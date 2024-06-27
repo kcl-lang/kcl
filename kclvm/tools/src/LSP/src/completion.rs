@@ -92,7 +92,7 @@ pub(crate) fn completion(
         None => {
             let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
             // Complete builtin pkgs if in import stmt
-            completions.extend(completion_import_builtin_pkg(program, pos));
+            completions.extend(completion_import_stmt(program, pos, tool));
             if !completions.is_empty() {
                 return Some(into_completion_items(&completions).into());
             }
@@ -229,7 +229,7 @@ fn completion_dot(
 
     if let Some(stmt) = program.pos_to_stmt(&pre_pos) {
         match stmt.node {
-            Stmt::Import(stmt) => return completion_import(&stmt, pos, program, tool),
+            Stmt::Import(stmt) => return dot_completion_in_import_stmt(&stmt, pos, program, tool),
             _ => {
                 let (expr, _) = inner_most_expr_in_stmt(&stmt.node, pos, None);
                 if let Some(node) = expr {
@@ -439,7 +439,11 @@ fn completion_newline(
     Some(into_completion_items(&completions).into())
 }
 
-fn completion_import_builtin_pkg(program: &Program, pos: &KCLPos) -> IndexSet<KCLCompletionItem> {
+fn completion_import_stmt(
+    program: &Program,
+    pos: &KCLPos,
+    tool: &dyn Toolchain,
+) -> IndexSet<KCLCompletionItem> {
     let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
     // completion position not contained in import stmt
     // import <space>  <cursor>
@@ -453,22 +457,55 @@ fn completion_import_builtin_pkg(program: &Program, pos: &KCLPos) -> IndexSet<KC
 
     if let Some(node) = program.pos_to_stmt(line_start_pos) {
         if let Stmt::Import(_) = node.node {
-            // system modules
-            completions.extend(STANDARD_SYSTEM_MODULES.iter().map(|s| KCLCompletionItem {
-                label: s.to_string(),
-                detail: None,
-                documentation: None,
-                kind: Some(KCLCompletionItemKind::Module),
-                insert_text: None,
-            }));
+            completions.extend(completion_import_builtin_pkg());
+            completions.extend(completion_import_internal_pkg(&program, &line_start_pos));
+            completions.extend(completion_import_external_pkg(&program, tool));
+        }
+    }
+    completions
+}
 
-            // internal pkg and modules in program.root
-            if let Ok(entries) = fs::read_dir(program.root.clone()) {
-                for entry in entries {
-                    if let Ok(entry) = entry {
-                        if let Ok(file_type) = entry.file_type() {
-                            // internal pkgs
-                            if file_type.is_dir() {
+fn completion_import_builtin_pkg() -> IndexSet<KCLCompletionItem> {
+    STANDARD_SYSTEM_MODULES
+        .iter()
+        .map(|s| KCLCompletionItem {
+            label: s.to_string(),
+            detail: None,
+            documentation: None,
+            kind: Some(KCLCompletionItemKind::Module),
+            insert_text: None,
+        })
+        .collect()
+}
+
+fn completion_import_internal_pkg(
+    program: &Program,
+    line_start_pos: &KCLPos,
+) -> IndexSet<KCLCompletionItem> {
+    let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
+    if let Ok(entries) = fs::read_dir(program.root.clone()) {
+        for entry in entries {
+            if let Ok(entry) = entry {
+                if let Ok(file_type) = entry.file_type() {
+                    // internal pkgs
+                    if file_type.is_dir() {
+                        if let Some(name) = entry.file_name().to_str() {
+                            completions.insert(KCLCompletionItem {
+                                label: name.to_string(),
+                                detail: None,
+                                documentation: None,
+                                kind: Some(KCLCompletionItemKind::Dir),
+                                insert_text: None,
+                            });
+                        }
+                    } else {
+                        // internal module
+                        let path = entry.path();
+                        if path.to_str().unwrap_or("") == line_start_pos.filename {
+                            continue;
+                        }
+                        if let Some(extension) = path.extension() {
+                            if extension == KCL_FILE_EXTENSION {
                                 if let Some(name) = entry.file_name().to_str() {
                                     completions.insert(KCLCompletionItem {
                                         label: name.to_string(),
@@ -478,25 +515,6 @@ fn completion_import_builtin_pkg(program: &Program, pos: &KCLPos) -> IndexSet<KC
                                         insert_text: None,
                                     });
                                 }
-                            } else {
-                                // internal module
-                                let path = entry.path();
-                                if path.to_str().unwrap_or("") == pos.filename {
-                                    continue;
-                                }
-                                if let Some(extension) = path.extension() {
-                                    if extension == KCL_FILE_EXTENSION {
-                                        if let Some(name) = entry.file_name().to_str() {
-                                            completions.insert(KCLCompletionItem {
-                                                label: name.to_string(),
-                                                detail: None,
-                                                documentation: None,
-                                                kind: Some(KCLCompletionItemKind::Module),
-                                                insert_text: None,
-                                            });
-                                        }
-                                    }
-                                }
                             }
                         }
                     }
@@ -505,6 +523,27 @@ fn completion_import_builtin_pkg(program: &Program, pos: &KCLPos) -> IndexSet<KC
         }
     }
     completions
+}
+
+fn completion_import_external_pkg(
+    program: &Program,
+    tool: &dyn Toolchain,
+) -> IndexSet<KCLCompletionItem> {
+    match tool.fetch_metadata(program.root.clone().into()) {
+        Ok(metadata) => metadata
+            .packages
+            .keys()
+            .into_iter()
+            .map(|name| KCLCompletionItem {
+                label: name.to_string(),
+                detail: None,
+                documentation: None,
+                kind: Some(KCLCompletionItemKind::Dir),
+                insert_text: None,
+            })
+            .collect(),
+        Err(_) => IndexSet::new(),
+    }
 }
 
 /// Complete schema value
@@ -615,7 +654,7 @@ fn schema_ty_to_type_complete_item(schema_ty: &SchemaType) -> KCLCompletionItem 
     }
 }
 
-fn completion_import(
+fn dot_completion_in_import_stmt(
     stmt: &ImportStmt,
     _pos: &KCLPos,
     program: &Program,
@@ -1970,6 +2009,14 @@ mod tests {
     completion_label_without_system_pkg_test_snapshot!(
         import_internal_pkg_test,
         "src/test_data/completion_test/import/internal/main.k",
+        1,
+        8,
+        None
+    );
+
+    completion_label_without_system_pkg_test_snapshot!(
+        import_external_pkg_test,
+        "src/test_data/completion_test/import/external/external_1/main.k",
         1,
         8,
         None
