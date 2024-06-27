@@ -289,16 +289,21 @@ impl<'ctx> Resolver<'ctx> {
         range: &Range,
     ) -> bool {
         if let Some(index_signature) = &schema_ty.index_signature {
-            if !self.check_type(val_ty.clone(), index_signature.val_ty.clone(), range) {
-                self.handler.add_type_error(
-                    &format!(
-                        "expected schema index signature value type {}, got {}",
-                        index_signature.val_ty.ty_str(),
-                        val_ty.ty_str()
-                    ),
-                    range.clone(),
-                );
-            }
+            let val_ty = match (&key_ty.kind, &val_ty.kind) {
+                (TypeKind::Union(key_tys), TypeKind::Union(val_tys)) => {
+                    let mut index_signature_val_tys: Vec<TypeRef> = vec![];
+                    for (i, key_ty) in key_tys.iter().enumerate() {
+                        if let TypeKind::StrLit(s) = &key_ty.kind {
+                            if schema_ty.attrs.get(s).is_none() && val_tys.get(i).is_some() {
+                                index_signature_val_tys.push(val_tys.get(i).unwrap().clone());
+                            }
+                        }
+                    }
+                    crate::ty::sup(&index_signature_val_tys).into()
+                }
+                _ => val_ty,
+            };
+
             if index_signature.any_other {
                 return self.check_type(key_ty, index_signature.key_ty.clone(), range)
                     && self.check_type(val_ty, index_signature.val_ty.clone(), range);

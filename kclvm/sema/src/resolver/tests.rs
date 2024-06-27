@@ -886,3 +886,19 @@ fn test_builtin_file_invalid() {
         assert_eq!(diags[0].messages[0].message, *expected_message);
     }
 }
+
+#[test]
+fn test_schema_index_signature_check() {
+    let sess = Arc::new(ParseSession::default());
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_data/index_signature_check.k"],
+        None,
+        None,
+    )
+    .unwrap()
+    .program;
+    let scope = resolve_program(&mut program);
+    let diags = scope.handler.diagnostics;
+    assert!(diags.is_empty())
+}
