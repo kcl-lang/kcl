@@ -2013,9 +2013,6 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                         let last_lambda_scope = self.last_lambda_scope();
                         // Local scope variable
                         if index >= last_lambda_scope {
-                            if uninitialized.contains(name) {
-                                continue;
-                            }
                             self.builder.build_load(*var, name)
                         } else {
                             // Outer lambda closure
@@ -2037,12 +2034,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                                         ],
                                     )
                                 }
-                                None => {
-                                    if uninitialized.contains(name) {
-                                        continue;
-                                    }
-                                    self.builder.build_load(*var, name)
-                                }
+                                None => self.builder.build_load(*var, name),
                             }
                         }
                     } else {

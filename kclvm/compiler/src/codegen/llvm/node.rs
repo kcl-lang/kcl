@@ -1979,6 +1979,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         let else_block = self.append_block("");
         let end_block = self.append_block("");
         let is_truth = self.value_is_truthy(cond);
+        self.emit_config_if_entry_expr_vars(config_if_entry_expr);
         let tpe = self.value_ptr_type();
         self.cond_br(is_truth, then_block, else_block);
         self.builder.position_at_end(then_block);
@@ -2083,7 +2084,6 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
     fn walk_config_expr(&self, config_expr: &'ctx ast::ConfigExpr) -> Self::Result {
         check_backtrack_stop!(self);
         self.enter_scope();
-        self.emit_config_entries_vars(&config_expr.items);
         let result = self.walk_config_entries(&config_expr.items);
         self.leave_scope();
         result
