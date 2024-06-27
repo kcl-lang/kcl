@@ -158,6 +158,52 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         }
     }
 
+    pub(crate) fn emit_config_if_entry_expr_vars(
+        &self,
+        config_if_entry_expr: &'ctx ast::ConfigIfEntryExpr,
+    ) {
+        self.emit_config_entries_vars(&config_if_entry_expr.items);
+        if let Some(orelse) = &config_if_entry_expr.orelse {
+            // Config expr or config if entry expr.
+            if let ast::Expr::Config(config_expr) = &orelse.node {
+                self.emit_config_entries_vars(&config_expr.items);
+            } else if let ast::Expr::ConfigIfEntry(config_if_entry_expr) = &orelse.node {
+                self.emit_config_if_entry_expr_vars(config_if_entry_expr);
+            }
+        }
+    }
+
+    pub(crate) fn emit_config_entries_vars(&self, items: &'ctx [ast::NodeRef<ast::ConfigEntry>]) {
+        for item in items {
+            if let ast::Expr::ConfigIfEntry(config_if_entry_expr) = &item.node.value.node {
+                self.emit_config_if_entry_expr_vars(config_if_entry_expr);
+            }
+            if let Some(key) = &item.node.key {
+                let optional_name = match &key.node {
+                    ast::Expr::Identifier(identifier) => Some(identifier.names[0].node.clone()),
+                    ast::Expr::StringLit(string_lit) => Some(string_lit.value.clone()),
+                    ast::Expr::Subscript(subscript) => {
+                        let mut name = None;
+                        if let ast::Expr::Identifier(identifier) = &subscript.value.node {
+                            if let Some(index_node) = &subscript.index {
+                                if let ast::Expr::NumberLit(number) = &index_node.node {
+                                    if let ast::NumberLitValue::Int(_) = number.value {
+                                        name = Some(identifier.names[0].node.clone())
+                                    }
+                                }
+                            }
+                        }
+                        name
+                    }
+                    _ => None,
+                };
+                if let Some(name) = &optional_name {
+                    self.add_or_update_local_variable_within_scope(name, None);
+                }
+            }
+        }
+    }
+
     /// Compile AST Modules, which requires traversing three times.
     /// 1. scan all possible global variables and allocate undefined values to global pointers.
     /// 2. build all user-defined schema/rule types.

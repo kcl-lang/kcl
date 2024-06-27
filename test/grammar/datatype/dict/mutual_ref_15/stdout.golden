@@ -1,0 +1,16 @@
+out:
+- foo: bar
+- foo2: bar2
+  a:
+    b: c
+a:
+  foo: bar
+b:
+  foo2: bar2
+  a:
+    b: c
+c:
+- foo: bar
+- foo2: bar2
+  a:
+    b: c
