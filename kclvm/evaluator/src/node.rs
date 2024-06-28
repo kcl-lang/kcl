@@ -440,12 +440,14 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                 ast::QuantOperation::All => {
                     if !is_truth {
                         self.leave_scope();
+                        self.clear_local_vars();
                         return Ok(self.bool_value(false));
                     }
                 }
                 ast::QuantOperation::Any => {
                     if is_truth {
                         self.leave_scope();
+                        self.clear_local_vars();
                         return Ok(self.bool_value(true));
                     }
                 }
@@ -466,11 +468,13 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             }
         }
         self.leave_scope();
+        self.clear_local_vars();
         // End for block.
         Ok(result)
     }
 
     fn walk_schema_attr(&self, schema_attr: &'ctx ast::SchemaAttr) -> Self::Result {
+        self.clear_local_vars();
         let name = schema_attr.name.node.as_str();
         self.add_target_var(name);
         for decorator in &schema_attr.decorators {
@@ -687,7 +691,8 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             };
             self.dict_insert_value(&mut dict_value, name.node.as_str(), &value);
         }
-        if let Some(proxy) = func.try_get_proxy() {
+        let vars = self.clean_and_cloned_local_vars();
+        let result = if let Some(proxy) = func.try_get_proxy() {
             // Invoke user defined functions, schemas or rules.
             Ok(self.invoke_proxy_function(proxy, &list_value, &dict_value))
         } else {
@@ -698,7 +703,9 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                 &dict_value,
                 &mut self.runtime_ctx.borrow_mut(),
             ))
-        }
+        };
+        self.set_local_vars(vars);
+        result
     }
 
     fn walk_subscript(&self, subscript: &'ctx ast::Subscript) -> Self::Result {

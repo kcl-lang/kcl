@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{collections::HashSet, rc::Rc};
 
 use generational_arena::Index;
 use kclvm_ast::ast;
@@ -144,6 +144,19 @@ impl<'ctx> Evaluator<'ctx> {
     #[inline]
     pub(crate) fn clear_local_vars(&self) {
         self.local_vars.borrow_mut().clear();
+    }
+
+    #[inline]
+    pub(crate) fn clean_and_cloned_local_vars(&self) -> HashSet<String> {
+        let mut local_vars = self.local_vars.borrow_mut();
+        let r = local_vars.clone();
+        local_vars.clear();
+        r
+    }
+
+    #[inline]
+    pub(crate) fn set_local_vars(&self, vars: HashSet<String>) {
+        self.local_vars.borrow_mut().extend(vars);
     }
 
     #[inline]

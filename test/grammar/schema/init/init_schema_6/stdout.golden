@@ -1,0 +1,10 @@
+configs:
+  foo:
+    name: foo
+  bar:
+    name: bar
+copies:
+  foo-copy:
+    name: foo-copy
+  bar-copy:
+    name: bar-copy
