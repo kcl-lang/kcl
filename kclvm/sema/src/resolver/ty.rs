@@ -304,6 +304,17 @@ impl<'ctx> Resolver<'ctx> {
                 _ => val_ty,
             };
 
+            if !self.check_type(val_ty.clone(), index_signature.val_ty.clone(), range) {
+                self.handler.add_type_error(
+                    &format!(
+                        "expected schema index signature value type {}, got {}",
+                        index_signature.val_ty.ty_str(),
+                        val_ty.ty_str()
+                    ),
+                    range.clone(),
+                );
+            }
+
             if index_signature.any_other {
                 return self.check_type(key_ty, index_signature.key_ty.clone(), range)
                     && self.check_type(val_ty, index_signature.val_ty.clone(), range);
