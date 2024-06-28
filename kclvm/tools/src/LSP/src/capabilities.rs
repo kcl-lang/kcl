@@ -1,8 +1,8 @@
 use lsp_types::{
     ClientCapabilities, CodeActionKind, CodeActionOptions, CodeActionProviderCapability,
-    CompletionOptions, HoverProviderCapability, InlayHintOptions, InlayHintServerCapabilities,
-    OneOf, SemanticTokensFullOptions, SemanticTokensLegend, SemanticTokensOptions,
-    ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, WorkDoneProgressOptions,
+    CompletionOptions, HoverProviderCapability, OneOf, SemanticTokensFullOptions,
+    SemanticTokensLegend, SemanticTokensOptions, ServerCapabilities, TextDocumentSyncCapability,
+    TextDocumentSyncKind, WorkDoneProgressOptions,
 };
 
 use crate::semantic_token::LEGEND_TYPE;
@@ -63,12 +63,7 @@ pub fn server_capabilities(client_caps: &ClientCapabilities) -> ServerCapabiliti
         document_range_formatting_provider: Some(OneOf::Left(true)),
         references_provider: Some(OneOf::Left(true)),
         rename_provider: Some(OneOf::Left(true)),
-        inlay_hint_provider: Some(lsp_types::OneOf::Right(
-            InlayHintServerCapabilities::Options(InlayHintOptions {
-                resolve_provider: None,
-                work_done_progress_options: Default::default(),
-            }),
-        )),
+        inlay_hint_provider: Some(lsp_types::OneOf::Left(true)),
         ..Default::default()
     }
 }
