@@ -23,6 +23,7 @@ use indexmap::IndexSet;
 use kclvm_ast::ast::{self, ImportStmt, Program, Stmt};
 use kclvm_ast::MAIN_PKG;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
+use kclvm_driver::get_kcl_files;
 use kclvm_driver::toolchain::{get_real_path_from_external, Metadata, Toolchain};
 use kclvm_sema::core::global_state::GlobalState;
 
@@ -490,6 +491,14 @@ fn completion_import_internal_pkg(
                 if let Ok(file_type) = entry.file_type() {
                     // internal pkgs
                     if file_type.is_dir() {
+                        if let Ok(files) = get_kcl_files(entry.path(), true) {
+                            // skip folder if without kcl file
+                            if files.is_empty() {
+                                continue;
+                            }
+                        } else {
+                            continue;
+                        }
                         if let Some(name) = entry.file_name().to_str() {
                             completions.insert(KCLCompletionItem {
                                 label: name.to_string(),
@@ -507,14 +516,16 @@ fn completion_import_internal_pkg(
                         }
                         if let Some(extension) = path.extension() {
                             if extension == KCL_FILE_EXTENSION {
-                                if let Some(name) = entry.file_name().to_str() {
-                                    completions.insert(KCLCompletionItem {
-                                        label: name.to_string(),
-                                        detail: None,
-                                        documentation: None,
-                                        kind: Some(KCLCompletionItemKind::Module),
-                                        insert_text: None,
-                                    });
+                                if let Some(name) = path.file_stem() {
+                                    if let Some(name) = name.to_str() {
+                                        completions.insert(KCLCompletionItem {
+                                            label: name.to_string(),
+                                            detail: None,
+                                            documentation: None,
+                                            kind: Some(KCLCompletionItemKind::Module),
+                                            insert_text: None,
+                                        });
+                                    }
                                 }
                             }
                         }
