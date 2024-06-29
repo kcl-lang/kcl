@@ -1,0 +1,17 @@
+content: |
+  Hello world from handlebars
+
+  1
+  2
+  5
+  Yehuda Katz
+  Alan Johnson
+  Charles Jolley
+  55
+  66
+content_raw: |
+  handlebars
+  [[object], [object]]
+  [object]
+  [object]
+  [Yehuda Katz, Alan Johnson, Charles Jolley]

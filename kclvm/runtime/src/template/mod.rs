@@ -22,11 +22,11 @@ pub extern "C" fn kclvm_template_execute(
             .register_template_string("template", template)
             .expect("register template failed");
         let data = get_call_arg(args, kwargs, 1, Some("data")).unwrap_or(ValueRef::dict(None));
-        let data: HashMap<String, String> = HashMap::from_iter(
+        let data: HashMap<String, JsonValue> = HashMap::from_iter(
             data.as_dict_ref()
                 .values
                 .iter()
-                .map(|(k, v)| (k.to_string(), v.to_string())),
+                .map(|(k, v)| (k.to_string(), v.build_json(&Default::default()))),
         );
         let result = handlebars
             .render("template", &data)

@@ -438,7 +438,7 @@ impl ValueRef {
         writer.to_str().unwrap().to_string()
     }
 
-    fn build_json(&self, opt: &JsonEncodeOptions) -> JsonValue {
+    pub(crate) fn build_json(&self, opt: &JsonEncodeOptions) -> JsonValue {
         match &*self.rc.borrow() {
             crate::Value::undefined => JsonValue::Null,
             crate::Value::none => JsonValue::Null,
