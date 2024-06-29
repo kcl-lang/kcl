@@ -67,22 +67,6 @@ pub unsafe extern "C" fn kclvm_context_set_import_names(
 // values: new
 // ----------------------------------------------------------------------------
 
-// singleton
-
-#[allow(non_camel_case_types, non_upper_case_globals)]
-static mut kclvm_value_Undefined_obj: usize = 0;
-
-#[allow(non_camel_case_types, non_upper_case_globals)]
-static mut kclvm_value_None_obj: usize = 0;
-
-#[allow(non_camel_case_types, non_upper_case_globals)]
-static mut kclvm_value_Bool_true_obj: usize = 0;
-
-#[allow(non_camel_case_types, non_upper_case_globals)]
-static mut kclvm_value_Bool_false_obj: usize = 0;
-
-// Undefine/None
-
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_value_Undefined(ctx: *mut kclvm_context_t) -> *mut kclvm_value_ref_t {
@@ -120,18 +104,10 @@ pub extern "C" fn kclvm_value_Bool(
     v: kclvm_bool_t,
 ) -> *mut kclvm_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
-    unsafe {
-        if v != 0 {
-            if kclvm_value_Bool_true_obj == 0 {
-                kclvm_value_Bool_true_obj = new_mut_ptr(ctx, ValueRef::bool(true)) as usize;
-            }
-            kclvm_value_Bool_true_obj as *mut kclvm_value_ref_t
-        } else {
-            if kclvm_value_Bool_false_obj == 0 {
-                kclvm_value_Bool_false_obj = new_mut_ptr(ctx, ValueRef::bool(false)) as usize;
-            }
-            kclvm_value_Bool_false_obj as *mut kclvm_value_ref_t
-        }
+    if v != 0 {
+        ValueRef::bool(true).into_raw(ctx)
+    } else {
+        ValueRef::bool(false).into_raw(ctx)
     }
 }
 
@@ -675,20 +651,6 @@ pub unsafe extern "C" fn kclvm_value_deep_copy(
 pub unsafe extern "C" fn kclvm_value_delete(p: *mut kclvm_value_ref_t) {
     if p.is_null() {
         return;
-    }
-    unsafe {
-        if p as usize == kclvm_value_Undefined_obj {
-            return;
-        }
-        if p as usize == kclvm_value_None_obj {
-            return;
-        }
-        if p as usize == kclvm_value_Bool_true_obj {
-            return;
-        }
-        if p as usize == kclvm_value_Bool_false_obj {
-            return;
-        }
     }
     let val = ptr_as_ref(p);
     val.from_raw();
