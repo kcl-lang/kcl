@@ -138,6 +138,16 @@ evaluator_snapshot! {import_stmt_1, r#"import math
 import math
 b = 2
 "#}
+evaluator_snapshot! {import_stmt_2, r#"
+import regex
+
+v = option("foo")
+x = regex.match("foo", "^\\w+$")
+"#}
+evaluator_snapshot! {import_stmt_3, r#"import math
+
+x = math.log(10)
+"#}
 
 evaluator_snapshot! {quant_expr_0, r#"b = all a in [1, 2, 3] {
     a > 0
@@ -367,4 +377,56 @@ fn test_if_stmt_setters() {
     let scopes = evaluator.lazy_scopes.borrow();
     let var_setters = scopes.get(MAIN_PKG).unwrap().setters.get("_a").unwrap();
     assert_eq!(var_setters.len(), 3);
+}
+
+use std::sync::Arc;
+use std::thread;
+
+const MULTI_THREAD_SOURCE: &str = r#"
+import regex
+foo = option("foo")
+bar = option("bar")
+x = regex.match("", "")
+"#;
+
+#[test]
+fn test_multithread_exec() {
+    let threads = 10;
+    multithread_check(threads, |thread| {
+        println!("run: {}", thread);
+        for _ in 0..1000 {
+            run_code(MULTI_THREAD_SOURCE);
+        }
+        println!("done: {}", thread);
+    });
+}
+
+fn multithread_check(threads: i32, check: impl Fn(i32) + Send + Sync + 'static) {
+    let check_shared = Arc::new(check);
+    let mut handles = vec![];
+    for thread in 0..threads {
+        let check_shared = Arc::clone(&check_shared);
+        let handle = thread::spawn(move || {
+            check_shared(thread);
+        });
+        handles.push(handle);
+    }
+    for handle in handles {
+        handle.join().unwrap();
+    }
+}
+
+fn run_code(source: &str) -> (String, String) {
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![source.to_string()],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    evaluator.run().unwrap()
 }
