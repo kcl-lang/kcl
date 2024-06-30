@@ -49,7 +49,7 @@ macro_rules! call {
             let res = serv_ref.$serv_name(&args);
             let result_byte = match res {
                 Ok(res) => res.encode_to_vec(),
-                Err(err) => panic!("{}", err),
+                Err(err) => format!("ERROR:{}", err.to_string()).into_bytes(),
             };
             *$result_len = result_byte.len();
             CString::from_vec_unchecked(result_byte).into_raw()
