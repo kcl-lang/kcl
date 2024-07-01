@@ -8,18 +8,19 @@ use anyhow::Ok;
 use generational_arena::Index;
 use kclvm_ast::ast::{self, CallExpr, ConfigEntry, NodeRef};
 use kclvm_ast::walker::TypedResultWalker;
-use kclvm_runtime::val_func::invoke_function;
 use kclvm_runtime::{
     schema_assert, schema_runtime_type, ConfigEntryOperationKind, DecoratorValue, RuntimeErrorType,
     UnionOptions, ValueRef, PKG_PATH_PREFIX,
 };
 use kclvm_sema::{builtin, pkgpath_without_prefix, plugin};
+use scopeguard::defer;
 
 use crate::error::INTERNAL_ERROR_MSG;
 use crate::func::{func_body, FunctionCaller, FunctionEvalContext};
 use crate::lazy::Setter;
 use crate::proxy::Proxy;
 use crate::rule::{rule_body, rule_check, RuleCaller, RuleEvalContext};
+use crate::runtime::invoke_function;
 use crate::schema::{schema_body, schema_check, SchemaCaller, SchemaEvalContext};
 use crate::ty::type_pack_and_check;
 use crate::union::union_entry;
@@ -391,6 +392,10 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         let mut iter_value = iter_host_value.iter();
         // Start iteration and enter the loop scope for the loop variable.
         self.enter_scope();
+        defer! {
+            self.leave_scope();
+            self.clear_local_vars();
+        }
         // Start block
         while let Some((next_value, key, value)) = iter_value.next_with_key_value(&iter_host_value)
         {
@@ -439,15 +444,11 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             match quant_expr.op {
                 ast::QuantOperation::All => {
                     if !is_truth {
-                        self.leave_scope();
-                        self.clear_local_vars();
                         return Ok(self.bool_value(false));
                     }
                 }
                 ast::QuantOperation::Any => {
                     if is_truth {
-                        self.leave_scope();
-                        self.clear_local_vars();
                         return Ok(self.bool_value(true));
                     }
                 }
@@ -467,8 +468,6 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                 }
             }
         }
-        self.leave_scope();
-        self.clear_local_vars();
         // End for block.
         Ok(result)
     }
@@ -696,13 +695,8 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             // Invoke user defined functions, schemas or rules.
             Ok(self.invoke_proxy_function(proxy, &list_value, &dict_value))
         } else {
-            // Invoke builtin function or plugin functions.
-            Ok(invoke_function(
-                &func,
-                &mut list_value,
-                &dict_value,
-                &mut self.runtime_ctx.borrow_mut(),
-            ))
+            // Invoke runtime builtin functions or external plugin functions.
+            Ok(invoke_function(self, &func, &mut list_value, &dict_value))
         };
         self.set_local_vars(vars);
         result
@@ -800,6 +794,9 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
     fn walk_list_comp(&self, list_comp: &'ctx ast::ListComp) -> Self::Result {
         let mut collection_value = self.list_value();
         self.enter_scope();
+        defer! {
+            self.leave_scope();
+        }
         self.walk_generator(
             &list_comp.generators,
             &list_comp.elt,
@@ -809,13 +806,15 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             &mut collection_value,
             &ast::CompType::List,
         );
-        self.leave_scope();
         Ok(collection_value)
     }
 
     fn walk_dict_comp(&self, dict_comp: &'ctx ast::DictComp) -> Self::Result {
         let mut collection_value = self.dict_value();
         self.enter_scope();
+        defer! {
+            self.leave_scope();
+        }
         let key = dict_comp
             .entry
             .key
@@ -830,7 +829,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             &mut collection_value,
             &ast::CompType::Dict,
         );
-        self.leave_scope();
+
         Ok(collection_value)
     }
 
@@ -863,6 +862,9 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         // Check the required attributes only when the values of all attributes
         // in the final schema are solved.
         self.push_schema_expr();
+        defer! {
+            self.pop_schema_expr();
+        }
         let config_value = self.walk_expr(&schema_expr.config)?;
         let schema_type = self.walk_identifier_with_ctx(
             &schema_expr.name.node,
@@ -900,26 +902,30 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             if let Proxy::Schema(schema) = &frame.proxy {
                 self.push_pkgpath(&frame.pkgpath);
                 self.push_backtrace(&frame);
+                defer! {
+                    self.pop_backtrace();
+                    self.pop_pkgpath();
+                }
                 let value = (schema.body)(
                     self,
                     &schema.ctx.borrow().snapshot(config_value, config_meta),
                     &list_value,
                     &dict_value,
                 );
-                self.pop_backtrace();
-                self.pop_pkgpath();
                 value
             } else if let Proxy::Rule(rule) = &frame.proxy {
                 self.push_pkgpath(&frame.pkgpath);
                 self.push_backtrace(&frame);
+                defer! {
+                    self.pop_backtrace();
+                    self.pop_pkgpath();
+                }
                 let value = (rule.body)(
                     self,
                     &rule.ctx.borrow().snapshot(config_value, config_meta),
                     &list_value,
                     &dict_value,
                 );
-                self.pop_backtrace();
-                self.pop_pkgpath();
                 value
             } else {
                 self.undefined_value()
@@ -933,15 +939,16 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                 &UnionOptions::default(),
             )
         };
-        self.pop_schema_expr();
         Ok(schema)
     }
 
     #[inline]
     fn walk_config_expr(&self, config_expr: &'ctx ast::ConfigExpr) -> Self::Result {
         self.enter_scope();
+        defer! {
+            self.leave_scope();
+        }
         let result = self.walk_config_entries(&config_expr.items);
-        self.leave_scope();
         result
     }
 
@@ -1200,10 +1207,12 @@ impl<'ctx> Evaluator<'ctx> {
                     self.push_pkgpath(&frame.pkgpath);
                     self.enter_scope();
                     self.push_backtrack_meta(setter);
+                    defer! {
+                        self.pop_backtrack_meta();
+                        self.leave_scope();
+                        self.pop_pkgpath();
+                    }
                     let value = self.walk_stmt(stmt);
-                    self.pop_backtrack_meta();
-                    self.leave_scope();
-                    self.pop_pkgpath();
                     value
                 } else {
                     self.ok_result()

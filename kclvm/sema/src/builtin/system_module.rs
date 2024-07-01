@@ -1830,9 +1830,43 @@ register_template_member! {
     )
 }
 
+// ------------------------------
+// runtime system package
+// ------------------------------
+
+pub const RUNTIME: &str = "runtime";
+macro_rules! register_runtime_member {
+    ($($name:ident => $ty:expr)*) => (
+        pub const RUNTIME_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+            let mut builtin_mapping = IndexMap::default();
+            $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
+            builtin_mapping
+        });
+        pub const RUNTIME_FUNCTION_NAMES: &[&str] = &[
+            $( stringify!($name), )*
+        ];
+    )
+}
+register_runtime_member! {
+    catch => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "func".to_string(),
+                ty: Arc::new(Type::function(None, Type::any_ref(), &[], "", false, None)),
+                has_default: false,
+            },
+        ],
+        r#"Executes the provided function and catches any potential runtime errors. Returns undefined if execution is successful, otherwise returns an error message in case of a runtime panic."#,
+        false,
+        None,
+    )
+}
+
 pub const STANDARD_SYSTEM_MODULES: &[&str] = &[
     COLLECTION, NET, MANIFESTS, MATH, DATETIME, REGEX, YAML, JSON, CRYPTO, BASE64, UNITS, FILE,
-    TEMPLATE,
+    TEMPLATE, RUNTIME,
 ];
 
 pub const STANDARD_SYSTEM_MODULE_NAMES_WITH_AT: &[&str] = &[
@@ -1849,6 +1883,7 @@ pub const STANDARD_SYSTEM_MODULE_NAMES_WITH_AT: &[&str] = &[
     "@units",
     "@file",
     "@template",
+    "@runtime",
 ];
 
 /// Get the system module members
@@ -1871,6 +1906,7 @@ pub fn get_system_module_members(name: &str) -> Vec<&str> {
         COLLECTION => COLLECTION_FUNCTION_NAMES.to_vec(),
         FILE => FILE_FUNCTION_NAMES.to_vec(),
         TEMPLATE => TEMPLATE_FUNCTION_NAMES.to_vec(),
+        RUNTIME => RUNTIME_FUNCTION_NAMES.to_vec(),
         _ => bug!("invalid system module name '{}'", name),
     }
 }
@@ -1928,6 +1964,10 @@ pub fn get_system_member_function_ty(name: &str, func: &str) -> TypeRef {
         }
         TEMPLATE => {
             let types = TEMPLATE_FUNCTION_TYPES;
+            types.get(func).cloned()
+        }
+        RUNTIME => {
+            let types = RUNTIME_FUNCTION_TYPES;
             types.get(func).cloned()
         }
         _ => None,

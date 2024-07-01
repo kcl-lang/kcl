@@ -216,7 +216,7 @@ impl ValueRef {
 }
 
 /// Get value from arguments and keyword arguments.
-pub(crate) fn get_call_arg(
+pub fn get_call_arg(
     args: &ValueRef,
     kwargs: &ValueRef,
     index: usize,

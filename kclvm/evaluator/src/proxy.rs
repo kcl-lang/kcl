@@ -1,4 +1,5 @@
 use kclvm_runtime::ValueRef;
+use scopeguard::defer;
 
 use crate::error as kcl_error;
 use crate::func::FunctionCaller;
@@ -55,12 +56,14 @@ pub(crate) fn call_schema_body(
         if let Proxy::Schema(schema) = &frame.proxy {
             s.push_pkgpath(&frame.pkgpath);
             s.push_backtrace(&frame);
+            defer! {
+                s.pop_backtrace();
+                s.pop_pkgpath();
+            }
             {
                 schema.ctx.borrow_mut().set_info_with_schema(&ctx.borrow())
             }
             let value = (schema.body)(s, &schema.ctx, args, kwargs);
-            s.pop_backtrace();
-            s.pop_pkgpath();
             value
         } else {
             ctx.borrow().value.clone()
@@ -89,12 +92,14 @@ pub(crate) fn call_schema_body_from_rule(
         if let Proxy::Schema(schema) = &frame.proxy {
             s.push_pkgpath(&frame.pkgpath);
             s.push_backtrace(&frame);
+            defer! {
+                s.pop_backtrace();
+                s.pop_pkgpath();
+            }
             {
                 schema.ctx.borrow_mut().set_info_with_rule(&ctx.borrow())
             }
             let value = (schema.body)(s, &schema.ctx, args, kwargs);
-            s.pop_backtrace();
-            s.pop_pkgpath();
             value
         } else {
             ctx.borrow().value.clone()
@@ -123,12 +128,14 @@ pub(crate) fn call_schema_check(
         if let Proxy::Schema(schema) = &frame.proxy {
             s.push_pkgpath(&frame.pkgpath);
             s.push_backtrace(&frame);
+            defer! {
+                s.pop_backtrace();
+                s.pop_pkgpath();
+            }
             if let Some(ctx) = ctx {
                 schema.ctx.borrow_mut().set_info_with_schema(&ctx.borrow())
             }
             (schema.check)(s, &schema.ctx, schema_value, args, kwargs);
-            s.pop_backtrace();
-            s.pop_pkgpath();
         }
     }
 }
@@ -145,9 +152,11 @@ pub(crate) fn call_rule_check(s: &Evaluator, func: &ValueRef, args: &ValueRef, k
         if let Proxy::Rule(rule) = &frame.proxy {
             s.push_pkgpath(&frame.pkgpath);
             s.push_backtrace(&frame);
+            defer! {
+                s.pop_backtrace();
+                s.pop_pkgpath();
+            }
             (rule.check)(s, &rule.ctx, args, kwargs);
-            s.pop_backtrace();
-            s.pop_pkgpath();
         }
     }
 }

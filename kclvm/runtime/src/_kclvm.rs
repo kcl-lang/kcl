@@ -220,6 +220,7 @@ pub enum ApiFunc {
     kclvm_regex_replace,
     kclvm_regex_search,
     kclvm_regex_split,
+    kclvm_runtime_catch,
     kclvm_schema_assert,
     kclvm_schema_backtrack_cache,
     kclvm_schema_default_settings,

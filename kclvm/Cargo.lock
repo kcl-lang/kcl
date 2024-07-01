@@ -1864,6 +1864,7 @@ dependencies = [
  "kclvm-parser",
  "kclvm-runtime",
  "kclvm-sema",
+ "scopeguard",
 ]
 
 [[package]]

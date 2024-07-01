@@ -1262,3 +1262,7 @@
 // api-spec(c):    kclvm_value_ref_t* kclvm_template_html_escape(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_template_html_escape(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
+// api-spec:       kclvm_runtime_catch
+// api-spec(c):    kclvm_value_ref_t* kclvm_runtime_catch(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_runtime_catch(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+

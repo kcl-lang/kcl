@@ -1,6 +1,5 @@
 ---
 source: loader/src/tests.rs
-assertion_line: 39
 expression: "format!(\"{:#?}\", p.symbols.values())"
 ---
 [
@@ -91,7 +90,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
         owner: Some(
             SymbolRef {
                 id: Index {
-                    index: 14,
+                    index: 15,
                     generation: 0,
                 },
                 kind: Package,
@@ -232,7 +231,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
         owner: Some(
             SymbolRef {
                 id: Index {
-                    index: 14,
+                    index: 15,
                     generation: 0,
                 },
                 kind: Package,
@@ -385,13 +384,6 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
         attrs: [
             SymbolRef {
                 id: Index {
-                    index: 136,
-                    generation: 0,
-                },
-                kind: Function,
-            },
-            SymbolRef {
-                id: Index {
                     index: 137,
                     generation: 0,
                 },
@@ -582,6 +574,13 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
             SymbolRef {
                 id: Index {
                     index: 164,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 165,
                     generation: 0,
                 },
                 kind: Function,
@@ -627,13 +626,6 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
         attrs: [
             SymbolRef {
                 id: Index {
-                    index: 136,
-                    generation: 0,
-                },
-                kind: Function,
-            },
-            SymbolRef {
-                id: Index {
                     index: 137,
                     generation: 0,
                 },
@@ -824,6 +816,13 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
             SymbolRef {
                 id: Index {
                     index: 164,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 165,
                     generation: 0,
                 },
                 kind: Function,
@@ -869,13 +868,6 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
         attrs: [
             SymbolRef {
                 id: Index {
-                    index: 136,
-                    generation: 0,
-                },
-                kind: Function,
-            },
-            SymbolRef {
-                id: Index {
                     index: 137,
                     generation: 0,
                 },
@@ -1066,6 +1058,13 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
             SymbolRef {
                 id: Index {
                     index: 164,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 165,
                     generation: 0,
                 },
                 kind: Function,

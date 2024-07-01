@@ -1,6 +1,5 @@
 ---
 source: loader/src/tests.rs
-assertion_line: 37
 expression: "format!(\"{:#?}\", p.symbols.values())"
 ---
 [
@@ -89,13 +88,6 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
             },
         ),
         attrs: [
-            SymbolRef {
-                id: Index {
-                    index: 136,
-                    generation: 0,
-                },
-                kind: Function,
-            },
             SymbolRef {
                 id: Index {
                     index: 137,
@@ -288,6 +280,13 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
             SymbolRef {
                 id: Index {
                     index: 164,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 165,
                     generation: 0,
                 },
                 kind: Function,
