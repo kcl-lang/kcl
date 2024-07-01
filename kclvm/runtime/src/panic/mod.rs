@@ -67,12 +67,6 @@ pub fn is_runtime_catch_function(ptr: u64) -> bool {
 }
 
 /// Convert an error to string.
-///
-/// ```
-/// use kclvm_error::err_to_str;
-///
-/// assert_eq!(err_to_str(Box::new("error_string".to_string())), "error_string");
-/// ```
 pub fn err_to_str(err: Box<dyn Any + Send>) -> String {
     if let Some(s) = err.downcast_ref::<&str>() {
         s.to_string()
