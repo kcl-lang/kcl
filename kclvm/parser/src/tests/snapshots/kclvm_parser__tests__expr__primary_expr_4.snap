@@ -1,0 +1,84 @@
+---
+source: parser/src/tests/expr.rs
+expression: "crate::tests::parsing_expr_string(r####\"{}..a\"####)"
+---
+Node {
+    node: Selector(
+        SelectorExpr {
+            value: Node {
+                node: Selector(
+                    SelectorExpr {
+                        value: Node {
+                            node: Config(
+                                ConfigExpr {
+                                    items: [],
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 0,
+                            end_line: 1,
+                            end_column: 2,
+                        },
+                        attr: Node {
+                            node: Identifier {
+                                names: [
+                                    Node {
+                                        node: "",
+                                        filename: "",
+                                        line: 1,
+                                        column: 3,
+                                        end_line: 1,
+                                        end_column: 3,
+                                    },
+                                ],
+                                pkgpath: "",
+                                ctx: Load,
+                            },
+                            filename: "",
+                            line: 1,
+                            column: 3,
+                            end_line: 1,
+                            end_column: 3,
+                        },
+                        ctx: Load,
+                        has_question: false,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 3,
+            },
+            attr: Node {
+                node: Identifier {
+                    names: [
+                        Node {
+                            node: "a",
+                            filename: "",
+                            line: 1,
+                            column: 4,
+                            end_line: 1,
+                            end_column: 5,
+                        },
+                    ],
+                    pkgpath: "",
+                    ctx: Load,
+                },
+                filename: "",
+                line: 1,
+                column: 4,
+                end_line: 1,
+                end_column: 5,
+            },
+            ctx: Load,
+            has_question: false,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 5,
+}
