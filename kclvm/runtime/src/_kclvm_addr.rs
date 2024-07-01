@@ -233,6 +233,7 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_regex_replace" => crate::kclvm_regex_replace as *const () as u64,
         "kclvm_regex_search" => crate::kclvm_regex_search as *const () as u64,
         "kclvm_regex_split" => crate::kclvm_regex_split as *const () as u64,
+        "kclvm_runtime_catch" => crate::kclvm_runtime_catch as *const () as u64,
         "kclvm_schema_assert" => crate::kclvm_schema_assert as *const () as u64,
         "kclvm_schema_backtrack_cache" => crate::kclvm_schema_backtrack_cache as *const () as u64,
         "kclvm_schema_default_settings" => crate::kclvm_schema_default_settings as *const () as u64,

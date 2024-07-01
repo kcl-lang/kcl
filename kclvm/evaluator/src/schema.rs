@@ -7,6 +7,7 @@ use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_ast::walker::TypedResultWalker;
 use kclvm_runtime::{schema_runtime_type, ConfigEntryOperationKind, ValueRef};
+use scopeguard::defer;
 
 use crate::lazy::{merge_variables_and_setters, LazyEvalScope, LazyEvalScopeRef};
 use crate::proxy::{call_schema_body, call_schema_check};
@@ -409,6 +410,10 @@ pub(crate) fn schema_body(
     let schema_name = { ctx.borrow().node.name.node.to_string() };
     s.push_schema(crate::EvalContext::Schema(ctx.clone()));
     s.enter_schema_scope(true);
+    defer! {
+        s.leave_scope();
+        s.pop_schema();
+    }
     // Evaluate arguments and keyword arguments and store values to local variables.
     s.walk_arguments(&ctx.borrow().node.args, args, kwargs);
     // Eval schema body and record schema instances.
@@ -509,8 +514,6 @@ pub(crate) fn schema_body(
         // Record base schema instances.
         schema_with_config(s, ctx, &schema_ctx_value, args, kwargs)
     };
-    s.leave_scope();
-    s.pop_schema();
     schema
 }
 
@@ -566,9 +569,11 @@ pub(crate) fn schema_check(
                 if let Proxy::Schema(schema) = &frame.proxy {
                     s.push_pkgpath(&frame.pkgpath);
                     s.push_backtrace(&frame);
+                    defer! {
+                        s.pop_backtrace();
+                        s.pop_pkgpath();
+                    }
                     (schema.check)(s, &schema.ctx, schema_value, args, kwargs);
-                    s.pop_backtrace();
-                    s.pop_pkgpath();
                 }
             }
         }

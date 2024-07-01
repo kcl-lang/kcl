@@ -418,6 +418,8 @@ declare %kclvm_value_ref_t* @kclvm_regex_search(%kclvm_context_t* %ctx, %kclvm_v
 
 declare %kclvm_value_ref_t* @kclvm_regex_split(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
+declare %kclvm_value_ref_t* @kclvm_runtime_catch(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
 declare void @kclvm_schema_assert(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %value, %kclvm_value_ref_t* %msg, %kclvm_value_ref_t* %config_meta);
 
 declare void @kclvm_schema_backtrack_cache(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %schema, %kclvm_value_ref_t* %cache, %kclvm_value_ref_t* %cal_map, %kclvm_char_t* %name, %kclvm_value_ref_t* %runtime_type);

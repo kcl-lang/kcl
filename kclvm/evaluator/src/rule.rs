@@ -5,6 +5,7 @@ use std::sync::Arc;
 use kclvm_ast::ast;
 use kclvm_ast::walker::TypedResultWalker;
 use kclvm_runtime::ValueRef;
+use scopeguard::defer;
 
 use crate::error as kcl_error;
 use crate::lazy::LazyEvalScope;
@@ -95,6 +96,10 @@ pub fn rule_body(
     let rule_name = &ctx.borrow().node.name.node;
     s.push_schema(crate::EvalContext::Rule(ctx.clone()));
     s.enter_scope();
+    defer! {
+        s.leave_scope();
+        s.pop_schema();
+    }
     // Evaluate arguments and keyword arguments and store values to local variables.
     s.walk_arguments(&ctx.borrow().node.args, args, kwargs);
     // Eval schema body and record schema instances.
@@ -110,8 +115,6 @@ pub fn rule_body(
         // Call rule check block function
         rule_check(s, ctx, args, kwargs);
     }
-    s.leave_scope();
-    s.pop_schema();
     rule_value
 }
 

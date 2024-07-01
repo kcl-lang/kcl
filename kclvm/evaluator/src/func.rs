@@ -5,6 +5,7 @@ use generational_arena::Index;
 use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_runtime::ValueRef;
+use scopeguard::defer;
 
 use crate::proxy::Proxy;
 use crate::Evaluator;
@@ -75,6 +76,12 @@ impl<'ctx> Evaluator<'ctx> {
         self.push_pkgpath(&frame.pkgpath);
         // Change the backtrace metadata: filename, line, etc.
         self.push_backtrace(&frame);
+        defer! {
+            // Recover the backtrace metadata: filename, line, etc.
+            self.pop_backtrace();
+            // Recover the package path scope.
+            self.pop_pkgpath();
+        }
         let value = match &frame.proxy {
             // Call a function and return the value
             Proxy::Lambda(lambda) => {
@@ -101,10 +108,6 @@ impl<'ctx> Evaluator<'ctx> {
             // The built-in lazy eval semantics prevent invoking
             Proxy::Global(_) => self.undefined_value(),
         };
-        // Recover the backtrace metadata: filename, line, etc.
-        self.pop_backtrace();
-        // Recover the package path scope.
-        self.pop_pkgpath();
         value
     }
 }
@@ -117,11 +120,13 @@ pub fn func_body(
     kwargs: &ValueRef,
 ) -> ValueRef {
     s.enter_scope();
+    defer! {
+        s.leave_scope();
+    }
     // Evaluate arguments and keyword arguments and store values to local variables.
     s.walk_arguments(&ctx.node.args, args, kwargs);
     let result = s
         .walk_stmts(&ctx.node.body)
         .expect(kcl_error::RUNTIME_ERROR_MSG);
-    s.leave_scope();
     result
 }

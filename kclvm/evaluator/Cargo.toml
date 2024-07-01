@@ -13,6 +13,7 @@ kclvm-ast = {path = "../ast"}
 kclvm-sema = {path = "../sema"}
 kclvm-runtime = {path = "../runtime"}
 kclvm-error = {path = "../error"}
+scopeguard = "1.2.0"
 
 [dev-dependencies]
 kclvm-parser = {path = "../parser"}

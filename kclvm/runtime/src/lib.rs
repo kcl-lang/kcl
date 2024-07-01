@@ -116,6 +116,9 @@ pub use self::file::*;
 pub mod template;
 pub use self::template::*;
 
+pub mod panic;
+pub use self::panic::*;
+
 pub mod _kcl_run;
 pub use self::_kcl_run::*;
 

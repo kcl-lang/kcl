@@ -3,6 +3,7 @@ use kclvm_runtime::{
     schema_runtime_type, separate_kv, split_type_union, ConfigEntryOperationKind, ValueRef,
     BUILTIN_TYPES, KCL_TYPE_ANY, PKG_PATH_PREFIX,
 };
+use scopeguard::defer;
 
 use crate::error as kcl_error;
 use crate::schema::SchemaEvalContext;
@@ -38,14 +39,16 @@ pub fn resolve_schema(s: &Evaluator, schema: &ValueRef, keys: &[String]) -> Valu
         let schema = if let Proxy::Schema(caller) = &frame.proxy {
             s.push_pkgpath(&frame.pkgpath);
             s.push_backtrace(&frame);
+            defer! {
+                s.pop_backtrace();
+                s.pop_pkgpath();
+            }
             let value = (caller.body)(
                 s,
                 &caller.ctx.borrow().snapshot(config_value, config_meta),
                 &schema_value.args,
                 &schema_value.kwargs,
             );
-            s.pop_backtrace();
-            s.pop_pkgpath();
             value
         } else {
             schema.clone()

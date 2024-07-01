@@ -624,7 +624,7 @@ pub unsafe extern "C" fn kclvm_value_function_invoke(
             return value;
         };
     }
-    kclvm_value_None(ctx)
+    kclvm_value_Undefined(ctx)
 }
 
 // ----------------------------------------------------------------------------
