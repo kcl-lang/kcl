@@ -1281,6 +1281,7 @@ mod tests {
                 "units",
                 "file",
                 "template",
+                "runtime",
             ]
             .iter()
             .map(|name| KCLCompletionItem {
