@@ -374,6 +374,8 @@ impl<'a> Parser<'a> {
                 ))
             }
             _ => {
+                self.sess
+                    .struct_token_error(&[TokenKind::ident_value()], self.token);
                 let attr = Box::new(Node::node(
                     Identifier {
                         names: vec![Node::node(
