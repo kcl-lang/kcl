@@ -97,7 +97,7 @@ impl LanguageServerState {
         let old_text = text.clone();
         apply_document_changes(&mut text, content_changes);
         vfs.set_file_contents(path.into(), Some(text.clone().into_bytes()));
-
+        self.opened_files.write().insert(file_id, text_document.version);
         // Update word index
         let old_word_index = build_word_index_with_content(&old_text, &text_document.uri, true);
         let new_word_index = build_word_index_with_content(&text, &text_document.uri, true);

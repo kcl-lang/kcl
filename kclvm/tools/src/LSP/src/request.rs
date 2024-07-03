@@ -151,7 +151,6 @@ impl LanguageServerSnapshot {
         let current_version = *self.opened_files.read().get(&file_id).ok_or_else(|| {
             anyhow::anyhow!(LSPError::DocumentVersionNotFound(path.clone().into()))
         })?;
-
         Ok(db_version == current_version)
     }
 }
@@ -306,16 +305,25 @@ pub(crate) fn handle_completion(
         return Ok(None);
     }
 
-    let kcl_pos = kcl_pos(&file, params.text_document_position.position);
+    let db = match snapshot.get_db(&path.clone().into()) {
+        Ok(db) => db,
+        Err(_) => return Ok(None),
+    };
+
     let completion_trigger_character = params
         .context
         .and_then(|ctx| ctx.trigger_character)
         .and_then(|s| s.chars().next());
 
-    let db = match snapshot.get_db(&path.clone().into()) {
-        Ok(db) => db,
-        Err(_) => return Ok(None),
-    };
+    if let Some(c) = completion_trigger_character {
+        if let '\n' = c {
+            if !snapshot.verify_request_version(db.version, &path)? {
+                return Err(anyhow!(LSPError::Retry));
+            }
+        }
+    }
+
+    let kcl_pos = kcl_pos(&file, params.text_document_position.position);
 
     let metadata = snapshot
         .entry_cache
