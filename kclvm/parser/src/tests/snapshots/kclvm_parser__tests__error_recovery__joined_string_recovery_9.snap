@@ -11,7 +11,7 @@ Node {
                     node: StringLit(
                         StringLit {
                             is_long_string: false,
-                            raw_value: "  ",
+                            raw_value: "\\\n  ",
                             value: "  ",
                         },
                     ),
@@ -61,8 +61,8 @@ Node {
                     node: StringLit(
                         StringLit {
                             is_long_string: false,
-                            raw_value: "C}\n",
-                            value: "C}\n",
+                            raw_value: "\n",
+                            value: "\n",
                         },
                     ),
                     filename: "",

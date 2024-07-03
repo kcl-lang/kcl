@@ -11,7 +11,7 @@ Node {
                     node: StringLit(
                         StringLit {
                             is_long_string: false,
-                            raw_value: "\n",
+                            raw_value: "\\n",
                             value: "\n",
                         },
                     ),
