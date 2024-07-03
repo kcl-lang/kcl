@@ -199,6 +199,11 @@ impl SymbolData {
     }
 
     pub fn remove_symbol(&mut self, id: &SymbolRef) {
+        if let Some(symbol) = self.get_symbol(id.clone()) {
+            self.symbols_info
+                .symbol_pos_set
+                .remove(&symbol.get_range().1);
+        }
         match id.get_kind() {
             SymbolKind::Schema => {
                 self.schemas.remove(id.get_id());
