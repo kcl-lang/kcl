@@ -781,21 +781,25 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
     }
 
     fn walk_joined_string(&mut self, joined_string: &'ctx ast::JoinedString) -> Self::Result {
-        let quote_str = if joined_string.is_long_string {
-            "\"\"\""
+        if !joined_string.raw_value.is_empty() {
+            self.write(&joined_string.raw_value)
         } else {
-            "\""
-        };
-        self.write(quote_str);
-        for value in &joined_string.values {
-            match &value.node {
-                ast::Expr::StringLit(string_lit) => {
-                    self.write(&string_lit.value.replace('\"', "\\\""));
+            let quote_str = if joined_string.is_long_string {
+                "\"\"\""
+            } else {
+                "\""
+            };
+            self.write(quote_str);
+            for value in &joined_string.values {
+                match &value.node {
+                    ast::Expr::StringLit(string_lit) => {
+                        self.write(&string_lit.value.replace('\"', "\\\""));
+                    }
+                    _ => self.expr(value),
                 }
-                _ => self.expr(value),
             }
+            self.write(quote_str);
         }
-        self.write(quote_str);
     }
 
     fn walk_formatted_value(&mut self, formatted_value: &'ctx ast::FormattedValue) -> Self::Result {

@@ -1640,37 +1640,56 @@ impl<'a> Parser<'a> {
         let mut data_off = 0;
         let mut raw_off: usize = quote_space;
         loop {
-            if let (Some(i), Some(data_i)) =
+            if raw_off >= raw_data.len() || data_off >= data.len() {
+                break;
+            }
+            if let (Some(raw_i), Some(data_i)) =
                 (raw_data[raw_off..].find("${"), data[data_off..].find("${"))
             {
-                if let (Some(j), Some(data_j)) = (
-                    raw_data[raw_off + i..].find('}'),
-                    data[data_off + i..].find('}'),
+                if let (Some(raw_j), Some(data_j)) = (
+                    raw_data[raw_off + raw_i..].find('}'),
+                    data[data_off + data_i..].find('}'),
                 ) {
-                    let lo: usize = raw_off + i;
-                    let hi: usize = raw_off + i + j + 1;
+                    let raw_lo: usize = raw_off + raw_i;
+                    let raw_hi: usize = raw_off + raw_i + raw_j + 1;
 
                     let data_lo: usize = data_off + data_i;
                     let data_hi: usize = data_off + data_i + data_j + 1;
 
                     let s0 = &data[data_off..data_lo];
-                    let s1 = &raw_data[lo..hi];
+                    let s0_raw = &raw_data[raw_off..raw_lo];
+                    let s1_raw = &raw_data[raw_lo..raw_hi];
 
-                    let s0_expr = node_ref!(Expr::StringLit(StringLit {
-                        is_long_string: false,
-                        raw_value: s0.to_string(),
-                        value: s0.to_string().replace("$$", "$"),
-                    }));
-
-                    let s1_expr = parse_expr(self, s1, pos + new_byte_pos(lo as u32));
-
-                    if !s0.is_empty() {
-                        joined_value.values.push(s0_expr);
+                    // Handling \${} Escapes
+                    let is_escape = !s0_raw.is_empty() && &s0_raw[s0_raw.len() - 1..] == "\\";
+                    if is_escape {
+                        let s_raw = &raw_data[raw_off..raw_hi];
+                        let s = &data[data_off..data_hi].replace("\\$", "$");
+                        joined_value
+                            .values
+                            .push(node_ref!(Expr::StringLit(StringLit {
+                                is_long_string: false,
+                                raw_value: s_raw.to_string(),
+                                value: s.to_string(),
+                            })));
+                    } else {
+                        if !s0.is_empty() {
+                            joined_value
+                                .values
+                                .push(node_ref!(Expr::StringLit(StringLit {
+                                    is_long_string: false,
+                                    raw_value: s0_raw.to_string(),
+                                    value: s0.to_string(),
+                                })));
+                        }
+                        joined_value.values.push(parse_expr(
+                            self,
+                            s1_raw,
+                            pos + new_byte_pos(raw_lo as u32),
+                        ));
                     }
-                    joined_value.values.push(s1_expr);
-
                     data_off = data_hi;
-                    raw_off = hi;
+                    raw_off = raw_hi;
                     continue;
                 } else {
                     self.sess.struct_message_error(
@@ -1681,7 +1700,7 @@ impl<'a> Parser<'a> {
                         .values
                         .push(node_ref!(Expr::StringLit(StringLit {
                             is_long_string: false,
-                            raw_value: data[data_off..].to_string(),
+                            raw_value: raw_data[raw_off..].to_string(),
                             value: data[data_off..].to_string(),
                         })));
                     break;
@@ -1695,8 +1714,8 @@ impl<'a> Parser<'a> {
                     .values
                     .push(node_ref!(Expr::StringLit(StringLit {
                         is_long_string: false,
-                        raw_value: data[data_off..].to_string(),
-                        value: data[data_off..].to_string().replace("$$", "$"),
+                        raw_value: raw_data[raw_off..].to_string(),
+                        value: data[data_off..].to_string(),
                     })));
                 break;
             }

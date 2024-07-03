@@ -219,6 +219,9 @@ parse_expr_snapshot! { joined_string_recovery_9, r#"'''\
 parse_expr_snapshot! { joined_string_recovery_10, r#""""
   ${CC}
 """"# }
+parse_expr_snapshot! { joined_string_recovery_11, r#"'\"false\" ${item.kind}: ${item.metadata.name}'"# }
+parse_expr_snapshot! { joined_string_recovery_12, r#"'\"false\" ${item.kind}: ${item.metadata.name} \"true\" ${item} '"# }
+parse_expr_snapshot! { joined_string_recovery_13, r#"'\"false\" \${item.kind}: a${item.metadata.name} \"true\" \${item} '"# }
 parse_expr_snapshot! { lambda_recovery_0, r#"lambda"# }
 parse_expr_snapshot! { lambda_recovery_1, r#"lambda {"# }
 parse_expr_snapshot! { lambda_recovery_2, r#"lambda {}"# }
