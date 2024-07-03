@@ -13,7 +13,9 @@ use kclvm_driver::{
 use kclvm_error::Diagnostic;
 use kclvm_error::Position as KCLPos;
 use kclvm_parser::entry::get_dir_files;
-use kclvm_parser::{load_program, KCLModuleCache, ParseSessionRef};
+use kclvm_parser::{
+    entry::get_normalized_k_files_from_paths, load_program, KCLModuleCache, ParseSessionRef,
+};
 use kclvm_sema::advanced_resolver::AdvancedResolver;
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::namer::Namer;
@@ -159,15 +161,25 @@ pub(crate) fn compile_with_params(
     params: Params,
 ) -> (IndexSet<Diagnostic>, anyhow::Result<(Program, GlobalState)>) {
     // Lookup compile unit (kcl.mod or kcl.yaml) from the entry file.
-    let (mut files, opt, _) =
+    let (mut files, opts, _) =
         lookup_compile_unit_with_cache(&*params.tool.read(), &params.entry_cache, &params.file);
-
     if !files.contains(&params.file) {
         files.push(params.file.clone());
     }
+    // Ignore the kcl plugin sematic check.
+    let mut opts = opts.unwrap_or_default();
+    opts.load_plugins = true;
+    // Get input files
+    let files = match get_normalized_k_files_from_paths(&files, &opts) {
+        Ok(file_list) => file_list,
+        Err(e) => {
+            return (
+                IndexSet::new(),
+                Err(anyhow::anyhow!("Compile failed: {:?}", e)),
+            )
+        }
+    };
     let files: Vec<&str> = files.iter().map(|s| s.as_str()).collect();
-    let mut opt = opt.unwrap_or_default();
-    opt.load_plugins = true;
     // Update opt.k_code_list
     if let Some(vfs) = params.vfs {
         let mut k_code_list = match load_files_code_from_vfs(&files, vfs) {
@@ -179,14 +191,14 @@ pub(crate) fn compile_with_params(
                 )
             }
         };
-        opt.k_code_list.append(&mut k_code_list);
+        opts.k_code_list.append(&mut k_code_list);
     }
 
     let mut diags = IndexSet::new();
 
     // Parser
     let sess = ParseSessionRef::default();
-    let mut program = match load_program(sess.clone(), &files, Some(opt), params.module_cache) {
+    let mut program = match load_program(sess.clone(), &files, Some(opts), params.module_cache) {
         Ok(r) => r.program,
         Err(e) => return (diags, Err(anyhow::anyhow!("Parse failed: {:?}", e))),
     };
