@@ -15,6 +15,8 @@ use crate::{
 pub trait Symbol {
     type SymbolData;
     type SemanticInfo;
+    type SymbolHint;
+
     fn get_sema_info(&self) -> &Self::SemanticInfo;
     fn is_global(&self) -> bool;
     fn get_range(&self) -> Range;
@@ -41,14 +43,17 @@ pub trait Symbol {
         module_info: Option<&ModuleInfo>,
     ) -> Vec<SymbolRef>;
 
+    fn get_hint(&self) -> Option<&Self::SymbolHint>;
+
     fn simple_dump(&self) -> String;
 
     fn full_dump(&self, data: &Self::SymbolData) -> Option<String>;
 }
 
-pub type KCLSymbol = dyn Symbol<SymbolData = SymbolData, SemanticInfo = KCLSymbolSemanticInfo>;
+pub type KCLSymbol =
+    dyn Symbol<SymbolData = SymbolData, SemanticInfo = SymbolSemanticInfo, SymbolHint = SymbolHint>;
 #[derive(Debug, Clone, Default)]
-pub struct KCLSymbolSemanticInfo {
+pub struct SymbolSemanticInfo {
     pub ty: Option<Arc<Type>>,
     pub doc: Option<String>,
 }
@@ -82,6 +87,12 @@ pub struct SymbolDB {
     pub(crate) node_symbol_map: IndexMap<NodeKey, SymbolRef>,
     pub(crate) symbol_node_map: IndexMap<SymbolRef, NodeKey>,
     pub(crate) pkg_symbol_map: IndexMap<String, IndexSet<SymbolRef>>,
+}
+
+#[derive(Debug, Clone)]
+pub enum SymbolHint {
+    TypeHint(String),
+    VarHint(String),
 }
 
 impl SymbolData {
@@ -936,7 +947,7 @@ pub struct SchemaSymbol {
     pub(crate) start: Position,
     pub(crate) end: Position,
     pub(crate) owner: SymbolRef,
-    pub(crate) sema_info: KCLSymbolSemanticInfo,
+    pub(crate) sema_info: SymbolSemanticInfo,
 
     pub(crate) parent_schema: Option<SymbolRef>,
     pub(crate) for_host: Option<SymbolRef>,
@@ -946,7 +957,8 @@ pub struct SchemaSymbol {
 
 impl Symbol for SchemaSymbol {
     type SymbolData = SymbolData;
-    type SemanticInfo = KCLSymbolSemanticInfo;
+    type SemanticInfo = SymbolSemanticInfo;
+    type SymbolHint = SymbolHint;
 
     fn is_global(&self) -> bool {
         true
@@ -1049,6 +1061,10 @@ impl Symbol for SchemaSymbol {
         self.get_attribute(name, data, module_info).is_some()
     }
 
+    fn get_hint(&self) -> Option<&Self::SymbolHint> {
+        None
+    }
+
     fn simple_dump(&self) -> String {
         let mut output = "{\n".to_string();
         output.push_str("\"kind\": \"SchemaSymbol\",\n");
@@ -1121,7 +1137,7 @@ impl SchemaSymbol {
             owner,
             parent_schema: None,
             for_host: None,
-            sema_info: KCLSymbolSemanticInfo::default(),
+            sema_info: SymbolSemanticInfo::default(),
             mixins: Vec::default(),
             attributes: IndexMap::default(),
         }
@@ -1136,18 +1152,21 @@ pub struct ValueSymbol {
     pub(crate) start: Position,
     pub(crate) end: Position,
     pub(crate) owner: Option<SymbolRef>,
-    pub(crate) sema_info: KCLSymbolSemanticInfo,
+    pub(crate) sema_info: SymbolSemanticInfo,
 
+    pub(crate) hint: Option<SymbolHint>,
     pub(crate) is_global: bool,
 }
 
 impl Symbol for ValueSymbol {
     type SymbolData = SymbolData;
-    type SemanticInfo = KCLSymbolSemanticInfo;
+    type SemanticInfo = SymbolSemanticInfo;
+    type SymbolHint = SymbolHint;
 
     fn is_global(&self) -> bool {
         self.is_global
     }
+
     fn get_range(&self) -> Range {
         (self.start.clone(), self.end.clone())
     }
@@ -1202,6 +1221,11 @@ impl Symbol for ValueSymbol {
     ) -> bool {
         self.get_attribute(name, data, module_info).is_some()
     }
+
+    fn get_hint(&self) -> Option<&Self::SymbolHint> {
+        self.hint.as_ref()
+    }
+
     fn simple_dump(&self) -> String {
         let mut output = "{\n".to_string();
         output.push_str("\"kind\": \"ValueSymbol\",\n");
@@ -1252,8 +1276,9 @@ impl ValueSymbol {
             start,
             end,
             owner,
-            sema_info: KCLSymbolSemanticInfo::default(),
+            sema_info: SymbolSemanticInfo::default(),
             is_global,
+            hint: None,
         }
     }
 }
@@ -1266,13 +1291,14 @@ pub struct AttributeSymbol {
     pub(crate) start: Position,
     pub(crate) end: Position,
     pub(crate) owner: SymbolRef,
-    pub(crate) sema_info: KCLSymbolSemanticInfo,
+    pub(crate) sema_info: SymbolSemanticInfo,
     pub(crate) is_optional: bool,
 }
 
 impl Symbol for AttributeSymbol {
     type SymbolData = SymbolData;
-    type SemanticInfo = KCLSymbolSemanticInfo;
+    type SemanticInfo = SymbolSemanticInfo;
+    type SymbolHint = SymbolHint;
 
     fn is_global(&self) -> bool {
         true
@@ -1336,6 +1362,10 @@ impl Symbol for AttributeSymbol {
         self.get_attribute(name, data, module_info).is_some()
     }
 
+    fn get_hint(&self) -> Option<&Self::SymbolHint> {
+        None
+    }
+
     fn simple_dump(&self) -> String {
         let mut output = "{\n".to_string();
         output.push_str("\"kind\": \"AttributeSymbol\",\n");
@@ -1383,7 +1413,7 @@ impl AttributeSymbol {
             name,
             start,
             end,
-            sema_info: KCLSymbolSemanticInfo::default(),
+            sema_info: SymbolSemanticInfo::default(),
             owner,
             is_optional,
         }
@@ -1401,12 +1431,13 @@ pub struct PackageSymbol {
     pub(crate) members: IndexMap<String, SymbolRef>,
     pub(crate) start: Position,
     pub(crate) end: Position,
-    pub(crate) sema_info: KCLSymbolSemanticInfo,
+    pub(crate) sema_info: SymbolSemanticInfo,
 }
 
 impl Symbol for PackageSymbol {
     type SymbolData = SymbolData;
-    type SemanticInfo = KCLSymbolSemanticInfo;
+    type SemanticInfo = SymbolSemanticInfo;
+    type SymbolHint = SymbolHint;
 
     fn is_global(&self) -> bool {
         true
@@ -1461,6 +1492,10 @@ impl Symbol for PackageSymbol {
         self.members.contains_key(name)
     }
 
+    fn get_hint(&self) -> Option<&Self::SymbolHint> {
+        None
+    }
+
     fn simple_dump(&self) -> String {
         let mut output = "{\n".to_string();
         output.push_str("\"kind\": \"PackageSymbol\",\n");
@@ -1508,7 +1543,7 @@ impl PackageSymbol {
             name,
             start,
             end,
-            sema_info: KCLSymbolSemanticInfo::default(),
+            sema_info: SymbolSemanticInfo::default(),
             members: IndexMap::default(),
         }
     }
@@ -1521,12 +1556,13 @@ pub struct TypeAliasSymbol {
     pub(crate) start: Position,
     pub(crate) end: Position,
     pub(crate) owner: SymbolRef,
-    pub(crate) sema_info: KCLSymbolSemanticInfo,
+    pub(crate) sema_info: SymbolSemanticInfo,
 }
 
 impl Symbol for TypeAliasSymbol {
     type SymbolData = SymbolData;
-    type SemanticInfo = KCLSymbolSemanticInfo;
+    type SemanticInfo = SymbolSemanticInfo;
+    type SymbolHint = SymbolHint;
 
     fn is_global(&self) -> bool {
         true
@@ -1586,6 +1622,10 @@ impl Symbol for TypeAliasSymbol {
         self.get_attribute(name, data, module_info).is_some()
     }
 
+    fn get_hint(&self) -> Option<&Self::SymbolHint> {
+        None
+    }
+
     fn simple_dump(&self) -> String {
         let mut output = "{\n".to_string();
         output.push_str("\"kind\": \"TypeAliasSymbol\",\n");
@@ -1629,7 +1669,7 @@ impl TypeAliasSymbol {
             name,
             start,
             end,
-            sema_info: KCLSymbolSemanticInfo::default(),
+            sema_info: SymbolSemanticInfo::default(),
             owner,
         }
     }
@@ -1642,7 +1682,7 @@ pub struct RuleSymbol {
     pub(crate) start: Position,
     pub(crate) end: Position,
     pub(crate) owner: SymbolRef,
-    pub(crate) sema_info: KCLSymbolSemanticInfo,
+    pub(crate) sema_info: SymbolSemanticInfo,
 
     pub(crate) parent_rules: Vec<SymbolRef>,
     pub(crate) for_host: Option<SymbolRef>,
@@ -1650,7 +1690,8 @@ pub struct RuleSymbol {
 
 impl Symbol for RuleSymbol {
     type SymbolData = SymbolData;
-    type SemanticInfo = KCLSymbolSemanticInfo;
+    type SemanticInfo = SymbolSemanticInfo;
+    type SymbolHint = SymbolHint;
 
     fn is_global(&self) -> bool {
         true
@@ -1699,6 +1740,10 @@ impl Symbol for RuleSymbol {
         _module_info: Option<&ModuleInfo>,
     ) -> bool {
         false
+    }
+
+    fn get_hint(&self) -> Option<&Self::SymbolHint> {
+        None
     }
 
     fn simple_dump(&self) -> String {
@@ -1757,7 +1802,7 @@ impl RuleSymbol {
             start,
             end,
             owner,
-            sema_info: KCLSymbolSemanticInfo::default(),
+            sema_info: SymbolSemanticInfo::default(),
             parent_rules: vec![],
             for_host: None,
         }
@@ -1772,12 +1817,13 @@ pub struct UnresolvedSymbol {
     pub(crate) start: Position,
     pub(crate) end: Position,
     pub(crate) owner: Option<SymbolRef>,
-    pub(crate) sema_info: KCLSymbolSemanticInfo,
+    pub(crate) sema_info: SymbolSemanticInfo,
 }
 
 impl Symbol for UnresolvedSymbol {
     type SymbolData = SymbolData;
-    type SemanticInfo = KCLSymbolSemanticInfo;
+    type SemanticInfo = SymbolSemanticInfo;
+    type SymbolHint = SymbolHint;
 
     fn is_global(&self) -> bool {
         false
@@ -1834,6 +1880,14 @@ impl Symbol for UnresolvedSymbol {
         self.get_attribute(name, data, module_info).is_some()
     }
 
+    fn get_sema_info(&self) -> &Self::SemanticInfo {
+        &self.sema_info
+    }
+
+    fn get_hint(&self) -> Option<&Self::SymbolHint> {
+        None
+    }
+
     fn simple_dump(&self) -> String {
         let mut output = "{\n".to_string();
         output.push_str("\"kind\": \"UnresolvedSymbol\",\n");
@@ -1853,6 +1907,7 @@ impl Symbol for UnresolvedSymbol {
         output.push_str("\"\n}");
         output
     }
+
     fn full_dump(&self, data: &Self::SymbolData) -> Option<String> {
         let mut output = format!("{{\n\"simple_info\": {},\n", self.simple_dump());
         output.push_str("\"additional_info\": {\n");
@@ -1862,10 +1917,6 @@ impl Symbol for UnresolvedSymbol {
         }
         output.push_str("\n}\n}");
         Some(output)
-    }
-
-    fn get_sema_info(&self) -> &Self::SemanticInfo {
-        &self.sema_info
     }
 }
 
@@ -1877,7 +1928,7 @@ impl UnresolvedSymbol {
             name,
             start,
             end,
-            sema_info: KCLSymbolSemanticInfo::default(),
+            sema_info: SymbolSemanticInfo::default(),
             owner,
         }
     }
@@ -1907,12 +1958,13 @@ pub struct ExpressionSymbol {
     pub(crate) owner: Option<SymbolRef>,
     pub(crate) name: String,
 
-    pub(crate) sema_info: KCLSymbolSemanticInfo,
+    pub(crate) sema_info: SymbolSemanticInfo,
 }
 
 impl Symbol for ExpressionSymbol {
     type SymbolData = SymbolData;
-    type SemanticInfo = KCLSymbolSemanticInfo;
+    type SemanticInfo = SymbolSemanticInfo;
+    type SymbolHint = SymbolHint;
 
     fn is_global(&self) -> bool {
         false
@@ -1971,6 +2023,15 @@ impl Symbol for ExpressionSymbol {
     ) -> bool {
         self.get_attribute(name, data, module_info).is_some()
     }
+
+    fn get_sema_info(&self) -> &Self::SemanticInfo {
+        &self.sema_info
+    }
+
+    fn get_hint(&self) -> Option<&Self::SymbolHint> {
+        None
+    }
+
     fn simple_dump(&self) -> String {
         let mut output = "{\n".to_string();
         output.push_str("\"kind\": \"ExpressionSymbol\",\n");
@@ -2000,10 +2061,6 @@ impl Symbol for ExpressionSymbol {
         output.push_str("\n}\n}");
         Some(output)
     }
-
-    fn get_sema_info(&self) -> &Self::SemanticInfo {
-        &self.sema_info
-    }
 }
 
 impl ExpressionSymbol {
@@ -2013,7 +2070,7 @@ impl ExpressionSymbol {
             name,
             start,
             end,
-            sema_info: KCLSymbolSemanticInfo::default(),
+            sema_info: SymbolSemanticInfo::default(),
             owner,
         }
     }
@@ -2025,12 +2082,13 @@ pub struct CommentSymbol {
     pub(crate) start: Position,
     pub(crate) end: Position,
     pub(crate) content: String,
-    pub(crate) sema_info: KCLSymbolSemanticInfo,
+    pub(crate) sema_info: SymbolSemanticInfo,
 }
 
 impl Symbol for CommentSymbol {
     type SymbolData = SymbolData;
-    type SemanticInfo = KCLSymbolSemanticInfo;
+    type SemanticInfo = SymbolSemanticInfo;
+    type SymbolHint = SymbolHint;
 
     fn get_sema_info(&self) -> &Self::SemanticInfo {
         &self.sema_info
@@ -2084,6 +2142,10 @@ impl Symbol for CommentSymbol {
         _module_info: Option<&ModuleInfo>,
     ) -> Vec<SymbolRef> {
         vec![]
+    }
+
+    fn get_hint(&self) -> Option<&Self::SymbolHint> {
+        None
     }
 
     fn simple_dump(&self) -> String {
@@ -2118,7 +2180,7 @@ impl CommentSymbol {
             start,
             end,
             content,
-            sema_info: KCLSymbolSemanticInfo::default(),
+            sema_info: SymbolSemanticInfo::default(),
         }
     }
 
@@ -2133,12 +2195,13 @@ pub struct DecoratorSymbol {
     pub(crate) start: Position,
     pub(crate) end: Position,
     pub(crate) name: String,
-    pub(crate) sema_info: KCLSymbolSemanticInfo,
+    pub(crate) sema_info: SymbolSemanticInfo,
 }
 
 impl Symbol for DecoratorSymbol {
     type SymbolData = SymbolData;
-    type SemanticInfo = KCLSymbolSemanticInfo;
+    type SemanticInfo = SymbolSemanticInfo;
+    type SymbolHint = SymbolHint;
 
     fn get_sema_info(&self) -> &Self::SemanticInfo {
         &self.sema_info
@@ -2194,6 +2257,10 @@ impl Symbol for DecoratorSymbol {
         vec![]
     }
 
+    fn get_hint(&self) -> Option<&Self::SymbolHint> {
+        None
+    }
+
     fn simple_dump(&self) -> String {
         let mut output = "{\n".to_string();
         output.push_str("\"kind\": \"CommentSymbol\",\n");
@@ -2226,7 +2293,7 @@ impl DecoratorSymbol {
             start,
             end,
             name,
-            sema_info: KCLSymbolSemanticInfo::default(),
+            sema_info: SymbolSemanticInfo::default(),
         }
     }
 
@@ -2242,14 +2309,15 @@ pub struct FunctionSymbol {
     pub(crate) start: Position,
     pub(crate) end: Position,
     pub(crate) owner: Option<SymbolRef>,
-    pub(crate) sema_info: KCLSymbolSemanticInfo,
+    pub(crate) sema_info: SymbolSemanticInfo,
 
     pub(crate) is_global: bool,
 }
 
 impl Symbol for FunctionSymbol {
     type SymbolData = SymbolData;
-    type SemanticInfo = KCLSymbolSemanticInfo;
+    type SemanticInfo = SymbolSemanticInfo;
+    type SymbolHint = SymbolHint;
 
     fn is_global(&self) -> bool {
         self.is_global
@@ -2310,6 +2378,14 @@ impl Symbol for FunctionSymbol {
         self.get_attribute(name, data, module_info).is_some()
     }
 
+    fn get_sema_info(&self) -> &Self::SemanticInfo {
+        &self.sema_info
+    }
+
+    fn get_hint(&self) -> Option<&Self::SymbolHint> {
+        None
+    }
+
     fn simple_dump(&self) -> String {
         let mut output = "{\n".to_string();
         output.push_str("\"kind\": \"FunctionSymbol\",\n");
@@ -2340,10 +2416,6 @@ impl Symbol for FunctionSymbol {
         output.push_str("\n}\n}");
         Some(output)
     }
-
-    fn get_sema_info(&self) -> &Self::SemanticInfo {
-        &self.sema_info
-    }
 }
 
 impl FunctionSymbol {
@@ -2360,7 +2432,7 @@ impl FunctionSymbol {
             start,
             end,
             owner,
-            sema_info: KCLSymbolSemanticInfo::default(),
+            sema_info: SymbolSemanticInfo::default(),
             is_global,
         }
     }

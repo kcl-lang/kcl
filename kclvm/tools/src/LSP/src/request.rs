@@ -464,7 +464,7 @@ pub(crate) fn handle_inlay_hint(
         },
         Err(_) => return Ok(None),
     };
-    let res = inlay_hints(&file, &db.gs, &db.prog);
+    let res = inlay_hints(&file, &db.gs);
 
     if !snapshot.verify_request_version(db.version, &path)? {
         return Err(anyhow!(LSPError::Retry));
