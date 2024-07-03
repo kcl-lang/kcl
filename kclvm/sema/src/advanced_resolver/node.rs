@@ -11,8 +11,8 @@ use crate::{
     core::{
         scope::LocalSymbolScopeKind,
         symbol::{
-            CommentSymbol, DecoratorSymbol, ExpressionSymbol, KCLSymbolSemanticInfo, SymbolRef,
-            UnresolvedSymbol, ValueSymbol,
+            CommentSymbol, DecoratorSymbol, ExpressionSymbol, SymbolHint, SymbolRef,
+            SymbolSemanticInfo, UnresolvedSymbol, ValueSymbol,
         },
     },
     ty::{Type, TypeKind, SCHEMA_MEMBER_FUNCTIONS},
@@ -73,7 +73,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             .type_aliases
             .get_mut(alias_symbol.get_id())
         {
-            symbol.sema_info = KCLSymbolSemanticInfo {
+            symbol.sema_info = SymbolSemanticInfo {
                 ty: self
                     .ctx
                     .node_ty_map
@@ -93,7 +93,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
                 continue;
             }
             self.ctx.maybe_def = true;
-            self.walk_identifier_expr(target)?;
+            self.walk_identifier_expr_with_hint(target, assign_stmt.ty.is_none())?;
             self.ctx.maybe_def = false;
         }
         self.walk_type_expr(assign_stmt.ty.as_ref().map(|ty| ty.as_ref()))?;
@@ -222,7 +222,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
                 .schemas
                 .get_mut(schema_symbol.get_id())
                 .ok_or(anyhow!("schema_symbol not found"))?
-                .sema_info = KCLSymbolSemanticInfo {
+                .sema_info = SymbolSemanticInfo {
                 ty: Some(schema_ty.clone()),
                 doc: schema_stmt.doc.as_ref().map(|doc| doc.node.clone()),
             };
@@ -285,7 +285,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
                     self.ctx.current_pkgpath.clone().unwrap(),
                 );
                 if let Some(symbol) = self.gs.get_symbols_mut().values.get_mut(value.get_id()) {
-                    symbol.sema_info = KCLSymbolSemanticInfo {
+                    symbol.sema_info = SymbolSemanticInfo {
                         ty: self
                             .ctx
                             .node_ty_map
@@ -368,7 +368,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             .rules
             .get_mut(rule_symbol.get_id())
         {
-            symbol.sema_info = KCLSymbolSemanticInfo {
+            symbol.sema_info = SymbolSemanticInfo {
                 ty: self
                     .ctx
                     .node_ty_map
@@ -434,15 +434,14 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
                 .get_scopes_mut()
                 .add_def_to_scope(cur_scope, name, value);
             if let Some(symbol) = self.gs.get_symbols_mut().values.get_mut(value.get_id()) {
-                symbol.sema_info = KCLSymbolSemanticInfo {
-                    ty: self
-                        .ctx
-                        .node_ty_map
-                        .borrow()
-                        .get(&self.ctx.get_node_key(ast_id))
-                        .map(|ty| ty.clone()),
-                    doc: None,
-                };
+                let ty = self
+                    .ctx
+                    .node_ty_map
+                    .borrow()
+                    .get(&self.ctx.get_node_key(ast_id))
+                    .map(|ty| ty.clone());
+                symbol.hint = ty.as_ref().map(|ty| SymbolHint::TypeHint(ty.ty_str()));
+                symbol.sema_info = SymbolSemanticInfo { ty, doc: None };
             }
         }
 
@@ -485,7 +484,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             .attributes
             .get_mut(attr_symbol.get_id())
         {
-            symbol.sema_info = KCLSymbolSemanticInfo {
+            symbol.sema_info = SymbolSemanticInfo {
                 ty: self
                     .ctx
                     .node_ty_map
@@ -688,7 +687,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
         self.expr(&comp_clause.iter)?;
         for target in comp_clause.targets.iter() {
             self.ctx.maybe_def = true;
-            self.walk_identifier_expr(target)?;
+            self.walk_identifier_expr_with_hint(target, true)?;
             self.ctx.maybe_def = false;
         }
         for if_expr in comp_clause.ifs.iter() {
@@ -1065,7 +1064,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                         .values
                         .get_mut(first_value.get_id())
                     {
-                        symbol.sema_info = KCLSymbolSemanticInfo {
+                        symbol.sema_info = SymbolSemanticInfo {
                             ty: self
                                 .ctx
                                 .node_ty_map
@@ -1095,7 +1094,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                         if let Some(symbol) =
                             self.gs.get_symbols_mut().values.get_mut(value.get_id())
                         {
-                            symbol.sema_info = KCLSymbolSemanticInfo {
+                            symbol.sema_info = SymbolSemanticInfo {
                                 ty: self
                                     .ctx
                                     .node_ty_map
@@ -1120,6 +1119,14 @@ impl<'ctx> AdvancedResolver<'ctx> {
         &mut self,
         identifier: &'ctx ast::NodeRef<ast::Identifier>,
     ) -> ResolvedResult {
+        self.walk_identifier_expr_with_hint(identifier, false)
+    }
+
+    pub fn walk_identifier_expr_with_hint(
+        &mut self,
+        identifier: &'ctx ast::NodeRef<ast::Identifier>,
+        with_hint: bool,
+    ) -> ResolvedResult {
         let symbol_ref = if let Some(identifier_symbol) = self
             .gs
             .get_symbols()
@@ -1139,15 +1146,16 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 } else {
                     &identifier.node.names.last().unwrap().id
                 };
-                symbol.sema_info = KCLSymbolSemanticInfo {
-                    ty: self
-                        .ctx
-                        .node_ty_map
-                        .borrow()
-                        .get(&self.ctx.get_node_key(id))
-                        .map(|ty| ty.clone()),
-                    doc: None,
-                };
+                let ty = self
+                    .ctx
+                    .node_ty_map
+                    .borrow()
+                    .get(&self.ctx.get_node_key(id))
+                    .map(|ty| ty.clone());
+                if with_hint {
+                    symbol.hint = ty.as_ref().map(|ty| SymbolHint::TypeHint(ty.ty_str()));
+                }
+                symbol.sema_info = SymbolSemanticInfo { ty, doc: None };
             }
 
             if self.ctx.maybe_def && identifier.node.names.len() > 0 {
@@ -1233,7 +1241,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
             );
 
             if let Some(value) = self.gs.get_symbols_mut().values.get_mut(value.get_id()) {
-                value.sema_info = KCLSymbolSemanticInfo {
+                value.sema_info = SymbolSemanticInfo {
                     ty: self
                         .ctx
                         .node_ty_map

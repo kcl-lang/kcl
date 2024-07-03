@@ -1,8 +1,7 @@
 [dependencies]
   [dependencies.konfig]
     name = "konfig"
-    full_name = "konfig_v0.0.1"
-    version = "v0.0.1"
+    full_name = "_"
     sum = "XFvHdBAoY/+qpJWmj8cjwOwZO8a3nX/7SE35cTxQOFU="
     url = "https://github.com/awesome-kusion/konfig.git"
     git_tag = "v0.0.1"
