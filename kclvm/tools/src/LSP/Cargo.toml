@@ -37,7 +37,7 @@ anyhow = { version = "1.0", default-features = false, features = ["std"] }
 crossbeam-channel = { version = "0.5.7", default-features = false }
 ra_ap_vfs = "0.0.149"
 ra_ap_vfs-notify = "0.0.149"
-lsp-types = { version = "0.93.0", default-features = false }
+lsp-types = { version = "0.93.0", features = ["proposed"]}
 threadpool = { version = "1.8.1", default-features = false }
 salsa = { version = "0.16.1", default-features = false }
 serde_json = { version = "1.0", default-features = false }

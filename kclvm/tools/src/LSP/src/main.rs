@@ -11,6 +11,7 @@ mod find_refs;
 mod from_lsp;
 mod goto_def;
 mod hover;
+mod inlay_hints;
 mod main_loop;
 mod notification;
 mod quick_fix;
@@ -73,6 +74,7 @@ fn run_server() -> anyhow::Result<()> {
             name: String::from("kcl-language-server"),
             version: None,
         }),
+        offset_encoding: None,
     };
 
     let initialize_result = serde_json::to_value(initialize_result)
