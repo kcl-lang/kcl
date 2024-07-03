@@ -187,6 +187,19 @@ impl Entry {
     }
 }
 
+/// [`get_normalized_k_files_from_paths`] returns all the [`String`] for compilation from the given [`file_paths`].
+pub fn get_normalized_k_files_from_paths(
+    file_paths: &[String],
+    opts: &LoadProgramOptions,
+) -> Result<Vec<String>> {
+    let mut files = vec![];
+    let entries = get_compile_entries_from_paths(file_paths, opts)?;
+    for entry in entries.iter() {
+        files.append(&mut entry.get_k_files().clone())
+    }
+    Ok(files)
+}
+
 /// [`get_compile_entries_from_paths`] returns all the [`Entries`] for compilation from the given [`file_paths`].
 ///
 /// # Note
