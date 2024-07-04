@@ -51,7 +51,7 @@ KCL 是一个开源的基于约束的记录及函数语言并通过成熟的编�
 + **API 亲和**：原生支持 [OpenAPI](https://github.com/kcl-lang/kcl-openapi)、 Kubernetes CRD， Kubernetes Resource Model (KRM) 等 API 生态规范
 + **开发友好**：[语言工具](https://kcl-lang.io/docs/tools/cli/kcl/) (Format，Lint，Test，Vet，Doc, 包管理工具等) 和 [IDE 插件](https://kcl-lang.io/docs/tools/Ide/) 构建良好的研发体验
 + **安全可控**：面向领域，不原生提供线程、IO 等系统级功能，低噪音，低安全风险，易维护，易治理
-+ **多语言 SDK**：Rust, Go, Python, Java 和 Node.js 等 SDK 满足不同场景和应用使用需求
++ **多语言 SDK**：Rust, Go, Python, .NET, Java 和 Node.js 等 SDK 满足不同场景和应用使用需求
 + **生态集成**：通过 [Kubectl KCL 插件](https://github.com/kcl-lang/kubectl-kcl)、[Kustomize KCL 插件](https://github.com/kcl-lang/kustomize-kcl)、[Helm KCL 插件](https://github.com/kcl-lang/helm-kcl) 、[KPT KCL SDK](https://github.com/kcl-lang/kpt-kcl) 或者 [Crossplane KCL 函数](https://github.com/kcl-lang/crossplane-kcl) 直接编辑、校验或者抽象资源
 
 + **生产可用**：广泛应用在蚂蚁集团平台工程及自动化的生产环境实践中
