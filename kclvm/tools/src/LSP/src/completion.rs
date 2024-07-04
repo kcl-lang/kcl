@@ -2024,4 +2024,28 @@ mod tests {
         8,
         None
     );
+
+    completion_label_without_builtin_func_test_snapshot!(
+        func_return_ty_1,
+        "src/test_data/completion_test/dot/func_return/func_return_1/func_return_1.k",
+        4,
+        8,
+        Some('.')
+    );
+
+    completion_label_without_builtin_func_test_snapshot!(
+        func_return_ty_2,
+        "src/test_data/completion_test/dot/func_return/func_return_2/func_return_2.k",
+        8,
+        12,
+        Some('.')
+    );
+
+    completion_label_without_builtin_func_test_snapshot!(
+        func_return_ty_3,
+        "src/test_data/completion_test/dot/func_return/func_return_3/func_return_3.k",
+        3,
+        2,
+        Some('.')
+    );
 }

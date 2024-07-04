@@ -895,7 +895,16 @@ impl<'ctx> AdvancedResolver<'ctx> {
                         end,
                         None,
                     );
-                    expr_symbol.sema_info.ty = Some(ty.clone());
+                    expr_symbol.sema_info.ty = if matches!(&expr.node, | ast::Expr::Call(_)) {
+                        if let TypeKind::Function(func_ty) = &ty.kind {
+                            Some(func_ty.return_ty.clone())
+                        } else {
+                            Some(ty.clone())
+                        }
+                    } else {
+                        Some(ty.clone())
+                    };
+
                     Ok(self.gs.get_symbols_mut().alloc_expression_symbol(
                         expr_symbol,
                         self.ctx.get_node_key(&expr.id),
