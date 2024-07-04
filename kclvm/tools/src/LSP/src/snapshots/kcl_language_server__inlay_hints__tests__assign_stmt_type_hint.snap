@@ -22,12 +22,8 @@ Some(
             kind: None,
             text_edits: None,
             tooltip: None,
-            padding_left: Some(
-                true,
-            ),
-            padding_right: Some(
-                true,
-            ),
+            padding_left: None,
+            padding_right: None,
             data: None,
         },
         InlayHint {
@@ -48,12 +44,8 @@ Some(
             kind: None,
             text_edits: None,
             tooltip: None,
-            padding_left: Some(
-                true,
-            ),
-            padding_right: Some(
-                true,
-            ),
+            padding_left: None,
+            padding_right: None,
             data: None,
         },
         InlayHint {
@@ -74,12 +66,8 @@ Some(
             kind: None,
             text_edits: None,
             tooltip: None,
-            padding_left: Some(
-                true,
-            ),
-            padding_right: Some(
-                true,
-            ),
+            padding_left: None,
+            padding_right: None,
             data: None,
         },
         InlayHint {
@@ -100,12 +88,8 @@ Some(
             kind: None,
             text_edits: None,
             tooltip: None,
-            padding_left: Some(
-                true,
-            ),
-            padding_right: Some(
-                true,
-            ),
+            padding_left: None,
+            padding_right: None,
             data: None,
         },
         InlayHint {
@@ -126,12 +110,8 @@ Some(
             kind: None,
             text_edits: None,
             tooltip: None,
-            padding_left: Some(
-                true,
-            ),
-            padding_right: Some(
-                true,
-            ),
+            padding_left: None,
+            padding_right: None,
             data: None,
         },
         InlayHint {
@@ -152,12 +132,8 @@ Some(
             kind: None,
             text_edits: None,
             tooltip: None,
-            padding_left: Some(
-                true,
-            ),
-            padding_right: Some(
-                true,
-            ),
+            padding_left: None,
+            padding_right: None,
             data: None,
         },
         InlayHint {
@@ -178,12 +154,8 @@ Some(
             kind: None,
             text_edits: None,
             tooltip: None,
-            padding_left: Some(
-                true,
-            ),
-            padding_right: Some(
-                true,
-            ),
+            padding_left: None,
+            padding_right: None,
             data: None,
         },
         InlayHint {
@@ -204,12 +176,8 @@ Some(
             kind: None,
             text_edits: None,
             tooltip: None,
-            padding_left: Some(
-                true,
-            ),
-            padding_right: Some(
-                true,
-            ),
+            padding_left: None,
+            padding_right: None,
             data: None,
         },
         InlayHint {
@@ -230,12 +198,8 @@ Some(
             kind: None,
             text_edits: None,
             tooltip: None,
-            padding_left: Some(
-                true,
-            ),
-            padding_right: Some(
-                true,
-            ),
+            padding_left: None,
+            padding_right: None,
             data: None,
         },
         InlayHint {
@@ -256,12 +220,8 @@ Some(
             kind: None,
             text_edits: None,
             tooltip: None,
-            padding_left: Some(
-                true,
-            ),
-            padding_right: Some(
-                true,
-            ),
+            padding_left: None,
+            padding_right: None,
             data: None,
         },
         InlayHint {
@@ -282,12 +242,8 @@ Some(
             kind: None,
             text_edits: None,
             tooltip: None,
-            padding_left: Some(
-                true,
-            ),
-            padding_right: Some(
-                true,
-            ),
+            padding_left: None,
+            padding_right: None,
             data: None,
         },
     ],
