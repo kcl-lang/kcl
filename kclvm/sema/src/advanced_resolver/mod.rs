@@ -49,8 +49,8 @@ use crate::{
     resolver::scope::{NodeKey, NodeTyMap},
 };
 
-use kclvm_ast::ast::AstIndex;
 use kclvm_ast::ast::Program;
+use kclvm_ast::ast::{AstIndex, Stmt};
 use kclvm_ast::walker::MutSelfTypedResultWalker;
 mod node;
 
@@ -113,6 +113,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 maybe_def: false,
             },
         };
+        // Scan all scehma symbol
         for (name, modules) in advanced_resolver.ctx.program.pkgs.iter() {
             if !advanced_resolver.gs.new_or_invalidate_pkgs.contains(name) {
                 continue;
@@ -130,6 +131,38 @@ impl<'ctx> AdvancedResolver<'ctx> {
                     pkg_info.pkg_filepath.clone(),
                     pkg_info.kfile_paths.clone(),
                 );
+                for module in modules.iter() {
+                    advanced_resolver.ctx.current_filename = Some(module.filename.clone());
+                    for stmt in &module.body {
+                        if matches!(stmt.node, Stmt::Schema(_)) {
+                            advanced_resolver.stmt(stmt)?;
+                        }
+                    }
+                }
+                advanced_resolver.leave_scope()
+            }
+        }
+
+        for (name, modules) in advanced_resolver.ctx.program.pkgs.iter() {
+            if !advanced_resolver.gs.new_or_invalidate_pkgs.contains(name) {
+                continue;
+            }
+            advanced_resolver.ctx.current_pkgpath = Some(name.clone());
+            if let Some(_) = advanced_resolver.gs.get_packages().get_package_info(name) {
+                if modules.is_empty() {
+                    continue;
+                }
+                if !advanced_resolver.ctx.scopes.is_empty() {
+                    advanced_resolver.ctx.scopes.clear();
+                }
+
+                let scope_ref = advanced_resolver
+                    .gs
+                    .get_scopes_mut()
+                    .get_root_scope(name.to_string())
+                    .unwrap();
+
+                advanced_resolver.ctx.scopes.push(scope_ref);
                 for module in modules.iter() {
                     advanced_resolver.ctx.current_filename = Some(module.filename.clone());
                     advanced_resolver.walk_module(module)?;
