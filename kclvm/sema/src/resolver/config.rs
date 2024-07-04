@@ -88,12 +88,33 @@ impl<'ctx> Resolver<'ctx> {
                             )),
                             TypeKind::Schema(schema_ty) => {
                                 match schema_ty.get_obj_of_attr(key_name) {
-                                    Some(attr_ty_obj) => Some(self.new_config_expr_context_item(
-                                        key_name,
-                                        attr_ty_obj.ty.clone(),
-                                        attr_ty_obj.range.0.clone(),
-                                        attr_ty_obj.range.1.clone(),
-                                    )),
+                                    Some(attr_ty_obj) => {
+                                        let ty = match &attr_ty_obj.ty.kind {
+                                            TypeKind::Schema(schema_ty) => {
+                                                let runtime_type =
+                                                    kclvm_runtime::schema_runtime_type(
+                                                        &schema_ty.name,
+                                                        &schema_ty.pkgpath,
+                                                    );
+                                                if let Some(runtime_scehma_ty) =
+                                                    self.ctx.schema_mapping.get(&runtime_type)
+                                                {
+                                                    Arc::new(Type::schema(
+                                                        runtime_scehma_ty.borrow().clone(),
+                                                    ))
+                                                } else {
+                                                    attr_ty_obj.ty.clone()
+                                                }
+                                            }
+                                            _ => attr_ty_obj.ty.clone(),
+                                        };
+                                        Some(self.new_config_expr_context_item(
+                                            key_name,
+                                            ty,
+                                            attr_ty_obj.range.0.clone(),
+                                            attr_ty_obj.range.1.clone(),
+                                        ))
+                                    }
                                     None => match &schema_ty.index_signature {
                                         Some(index_signature) => {
                                             Some(self.new_config_expr_context_item(

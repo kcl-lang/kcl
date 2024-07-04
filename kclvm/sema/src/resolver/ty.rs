@@ -352,21 +352,37 @@ impl<'ctx> Resolver<'ctx> {
             // empty dict {}
             TypeKind::Any => true,
             // single key: {key1: value1}
-            TypeKind::StrLit(s) => schema_ty.attrs.len() == 1 && schema_ty.attrs.contains_key(s),
+            TypeKind::StrLit(s) => schema_ty.attrs.len() >= 1 && schema_ty.attrs.contains_key(s),
             // multi key: {
             // key1: value1
             // key2: value2
             // ...
             // }
             TypeKind::Union(types) => {
-                schema_ty.attrs.len() == types.len()
-                    && types.iter().all(|ty| match &ty.kind {
-                        TypeKind::StrLit(s) => schema_ty.attrs.contains_key(s),
+                let (attrs, has_index_signature) = Self::get_schema_attrs(schema_ty);
+                match (attrs.len() >= types.len(), has_index_signature) {
+                    (true, _) => types.iter().all(|ty| match &ty.kind {
+                        TypeKind::StrLit(s) => attrs.contains(s),
                         _ => false,
-                    })
+                    }),
+                    // Todo: do more index_signature check
+                    (false, true) => true,
+                    (false, false) => false,
+                }
             }
             _ => false,
         }
+    }
+
+    fn get_schema_attrs(schema_ty: &SchemaType) -> (Vec<String>, bool) {
+        let mut attrs: Vec<String> = schema_ty.attrs.keys().map(|attr| attr.clone()).collect();
+        let mut has_index_signature = schema_ty.index_signature.is_some();
+        if let Some(base) = &schema_ty.base {
+            let (base_attrs, index_signature) = Self::get_schema_attrs(base);
+            attrs.extend(base_attrs);
+            has_index_signature &= index_signature;
+        }
+        (attrs, has_index_signature)
     }
 
     fn upgrade_named_ty_with_scope(

@@ -434,4 +434,25 @@ mod tests {
         6,
         10
     );
+
+    goto_def_test_snapshot!(
+        goto_nested_schema_attr_test,
+        "src/test_data/goto_def_test/goto_nested_schema_attr_test/goto_nested_schema_attr_test.k",
+        22,
+        22
+    );
+
+    goto_def_test_snapshot!(
+        goto_base_schema_attr_test,
+        "src/test_data/goto_def_test/goto_base_schema_attr_test/goto_base_schema_attr_test.k",
+        8,
+        12
+    );
+
+    goto_def_test_snapshot!(
+        goto_base_schema_attr_1_test,
+        "src/test_data/goto_def_test/goto_base_schema_attr_1_test/goto_base_schema_attr_1_test.k",
+        4,
+        12
+    );
 }
