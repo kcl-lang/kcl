@@ -1173,6 +1173,93 @@ fn complete_test() {
 }
 
 #[test]
+fn complete_with_version_test() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut path = root.clone();
+
+    path.push("src/test_data/completion_test/newline/newline_with_version/newline_with_version.k");
+
+    let path = path.to_str().unwrap();
+    let src = std::fs::read_to_string(path).unwrap();
+    let server = Project {}.server(InitializeParams::default());
+
+    // Mock open file
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: Url::from_file_path(path).unwrap(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: src,
+            },
+        },
+    );
+
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+
+    let r: Request = Request::new(
+        id.into(),
+        "textDocument/completion".to_string(),
+        CompletionParams {
+            text_document_position: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier {
+                    uri: Url::from_file_path(path).unwrap(),
+                },
+                position: Position::new(6, 4),
+            },
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+            context: Some(CompletionContext {
+                trigger_kind: CompletionTriggerKind::TRIGGER_CHARACTER,
+                trigger_character: Some("\n".to_string()),
+            }),
+        },
+    );
+
+    let id = r.id.clone();
+    server.client.sender.send(r.into()).unwrap();
+
+    server.notification::<lsp_types::notification::DidChangeTextDocument>(
+        lsp_types::DidChangeTextDocumentParams {
+            text_document: lsp_types::VersionedTextDocumentIdentifier {
+                uri: Url::from_file_path(path).unwrap(),
+                version: 1,
+            },
+            content_changes: vec![TextDocumentContentChangeEvent {
+                range: None,
+                range_length: None,
+                text: "schema Name:\n    name: str\n\nname1 = \"\"\n\nname: Name{\n    \n}"
+                    .to_string(),
+            }],
+        },
+    );
+
+    while let Some(msg) = server.recv() {
+        match msg {
+            Message::Request(req) => {
+                panic!("did not expect a request as a response to a request: {req:?}")
+            }
+            Message::Notification(_) => (),
+            Message::Response(res) => {
+                assert_eq!(res.id, id);
+                assert_eq!(
+                    res.result.unwrap(),
+                    to_json(CompletionResponse::Array(vec![CompletionItem {
+                        label: "name".to_string(),
+                        kind: Some(CompletionItemKind::FIELD),
+                        detail: Some("name: str".to_string()),
+                        ..Default::default()
+                    },]))
+                    .unwrap()
+                );
+                break;
+            }
+        }
+    }
+}
+
+#[test]
 fn hover_test() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut path = root.clone();
