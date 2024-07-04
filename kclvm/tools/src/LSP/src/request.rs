@@ -315,11 +315,9 @@ pub(crate) fn handle_completion(
         .and_then(|ctx| ctx.trigger_character)
         .and_then(|s| s.chars().next());
 
-    if let Some(c) = completion_trigger_character {
-        if let '\n' = c {
-            if !snapshot.verify_request_version(db.version, &path)? {
-                return Err(anyhow!(LSPError::Retry));
-            }
+    if matches!(completion_trigger_character, Some('\n')) {
+        if !snapshot.verify_request_version(db.version, &path)? {
+            return Err(anyhow!(LSPError::Retry));
         }
     }
 
