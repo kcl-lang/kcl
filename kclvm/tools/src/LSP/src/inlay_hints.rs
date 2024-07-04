@@ -1,35 +1,73 @@
+use indexmap::IndexSet;
 use kclvm_sema::core::symbol::SymbolHint;
 use kclvm_sema::core::{global_state::GlobalState, symbol::KCLSymbol};
 use lsp_types::{InlayHint, InlayHintLabelPart, Position as LspPosition};
 use std::convert::TryInto;
+use std::hash::Hash;
+
+#[derive(Clone, Debug)]
+struct KCLInlayHint {
+    /// The position of this hint.
+    pub position: LspPosition,
+
+    /// An inlay hint label part allows for interactive and composite labels
+    /// of inlay hints.
+    pub part: InlayHintLabelPart,
+}
+
+impl Hash for KCLInlayHint {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.position.line.hash(state);
+        self.position.character.hash(state);
+        self.part.value.hash(state);
+    }
+}
+
+impl PartialEq for KCLInlayHint {
+    fn eq(&self, other: &Self) -> bool {
+        self.position == other.position && self.part.value == other.part.value
+    }
+}
+
+impl Eq for KCLInlayHint {}
 
 pub fn inlay_hints(file: &str, gs: &GlobalState) -> Option<Vec<InlayHint>> {
-    let mut inlay_hints: Vec<InlayHint> = vec![];
+    let mut inlay_hints: IndexSet<KCLInlayHint> = Default::default();
     let sema_db = gs.get_sema_db();
     if let Some(file_sema) = sema_db.get_file_sema(file) {
         let symbols = file_sema.get_symbols();
         for symbol_ref in symbols {
             if let Some(symbol) = gs.get_symbols().get_symbol(*symbol_ref) {
                 if let Some(hint) = symbol.get_hint() {
-                    inlay_hints.push(generate_inlay_hint(symbol, hint));
+                    inlay_hints.insert(generate_inlay_hint(symbol, hint));
                 }
             }
         }
     }
-    Some(inlay_hints)
+    Some(
+        inlay_hints
+            .into_iter()
+            .map(|h| into_lsp_inlay_hint(&h))
+            .collect(),
+    )
 }
 
 #[inline]
-fn generate_inlay_hint(symbol: &KCLSymbol, hint: &SymbolHint) -> InlayHint {
+fn generate_inlay_hint(symbol: &KCLSymbol, hint: &SymbolHint) -> KCLInlayHint {
     let (part, position) = get_hint_label(symbol, &hint);
+    KCLInlayHint { position, part }
+}
+
+#[inline]
+fn into_lsp_inlay_hint(hint: &KCLInlayHint) -> InlayHint {
     InlayHint {
-        position,
-        label: lsp_types::InlayHintLabel::LabelParts(vec![part]),
+        position: hint.position.clone(),
+        label: lsp_types::InlayHintLabel::LabelParts(vec![hint.part.clone()]),
         kind: None,
         text_edits: None,
         tooltip: None,
-        padding_left: Some(true),
-        padding_right: Some(true),
+        padding_left: None,
+        padding_right: None,
         data: None,
     }
 }
