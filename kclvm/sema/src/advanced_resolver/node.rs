@@ -15,7 +15,7 @@ use crate::{
             SymbolSemanticInfo, UnresolvedSymbol, ValueSymbol,
         },
     },
-    ty::{Type, TypeKind, SCHEMA_MEMBER_FUNCTIONS},
+    ty::{Parameter, Type, TypeKind, SCHEMA_MEMBER_FUNCTIONS},
 };
 
 use super::AdvancedResolver;
@@ -573,7 +573,22 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
 
     fn walk_call_expr(&mut self, call_expr: &'ctx ast::CallExpr) -> Self::Result {
         self.expr(&call_expr.func)?;
-        self.do_arguments_symbol_resolve(&call_expr.args, &call_expr.keywords)?;
+        let ty = self
+            .ctx
+            .node_ty_map
+            .borrow()
+            .get(&self.ctx.get_node_key(&call_expr.func.id))
+            .unwrap()
+            .clone();
+        if let TypeKind::Function(func_ty) = &ty.kind {
+            let func_params = &func_ty.params;
+            self.do_arguments_symbol_resolve_with_hint(
+                &call_expr.args,
+                &call_expr.keywords,
+                true,
+                func_params.to_vec(),
+            )?;
+        }
         Ok(None)
     }
 
@@ -1235,32 +1250,64 @@ impl<'ctx> AdvancedResolver<'ctx> {
         args: &'ctx [ast::NodeRef<ast::Expr>],
         kwargs: &'ctx [ast::NodeRef<ast::Keyword>],
     ) -> anyhow::Result<()> {
-        for arg in args.iter() {
-            self.expr(arg)?;
-        }
+        self.do_arguments_symbol_resolve_with_hint(args, kwargs, false, vec![])
+    }
+
+    pub fn do_arguments_symbol_resolve_with_hint(
+        &mut self,
+        args: &'ctx [ast::NodeRef<ast::Expr>],
+        kwargs: &'ctx [ast::NodeRef<ast::Keyword>],
+        with_hint: bool,
+        mut params: Vec<Parameter>,
+    ) -> anyhow::Result<()> {
         for kw in kwargs.iter() {
             if let Some(value) = &kw.node.value {
                 self.expr(value)?;
             }
+            let kw_name = kw.node.arg.node.get_name();
             let (start_pos, end_pos): Range = kw.get_span_pos();
             let value = self.gs.get_symbols_mut().alloc_value_symbol(
-                ValueSymbol::new(kw.node.arg.node.get_name(), start_pos, end_pos, None, false),
+                ValueSymbol::new(kw_name.clone(), start_pos, end_pos, None, false),
                 self.ctx.get_node_key(&kw.id),
                 self.ctx.current_pkgpath.clone().unwrap(),
             );
 
             if let Some(value) = self.gs.get_symbols_mut().values.get_mut(value.get_id()) {
-                value.sema_info = SymbolSemanticInfo {
-                    ty: self
+                let ty = self
+                    .ctx
+                    .node_ty_map
+                    .borrow()
+                    .get(&self.ctx.get_node_key(&kw.id))
+                    .map(|ty| ty.clone());
+                if with_hint {
+                    value.hint = Some(SymbolHint::VarHint(kw_name.clone()));
+                    params.retain(|param| param.name != kw_name);
+                }
+                value.sema_info = SymbolSemanticInfo { ty, doc: None };
+            }
+        }
+        for (i, arg) in args.iter().enumerate() {
+            self.expr(arg)?;
+            if with_hint {
+                let (start_pos, end_pos) = arg.get_span_pos();
+                let value = self.gs.get_symbols_mut().alloc_value_symbol(
+                    ValueSymbol::new(params[i].name.clone(), start_pos, end_pos, None, false),
+                    self.ctx.get_node_key(&arg.id),
+                    self.ctx.current_pkgpath.clone().unwrap(),
+                );
+                if let Some(value) = self.gs.get_symbols_mut().values.get_mut(value.get_id()) {
+                    let ty = self
                         .ctx
                         .node_ty_map
                         .borrow()
-                        .get(&self.ctx.get_node_key(&kw.id))
-                        .map(|ty| ty.clone()),
-                    doc: None,
-                };
+                        .get(&self.ctx.get_node_key(&arg.id))
+                        .map(|ty| ty.clone());
+                    value.hint = Some(SymbolHint::VarHint(params[i].name.clone()));
+                    value.sema_info = SymbolSemanticInfo { ty, doc: None };
+                }
             }
         }
+
         Ok(())
     }
 
