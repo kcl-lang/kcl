@@ -1,5 +1,6 @@
 ---
 source: loader/src/tests.rs
+assertion_line: 29
 expression: "format!(\"{:#?}\", p.symbols.values())"
 ---
 [
@@ -437,6 +438,44 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                     generation: 0,
                 },
                 kind: Function,
+            },
+        ),
+        attrs: [],
+        is_global: false,
+    },
+    SymbolInfo {
+        ty: Type {
+            kind: IntLit(
+                10,
+            ),
+            is_type_alias: false,
+            flags: INT | LITERAL,
+        },
+        name: "x",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 3,
+                column: Some(
+                    13,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 3,
+                column: Some(
+                    15,
+                ),
+            },
+        ),
+        owner: None,
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 1,
+                    generation: 0,
+                },
+                kind: Value,
             },
         ),
         attrs: [],

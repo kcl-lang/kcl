@@ -1,6 +1,6 @@
 ---
 source: tools/src/LSP/src/inlay_hints.rs
-assertion_line: 80
+assertion_line: 118
 expression: "format!(\"{:#?}\", res)"
 ---
 Some(
@@ -265,12 +265,8 @@ Some(
             kind: None,
             text_edits: None,
             tooltip: None,
-            padding_left: Some(
-                true,
-            ),
-            padding_right: Some(
-                true,
-            ),
+            padding_left: None,
+            padding_right: None,
             data: None,
         },
         InlayHint {
@@ -291,12 +287,8 @@ Some(
             kind: None,
             text_edits: None,
             tooltip: None,
-            padding_left: Some(
-                true,
-            ),
-            padding_right: Some(
-                true,
-            ),
+            padding_left: None,
+            padding_right: None,
             data: None,
         },
         InlayHint {
@@ -317,12 +309,8 @@ Some(
             kind: None,
             text_edits: None,
             tooltip: None,
-            padding_left: Some(
-                true,
-            ),
-            padding_right: Some(
-                true,
-            ),
+            padding_left: None,
+            padding_right: None,
             data: None,
         },
         InlayHint {
@@ -343,38 +331,8 @@ Some(
             kind: None,
             text_edits: None,
             tooltip: None,
-            padding_left: Some(
-                true,
-            ),
-            padding_right: Some(
-                true,
-            ),
-            data: None,
-        },
-        InlayHint {
-            position: Position {
-                line: 27,
-                character: 19,
-            },
-            label: LabelParts(
-                [
-                    InlayHintLabelPart {
-                        value: "z: ",
-                        tooltip: None,
-                        location: None,
-                        command: None,
-                    },
-                ],
-            ),
-            kind: None,
-            text_edits: None,
-            tooltip: None,
-            padding_left: Some(
-                true,
-            ),
-            padding_right: Some(
-                true,
-            ),
+            padding_left: None,
+            padding_right: None,
             data: None,
         },
     ],

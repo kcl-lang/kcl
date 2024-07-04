@@ -1264,50 +1264,49 @@ impl<'ctx> AdvancedResolver<'ctx> {
             if let Some(value) = &kw.node.value {
                 self.expr(value)?;
             }
-            let kw_name = kw.node.arg.node.get_name();
             let (start_pos, end_pos): Range = kw.get_span_pos();
             let value = self.gs.get_symbols_mut().alloc_value_symbol(
-                ValueSymbol::new(kw_name.clone(), start_pos, end_pos, None, false),
+                ValueSymbol::new(kw.node.arg.node.get_name(), start_pos, end_pos, None, false),
                 self.ctx.get_node_key(&kw.id),
                 self.ctx.current_pkgpath.clone().unwrap(),
             );
 
             if let Some(value) = self.gs.get_symbols_mut().values.get_mut(value.get_id()) {
+                params.retain(|param| param.name != kw.node.arg.node.get_name());
+                value.sema_info = SymbolSemanticInfo {
+                    ty: self
+                        .ctx
+                        .node_ty_map
+                        .borrow()
+                        .get(&self.ctx.get_node_key(&kw.id))
+                        .map(|ty| ty.clone()),
+                    doc: None,
+                };
+            }
+        }
+
+        for (arg, param) in args.iter().zip(params.iter()) {
+            self.expr(arg)?;
+            let (start_pos, end_pos) = arg.get_span_pos();
+            let arg_value = self.gs.get_symbols_mut().alloc_value_symbol(
+                ValueSymbol::new(param.name.clone(), start_pos, end_pos, None, false),
+                self.ctx.get_node_key(&arg.id),
+                self.ctx.current_pkgpath.clone().unwrap(),
+            );
+
+            if let Some(val) = self.gs.get_symbols_mut().values.get_mut(arg_value.get_id()) {
                 let ty = self
                     .ctx
                     .node_ty_map
                     .borrow()
-                    .get(&self.ctx.get_node_key(&kw.id))
+                    .get(&self.ctx.get_node_key(&arg.id))
                     .map(|ty| ty.clone());
                 if with_hint {
-                    value.hint = Some(SymbolHint::VarHint(kw_name.clone()));
-                    params.retain(|param| param.name != kw_name);
+                    val.hint = Some(SymbolHint::VarHint(param.name.clone()));
                 }
-                value.sema_info = SymbolSemanticInfo { ty, doc: None };
+                val.sema_info = SymbolSemanticInfo { ty, doc: None };
             }
         }
-        for (i, arg) in args.iter().enumerate() {
-            self.expr(arg)?;
-            if with_hint {
-                let (start_pos, end_pos) = arg.get_span_pos();
-                let value = self.gs.get_symbols_mut().alloc_value_symbol(
-                    ValueSymbol::new(params[i].name.clone(), start_pos, end_pos, None, false),
-                    self.ctx.get_node_key(&arg.id),
-                    self.ctx.current_pkgpath.clone().unwrap(),
-                );
-                if let Some(value) = self.gs.get_symbols_mut().values.get_mut(value.get_id()) {
-                    let ty = self
-                        .ctx
-                        .node_ty_map
-                        .borrow()
-                        .get(&self.ctx.get_node_key(&arg.id))
-                        .map(|ty| ty.clone());
-                    value.hint = Some(SymbolHint::VarHint(params[i].name.clone()));
-                    value.sema_info = SymbolSemanticInfo { ty, doc: None };
-                }
-            }
-        }
-
         Ok(())
     }
 
