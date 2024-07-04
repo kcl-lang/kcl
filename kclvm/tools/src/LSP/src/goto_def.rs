@@ -434,4 +434,11 @@ mod tests {
         6,
         10
     );
+
+    goto_def_test_snapshot!(
+        goto_nested_schema_attr_test,
+        "src/test_data/goto_def_test/goto_nested_schema_attr_test/goto_nested_schema_attr_test.k",
+        22,
+        22
+    );
 }
