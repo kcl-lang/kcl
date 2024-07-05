@@ -10,6 +10,7 @@ use kclvm_driver::CompileUnitOptions;
 use kclvm_parser::KCLModuleCache;
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::resolver::scope::KCLScopeCache;
+use lsp_server::RequestId;
 use lsp_server::{ReqQueue, Request, Response};
 use lsp_types::Url;
 use lsp_types::{
@@ -76,6 +77,8 @@ pub(crate) struct LanguageServerState {
     pub opened_files: Arc<RwLock<HashMap<FileId, DocumentVersion>>>,
     /// The VFS loader
     pub loader: Handle<Box<dyn ra_ap_vfs::loader::Handle>, Receiver<ra_ap_vfs::loader::Message>>,
+    /// request retry time
+    pub request_retry: Arc<RwLock<HashMap<RequestId, i32>>>,
     /// The word index map
     pub word_index_map: KCLWordIndexMap,
     /// KCL parse cache
@@ -99,6 +102,8 @@ pub(crate) struct LanguageServerSnapshot {
     pub db: Arc<RwLock<HashMap<FileId, Arc<AnalysisDatabase>>>>,
     /// Documents that are currently kept in memory from the client
     pub opened_files: Arc<RwLock<HashMap<FileId, DocumentVersion>>>,
+    /// request retry time
+    pub request_retry: Arc<RwLock<HashMap<RequestId, i32>>>,
     /// The word index map
     pub word_index_map: KCLWordIndexMap,
     /// KCL parse cache
@@ -141,6 +146,7 @@ impl LanguageServerState {
             entry_cache: KCLEntryCache::default(),
             tool: Arc::new(RwLock::new(toolchain::default())),
             gs_cache: KCLGlobalStateCache::default(),
+            request_retry: Arc::new(RwLock::new(HashMap::new())),
         };
 
         let word_index_map = state.word_index_map.clone();
@@ -380,6 +386,7 @@ impl LanguageServerState {
             scope_cache: self.scope_cache.clone(),
             entry_cache: self.entry_cache.clone(),
             tool: self.tool.clone(),
+            request_retry: self.request_retry.clone(),
         }
     }
 

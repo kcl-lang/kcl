@@ -2,6 +2,7 @@ use anyhow::anyhow;
 use crossbeam_channel::Sender;
 
 use kclvm_sema::info::is_valid_kcl_name;
+use lsp_server::RequestId;
 use lsp_types::{Location, SemanticTokensResult, TextEdit};
 use ra_ap_vfs::{AbsPathBuf, VfsPath};
 use std::collections::HashMap;
@@ -52,7 +53,6 @@ impl LanguageServerState {
             })?
             .on::<lsp_types::request::GotoDefinition>(handle_goto_definition)?
             .on::<lsp_types::request::References>(handle_reference)?
-            .on::<lsp_types::request::Completion>(handle_completion)?
             .on::<lsp_types::request::HoverRequest>(handle_hover)?
             .on::<lsp_types::request::DocumentSymbolRequest>(handle_document_symbol)?
             .on::<lsp_types::request::CodeActionRequest>(handle_code_action)?
@@ -61,6 +61,7 @@ impl LanguageServerState {
             .on::<lsp_types::request::Rename>(handle_rename)?
             .on::<lsp_types::request::SemanticTokensFullRequest>(handle_semantic_tokens_full)?
             .on::<lsp_types::request::InlayHintRequest>(handle_inlay_hint)?
+            .on_maybe_retry::<lsp_types::request::Completion>(handle_completion)?
             .finish();
 
         Ok(())
@@ -298,6 +299,7 @@ pub(crate) fn handle_completion(
     snapshot: LanguageServerSnapshot,
     params: lsp_types::CompletionParams,
     sender: Sender<Task>,
+    id: RequestId,
 ) -> anyhow::Result<Option<lsp_types::CompletionResponse>> {
     let file = file_path_from_url(&params.text_document_position.text_document.uri)?;
     let path = from_lsp::abs_path(&params.text_document_position.text_document.uri)?;
@@ -316,7 +318,9 @@ pub(crate) fn handle_completion(
         .and_then(|s| s.chars().next());
 
     if matches!(completion_trigger_character, Some('\n')) {
-        if !snapshot.verify_request_version(db.version, &path)? {
+        if snapshot.request_retry.read().get(&id).is_none() {
+            return Err(anyhow!(LSPError::Retry));
+        } else if !snapshot.verify_request_version(db.version, &path)? {
             return Err(anyhow!(LSPError::Retry));
         }
     }
