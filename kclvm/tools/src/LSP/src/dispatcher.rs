@@ -1,5 +1,5 @@
 use crossbeam_channel::Sender;
-use lsp_server::{ExtractError, Request};
+use lsp_server::{ExtractError, Request, RequestId};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::error::Error;
@@ -128,6 +128,58 @@ impl<'a> RequestDispatcher<'a> {
                             .map_or(false, |lsp_err| matches!(lsp_err, LSPError::Retry)) =>
                     {
                         sender.send(Task::Retry(req)).unwrap();
+                    }
+                    _ => {
+                        sender
+                            .send(Task::Response(result_to_response::<R>(req.id, result)))
+                            .unwrap();
+                    }
+                }
+            }
+        });
+
+        Ok(self)
+    }
+
+    /// Try to dispatch the event as the given Request type on the thread pool.
+    pub fn on_maybe_retry<R>(
+        &mut self,
+        compute_response_fn: fn(
+            LanguageServerSnapshot,
+            R::Params,
+            Sender<Task>,
+            RequestId,
+        ) -> anyhow::Result<R::Result>,
+    ) -> anyhow::Result<&mut Self>
+    where
+        R: lsp_types::request::Request + 'static,
+        R::Params: DeserializeOwned + 'static + Send,
+        R::Result: Serialize + 'static,
+    {
+        let (req, params) = match self.parse::<R>() {
+            Some(it) => it,
+            None => return Ok(self),
+        };
+
+        self.state.thread_pool.execute({
+            let snapshot = self.state.snapshot();
+            let sender = self.state.task_sender.clone();
+            let request_retry = self.state.request_retry.clone();
+            move || {
+                let result = compute_response_fn(snapshot, params, sender.clone(), req.id.clone());
+                match &result {
+                    Err(e)
+                        if e.downcast_ref::<LSPError>()
+                            .map_or(false, |lsp_err| matches!(lsp_err, LSPError::Retry)) =>
+                    {
+                        sender.send(Task::Retry(req.clone())).unwrap();
+                        let mut request_retry = request_retry.write();
+                        match request_retry.get_mut(&req.clone().id) {
+                            Some(t) => *t += 1,
+                            None => {
+                                request_retry.insert(req.id.clone(), 1);
+                            }
+                        }
                     }
                     _ => {
                         sender
