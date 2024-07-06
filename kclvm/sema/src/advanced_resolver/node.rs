@@ -600,6 +600,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             let func_name = func_fully_qualified_name
                 .as_ref()
                 .and_then(|name| name.split("::").last().map(String::from));
+
             let is_builtin = func_name.as_deref().map_or(false, |name| {
                 BUILTIN_FUNCTION_NAMES.contains(&name) || is_system_module_function(&name)
             });
