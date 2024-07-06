@@ -8,6 +8,7 @@ use kclvm_ast::walker::MutSelfTypedResultWalker;
 use kclvm_error::{diagnostic::Range, Position};
 
 use crate::{
+    builtin::{is_system_module_function, BUILTIN_FUNCTION_NAMES},
     core::{
         scope::LocalSymbolScopeKind,
         symbol::{
@@ -580,15 +581,43 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             .get(&self.ctx.get_node_key(&call_expr.func.id))
             .unwrap()
             .clone();
+
         if let TypeKind::Function(func_ty) = &ty.kind {
+            let func_fully_qualified_name = match &call_expr.func.node {
+                ast::Expr::Identifier(ident) => {
+                    let names = ident
+                        .names
+                        .iter()
+                        .map(|node| &node.node)
+                        .cloned()
+                        .collect::<Vec<String>>()
+                        .join("::");
+                    Some(names)
+                }
+                _ => None,
+            };
+
+            let func_name = func_fully_qualified_name
+                .as_ref()
+                .and_then(|name| name.split("::").last().map(String::from));
+            let is_builtin = func_name.as_deref().map_or(false, |name| {
+                BUILTIN_FUNCTION_NAMES.contains(&name) || is_system_module_function(&name)
+            });
+
             let func_params = &func_ty.params;
-            self.do_arguments_symbol_resolve_with_hint(
-                &call_expr.args,
-                &call_expr.keywords,
-                true,
-                func_params.to_vec(),
-            )?;
+
+            if is_builtin {
+                self.do_arguments_symbol_resolve(&call_expr.args, &call_expr.keywords)?;
+            } else {
+                self.do_arguments_symbol_resolve_with_hint(
+                    &call_expr.args,
+                    &call_expr.keywords,
+                    true,
+                    func_params.to_vec(),
+                )?;
+            }
         }
+
         Ok(None)
     }
 
@@ -1250,7 +1279,33 @@ impl<'ctx> AdvancedResolver<'ctx> {
         args: &'ctx [ast::NodeRef<ast::Expr>],
         kwargs: &'ctx [ast::NodeRef<ast::Keyword>],
     ) -> anyhow::Result<()> {
-        self.do_arguments_symbol_resolve_with_hint(args, kwargs, false, vec![])
+        for arg in args.iter() {
+            self.expr(arg)?;
+        }
+        for kw in kwargs.iter() {
+            if let Some(value) = &kw.node.value {
+                self.expr(value)?;
+            }
+            let (start_pos, end_pos): Range = kw.get_span_pos();
+            let value = self.gs.get_symbols_mut().alloc_value_symbol(
+                ValueSymbol::new(kw.node.arg.node.get_name(), start_pos, end_pos, None, false),
+                self.ctx.get_node_key(&kw.id),
+                self.ctx.current_pkgpath.clone().unwrap(),
+            );
+
+            if let Some(value) = self.gs.get_symbols_mut().values.get_mut(value.get_id()) {
+                value.sema_info = SymbolSemanticInfo {
+                    ty: self
+                        .ctx
+                        .node_ty_map
+                        .borrow()
+                        .get(&self.ctx.get_node_key(&kw.id))
+                        .map(|ty| ty.clone()),
+                    doc: None,
+                };
+            }
+        }
+        Ok(())
     }
 
     pub fn do_arguments_symbol_resolve_with_hint(
