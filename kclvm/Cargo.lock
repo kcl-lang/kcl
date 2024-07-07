@@ -1698,6 +1698,7 @@ dependencies = [
  "kclvm-sema",
  "kclvm-tools",
  "kclvm-utils",
+ "kclvm-version",
  "maplit",
  "once_cell",
  "prost",

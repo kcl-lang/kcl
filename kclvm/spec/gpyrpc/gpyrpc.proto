@@ -46,6 +46,7 @@ service BuiltinService {
 // gpyrpc.KclvmService
 service KclvmService {
 	rpc Ping(Ping_Args) returns(Ping_Result);
+	rpc GetVersion(GetVersion_Args) returns(GetVersion_Result);
 
 	rpc ExecProgram(ExecProgram_Args) returns(ExecProgram_Result);
 	rpc BuildProgram(BuildProgram_Args) returns(BuildProgram_Result);
@@ -81,6 +82,16 @@ message Ping_Args {
 }
 message Ping_Result {
 	string value = 1;
+}
+
+message GetVersion_Args {
+	// empty
+}
+message GetVersion_Result {
+	string version = 1;
+	string checksum = 2;
+	string git_sha = 3;
+	string version_info = 4;
 }
 
 message ListMethod_Args {

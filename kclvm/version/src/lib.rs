@@ -2,6 +2,7 @@
 
 pub const VERSION: &str = include_str!("./../../../VERSION");
 pub const CHECK_SUM: &str = "c020ab3eb4b9179219d6837a57f5d323";
+pub const GIT_SHA: &str = env!("VERGEN_GIT_SHA");
 
 /// Get kCL full version string with the format `{version}-{check_sum}`.
 #[inline]

@@ -166,6 +166,7 @@ pub extern "C" fn kclvm_service_call_with_length(
 pub(crate) fn kclvm_get_service_fn_ptr_by_name(name: &str) -> u64 {
     match name {
         "KclvmService.Ping" => ping as *const () as u64,
+        "KclvmService.GetVersion" => get_version as *const () as u64,
         "KclvmService.ParseFile" => parse_file as *const () as u64,
         "KclvmService.ParseProgram" => parse_program as *const () as u64,
         "KclvmService.LoadPackage" => load_package as *const () as u64,
@@ -198,6 +199,15 @@ pub(crate) fn ping(
     result_len: *mut usize,
 ) -> *const c_char {
     call!(serv, args, result_len, PingArgs, ping)
+}
+
+/// get_version is used to get kclvm service version
+pub(crate) fn get_version(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(serv, args, result_len, GetVersionArgs, get_version)
 }
 
 /// parse_file provides users with the ability to parse kcl single file

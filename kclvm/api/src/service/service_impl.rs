@@ -86,6 +86,30 @@ impl KclvmServiceImpl {
         })
     }
 
+    /// GetVersion KclvmService, return the kclvm service version information
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
+    /// use kclvm_api::gpyrpc::*;
+    /// let serv = KclvmServiceImpl::default();
+    /// let args = &GetVersionArgs {
+    ///     ..Default::default()
+    /// };
+    /// let get_version_result = serv.get_version(args).unwrap();
+    /// assert!(get_version_result.version_info.to_string().contains("Version"), "{0}", get_version_result.version_info);
+    /// ```
+    ///
+    pub fn get_version(&self, _args: &GetVersionArgs) -> anyhow::Result<GetVersionResult> {
+        Ok(GetVersionResult {
+            version: kclvm_version::VERSION.to_string(),
+            checksum: kclvm_version::CHECK_SUM.to_string(),
+            git_sha: kclvm_version::GIT_SHA.to_string(),
+            version_info: kclvm_version::get_version_info(),
+        })
+    }
+
     /// Parse KCL program with entry files.
     ///
     /// # Examples
