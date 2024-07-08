@@ -12,17 +12,17 @@ gen-runtime-api:
 	make -C ./runtime gen-api-spec
 	make fmt
 
-# Install the wasm target
+# Install the wasm32-unknown-unknown target
 install-rustc-wasm:
 	rustup target add wasm32-unknown-unknown
+
+# Install the wasm-wasi target
+install-rustc-wasm-wasi:
+	rustup target add wasm32-wasi
 
 # Install python3 pytest
 install-pytest:
 	python3 -mpip install --user -U pytest pytest-html pytest-xdist
-
-# Install kclvm-py
-install-kclvm-py:
-	python3 -mpip install --user -U kclvm
 
 # ------------------------
 # Compile and run
@@ -82,19 +82,19 @@ codecov-lcov:
 	cargo llvm-cov --features llvm --lcov --output-path $(PWD)/.kclvm_cov/lcov.info -r --workspace --ignore-filename-regex gpyrpc.rs -- --nocapture
 
 # Test runtime libaries using python functions
-test-runtime: install-kclvm-py install-pytest
+test-runtime: install-pytest
 	cd ./tests/test_units && PYTHONPATH=./../../tests/test_units/runtime python3 -m pytest -vv || { echo 'kclvm/tests/test_units failed' ; exit 1; }
 
 # E2E grammar tests.
-test-grammar: install-kclvm-py install-pytest
+test-grammar: install-pytest
 	cd tests/integration/grammar && python3 -m pytest -v -n 5
 
 # E2E grammar tests with the fast evaluator
-test-grammar-evaluator: install-kclvm-py install-pytest
+test-grammar-evaluator: install-pytest
 	cd tests/integration/grammar && KCL_FAST_EVAL=1 python3 -m pytest -v -n 5
 
 # E2E konfig tests.
-test-konfig: install-kclvm-py install-pytest
+test-konfig: install-pytest
 	cd tests/integration/konfig && python3 -m pytest -v -n 5
 
 # Parser fuzz.

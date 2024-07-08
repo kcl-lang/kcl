@@ -663,6 +663,6 @@ declare %kclvm_value_ref_t* @kclvm_yaml_encode_all(%kclvm_context_t* %ctx, %kclv
 declare %kclvm_value_ref_t* @kclvm_yaml_validate(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
 define void @__kcl_keep_link_runtime(%kclvm_value_ref_t* %_a, %kclvm_context_t* %_b) {
-	call %kclvm_value_ref_t* @kclvm_value_None(%kclvm_context_t* %_b)
-	ret void
+    call %kclvm_value_ref_t* @kclvm_value_None(%kclvm_context_t* %_b)
+    ret void
 }

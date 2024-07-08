@@ -30,3 +30,8 @@ num-integer = "0.1.44"
 glob = "0.3.0"
 uuid = { version = "1.7.0", features = ["serde", "v4"] }
 handlebars = "5.1.2"
+walkdir = "2.5.0"
+
+[[bin]]
+name = "gen-api-spec"
+path = "scripts/gen-api-spec.rs"

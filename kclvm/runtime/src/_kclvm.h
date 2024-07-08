@@ -19,38 +19,23 @@ extern "C" {
 
 enum kclvm_kind_t {
     Invalid = 0,
-
-    // only for value
-
-    Undefined = 1, 
+    Undefined = 1,
     None = 2,
-
-    // for value & type
-
     Bool = 3,
     Int = 4,
     Float = 5,
     Str = 6,
     List = 7,
     Dict = 8,
-
     Schema = 9,
     Error = 10,
-
-    // only for type
-
     Any = 11,
     Union = 12,
-
     BoolLit = 13,
     IntLit = 14,
     FloatLit = 15,
     StrLit = 16,
-
     Func = 17,
-
-    // max num
-
     Max = 18,
 };
 
