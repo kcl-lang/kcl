@@ -1976,20 +1976,3 @@ pub fn get_system_member_function_ty(name: &str, func: &str) -> TypeRef {
         .map(|ty| Arc::new(ty))
         .unwrap_or(Type::any_ref())
 }
-
-pub fn is_system_module_function(name: &str) -> bool {
-    BASE64_FUNCTION_NAMES.contains(&name)
-        || NET_FUNCTION_NAMES.contains(&name)
-        || MANIFESTS_FUNCTION_NAMES.contains(&name)
-        || MATH_FUNCTION_NAMES.contains(&name)
-        || DATETIME_FUNCTION_NAMES.contains(&name)
-        || REGEX_FUNCTION_NAMES.contains(&name)
-        || YAML_FUNCTION_NAMES.contains(&name)
-        || JSON_FUNCTION_NAMES.contains(&name)
-        || CRYPTO_FUNCTION_NAMES.contains(&name)
-        || UNITS_FUNCTION_NAMES.contains(&name)
-        || COLLECTION_FUNCTION_NAMES.contains(&name)
-        || FILE_FUNCTION_NAMES.contains(&name)
-        || TEMPLATE_FUNCTION_NAMES.contains(&name)
-        || RUNTIME_FUNCTION_NAMES.contains(&name)
-}

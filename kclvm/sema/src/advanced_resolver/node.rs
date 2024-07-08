@@ -8,7 +8,6 @@ use kclvm_ast::walker::MutSelfTypedResultWalker;
 use kclvm_error::{diagnostic::Range, Position};
 
 use crate::{
-    builtin::{is_system_module_function, BUILTIN_FUNCTION_NAMES},
     core::{
         scope::LocalSymbolScopeKind,
         symbol::{
@@ -583,31 +582,9 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             .clone();
 
         if let TypeKind::Function(func_ty) = &ty.kind {
-            let func_fully_qualified_name = match &call_expr.func.node {
-                ast::Expr::Identifier(ident) => {
-                    let names = ident
-                        .names
-                        .iter()
-                        .map(|node| &node.node)
-                        .cloned()
-                        .collect::<Vec<String>>()
-                        .join("::");
-                    Some(names)
-                }
-                _ => None,
-            };
-
-            let func_name = func_fully_qualified_name
-                .as_ref()
-                .and_then(|name| name.split("::").last().map(String::from));
-
-            let is_builtin = func_name.as_deref().map_or(false, |name| {
-                BUILTIN_FUNCTION_NAMES.contains(&name) || is_system_module_function(&name)
-            });
-
             let func_params = &func_ty.params;
 
-            if is_builtin {
+            if func_params.is_empty() {
                 self.do_arguments_symbol_resolve(&call_expr.args, &call_expr.keywords)?;
             } else {
                 self.do_arguments_symbol_resolve_with_hint(
@@ -1314,8 +1291,25 @@ impl<'ctx> AdvancedResolver<'ctx> {
         args: &'ctx [ast::NodeRef<ast::Expr>],
         kwargs: &'ctx [ast::NodeRef<ast::Keyword>],
         with_hint: bool,
-        mut params: Vec<Parameter>,
+        params: Vec<Parameter>,
     ) -> anyhow::Result<()> {
+        for (arg, param) in args.iter().zip(params.iter()) {
+            self.expr(arg)?;
+
+            let symbol_data = self.gs.get_symbols_mut();
+            if let Some(arg_ref) = symbol_data
+                .symbols_info
+                .node_symbol_map
+                .get(&self.ctx.get_node_key(&arg.id))
+            {
+                if let Some(value) = symbol_data.values.get_mut(arg_ref.get_id()) {
+                    if with_hint {
+                        value.hint = Some(SymbolHint::VarHint(param.name.clone()));
+                    }
+                }
+            }
+        }
+
         for kw in kwargs.iter() {
             if let Some(value) = &kw.node.value {
                 self.expr(value)?;
@@ -1328,7 +1322,6 @@ impl<'ctx> AdvancedResolver<'ctx> {
             );
 
             if let Some(value) = self.gs.get_symbols_mut().values.get_mut(value.get_id()) {
-                params.retain(|param| param.name != kw.node.arg.node.get_name());
                 value.sema_info = SymbolSemanticInfo {
                     ty: self
                         .ctx
@@ -1338,29 +1331,6 @@ impl<'ctx> AdvancedResolver<'ctx> {
                         .map(|ty| ty.clone()),
                     doc: None,
                 };
-            }
-        }
-
-        for (arg, param) in args.iter().zip(params.iter()) {
-            self.expr(arg)?;
-            let (start_pos, end_pos) = arg.get_span_pos();
-            let arg_value = self.gs.get_symbols_mut().alloc_value_symbol(
-                ValueSymbol::new(param.name.clone(), start_pos, end_pos, None, false),
-                self.ctx.get_node_key(&arg.id),
-                self.ctx.current_pkgpath.clone().unwrap(),
-            );
-
-            if let Some(val) = self.gs.get_symbols_mut().values.get_mut(arg_value.get_id()) {
-                let ty = self
-                    .ctx
-                    .node_ty_map
-                    .borrow()
-                    .get(&self.ctx.get_node_key(&arg.id))
-                    .map(|ty| ty.clone());
-                if with_hint {
-                    val.hint = Some(SymbolHint::VarHint(param.name.clone()));
-                }
-                val.sema_info = SymbolSemanticInfo { ty, doc: None };
             }
         }
         Ok(())
