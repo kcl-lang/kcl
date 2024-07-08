@@ -225,6 +225,51 @@ impl<'ctx> AdvancedResolver<'ctx> {
         self.ctx.scopes.push(scope_ref);
     }
 
+    fn enter_schema_def_scope(
+        &mut self,
+        name: &str,
+        filepath: &str,
+        start: Position,
+        end: Position,
+        kind: LocalSymbolScopeKind,
+    ) {
+        let parent = *self.ctx.scopes.last().unwrap();
+        let local_scope = LocalSymbolScope::new(parent, start, end, kind);
+        let fqn_name = format!("{filepath}.{name}");
+
+        let scope_ref = match self.gs.get_scopes().schema_scope_map.get(&fqn_name) {
+            Some(scope_ref) => scope_ref.clone(),
+            None => {
+                let scope_ref = self.gs.get_scopes_mut().alloc_local_scope(local_scope);
+                self.gs
+                    .get_scopes_mut()
+                    .schema_scope_map
+                    .insert(fqn_name, scope_ref);
+
+                match parent.get_kind() {
+                    ScopeKind::Root => {
+                        self.gs
+                            .get_scopes_mut()
+                            .roots
+                            .get_mut(parent.get_id())
+                            .unwrap()
+                            .add_child(filepath, scope_ref);
+                    }
+                    ScopeKind::Local => {
+                        self.gs
+                            .get_scopes_mut()
+                            .locals
+                            .get_mut(parent.get_id())
+                            .unwrap()
+                            .add_child(scope_ref);
+                    }
+                }
+                scope_ref
+            }
+        };
+        self.ctx.scopes.push(scope_ref);
+    }
+
     fn leave_scope(&mut self) {
         self.ctx.scopes.pop();
     }

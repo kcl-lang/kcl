@@ -97,6 +97,8 @@ impl ScopeRef {
 pub struct ScopeData {
     /// map pkgpath to root_scope
     pub(crate) root_map: IndexMap<String, ScopeRef>,
+    /// map schema fully qualified name to schema local scope
+    pub(crate) schema_scope_map: IndexMap<String, ScopeRef>,
     pub(crate) locals: generational_arena::Arena<LocalSymbolScope>,
     pub(crate) roots: generational_arena::Arena<RootSymbolScope>,
 }
@@ -208,6 +210,8 @@ impl ScopeData {
                 self.clear_scope_and_child(scope_ref);
                 self.roots.remove(scope_ref.get_id());
             }
+            self.schema_scope_map
+                .retain(|key, _| !key.starts_with(invalidate_pkg));
         }
     }
 
