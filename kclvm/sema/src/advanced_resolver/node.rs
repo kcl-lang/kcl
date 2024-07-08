@@ -15,7 +15,7 @@ use crate::{
             SymbolSemanticInfo, UnresolvedSymbol, ValueSymbol,
         },
     },
-    ty::{Parameter, Type, TypeKind, SCHEMA_MEMBER_FUNCTIONS},
+    ty::{self, Type, TypeKind, SCHEMA_MEMBER_FUNCTIONS},
 };
 
 use super::AdvancedResolver;
@@ -582,18 +582,12 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             .clone();
 
         if let TypeKind::Function(func_ty) = &ty.kind {
-            let func_params = &func_ty.params;
-
-            if func_params.is_empty() {
-                self.do_arguments_symbol_resolve(&call_expr.args, &call_expr.keywords)?;
-            } else {
-                self.do_arguments_symbol_resolve_with_hint(
-                    &call_expr.args,
-                    &call_expr.keywords,
-                    true,
-                    func_params.to_vec(),
-                )?;
-            }
+            self.do_arguments_symbol_resolve_with_hint(
+                &call_expr.args,
+                &call_expr.keywords,
+                true,
+                &func_ty,
+            )?;
         }
 
         Ok(None)
@@ -1291,46 +1285,50 @@ impl<'ctx> AdvancedResolver<'ctx> {
         args: &'ctx [ast::NodeRef<ast::Expr>],
         kwargs: &'ctx [ast::NodeRef<ast::Keyword>],
         with_hint: bool,
-        params: Vec<Parameter>,
+        func_ty: &ty::FunctionType,
     ) -> anyhow::Result<()> {
-        for (arg, param) in args.iter().zip(params.iter()) {
-            self.expr(arg)?;
+        if func_ty.params.is_empty() {
+            self.do_arguments_symbol_resolve(args, kwargs)?;
+        } else {
+            for (arg, param) in args.iter().zip(func_ty.params.iter()) {
+                self.expr(arg)?;
 
-            let symbol_data = self.gs.get_symbols_mut();
-            if let Some(arg_ref) = symbol_data
-                .symbols_info
-                .node_symbol_map
-                .get(&self.ctx.get_node_key(&arg.id))
-            {
-                if let Some(value) = symbol_data.values.get_mut(arg_ref.get_id()) {
-                    if with_hint {
-                        value.hint = Some(SymbolHint::VarHint(param.name.clone()));
+                let symbol_data = self.gs.get_symbols_mut();
+                if let Some(arg_ref) = symbol_data
+                    .symbols_info
+                    .node_symbol_map
+                    .get(&self.ctx.get_node_key(&arg.id))
+                {
+                    if let Some(value) = symbol_data.values.get_mut(arg_ref.get_id()) {
+                        if with_hint {
+                            value.hint = Some(SymbolHint::VarHint(param.name.clone()));
+                        }
                     }
                 }
             }
-        }
 
-        for kw in kwargs.iter() {
-            if let Some(value) = &kw.node.value {
-                self.expr(value)?;
-            }
-            let (start_pos, end_pos): Range = kw.get_span_pos();
-            let value = self.gs.get_symbols_mut().alloc_value_symbol(
-                ValueSymbol::new(kw.node.arg.node.get_name(), start_pos, end_pos, None, false),
-                self.ctx.get_node_key(&kw.id),
-                self.ctx.current_pkgpath.clone().unwrap(),
-            );
+            for kw in kwargs.iter() {
+                if let Some(value) = &kw.node.value {
+                    self.expr(value)?;
+                }
+                let (start_pos, end_pos): Range = kw.get_span_pos();
+                let value = self.gs.get_symbols_mut().alloc_value_symbol(
+                    ValueSymbol::new(kw.node.arg.node.get_name(), start_pos, end_pos, None, false),
+                    self.ctx.get_node_key(&kw.id),
+                    self.ctx.current_pkgpath.clone().unwrap(),
+                );
 
-            if let Some(value) = self.gs.get_symbols_mut().values.get_mut(value.get_id()) {
-                value.sema_info = SymbolSemanticInfo {
-                    ty: self
-                        .ctx
-                        .node_ty_map
-                        .borrow()
-                        .get(&self.ctx.get_node_key(&kw.id))
-                        .map(|ty| ty.clone()),
-                    doc: None,
-                };
+                if let Some(value) = self.gs.get_symbols_mut().values.get_mut(value.get_id()) {
+                    value.sema_info = SymbolSemanticInfo {
+                        ty: self
+                            .ctx
+                            .node_ty_map
+                            .borrow()
+                            .get(&self.ctx.get_node_key(&kw.id))
+                            .map(|ty| ty.clone()),
+                        doc: None,
+                    };
+                }
             }
         }
         Ok(())
