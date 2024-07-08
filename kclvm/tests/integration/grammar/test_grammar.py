@@ -3,7 +3,6 @@ import pytest
 import os
 import subprocess
 import re
-import yaml
 import pathlib
 from ruamel.yaml import YAML
 
@@ -14,7 +13,7 @@ SETTINGS_FILE = "settings.yaml"
 TEST_PATH = "test/grammar"
 
 # Ruamel YAML instance
-ruamel_yaml = YAML(typ="unsafe", pure=True)
+ruamel_yaml = YAML(pure=True)
 # Convert None to null
 ruamel_yaml.representer.add_representer(
     type(None),
@@ -90,7 +89,7 @@ def read_settings_file(settings_file_name):
     if os.path.isfile(settings_file_name):
         try:
             with open(settings_file_name, "r") as stream:
-                settings = yaml.safe_load(stream)
+                settings = ruamel_yaml.load(stream)
         except Exception:
             raise
         return settings

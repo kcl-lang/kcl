@@ -21,8 +21,8 @@ install-rustc-wasm-wasi:
 	rustup target add wasm32-wasi
 
 # Install python3 pytest
-install-pytest:
-	python3 -mpip install --user -U pytest pytest-html pytest-xdist
+install-test-deps:
+	python3 -mpip install --user -U pytest pytest-html pytest-xdist ruamel.yaml
 
 # ------------------------
 # Compile and run
@@ -82,19 +82,19 @@ codecov-lcov:
 	cargo llvm-cov --features llvm --lcov --output-path $(PWD)/.kclvm_cov/lcov.info -r --workspace --ignore-filename-regex gpyrpc.rs -- --nocapture
 
 # Test runtime libaries using python functions
-test-runtime: install-pytest
+test-runtime: install-test-deps
 	cd ./tests/test_units && PYTHONPATH=./../../tests/test_units/runtime python3 -m pytest -vv || { echo 'kclvm/tests/test_units failed' ; exit 1; }
 
 # E2E grammar tests.
-test-grammar: install-pytest
+test-grammar: install-test-deps
 	cd tests/integration/grammar && python3 -m pytest -v -n 5
 
 # E2E grammar tests with the fast evaluator
-test-grammar-evaluator: install-pytest
+test-grammar-evaluator: install-test-deps
 	cd tests/integration/grammar && KCL_FAST_EVAL=1 python3 -m pytest -v -n 5
 
 # E2E konfig tests.
-test-konfig: install-pytest
+test-konfig: install-test-deps
 	cd tests/integration/konfig && python3 -m pytest -v -n 5
 
 # Parser fuzz.
