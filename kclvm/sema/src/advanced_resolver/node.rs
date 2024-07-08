@@ -1292,17 +1292,29 @@ impl<'ctx> AdvancedResolver<'ctx> {
         } else {
             for (arg, param) in args.iter().zip(func_ty.params.iter()) {
                 self.expr(arg)?;
-
                 let symbol_data = self.gs.get_symbols_mut();
+
                 if let Some(arg_ref) = symbol_data
                     .symbols_info
                     .node_symbol_map
                     .get(&self.ctx.get_node_key(&arg.id))
                 {
-                    if let Some(value) = symbol_data.values.get_mut(arg_ref.get_id()) {
-                        if with_hint {
-                            value.hint = Some(SymbolHint::VarHint(param.name.clone()));
+                    match arg_ref.get_kind() {
+                        crate::core::symbol::SymbolKind::Value => {
+                            if let Some(value) = symbol_data.values.get_mut(arg_ref.get_id()) {
+                                if with_hint {
+                                    value.hint = Some(SymbolHint::VarHint(param.name.clone()));
+                                }
+                            }
                         }
+                        crate::core::symbol::SymbolKind::Expression => {
+                            if let Some(expr) = symbol_data.exprs.get_mut(arg_ref.get_id()) {
+                                if with_hint {
+                                    expr.hint = Some(SymbolHint::VarHint(param.name.clone()));
+                                }
+                            }
+                        }
+                        _ => {}
                     }
                 }
             }
