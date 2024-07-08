@@ -12,8 +12,7 @@ _person = {
         "key3": None
     }
 }
-print("[", end="")
-print(json.encode(_person, indent=4), end=",\n")
-print(json.encode(_person, indent=4, ignore_private=True), end=",\n")
-print(json.encode(_person, indent=4, ignore_none=True), end=",\n")
-print(json.encode(_person, indent=4, ignore_private=True, ignore_none=True), end="]\n")
+person0 = json.encode(_person, indent=4)
+person1 = json.encode(_person, indent=4, ignore_private=True)
+person2 = json.encode(_person, indent=4, ignore_none=True)
+person3 = json.encode(_person, indent=4, ignore_private=True, ignore_none=True)
