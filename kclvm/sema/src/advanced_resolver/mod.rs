@@ -289,6 +289,7 @@ mod tests {
     use crate::namer::Namer;
     use crate::resolver;
 
+    use kclvm_ast::MAIN_PKG;
     use kclvm_error::Position;
     use kclvm_parser::load_program;
     use kclvm_parser::ParseSession;
@@ -1492,5 +1493,33 @@ mod tests {
             let all_defs = gs.get_all_defs_in_scope(scope_ref).unwrap();
             assert_eq!(all_defs.len(), *def_num)
         }
+    }
+
+    #[test]
+    fn test_schema_def_scope() {
+        let sess = Arc::new(ParseSession::default());
+
+        let path = "src/advanced_resolver/test_data/schema_def_scope.k"
+            .to_string()
+            .replace("/", &std::path::MAIN_SEPARATOR.to_string());
+        let mut program = load_program(sess.clone(), &[&path], None, None)
+            .unwrap()
+            .program;
+        let mut gs = GlobalState::default();
+        Namer::find_symbols(&program, &mut gs);
+        let node_ty_map = resolver::resolve_program(&mut program).node_ty_map;
+        AdvancedResolver::resolve_program(&program, &mut gs, node_ty_map).unwrap();
+        let main_pkg_root_scope = gs
+            .get_scopes()
+            .get_root_scope(MAIN_PKG.to_string())
+            .unwrap();
+        assert_eq!(
+            gs.get_scopes()
+                .get_scope(&main_pkg_root_scope)
+                .unwrap()
+                .get_children()
+                .len(),
+            2
+        );
     }
 }
