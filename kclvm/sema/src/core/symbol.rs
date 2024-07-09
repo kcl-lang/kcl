@@ -2030,7 +2030,7 @@ impl Symbol for ExpressionSymbol {
     }
 
     fn get_hint(&self) -> Option<&Self::SymbolHint> {
-        None
+        self.hint.as_ref()
     }
 
     fn simple_dump(&self) -> String {

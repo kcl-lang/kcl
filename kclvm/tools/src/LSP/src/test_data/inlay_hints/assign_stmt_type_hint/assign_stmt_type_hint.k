@@ -25,4 +25,4 @@ func = lambda x, y, z{
       x * y + z
 }
 
-value = func(a, 1, z = 2)
+k = func(a, 1, z = 2)

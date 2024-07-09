@@ -294,29 +294,7 @@ Some(
         InlayHint {
             position: Position {
                 line: 27,
-                character: 9,
-            },
-            label: LabelParts(
-                [
-                    InlayHintLabelPart {
-                        value: "x: ",
-                        tooltip: None,
-                        location: None,
-                        command: None,
-                    },
-                ],
-            ),
-            kind: None,
-            text_edits: None,
-            tooltip: None,
-            padding_left: None,
-            padding_right: None,
-            data: None,
-        },
-        InlayHint {
-            position: Position {
-                line: 27,
-                character: 12,
+                character: 13,
             },
             label: LabelParts(
                 [
