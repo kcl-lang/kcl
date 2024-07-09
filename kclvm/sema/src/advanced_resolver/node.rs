@@ -232,7 +232,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
 
         let mut last_end_pos = start.clone();
 
-        self.enter_local_scope(
+        self.enter_schema_def_scope(
+            &schema_ty.into_schema_type().name,
             &self.ctx.current_filename.clone().unwrap(),
             start,
             end.clone(),

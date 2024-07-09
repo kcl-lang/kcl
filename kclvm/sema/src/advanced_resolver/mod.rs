@@ -225,6 +225,51 @@ impl<'ctx> AdvancedResolver<'ctx> {
         self.ctx.scopes.push(scope_ref);
     }
 
+    fn enter_schema_def_scope(
+        &mut self,
+        name: &str,
+        filepath: &str,
+        start: Position,
+        end: Position,
+        kind: LocalSymbolScopeKind,
+    ) {
+        let parent = *self.ctx.scopes.last().unwrap();
+        let local_scope = LocalSymbolScope::new(parent, start, end, kind);
+        let pkg_path = self.ctx.current_pkgpath.clone().unwrap();
+        let fqn_name = format!("{pkg_path}.{name}");
+        let scope_ref = match self.gs.get_scopes().schema_scope_map.get(&fqn_name) {
+            Some(scope_ref) => scope_ref.clone(),
+            None => {
+                let scope_ref = self.gs.get_scopes_mut().alloc_local_scope(local_scope);
+                self.gs
+                    .get_scopes_mut()
+                    .schema_scope_map
+                    .insert(fqn_name, scope_ref);
+
+                match parent.get_kind() {
+                    ScopeKind::Root => {
+                        self.gs
+                            .get_scopes_mut()
+                            .roots
+                            .get_mut(parent.get_id())
+                            .unwrap()
+                            .add_child(filepath, scope_ref);
+                    }
+                    ScopeKind::Local => {
+                        self.gs
+                            .get_scopes_mut()
+                            .locals
+                            .get_mut(parent.get_id())
+                            .unwrap()
+                            .add_child(scope_ref);
+                    }
+                }
+                scope_ref
+            }
+        };
+        self.ctx.scopes.push(scope_ref);
+    }
+
     fn leave_scope(&mut self) {
         self.ctx.scopes.pop();
     }
@@ -244,6 +289,7 @@ mod tests {
     use crate::namer::Namer;
     use crate::resolver;
 
+    use kclvm_ast::MAIN_PKG;
     use kclvm_error::Position;
     use kclvm_parser::load_program;
     use kclvm_parser::ParseSession;
@@ -1447,5 +1493,33 @@ mod tests {
             let all_defs = gs.get_all_defs_in_scope(scope_ref).unwrap();
             assert_eq!(all_defs.len(), *def_num)
         }
+    }
+
+    #[test]
+    fn test_schema_def_scope() {
+        let sess = Arc::new(ParseSession::default());
+
+        let path = "src/advanced_resolver/test_data/schema_def_scope.k"
+            .to_string()
+            .replace("/", &std::path::MAIN_SEPARATOR.to_string());
+        let mut program = load_program(sess.clone(), &[&path], None, None)
+            .unwrap()
+            .program;
+        let mut gs = GlobalState::default();
+        Namer::find_symbols(&program, &mut gs);
+        let node_ty_map = resolver::resolve_program(&mut program).node_ty_map;
+        AdvancedResolver::resolve_program(&program, &mut gs, node_ty_map).unwrap();
+        let main_pkg_root_scope = gs
+            .get_scopes()
+            .get_root_scope(MAIN_PKG.to_string())
+            .unwrap();
+        assert_eq!(
+            gs.get_scopes()
+                .get_scope(&main_pkg_root_scope)
+                .unwrap()
+                .get_children()
+                .len(),
+            2
+        );
     }
 }
