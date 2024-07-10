@@ -6,15 +6,21 @@ syntax = "proto3";
 
 package gpyrpc;
 
+// Message representing an external package for KCL.
 // kcl main.k -E pkg_name=pkg_path
 message ExternalPkg {
+	// Name of the package.
 	string pkg_name = 1;
+	// Path of the package.
 	string pkg_path = 2;
 }
 
+// Message representing a key-value argument for KCL.
 // kcl main.k -D name=value
 message Argument {
+	// Name of the argument.
 	string name = 1;
+	// Value of the argument.
 	string value = 2;
 }
 
@@ -22,14 +28,21 @@ message Argument {
 // Error types
 // ----------------------------------------------------------------------------
 
+// Message representing an error.
 message Error {
+	// Level of the error (e.g., "Error", "Warning").
 	string level = 1;
+	// Error code. (e.g., "E1001")
 	string code = 2;
+	// List of error messages.
 	repeated Message messages = 3;
 }
 
+// Message representing a detailed error message with a position.
 message Message {
+	// The error message text.
 	string msg = 1;
+	// The position in the source code where the error occurred.
 	Position pos = 2;
 }
 
@@ -37,440 +50,1365 @@ message Message {
 // service request/response
 // ----------------------------------------------------------------------------
 
-// gpyrpc.BuiltinService
+// Service for built-in functionality.
 service BuiltinService {
-	rpc Ping(Ping_Args) returns(Ping_Result);
-	rpc ListMethod(ListMethod_Args) returns(ListMethod_Result);
+	// Sends a ping request.
+	rpc Ping(Ping_Args) returns (Ping_Result);
+	// Lists available methods.
+	rpc ListMethod(ListMethod_Args) returns (ListMethod_Result);
 }
 
-// gpyrpc.KclvmService
+// Service for KCL VM interactions.
 service KclvmService {
-	rpc Ping(Ping_Args) returns(Ping_Result);
-	rpc GetVersion(GetVersion_Args) returns(GetVersion_Result);
+	/// Ping KclvmService, return the same value as the parameter
+	///
+	/// # Examples
+	///
+	/// ```jsonrpc
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "Ping",
+	///     "params": {
+	///         "value": "hello"
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "value": "hello"
+	///     },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc Ping(Ping_Args) returns (Ping_Result);
 
-	rpc ExecProgram(ExecProgram_Args) returns(ExecProgram_Result);
-	rpc BuildProgram(BuildProgram_Args) returns(BuildProgram_Result);
-	rpc ExecArtifact(ExecArtifact_Args) returns(ExecProgram_Result);
+	/// GetVersion KclvmService, return the kclvm service version information
+	///
+	/// # Examples
+	///
+	/// ```jsonrpc
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "GetVersion",
+	///     "params": {},
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "version": "0.9.1",
+	///         "checksum": "c020ab3eb4b9179219d6837a57f5d323",
+	///         "git_sha": "1a9a72942fffc9f62cb8f1ae4e1d5ca32aa1f399",
+	///         "version_info": "Version: 0.9.1-c020ab3eb4b9179219d6837a57f5d323\nPlatform: aarch64-apple-darwin\nGitCommit: 1a9a72942fffc9f62cb8f1ae4e1d5ca32aa1f399"
+	///     },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc GetVersion(GetVersion_Args) returns (GetVersion_Result);
 
-	rpc ParseFile(ParseFile_Args) returns(ParseFile_Result);
-	rpc ParseProgram(ParseProgram_Args) returns(ParseProgram_Result);
-	rpc LoadPackage(LoadPackage_Args) returns(LoadPackage_Result);
-	rpc ListOptions(ParseProgram_Args) returns(ListOptions_Result);
-	rpc ListVariables(ListVariables_Args) returns(ListVariables_Result);
+	/// Parse KCL program with entry files.
+	///
+	/// # Examples
+	///
+	/// ```jsonrpc
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "ParseProgram",
+	///     "params": {
+	///         "paths": ["./src/testdata/test.k"]
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "ast_json": "{...}",
+	///         "paths": ["./src/testdata/test.k"],
+	///         "errors": []
+	///     },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc ParseProgram(ParseProgram_Args) returns (ParseProgram_Result);
 
-	rpc FormatCode(FormatCode_Args) returns(FormatCode_Result);
-	rpc FormatPath(FormatPath_Args) returns(FormatPath_Result);
-	rpc LintPath(LintPath_Args) returns(LintPath_Result);
+	/// Parse KCL single file to Module AST JSON string with import dependencies
+	/// and parse errors.
+	///
+	/// # Examples
+	///
+	/// ```jsonrpc
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "ParseFile",
+	///     "params": {
+	///         "path": "./src/testdata/parse/main.k"
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "ast_json": "{...}",
+	///         "deps": ["./dep1", "./dep2"],
+	///         "errors": []
+	///     },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc ParseFile(ParseFile_Args) returns (ParseFile_Result);
+
+	/// load_package provides users with the ability to parse kcl program and semantic model
+	/// information including symbols, types, definitions, etc.
+	///
+	/// # Examples
+	///
+	/// ```jsonrpc
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "LoadPackage",
+	///     "params": {
+	///         "parse_args": {
+	///             "paths": ["./src/testdata/parse/main.k"]
+	///         },
+	///         "resolve_ast": true
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "program": "{...}",
+	///         "paths": ["./src/testdata/parse/main.k"],
+	///         "parse_errors": [],
+	///         "type_errors": [],
+	///         "symbols": { ... },
+	///         "scopes": { ... },
+	///         "node_symbol_map": { ... },
+	///         "symbol_node_map": { ... },
+	///         "fully_qualified_name_map": { ... },
+	///         "pkg_scope_map": { ... }
+	///     },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc LoadPackage(LoadPackage_Args) returns (LoadPackage_Result);
+
+	/// list_options provides users with the ability to parse kcl program and get all option information.
+	///
+	/// # Examples
+	///
+	/// ```jsonrpc
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "ListOptions",
+	///     "params": {
+	///         "paths": ["./src/testdata/option/main.k"]
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "options": [
+	///             { "name": "option1", "type": "str", "required": true, "default_value": "", "help": "option 1 help" },
+	///             { "name": "option2", "type": "int", "required": false, "default_value": "0", "help": "option 2 help" },
+	///             { "name": "option3", "type": "bool", "required": false, "default_value": "false", "help": "option 3 help" }
+	///         ]
+	///     },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc ListOptions(ParseProgram_Args) returns (ListOptions_Result);
+
+	/// list_variables provides users with the ability to parse kcl program and get all variables by specs.
+	///
+	/// # Examples
+	///
+	/// ```jsonrpc
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "ListVariables",
+	///     "params": {
+	///         "files": ["./src/testdata/variables/main.k"],
+	///         "specs": ["a"]
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "variables": {
+	///             "a": {
+	///                 "variables": [
+	///                     { "value": "1", "type_name": "int", "op_sym": "", "list_items": [], "dict_entries": [] }
+	///                 ]
+	///             }
+	///         },
+	///         "unsupported_codes": [],
+	///         "parse_errors": []
+	///     },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc ListVariables(ListVariables_Args) returns (ListVariables_Result);
+
+	/// Execute KCL file with args. **Note that it is not thread safe.**
+	///
+	/// # Examples
+	///
+	/// ```jsonrpc
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "ExecProgram",
+	///     "params": {
+	///         "work_dir": "./src/testdata",
+	///         "k_filename_list": ["test.k"]
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "json_result": "{\"alice\": {\"age\": 18}}",
+	///         "yaml_result": "alice:\n  age: 18",
+	///         "log_message": "",
+	///         "err_message": ""
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Request with code
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "ExecProgram",
+	///     "params": {
+	///         "k_filename_list": ["file.k"],
+	///         "k_code_list": ["alice = {age = 18}"]
+	///     },
+	///     "id": 2
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "json_result": "{\"alice\": {\"age\": 18}}",
+	///         "yaml_result": "alice:\n  age: 18",
+	///         "log_message": "",
+	///         "err_message": ""
+	///     },
+	///     "id": 2
+	/// }
+	///
+	/// // Error case - cannot find file
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "ExecProgram",
+	///     "params": {
+	///         "k_filename_list": ["invalid_file.k"]
+	///     },
+	///     "id": 3
+	/// }
+	///
+	/// // Error Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "error": {
+	///         "code": -32602,
+	///         "message": "Cannot find the kcl file"
+	///     },
+	///     "id": 3
+	/// }
+	///
+	/// // Error case - no input files
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "ExecProgram",
+	///     "params": {
+	///         "k_filename_list": []
+	///     },
+	///     "id": 4
+	/// }
+	///
+	/// // Error Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "error": {
+	///         "code": -32602,
+	///         "message": "No input KCL files or paths"
+	///     },
+	///     "id": 4
+	/// }
+	/// ```
+	rpc ExecProgram(ExecProgram_Args) returns (ExecProgram_Result);
+
+	/// Build the KCL program to an artifact.
+	///
+	/// # Examples
+	///
+	/// ```jsonrpc
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "BuildProgram",
+	///     "params": {
+	///         "exec_args": {
+	///             "work_dir": "./src/testdata",
+	///             "k_filename_list": ["test.k"]
+	///         },
+	///         "output": "./build"
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "path": "./build/test.k"
+	///     },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc BuildProgram(BuildProgram_Args) returns (BuildProgram_Result);
+
+	/// Execute the KCL artifact with args. **Note that it is not thread safe.**
+	///
+	/// # Examples
+	///
+	/// ```jsonrpc
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "ExecArtifact",
+	///     "params": {
+	///         "path": "./artifact_path",
+	///         "exec_args": {
+	///             "work_dir": "./src/testdata",
+	///             "k_filename_list": ["test.k"]
+	///         }
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "json_result": "{\"alice\": {\"age\": 18}}",
+	///         "yaml_result": "alice:\n  age: 18",
+	///         "log_message": "",
+	///         "err_message": ""
+	///     },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc ExecArtifact(ExecArtifact_Args) returns (ExecProgram_Result);
+
+	/// Override KCL file with args.
+	///
+	/// # Examples
+	///
+	/// ```jsonrpc
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "OverrideFile",
+	///     "params": {
+	///         "file": "./src/testdata/test.k",
+	///         "specs": ["alice.age=18"]
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "result": true,
+	///         "parse_errors": []
+	///     },
+	///     "id": 1
+	/// }
+	/// ```
 	rpc OverrideFile(OverrideFile_Args) returns (OverrideFile_Result);
 
-	rpc GetSchemaTypeMapping(GetSchemaTypeMapping_Args) returns(GetSchemaTypeMapping_Result);
-	rpc ValidateCode(ValidateCode_Args) returns(ValidateCode_Result);
+	/// Get schema type mapping.
+	///
+	/// # Examples
+	///
+	/// ```jsonrpc
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "GetSchemaTypeMapping",
+	///     "params": {
+	///         "exec_args": {
+	///             "work_dir": "./src/testdata",
+	///             "k_filename_list": ["main.k"],
+	///             "external_pkgs": [
+	///                 {
+	///                     "pkg_name":"pkg",
+	///                     "pkg_path": "./src/testdata/pkg"
+	///                 }
+	///             ]
+	///         },
+	///         "schema_name": "Person"
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "schema_type_mapping": {
+	///             "Person": {
+	///                 "type": "schema",
+	///                 "schema_name": "Person",
+	///                 "properties": {
+	///                     "name": { "type": "str" },
+	///                     "age": { "type": "int" }
+	///                 },
+	///                 "required": ["name", "age"],
+	///                 "decorators": []
+	///             }
+	///         }
+	///     },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc GetSchemaTypeMapping(GetSchemaTypeMapping_Args) returns (GetSchemaTypeMapping_Result);
 
-	rpc ListDepFiles(ListDepFiles_Args) returns(ListDepFiles_Result);
-	rpc LoadSettingsFiles(LoadSettingsFiles_Args) returns(LoadSettingsFiles_Result);
+	/// Format code source.
+	///
+	/// # Examples
+	///
+	/// ```jsonrpc
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "FormatCode",
+	///     "params": {
+	///         "source": "schema Person {\n    name: str\n    age: int\n}\nperson = Person {\n    name = \"Alice\"\n    age = 18\n}\n"
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "formatted": "schema Person {\n    name: str\n    age: int\n}\nperson = Person {\n    name = \"Alice\"\n    age = 18\n}\n"
+	///     },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc FormatCode(FormatCode_Args) returns (FormatCode_Result);
 
-	rpc Rename(Rename_Args) returns(Rename_Result);
-	rpc RenameCode(RenameCode_Args) returns(RenameCode_Result);
+	/// Format KCL file or directory path contains KCL files and returns the changed file paths.
+	///
+	/// # Examples
+	///
+	/// ```jsonrpc
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "FormatPath",
+	///     "params": {
+	///         "path": "./src/testdata/test.k"
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "changed_paths": []
+	///     },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc FormatPath(FormatPath_Args) returns (FormatPath_Result);
 
+	/// Lint files and return error messages including errors and warnings.
+	///
+	/// # Examples
+	///
+	/// ```jsonrpc
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "LintPath",
+	///     "params": {
+	///         "paths": ["./src/testdata/test-lint.k"]
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "results": ["Module 'math' imported but unused"]
+	///     },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc LintPath(LintPath_Args) returns (LintPath_Result);
+
+	/// Validate code using schema and data strings.
+	///
+	/// **Note that it is not thread safe.**
+	///
+	/// # Examples
+	///
+	/// ```jsonrpc
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "ValidateCode",
+	///     "params": {
+	///         "code": "schema Person {\n    name: str\n    age: int\n    check: 0 < age < 120\n}",
+	///         "data": "{\"name\": \"Alice\", \"age\": 10}"
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "success": true,
+	///         "err_message": ""
+	///     },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc ValidateCode(ValidateCode_Args) returns (ValidateCode_Result);
+
+	rpc ListDepFiles(ListDepFiles_Args) returns (ListDepFiles_Result);
+	/// Build setting file config from args.
+	///
+	/// # Examples
+	///
+	/// 
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "LoadSettingsFiles",
+	///     "params": {
+	///         "work_dir": "./src/testdata/settings",
+	///         "files": ["./src/testdata/settings/kcl.yaml"]
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "kcl_cli_configs": {
+	///             "files": ["./src/testdata/settings/kcl.yaml"],
+	///             "output": "",
+	///             "overrides": [],
+	///             "path_selector": [],
+	///             "strict_range_check": false,
+	///             "disable_none": false,
+	///             "verbose": 0,
+	///             "debug": false,
+	///             "sort_keys": false,
+	///             "show_hidden": false,
+	///             "include_schema_type_path": false,
+	///             "fast_eval": false
+	///         },
+	///         "kcl_options": []
+	///     },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc LoadSettingsFiles(LoadSettingsFiles_Args) returns (LoadSettingsFiles_Result);
+
+	/// Rename all the occurrences of the target symbol in the files. This API will rewrite files if they contain symbols to be renamed.
+	/// Return the file paths that got changed.
+	///
+	/// # Examples
+	///
+	/// 
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "Rename",
+	///     "params": {
+	///         "package_root": "./src/testdata/rename_doc",
+	///         "symbol_path": "a",
+	///         "file_paths": ["./src/testdata/rename_doc/main.k"],
+	///         "new_name": "a2"
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "changed_files": ["./src/testdata/rename_doc/main.k"]
+	///     },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc Rename(Rename_Args) returns (Rename_Result);
+
+	/// Rename all the occurrences of the target symbol and return the modified code if any code has been changed. This API won't rewrite files but return the changed code.
+	///
+	/// # Examples
+	///
+	/// 
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "RenameCode",
+	///     "params": {
+	///         "package_root": "/mock/path",
+	///         "symbol_path": "a",
+	///         "source_codes": {
+	///             "/mock/path/main.k": "a = 1\nb = a"
+	///         },
+	///         "new_name": "a2"
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "changed_codes": {
+	///             "/mock/path/main.k": "a2 = 1\nb = a2"
+	///         }
+	///     },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc RenameCode(RenameCode_Args) returns (RenameCode_Result);
+
+	/// Test KCL packages with test arguments.
+	///
+	/// # Examples
+	///
+	/// 
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "Test",
+	///     "params": {
+	///         "exec_args": {
+	///             "work_dir": "./src/testdata/testing/module",
+	///             "k_filename_list": ["main.k"]
+	///         },
+	///         "pkg_list": ["./src/testdata/testing/module/..."]
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "info": [
+	///             {"name": "test_case_1", "error": "", "duration": 1000, "log_message": ""},
+	///             {"name": "test_case_2", "error": "some error", "duration": 2000, "log_message": ""}
+	///         ]
+	///     },
+	///     "id": 1
+	/// }
+	/// ```
 	rpc Test(Test_Args) returns (Test_Result);
 
+	/// Download and update dependencies defined in the kcl.mod file.
+	///
+	/// # Examples
+	///
+	/// 
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "UpdateDependencies",
+	///     "params": {
+	///         "manifest_path": "./src/testdata/update_dependencies"
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "external_pkgs": [
+	///             {"pkg_name": "pkg1", "pkg_path": "./src/testdata/update_dependencies/pkg1"}
+	///         ]
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Request with vendor flag
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "UpdateDependencies",
+	///     "params": {
+	///         "manifest_path": "./src/testdata/update_dependencies",
+	///         "vendor": true
+	///     },
+	///     "id": 2
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "external_pkgs": [
+	///             {"pkg_name": "pkg1", "pkg_path": "./src/testdata/update_dependencies/pkg1"}
+	///         ]
+	///     },
+	///     "id": 2
+	/// }
+	/// ```
 	rpc UpdateDependencies(UpdateDependencies_Args) returns (UpdateDependencies_Result);
 }
 
+// Message for ping request arguments.
 message Ping_Args {
-	string value = 1;
-}
-message Ping_Result {
+	// Value to be sent in the ping request.
 	string value = 1;
 }
 
+// Message for ping response.
+message Ping_Result {
+	// Value received in the ping response.
+	string value = 1;
+}
+
+// Message for version request arguments. Empty message.
 message GetVersion_Args {
 	// empty
 }
+
+// Message for version response.
 message GetVersion_Result {
+	// KCL version.
 	string version = 1;
+	// Checksum of the KCL version.
 	string checksum = 2;
+	// Git Git SHA of the KCL code repo.
 	string git_sha = 3;
+	// Detailed version information as a string.
 	string version_info = 4;
 }
 
+// Message for list method request arguments. Empty message.
 message ListMethod_Args {
 	// empty
 }
+
+// Message for list method response.
 message ListMethod_Result {
+	// List of available method names.
 	repeated string method_name_list = 1;
 }
 
+// Message for parse file request arguments.
 message ParseFile_Args {
+	// Path of the file to be parsed.
 	string path = 1;
+	// Source code to be parsed.
 	string source = 2;
-	repeated ExternalPkg external_pkgs = 3;  // External packages path
+	// External packages path.
+	repeated ExternalPkg external_pkgs = 3;
 }
 
+// Message for parse file response.
 message ParseFile_Result {
-	string ast_json = 1;         // JSON string value
-	repeated string deps = 2;    // file dependency paths
-	repeated Error errors = 3;    // Parse errors
+	// Abstract Syntax Tree (AST) in JSON format.
+	string ast_json = 1;
+	// File dependency paths.
+	repeated string deps = 2;
+	// List of parse errors.
+	repeated Error errors = 3;
 }
 
+// Message for parse program request arguments.
 message ParseProgram_Args {
+	// Paths of the program files to be parsed.
 	repeated string paths = 1;
+	// Source codes to be parsed.
 	repeated string sources = 2;
-	repeated ExternalPkg external_pkgs = 3;  // External packages path
+	// External packages path.
+	repeated ExternalPkg external_pkgs = 3;
 }
 
+// Message for parse program response.
 message ParseProgram_Result {
-	string ast_json = 1;            // JSON string value
-	repeated string paths = 2;      // Returns the files in the order they should be compiled
-	repeated Error errors = 3;     // Parse errors
+	// Abstract Syntax Tree (AST) in JSON format.
+	string ast_json = 1;
+	// Returns the files in the order they should be compiled.
+	repeated string paths = 2;
+	// List of parse errors.
+	repeated Error errors = 3;
 }
 
+// Message for load package request arguments.
 message LoadPackage_Args {
+	// Arguments for parsing the program.
 	ParseProgram_Args parse_args = 1;
+	// Flag indicating whether to resolve AST.
 	bool resolve_ast = 2;
+	// Flag indicating whether to load built-in modules.
 	bool load_builtin = 3;
+	// Flag indicating whether to include AST index.
 	bool with_ast_index = 4;
 }
 
+// Message for load package response.
 message LoadPackage_Result {
-	string program = 1;          // JSON string value
-	repeated string paths = 2;   // Returns the files in the order they should be compiled
-	repeated Error parse_errors = 3;     // Parse errors
-	repeated Error type_errors = 4;      // Type errors
-	map<string, Scope> scopes = 5;    // Map key is the ScopeIndex json string.
-	map<string, Symbol> symbols = 6;  // Map key is the SymbolIndex json string.
-	map<string, SymbolIndex> node_symbol_map = 7;  // Map key is the AST index UUID string.
-	map<string, string> symbol_node_map = 8;       // Map key is the SymbolIndex json string.
-	map<string, SymbolIndex> fully_qualified_name_map = 9;  // Map key is the fully_qualified_name e.g. `pkg.Name`
-	map<string, ScopeIndex> pkg_scope_map = 10;      // Map key is the package path.
+	// Program Abstract Syntax Tree (AST) in JSON format.
+	string program = 1;
+	// Returns the files in the order they should be compiled.
+	repeated string paths = 2;
+	// List of parse errors.
+	repeated Error parse_errors = 3;
+	// List of type errors.
+	repeated Error type_errors = 4;
+	// Map of scopes with scope index as key.
+	map<string, Scope> scopes = 5;
+	// Map of symbols with symbol index as key.
+	map<string, Symbol> symbols = 6;
+	// Map of node-symbol associations with AST index UUID as key.
+	map<string, SymbolIndex> node_symbol_map = 7;
+	// Map of symbol-node associations with symbol index as key.
+	map<string, string> symbol_node_map = 8;
+	// Map of fully qualified names with symbol index as key.
+	map<string, SymbolIndex> fully_qualified_name_map = 9;
+	// Map of package scope with package path as key.
+	map<string, ScopeIndex> pkg_scope_map = 10;
 }
 
+// Message for list options response.
 message ListOptions_Result {
-	repeated OptionHelp options = 2;   // Returns the files in the order they should be compiled
+	// List of available options.
+	repeated OptionHelp options = 2;
 }
 
+// Message representing a help option.
 message OptionHelp {
-    string name = 1;
-    string type = 2;
-    bool required = 3;
-    string default_value = 4;
-    string help = 5;
+	// Name of the option.
+	string name = 1;
+	// Type of the option.
+	string type = 2;
+	// Flag indicating if the option is required.
+	bool required = 3;
+	// Default value of the option.
+	string default_value = 4;
+	// Help text for the option.
+	string help = 5;
 }
 
+// Message representing a symbol in KCL.
 message Symbol {
+	// Type of the symbol.
 	KclType ty = 1;
+	// Name of the symbol.
 	string name = 2;
+	// Owner of the symbol.
 	SymbolIndex owner = 3;
+	// Definition of the symbol.
 	SymbolIndex def = 4;
+	// Attributes of the symbol.
 	repeated SymbolIndex attrs = 5;
+	// Flag indicating if the symbol is global.
 	bool is_global = 6;
 }
 
+// Message representing a scope in KCL.
 message Scope {
+	// Type of the scope.
 	string kind = 1;
+	// Parent scope.
 	ScopeIndex parent = 2;
+	// Owner of the scope.
 	SymbolIndex owner = 3;
+	// Children of the scope.
 	repeated ScopeIndex children = 4;
+	// Definitions in the scope.
 	repeated SymbolIndex defs = 5;
 }
 
+// Message representing a symbol index.
 message SymbolIndex {
+	// Index identifier.
 	uint64 i = 1;
+	// Global identifier.
 	uint64 g = 2;
+	// Type of the symbol or scope.
 	string kind = 3;
 }
 
+// Message representing a scope index.
 message ScopeIndex {
+	// Index identifier.
 	uint64 i = 1;
+	// Global identifier.
 	uint64 g = 2;
+	// Type of the scope.
 	string kind = 3;
 }
 
+// Message for execute program request arguments.
 message ExecProgram_Args {
+	// Working directory.
 	string work_dir = 1;
-
+	// List of KCL filenames.
 	repeated string k_filename_list = 2;
+	// List of KCL codes.
 	repeated string k_code_list = 3;
-	
+	// Arguments for the program.
 	repeated Argument args = 4;
+	// Override configurations.
 	repeated string overrides = 5;
-
+	// Flag to disable YAML result.
 	bool disable_yaml_result = 6;
-
+	// Flag to print override AST.
 	bool print_override_ast = 7;
-
-	// -r --strict-range-check
+	// Flag for strict range check.
 	bool strict_range_check = 8;
-
-	// -n --disable-none
+	// Flag to disable none values.
 	bool disable_none = 9;
-	// -v --verbose
+	// Verbose level.
 	int32 verbose = 10;
-
-	// -d --debug
+	// Debug level.
 	int32 debug = 11;
-
-	// yaml/json: sort keys
+	// Flag to sort keys in YAML/JSON results.
 	bool sort_keys = 12;
-
-	// -E --external : external packages path
+	// External packages path.
 	repeated ExternalPkg external_pkgs = 13;
-
-	// Whether including schema type in JSON/YAML result
+	// Flag to include schema type path in results.
 	bool include_schema_type_path = 14;
-
-	// Whether only compiling the program
+	// Flag to compile only without execution.
 	bool compile_only = 15;
-
-	// Show hidden attributes
+	// Flag to show hidden attributes.
 	bool show_hidden = 16;
-
-	// -S --path_selector
+	// Path selectors for results.
 	repeated string path_selector = 17;
-
-	// -K --fast_eval
+	// Flag for fast evaluation.
 	bool fast_eval = 18;
 }
 
+// Message for execute program response.
 message ExecProgram_Result {
+	// Result in JSON format.
 	string json_result = 1;
+	// Result in YAML format.
 	string yaml_result = 2;
+	// Log message from execution.
 	string log_message = 3;
+	// Error message from execution.
 	string err_message = 4;
 }
 
+// Message for build program request arguments.
 message BuildProgram_Args {
+	// Arguments for executing the program.
 	ExecProgram_Args exec_args = 1;
+	// Output path.
 	string output = 2;
 }
 
+// Message for build program response.
 message BuildProgram_Result {
+	// Path of the built program.
 	string path = 1;
 }
 
+// Message for execute artifact request arguments.
 message ExecArtifact_Args {
+	// Path of the artifact.
 	string path = 1;
+	// Arguments for executing the program.
 	ExecProgram_Args exec_args = 2;
 }
 
+// Message for reset plugin request arguments.
 message ResetPlugin_Args {
+	// Root path for the plugin.
 	string plugin_root = 1;
 }
+
+// Message for reset plugin response. Empty message.
 message ResetPlugin_Result {
 	// empty
 }
 
+// Message for format code request arguments.
 message FormatCode_Args {
+	// Source code to be formatted.
 	string source = 1;
 }
 
+// Message for format code response.
 message FormatCode_Result {
+	// Formatted code as bytes.
 	bytes formatted = 1;
 }
 
+// Message for format file path request arguments.
 message FormatPath_Args {
+	// Path of the file to format.
 	string path = 1;
 }
 
+// Message for format file path response.
 message FormatPath_Result {
+	// List of changed file paths.
 	repeated string changed_paths = 1;
 }
 
+// Message for lint file path request arguments.
 message LintPath_Args {
+	// Paths of the files to lint.
 	repeated string paths = 1;
 }
 
+// Message for lint file path response.
 message LintPath_Result {
+	// List of lint results.
 	repeated string results = 1;
 }
 
+// Message for override file request arguments.
 message OverrideFile_Args {
+	// Path of the file to override.
 	string file = 1;
+	// List of override specifications.
 	repeated string specs = 2;
+	// List of import paths.
 	repeated string import_paths = 3;
 }
 
+// Message for override file response.
 message OverrideFile_Result {
+	// Result of the override operation.
 	bool result = 1;
+	// List of parse errors encountered.
 	repeated Error parse_errors = 2;
 }
 
+// Message for list variables options.
 message ListVariables_Options {
+	// Flag to merge program configuration.
 	bool merge_program = 1;
 }
 
+// Message representing a list of variables.
 message VariableList {
-  repeated Variable variables = 1;
+	// List of variables.
+	repeated Variable variables = 1;
 }
 
+// Message for list variables request arguments.
 message ListVariables_Args {
+	// Files to be processed.
 	repeated string files = 1;
+	// Specifications for variables.
 	repeated string specs = 2;
+	// Options for listing variables.
 	ListVariables_Options options = 3;
 }
 
+// Message for list variables response.
 message ListVariables_Result {
+	// Map of variable lists by file.
 	map<string, VariableList> variables = 1;
-	repeated string unsupported_codes = 2; 
+	// List of unsupported codes.
+	repeated string unsupported_codes = 2;
+	// List of parse errors encountered.
 	repeated Error parse_errors = 3;
 }
 
+// Message representing a variable.
 message Variable {
+	// Value of the variable.
 	string value = 1;
-	string type_name = 2; 
-	string op_sym = 3; 
-	repeated Variable list_items = 4; 
+	// Type name of the variable.
+	string type_name = 2;
+	// Operation symbol associated with the variable.
+	string op_sym = 3;
+	// List items if the variable is a list.
+	repeated Variable list_items = 4;
+	// Dictionary entries if the variable is a dictionary.
 	repeated MapEntry dict_entries = 5;
 }
 
+// Message representing a map entry.
 message MapEntry {
+	// Key of the map entry.
 	string key = 1;
+	// Value of the map entry.
 	Variable value = 2;
 }
 
+// Message for get schema type mapping request arguments.
 message GetSchemaTypeMapping_Args {
+	// Arguments for executing the program.
 	ExecProgram_Args exec_args = 1;
+	// Name of the schema.
 	string schema_name = 2;
 }
+
+// Message for get schema type mapping response.
 message GetSchemaTypeMapping_Result {
+	// Map of schema type mappings.
 	map<string, KclType> schema_type_mapping = 1;
 }
 
+// Message for validate code request arguments.
 message ValidateCode_Args {
+	// Path to the data file.
 	string datafile = 1;
+	// Data content.
 	string data = 2;
+	// Path to the code file.
 	string file = 3;
+	// Source code content.
 	string code = 4;
+	// Name of the schema.
 	string schema = 5;
+	// Name of the attribute.
 	string attribute_name = 6;
+	// Format of the validation (e.g., "json", "yaml").
 	string format = 7;
 }
 
+// Message for validate code response.
 message ValidateCode_Result {
+	// Flag indicating if validation was successful.
 	bool success = 1;
+	// Error message from validation.
 	string err_message = 2;
 }
 
+// Message representing a position in the source code.
 message Position {
+	// Line number.
 	int64 line = 1;
+	// Column number.
 	int64 column = 2;
+	// Filename the position refers to.
 	string filename = 3;
 }
 
+// Message for list dependency files request arguments.
 message ListDepFiles_Args {
+	// Working directory.
 	string work_dir = 1;
+	// Flag to use absolute paths.
 	bool use_abs_path = 2;
+	// Flag to include all files.
 	bool include_all = 3;
+	// Flag to use fast parser.
 	bool use_fast_parser = 4;
 }
 
+// Message for list dependency files response.
 message ListDepFiles_Result {
+	// Root package path.
 	string pkgroot = 1;
+	// Package path.
 	string pkgpath = 2;
+	// List of file paths in the package.
 	repeated string files = 3;
 }
 
 // ---------------------------------------------------------------------------------
 // LoadSettingsFiles API
-//    Input work dir and setting files and return the merged kcl singleton config.
+//	Input work dir and setting files and return the merged kcl singleton config.
 // ---------------------------------------------------------------------------------
 
+// Message for load settings files request arguments.
 message LoadSettingsFiles_Args {
+	// Working directory.
 	string work_dir = 1;
+	// Setting files to load.
 	repeated string files = 2;
 }
 
+// Message for load settings files response.
 message LoadSettingsFiles_Result {
+	// KCL CLI configuration.
 	CliConfig kcl_cli_configs = 1;
+	// List of KCL options as key-value pairs.
 	repeated KeyValuePair kcl_options = 2;
 }
 
+// Message representing KCL CLI configuration.
 message CliConfig {
+	// List of files.
 	repeated string files = 1;
+	// Output path.
 	string output = 2;
+	// List of overrides.
 	repeated string overrides = 3;
+	// Path selectors.
 	repeated string path_selector = 4;
+	// Flag for strict range check.
 	bool strict_range_check = 5;
+	// Flag to disable none values.
 	bool disable_none = 6;
+	// Verbose level.
 	int64 verbose = 7;
+	// Debug flag.
 	bool debug = 8;
+	// Flag to sort keys in YAML/JSON results.
 	bool sort_keys = 9;
+	// Flag to show hidden attributes.
 	bool show_hidden = 10;
+	// Flag to include schema type path in results.
 	bool include_schema_type_path = 11;
+	// Flag for fast evaluation.
 	bool fast_eval = 12;
 }
 
+// Message representing a key-value pair.
 message KeyValuePair {
+	// Key of the pair.
 	string key = 1;
+	// Value of the pair.
 	string value = 2;
 }
 
 // ---------------------------------------------------------------------------------
 // Rename API
-//    find all the occurrences of the target symbol and rename them. This API will rewrite files if they contain symbols to be renamed.
+//	Find all the occurrences of the target symbol and rename them. 
+//	This API will rewrite files if they contain symbols to be renamed.
 // ---------------------------------------------------------------------------------
 
+// Message for rename request arguments.
 message Rename_Args {
-	string package_root = 1;              // the file path to the package root
-	string symbol_path = 2;               // the path to the target symbol to be renamed. The symbol path should conform to format: `<pkgpath>:<field_path>` When the pkgpath is '__main__', `<pkgpath>:` can be omitted.
-	repeated string file_paths = 3;       // the paths to the source code files
-	string new_name = 4;                  // the new name of the symbol
+	// File path to the package root.
+	string package_root = 1;
+	// Path to the target symbol to be renamed.
+	string symbol_path = 2;
+	// Paths to the source code files.
+	repeated string file_paths = 3;
+	// New name of the symbol.
+	string new_name = 4;
 }
 
+// Message for rename response.
 message Rename_Result {
-	repeated string changed_files = 1;    // the file paths got changed
+	// List of file paths that got changed.
+	repeated string changed_files = 1;
 }
 
 // ---------------------------------------------------------------------------------
 // RenameCode API
-//    find all the occurrences of the target symbol and rename them. This API won't rewrite files but return the modified code if any code has been changed.
+//	Find all the occurrences of the target symbol and rename them.
+//	This API won't rewrite files but return the modified code if any code has been changed.
 // ---------------------------------------------------------------------------------
 
+// Message for rename code request arguments.
 message RenameCode_Args {
-	string package_root = 1;              // the file path to the package root
-	string symbol_path = 2;               // the path to the target symbol to be renamed. The symbol path should conform to format: `<pkgpath>:<field_path>` When the pkgpath is '__main__', `<pkgpath>:` can be omitted.
-	map<string, string> source_codes = 3; // the source code. a <filename>:<code> map
-	string new_name = 4;                  // the new name of the symbol
+	// File path to the package root.
+	string package_root = 1;
+	// Path to the target symbol to be renamed.
+	string symbol_path = 2;
+	// Map of source code with filename as key and code as value.
+	map<string, string> source_codes = 3;
+	// New name of the symbol.
+	string new_name = 4;
 }
 
+// Message for rename code response.
 message RenameCode_Result {
-	map<string, string> changed_codes = 1; // the changed code. a <filename>:<code> map
+	// Map of changed code with filename as key and modified code as value.
+	map<string, string> changed_codes = 1;
 }
 
 // ---------------------------------------------------------------------------------
 // Test API
-//    Test KCL packages with test arguments
+//	Test KCL packages with test arguments.
 // ---------------------------------------------------------------------------------
 
+// Message for test request arguments.
 message Test_Args {
-	ExecProgram_Args exec_args = 1;      // This field stores the execution program arguments.
-	repeated string pkg_list = 2;        // The package path list to be tested e.g., "./...", "/path/to/package/", "/path/to/package/..."
-	string run_regexp = 3;               // This field stores a regular expression for filtering tests to run.
-	bool fail_fast = 4;                  // This field determines whether the test run should stop on the first failure.
+	// Execution program arguments.
+	ExecProgram_Args exec_args = 1;
+	// List of KCL package paths to be tested.
+	repeated string pkg_list = 2;
+	// Regular expression for filtering tests to run.
+	string run_regexp = 3;
+	// Flag to stop the test run on the first failure.
+	bool fail_fast = 4;
 }
 
+// Message for test response.
 message Test_Result {
+	// List of test case information.
 	repeated TestCaseInfo info = 2;
 }
 
+// Message representing information about a single test case.
 message TestCaseInfo {
-	string name = 1;          // Test case name
+	// Name of the test case.
+	string name = 1;
+	// Error message if any.
 	string error = 2;
-	uint64 duration = 3;         // Number of whole microseconds in the duration.
+	// Duration of the test case in microseconds.
+	uint64 duration = 3;
+	// Log message from the test case.
 	string log_message = 4;
 }
 
 // ---------------------------------------------------------------------------------
 // UpdateDependencies API
-//    Download and update dependencies defined in the kcl.mod file
+//	Download and update dependencies defined in the kcl.mod file.
 // ---------------------------------------------------------------------------------
 
+// Message for update dependencies request arguments.
 message UpdateDependencies_Args {
+	// Path to the manifest file.
 	string manifest_path = 1;
+	// Flag to vendor dependencies locally.
 	bool vendor = 2;
 }
 
+// Message for update dependencies response.
 message UpdateDependencies_Result {
+	// List of external packages updated.
 	repeated ExternalPkg external_pkgs = 3;
 }
 
@@ -478,40 +1416,60 @@ message UpdateDependencies_Result {
 // KCL Type Structure
 // ----------------------------------------------------------------------------
 
+// Message representing a KCL type.
 message KclType {
-	string type = 1;                     // schema, dict, list, str, int, float, bool, any, union, number_multiplier
-	repeated KclType union_types = 2 ;   // union types
-	string default = 3;                  // default value
-
-	string schema_name = 4;              // schema name
-	string schema_doc = 5;               // schema doc
-	map<string, KclType> properties = 6; // schema properties
-	repeated string required = 7;        // required schema properties, [property_name1, property_name2]
-
-	KclType key = 8;                     // dict key type
-	KclType item = 9;                    // dict/list item type
-
+	// Type name (e.g., schema, dict, list, str, int, float, bool, any, union, number_multiplier).
+	string type = 1;
+	// Union types if applicable.
+	repeated KclType union_types = 2;
+	// Default value of the type.
+	string default = 3;
+	// Name of the schema if applicable.
+	string schema_name = 4;
+	// Documentation for the schema.
+	string schema_doc = 5;
+	// Properties of the schema as a map with property name as key.
+	map<string, KclType> properties = 6;
+	// List of required schema properties.
+	repeated string required = 7;
+	// Key type if the KclType is a dictionary.
+	KclType key = 8;
+	// Item type if the KclType is a list or dictionary.
+	KclType item = 9;
+	// Line number where the type is defined.
 	int32 line = 10;
-
-	repeated Decorator decorators = 11;  // schema decorators
-
-	string filename = 12;                // `filename` represents the absolute path of the file name where the attribute is located.
-	string pkg_path = 13;                // `pkg_path` represents the path name of the package where the attribute is located.
-	string description = 14;             // `description` represents the document of the attribute.
-	map<string, Example> examples = 15;  // A map object to hold examples, the key is the example name.
+	// List of decorators for the schema.
+	repeated Decorator decorators = 11;
+	// Absolute path of the file where the attribute is located.
+	string filename = 12;
+	// Path of the package where the attribute is located.
+	string pkg_path = 13;
+	// Documentation for the attribute.
+	string description = 14;
+	// Map of examples with example name as key.
+	map<string, Example> examples = 15;
+	// Base schema if applicable.
 	KclType base_schema = 16;
 }
 
+// Message representing a decorator in KCL.
 message Decorator {
+	// Name of the decorator.
 	string name = 1;
+	// Arguments for the decorator.
 	repeated string arguments = 2;
+	// Keyword arguments for the decorator as a map with keyword name as key.
 	map<string, string> keywords = 3;
 }
 
+// Message representing an example in KCL.
 message Example {
-	string summary = 1;                // Short description for the example.
-	string description = 2;            // Long description for the example.
-	string value = 3;                  // Embedded literal example.
+	// Short description for the example.
+	string summary = 1;
+	// Long description for the example.
+	string description = 2;
+	// Embedded literal example.
+	string value = 3;
 }
 
 // ----------------------------------------------------------------------------
