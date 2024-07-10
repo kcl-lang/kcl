@@ -92,7 +92,12 @@ fn get_hint_label(symbol: &KCLSymbol, hint: &SymbolHint) -> (InlayHintLabelPart,
             },
             LspPosition::new(
                 (start.line - 1).try_into().unwrap(),
-                start.column.unwrap_or(0).try_into().unwrap(),
+                start
+                    .column
+                    .unwrap_or(1)
+                    .saturating_sub(1)
+                    .try_into()
+                    .unwrap(),
             ),
         ),
     }

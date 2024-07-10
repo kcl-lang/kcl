@@ -294,7 +294,7 @@ Some(
         InlayHint {
             position: Position {
                 line: 27,
-                character: 13,
+                character: 12,
             },
             label: LabelParts(
                 [
