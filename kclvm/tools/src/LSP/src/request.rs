@@ -491,6 +491,7 @@ pub(crate) fn handle_signature_help(
 ) -> anyhow::Result<Option<lsp_types::SignatureHelp>> {
     let file = file_path_from_url(&params.text_document_position_params.text_document.uri)?;
     let pos = kcl_pos(&file, params.text_document_position_params.position);
+    let trigger_character = params.context.and_then(|ctx| ctx.trigger_character);
     let path = from_lsp::abs_path(&params.text_document_position_params.text_document.uri)?;
     let db = match snapshot.try_get_db(&path.clone().into()) {
         Ok(option_db) => match option_db {
@@ -499,7 +500,7 @@ pub(crate) fn handle_signature_help(
         },
         Err(_) => return Ok(None),
     };
-    let res = signature_help(&pos, &db.gs);
+    let res = signature_help(&pos, &db.gs, trigger_character);
 
     // if !snapshot.verify_request_version(db.version, &path)? {
     //     return Err(anyhow!(LSPError::Retry));

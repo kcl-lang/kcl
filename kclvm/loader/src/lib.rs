@@ -107,6 +107,7 @@ pub enum ScopeKind {
     SchemaConfig,
     Value,
     Check,
+    Callable
 }
 
 /// load_package provides users with the ability to parse kcl program and sematic model
@@ -255,6 +256,7 @@ impl From<LocalSymbolScopeKind> for ScopeKind {
             LocalSymbolScopeKind::SchemaConfig => ScopeKind::SchemaConfig,
             LocalSymbolScopeKind::Value => ScopeKind::Value,
             LocalSymbolScopeKind::Check => ScopeKind::Check,
+            LocalSymbolScopeKind::Callable => ScopeKind::Callable,
         }
     }
 }

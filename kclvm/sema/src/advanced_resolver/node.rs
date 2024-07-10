@@ -573,7 +573,9 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
     }
 
     fn walk_call_expr(&mut self, call_expr: &'ctx ast::CallExpr) -> Self::Result {
-        self.expr(&call_expr.func)?;
+        let start = call_expr.func.get_end_pos();
+        let end = self.ctx.end_pos.clone();
+        let func_symbol = self.expr(&call_expr.func)?;
         let ty = self
             .ctx
             .node_ty_map
@@ -583,12 +585,27 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             .clone();
 
         if let TypeKind::Function(func_ty) = &ty.kind {
+            self.enter_local_scope(
+                &self.ctx.current_filename.as_ref().unwrap().clone(),
+                start,
+                end,
+                LocalSymbolScopeKind::Callable,
+            );
+
+            if let Some(owner) = func_symbol {
+                let cur_scope = self.ctx.scopes.last().unwrap();
+                self.gs
+                    .get_scopes_mut()
+                    .set_owner_to_scope(*cur_scope, owner);
+            }
+
             self.do_arguments_symbol_resolve_with_hint(
                 &call_expr.args,
                 &call_expr.keywords,
                 true,
                 &func_ty,
             )?;
+            self.leave_scope();
         }
 
         Ok(None)
@@ -863,6 +880,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 | ast::Expr::ConfigIfEntry(_)
                 | ast::Expr::Quant(_)
                 | ast::Expr::Lambda(_)
+                | ast::Expr::Call(_)
         ) {
             let (start, end) = expr.get_span_pos();
             self.ctx.start_pos = start;
