@@ -17,6 +17,7 @@ mod notification;
 mod quick_fix;
 mod request;
 mod semantic_token;
+mod signature_help;
 mod state;
 mod to_lsp;
 mod util;

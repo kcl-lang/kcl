@@ -23,6 +23,7 @@ use crate::{
     inlay_hints::inlay_hints,
     quick_fix,
     semantic_token::semantic_tokens_full,
+    signature_help::signature_help,
     state::{log_message, LanguageServerSnapshot, LanguageServerState, Task},
 };
 
@@ -61,6 +62,7 @@ impl LanguageServerState {
             .on::<lsp_types::request::Rename>(handle_rename)?
             .on::<lsp_types::request::SemanticTokensFullRequest>(handle_semantic_tokens_full)?
             .on::<lsp_types::request::InlayHintRequest>(handle_inlay_hint)?
+            .on::<lsp_types::request::SignatureHelpRequest>(handle_signature_help)?
             .on_maybe_retry::<lsp_types::request::Completion>(handle_completion)?
             .finish();
 
@@ -479,5 +481,28 @@ pub(crate) fn handle_inlay_hint(
     if !snapshot.verify_request_version(db.version, &path)? {
         return Err(anyhow!(LSPError::Retry));
     }
+    Ok(res)
+}
+
+pub(crate) fn handle_signature_help(
+    snapshot: LanguageServerSnapshot,
+    params: lsp_types::SignatureHelpParams,
+    sender: Sender<Task>,
+) -> anyhow::Result<Option<lsp_types::SignatureHelp>> {
+    let file = file_path_from_url(&params.text_document_position_params.text_document.uri)?;
+    let pos = kcl_pos(&file, params.text_document_position_params.position);
+    let path = from_lsp::abs_path(&params.text_document_position_params.text_document.uri)?;
+    let db = match snapshot.try_get_db(&path.clone().into()) {
+        Ok(option_db) => match option_db {
+            Some(db) => db,
+            None => return Err(anyhow!(LSPError::Retry)),
+        },
+        Err(_) => return Ok(None),
+    };
+    let res = signature_help(&pos, &db.gs);
+
+    // if !snapshot.verify_request_version(db.version, &path)? {
+    //     return Err(anyhow!(LSPError::Retry));
+    // }
     Ok(res)
 }
