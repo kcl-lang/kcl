@@ -1,5 +1,6 @@
 ---
 source: tools/src/LSP/src/inlay_hints.rs
+assertion_line: 118
 expression: "format!(\"{:#?}\", res)"
 ---
 Some(
@@ -233,6 +234,72 @@ Some(
                 [
                     InlayHintLabelPart {
                         value: ": number_multiplier(1Ki)",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: None,
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 23,
+                character: 4,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: ": (any, any, any) -> any",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: None,
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 27,
+                character: 1,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: ": any",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: None,
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 27,
+                character: 12,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: "y: ",
                         tooltip: None,
                         location: None,
                         command: None,

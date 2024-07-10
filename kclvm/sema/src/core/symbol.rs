@@ -1959,6 +1959,7 @@ pub struct ExpressionSymbol {
     pub(crate) name: String,
 
     pub(crate) sema_info: SymbolSemanticInfo,
+    pub(crate) hint: Option<SymbolHint>,
 }
 
 impl Symbol for ExpressionSymbol {
@@ -2029,7 +2030,7 @@ impl Symbol for ExpressionSymbol {
     }
 
     fn get_hint(&self) -> Option<&Self::SymbolHint> {
-        None
+        self.hint.as_ref()
     }
 
     fn simple_dump(&self) -> String {
@@ -2072,6 +2073,7 @@ impl ExpressionSymbol {
             end,
             sema_info: SymbolSemanticInfo::default(),
             owner,
+            hint: None,
         }
     }
 }

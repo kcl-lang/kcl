@@ -15,7 +15,7 @@ use crate::{
             SymbolSemanticInfo, UnresolvedSymbol, ValueSymbol,
         },
     },
-    ty::{Type, TypeKind, SCHEMA_MEMBER_FUNCTIONS},
+    ty::{self, Type, TypeKind, SCHEMA_MEMBER_FUNCTIONS},
 };
 
 use super::AdvancedResolver;
@@ -574,7 +574,23 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
 
     fn walk_call_expr(&mut self, call_expr: &'ctx ast::CallExpr) -> Self::Result {
         self.expr(&call_expr.func)?;
-        self.do_arguments_symbol_resolve(&call_expr.args, &call_expr.keywords)?;
+        let ty = self
+            .ctx
+            .node_ty_map
+            .borrow()
+            .get(&self.ctx.get_node_key(&call_expr.func.id))
+            .unwrap()
+            .clone();
+
+        if let TypeKind::Function(func_ty) = &ty.kind {
+            self.do_arguments_symbol_resolve_with_hint(
+                &call_expr.args,
+                &call_expr.keywords,
+                true,
+                &func_ty,
+            )?;
+        }
+
         Ok(None)
     }
 
@@ -1260,6 +1276,72 @@ impl<'ctx> AdvancedResolver<'ctx> {
                         .map(|ty| ty.clone()),
                     doc: None,
                 };
+            }
+        }
+        Ok(())
+    }
+
+    pub fn do_arguments_symbol_resolve_with_hint(
+        &mut self,
+        args: &'ctx [ast::NodeRef<ast::Expr>],
+        kwargs: &'ctx [ast::NodeRef<ast::Keyword>],
+        with_hint: bool,
+        func_ty: &ty::FunctionType,
+    ) -> anyhow::Result<()> {
+        if func_ty.params.is_empty() {
+            self.do_arguments_symbol_resolve(args, kwargs)?;
+        } else {
+            for (arg, param) in args.iter().zip(func_ty.params.iter()) {
+                self.expr(arg)?;
+                let symbol_data = self.gs.get_symbols_mut();
+
+                if let Some(arg_ref) = symbol_data
+                    .symbols_info
+                    .node_symbol_map
+                    .get(&self.ctx.get_node_key(&arg.id))
+                {
+                    match arg_ref.get_kind() {
+                        crate::core::symbol::SymbolKind::Value => {
+                            if let Some(value) = symbol_data.values.get_mut(arg_ref.get_id()) {
+                                if with_hint {
+                                    value.hint = Some(SymbolHint::VarHint(param.name.clone()));
+                                }
+                            }
+                        }
+                        crate::core::symbol::SymbolKind::Expression => {
+                            if let Some(expr) = symbol_data.exprs.get_mut(arg_ref.get_id()) {
+                                if with_hint {
+                                    expr.hint = Some(SymbolHint::VarHint(param.name.clone()));
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+
+            for kw in kwargs.iter() {
+                if let Some(value) = &kw.node.value {
+                    self.expr(value)?;
+                }
+                let (start_pos, end_pos): Range = kw.get_span_pos();
+                let value = self.gs.get_symbols_mut().alloc_value_symbol(
+                    ValueSymbol::new(kw.node.arg.node.get_name(), start_pos, end_pos, None, false),
+                    self.ctx.get_node_key(&kw.id),
+                    self.ctx.current_pkgpath.clone().unwrap(),
+                );
+
+                if let Some(value) = self.gs.get_symbols_mut().values.get_mut(value.get_id()) {
+                    value.sema_info = SymbolSemanticInfo {
+                        ty: self
+                            .ctx
+                            .node_ty_map
+                            .borrow()
+                            .get(&self.ctx.get_node_key(&kw.id))
+                            .map(|ty| ty.clone()),
+                        doc: None,
+                    };
+                }
             }
         }
         Ok(())
