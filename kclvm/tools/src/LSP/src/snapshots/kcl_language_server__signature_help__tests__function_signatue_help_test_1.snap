@@ -1,0 +1,39 @@
+---
+source: tools/src/LSP/src/signature_help.rs
+expression: "format!(\"{:#?}\", res)"
+---
+SignatureHelp {
+    signatures: [
+        SignatureInformation {
+            label: "function func(x: any, y: any, z: any) -> any",
+            documentation: None,
+            parameters: Some(
+                [
+                    ParameterInformation {
+                        label: Simple(
+                            "x: any",
+                        ),
+                        documentation: None,
+                    },
+                    ParameterInformation {
+                        label: Simple(
+                            "y: any",
+                        ),
+                        documentation: None,
+                    },
+                    ParameterInformation {
+                        label: Simple(
+                            "z: any",
+                        ),
+                        documentation: None,
+                    },
+                ],
+            ),
+            active_parameter: Some(
+                1,
+            ),
+        },
+    ],
+    active_signature: None,
+    active_parameter: None,
+}

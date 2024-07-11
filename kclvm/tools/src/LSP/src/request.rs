@@ -487,7 +487,7 @@ pub(crate) fn handle_inlay_hint(
 pub(crate) fn handle_signature_help(
     snapshot: LanguageServerSnapshot,
     params: lsp_types::SignatureHelpParams,
-    sender: Sender<Task>,
+    _sender: Sender<Task>,
 ) -> anyhow::Result<Option<lsp_types::SignatureHelp>> {
     let file = file_path_from_url(&params.text_document_position_params.text_document.uri)?;
     let pos = kcl_pos(&file, params.text_document_position_params.position);
@@ -502,8 +502,5 @@ pub(crate) fn handle_signature_help(
     };
     let res = signature_help(&pos, &db.gs, trigger_character);
 
-    // if !snapshot.verify_request_version(db.version, &path)? {
-    //     return Err(anyhow!(LSPError::Retry));
-    // }
     Ok(res)
 }

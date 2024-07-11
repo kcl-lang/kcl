@@ -107,7 +107,7 @@ pub enum ScopeKind {
     SchemaConfig,
     Value,
     Check,
-    Callable
+    Callable,
 }
 
 /// load_package provides users with the ability to parse kcl program and sematic model

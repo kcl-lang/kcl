@@ -404,7 +404,7 @@ pub enum LocalSymbolScopeKind {
     SchemaConfig,
     Value,
     Check,
-    Callable
+    Callable,
 }
 
 impl Scope for LocalSymbolScope {
