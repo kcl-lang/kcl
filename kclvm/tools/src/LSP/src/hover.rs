@@ -480,7 +480,7 @@ mod tests {
                     assert_eq!(s, "str\n\n");
                 }
                 if let MarkedString::LanguageString(s) = vec[1].clone() {
-                    assert_eq!(s.value, "fn count(sub: str, start: int, end: int) -> int");
+                    assert_eq!(s.value, "function count(sub: str, start: int, end: int) -> int");
                 }
                 if let MarkedString::String(s) = vec[2].clone() {
                     assert_eq!(s, "Return the number of non-overlapping occurrences of substring sub in the range [start, end]. Optional arguments start and end are interpreted as in slice notation.");
@@ -500,7 +500,7 @@ mod tests {
             lsp_types::HoverContents::Array(vec) => {
                 assert_eq!(vec.len(), 2);
                 if let MarkedString::LanguageString(s) = vec[0].clone() {
-                    assert_eq!(s.value, "fn print() -> NoneType");
+                    assert_eq!(s.value, "function print() -> NoneType");
                 }
                 if let MarkedString::String(s) = vec[1].clone() {
                     assert_eq!(s, "Prints the values to a stream, or to the system stdout by default.\n\nOptional keyword arguments:\n\nsep:   string inserted between values, default a space.\n\nend:   string appended after the last value, default a newline.");
