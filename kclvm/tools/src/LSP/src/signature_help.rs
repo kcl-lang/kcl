@@ -21,28 +21,32 @@ pub fn signature_help(
         // func<cursor>
         "(" => {
             let def = find_def(pos, gs, false)?;
-            if let kclvm_sema::core::symbol::SymbolKind::Value = def.get_kind() {
-                let symbol = gs.get_symbols().get_symbol(def)?;
-                let ty = &symbol.get_sema_info().ty.clone()?;
-                if let kclvm_sema::ty::TypeKind::Function(func_ty) = &ty.kind {
-                    let (label, parameters) = function_signatue_help(&symbol.get_name(), func_ty);
-                    let documentation = symbol
-                        .get_sema_info()
-                        .doc
-                        .clone()
-                        .and_then(|s| Some(lsp_types::Documentation::String(s)));
+            match def.get_kind() {
+                SymbolKind::Value | SymbolKind::Function => {
+                    let symbol = gs.get_symbols().get_symbol(def)?;
+                    let ty = &symbol.get_sema_info().ty.clone()?;
+                    if let kclvm_sema::ty::TypeKind::Function(func_ty) = &ty.kind {
+                        let (label, parameters) =
+                            function_signatue_help(&symbol.get_name(), func_ty);
+                        let documentation = symbol
+                            .get_sema_info()
+                            .doc
+                            .clone()
+                            .and_then(|s| Some(lsp_types::Documentation::String(s)));
 
-                    return Some(SignatureHelp {
-                        signatures: vec![SignatureInformation {
-                            label,
-                            documentation,
-                            parameters,
-                            active_parameter: Some(0),
-                        }],
-                        active_signature: None,
-                        active_parameter: None,
-                    });
+                        return Some(SignatureHelp {
+                            signatures: vec![SignatureInformation {
+                                label,
+                                documentation,
+                                parameters,
+                                active_parameter: Some(0),
+                            }],
+                            active_signature: None,
+                            active_parameter: None,
+                        });
+                    }
                 }
+                _ => {}
             }
             None
         }
@@ -165,34 +169,66 @@ mod tests {
     }
 
     signature_help_test_snapshot!(
-        function_signatue_help_test_0,
-        "src/test_data/signature_help/function_signature_help/function_signature_help.k",
+        lambda_signatue_help_test_0,
+        "src/test_data/signature_help/lambda_signature_help/lambda_signature_help.k",
         5,
         9,
         Some("(".to_string())
     );
 
     signature_help_test_snapshot!(
-        function_signatue_help_test_1,
-        "src/test_data/signature_help/function_signature_help/function_signature_help.k",
+        lambda_signatue_help_test_1,
+        "src/test_data/signature_help/lambda_signature_help/lambda_signature_help.k",
         6,
         11,
         Some(",".to_string())
     );
 
     signature_help_test_snapshot!(
-        function_signatue_help_test_2,
-        "src/test_data/signature_help/function_signature_help/function_signature_help.k",
+        lambda_signatue_help_test_2,
+        "src/test_data/signature_help/lambda_signature_help/lambda_signature_help.k",
         7,
         14,
         Some(",".to_string())
     );
 
     signature_help_test_snapshot!(
-        function_signatue_help_test_3,
-        "src/test_data/signature_help/function_signature_help/function_signature_help.k",
+        lambda_signatue_help_test_3,
+        "src/test_data/signature_help/lambda_signature_help/lambda_signature_help.k",
         8,
         21,
+        Some(",".to_string())
+    );
+
+    signature_help_test_snapshot!(
+        builtin_function_signature_help_test_0,
+        "src/test_data/signature_help/builtin_function_signature_help/builtin_function_signature_help.k",
+        1,
+        4,
+        Some("(".to_string())
+    );
+
+    signature_help_test_snapshot!(
+        builtin_function_signature_help_test_1,
+        "src/test_data/signature_help/builtin_function_signature_help/builtin_function_signature_help.k",
+        2,
+        6,
+        Some(",".to_string())
+    );
+
+    signature_help_test_snapshot!(
+        pkg_function_signature_help_test_0,
+        "src/test_data/signature_help/pkg_function_signature_help/pkg_function_signature_help.k",
+        3,
+        9,
+        Some("(".to_string())
+    );
+
+    signature_help_test_snapshot!(
+        pkg_function_signature_help_test_1,
+        "src/test_data/signature_help/pkg_function_signature_help/pkg_function_signature_help.k",
+        4,
+        11,
         Some(",".to_string())
     );
 }

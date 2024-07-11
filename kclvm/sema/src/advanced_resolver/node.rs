@@ -1060,6 +1060,17 @@ impl<'ctx> AdvancedResolver<'ctx> {
                         let mut unresolved =
                             UnresolvedSymbol::new(name.node.clone(), start_pos, end_pos, None);
                         unresolved.def = Some(def_symbol_ref);
+
+                        unresolved.sema_info = SymbolSemanticInfo {
+                            ty: self
+                                .ctx
+                                .node_ty_map
+                                .borrow()
+                                .get(&self.ctx.get_node_key(&name.id))
+                                .map(|ty| ty.clone()),
+                            doc: None,
+                        };
+
                         let unresolved_ref = self.gs.get_symbols_mut().alloc_unresolved_symbol(
                             unresolved,
                             self.ctx.get_node_key(&ast_id),
