@@ -203,7 +203,7 @@ fn build_func_hover_content(
         docs.push((self_ty, MarkedStringType::String));
     }
 
-    let mut sig = format!("fn {}(", name);
+    let mut sig = format!("function {}(", name);
     if func_ty.params.is_empty() {
         sig.push(')');
     } else {
@@ -428,7 +428,7 @@ mod tests {
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
                 if let MarkedString::LanguageString(s) = vec[0].clone() {
-                    assert_eq!(s.value, "fn f(x: any) -> any");
+                    assert_eq!(s.value, "function f(x: any) -> any");
                 }
                 if let MarkedString::String(s) = vec[0].clone() {
                     assert_eq!(s, "lambda documents");
@@ -454,7 +454,7 @@ mod tests {
             lsp_types::HoverContents::Array(vec) => {
                 assert_eq!(vec.len(), 2);
                 if let MarkedString::LanguageString(s) = vec[0].clone() {
-                    assert_eq!(s.value, "fn encode(value: str, encoding: str) -> str");
+                    assert_eq!(s.value, "function encode(value: str, encoding: str) -> str");
                 }
                 if let MarkedString::String(s) = vec[1].clone() {
                     assert_eq!(
@@ -567,7 +567,7 @@ mod tests {
                     assert_eq!(s, "str\n\n");
                 }
                 if let MarkedString::LanguageString(s) = vec[1].clone() {
-                    assert_eq!(s.value, "fn capitalize() -> str");
+                    assert_eq!(s.value, "function capitalize() -> str");
                 }
                 if let MarkedString::String(s) = vec[2].clone() {
                     assert_eq!(s, "Return a copy of the string with its first character capitalized and the rest lowercased.");
@@ -654,7 +654,7 @@ mod tests {
         let expect_content = vec![
             MarkedString::LanguageString(LanguageString {
                 language: "KCL".to_string(),
-                value: "fn deprecated(version: str, reason: str, strict: bool) -> any".to_string(),
+                value: "function deprecated(version: str, reason: str, strict: bool) -> any".to_string(),
             }),
             MarkedString::String(
                 "This decorator is used to get the deprecation message according to the wrapped key-value pair.".to_string(),
