@@ -257,6 +257,7 @@ fn register_builtin_service(io: &mut IoHandler) {
                 "KclvmService.Rename".to_owned(),
                 "KclvmService.RenameCode".to_owned(),
                 "KclvmService.Test".to_owned(),
+                "KclvmService.UpdateDependencies".to_owned(),
                 "BuiltinService.Ping".to_owned(),
                 "BuiltinService.PingListMethod".to_owned(),
             ],
