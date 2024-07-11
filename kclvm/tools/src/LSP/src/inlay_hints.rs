@@ -124,4 +124,9 @@ mod tests {
         test_assign_stmt_type_hint,
         "src/test_data/inlay_hints/assign_stmt_type_hint/assign_stmt_type_hint.k"
     );
+
+    inlay_hints_test_snapshot!(
+        test_function_call_arg_hint,
+        "src/test_data/inlay_hints/function_call/function_call.k"
+    );
 }
