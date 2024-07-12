@@ -203,7 +203,7 @@ fn build_func_hover_content(
         docs.push((self_ty, MarkedStringType::String));
     }
 
-    let mut sig = format!("fn {}(", name);
+    let mut sig = format!("function {}(", name);
     if func_ty.params.is_empty() {
         sig.push(')');
     } else {
@@ -428,7 +428,7 @@ mod tests {
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
                 if let MarkedString::LanguageString(s) = vec[0].clone() {
-                    assert_eq!(s.value, "fn f(x: any) -> any");
+                    assert_eq!(s.value, "function f(x: any) -> any");
                 }
                 if let MarkedString::String(s) = vec[0].clone() {
                     assert_eq!(s, "lambda documents");
@@ -454,7 +454,7 @@ mod tests {
             lsp_types::HoverContents::Array(vec) => {
                 assert_eq!(vec.len(), 2);
                 if let MarkedString::LanguageString(s) = vec[0].clone() {
-                    assert_eq!(s.value, "fn encode(value: str, encoding: str) -> str");
+                    assert_eq!(s.value, "function encode(value: str, encoding: str) -> str");
                 }
                 if let MarkedString::String(s) = vec[1].clone() {
                     assert_eq!(
@@ -480,7 +480,10 @@ mod tests {
                     assert_eq!(s, "str\n\n");
                 }
                 if let MarkedString::LanguageString(s) = vec[1].clone() {
-                    assert_eq!(s.value, "fn count(sub: str, start: int, end: int) -> int");
+                    assert_eq!(
+                        s.value,
+                        "function count(sub: str, start: int, end: int) -> int"
+                    );
                 }
                 if let MarkedString::String(s) = vec[2].clone() {
                     assert_eq!(s, "Return the number of non-overlapping occurrences of substring sub in the range [start, end]. Optional arguments start and end are interpreted as in slice notation.");
@@ -500,7 +503,7 @@ mod tests {
             lsp_types::HoverContents::Array(vec) => {
                 assert_eq!(vec.len(), 2);
                 if let MarkedString::LanguageString(s) = vec[0].clone() {
-                    assert_eq!(s.value, "fn print() -> NoneType");
+                    assert_eq!(s.value, "function print() -> NoneType");
                 }
                 if let MarkedString::String(s) = vec[1].clone() {
                     assert_eq!(s, "Prints the values to a stream, or to the system stdout by default.\n\nOptional keyword arguments:\n\nsep:   string inserted between values, default a space.\n\nend:   string appended after the last value, default a newline.");
@@ -567,7 +570,7 @@ mod tests {
                     assert_eq!(s, "str\n\n");
                 }
                 if let MarkedString::LanguageString(s) = vec[1].clone() {
-                    assert_eq!(s.value, "fn capitalize() -> str");
+                    assert_eq!(s.value, "function capitalize() -> str");
                 }
                 if let MarkedString::String(s) = vec[2].clone() {
                     assert_eq!(s, "Return a copy of the string with its first character capitalized and the rest lowercased.");
@@ -654,7 +657,7 @@ mod tests {
         let expect_content = vec![
             MarkedString::LanguageString(LanguageString {
                 language: "KCL".to_string(),
-                value: "fn deprecated(version: str, reason: str, strict: bool) -> any".to_string(),
+                value: "function deprecated(version: str, reason: str, strict: bool) -> any".to_string(),
             }),
             MarkedString::String(
                 "This decorator is used to get the deprecation message according to the wrapped key-value pair.".to_string(),

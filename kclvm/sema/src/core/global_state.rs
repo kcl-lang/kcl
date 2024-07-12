@@ -322,6 +322,25 @@ impl GlobalState {
         }
         None
     }
+
+    pub fn get_scope_symbols(&self, scope: ScopeRef) -> Option<Vec<SymbolRef>> {
+        let scope = self.get_scopes().get_scope(&scope)?;
+        let filename = scope.get_filename();
+        let packeage = self.get_sema_db().get_file_sema(filename)?;
+
+        let pkg_symbols = packeage.get_symbols();
+
+        let symbols: Vec<SymbolRef> = pkg_symbols
+            .iter()
+            .filter(|symbol| {
+                let symbol = self.get_symbols().get_symbol(**symbol).unwrap();
+                scope.contains_pos(&symbol.get_range().0)
+                    && scope.contains_pos(&symbol.get_range().1)
+            })
+            .map(|s| s.clone())
+            .collect();
+        Some(symbols)
+    }
 }
 
 impl GlobalState {

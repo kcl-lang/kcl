@@ -1,0 +1,43 @@
+---
+source: tools/src/LSP/src/signature_help.rs
+expression: "format!(\"{:#?}\", res)"
+---
+SignatureHelp {
+    signatures: [
+        SignatureInformation {
+            label: "function pow(x: int | float, y: int | float, z: int | float) -> int | float",
+            documentation: Some(
+                String(
+                    "Equivalent to `x ** y` (with two arguments) or `x ** y % z` (with three arguments)\n\nSome types, such as ints, are able to use a more efficient algorithm when\ninvoked using the three argument form.",
+                ),
+            ),
+            parameters: Some(
+                [
+                    ParameterInformation {
+                        label: Simple(
+                            "x: int | float",
+                        ),
+                        documentation: None,
+                    },
+                    ParameterInformation {
+                        label: Simple(
+                            "y: int | float",
+                        ),
+                        documentation: None,
+                    },
+                    ParameterInformation {
+                        label: Simple(
+                            "z: int | float",
+                        ),
+                        documentation: None,
+                    },
+                ],
+            ),
+            active_parameter: Some(
+                0,
+            ),
+        },
+    ],
+    active_signature: None,
+    active_parameter: None,
+}

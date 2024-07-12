@@ -1,0 +1,33 @@
+---
+source: tools/src/LSP/src/signature_help.rs
+expression: "format!(\"{:#?}\", res)"
+---
+SignatureHelp {
+    signatures: [
+        SignatureInformation {
+            label: "function gcd(a: int, b: int) -> int",
+            documentation: None,
+            parameters: Some(
+                [
+                    ParameterInformation {
+                        label: Simple(
+                            "a: int",
+                        ),
+                        documentation: None,
+                    },
+                    ParameterInformation {
+                        label: Simple(
+                            "b: int",
+                        ),
+                        documentation: None,
+                    },
+                ],
+            ),
+            active_parameter: Some(
+                1,
+            ),
+        },
+    ],
+    active_signature: None,
+    active_parameter: None,
+}

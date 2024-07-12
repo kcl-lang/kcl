@@ -1,0 +1,37 @@
+---
+source: tools/src/LSP/src/signature_help.rs
+expression: "format!(\"{:#?}\", res)"
+---
+SignatureHelp {
+    signatures: [
+        SignatureInformation {
+            label: "function gcd(a: int, b: int) -> int",
+            documentation: Some(
+                String(
+                    "Return the greatest common divisor of `x` and `y`.",
+                ),
+            ),
+            parameters: Some(
+                [
+                    ParameterInformation {
+                        label: Simple(
+                            "a: int",
+                        ),
+                        documentation: None,
+                    },
+                    ParameterInformation {
+                        label: Simple(
+                            "b: int",
+                        ),
+                        documentation: None,
+                    },
+                ],
+            ),
+            active_parameter: Some(
+                0,
+            ),
+        },
+    ],
+    active_signature: None,
+    active_parameter: None,
+}
