@@ -302,11 +302,11 @@ fn build_expect_diags() -> Vec<Diagnostic> {
         ),
         build_lsp_diag(
             (10, 8, 10, 10),
-            "name 'nu' is not defined, did you mean '[\"number\", \"n\", \"num\"]'?".to_string(),
+            "name 'nu' is not defined, did you mean '[\"number\"]'?".to_string(),
             Some(DiagnosticSeverity::ERROR),
             vec![],
             Some(NumberOrString::String("CompileError".to_string())),
-            Some(serde_json::json!({ "suggested_replacement": ["number", "n", "num"] })),
+            Some(serde_json::json!({ "suggested_replacement": ["number"] })),
         ),
         build_lsp_diag(
             (0, 0, 0, 10),
