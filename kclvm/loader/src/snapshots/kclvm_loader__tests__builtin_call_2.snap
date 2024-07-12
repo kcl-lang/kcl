@@ -609,7 +609,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                 filename: "test.k",
                 line: 3,
                 column: Some(
-                    25,
+                    19,
                 ),
             },
         ),
@@ -1093,7 +1093,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                 filename: "test.k",
                 line: 3,
                 column: Some(
-                    40,
+                    35,
                 ),
             },
         ),
