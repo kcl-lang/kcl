@@ -90,7 +90,13 @@ pub struct SymbolDB {
 }
 
 #[derive(Debug, Clone)]
-pub enum SymbolHint {
+pub struct SymbolHint {
+    pub kind: SymbolHintKind,
+    pub pos: Position,
+}
+
+#[derive(Debug, Clone)]
+pub enum SymbolHintKind {
     TypeHint(String),
     VarHint(String),
 }
@@ -1818,6 +1824,7 @@ pub struct UnresolvedSymbol {
     pub(crate) end: Position,
     pub(crate) owner: Option<SymbolRef>,
     pub(crate) sema_info: SymbolSemanticInfo,
+    pub(crate) hint: Option<SymbolHint>,
 }
 
 impl Symbol for UnresolvedSymbol {
@@ -1885,7 +1892,7 @@ impl Symbol for UnresolvedSymbol {
     }
 
     fn get_hint(&self) -> Option<&Self::SymbolHint> {
-        None
+        self.hint.as_ref()
     }
 
     fn simple_dump(&self) -> String {
@@ -1930,6 +1937,7 @@ impl UnresolvedSymbol {
             end,
             sema_info: SymbolSemanticInfo::default(),
             owner,
+            hint: None,
         }
     }
 

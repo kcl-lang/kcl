@@ -1,9 +1,10 @@
 use indexmap::IndexSet;
-use kclvm_sema::core::symbol::SymbolHint;
-use kclvm_sema::core::{global_state::GlobalState, symbol::KCLSymbol};
+use kclvm_sema::core::global_state::GlobalState;
+use kclvm_sema::core::symbol::{SymbolHint, SymbolHintKind};
 use lsp_types::{InlayHint, InlayHintLabelPart, Position as LspPosition};
-use std::convert::TryInto;
 use std::hash::Hash;
+
+use crate::to_lsp::lsp_pos;
 
 #[derive(Clone, Debug)]
 struct KCLInlayHint {
@@ -39,7 +40,7 @@ pub fn inlay_hints(file: &str, gs: &GlobalState) -> Option<Vec<InlayHint>> {
         for symbol_ref in symbols {
             if let Some(symbol) = gs.get_symbols().get_symbol(*symbol_ref) {
                 if let Some(hint) = symbol.get_hint() {
-                    inlay_hints.insert(generate_inlay_hint(symbol, hint));
+                    inlay_hints.insert(generate_inlay_hint(hint));
                 }
             }
         }
@@ -53,8 +54,8 @@ pub fn inlay_hints(file: &str, gs: &GlobalState) -> Option<Vec<InlayHint>> {
 }
 
 #[inline]
-fn generate_inlay_hint(symbol: &KCLSymbol, hint: &SymbolHint) -> KCLInlayHint {
-    let (part, position) = get_hint_label(symbol, &hint);
+fn generate_inlay_hint(hint: &SymbolHint) -> KCLInlayHint {
+    let (part, position) = get_hint_label(&hint);
     KCLInlayHint { position, part }
 }
 
@@ -72,33 +73,21 @@ fn into_lsp_inlay_hint(hint: &KCLInlayHint) -> InlayHint {
     }
 }
 
-fn get_hint_label(symbol: &KCLSymbol, hint: &SymbolHint) -> (InlayHintLabelPart, LspPosition) {
-    let (start, end) = symbol.get_range();
-    match hint {
-        SymbolHint::TypeHint(ty) => (
+fn get_hint_label(hint: &SymbolHint) -> (InlayHintLabelPart, LspPosition) {
+    match &hint.kind {
+        SymbolHintKind::TypeHint(ty) => (
             InlayHintLabelPart {
                 value: format!(": {ty}"),
                 ..Default::default()
             },
-            LspPosition::new(
-                (end.line - 1).try_into().unwrap(),
-                end.column.unwrap_or(0).try_into().unwrap(),
-            ),
+            lsp_pos(&hint.pos),
         ),
-        SymbolHint::VarHint(var) => (
+        SymbolHintKind::VarHint(var) => (
             InlayHintLabelPart {
                 value: format!("{var}: "),
                 ..Default::default()
             },
-            LspPosition::new(
-                (start.line - 1).try_into().unwrap(),
-                start
-                    .column
-                    .unwrap_or(1)
-                    .saturating_sub(1)
-                    .try_into()
-                    .unwrap(),
-            ),
+            lsp_pos(&hint.pos),
         ),
     }
 }

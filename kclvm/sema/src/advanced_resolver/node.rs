@@ -11,8 +11,8 @@ use crate::{
     core::{
         scope::LocalSymbolScopeKind,
         symbol::{
-            CommentSymbol, DecoratorSymbol, ExpressionSymbol, SymbolHint, SymbolRef,
-            SymbolSemanticInfo, UnresolvedSymbol, ValueSymbol,
+            CommentSymbol, DecoratorSymbol, ExpressionSymbol, Symbol, SymbolHint, SymbolHintKind,
+            SymbolRef, SymbolSemanticInfo, UnresolvedSymbol, ValueSymbol,
         },
     },
     ty::{self, Type, TypeKind, SCHEMA_MEMBER_FUNCTIONS},
@@ -441,7 +441,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
                     .borrow()
                     .get(&self.ctx.get_node_key(ast_id))
                     .map(|ty| ty.clone());
-                symbol.hint = ty.as_ref().map(|ty| SymbolHint::TypeHint(ty.ty_str()));
+                symbol.hint = ty.as_ref().map(|ty| SymbolHint {
+                    kind: SymbolHintKind::TypeHint(ty.ty_str()),
+                    pos: symbol.get_range().1,
+                });
                 symbol.sema_info = SymbolSemanticInfo { ty, doc: None };
             }
         }
@@ -1208,7 +1211,10 @@ impl<'ctx> AdvancedResolver<'ctx> {
                     .get(&self.ctx.get_node_key(id))
                     .map(|ty| ty.clone());
                 if with_hint {
-                    symbol.hint = ty.as_ref().map(|ty| SymbolHint::TypeHint(ty.ty_str()));
+                    symbol.hint = ty.as_ref().map(|ty| SymbolHint {
+                        kind: SymbolHintKind::TypeHint(ty.ty_str()),
+                        pos: symbol.get_range().1,
+                    });
                 }
                 symbol.sema_info = SymbolSemanticInfo { ty, doc: None };
             }
@@ -1322,29 +1328,53 @@ impl<'ctx> AdvancedResolver<'ctx> {
         } else {
             for (arg, param) in args.iter().zip(func_ty.params.iter()) {
                 self.expr(arg)?;
-                let symbol_data = self.gs.get_symbols_mut();
 
-                if let Some(arg_ref) = symbol_data
-                    .symbols_info
-                    .node_symbol_map
-                    .get(&self.ctx.get_node_key(&arg.id))
-                {
-                    match arg_ref.get_kind() {
-                        crate::core::symbol::SymbolKind::Value => {
-                            if let Some(value) = symbol_data.values.get_mut(arg_ref.get_id()) {
-                                if with_hint {
-                                    value.hint = Some(SymbolHint::VarHint(param.name.clone()));
+                if with_hint {
+                    let symbol_data = self.gs.get_symbols_mut();
+                    let id = match &arg.node {
+                        ast::Expr::Identifier(id) => id.names.last().unwrap().id.clone(),
+                        _ => arg.id.clone(),
+                    };
+                    if let Some(arg_ref) = symbol_data
+                        .symbols_info
+                        .node_symbol_map
+                        .get(&self.ctx.get_node_key(&id))
+                    {
+                        match arg_ref.get_kind() {
+                            crate::core::symbol::SymbolKind::Expression => {
+                                if let Some(expr) = symbol_data.exprs.get_mut(arg_ref.get_id()) {
+                                    expr.hint = Some(SymbolHint {
+                                        pos: arg.get_pos(),
+                                        kind: SymbolHintKind::VarHint(param.name.clone()),
+                                    });
                                 }
                             }
-                        }
-                        crate::core::symbol::SymbolKind::Expression => {
-                            if let Some(expr) = symbol_data.exprs.get_mut(arg_ref.get_id()) {
-                                if with_hint {
-                                    expr.hint = Some(SymbolHint::VarHint(param.name.clone()));
+                            crate::core::symbol::SymbolKind::Unresolved => {
+                                let mut has_hint = false;
+                                if let Some(unresolved) =
+                                    symbol_data.unresolved.get(arg_ref.get_id())
+                                {
+                                    if let Some(def) = unresolved.def {
+                                        if let Some(def) = symbol_data.get_symbol(def) {
+                                            if def.get_name() != param.name {
+                                                has_hint = true;
+                                            }
+                                        }
+                                    }
+                                }
+                                if has_hint {
+                                    if let Some(unresolved) =
+                                        symbol_data.unresolved.get_mut(arg_ref.get_id())
+                                    {
+                                        unresolved.hint = Some(SymbolHint {
+                                            kind: SymbolHintKind::VarHint(param.name.clone()),
+                                            pos: arg.get_pos(),
+                                        });
+                                    }
                                 }
                             }
+                            _ => {}
                         }
-                        _ => {}
                     }
                 }
             }
