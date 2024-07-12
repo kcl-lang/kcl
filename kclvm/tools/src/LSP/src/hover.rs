@@ -480,7 +480,10 @@ mod tests {
                     assert_eq!(s, "str\n\n");
                 }
                 if let MarkedString::LanguageString(s) = vec[1].clone() {
-                    assert_eq!(s.value, "function count(sub: str, start: int, end: int) -> int");
+                    assert_eq!(
+                        s.value,
+                        "function count(sub: str, start: int, end: int) -> int"
+                    );
                 }
                 if let MarkedString::String(s) = vec[2].clone() {
                     assert_eq!(s, "Return the number of non-overlapping occurrences of substring sub in the range [start, end]. Optional arguments start and end are interpreted as in slice notation.");
