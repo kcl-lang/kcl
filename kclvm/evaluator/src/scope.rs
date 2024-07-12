@@ -556,4 +556,30 @@ impl<'ctx> Evaluator<'ctx> {
             value
         }
     }
+
+    /// Load global value from name.
+    pub fn load_global_value(&self, pkgpath: &str, names: &[&str]) -> ValueRef {
+        if names.is_empty() {
+            return self.undefined_value();
+        }
+        let name = names[0];
+        if names.len() == 1 {
+            self.get_variable(name)
+        } else {
+            let mut value = if pkgpath.is_empty() {
+                self.get_variable(name)
+            } else {
+                self.undefined_value()
+            };
+            for i in 0..names.len() - 1 {
+                let attr = names[i + 1];
+                if i == 0 && !pkgpath.is_empty() {
+                    value = self.get_variable_in_pkgpath(attr, pkgpath);
+                } else {
+                    value = value.load_attr(attr)
+                }
+            }
+            value
+        }
+    }
 }

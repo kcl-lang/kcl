@@ -70,7 +70,11 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./kclvm/.kclvm_cov/lcov.info
 
+      - name: Release
+        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make release
+        shell: bash
+
       - uses: actions/upload-artifact@v3
         with:
           name: kcl-darwin-amd64
-          path: _build/dist/Darwin/kclvm
+          path: _build/kclvm-Darwin-latest.tar.gz
