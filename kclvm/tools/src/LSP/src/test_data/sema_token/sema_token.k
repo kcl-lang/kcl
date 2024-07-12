@@ -11,3 +11,6 @@ n: num = 1
 func = lambda x{
     x
 }
+
+a = func("123")
+b = func(x="123")

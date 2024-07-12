@@ -153,22 +153,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn semantic_tokens_full_test() {
-        let (file, _, _, gs) = compile_test_file("src/test_data/sema_token.k");
-        let expected = [
-            (0, 15, 1, 3), // m
-            (1, 5, 3, 4),  // num
-            (1, 7, 7, 1),  // Persons
-            (1, 4, 4, 2),  // name
-            (2, 0, 2, 0),  // p5
-            (0, 4, 7, 1),  // Persons
-            (0, 10, 7, 1), // Persons
-            (1, 4, 4, 2),  // name
-            (2, 0, 1, 0),  // n
-            (0, 3, 3, 4),  // num
-            (2, 0, 4, 8),  // func
-            (0, 14, 1, 0), // x
-            (1, 4, 1, 0),  // x
-        ];
+        let (file, _, _, gs) = compile_test_file("src/test_data/sema_token/sema_token.k");
         let res = semantic_tokens_full(&file, &gs);
         if let Some(tokens) = res {
             match &tokens {
@@ -185,7 +170,26 @@ mod tests {
                             )
                         })
                         .collect();
-                    assert_eq!(get, expected);
+                    // (delta line, delta col(if delta line != 0, from 0), length, kind)
+                    // (0, 15, 1, 3), // m
+                    // (1, 5, 3, 4),  // num
+                    // (1, 7, 7, 1),  // Persons
+                    // (1, 4, 4, 2),  // name
+                    // (2, 0, 2, 0),  // p5
+                    // (0, 4, 7, 1),  // Persons
+                    // (0, 10, 7, 1), // Persons
+                    // (1, 4, 4, 2),  // name
+                    // (2, 0, 1, 0),  // n
+                    // (0, 3, 3, 4),  // num
+                    // (2, 0, 4, 8),  // func
+                    // (0, 14, 1, 0), // x
+                    // (1, 4, 1, 0),  // x
+                    // (3, 0, 1, 0),  // a
+                    // (0, 4, 4, 8),  // func
+                    // (1, 0, 1, 0),  // b
+                    // (0, 4, 4, 8),  // func
+                    // (0, 5, 1, 0)   // x
+                    insta::assert_snapshot!(format!("{:?}", get));
                 }
                 lsp_types::SemanticTokensResult::Partial(_) => {
                     panic!("test failed")
