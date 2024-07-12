@@ -1288,7 +1288,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
             if let Some(value) = &kw.node.value {
                 self.expr(value)?;
             }
-            let (start_pos, end_pos): Range = kw.get_span_pos();
+            let (start_pos, end_pos): Range = kw.node.arg.get_span_pos();
             let value = self.gs.get_symbols_mut().alloc_value_symbol(
                 ValueSymbol::new(kw.node.arg.node.get_name(), start_pos, end_pos, None, false),
                 self.ctx.get_node_key(&kw.id),
@@ -1353,7 +1353,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 if let Some(value) = &kw.node.value {
                     self.expr(value)?;
                 }
-                let (start_pos, end_pos): Range = kw.get_span_pos();
+                let (start_pos, end_pos): Range = kw.node.arg.get_span_pos();
                 let value = self.gs.get_symbols_mut().alloc_value_symbol(
                     ValueSymbol::new(kw.node.arg.node.get_name(), start_pos, end_pos, None, false),
                     self.ctx.get_node_key(&kw.id),
