@@ -321,7 +321,34 @@ bob: Person {
     age: 18
 }
 "#}
+evaluator_snapshot! {schema_2, r#"
+VALUES_MAP = {
+    "1": Values1{
+        attr1 = "foo"
+    }
+    "2": Values2 {
+        attr2 = "bar"
+    }
+}
 
+schema Config:
+    provider: "1" | "2"
+    values = VALUES_MAP[provider]
+    provider_values: Values1 | Values2 = values
+
+schema CommonValues:
+
+schema Values1(CommonValues):
+    attr1: str
+
+schema Values2(CommonValues):
+    attr2: str
+
+config: Config {
+	provider = "1"
+	provider_values.attr1 = "foobar"
+}
+"#}
 evaluator_snapshot! {lazy_scope_0, r#"
 b = a + c
 a = 1

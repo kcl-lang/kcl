@@ -399,9 +399,15 @@ pub(crate) fn schema_body(
     init_lazy_scope(s, &mut ctx.borrow_mut());
     // Schema self value or parent schema value;
     let mut schema_ctx_value = if let Some(parent_name) = &ctx.borrow().node.parent_name {
-        let base_constructor_func = s
-            .walk_identifier_with_ctx(&parent_name.node, &ast::ExprContext::Load, None)
-            .expect(kcl_error::RUNTIME_ERROR_MSG);
+        let base_constructor_func = s.load_global_value(
+            &parent_name.node.pkgpath,
+            &parent_name
+                .node
+                .names
+                .iter()
+                .map(|n| n.node.as_str())
+                .collect::<Vec<&str>>(),
+        );
         // Call base schema function
         call_schema_body(s, &base_constructor_func, args, kwargs, ctx)
     } else {
@@ -442,9 +448,15 @@ pub(crate) fn schema_body(
     {
         let ctx_ref = ctx.borrow();
         for mixin in &ctx_ref.node.mixins {
-            let mixin_func = s
-                .walk_identifier_with_ctx(&mixin.node, &ast::ExprContext::Load, None)
-                .expect(kcl_error::RUNTIME_ERROR_MSG);
+            let mixin_func = s.load_global_value(
+                &mixin.node.pkgpath,
+                &mixin
+                    .node
+                    .names
+                    .iter()
+                    .map(|n| n.node.as_str())
+                    .collect::<Vec<&str>>(),
+            );
             schema_ctx_value = call_schema_body(s, &mixin_func, args, kwargs, ctx);
         }
     }

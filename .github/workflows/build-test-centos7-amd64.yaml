@@ -36,4 +36,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: kcl-centos7-amd64
-          path: _build/dist/centos/kclvm
+          path: _build/kclvm-centos-latest.tar.gz
