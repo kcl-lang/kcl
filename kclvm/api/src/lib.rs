@@ -55,8 +55,8 @@ pub fn call_with_plugin_agent<'a>(
 ) -> Result<Vec<u8>> {
     let mut result_len: usize = 0;
     let result_ptr = {
-        let args = CString::new(args)?;
-        let call = CString::new(name)?;
+        let args = unsafe { CString::from_vec_unchecked(args.to_vec()) };
+        let call = unsafe { CString::from_vec_unchecked(name.to_vec()) };
         let serv = kclvm_service_new(plugin_agent);
         kclvm_service_call_with_length(serv, call.as_ptr(), args.as_ptr(), &mut result_len)
     };
@@ -69,4 +69,29 @@ pub fn call_with_plugin_agent<'a>(
     };
 
     Ok(result)
+}
+
+/// call_native is a universal KCL API interface that is consistent with the methods and parameters defined in Protobuf.
+/// The first two parameters represent the name and length of the calling method, the middle two parameters represent
+/// the Protobuf byte sequence and length of the calling parameter, and the return parameter is the byte sequence and
+/// length of Protobuf.
+#[no_mangle]
+pub extern "C" fn call_native(
+    name_ptr: *const u8,
+    name_len: usize,
+    args_ptr: *const u8,
+    args_len: usize,
+    result_ptr: *mut u8,
+) -> usize {
+    let name = unsafe { std::slice::from_raw_parts(name_ptr, name_len) };
+    let args = unsafe { std::slice::from_raw_parts(args_ptr, args_len) };
+    let res = call(name, args);
+    let result = match res {
+        Ok(res) => res,
+        Err(err) => err.to_string().into_bytes(),
+    };
+    unsafe {
+        std::ptr::copy_nonoverlapping(result.as_ptr(), result_ptr, result.len());
+    }
+    result.len()
 }
