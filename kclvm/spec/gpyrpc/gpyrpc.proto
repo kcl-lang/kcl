@@ -1062,17 +1062,6 @@ message ExecArtifact_Args {
 	ExecProgram_Args exec_args = 2;
 }
 
-// Message for reset plugin request arguments.
-message ResetPlugin_Args {
-	// Root path for the plugin.
-	string plugin_root = 1;
-}
-
-// Message for reset plugin response. Empty message.
-message ResetPlugin_Result {
-	// empty
-}
-
 // Message for format code request arguments.
 message FormatCode_Args {
 	// Source code to be formatted.
