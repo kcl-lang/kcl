@@ -329,7 +329,7 @@ impl<'ctx> Resolver<'ctx> {
         &mut self,
         key: &'ctx Option<ast::NodeRef<ast::Expr>>,
         value: &'ctx ast::NodeRef<ast::Expr>,
-    ) {
+    ) -> Option<TypeRef> {
         if let Some(key) = key {
             if let Some(Some(_)) = self.ctx.config_expr_context.last() {
                 let mut has_index = false;
@@ -342,17 +342,17 @@ impl<'ctx> Resolver<'ctx> {
                                     has_index = true;
                                     identifier.get_names()
                                 } else {
-                                    return;
+                                    return None;
                                 }
                             } else {
-                                return;
+                                return None;
                             }
                         } else {
-                            return;
+                            return None;
                         }
                     }
                     ast::Expr::StringLit(string_lit) => vec![string_lit.value.clone()],
-                    _ => return,
+                    _ => return None,
                 };
                 let mut stack_depth = 0;
                 for name in &names {
@@ -360,6 +360,9 @@ impl<'ctx> Resolver<'ctx> {
                     stack_depth += self.switch_config_expr_context_by_name(name);
                 }
                 let mut val_ty = self.expr(value);
+
+                let return_ty = Some(val_ty.clone());
+
                 for _ in 0..names.len() - 1 {
                     val_ty = Type::dict_ref(self.str_ty(), val_ty);
                 }
@@ -376,8 +379,10 @@ impl<'ctx> Resolver<'ctx> {
                     );
                 }
                 self.clear_config_expr_context(stack_depth, false);
+                return return_ty;
             }
         }
+        None
     }
 
     pub(crate) fn get_config_attr_err_suggestion(
@@ -539,13 +544,13 @@ impl<'ctx> Resolver<'ctx> {
             let value = &item.node.value;
             let op = &item.node.operation;
             let mut stack_depth: usize = 0;
-            self.check_config_entry(key, value);
+            let value_ty = self.check_config_entry(key, value);
             stack_depth += self.switch_config_expr_context_by_key(key);
             let mut has_insert_index = false;
             let val_ty = match key {
                 Some(key) => match &key.node {
                     ast::Expr::Identifier(identifier) => {
-                        let mut val_ty = self.expr(value);
+                        let mut val_ty = value_ty.unwrap_or(self.expr(value));
 
                         for _ in 0..identifier.names.len() - 1 {
                             val_ty = Type::dict_ref(self.str_ty(), val_ty.clone());
@@ -597,7 +602,7 @@ impl<'ctx> Resolver<'ctx> {
                         if matches!(subscript.value.node, ast::Expr::Identifier(_)) =>
                     {
                         has_insert_index = true;
-                        let val_ty = self.expr(value);
+                        let val_ty = value_ty.unwrap_or(self.expr(value));
                         key_types.push(self.str_ty());
                         val_types.push(Type::list_ref(val_ty.clone()));
                         val_ty
@@ -607,7 +612,7 @@ impl<'ctx> Resolver<'ctx> {
                         self.ctx.config_expr_context.push(None);
                         let key_ty = self.expr(key);
                         self.ctx.config_expr_context.pop();
-                        let val_ty = self.expr(value);
+                        let val_ty = value_ty.unwrap_or(self.expr(value));
                         self.check_attr_ty(&key_ty, key.get_span_pos());
                         if let ast::Expr::StringLit(string_lit) = &key.node {
                             let ty = if let Some(attr) = attrs.get(&string_lit.value) {
@@ -640,7 +645,7 @@ impl<'ctx> Resolver<'ctx> {
                     }
                 },
                 None => {
-                    let val_ty = self.expr(value);
+                    let val_ty = value_ty.unwrap_or(self.expr(value));
                     match &val_ty.kind {
                         TypeKind::None | TypeKind::Any => {
                             val_types.push(val_ty.clone());
