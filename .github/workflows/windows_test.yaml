@@ -45,7 +45,8 @@ jobs:
       - run: cargo test -p kclvm-* --features llvm
         working-directory: ./kclvm
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: kcl-windows
+          if-no-files-found: error
           path: scripts/build-windows/_output/kclvm-windows

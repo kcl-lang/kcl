@@ -59,7 +59,8 @@ jobs:
         run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make test
         shell: bash
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: kcl-linux-amd64
+          if-no-files-found: error
           path: _build/dist/ubuntu/kclvm

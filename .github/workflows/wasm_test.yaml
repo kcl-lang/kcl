@@ -26,4 +26,5 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: kcl-wasm
+          if-no-files-found: error
           path: kclvm/target/wasm32-wasi/release/kclvm_cli_cdylib.wasm

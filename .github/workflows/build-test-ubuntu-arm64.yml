@@ -24,15 +24,20 @@ jobs:
         run: |
           docker pull --platform linux/arm64 kcllang/kcl-builder-arm64
 
-      - name: Run custom ARM64 Docker image
+      - name: Build in Docker
         run: |
           docker run --rm --platform linux/arm64 \
             -v ${{ github.workspace }}:/workspace -w /workspace \
             kcllang/kcl-builder-arm64 \
-            make && make release
+            /bin/bash -c "make && make release"
+
+      - name: Release
+        shell: bash
+        run: os=ubuntu topdir=$PWD ./scripts/release.sh
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: kcl-linux-arm64
+          if-no-files-found: error
           path: _build/kclvm-ubuntu-latest.tar.gz

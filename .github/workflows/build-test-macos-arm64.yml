@@ -4,7 +4,7 @@ on: ["push", "pull_request"]
 jobs:
   build-and-test:
     # Ref: https://github.com/actions/runner-images/tree/main/images/macos
-    # Note: The arch of macos-14 is arm64
+    # Note: The arch of macos-13-xlarge and macos-14 is arm64
     strategy:
       matrix:
         os: [macos-13-xlarge, macos-14]
@@ -49,7 +49,9 @@ jobs:
         run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/opt/homebrew/opt/llvm@12/bin/ && make test-grammar-evaluator
         shell: bash
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
+        if: "contains(matrix.os, 'macos-13-xlarge')"
         with:
           name: kcl-darwin-arm64
+          if-no-files-found: error
           path: _build/dist/Darwin/kclvm
