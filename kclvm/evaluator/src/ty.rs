@@ -117,7 +117,7 @@ pub fn convert_collection_value(s: &Evaluator, value: &ValueRef, tpe: &str) -> V
                 .ops
                 .get(k)
                 .unwrap_or(&ConfigEntryOperationKind::Union);
-            let index = dict_ref.insert_indexs.get(k).unwrap_or(&-1);
+            let index = dict_ref.insert_indexs.get(k);
             expected_dict.dict_update_entry(k, &expected_value, op, index)
         }
         expected_dict

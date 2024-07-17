@@ -165,7 +165,7 @@ pub trait DerivedValueCalculationMethods: ValueMethods + ValueCalculationMethods
         key: Self::Value,
         value: Self::Value,
         op: i32,
-        insert_index: i32,
+        insert_index: Option<i32>,
     );
     /// Insert a dict entry including key, value, op and insert_index into the dict,
     /// and the type of key is `&str`
@@ -175,13 +175,13 @@ pub trait DerivedValueCalculationMethods: ValueMethods + ValueCalculationMethods
         key: &str,
         value: Self::Value,
         op: i32,
-        insert_index: i32,
+        insert_index: Option<i32>,
     ) {
         self.dict_insert_with_key_value(dict, self.string_value(key), value, op, insert_index);
     }
     /// Insert a dict entry with the override = attribute operator including key, value into the dict.
     fn dict_insert_override_item(&self, dict: Self::Value, key: &str, value: Self::Value) {
-        self.dict_insert(dict, key, value, 1, -1);
+        self.dict_insert(dict, key, value, 1, None);
     }
     /// Dict contains key.
     fn dict_contains_key(&self, dict: Self::Value, key: &str) -> Self::Value {

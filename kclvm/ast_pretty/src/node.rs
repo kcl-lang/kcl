@@ -842,9 +842,6 @@ impl<'p> Printer<'p> {
         match &item.node.key {
             Some(key) => {
                 let print_right_brace_count = self.write_config_key(key);
-                if item.node.insert_index >= 0 {
-                    self.write(&format!("[{}]", item.node.insert_index));
-                }
                 if !matches!(item.node.operation, ast::ConfigEntryOperation::Union) {
                     self.write_space();
                 }

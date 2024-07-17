@@ -453,7 +453,7 @@ pub fn dict(ctx: &mut Context, iterable: Option<&ValueRef>) -> ValueRef {
                 let k = iter.cur_key.clone();
                 match &*k.rc.borrow() {
                     Value::str_value(str) => {
-                        result.dict_insert(ctx, str.as_str(), &elem, Default::default(), -1);
+                        result.dict_insert(ctx, str.as_str(), &elem, Default::default(), None);
                     }
                     _ => {
                         let mut elem_iter = elem.iter();
@@ -462,7 +462,7 @@ pub fn dict(ctx: &mut Context, iterable: Option<&ValueRef>) -> ValueRef {
                         }
                         let k = elem_iter.next(val).unwrap().to_string();
                         let v = elem_iter.next(val).unwrap();
-                        result.dict_insert(ctx, k.as_str(), v, Default::default(), -1);
+                        result.dict_insert(ctx, k.as_str(), v, Default::default(), None);
                     }
                 };
             }

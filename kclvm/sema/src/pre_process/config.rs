@@ -60,7 +60,6 @@ impl ConfigNestAttrTransformer {
                             } else {
                                 ast::ConfigEntryOperation::Union
                             },
-                            insert_index: -1,
                         };
                         let config_expr = ast::ConfigExpr {
                             items: vec![Box::new(ast::Node::new(

@@ -74,7 +74,7 @@ fn test_kclvm_manifests_yaml_stream() {
             "opts",
             &opts,
             ConfigEntryOperationKind::Override,
-            -1,
+            None,
         );
         kclvm_manifests_yaml_stream(&mut ctx, &args, &kwargs);
         assert_eq!(

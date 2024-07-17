@@ -209,14 +209,14 @@ impl<'ctx> Evaluator<'ctx> {
         key: &str,
         value: &ValueRef,
         op: &ast::ConfigEntryOperation,
-        insert_index: i32,
+        insert_index: Option<i32>,
     ) {
         let op = match op {
             ast::ConfigEntryOperation::Union => ConfigEntryOperationKind::Union,
             ast::ConfigEntryOperation::Override => ConfigEntryOperationKind::Override,
             ast::ConfigEntryOperation::Insert => ConfigEntryOperationKind::Insert,
         };
-        self.dict_merge_key_value_pair(dict, key, value, op, insert_index, false);
+        self.dict_merge_key_value_pair(dict, key, value, op, insert_index, true);
     }
 
     /// Insert a dict entry including key, value, op and insert_index into the dict,
@@ -228,7 +228,7 @@ impl<'ctx> Evaluator<'ctx> {
         key: &str,
         value: &ValueRef,
         op: &ast::ConfigEntryOperation,
-        insert_index: i32,
+        insert_index: Option<i32>,
     ) {
         let op = match op {
             ast::ConfigEntryOperation::Union => ConfigEntryOperationKind::Union,
@@ -259,7 +259,14 @@ impl<'ctx> Evaluator<'ctx> {
     /// Insert an entry including key and value into the dict, and merge the original entry.
     #[inline]
     pub(crate) fn dict_insert_merge_value(&self, dict: &mut ValueRef, key: &str, value: &ValueRef) {
-        self.dict_merge_key_value_pair(dict, key, value, ConfigEntryOperationKind::Union, -1, true);
+        self.dict_merge_key_value_pair(
+            dict,
+            key,
+            value,
+            ConfigEntryOperationKind::Union,
+            None,
+            true,
+        );
     }
 
     /// Set dict key with the value. When the dict is a schema and resolve schema validations.
@@ -292,14 +299,16 @@ impl<'ctx> Evaluator<'ctx> {
         key: &str,
         v: &ValueRef,
         op: ConfigEntryOperationKind,
-        insert_index: i32,
+        insert_index: Option<i32>,
         idempotent_check: bool,
     ) {
         if p.is_config() {
             let mut dict: DictValue = Default::default();
             dict.values.insert(key.to_string(), v.clone());
             dict.ops.insert(key.to_string(), op);
-            dict.insert_indexs.insert(key.to_string(), insert_index);
+            if let Some(index) = insert_index {
+                dict.insert_indexs.insert(key.to_string(), index);
+            }
             union_entry(
                 self,
                 p,

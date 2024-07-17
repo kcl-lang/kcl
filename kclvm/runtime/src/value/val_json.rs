@@ -368,7 +368,13 @@ impl ValueRef {
                 let mut dict = Self::dict(None);
                 for (name, value) in values {
                     let v = Self::parse_json(ctx, value);
-                    dict.dict_insert(ctx, name.as_ref(), &v, ConfigEntryOperationKind::Union, -1);
+                    dict.dict_insert(
+                        ctx,
+                        name.as_ref(),
+                        &v,
+                        ConfigEntryOperationKind::Union,
+                        None,
+                    );
                 }
                 dict
             }

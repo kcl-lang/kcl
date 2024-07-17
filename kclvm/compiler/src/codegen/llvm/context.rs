@@ -998,11 +998,13 @@ impl<'ctx> DerivedValueCalculationMethods for LLVMCodeGenContext<'ctx> {
         key: &str,
         value: Self::Value,
         op: i32,
-        insert_index: i32,
+        insert_index: Option<i32>,
     ) {
         let name = self.native_global_string(key, "").into();
         let op = self.native_int_value(op);
-        let insert_index = self.native_int_value(insert_index);
+        let has_insert_index = insert_index.is_some();
+        let has_insert_index = self.native_i8_value(if has_insert_index { 1 } else { 0 });
+        let insert_index = self.native_int_value(insert_index.unwrap_or(-1));
         self.build_void_call(
             &ApiFunc::kclvm_dict_insert.name(),
             &[
@@ -1012,6 +1014,7 @@ impl<'ctx> DerivedValueCalculationMethods for LLVMCodeGenContext<'ctx> {
                 value,
                 op,
                 insert_index,
+                has_insert_index,
             ],
         );
     }
@@ -1025,10 +1028,12 @@ impl<'ctx> DerivedValueCalculationMethods for LLVMCodeGenContext<'ctx> {
         key: Self::Value,
         value: Self::Value,
         op: i32,
-        insert_index: i32,
+        insert_index: Option<i32>,
     ) {
         let op = self.native_int_value(op);
-        let insert_index = self.native_int_value(insert_index);
+        let has_insert_index = insert_index.is_some();
+        let has_insert_index = self.native_i8_value(if has_insert_index { 1 } else { 0 });
+        let insert_index = self.native_int_value(insert_index.unwrap_or(-1));
         self.build_void_call(
             &ApiFunc::kclvm_dict_insert_value.name(),
             &[
@@ -1038,6 +1043,7 @@ impl<'ctx> DerivedValueCalculationMethods for LLVMCodeGenContext<'ctx> {
                 value,
                 op,
                 insert_index,
+                has_insert_index,
             ],
         );
     }
@@ -1574,6 +1580,12 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
     pub fn native_i8(&self, v: i8) -> IntValue<'ctx> {
         let i8_type = self.context.i8_type();
         i8_type.const_int(v as u64, false)
+    }
+
+    /// Get LLVM i8 zero value
+    pub fn native_i8_value(&self, v: i8) -> BasicValueEnum<'ctx> {
+        let i8_type = self.context.i8_type();
+        i8_type.const_int(v as u64, false).into()
     }
 
     /// Construct a LLVM int value using i32
@@ -2356,14 +2368,14 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         }
         // Deal scalars
         for scalar in scalars.iter() {
-            self.dict_safe_insert(global_dict, SCALAR_KEY, *scalar, 0, -1);
+            self.dict_safe_insert(global_dict, SCALAR_KEY, *scalar, 0, None);
         }
         // Deal global variables
         for (name, ptr) in globals.iter() {
             let value = self.builder.build_load(*ptr, "");
             let value_dict = self.dict_value();
-            self.dict_safe_insert(value_dict, name.as_str(), value, 0, -1);
-            self.dict_safe_insert(global_dict, SCALAR_KEY, value_dict, 0, -1);
+            self.dict_safe_insert(value_dict, name.as_str(), value, 0, None);
+            self.dict_safe_insert(global_dict, SCALAR_KEY, value_dict, 0, None);
         }
         // Plan result to json string.
         self.build_call(
@@ -2386,11 +2398,13 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         key: &str,
         value: BasicValueEnum<'ctx>,
         op: i32,
-        insert_index: i32,
+        insert_index: Option<i32>,
     ) {
         let name = self.native_global_string(key, "").into();
         let op = self.native_int_value(op);
-        let insert_index = self.native_int_value(insert_index);
+        let has_insert_index = insert_index.is_some();
+        let has_insert_index = self.native_i8_value(if has_insert_index { 1 } else { 0 });
+        let insert_index = self.native_int_value(insert_index.unwrap_or(-1));
         self.build_void_call(
             &ApiFunc::kclvm_dict_safe_insert.name(),
             &[
@@ -2400,6 +2414,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 value,
                 op,
                 insert_index,
+                has_insert_index,
             ],
         );
     }
@@ -2413,11 +2428,13 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         key: &str,
         value: BasicValueEnum<'ctx>,
         op: i32,
-        insert_index: i32,
+        insert_index: Option<i32>,
     ) {
         let name = self.native_global_string(key, "").into();
         let op = self.native_int_value(op);
-        let insert_index = self.native_int_value(insert_index);
+        let has_insert_index = insert_index.is_some();
+        let has_insert_index = self.native_i8_value(if has_insert_index { 1 } else { 0 });
+        let insert_index = self.native_int_value(insert_index.unwrap_or(-1));
         self.build_void_call(
             &ApiFunc::kclvm_dict_merge.name(),
             &[
@@ -2427,6 +2444,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 value,
                 op,
                 insert_index,
+                has_insert_index,
             ],
         );
     }

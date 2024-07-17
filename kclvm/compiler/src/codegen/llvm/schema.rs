@@ -89,7 +89,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             match &stmt.node {
                 ast::Stmt::Unification(unification_stmt) => {
                     let name = &unification_stmt.target.node.names[0].node;
-                    self.dict_merge(schema_value, name, value, 0, -1);
+                    self.dict_merge(schema_value, name, value, 0, None);
                     if is_in_if {
                         in_if_names.push(name.to_string());
                     } else {
@@ -105,7 +105,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 ast::Stmt::Assign(assign_stmt) => {
                     for target in &assign_stmt.targets {
                         let name = &target.node.names[0].node;
-                        self.dict_merge(schema_value, name, value, 0, -1);
+                        self.dict_merge(schema_value, name, value, 0, None);
                         if is_in_if {
                             in_if_names.push(name.to_string());
                         } else {
@@ -122,7 +122,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 ast::Stmt::AugAssign(aug_assign_stmt) => {
                     let target = &aug_assign_stmt.target;
                     let name = &target.node.names[0].node;
-                    self.dict_merge(schema_value, name, value, 0, -1);
+                    self.dict_merge(schema_value, name, value, 0, None);
                     if is_in_if {
                         in_if_names.push(name.to_string());
                     } else {
@@ -186,7 +186,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 }
                 ast::Stmt::SchemaAttr(schema_attr) => {
                     let name = schema_attr.name.node.as_str();
-                    self.dict_merge(schema_value, name, value, 0, -1);
+                    self.dict_merge(schema_value, name, value, 0, None);
                     if is_in_if {
                         in_if_names.push(name.to_string());
                     } else {
@@ -324,7 +324,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         let config_value = phi.as_basic_value();
         if self.scope_level() >= INNER_LEVEL && !self.local_vars.borrow().contains(name) {
             if let Some(value) = value {
-                self.dict_merge(schema_value, name, value, 1, -1);
+                self.dict_merge(schema_value, name, value, 1, None);
             }
             self.value_union(schema_value, config_value);
             let cal_map = self

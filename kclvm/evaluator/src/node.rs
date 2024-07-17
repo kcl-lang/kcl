@@ -490,8 +490,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                     config_value.dict_get_attr_operator(name),
                     Some(ConfigEntryOperationKind::Override)
                 );
-                let without_index =
-                    matches!(config_value.dict_get_insert_index(name), Some(-1) | None);
+                let without_index = matches!(config_value.dict_get_insert_index(name), None);
                 is_override_op && without_index
             };
             if !is_override_attr {
@@ -512,7 +511,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                                 name,
                                 &value,
                                 &ast::ConfigEntryOperation::Override,
-                                -1,
+                                None,
                             );
                         }
                         // Assign
@@ -521,7 +520,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                             name,
                             &value,
                             &ast::ConfigEntryOperation::Override,
-                            -1,
+                            None,
                         ),
                     }
                 }
@@ -555,7 +554,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                             name,
                             &value,
                             &ast::ConfigEntryOperation::Override,
-                            -1,
+                            None,
                         );
                     }
                     // Assign
@@ -564,7 +563,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                         name,
                         &value,
                         &ast::ConfigEntryOperation::Override,
-                        -1,
+                        None,
                     ),
                 }
             }
@@ -1510,7 +1509,7 @@ impl<'ctx> Evaluator<'ctx> {
                             &key.as_str(),
                             &value.deep_copy(),
                             op,
-                            -1,
+                            None,
                         );
                     }
                 }
@@ -1535,19 +1534,28 @@ impl<'ctx> Evaluator<'ctx> {
         let mut config_value = self.dict_value();
         for item in items {
             let value = self.walk_expr(&item.node.value)?;
-            if let Some(key) = &item.node.key {
-                let mut insert_index = -1;
-                let optional_name = match &key.node {
+            if let Some(key_node) = &item.node.key {
+                let mut insert_index = None;
+                let optional_name = match &key_node.node {
                     ast::Expr::Identifier(identifier) => Some(identifier.names[0].node.clone()),
                     ast::Expr::StringLit(string_lit) => Some(string_lit.value.clone()),
                     ast::Expr::Subscript(subscript) => {
                         let mut name = None;
                         if let ast::Expr::Identifier(identifier) = &subscript.value.node {
                             if let Some(index_node) = &subscript.index {
+                                // Insert index
                                 if let ast::Expr::NumberLit(number) = &index_node.node {
                                     if let ast::NumberLitValue::Int(v) = number.value {
-                                        insert_index = v;
+                                        insert_index = Some(v as i32);
                                         name = Some(identifier.names[0].node.clone())
+                                    }
+                                } else if let ast::Expr::Unary(unary_expr) = &index_node.node {
+                                    // Negative insert index
+                                    if let ast::Expr::NumberLit(number) = &unary_expr.operand.node {
+                                        if let ast::NumberLitValue::Int(v) = number.value {
+                                            insert_index = Some(-v as i32);
+                                            name = Some(identifier.names[0].node.clone())
+                                        }
                                     }
                                 }
                             }
@@ -1559,14 +1567,14 @@ impl<'ctx> Evaluator<'ctx> {
                 // Store a local variable for every entry key.
                 let key = match &optional_name {
                     Some(name) if !self.is_local_var(name) => self.string_value(name),
-                    _ => self.walk_expr(key)?,
+                    _ => self.walk_expr(key_node)?,
                 };
                 self.dict_insert(
                     &mut config_value,
                     &key.as_str(),
                     &value,
                     &item.node.operation,
-                    insert_index as i32,
+                    insert_index,
                 );
                 if let Some(name) = &optional_name {
                     let value = self.dict_get_value(&config_value, name);

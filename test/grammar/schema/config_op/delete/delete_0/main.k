@@ -4,5 +4,8 @@ schema Person:
 
 person = Person {
     info = {"key2": "value2"}
-    hc[0] = None
+}
+personDeleteHc0 = {
+    **person
+    hc[0] = Undefined
 }

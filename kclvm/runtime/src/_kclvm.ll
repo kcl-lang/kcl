@@ -226,11 +226,11 @@ declare %kclvm_value_ref_t* @kclvm_dict_get_value_by_path(%kclvm_context_t* %ctx
 
 declare %kclvm_bool_t @kclvm_dict_has_value(%kclvm_value_ref_t* %p, %kclvm_char_t* %key);
 
-declare void @kclvm_dict_insert(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p, %kclvm_char_t* %key, %kclvm_value_ref_t* %v, %kclvm_size_t %op, %kclvm_size_t %insert_index);
+declare void @kclvm_dict_insert(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p, %kclvm_char_t* %key, %kclvm_value_ref_t* %v, %kclvm_size_t %op, %kclvm_size_t %insert_index, %kclvm_bool_t %has_insert_index);
 
 declare void @kclvm_dict_insert_unpack(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p, %kclvm_value_ref_t* %v);
 
-declare void @kclvm_dict_insert_value(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p, %kclvm_value_ref_t* %key, %kclvm_value_ref_t* %v, %kclvm_size_t %op, %kclvm_size_t %insert_index);
+declare void @kclvm_dict_insert_value(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p, %kclvm_value_ref_t* %key, %kclvm_value_ref_t* %v, %kclvm_size_t %op, %kclvm_size_t %insert_index, %kclvm_bool_t %has_insert_index);
 
 declare %kclvm_bool_t @kclvm_dict_is_override_attr(%kclvm_value_ref_t* %p, %kclvm_char_t* %key);
 
@@ -238,11 +238,11 @@ declare %kclvm_value_ref_t* @kclvm_dict_keys(%kclvm_context_t* %ctx, %kclvm_valu
 
 declare %kclvm_size_t @kclvm_dict_len(%kclvm_value_ref_t* %p);
 
-declare void @kclvm_dict_merge(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p, %kclvm_char_t* %key, %kclvm_value_ref_t* %v, %kclvm_size_t %op, %kclvm_size_t %insert_index);
+declare void @kclvm_dict_merge(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p, %kclvm_char_t* %key, %kclvm_value_ref_t* %v, %kclvm_size_t %op, %kclvm_size_t %insert_index, %kclvm_bool_t %has_insert_index);
 
 declare void @kclvm_dict_remove(%kclvm_value_ref_t* %p, %kclvm_char_t* %key);
 
-declare void @kclvm_dict_safe_insert(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p, %kclvm_char_t* %key, %kclvm_value_ref_t* %v, %kclvm_size_t %op, %kclvm_size_t %insert_index);
+declare void @kclvm_dict_safe_insert(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p, %kclvm_char_t* %key, %kclvm_value_ref_t* %v, %kclvm_size_t %op, %kclvm_size_t %insert_index, %kclvm_bool_t %has_insert_index);
 
 declare void @kclvm_dict_set_value(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p, %kclvm_char_t* %key, %kclvm_value_ref_t* %val);
 

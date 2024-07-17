@@ -128,10 +128,8 @@ impl ValueRef {
     /// Dict get value e.g., {k1 = v1, k2 = v2}.get_attr_operator(k1) == Some(ConfigEntryOperationKind::Override)
     pub fn dict_get_insert_index(&self, key: &str) -> Option<i32> {
         match &*self.rc.borrow() {
-            Value::dict_value(ref dict) => Some(*dict.insert_indexs.get(key).unwrap_or(&-1)),
-            Value::schema_value(ref schema) => {
-                Some(*schema.config.insert_indexs.get(key).unwrap_or(&-1))
-            }
+            Value::dict_value(ref dict) => dict.insert_indexs.get(key).cloned(),
+            Value::schema_value(ref schema) => schema.config.insert_indexs.get(key).cloned(),
             _ => None,
         }
     }
@@ -148,12 +146,8 @@ impl ValueRef {
                     } else {
                         &ConfigEntryOperationKind::Union
                     };
-                    let index = if let Some(idx) = dict.insert_indexs.get(key) {
-                        *idx
-                    } else {
-                        -1
-                    };
-                    d.dict_update_entry(key, value, op, &index);
+                    let index = dict.insert_indexs.get(key);
+                    d.dict_update_entry(key, value, op, index);
                     d.set_potential_schema_type(&dict.potential_schema.clone().unwrap_or_default());
                     Some(d)
                 } else {
@@ -169,12 +163,8 @@ impl ValueRef {
                     } else {
                         &ConfigEntryOperationKind::Union
                     };
-                    let index = if let Some(idx) = schema.config.insert_indexs.get(key) {
-                        *idx
-                    } else {
-                        -1
-                    };
-                    d.dict_update_entry(key, value, op, &index);
+                    let index = schema.config.insert_indexs.get(key);
+                    d.dict_update_entry(key, value, op, index);
                     d.set_potential_schema_type(
                         &schema.config.potential_schema.clone().unwrap_or_default(),
                     );
@@ -200,7 +190,7 @@ impl ValueRef {
                             .ops
                             .get(key)
                             .unwrap_or(&ConfigEntryOperationKind::Union);
-                        let index = dict.insert_indexs.get(key).unwrap_or(&-1);
+                        let index = dict.insert_indexs.get(key);
                         d.dict_update_entry(key, value, op, index);
                     }
                 }
@@ -217,7 +207,7 @@ impl ValueRef {
                             .ops
                             .get(key)
                             .unwrap_or(&ConfigEntryOperationKind::Union);
-                        let index = schema.config.insert_indexs.get(key).unwrap_or(&-1);
+                        let index = schema.config.insert_indexs.get(key);
                         d.dict_update_entry(key, value, op, index);
                     }
                 }
@@ -248,7 +238,7 @@ impl ValueRef {
                 for key in keys {
                     if dict.values.contains_key(key) {
                         let value = dict.values.get(key).unwrap();
-                        let index = dict.insert_indexs.get(key).unwrap_or(&-1);
+                        let index = dict.insert_indexs.get(key);
                         d.dict_update_entry(key, value, op, index);
                     }
                 }
@@ -260,7 +250,7 @@ impl ValueRef {
                 for key in keys {
                     if schema.config.values.contains_key(key) {
                         let value = schema.config.values.get(key).unwrap();
-                        let index = schema.config.insert_indexs.get(key).unwrap_or(&-1);
+                        let index = schema.config.insert_indexs.get(key);
                         d.dict_update_entry(key, value, op, index);
                     }
                 }
@@ -319,7 +309,7 @@ impl ValueRef {
         key: &str,
         val: &ValueRef,
         op: &ConfigEntryOperationKind,
-        index: &i32,
+        index: Option<&i32>,
     ) {
         let mut binding = self.rc.borrow_mut();
         let dict = match &mut *binding {
@@ -329,7 +319,9 @@ impl ValueRef {
         };
         dict.values.insert(key.to_string(), val.clone());
         dict.ops.insert(key.to_string(), op.clone());
-        dict.insert_indexs.insert(key.to_string(), *index);
+        if let Some(index) = index {
+            dict.insert_indexs.insert(key.to_string(), *index);
+        }
     }
 
     /// Insert key value pair with the idempotent check.
@@ -340,7 +332,7 @@ impl ValueRef {
         key: &str,
         v: &ValueRef,
         op: ConfigEntryOperationKind,
-        insert_index: i32,
+        insert_index: Option<i32>,
     ) {
         self.dict_merge_key_value_pair(ctx, key, v, op, insert_index, true);
     }
@@ -352,7 +344,7 @@ impl ValueRef {
         key: &str,
         v: &ValueRef,
         op: ConfigEntryOperationKind,
-        insert_index: i32,
+        insert_index: Option<i32>,
     ) {
         self.dict_merge_key_value_pair(ctx, key, v, op, insert_index, false);
     }
@@ -364,7 +356,7 @@ impl ValueRef {
         key: &str,
         v: &ValueRef,
         op: ConfigEntryOperationKind,
-        insert_index: i32,
+        insert_index: Option<i32>,
         idempotent_check: bool,
     ) {
         if ctx.cfg.debug_mode {
@@ -391,7 +383,9 @@ impl ValueRef {
             let mut dict: DictValue = Default::default();
             dict.values.insert(key.to_string(), v.clone());
             dict.ops.insert(key.to_string(), op);
-            dict.insert_indexs.insert(key.to_string(), insert_index);
+            if let Some(insert_index) = insert_index {
+                dict.insert_indexs.insert(key.to_string(), insert_index);
+            }
             self.union_entry(
                 ctx,
                 &ValueRef::from(Value::dict_value(Box::new(dict))),
@@ -521,7 +515,7 @@ mod test_value_dict {
                 key,
                 &ValueRef::str(val),
                 &ConfigEntryOperationKind::Union,
-                &-1,
+                None,
             );
         }
         for (key, val) in update_entries {
