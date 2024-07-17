@@ -428,7 +428,9 @@ impl KclvmServiceImpl {
         });
     }
 
-    /// Execute KCL file with args. **Note that it is not thread safe.**
+    /// Execute KCL file with arguments and return the JSON/YAML result.
+    ///
+    /// **Note that it is not thread safe when the llvm feature is enabled.**
     ///
     /// # Examples
     ///
@@ -517,7 +519,9 @@ impl KclvmServiceImpl {
         })
     }
 
-    /// Execute the KCL artifact with args. **Note that it is not thread safe.**
+    /// Execute the KCL artifact with arguments and return the JSON/YAML result.
+    ///
+    /// ***Note that it is not thread safe when the llvm feature is enabled.*
     ///
     /// # Examples
     ///
