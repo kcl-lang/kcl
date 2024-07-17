@@ -17,7 +17,6 @@ expression: got_ast_json_str
         "filename": "<workspace>/test.k.json",
         "line": 1,
         "node": {
-          "insert_index": -1,
           "key": {
             "column": 4,
             "end_column": 13,
@@ -47,7 +46,6 @@ expression: got_ast_json_str
                   "filename": "<workspace>/test.k.json",
                   "line": 4,
                   "node": {
-                    "insert_index": -1,
                     "key": {
                       "column": 8,
                       "end_column": 14,
@@ -84,7 +82,6 @@ expression: got_ast_json_str
                   "filename": "<workspace>/test.k.json",
                   "line": 4,
                   "node": {
-                    "insert_index": -1,
                     "key": {
                       "column": 8,
                       "end_column": 16,
@@ -127,7 +124,6 @@ expression: got_ast_json_str
         "filename": "<workspace>/test.k.json",
         "line": 1,
         "node": {
-          "insert_index": -1,
           "key": {
             "column": 4,
             "end_column": 9,
@@ -166,7 +162,6 @@ expression: got_ast_json_str
         "filename": "<workspace>/test.k.json",
         "line": 1,
         "node": {
-          "insert_index": -1,
           "key": {
             "column": 4,
             "end_column": 10,
@@ -203,7 +198,6 @@ expression: got_ast_json_str
         "filename": "<workspace>/test.k.json",
         "line": 1,
         "node": {
-          "insert_index": -1,
           "key": {
             "column": 4,
             "end_column": 12,

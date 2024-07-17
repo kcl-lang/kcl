@@ -80,7 +80,6 @@ Node {
                                                     end_column: 11,
                                                 },
                                                 operation: Override,
-                                                insert_index: -1,
                                             },
                                             filename: "",
                                             line: 1,
@@ -98,7 +97,6 @@ Node {
                             end_column: 12,
                         },
                         operation: Override,
-                        insert_index: -1,
                     },
                     filename: "",
                     line: 1,
@@ -115,4 +113,3 @@ Node {
     end_line: 1,
     end_column: 12,
 }
-

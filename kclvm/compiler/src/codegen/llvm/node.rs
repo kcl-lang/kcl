@@ -1538,10 +1538,10 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                         &fn_name.name(),
                         &[self.current_runtime_ctx_ptr(), org_value, value],
                     );
-                    self.dict_merge(schema_value, name, value, 1, -1);
+                    self.dict_merge(schema_value, name, value, 1, None);
                 }
                 // Assign
-                _ => self.dict_merge(schema_value, name, value, 1, -1),
+                _ => self.dict_merge(schema_value, name, value, 1, None),
             }
         }
         self.br(is_not_override_else_block);
@@ -1595,10 +1595,10 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                         &fn_name.name(),
                         &[self.current_runtime_ctx_ptr(), org_value, value],
                     );
-                    self.dict_merge(schema_value, name, value, 1, -1);
+                    self.dict_merge(schema_value, name, value, 1, None);
                 }
                 // Assign
-                _ => self.dict_merge(schema_value, name, value, 1, -1),
+                _ => self.dict_merge(schema_value, name, value, 1, None),
             }
         }
         self.br(end_block);
@@ -1781,7 +1781,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             } else {
                 self.none_value()
             };
-            self.dict_insert(dict_value, name.node.as_str(), value, 0, -1);
+            self.dict_insert(dict_value, name.node.as_str(), value, 0, None);
         }
         let pkgpath = self.native_global_string_value(&self.current_pkgpath());
         let is_in_schema = self.is_in_schema() || self.is_in_schema_expr();
@@ -2053,7 +2053,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             } else {
                 self.none_value()
             };
-            self.dict_insert(dict_value, name.node.as_str(), value, 0, -1);
+            self.dict_insert(dict_value, name.node.as_str(), value, 0, None);
         }
         let pkgpath = self.native_global_string_value(&self.current_pkgpath());
         let schema = self.build_call(
@@ -2597,7 +2597,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             } else {
                 self.none_value()
             };
-            self.dict_insert(dict_value, name.node.as_str(), value, 0, -1);
+            self.dict_insert(dict_value, name.node.as_str(), value, 0, None);
         }
         let name = match &decorator.func.node {
             ast::Expr::Identifier(ident) if ident.names.len() == 1 => ident.names[0].clone(),
@@ -2808,7 +2808,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                         key,
                         self.value_deep_copy(value),
                         op.value(),
-                        -1,
+                        None,
                     );
                 }
             }
@@ -2843,7 +2843,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         for item in items {
             let value = self.walk_expr(&item.node.value)?;
             if let Some(key) = &item.node.key {
-                let mut insert_index = -1;
+                let mut insert_index = None;
                 let optional_name = match &key.node {
                     ast::Expr::Identifier(identifier) => Some(identifier.names[0].node.clone()),
                     ast::Expr::StringLit(string_lit) => Some(string_lit.value.clone()),
@@ -2851,10 +2851,19 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                         let mut name = None;
                         if let ast::Expr::Identifier(identifier) = &subscript.value.node {
                             if let Some(index_node) = &subscript.index {
+                                // Insert index
                                 if let ast::Expr::NumberLit(number) = &index_node.node {
                                     if let ast::NumberLitValue::Int(v) = number.value {
-                                        insert_index = v;
+                                        insert_index = Some(v as i32);
                                         name = Some(identifier.names[0].node.clone())
+                                    }
+                                } else if let ast::Expr::Unary(unary_expr) = &index_node.node {
+                                    // Negative insert index
+                                    if let ast::Expr::NumberLit(number) = &unary_expr.operand.node {
+                                        if let ast::NumberLitValue::Int(v) = number.value {
+                                            insert_index = Some(-v as i32);
+                                            name = Some(identifier.names[0].node.clone())
+                                        }
                                     }
                                 }
                             }
@@ -2873,7 +2882,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                     key,
                     value,
                     item.node.operation.value(),
-                    insert_index as i32,
+                    insert_index,
                 );
                 if let Some(name) = &optional_name {
                     let value =

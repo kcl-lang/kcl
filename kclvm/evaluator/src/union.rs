@@ -2,7 +2,9 @@
 
 use crate::*;
 use kclvm_runtime::unification::value_subsume;
-use kclvm_runtime::{ConfigEntryOperationKind, DictValue, UnionContext, UnionOptions, Value};
+use kclvm_runtime::{
+    must_normalize_index, ConfigEntryOperationKind, DictValue, UnionContext, UnionOptions, Value,
+};
 
 use self::ty::resolve_schema;
 
@@ -35,61 +37,119 @@ fn do_union(
             } else {
                 &ConfigEntryOperationKind::Union
             };
-            let index = if let Some(idx) = delta.insert_indexs.get(k) {
-                *idx
-            } else {
-                -1
-            };
-            if !obj.values.contains_key(k) {
+            let index = delta.insert_indexs.get(k);
+            if !obj.values.contains_key(k) && index.is_none() {
                 obj.values.insert(k.clone(), v.clone());
             } else {
                 match operation {
-                    ConfigEntryOperationKind::Union => {
-                        let obj_value = obj.values.get_mut(k).unwrap();
-                        if opts.idempotent_check && !value_subsume(v, obj_value, false) {
-                            union_context.conflict = true;
-                            union_context.path_backtrace.push(k.clone());
-                            union_context.obj_json = if obj_value.is_config() {
-                                "{...}".to_string()
-                            } else if obj_value.is_list() {
-                                "[...]".to_string()
-                            } else {
-                                obj_value.to_json_string()
-                            };
+                    ConfigEntryOperationKind::Union => match index {
+                        Some(index) => {
+                            let index = *index;
+                            if let Some(origin_value) = obj.values.get_mut(k) {
+                                if !origin_value.is_list() {
+                                    panic!(
+                                        "only list attribute can be union value with the index {}",
+                                        index
+                                    );
+                                }
+                                let value = origin_value.list_get(index as isize);
+                                if let Some(mut value) = value {
+                                    if opts.idempotent_check && !value_subsume(v, &value, false) {
+                                        union_context.conflict = true;
+                                        union_context
+                                            .path_backtrace
+                                            .push(format!("{}[{}]", k, index));
+                                        union_context.obj_json = if value.is_config() {
+                                            "{...}".to_string()
+                                        } else if value.is_list() {
+                                            "[...]".to_string()
+                                        } else {
+                                            value.to_json_string()
+                                        };
 
-                            union_context.delta_json = if v.is_config() {
-                                "{...}".to_string()
-                            } else if v.is_list() {
-                                "[...]".to_string()
+                                        union_context.delta_json = if v.is_config() {
+                                            "{...}".to_string()
+                                        } else if v.is_list() {
+                                            "[...]".to_string()
+                                        } else {
+                                            v.to_json_string()
+                                        };
+                                        return;
+                                    }
+                                    let union_value =
+                                        union(s, &mut value, v, false, opts, union_context);
+                                    if union_context.conflict {
+                                        union_context.path_backtrace.push(k.clone());
+                                        return;
+                                    }
+                                    let index = must_normalize_index(index, origin_value.len());
+                                    origin_value.list_set(index, &union_value);
+                                } else {
+                                    panic!("only non-empty list attribute can be union value with the index {}", index);
+                                }
                             } else {
-                                v.to_json_string()
-                            };
-                            return;
-                        }
-                        union(s, obj_value, v, false, opts, union_context);
-                        if union_context.conflict {
-                            union_context.path_backtrace.push(k.clone());
-                            return;
-                        }
-                    }
-                    ConfigEntryOperationKind::Override => {
-                        if index < 0 {
-                            obj.values.insert(k.clone(), v.clone());
-                        } else {
-                            let origin_value = obj.values.get_mut(k).unwrap();
-                            if !origin_value.is_list() {
-                                panic!("only list attribute can be inserted value");
+                                panic!("only non-empty list attribute can be union value with the index {}", index);
                             }
-                            if v.is_none_or_undefined() {
-                                origin_value.list_remove_at(index as usize);
+                        }
+                        None => {
+                            if let Some(obj_value) = obj.values.get_mut(k) {
+                                if opts.idempotent_check && !value_subsume(v, obj_value, false) {
+                                    union_context.conflict = true;
+                                    union_context.path_backtrace.push(k.clone());
+                                    union_context.obj_json = if obj_value.is_config() {
+                                        "{...}".to_string()
+                                    } else if obj_value.is_list() {
+                                        "[...]".to_string()
+                                    } else {
+                                        obj_value.to_json_string()
+                                    };
+
+                                    union_context.delta_json = if v.is_config() {
+                                        "{...}".to_string()
+                                    } else if v.is_list() {
+                                        "[...]".to_string()
+                                    } else {
+                                        v.to_json_string()
+                                    };
+                                    return;
+                                }
+                                union(s, obj_value, v, false, opts, union_context);
+                                if union_context.conflict {
+                                    union_context.path_backtrace.push(k.clone());
+                                    return;
+                                }
                             } else {
-                                origin_value.list_set(index as usize, v);
+                                obj.values.insert(k.clone(), v.clone());
+                            }
+                        }
+                    },
+                    ConfigEntryOperationKind::Override => {
+                        match index {
+                            Some(index) => {
+                                let index = *index;
+                                let origin_value = obj.values.get_mut(k);
+                                if let Some(origin_value) = origin_value {
+                                    if !origin_value.is_list() {
+                                        panic!("only list attribute can be override value with the index {}", index);
+                                    }
+                                    let index = must_normalize_index(index, origin_value.len());
+                                    if v.is_undefined() {
+                                        origin_value.list_remove_at(index as usize);
+                                    } else {
+                                        origin_value.list_must_set(index as usize, v);
+                                    }
+                                } else {
+                                    panic!("only list attribute can be override value with the index {}", index);
+                                }
+                            }
+                            None => {
+                                obj.values.insert(k.clone(), v.clone());
                             }
                         }
                     }
                     ConfigEntryOperationKind::Insert => {
-                        let origin_value = obj.values.get_mut(k).unwrap();
-                        if origin_value.is_none_or_undefined() {
+                        let origin_value = obj.values.get_mut(k);
+                        if origin_value.is_none() || origin_value.unwrap().is_none_or_undefined() {
                             let list = ValueRef::list(None);
                             obj.values.insert(k.to_string(), list);
                         }
@@ -99,21 +159,27 @@ fn do_union(
                         }
                         match (&mut *origin_value.rc.borrow_mut(), &*v.rc.borrow()) {
                             (Value::list_value(origin_value), Value::list_value(value)) => {
-                                if index == -1 {
-                                    for elem in value.values.iter() {
-                                        origin_value.values.push(elem.clone());
+                                match index {
+                                    Some(index) => {
+                                        let index = *index;
+                                        let mut insert_index =
+                                            must_normalize_index(index, origin_value.values.len());
+                                        for v in &value.values {
+                                            origin_value.values.insert(insert_index, v.clone());
+                                            insert_index += 1;
+                                        }
                                     }
-                                } else if index >= 0 {
-                                    let mut insert_index = index;
-                                    for v in &value.values {
-                                        origin_value
-                                            .values
-                                            .insert(insert_index as usize, v.clone());
-                                        insert_index += 1;
+                                    None => {
+                                        for elem in value.values.iter() {
+                                            origin_value.values.push(elem.clone());
+                                        }
                                     }
                                 }
                             }
-                            _ => panic!("only list attribute can be inserted value"),
+                            _ => panic!(
+                                "only list attribute can be inserted value, the origin value type is {} and got value type is {}",
+                                origin_value.type_str(), v.type_str()
+                            ),
                         };
                     }
                 }
@@ -121,7 +187,7 @@ fn do_union(
         }
     };
 
-    // whether to union schema vars and resolve it and do the check of schema
+    // Whether to union schema vars and resolve it and do the check of schema.
     let mut union_schema = false;
     let mut pkgpath: String = "".to_string();
     let mut name: String = "".to_string();

@@ -34,6 +34,23 @@ impl Default for UnionOptions {
     }
 }
 
+/// Normalize negative index into positive index with the length.
+pub fn must_normalize_index(index: i32, len: usize) -> usize {
+    if index < 0 {
+        let pos_index = index + len as i32;
+        if pos_index >= 0 {
+            pos_index as usize
+        } else {
+            panic!(
+                "index out of bounds: the len is {} but the index is {}",
+                len, index
+            )
+        }
+    } else {
+        index as usize
+    }
+}
+
 impl ValueRef {
     fn do_union(
         &mut self,
@@ -64,61 +81,121 @@ impl ValueRef {
                 } else {
                     &ConfigEntryOperationKind::Union
                 };
-                let index = if let Some(idx) = delta.insert_indexs.get(k) {
-                    *idx
-                } else {
-                    -1
-                };
-                if !obj.values.contains_key(k) {
+                let index = delta.insert_indexs.get(k);
+                if !obj.values.contains_key(k) && index.is_none() {
                     obj.values.insert(k.clone(), v.clone());
                 } else {
                     match operation {
-                        ConfigEntryOperationKind::Union => {
-                            let obj_value = obj.values.get_mut(k).unwrap();
-                            if opts.idempotent_check && !value_subsume(v, obj_value, false) {
-                                union_context.conflict = true;
-                                union_context.path_backtrace.push(k.clone());
-                                union_context.obj_json = if obj_value.is_config() {
-                                    "{...}".to_string()
-                                } else if obj_value.is_list() {
-                                    "[...]".to_string()
-                                } else {
-                                    obj_value.to_json_string()
-                                };
+                        ConfigEntryOperationKind::Union => match index {
+                            Some(index) => {
+                                let index = *index;
+                                if let Some(origin_value) = obj.values.get_mut(k) {
+                                    if !origin_value.is_list() {
+                                        panic!(
+                                            "only list attribute can be union value with the index {}",
+                                            index
+                                        );
+                                    }
+                                    let value = origin_value.list_get(index as isize);
+                                    if let Some(mut value) = value {
+                                        if opts.idempotent_check && !value_subsume(v, &value, false)
+                                        {
+                                            union_context.conflict = true;
+                                            union_context
+                                                .path_backtrace
+                                                .push(format!("{}[{}]", k, index));
+                                            union_context.obj_json = if value.is_config() {
+                                                "{...}".to_string()
+                                            } else if value.is_list() {
+                                                "[...]".to_string()
+                                            } else {
+                                                value.to_json_string()
+                                            };
 
-                                union_context.delta_json = if v.is_config() {
-                                    "{...}".to_string()
-                                } else if v.is_list() {
-                                    "[...]".to_string()
+                                            union_context.delta_json = if v.is_config() {
+                                                "{...}".to_string()
+                                            } else if v.is_list() {
+                                                "[...]".to_string()
+                                            } else {
+                                                v.to_json_string()
+                                            };
+                                            return;
+                                        }
+                                        let union_value =
+                                            value.union(ctx, v, false, opts, union_context);
+                                        if union_context.conflict {
+                                            union_context.path_backtrace.push(k.clone());
+                                            return;
+                                        }
+                                        let index = must_normalize_index(index, origin_value.len());
+                                        origin_value.list_set(index, &union_value);
+                                    } else {
+                                        panic!("only non-empty list attribute can be union value with the index {}", index);
+                                    }
                                 } else {
-                                    v.to_json_string()
-                                };
-                                return;
+                                    panic!("only non-empty list attribute can be union value with the index {}", index);
+                                }
                             }
-                            obj_value.union(ctx, v, false, opts, union_context);
-                            if union_context.conflict {
-                                union_context.path_backtrace.push(k.clone());
-                                return;
+                            None => {
+                                if let Some(obj_value) = obj.values.get_mut(k) {
+                                    if opts.idempotent_check && !value_subsume(v, obj_value, false)
+                                    {
+                                        union_context.conflict = true;
+                                        union_context.path_backtrace.push(k.clone());
+                                        union_context.obj_json = if obj_value.is_config() {
+                                            "{...}".to_string()
+                                        } else if obj_value.is_list() {
+                                            "[...]".to_string()
+                                        } else {
+                                            obj_value.to_json_string()
+                                        };
+
+                                        union_context.delta_json = if v.is_config() {
+                                            "{...}".to_string()
+                                        } else if v.is_list() {
+                                            "[...]".to_string()
+                                        } else {
+                                            v.to_json_string()
+                                        };
+                                        return;
+                                    }
+                                    obj_value.union(ctx, v, false, opts, union_context);
+                                    if union_context.conflict {
+                                        union_context.path_backtrace.push(k.clone());
+                                        return;
+                                    }
+                                } else {
+                                    obj.values.insert(k.clone(), v.clone());
+                                }
                             }
-                        }
-                        ConfigEntryOperationKind::Override => {
-                            if index < 0 {
+                        },
+                        ConfigEntryOperationKind::Override => match index {
+                            Some(index) => {
+                                let index = *index;
+                                let origin_value = obj.values.get_mut(k);
+                                if let Some(origin_value) = origin_value {
+                                    if !origin_value.is_list() {
+                                        panic!("only list attribute can be override value with the index {}", index);
+                                    }
+                                    let index = must_normalize_index(index, origin_value.len());
+                                    if v.is_undefined() {
+                                        origin_value.list_remove_at(index as usize);
+                                    } else {
+                                        origin_value.list_must_set(index as usize, v);
+                                    }
+                                } else {
+                                    panic!("only list attribute can be override value with the index {}", index);
+                                }
+                            }
+                            None => {
                                 obj.values.insert(k.clone(), v.clone());
-                            } else {
-                                let origin_value = obj.values.get_mut(k).unwrap();
-                                if !origin_value.is_list() {
-                                    panic!("only list attribute can be inserted value");
-                                }
-                                if v.is_none_or_undefined() {
-                                    origin_value.list_remove_at(index as usize);
-                                } else {
-                                    origin_value.list_set(index as usize, v);
-                                }
                             }
-                        }
+                        },
                         ConfigEntryOperationKind::Insert => {
-                            let origin_value = obj.values.get_mut(k).unwrap();
-                            if origin_value.is_none_or_undefined() {
+                            let origin_value = obj.values.get_mut(k);
+                            if origin_value.is_none()
+                                || origin_value.unwrap().is_none_or_undefined()
+                            {
                                 let list = ValueRef::list(None);
                                 obj.values.insert(k.to_string(), list);
                             }
@@ -128,21 +205,27 @@ impl ValueRef {
                             }
                             match (&mut *origin_value.rc.borrow_mut(), &*v.rc.borrow()) {
                                 (Value::list_value(origin_value), Value::list_value(value)) => {
-                                    if index == -1 {
-                                        for elem in value.values.iter() {
-                                            origin_value.values.push(elem.clone());
+                                    match index {
+                                        Some(index) => {
+                                            let index = *index;
+                                            let mut insert_index =
+                                                must_normalize_index(index, origin_value.values.len());
+                                            for v in &value.values {
+                                                origin_value.values.insert(insert_index, v.clone());
+                                                insert_index += 1;
+                                            }
                                         }
-                                    } else if index >= 0 {
-                                        let mut insert_index = index;
-                                        for v in &value.values {
-                                            origin_value
-                                                .values
-                                                .insert(insert_index as usize, v.clone());
-                                            insert_index += 1;
+                                        None => {
+                                            for elem in value.values.iter() {
+                                                origin_value.values.push(elem.clone());
+                                            }
                                         }
                                     }
                                 }
-                                _ => panic!("only list attribute can be inserted value"),
+                                _ => panic!(
+                                    "only list attribute can be inserted value, the origin value type is {} and got value type is {}",
+                                    origin_value.type_str(), v.type_str()
+                                ),
                             };
                         }
                     }
@@ -150,7 +233,7 @@ impl ValueRef {
             }
         };
 
-        //union schema vars
+        // Whether to union schema vars and resolve it and do the check of schema.
         let mut union_schema = false;
         let mut pkgpath: String = "".to_string();
         let mut name: String = "".to_string();
@@ -371,37 +454,37 @@ mod test_value_union {
         let mut ctx = Context::new();
         let cases = [
             (
-                vec![("key", "value", ConfigEntryOperationKind::Union, -1)],
-                vec![("key", "value", ConfigEntryOperationKind::Union, -1)],
-                vec![("key", "value", ConfigEntryOperationKind::Union, -1)],
+                vec![("key", "value", ConfigEntryOperationKind::Union, None)],
+                vec![("key", "value", ConfigEntryOperationKind::Union, None)],
+                vec![("key", "value", ConfigEntryOperationKind::Union, None)],
             ),
             (
-                vec![("key", "value", ConfigEntryOperationKind::Override, -1)],
-                vec![("key", "value", ConfigEntryOperationKind::Override, -1)],
-                vec![("key", "value", ConfigEntryOperationKind::Override, -1)],
+                vec![("key", "value", ConfigEntryOperationKind::Override, None)],
+                vec![("key", "value", ConfigEntryOperationKind::Override, None)],
+                vec![("key", "value", ConfigEntryOperationKind::Override, None)],
             ),
             (
-                vec![("key", "value1", ConfigEntryOperationKind::Union, -1)],
-                vec![("key", "value2", ConfigEntryOperationKind::Override, -1)],
-                vec![("key", "value2", ConfigEntryOperationKind::Override, -1)],
+                vec![("key", "value1", ConfigEntryOperationKind::Union, None)],
+                vec![("key", "value2", ConfigEntryOperationKind::Override, None)],
+                vec![("key", "value2", ConfigEntryOperationKind::Override, None)],
             ),
             (
                 vec![
-                    ("key1", "value1", ConfigEntryOperationKind::Union, -1),
-                    ("key2", "value2", ConfigEntryOperationKind::Union, -1),
+                    ("key1", "value1", ConfigEntryOperationKind::Union, None),
+                    ("key2", "value2", ConfigEntryOperationKind::Union, None),
                 ],
                 vec![
                     (
                         "key1",
                         "override_value1",
                         ConfigEntryOperationKind::Override,
-                        -1,
+                        None,
                     ),
                     (
                         "key2",
                         "override_value2",
                         ConfigEntryOperationKind::Override,
-                        -1,
+                        None,
                     ),
                 ],
                 vec![
@@ -409,13 +492,13 @@ mod test_value_union {
                         "key1",
                         "override_value1",
                         ConfigEntryOperationKind::Override,
-                        -1,
+                        None,
                     ),
                     (
                         "key2",
                         "override_value2",
                         ConfigEntryOperationKind::Override,
-                        -1,
+                        None,
                     ),
                 ],
             ),
@@ -424,20 +507,20 @@ mod test_value_union {
             let mut left_value = ValueRef::dict(None);
             let mut right_value = ValueRef::dict(None);
             for (key, val, op, index) in left_entries {
-                left_value.dict_update_entry(key, &ValueRef::str(val), &op, &index);
+                left_value.dict_update_entry(key, &ValueRef::str(val), &op, index);
             }
             for (key, val, op, index) in right_entries {
-                right_value.dict_update_entry(key, &ValueRef::str(val), &op, &index);
+                right_value.dict_update_entry(key, &ValueRef::str(val), &op, index);
             }
             let result = left_value.bin_bit_or(&mut ctx, &right_value);
             for (key, val, op, index) in expected {
                 let result_dict = result.as_dict_ref();
                 let result_val = result_dict.values.get(key).unwrap().as_str();
                 let result_op = result_dict.ops.get(key).unwrap();
-                let result_index = result_dict.insert_indexs.get(key).unwrap();
+                let result_index = result_dict.insert_indexs.get(key);
                 assert_eq!(result_val, val);
                 assert_eq!(*result_op, op);
-                assert_eq!(*result_index, index);
+                assert_eq!(result_index.cloned(), index);
             }
         }
     }
@@ -446,38 +529,48 @@ mod test_value_union {
         let mut ctx = Context::new();
         let cases = [
             (
-                vec![("key", vec![0, 1], ConfigEntryOperationKind::Override, -1)],
-                vec![("key", vec![2, 3], ConfigEntryOperationKind::Insert, -1)],
+                vec![("key", vec![0, 1], ConfigEntryOperationKind::Override, None)],
+                vec![("key", vec![2, 3], ConfigEntryOperationKind::Insert, None)],
                 vec![(
                     "key",
                     vec![0, 1, 2, 3],
                     ConfigEntryOperationKind::Insert,
-                    -1,
+                    None,
                 )],
             ),
             (
-                vec![("key", vec![0, 1], ConfigEntryOperationKind::Override, -1)],
-                vec![("key", vec![2, 3], ConfigEntryOperationKind::Insert, 0)],
-                vec![("key", vec![2, 3, 0, 1], ConfigEntryOperationKind::Insert, 0)],
+                vec![("key", vec![0, 1], ConfigEntryOperationKind::Override, None)],
+                vec![("key", vec![2, 3], ConfigEntryOperationKind::Insert, Some(0))],
+                vec![(
+                    "key",
+                    vec![2, 3, 0, 1],
+                    ConfigEntryOperationKind::Insert,
+                    Some(0),
+                )],
             ),
             (
-                vec![("key", vec![0, 1], ConfigEntryOperationKind::Override, -1)],
-                vec![("key", vec![2, 3], ConfigEntryOperationKind::Insert, 1)],
-                vec![("key", vec![0, 2, 3, 1], ConfigEntryOperationKind::Insert, 1)],
+                vec![("key", vec![0, 1], ConfigEntryOperationKind::Override, None)],
+                vec![("key", vec![2, 3], ConfigEntryOperationKind::Insert, Some(1))],
+                vec![(
+                    "key",
+                    vec![0, 2, 3, 1],
+                    ConfigEntryOperationKind::Insert,
+                    Some(1),
+                )],
             ),
         ];
         for (left_entries, right_entries, expected) in cases {
             let mut left_value = ValueRef::dict(None);
             let mut right_value = ValueRef::dict(None);
             for (key, val, op, index) in left_entries {
-                left_value.dict_update_entry(key, &ValueRef::list_int(val.as_slice()), &op, &index);
+                left_value.dict_update_entry(key, &ValueRef::list_int(val.as_slice()), &op, index);
             }
             for (key, val, op, index) in right_entries {
                 right_value.dict_update_entry(
                     key,
                     &ValueRef::list_int(val.as_slice()),
                     &op,
-                    &index,
+                    index.as_ref(),
                 );
             }
             let result = left_value.bin_bit_or(&mut ctx, &right_value);
@@ -485,10 +578,10 @@ mod test_value_union {
                 let result_dict = result.as_dict_ref();
                 let result_val = result_dict.values.get(key).unwrap();
                 let result_op = result_dict.ops.get(key).unwrap();
-                let result_index = result_dict.insert_indexs.get(key).unwrap();
+                let result_index = result_dict.insert_indexs.get(key);
                 assert_eq!(result_val.clone(), ValueRef::list_int(val.as_slice()));
                 assert_eq!(*result_op, op);
-                assert_eq!(*result_index, index);
+                assert_eq!(result_index.cloned(), index);
             }
         }
     }
@@ -498,66 +591,66 @@ mod test_value_union {
         let mut ctx = Context::new();
         let cases = [
             (
-                vec![("key1", "value", ConfigEntryOperationKind::Union, -1)],
-                vec![("key1", "value", ConfigEntryOperationKind::Union, -1)],
-                vec![("key2", "value", ConfigEntryOperationKind::Union, -1)],
+                vec![("key1", "value", ConfigEntryOperationKind::Union, None)],
+                vec![("key1", "value", ConfigEntryOperationKind::Union, None)],
+                vec![("key2", "value", ConfigEntryOperationKind::Union, None)],
                 vec![
-                    ("key1", "value", ConfigEntryOperationKind::Union, -1),
-                    ("key2", "value", ConfigEntryOperationKind::Union, -1),
+                    ("key1", "value", ConfigEntryOperationKind::Union, None),
+                    ("key2", "value", ConfigEntryOperationKind::Union, None),
                 ],
             ),
             (
-                vec![("key1", "value1", ConfigEntryOperationKind::Override, -1)],
-                vec![("key1", "value2", ConfigEntryOperationKind::Override, -1)],
-                vec![("key2", "value", ConfigEntryOperationKind::Override, -1)],
+                vec![("key1", "value1", ConfigEntryOperationKind::Override, None)],
+                vec![("key1", "value2", ConfigEntryOperationKind::Override, None)],
+                vec![("key2", "value", ConfigEntryOperationKind::Override, None)],
                 vec![
-                    ("key1", "value2", ConfigEntryOperationKind::Override, -1),
-                    ("key2", "value", ConfigEntryOperationKind::Override, -1),
+                    ("key1", "value2", ConfigEntryOperationKind::Override, None),
+                    ("key2", "value", ConfigEntryOperationKind::Override, None),
                 ],
             ),
             (
-                vec![("key1", "value1", ConfigEntryOperationKind::Union, -1)],
-                vec![("key1", "value2", ConfigEntryOperationKind::Override, -1)],
-                vec![("key2", "value", ConfigEntryOperationKind::Override, -1)],
+                vec![("key1", "value1", ConfigEntryOperationKind::Union, None)],
+                vec![("key1", "value2", ConfigEntryOperationKind::Override, None)],
+                vec![("key2", "value", ConfigEntryOperationKind::Override, None)],
                 vec![
-                    ("key1", "value2", ConfigEntryOperationKind::Override, -1),
-                    ("key2", "value", ConfigEntryOperationKind::Override, -1),
+                    ("key1", "value2", ConfigEntryOperationKind::Override, None),
+                    ("key2", "value", ConfigEntryOperationKind::Override, None),
                 ],
             ),
             (
                 vec![
-                    ("key1", "value1", ConfigEntryOperationKind::Union, -1),
-                    ("key2", "value2", ConfigEntryOperationKind::Union, -1),
+                    ("key1", "value1", ConfigEntryOperationKind::Union, None),
+                    ("key2", "value2", ConfigEntryOperationKind::Union, None),
                 ],
                 vec![
                     (
                         "key1",
                         "override_value1",
                         ConfigEntryOperationKind::Override,
-                        -1,
+                        None,
                     ),
                     (
                         "key2",
                         "override_value2",
                         ConfigEntryOperationKind::Override,
-                        -1,
+                        None,
                     ),
                 ],
-                vec![("key3", "value", ConfigEntryOperationKind::Union, -1)],
+                vec![("key3", "value", ConfigEntryOperationKind::Union, None)],
                 vec![
                     (
                         "key1",
                         "override_value1",
                         ConfigEntryOperationKind::Override,
-                        -1,
+                        None,
                     ),
                     (
                         "key2",
                         "override_value2",
                         ConfigEntryOperationKind::Override,
-                        -1,
+                        None,
                     ),
-                    ("key3", "value", ConfigEntryOperationKind::Union, -1),
+                    ("key3", "value", ConfigEntryOperationKind::Union, None),
                 ],
             ),
         ];
@@ -565,25 +658,25 @@ mod test_value_union {
             let mut left_value = ValueRef::dict(None);
             let mut right_value = ValueRef::dict(None);
             for (key, val, op, index) in left_entries {
-                left_value.dict_update_entry(key, &ValueRef::str(val), &op, &index);
+                left_value.dict_update_entry(key, &ValueRef::str(val), &op, index);
             }
             for (key, val, op, index) in right_entries {
-                right_value.dict_update_entry(key, &ValueRef::str(val), &op, &index);
+                right_value.dict_update_entry(key, &ValueRef::str(val), &op, index);
             }
             for (key, val, op, index) in both_entries {
                 let both_val = ValueRef::str(val);
-                left_value.dict_update_entry(key, &both_val, &op, &index);
-                left_value.dict_update_entry(key, &both_val, &op, &index);
+                left_value.dict_update_entry(key, &both_val, &op, index);
+                left_value.dict_update_entry(key, &both_val, &op, index);
             }
             let result = left_value.bin_bit_or(&mut ctx, &right_value);
             for (key, val, op, index) in expected {
                 let result_dict = result.as_dict_ref();
                 let result_val = result_dict.values.get(key).unwrap().as_str();
                 let result_op = result_dict.ops.get(key).unwrap();
-                let result_index = result_dict.insert_indexs.get(key).unwrap();
+                let result_index = result_dict.insert_indexs.get(key);
                 assert_eq!(result_val, val);
                 assert_eq!(*result_op, op);
-                assert_eq!(*result_index, index);
+                assert_eq!(result_index, index);
             }
         }
     }

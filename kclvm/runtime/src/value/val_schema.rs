@@ -295,10 +295,12 @@ impl ValueRef {
                     .ops
                     .get(k)
                     .unwrap_or(&ConfigEntryOperationKind::Union);
-                let index = value.config.insert_indexs.get(k).unwrap_or(&-1);
+                let index = value.config.insert_indexs.get(k);
                 values.insert(k.clone(), v.clone());
                 ops.insert(k.clone(), op.clone());
-                insert_indexs.insert(k.clone(), *index);
+                if let Some(index) = index {
+                    insert_indexs.insert(k.clone(), *index);
+                }
             }
         }
     }
@@ -416,7 +418,7 @@ mod test_value_schema {
                 key,
                 &ValueRef::str(val),
                 &ConfigEntryOperationKind::Union,
-                &-1,
+                None,
             );
         }
         assert_ne!(schema1, schema2);

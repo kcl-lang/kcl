@@ -82,8 +82,7 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\ndata
                               "end_line": 3,
                               "end_column": 21
                             },
-                            "operation": "Override",
-                            "insert_index": -1
+                            "operation": "Override"
                           },
                           "filename": "hello.k",
                           "line": 3,
@@ -99,8 +98,7 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\ndata
                     "end_line": 3,
                     "end_column": 22
                   },
-                  "operation": "Union",
-                  "insert_index": -1
+                  "operation": "Union"
                 },
                 "filename": "hello.k",
                 "line": 3,
@@ -263,8 +261,7 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\ndata
                                         "end_line": 4,
                                         "end_column": 44
                                       },
-                                      "operation": "Override",
-                                      "insert_index": -1
+                                      "operation": "Override"
                                     },
                                     "filename": "hello.k",
                                     "line": 4,
@@ -281,8 +278,7 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\ndata
                               "end_line": 5,
                               "end_column": 0
                             },
-                            "operation": "Override",
-                            "insert_index": -1
+                            "operation": "Override"
                           },
                           "filename": "hello.k",
                           "line": 4,
@@ -299,8 +295,7 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\ndata
                     "end_line": 5,
                     "end_column": 0
                   },
-                  "operation": "Union",
-                  "insert_index": -1
+                  "operation": "Union"
                 },
                 "filename": "hello.k",
                 "line": 4,

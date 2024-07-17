@@ -65,7 +65,6 @@ Node {
                                                     end_column: 17,
                                                 },
                                                 operation: Union,
-                                                insert_index: -1,
                                             },
                                             filename: "",
                                             line: 1,
@@ -84,7 +83,6 @@ Node {
                             end_column: 18,
                         },
                         operation: Union,
-                        insert_index: -1,
                     },
                     filename: "",
                     line: 1,
@@ -101,4 +99,3 @@ Node {
     end_line: 1,
     end_column: 18,
 }
-

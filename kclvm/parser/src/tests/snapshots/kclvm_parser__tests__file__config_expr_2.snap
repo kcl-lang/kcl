@@ -77,8 +77,7 @@ expression: "crate::tests::parsing_file_string(\"testdata/config_expr-02.k\")"
                     "end_line": 2,
                     "end_column": 12
                   },
-                  "operation": "Override",
-                  "insert_index": -1
+                  "operation": "Override"
                 },
                 "filename": "config_expr-02.k",
                 "line": 2,
@@ -125,8 +124,7 @@ expression: "crate::tests::parsing_file_string(\"testdata/config_expr-02.k\")"
                     "end_line": 3,
                     "end_column": 12
                   },
-                  "operation": "Override",
-                  "insert_index": -1
+                  "operation": "Override"
                 },
                 "filename": "config_expr-02.k",
                 "line": 3,

@@ -1095,6 +1095,7 @@ pub unsafe extern "C" fn kclvm_dict_insert(
     v: *const kclvm_value_ref_t,
     op: kclvm_size_t,
     insert_index: kclvm_size_t,
+    has_insert_index: kclvm_bool_t,
 ) {
     let p = mut_ptr_as_ref(p);
     let v = ptr_as_ref(v);
@@ -1103,7 +1104,11 @@ pub unsafe extern "C" fn kclvm_dict_insert(
         c2str(key),
         v,
         ConfigEntryOperationKind::from_i32(op),
-        insert_index,
+        if has_insert_index != 0 {
+            Some(insert_index)
+        } else {
+            None
+        },
     );
 }
 
@@ -1116,6 +1121,7 @@ pub unsafe extern "C" fn kclvm_dict_merge(
     v: *const kclvm_value_ref_t,
     op: kclvm_size_t,
     insert_index: kclvm_size_t,
+    has_insert_index: kclvm_bool_t,
 ) {
     let p = mut_ptr_as_ref(p);
     let v = ptr_as_ref(v);
@@ -1135,7 +1141,11 @@ pub unsafe extern "C" fn kclvm_dict_merge(
             key,
             &v,
             ConfigEntryOperationKind::from_i32(op),
-            insert_index,
+            if has_insert_index != 0 {
+                Some(insert_index)
+            } else {
+                None
+            },
         );
     } else {
         p.dict_merge(
@@ -1143,7 +1153,11 @@ pub unsafe extern "C" fn kclvm_dict_merge(
             key,
             v,
             ConfigEntryOperationKind::from_i32(op),
-            insert_index,
+            if has_insert_index != 0 {
+                Some(insert_index)
+            } else {
+                None
+            },
         );
     }
 }
@@ -1157,6 +1171,7 @@ pub unsafe extern "C" fn kclvm_dict_insert_value(
     v: *const kclvm_value_ref_t,
     op: kclvm_size_t,
     insert_index: kclvm_size_t,
+    has_insert_index: kclvm_bool_t,
 ) {
     let p = mut_ptr_as_ref(p);
     let v = ptr_as_ref(v);
@@ -1167,7 +1182,11 @@ pub unsafe extern "C" fn kclvm_dict_insert_value(
         key.as_str(),
         v,
         ConfigEntryOperationKind::from_i32(op),
-        insert_index,
+        if has_insert_index != 0 {
+            Some(insert_index)
+        } else {
+            None
+        },
     );
 }
 
@@ -1194,11 +1213,12 @@ pub unsafe extern "C" fn kclvm_dict_safe_insert(
     v: *const kclvm_value_ref_t,
     op: kclvm_size_t,
     insert_index: kclvm_size_t,
+    has_insert_index: kclvm_bool_t,
 ) {
     if p.is_null() || key.is_null() || v.is_null() {
         return;
     }
-    kclvm_dict_insert(ctx, p, key, v, op, insert_index);
+    kclvm_dict_insert(ctx, p, key, v, op, insert_index, has_insert_index);
 }
 
 #[no_mangle]
@@ -2129,9 +2149,9 @@ pub unsafe extern "C" fn kclvm_schema_value_check(
                     key.as_str(),
                     &index_sign_value.deep_copy(),
                     &ConfigEntryOperationKind::Override,
-                    &-1,
+                    None,
                 );
-                schema_value.dict_insert(ctx, key.as_str(), value, op.clone(), -1);
+                schema_value.dict_insert(ctx, key.as_str(), value, op.clone(), None);
                 let value = schema_value.dict_get_value(key).unwrap();
                 schema_value.dict_update_key_value(
                     key.as_str(),

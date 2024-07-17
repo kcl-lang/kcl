@@ -1070,7 +1070,6 @@ pub struct ConfigEntry {
     pub key: Option<NodeRef<Expr>>,
     pub value: NodeRef<Expr>,
     pub operation: ConfigEntryOperation,
-    pub insert_index: isize,
 }
 
 /// CheckExpr, e.g.

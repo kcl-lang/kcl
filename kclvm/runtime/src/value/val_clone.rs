@@ -56,13 +56,8 @@ impl ValueRef {
                 let mut dict = ValueRef::from(Value::dict_value(Box::new(DictValue::new(&[]))));
                 for (key, val) in &v.values {
                     let op = v.ops.get(key).unwrap_or(&ConfigEntryOperationKind::Union);
-                    let index = v.insert_indexs.get(key).unwrap_or(&-1);
-                    dict.dict_update_entry(
-                        key.as_str(),
-                        &val.deep_copy(),
-                        &op.clone(),
-                        &index.clone(),
-                    );
+                    let index = v.insert_indexs.get(key);
+                    dict.dict_update_entry(key.as_str(), &val.deep_copy(), &op.clone(), index);
                 }
                 dict.set_potential_schema_type(&v.potential_schema.clone().unwrap_or_default());
                 dict
@@ -78,13 +73,8 @@ impl ValueRef {
                         .ops
                         .get(key)
                         .unwrap_or(&ConfigEntryOperationKind::Union);
-                    let index = v.config.insert_indexs.get(key).unwrap_or(&-1);
-                    dict.dict_update_entry(
-                        key.as_str(),
-                        &val.deep_copy(),
-                        &op.clone(),
-                        &index.clone(),
-                    );
+                    let index = v.config.insert_indexs.get(key);
+                    dict.dict_update_entry(key.as_str(), &val.deep_copy(), &op.clone(), index);
                     if let Some(type_str) = v.config.attr_map.get(key) {
                         dict.update_attr_map(key, type_str);
                     }

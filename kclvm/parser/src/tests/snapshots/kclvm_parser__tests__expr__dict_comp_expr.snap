@@ -82,7 +82,6 @@ Node {
                     end_column: 9,
                 },
                 operation: Union,
-                insert_index: -1,
             },
             generators: [
                 Node {
@@ -178,7 +177,6 @@ Node {
                                                     end_column: 29,
                                                 },
                                                 operation: Override,
-                                                insert_index: -1,
                                             },
                                             filename: "",
                                             line: 1,
@@ -229,7 +227,6 @@ Node {
                                                     end_column: 37,
                                                 },
                                                 operation: Override,
-                                                insert_index: -1,
                                             },
                                             filename: "",
                                             line: 1,
@@ -263,4 +260,3 @@ Node {
     end_line: 1,
     end_column: 39,
 }
-

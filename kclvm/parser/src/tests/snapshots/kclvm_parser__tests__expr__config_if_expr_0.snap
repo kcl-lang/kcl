@@ -68,7 +68,6 @@ Node {
                                                     end_column: 13,
                                                 },
                                                 operation: Override,
-                                                insert_index: -1,
                                             },
                                             filename: "",
                                             line: 3,
@@ -87,7 +86,6 @@ Node {
                             end_column: 0,
                         },
                         operation: Union,
-                        insert_index: -1,
                     },
                     filename: "",
                     line: 2,
@@ -104,4 +102,3 @@ Node {
     end_line: 4,
     end_column: 1,
 }
-

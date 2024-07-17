@@ -347,24 +347,24 @@
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_dict_values(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p);
 
 // api-spec:       kclvm_dict_insert
-// api-spec(c):    void kclvm_dict_insert(kclvm_context_t* ctx, kclvm_value_ref_t* p, kclvm_char_t* key, kclvm_value_ref_t* v, kclvm_size_t op, kclvm_size_t insert_index);
-// api-spec(llvm): declare void @kclvm_dict_insert(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p, %kclvm_char_t* %key, %kclvm_value_ref_t* %v, %kclvm_size_t %op, %kclvm_size_t %insert_index);
+// api-spec(c):    void kclvm_dict_insert(kclvm_context_t* ctx, kclvm_value_ref_t* p, kclvm_char_t* key, kclvm_value_ref_t* v, kclvm_size_t op, kclvm_size_t insert_index, kclvm_bool_t has_insert_index);
+// api-spec(llvm): declare void @kclvm_dict_insert(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p, %kclvm_char_t* %key, %kclvm_value_ref_t* %v, %kclvm_size_t %op, %kclvm_size_t %insert_index, %kclvm_bool_t %has_insert_index);
 
 // api-spec:       kclvm_dict_merge
-// api-spec(c):    void kclvm_dict_merge(kclvm_context_t* ctx, kclvm_value_ref_t* p, kclvm_char_t* key, kclvm_value_ref_t* v, kclvm_size_t op, kclvm_size_t insert_index);
-// api-spec(llvm): declare void @kclvm_dict_merge(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p, %kclvm_char_t* %key, %kclvm_value_ref_t* %v, %kclvm_size_t %op, %kclvm_size_t %insert_index);
+// api-spec(c):    void kclvm_dict_merge(kclvm_context_t* ctx, kclvm_value_ref_t* p, kclvm_char_t* key, kclvm_value_ref_t* v, kclvm_size_t op, kclvm_size_t insert_index, kclvm_bool_t has_insert_index);
+// api-spec(llvm): declare void @kclvm_dict_merge(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p, %kclvm_char_t* %key, %kclvm_value_ref_t* %v, %kclvm_size_t %op, %kclvm_size_t %insert_index, %kclvm_bool_t %has_insert_index);
 
 // api-spec:       kclvm_dict_insert_value
-// api-spec(c):    void kclvm_dict_insert_value(kclvm_context_t* ctx, kclvm_value_ref_t* p, kclvm_value_ref_t* key, kclvm_value_ref_t* v, kclvm_size_t op, kclvm_size_t insert_index);
-// api-spec(llvm): declare void @kclvm_dict_insert_value(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p, %kclvm_value_ref_t* %key, %kclvm_value_ref_t* %v, %kclvm_size_t %op, %kclvm_size_t %insert_index);
+// api-spec(c):    void kclvm_dict_insert_value(kclvm_context_t* ctx, kclvm_value_ref_t* p, kclvm_value_ref_t* key, kclvm_value_ref_t* v, kclvm_size_t op, kclvm_size_t insert_index, kclvm_bool_t has_insert_index);
+// api-spec(llvm): declare void @kclvm_dict_insert_value(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p, %kclvm_value_ref_t* %key, %kclvm_value_ref_t* %v, %kclvm_size_t %op, %kclvm_size_t %insert_index, %kclvm_bool_t %has_insert_index);
 
 // api-spec:       kclvm_dict_update_key_value
 // api-spec(c):    void kclvm_dict_update_key_value(kclvm_value_ref_t* p, kclvm_value_ref_t* key, kclvm_value_ref_t* v);
 // api-spec(llvm): declare void @kclvm_dict_update_key_value(%kclvm_value_ref_t* %p, %kclvm_value_ref_t* %key, %kclvm_value_ref_t* %v);
 
 // api-spec:       kclvm_dict_safe_insert
-// api-spec(c):    void kclvm_dict_safe_insert(kclvm_context_t* ctx, kclvm_value_ref_t* p, kclvm_char_t* key, kclvm_value_ref_t* v, kclvm_size_t op, kclvm_size_t insert_index);
-// api-spec(llvm): declare void @kclvm_dict_safe_insert(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p, %kclvm_char_t* %key, %kclvm_value_ref_t* %v, %kclvm_size_t %op, %kclvm_size_t %insert_index);
+// api-spec(c):    void kclvm_dict_safe_insert(kclvm_context_t* ctx, kclvm_value_ref_t* p, kclvm_char_t* key, kclvm_value_ref_t* v, kclvm_size_t op, kclvm_size_t insert_index, kclvm_bool_t has_insert_index);
+// api-spec(llvm): declare void @kclvm_dict_safe_insert(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p, %kclvm_char_t* %key, %kclvm_value_ref_t* %v, %kclvm_size_t %op, %kclvm_size_t %insert_index, %kclvm_bool_t %has_insert_index);
 
 // api-spec:       kclvm_dict_insert_unpack
 // api-spec(c):    void kclvm_dict_insert_unpack(kclvm_context_t* ctx, kclvm_value_ref_t* p, kclvm_value_ref_t* v);

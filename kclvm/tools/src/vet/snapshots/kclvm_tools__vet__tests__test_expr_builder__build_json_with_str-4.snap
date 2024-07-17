@@ -34,7 +34,6 @@ expression: got_ast_json_str
                   "filename": "",
                   "line": 2,
                   "node": {
-                    "insert_index": -1,
                     "key": {
                       "column": 8,
                       "end_column": 13,
@@ -73,7 +72,6 @@ expression: got_ast_json_str
                   "filename": "",
                   "line": 2,
                   "node": {
-                    "insert_index": -1,
                     "key": {
                       "column": 8,
                       "end_column": 17,
@@ -110,7 +108,6 @@ expression: got_ast_json_str
                   "filename": "",
                   "line": 2,
                   "node": {
-                    "insert_index": -1,
                     "key": {
                       "column": 8,
                       "end_column": 14,

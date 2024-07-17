@@ -25,7 +25,6 @@ expression: got_ast_json_str
             "filename": "",
             "line": 1,
             "node": {
-              "insert_index": -1,
               "key": {
                 "column": 4,
                 "end_column": 9,
@@ -64,7 +63,6 @@ expression: got_ast_json_str
             "filename": "",
             "line": 1,
             "node": {
-              "insert_index": -1,
               "key": {
                 "column": 4,
                 "end_column": 10,
@@ -94,7 +92,6 @@ expression: got_ast_json_str
                       "filename": "",
                       "line": 5,
                       "node": {
-                        "insert_index": -1,
                         "key": {
                           "column": 8,
                           "end_column": 12,
@@ -133,7 +130,6 @@ expression: got_ast_json_str
                       "filename": "",
                       "line": 5,
                       "node": {
-                        "insert_index": -1,
                         "key": {
                           "column": 8,
                           "end_column": 15,
@@ -176,7 +172,6 @@ expression: got_ast_json_str
             "filename": "",
             "line": 1,
             "node": {
-              "insert_index": -1,
               "key": {
                 "column": 4,
                 "end_column": 8,
@@ -258,7 +253,6 @@ expression: got_ast_json_str
             "filename": "",
             "line": 1,
             "node": {
-              "insert_index": -1,
               "key": {
                 "column": 4,
                 "end_column": 12,
@@ -288,7 +282,6 @@ expression: got_ast_json_str
                       "filename": "",
                       "line": 9,
                       "node": {
-                        "insert_index": -1,
                         "key": {
                           "column": 8,
                           "end_column": 13,
@@ -331,7 +324,6 @@ expression: got_ast_json_str
             "filename": "",
             "line": 1,
             "node": {
-              "insert_index": -1,
               "key": {
                 "column": 4,
                 "end_column": 13,
@@ -368,7 +360,6 @@ expression: got_ast_json_str
             "filename": "",
             "line": 1,
             "node": {
-              "insert_index": -1,
               "key": {
                 "column": 4,
                 "end_column": 10,

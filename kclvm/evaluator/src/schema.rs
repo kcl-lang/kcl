@@ -737,14 +737,14 @@ fn schema_relaxed_attr_update_and_check(
                     key.as_str(),
                     &index_sign_value.deep_copy(),
                     &ConfigEntryOperationKind::Override,
-                    &-1,
+                    None,
                 );
                 s.dict_merge_key_value_pair(
                     schema_value,
                     key.as_str(),
                     value,
                     op.clone(),
-                    -1,
+                    None,
                     false,
                 );
                 let value = schema_value.dict_get_value(key).unwrap();
@@ -864,7 +864,7 @@ impl<'ctx> Evaluator<'ctx> {
                     name,
                     value,
                     &ast::ConfigEntryOperation::Override,
-                    -1,
+                    None,
                 );
             }
             self.value_union(&mut schema_value, &config_value);

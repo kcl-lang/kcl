@@ -1479,7 +1479,6 @@ impl<'a> Parser<'a> {
                 key,
                 value,
                 operation,
-                insert_index: -1,
             },
             self.sess.struct_token_loc(token, self.prev_token),
         ))
@@ -1747,7 +1746,6 @@ impl<'a> Parser<'a> {
                         key: expr0,
                         value: expr1,
                         operation: op,
-                        insert_index: -1
                     },
                     pos
                 ));
@@ -1777,7 +1775,6 @@ impl<'a> Parser<'a> {
                         key: expr0,
                         value: expr1,
                         operation: op,
-                        insert_index: -1
                     },
                     pos
                 ));
@@ -1838,7 +1835,6 @@ impl<'a> Parser<'a> {
                         key: expr0,
                         value: expr1,
                         operation: op,
-                        insert_index: -1
                     },
                     pos
                 ));

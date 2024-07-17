@@ -114,6 +114,15 @@ impl ValueRef {
         }
     }
 
+    pub fn list_must_set(&mut self, i: usize, v: &Self) {
+        match &mut *self.rc.borrow_mut() {
+            Value::list_value(list) => {
+                list.values.as_mut_slice()[i] = v.clone();
+            }
+            _ => panic!("Invalid list object in list_set"),
+        }
+    }
+
     pub fn list_pop(&mut self) -> Option<Self> {
         match &mut *self.rc.borrow_mut() {
             Value::list_value(list) => list.values.pop(),

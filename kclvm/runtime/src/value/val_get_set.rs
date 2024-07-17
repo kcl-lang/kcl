@@ -43,14 +43,14 @@ mod test_value_get {
             "a",
             &ValueRef::str("a-value"),
             Default::default(),
-            0,
+            None,
         );
         dict.dict_insert(
             &mut ctx,
             "b",
             &ValueRef::str("b-value"),
             Default::default(),
-            0,
+            None,
         );
 
         list_int.list_set(1, &dict);

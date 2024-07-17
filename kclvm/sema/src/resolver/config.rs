@@ -546,7 +546,6 @@ impl<'ctx> Resolver<'ctx> {
             let mut stack_depth: usize = 0;
             let value_ty = self.check_config_entry(key, value);
             stack_depth += self.switch_config_expr_context_by_key(key);
-            let mut has_insert_index = false;
             let val_ty = match key {
                 Some(key) => match &key.node {
                     ast::Expr::Identifier(identifier) => {
@@ -601,7 +600,6 @@ impl<'ctx> Resolver<'ctx> {
                     ast::Expr::Subscript(subscript)
                         if matches!(subscript.value.node, ast::Expr::Identifier(_)) =>
                     {
-                        has_insert_index = true;
                         let val_ty = value_ty.unwrap_or(self.expr(value));
                         key_types.push(self.str_ty());
                         val_types.push(Type::list_ref(val_ty.clone()));
@@ -687,7 +685,6 @@ impl<'ctx> Resolver<'ctx> {
                 }
             };
             if matches!(op, ast::ConfigEntryOperation::Insert)
-                && !has_insert_index
                 && !val_ty.is_any()
                 && !val_ty.is_list()
             {

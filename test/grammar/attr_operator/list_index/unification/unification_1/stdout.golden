@@ -1,0 +1,5 @@
+a:
+  config:
+  - name: One
+    key: value
+  - name: asdad
