@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 165
 expression: "crate::tests::parsing_expr_string(r#\"{lambda{}\"#)"
 ---
 Node {
@@ -36,7 +35,6 @@ Node {
                             end_column: 9,
                         },
                         operation: Override,
-                        insert_index: -1,
                     },
                     filename: "",
                     line: 1,
@@ -53,4 +51,3 @@ Node {
     end_line: 1,
     end_column: 9,
 }
-

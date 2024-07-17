@@ -397,8 +397,7 @@ expression: "crate::tests::parsing_file_string(\"testdata/config_expr-04.k\")"
                                         "end_line": 15,
                                         "end_column": 22
                                       },
-                                      "operation": "Union",
-                                      "insert_index": -1
+                                      "operation": "Union"
                                     },
                                     "filename": "config_expr-04.k",
                                     "line": 15,
@@ -443,8 +442,7 @@ expression: "crate::tests::parsing_file_string(\"testdata/config_expr-04.k\")"
                                         "end_line": 15,
                                         "end_column": 34
                                       },
-                                      "operation": "Union",
-                                      "insert_index": -1
+                                      "operation": "Union"
                                     },
                                     "filename": "config_expr-04.k",
                                     "line": 15,
@@ -469,8 +467,7 @@ expression: "crate::tests::parsing_file_string(\"testdata/config_expr-04.k\")"
                         "end_line": 16,
                         "end_column": 5
                       },
-                      "operation": "Union",
-                      "insert_index": -1
+                      "operation": "Union"
                     },
                     "filename": "config_expr-04.k",
                     "line": 14,
@@ -603,8 +600,7 @@ expression: "crate::tests::parsing_file_string(\"testdata/config_expr-04.k\")"
                         "end_line": 20,
                         "end_column": 15
                       },
-                      "operation": "Union",
-                      "insert_index": -1
+                      "operation": "Union"
                     },
                     "filename": "config_expr-04.k",
                     "line": 20,
@@ -735,8 +731,7 @@ expression: "crate::tests::parsing_file_string(\"testdata/config_expr-04.k\")"
                                                       "end_line": 23,
                                                       "end_column": 26
                                                     },
-                                                    "operation": "Union",
-                                                    "insert_index": -1
+                                                    "operation": "Union"
                                                   },
                                                   "filename": "config_expr-04.k",
                                                   "line": 23,
@@ -781,8 +776,7 @@ expression: "crate::tests::parsing_file_string(\"testdata/config_expr-04.k\")"
                                                       "end_line": 23,
                                                       "end_column": 38
                                                     },
-                                                    "operation": "Union",
-                                                    "insert_index": -1
+                                                    "operation": "Union"
                                                   },
                                                   "filename": "config_expr-04.k",
                                                   "line": 23,
@@ -807,8 +801,7 @@ expression: "crate::tests::parsing_file_string(\"testdata/config_expr-04.k\")"
                                       "end_line": 24,
                                       "end_column": 9
                                     },
-                                    "operation": "Insert",
-                                    "insert_index": -1
+                                    "operation": "Insert"
                                   },
                                   "filename": "config_expr-04.k",
                                   "line": 22,
@@ -831,8 +824,7 @@ expression: "crate::tests::parsing_file_string(\"testdata/config_expr-04.k\")"
                         "end_line": 25,
                         "end_column": 5
                       },
-                      "operation": "Union",
-                      "insert_index": -1
+                      "operation": "Union"
                     },
                     "filename": "config_expr-04.k",
                     "line": 21,

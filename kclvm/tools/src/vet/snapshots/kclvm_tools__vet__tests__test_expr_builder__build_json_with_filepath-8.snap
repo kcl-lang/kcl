@@ -25,7 +25,6 @@ expression: got_ast_json_str
             "filename": "<workspace>/only_with_float.json",
             "line": 1,
             "node": {
-              "insert_index": -1,
               "key": {
                 "column": 4,
                 "end_column": 17,

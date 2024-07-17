@@ -114,7 +114,6 @@ Node {
                                         end_column: 7,
                                     },
                                     operation: Override,
-                                    insert_index: -1,
                                 },
                                 filename: "",
                                 line: 2,
@@ -139,4 +138,3 @@ Node {
     end_line: 3,
     end_column: 1,
 }
-
