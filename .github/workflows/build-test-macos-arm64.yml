@@ -49,9 +49,13 @@ jobs:
         run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/opt/homebrew/opt/llvm@12/bin/ && make test-grammar-evaluator
         shell: bash
 
+      - name: Release
+        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/opt/homebrew/opt/llvm@12/bin/ && make release
+        shell: bash
+
       - uses: actions/upload-artifact@v4
         if: "contains(matrix.os, 'macos-13-xlarge')"
         with:
           name: kcl-darwin-arm64
           if-no-files-found: error
-          path: _build/dist/Darwin/kclvm
+          path: _build/kclvm-Darwin-latest.tar.gz

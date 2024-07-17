@@ -428,7 +428,9 @@ impl KclvmServiceImpl {
         });
     }
 
-    /// Execute KCL file with args. **Note that it is not thread safe.**
+    /// Execute KCL file with arguments and return the JSON/YAML result.
+    ///
+    /// **Note that it is not thread safe when the llvm feature is enabled.**
     ///
     /// # Examples
     ///
@@ -517,7 +519,9 @@ impl KclvmServiceImpl {
         })
     }
 
-    /// Execute the KCL artifact with args. **Note that it is not thread safe.**
+    /// Execute the KCL artifact with arguments and return the JSON/YAML result.
+    ///
+    /// ***Note that it is not thread safe when the llvm feature is enabled.*
     ///
     /// # Examples
     ///
@@ -584,17 +588,17 @@ impl KclvmServiceImpl {
     ///     age = 18
     /// }
     /// ```
-    pub fn override_file(&self, args: &OverrideFileArgs) -> Result<OverrideFileResult, String> {
-        override_file(&args.file, &args.specs, &args.import_paths)
-            .map_err(|err| err.to_string())
-            .map(|result| OverrideFileResult {
+    pub fn override_file(&self, args: &OverrideFileArgs) -> anyhow::Result<OverrideFileResult> {
+        override_file(&args.file, &args.specs, &args.import_paths).map(|result| {
+            OverrideFileResult {
                 result: result.result,
                 parse_errors: result
                     .parse_errors
                     .into_iter()
                     .map(|e| e.into_error())
                     .collect(),
-            })
+            }
+        })
     }
 
     /// Service for getting the schema mapping.
