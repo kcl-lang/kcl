@@ -579,36 +579,37 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
         let start = call_expr.func.get_end_pos();
         let end = self.ctx.end_pos.clone();
         let func_symbol = self.expr(&call_expr.func)?;
-        let ty = self
+        let call_ty = self
             .ctx
             .node_ty_map
             .borrow()
             .get(&self.ctx.get_node_key(&call_expr.func.id))
-            .unwrap()
-            .clone();
+            .map(|ty| ty.clone());
 
-        if let TypeKind::Function(func_ty) = &ty.kind {
-            self.enter_local_scope(
-                &self.ctx.current_filename.as_ref().unwrap().clone(),
-                start,
-                end,
-                LocalSymbolScopeKind::Callable,
-            );
+        if let Some(ty) = call_ty {
+            if let TypeKind::Function(func_ty) = &ty.kind {
+                self.enter_local_scope(
+                    &self.ctx.current_filename.as_ref().unwrap().clone(),
+                    start,
+                    end,
+                    LocalSymbolScopeKind::Callable,
+                );
 
-            if let Some(owner) = func_symbol {
-                let cur_scope = self.ctx.scopes.last().unwrap();
-                self.gs
-                    .get_scopes_mut()
-                    .set_owner_to_scope(*cur_scope, owner);
+                if let Some(owner) = func_symbol {
+                    let cur_scope = self.ctx.scopes.last().unwrap();
+                    self.gs
+                        .get_scopes_mut()
+                        .set_owner_to_scope(*cur_scope, owner);
+                }
+
+                self.do_arguments_symbol_resolve_with_hint(
+                    &call_expr.args,
+                    &call_expr.keywords,
+                    true,
+                    &func_ty,
+                )?;
+                self.leave_scope();
             }
-
-            self.do_arguments_symbol_resolve_with_hint(
-                &call_expr.args,
-                &call_expr.keywords,
-                true,
-                &func_ty,
-            )?;
-            self.leave_scope();
         }
 
         Ok(None)
