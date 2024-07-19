@@ -123,6 +123,7 @@ fn register_kclvm_service(io: &mut IoHandler) {
         };
         futures::future::ready(catch!(kclvm_service_impl, args, exec_program))
     });
+    #[cfg(feature = "llvm")]
     io.add_method("KclvmService.BuildProgram", |params: Params| {
         let kclvm_service_impl = KclvmServiceImpl::default();
         let args: BuildProgramArgs = match params.parse() {
@@ -131,6 +132,7 @@ fn register_kclvm_service(io: &mut IoHandler) {
         };
         futures::future::ready(catch!(kclvm_service_impl, args, build_program))
     });
+    #[cfg(feature = "llvm")]
     io.add_method("KclvmService.ExecArtifact", |params: Params| {
         let kclvm_service_impl = KclvmServiceImpl::default();
         let args: ExecArtifactArgs = match params.parse() {

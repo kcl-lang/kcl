@@ -21,7 +21,9 @@ use kclvm_query::query::get_full_schema_type;
 use kclvm_query::query::CompilationOptions;
 use kclvm_query::selector::{list_variables, ListOptions};
 use kclvm_query::GetSchemaOption;
-use kclvm_runner::{build_program, exec_artifact, exec_program};
+use kclvm_runner::exec_program;
+#[cfg(feature = "llvm")]
+use kclvm_runner::{build_program, exec_artifact};
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::resolver::scope::KCLScopeCache;
 use kclvm_sema::resolver::Options;
@@ -507,6 +509,7 @@ impl KclvmServiceImpl {
     /// }).unwrap();
     /// assert!(!artifact.path.is_empty());
     /// ```
+    #[cfg(feature = "llvm")]
     pub fn build_program(&self, args: &BuildProgramArgs) -> anyhow::Result<BuildProgramResult> {
         let exec_args = transform_exec_para(&args.exec_args, self.plugin_agent)?;
         let artifact = build_program(
@@ -548,6 +551,7 @@ impl KclvmServiceImpl {
     /// assert_eq!(exec_result.err_message, "");
     /// assert_eq!(exec_result.yaml_result, "alice:\n  age: 18");
     /// ```
+    #[cfg(feature = "llvm")]
     pub fn exec_artifact(&self, args: &ExecArtifactArgs) -> anyhow::Result<ExecProgramResult> {
         let exec_args = transform_exec_para(&args.exec_args, self.plugin_agent)?;
         let result = exec_artifact(&args.path, &exec_args)?;
