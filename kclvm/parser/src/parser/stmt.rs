@@ -306,6 +306,7 @@ impl<'a> Parser<'a> {
                         None
                     }
                 })
+                // Drop error assign target nodes.
                 .flatten()
                 .collect();
 
@@ -369,6 +370,7 @@ impl<'a> Parser<'a> {
                                 None
                             }
                         })
+                        // Drop error assign target nodes.
                         .flatten()
                         .collect();
                     Some(Box::new(Node::node_with_pos(
