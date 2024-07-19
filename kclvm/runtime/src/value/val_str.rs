@@ -77,14 +77,6 @@ impl ValueRef {
             _ => panic!("Invalid str object in str len"),
         }
     }
-    pub fn str_resize(&mut self, n: usize) {
-        match &mut *self.rc.borrow_mut() {
-            Value::str_value(str) => {
-                *str = "?".repeat(n);
-            }
-            _ => panic!("Invalid str object in str resize"),
-        }
-    }
 
     pub fn str_lower(&self) -> ValueRef {
         match &*self.rc.borrow() {

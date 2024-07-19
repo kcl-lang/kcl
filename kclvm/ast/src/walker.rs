@@ -110,6 +110,7 @@ pub trait TypedResultWalker<'ctx>: Sized {
     fn walk_arguments(&self, arguments: &'ctx ast::Arguments) -> Self::Result;
     fn walk_compare(&self, compare: &'ctx ast::Compare) -> Self::Result;
     fn walk_identifier(&self, identifier: &'ctx ast::Identifier) -> Self::Result;
+    fn walk_target(&self, target: &'ctx ast::Target) -> Self::Result;
     fn walk_number_lit(&self, number_lit: &'ctx ast::NumberLit) -> Self::Result;
     fn walk_string_lit(&self, string_lit: &'ctx ast::StringLit) -> Self::Result;
     fn walk_name_constant_lit(&self, name_constant_lit: &'ctx ast::NameConstantLit)
@@ -174,6 +175,7 @@ pub trait MutSelfTypedResultWalker<'ctx>: Sized {
 
     fn walk_expr(&mut self, expr: &'ctx ast::Expr) -> Self::Result {
         match expr {
+            ast::Expr::Target(target) => self.walk_target(target),
             ast::Expr::Identifier(identifier) => self.walk_identifier(identifier),
             ast::Expr::Unary(unary_expr) => self.walk_unary_expr(unary_expr),
             ast::Expr::Binary(binary_expr) => self.walk_binary_expr(binary_expr),
@@ -243,6 +245,7 @@ pub trait MutSelfTypedResultWalker<'ctx>: Sized {
     fn walk_arguments(&mut self, arguments: &'ctx ast::Arguments) -> Self::Result;
     fn walk_compare(&mut self, compare: &'ctx ast::Compare) -> Self::Result;
     fn walk_identifier(&mut self, identifier: &'ctx ast::Identifier) -> Self::Result;
+    fn walk_target(&mut self, target: &'ctx ast::Target) -> Self::Result;
     fn walk_number_lit(&mut self, number_lit: &'ctx ast::NumberLit) -> Self::Result;
     fn walk_string_lit(&mut self, string_lit: &'ctx ast::StringLit) -> Self::Result;
     fn walk_name_constant_lit(
@@ -274,13 +277,13 @@ pub trait MutSelfMutWalker<'ctx> {
     }
     fn walk_assign_stmt(&mut self, assign_stmt: &'ctx mut ast::AssignStmt) {
         for target in assign_stmt.targets.iter_mut() {
-            self.walk_identifier(&mut target.node)
+            self.walk_target(&mut target.node)
         }
         self.walk_expr(&mut assign_stmt.value.node);
         walk_if_mut!(self, walk_type, assign_stmt.ty);
     }
     fn walk_aug_assign_stmt(&mut self, aug_assign_stmt: &'ctx mut ast::AugAssignStmt) {
-        self.walk_identifier(&mut aug_assign_stmt.target.node);
+        self.walk_target(&mut aug_assign_stmt.target.node);
         self.walk_expr(&mut aug_assign_stmt.value.node);
     }
     fn walk_assert_stmt(&mut self, assert_stmt: &'ctx mut ast::AssertStmt) {
@@ -471,6 +474,13 @@ pub trait MutSelfMutWalker<'ctx> {
         // Nothing to do.
         let _ = identifier;
     }
+    fn walk_target(&mut self, target: &'ctx mut ast::Target) {
+        for path in target.paths.iter_mut() {
+            if let ast::MemberOrIndex::Index(index) = path {
+                self.walk_expr(&mut index.node)
+            }
+        }
+    }
     fn walk_number_lit(&mut self, number_lit: &'ctx mut ast::NumberLit) {
         let _ = number_lit;
     }
@@ -518,6 +528,7 @@ pub trait MutSelfMutWalker<'ctx> {
     }
     fn walk_expr(&mut self, expr: &'ctx mut ast::Expr) {
         match expr {
+            ast::Expr::Target(target) => self.walk_target(target),
             ast::Expr::Identifier(identifier) => self.walk_identifier(identifier),
             ast::Expr::Unary(unary_expr) => self.walk_unary_expr(unary_expr),
             ast::Expr::Binary(binary_expr) => self.walk_binary_expr(binary_expr),
@@ -671,6 +682,9 @@ pub trait Walker<'ctx>: TypedResultWalker<'ctx> {
     fn walk_identifier(&mut self, identifier: &'ctx ast::Identifier) {
         walk_identifier(self, identifier);
     }
+    fn walk_target(&mut self, target: &'ctx ast::Target) {
+        walk_target(self, target);
+    }
     fn walk_number_lit(&mut self, number_lit: &'ctx ast::NumberLit) {
         walk_number_lit(self, number_lit);
     }
@@ -703,6 +717,7 @@ pub trait Walker<'ctx>: TypedResultWalker<'ctx> {
 
 pub fn walk_expr<'ctx, V: Walker<'ctx>>(walker: &mut V, expr: &'ctx ast::Expr) {
     match expr {
+        ast::Expr::Target(target) => walker.walk_target(target),
         ast::Expr::Identifier(identifier) => walker.walk_identifier(identifier),
         ast::Expr::Unary(unary_expr) => walker.walk_unary_expr(unary_expr),
         ast::Expr::Binary(binary_expr) => walker.walk_binary_expr(binary_expr),
@@ -777,7 +792,9 @@ pub fn walk_type_alias_stmt<'ctx, V: Walker<'ctx>>(
 }
 
 pub fn walk_assign_stmt<'ctx, V: Walker<'ctx>>(walker: &mut V, assign_stmt: &'ctx ast::AssignStmt) {
-    walk_list!(walker, walk_identifier, assign_stmt.targets);
+    for target in &assign_stmt.targets {
+        walker.walk_target(&target.node)
+    }
     walker.walk_expr(&assign_stmt.value.node);
 }
 
@@ -785,7 +802,7 @@ pub fn walk_aug_assign_stmt<'ctx, V: Walker<'ctx>>(
     walker: &mut V,
     aug_assign_stmt: &'ctx ast::AugAssignStmt,
 ) {
-    walker.walk_identifier(&aug_assign_stmt.target.node);
+    walker.walk_target(&aug_assign_stmt.target.node);
     walker.walk_expr(&aug_assign_stmt.value.node);
 }
 
@@ -991,6 +1008,14 @@ pub fn walk_identifier<'ctx, V: Walker<'ctx>>(walker: &mut V, identifier: &'ctx 
     let _ = identifier;
 }
 
+pub fn walk_target<'ctx, V: Walker<'ctx>>(walker: &mut V, target: &'ctx ast::Target) {
+    for path in target.paths.iter() {
+        if let ast::MemberOrIndex::Index(index) = path {
+            walk_expr(walker, &index.node);
+        }
+    }
+}
+
 pub fn walk_number_lit<'ctx, V: Walker<'ctx>>(walker: &mut V, number_lit: &'ctx ast::NumberLit) {
     // Nothing to do.
     let _ = walker;
@@ -1055,12 +1080,12 @@ pub trait MutSelfWalker {
     }
     fn walk_assign_stmt(&mut self, assign_stmt: &ast::AssignStmt) {
         for target in &assign_stmt.targets {
-            self.walk_identifier(&target.node)
+            self.walk_target(&target.node)
         }
         self.walk_expr(&assign_stmt.value.node);
     }
     fn walk_aug_assign_stmt(&mut self, aug_assign_stmt: &ast::AugAssignStmt) {
-        self.walk_identifier(&aug_assign_stmt.target.node);
+        self.walk_target(&aug_assign_stmt.target.node);
         self.walk_expr(&aug_assign_stmt.value.node);
     }
     fn walk_assert_stmt(&mut self, assert_stmt: &ast::AssertStmt) {
@@ -1213,6 +1238,13 @@ pub trait MutSelfWalker {
         // Nothing to do.
         let _ = identifier;
     }
+    fn walk_target(&mut self, target: &ast::Target) {
+        for path in target.paths.iter() {
+            if let ast::MemberOrIndex::Index(index) = path {
+                self.walk_expr(&index.node)
+            }
+        }
+    }
     fn walk_number_lit(&mut self, number_lit: &ast::NumberLit) {
         let _ = number_lit;
     }
@@ -1260,6 +1292,7 @@ pub trait MutSelfWalker {
     }
     fn walk_expr(&mut self, expr: &ast::Expr) {
         match expr {
+            ast::Expr::Target(target) => self.walk_target(target),
             ast::Expr::Identifier(identifier) => self.walk_identifier(identifier),
             ast::Expr::Unary(unary_expr) => self.walk_unary_expr(unary_expr),
             ast::Expr::Binary(binary_expr) => self.walk_binary_expr(binary_expr),

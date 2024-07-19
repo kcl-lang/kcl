@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/expr.rs
-assertion_line: 82
 expression: "crate::tests::parsing_expr_string(r####\"lambda {\n    if True:\n        _a = 1\n    else:\n        _a = 2\n    _a\n}\"####)"
 ---
 Node {
@@ -17,19 +16,17 @@ Node {
                                         AssignStmt {
                                             targets: [
                                                 Node {
-                                                    node: Identifier {
-                                                        names: [
-                                                            Node {
-                                                                node: "_a",
-                                                                filename: "",
-                                                                line: 3,
-                                                                column: 8,
-                                                                end_line: 3,
-                                                                end_column: 10,
-                                                            },
-                                                        ],
+                                                    node: Target {
+                                                        name: Node {
+                                                            node: "_a",
+                                                            filename: "",
+                                                            line: 3,
+                                                            column: 8,
+                                                            end_line: 3,
+                                                            end_column: 10,
+                                                        },
+                                                        paths: [],
                                                         pkgpath: "",
-                                                        ctx: Store,
                                                     },
                                                     filename: "",
                                                     line: 3,
@@ -81,19 +78,17 @@ Node {
                                         AssignStmt {
                                             targets: [
                                                 Node {
-                                                    node: Identifier {
-                                                        names: [
-                                                            Node {
-                                                                node: "_a",
-                                                                filename: "",
-                                                                line: 5,
-                                                                column: 8,
-                                                                end_line: 5,
-                                                                end_column: 10,
-                                                            },
-                                                        ],
+                                                    node: Target {
+                                                        name: Node {
+                                                            node: "_a",
+                                                            filename: "",
+                                                            line: 5,
+                                                            column: 8,
+                                                            end_line: 5,
+                                                            end_column: 10,
+                                                        },
+                                                        paths: [],
                                                         pkgpath: "",
-                                                        ctx: Store,
                                                     },
                                                     filename: "",
                                                     line: 5,
@@ -181,4 +176,3 @@ Node {
     end_line: 7,
     end_column: 1,
 }
-

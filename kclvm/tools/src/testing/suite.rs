@@ -169,7 +169,7 @@ pub fn load_test_suites<P: AsRef<str>>(path: P, opts: &TestOptions) -> Result<Ve
                             let func_name = target.node.get_name();
                             if is_test_suite(&func_name) && should_run(&opts.run_regexp, &func_name)
                             {
-                                cases.insert(func_name.clone(), TestCase {});
+                                cases.insert(func_name.to_string(), TestCase {});
                             }
                         }
                     }

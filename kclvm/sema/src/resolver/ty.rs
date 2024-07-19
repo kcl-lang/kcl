@@ -194,10 +194,7 @@ impl<'ctx> Resolver<'ctx> {
             return;
         }
         for target in &assign_stmt.targets {
-            if target.node.names.is_empty() {
-                continue;
-            }
-            let name = &target.node.names[0].node;
+            let name = &target.node.name.node;
             // If the assignment statement has type annotation, check the type of value and the type annotation of target
 
             if let Some(ty_annotation) = &assign_stmt.ty {
@@ -240,7 +237,7 @@ impl<'ctx> Resolver<'ctx> {
                     annotation_ty
                 };
 
-                self.set_type_to_scope(name, target_ty.clone(), &target.node.names[0]);
+                self.set_type_to_scope(name, target_ty.clone(), &target.node.name);
 
                 // Check the type of value and the type annotation of target
                 self.must_assignable_to(value_ty.clone(), target_ty, target.get_span_pos(), None)

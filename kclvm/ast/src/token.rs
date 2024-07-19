@@ -313,16 +313,20 @@ impl From<Token> for String {
 }
 
 impl Token {
+    /// New a token using the kind and span.
+    #[inline]
     pub fn new(kind: TokenKind, span: Span) -> Self {
         Token { kind, span }
     }
 
     /// Some token that will be thrown away later.
+    #[inline]
     pub fn dummy() -> Self {
         Token::new(TokenKind::Dummy, DUMMY_SP)
     }
 
     /// Returns an identifier if this token is an identifier.
+    #[inline]
     pub fn ident(&self) -> Option<Ident> {
         match self.kind {
             Ident(name) => Some(Ident::new(name, self.span)),
@@ -330,11 +334,14 @@ impl Token {
         }
     }
 
+    /// Whether the token is keyword.
+    #[inline]
     pub fn is_keyword(&self, kw: Symbol) -> bool {
         self.run_on_ident(|id| id.name == kw)
     }
 
     /// Whether the token is a string literal token.
+    #[inline]
     pub fn is_string_lit(&self) -> bool {
         match self.kind {
             TokenKind::Literal(lit) => {

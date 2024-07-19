@@ -34,6 +34,60 @@ pub fn get_key_path(key: &Option<ast::NodeRef<ast::Expr>>) -> String {
     }
 }
 
+/// Get assign target path from the AST key node and convert string-based AST nodes including
+/// `ast::Expr::Identifier` and `ast::Expr::StringLit` to strings.
+///
+/// # Examples
+///
+/// ```
+/// use kclvm_ast::ast;
+/// use kclvm_ast::path::get_target_path;
+///
+/// let target = ast::Target {
+///     name: ast::Node::dummy_node("alice".to_string()),
+///     paths: vec![],
+///     pkgpath: "".to_string(),
+/// };
+/// assert_eq!(get_target_path(&target), "alice");
+/// ```
+#[inline]
+pub fn get_target_path(key: &ast::Target) -> String {
+    let mut result = key.name.node.to_string();
+    for path in &key.paths {
+        match path {
+            ast::MemberOrIndex::Member(member) => {
+                result.push('.');
+                result.push_str(&member.node);
+            }
+            ast::MemberOrIndex::Index(index) => {
+                result.push('[');
+                match &index.node {
+                    ast::Expr::Unary(unary_expr) => match &unary_expr.operand.node {
+                        ast::Expr::NumberLit(number) => {
+                            result.push_str(&unary_expr.op.symbol());
+                            result.push_str(&number.to_string());
+                        }
+                        _ => {
+                            result.push_str("...");
+                        }
+                    },
+                    ast::Expr::NumberLit(number) => {
+                        result.push_str(&number.to_string());
+                    }
+                    ast::Expr::StringLit(string_lit) => {
+                        result.push_str(&format!("{:?}", string_lit.value));
+                    }
+                    _ => {
+                        result.push_str("...");
+                    }
+                }
+                result.push(']');
+            }
+        }
+    }
+    result
+}
+
 /// Get all attribute paths recursively from a config expression AST node.
 ///
 /// # Examples

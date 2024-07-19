@@ -18,18 +18,16 @@ expression: "crate::tests::parsing_file_string(\"testdata/if-03.k\")"
               "targets": [
                 {
                   "node": {
-                    "names": [
-                      {
-                        "node": "a",
-                        "filename": "if-03.k",
-                        "line": 1,
-                        "column": 9,
-                        "end_line": 1,
-                        "end_column": 10
-                      }
-                    ],
-                    "pkgpath": "",
-                    "ctx": "Store"
+                    "name": {
+                      "node": "a",
+                      "filename": "if-03.k",
+                      "line": 1,
+                      "column": 9,
+                      "end_line": 1,
+                      "end_column": 10
+                    },
+                    "paths": [],
+                    "pkgpath": ""
                   },
                   "filename": "if-03.k",
                   "line": 1,

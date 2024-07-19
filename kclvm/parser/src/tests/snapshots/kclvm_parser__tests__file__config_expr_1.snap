@@ -14,18 +14,16 @@ expression: "crate::tests::parsing_file_string(\"testdata/config_expr-01.k\")"
         "targets": [
           {
             "node": {
-              "names": [
-                {
-                  "node": "config",
-                  "filename": "config_expr-01.k",
-                  "line": 1,
-                  "column": 0,
-                  "end_line": 1,
-                  "end_column": 6
-                }
-              ],
-              "pkgpath": "",
-              "ctx": "Store"
+              "name": {
+                "node": "config",
+                "filename": "config_expr-01.k",
+                "line": 1,
+                "column": 0,
+                "end_line": 1,
+                "end_column": 6
+              },
+              "paths": [],
+              "pkgpath": ""
             },
             "filename": "config_expr-01.k",
             "line": 1,

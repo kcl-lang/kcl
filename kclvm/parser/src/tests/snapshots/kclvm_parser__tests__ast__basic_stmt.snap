@@ -14,18 +14,16 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\n# co
         "targets": [
           {
             "node": {
-              "names": [
-                {
-                  "node": "a",
-                  "filename": "hello.k",
-                  "line": 3,
-                  "column": 0,
-                  "end_line": 3,
-                  "end_column": 1
-                }
-              ],
-              "pkgpath": "",
-              "ctx": "Store"
+              "name": {
+                "node": "a",
+                "filename": "hello.k",
+                "line": 3,
+                "column": 0,
+                "end_line": 3,
+                "end_column": 1
+              },
+              "paths": [],
+              "pkgpath": ""
             },
             "filename": "hello.k",
             "line": 3,
@@ -63,18 +61,16 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\n# co
         "targets": [
           {
             "node": {
-              "names": [
-                {
-                  "node": "b",
-                  "filename": "hello.k",
-                  "line": 5,
-                  "column": 0,
-                  "end_line": 5,
-                  "end_column": 1
-                }
-              ],
-              "pkgpath": "",
-              "ctx": "Store"
+              "name": {
+                "node": "b",
+                "filename": "hello.k",
+                "line": 5,
+                "column": 0,
+                "end_line": 5,
+                "end_column": 1
+              },
+              "paths": [],
+              "pkgpath": ""
             },
             "filename": "hello.k",
             "line": 5,
@@ -112,18 +108,16 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\n# co
         "targets": [
           {
             "node": {
-              "names": [
-                {
-                  "node": "c",
-                  "filename": "hello.k",
-                  "line": 7,
-                  "column": 0,
-                  "end_line": 7,
-                  "end_column": 1
-                }
-              ],
-              "pkgpath": "",
-              "ctx": "Store"
+              "name": {
+                "node": "c",
+                "filename": "hello.k",
+                "line": 7,
+                "column": 0,
+                "end_line": 7,
+                "end_column": 1
+              },
+              "paths": [],
+              "pkgpath": ""
             },
             "filename": "hello.k",
             "line": 7,

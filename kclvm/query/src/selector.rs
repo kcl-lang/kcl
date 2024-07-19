@@ -2,7 +2,7 @@ use crate::r#override::build_expr_from_string;
 
 use super::util::{invalid_symbol_selector_spec_error, split_field_path};
 use anyhow::Result;
-use kclvm_ast::ast;
+use kclvm_ast::{ast, path::get_target_path};
 use kclvm_error::diagnostic::Errors;
 use kclvm_parser::ParseSession;
 use serde::{Deserialize, Serialize};
@@ -359,14 +359,11 @@ impl<'ctx> MutSelfWalker for Selector {
                 "".to_string()
             };
             // The length of name for variable in top level is 1
-            if assign_stmt.targets.len() == 1 {
-                let target = &assign_stmt.targets[0];
-                let target = &Some(Box::new(ast::Node::dummy_node(ast::Expr::Identifier(
-                    target.node.clone(),
-                ))));
-                let key = get_key_path(&target);
+            for target in &assign_stmt.targets {
+                let key = get_target_path(&target.node);
+                let mut variable = variable.clone();
                 variable.name = key.to_string();
-                variable.type_name = type_name;
+                variable.type_name = type_name.clone();
                 variable.op_sym = ast::ConfigEntryOperation::Override.symbol().to_string();
                 self.switch_top_variable(variable.clone());
                 self.push_variable(variable);
@@ -375,20 +372,17 @@ impl<'ctx> MutSelfWalker for Selector {
             }
         } else {
             // Compare the target with the spec
-            if assign_stmt.targets.len() == 1 {
-                let target = &assign_stmt.targets[0];
-                let target = &Some(Box::new(ast::Node::dummy_node(ast::Expr::Identifier(
-                    target.node.clone(),
-                ))));
-                let target = get_key_path(target);
+            for target in &assign_stmt.targets {
+                let target = get_target_path(&target.node);
                 let selector = self.inner.pop_front();
                 if let Some(selector) = selector {
-                    if selector == target.to_string() {
+                    if selector == target {
                         let type_name = if let ast::Expr::Schema(schema) = &assign_stmt.value.node {
                             schema.name.node.get_name()
                         } else {
                             "".to_string()
                         };
+                        let mut variable = variable.clone();
                         variable.name = selector.to_string();
                         variable.type_name = type_name;
                         variable.op_sym = ast::ConfigEntryOperation::Override.symbol().to_string();

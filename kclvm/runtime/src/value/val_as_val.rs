@@ -20,6 +20,14 @@ impl ValueRef {
     }
 
     #[inline]
+    pub fn must_as_strict_int(&self) -> i64 {
+        match *self.rc.borrow() {
+            Value::int_value(ref v) => *v,
+            _ => panic!("invalid int value"),
+        }
+    }
+
+    #[inline]
     pub fn as_float(&self) -> f64 {
         match *self.rc.borrow() {
             Value::int_value(ref v) => *v as f64,

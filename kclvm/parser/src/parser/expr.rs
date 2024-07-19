@@ -7,12 +7,14 @@ use std::vec;
 use super::int::bytes_to_int;
 use super::Parser;
 
+use anyhow::bail;
 use either::{self, Either};
-use kclvm_ast::node_ref;
 
 use crate::parser::precedence::Precedence;
+use anyhow::Result;
 use compiler_base_error::unit_type::{TypeWithUnit, UnitUsize};
 use kclvm_ast::ast::*;
+use kclvm_ast::node_ref;
 use kclvm_ast::token;
 use kclvm_ast::token::{BinOpToken, DelimToken, TokenKind, VALID_SPACES_LENGTH};
 use kclvm_span::symbol::kw;
@@ -2427,5 +2429,80 @@ impl<'a> Parser<'a> {
                 .struct_span_error("expected identifier", token.span);
             expr.into_missing_identifier().node
         }
+    }
+
+    /// Cast an expression into an assign target.
+    pub(crate) fn expr_as_assign_target(&self, expr: &NodeRef<Expr>) -> Result<Target> {
+        let mut paths = self.expr_as_assign_target_paths(expr)?;
+        if paths.len() >= 1 {
+            let first = paths.remove(0);
+            match first {
+                MemberOrIndex::Member(member) => Ok(Target {
+                    name: *member,
+                    paths: paths.to_vec(),
+                    pkgpath: "".to_string(),
+                }),
+                MemberOrIndex::Index(_) => bail!(
+                    "'{}' is an illegal expression for assignment",
+                    expr.node.get_expr_name()
+                ),
+            }
+        } else {
+            bail!(
+                "'{}' is an illegal expression for assignment",
+                expr.node.get_expr_name()
+            );
+        }
+    }
+
+    /// Cast an expression into an assign target paths.
+    pub(crate) fn expr_as_assign_target_paths(
+        &self,
+        expr: &NodeRef<Expr>,
+    ) -> Result<Vec<MemberOrIndex>> {
+        match &expr.node {
+            Expr::Identifier(identifier) => Ok(self.identifier_as_assign_target_paths(identifier)),
+            Expr::Selector(selector) => {
+                if selector.has_question {
+                    bail!("'{}' is an illegal expression for assignment, because the left-hand side of an assignment expression may not be an optional attribute access.", expr.node.get_expr_name());
+                } else {
+                    let mut value_paths = self.expr_as_assign_target_paths(&selector.value)?;
+                    let mut attr_values =
+                        self.identifier_as_assign_target_paths(&selector.attr.node);
+                    value_paths.append(&mut attr_values);
+                    Ok(value_paths)
+                }
+            }
+            Expr::Subscript(subscript) => {
+                if subscript.has_question {
+                    bail!("'{}' is an illegal expression for assignment, because the left-hand side of an assignment expression may not be an optional subscript access.", expr.node.get_expr_name());
+                } else {
+                    let mut value_paths = self.expr_as_assign_target_paths(&subscript.value)?;
+                    if let Some(index) = &subscript.index {
+                        value_paths.push(MemberOrIndex::Index(index.clone()));
+                        Ok(value_paths)
+                    } else {
+                        bail!("'{}' is an illegal expression for assignment, because the left-hand side of an assignment expression may not be a slice access.", expr.node.get_expr_name());
+                    }
+                }
+            }
+            _ => bail!(
+                "'{}' is an illegal expression for assignment",
+                expr.node.get_expr_name()
+            ),
+        }
+    }
+
+    /// Cast a identifier into an assign target paths.
+    #[inline]
+    pub(crate) fn identifier_as_assign_target_paths(
+        &self,
+        identifier: &Identifier,
+    ) -> Vec<MemberOrIndex> {
+        identifier
+            .names
+            .iter()
+            .map(|i| MemberOrIndex::Member(Box::new(i.clone())))
+            .collect()
     }
 }

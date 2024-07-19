@@ -84,6 +84,8 @@ impl From<Pos> for Range {
     }
 }
 
+/// The unique index of AST, used for KCL semantic analysis to record AST
+/// node semantic information.
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct AstIndex(uuid::Uuid);
 
@@ -487,10 +489,16 @@ pub struct UnificationStmt {
 /// AssignStmt represents an assignment, e.g.
 /// ```kcl
 /// a: int = 1
+/// a["key"] = "value"
+/// a.b["key"].c = "value"
+/// a[0] = 1
 /// ```
+/// Valid left-hand side of an assignment expressions:
+/// - Expr::Identifier a
+/// - Expr::Subscript  e.g. `a[0]`, `b["k"]`
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct AssignStmt {
-    pub targets: Vec<NodeRef<Identifier>>,
+    pub targets: Vec<NodeRef<Target>>,
     pub value: NodeRef<Expr>,
     pub ty: Option<NodeRef<Type>>,
 }
@@ -498,10 +506,11 @@ pub struct AssignStmt {
 /// AugAssignStmt represents an argument assignment, e.g.
 /// ```kcl
 /// a += 1
+/// a[0] += 2
 /// ```
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct AugAssignStmt {
-    pub target: NodeRef<Identifier>,
+    pub target: NodeRef<Target>,
     pub value: NodeRef<Expr>,
     pub op: AugOp,
 }
@@ -606,23 +615,19 @@ impl SchemaStmt {
                     }
                     Stmt::Assign(assign_stmt) => {
                         for target in &assign_stmt.targets {
-                            if !target.node.names.is_empty() {
-                                attr_list.push((
-                                    target.line,
-                                    target.column,
-                                    target.node.names[0].node.to_string(),
-                                ));
-                            }
+                            attr_list.push((
+                                target.line,
+                                target.column,
+                                target.node.name.node.to_string(),
+                            ));
                         }
                     }
                     Stmt::AugAssign(aug_assign_stmt) => {
-                        if !aug_assign_stmt.target.node.names.is_empty() {
-                            attr_list.push((
-                                aug_assign_stmt.target.line,
-                                aug_assign_stmt.target.column,
-                                aug_assign_stmt.target.node.names[0].node.to_string(),
-                            ));
-                        }
+                        attr_list.push((
+                            aug_assign_stmt.target.line,
+                            aug_assign_stmt.target.column,
+                            aug_assign_stmt.target.node.name.node.to_string(),
+                        ));
                     }
                     Stmt::If(if_stmt) => {
                         loop_body(&if_stmt.body, attr_list);
@@ -715,6 +720,7 @@ pub struct RuleStmt {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type")]
 pub enum Expr {
+    Target(Target),
     Identifier(Identifier),
     Unary(UnaryExpr),
     Binary(BinaryExpr),
@@ -750,6 +756,7 @@ pub enum Expr {
 impl Expr {
     pub fn get_expr_name(&self) -> String {
         match self {
+            Expr::Target(_) => "TargetExpression",
             Expr::Identifier(_) => "IdentifierExpression",
             Expr::Unary(_) => "UnaryExpression",
             Expr::Binary(_) => "BinaryExpression",
@@ -784,6 +791,46 @@ impl Expr {
     }
 }
 
+/// Target, e.g.
+/// ```kcl
+/// a.b.c
+/// b
+/// _c
+/// a["b"][0].c
+/// ```
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct Target {
+    pub name: Node<String>,
+    pub paths: Vec<MemberOrIndex>,
+    pub pkgpath: String,
+}
+
+impl Target {
+    #[inline]
+    pub fn get_name(&self) -> &str {
+        self.name.node.as_str()
+    }
+}
+
+/// Member or index expression
+/// - `a.<member>`
+/// - `b[<index>]`
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum MemberOrIndex {
+    Member(NodeRef<String>),
+    Index(NodeRef<Expr>),
+}
+
+impl MemberOrIndex {
+    #[inline]
+    pub fn id(&self) -> AstIndex {
+        match self {
+            MemberOrIndex::Member(member) => member.id.clone(),
+            MemberOrIndex::Index(index) => index.id.clone(),
+        }
+    }
+}
+
 /// Identifier, e.g.
 /// ```kcl
 /// a
@@ -799,10 +846,12 @@ pub struct Identifier {
 }
 
 impl Identifier {
+    #[inline]
     pub fn get_name(&self) -> String {
         self.get_names().join(".")
     }
 
+    #[inline]
     pub fn get_names(&self) -> Vec<String> {
         self.names
             .iter()
@@ -1258,6 +1307,19 @@ pub enum NumberLitValue {
 pub struct NumberLit {
     pub binary_suffix: Option<NumberBinarySuffix>,
     pub value: NumberLitValue,
+}
+
+impl ToString for NumberLit {
+    fn to_string(&self) -> String {
+        let mut result = match self.value {
+            NumberLitValue::Int(v) => v.to_string(),
+            NumberLitValue::Float(v) => v.to_string(),
+        };
+        if let Some(suffix) = &self.binary_suffix {
+            result.push_str(&suffix.value());
+        }
+        result
+    }
 }
 
 /// StringLit, e.g.

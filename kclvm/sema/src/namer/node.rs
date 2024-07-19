@@ -111,7 +111,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
         for target in assign_stmt.targets.iter() {
             let (start_pos, end_pos): Range = target.get_span_pos();
             let owner = self.ctx.owner_symbols.last().unwrap().clone();
-            if target.node.names.len() == 1 {
+            if target.node.paths.is_empty() {
                 let owner_fully_qualified_name = self
                     .gs
                     .get_symbols()
@@ -125,7 +125,13 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
                     .contains(&value_fully_qualified_name)
                 {
                     let value_ref = self.gs.get_symbols_mut().alloc_value_symbol(
-                        ValueSymbol::new(value_name, start_pos, end_pos, Some(owner), true),
+                        ValueSymbol::new(
+                            value_name.to_string(),
+                            start_pos,
+                            end_pos,
+                            Some(owner),
+                            true,
+                        ),
                         self.ctx.get_node_key(&target.id),
                         self.ctx
                             .current_package_info
@@ -360,6 +366,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
     }
 
     fn walk_identifier(&mut self, _identifier: &'ctx ast::Identifier) -> Self::Result {
+        None
+    }
+
+    fn walk_target(&mut self, _target: &'ctx ast::Target) -> Self::Result {
         None
     }
 

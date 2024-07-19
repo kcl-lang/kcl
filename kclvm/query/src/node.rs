@@ -60,7 +60,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for AstNodeMover {
         }
 
         for target in assign_stmt.targets.iter_mut() {
-            self.walk_identifier(&mut target.node)
+            self.walk_target(&mut target.node)
         }
         self.walk_expr(&mut assign_stmt.value.node);
         walk_if_mut!(self, walk_type, assign_stmt.ty)
@@ -72,7 +72,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for AstNodeMover {
         aug_assign_stmt.value.line += self.line_offset as u64;
         aug_assign_stmt.value.end_line += self.line_offset as u64;
 
-        self.walk_identifier(&mut aug_assign_stmt.target.node);
+        self.walk_target(&mut aug_assign_stmt.target.node);
         self.walk_expr(&mut aug_assign_stmt.value.node);
     }
     fn walk_assert_stmt(&mut self, assert_stmt: &'ctx mut ast::AssertStmt) {
@@ -672,21 +672,6 @@ impl<'ctx> MutSelfMutWalker<'ctx> for AstNodeMover {
         self.walk_expr(&mut compare.left.node);
         walk_list_mut!(self, walk_expr, compare.comparators);
     }
-    fn walk_identifier(&mut self, identifier: &'ctx mut ast::Identifier) {
-        // Nothing to do.
-        let _ = identifier;
-    }
-    fn walk_number_lit(&mut self, number_lit: &'ctx mut ast::NumberLit) {
-        let _ = number_lit;
-    }
-    fn walk_string_lit(&mut self, string_lit: &'ctx mut ast::StringLit) {
-        // Nothing to do.
-        let _ = string_lit;
-    }
-    fn walk_name_constant_lit(&mut self, name_constant_lit: &'ctx mut ast::NameConstantLit) {
-        // Nothing to do.
-        let _ = name_constant_lit;
-    }
     fn walk_joined_string(&mut self, joined_string: &'ctx mut ast::JoinedString) {
         joined_string.values.iter_mut().for_each(|v| {
             v.line += self.line_offset as u64;
@@ -700,14 +685,6 @@ impl<'ctx> MutSelfMutWalker<'ctx> for AstNodeMover {
         formatted_value.value.end_line += self.line_offset as u64;
 
         self.walk_expr(&mut formatted_value.value.node);
-    }
-    fn walk_comment(&mut self, comment: &'ctx mut ast::Comment) {
-        // Nothing to do.
-        let _ = comment;
-    }
-    fn walk_missing_expr(&mut self, missing_expr: &'ctx mut ast::MissingExpr) {
-        // Nothing to do.
-        let _ = missing_expr;
     }
     fn walk_module(&mut self, module: &'ctx mut ast::Module) {
         module.comments.iter_mut().for_each(|c| {
@@ -745,6 +722,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for AstNodeMover {
     }
     fn walk_expr(&mut self, expr: &'ctx mut ast::Expr) {
         match expr {
+            ast::Expr::Target(target) => self.walk_target(target),
             ast::Expr::Identifier(identifier) => self.walk_identifier(identifier),
             ast::Expr::Unary(unary_expr) => self.walk_unary_expr(unary_expr),
             ast::Expr::Binary(binary_expr) => self.walk_binary_expr(binary_expr),

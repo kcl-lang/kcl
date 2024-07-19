@@ -14,18 +14,16 @@ expression: "crate::tests::parsing_file_string(\"testdata/assign-01.k\")"
         "targets": [
           {
             "node": {
-              "names": [
-                {
-                  "node": "a",
-                  "filename": "assign-01.k",
-                  "line": 1,
-                  "column": 0,
-                  "end_line": 1,
-                  "end_column": 1
-                }
-              ],
-              "pkgpath": "",
-              "ctx": "Store"
+              "name": {
+                "node": "a",
+                "filename": "assign-01.k",
+                "line": 1,
+                "column": 0,
+                "end_line": 1,
+                "end_column": 1
+              },
+              "paths": [],
+              "pkgpath": ""
             },
             "filename": "assign-01.k",
             "line": 1,
@@ -63,18 +61,16 @@ expression: "crate::tests::parsing_file_string(\"testdata/assign-01.k\")"
         "targets": [
           {
             "node": {
-              "names": [
-                {
-                  "node": "b",
-                  "filename": "assign-01.k",
-                  "line": 2,
-                  "column": 0,
-                  "end_line": 2,
-                  "end_column": 1
-                }
-              ],
-              "pkgpath": "",
-              "ctx": "Store"
+              "name": {
+                "node": "b",
+                "filename": "assign-01.k",
+                "line": 2,
+                "column": 0,
+                "end_line": 2,
+                "end_column": 1
+              },
+              "paths": [],
+              "pkgpath": ""
             },
             "filename": "assign-01.k",
             "line": 2,
@@ -138,18 +134,16 @@ expression: "crate::tests::parsing_file_string(\"testdata/assign-01.k\")"
         "targets": [
           {
             "node": {
-              "names": [
-                {
-                  "node": "c",
-                  "filename": "assign-01.k",
-                  "line": 3,
-                  "column": 0,
-                  "end_line": 3,
-                  "end_column": 1
-                }
-              ],
-              "pkgpath": "",
-              "ctx": "Store"
+              "name": {
+                "node": "c",
+                "filename": "assign-01.k",
+                "line": 3,
+                "column": 0,
+                "end_line": 3,
+                "end_column": 1
+              },
+              "paths": [],
+              "pkgpath": ""
             },
             "filename": "assign-01.k",
             "line": 3,

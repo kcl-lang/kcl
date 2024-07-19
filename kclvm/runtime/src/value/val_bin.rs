@@ -135,7 +135,7 @@ impl ValueRef {
                 let mut list = ListValue::default();
                 for _ in 0..(*b as usize) {
                     for x in a.values.iter() {
-                        list.values.push(x.clone());
+                        list.values.push(x.deep_copy());
                     }
                 }
                 Self::from(Value::list_value(Box::new(list)))
@@ -144,7 +144,7 @@ impl ValueRef {
                 let mut list = ListValue::default();
                 for _ in 0..(*b as usize) {
                     for x in a.values.iter() {
-                        list.values.push(x.clone());
+                        list.values.push(x.deep_copy());
                     }
                 }
                 Self::from(Value::list_value(Box::new(list)))
@@ -298,11 +298,7 @@ impl ValueRef {
             (Value::str_value(a), Value::int_value(b)) => {
                 let str_len = a.chars().count();
                 let index = *b;
-                let index = if index < 0 {
-                    (index + str_len as i64) as usize
-                } else {
-                    index as usize
-                };
+                let index = must_normalize_index(index as i32, str_len);
                 if index < a.len() {
                     let ch = a.chars().nth(index).unwrap();
                     Self::str(ch.to_string().as_ref())
@@ -312,11 +308,7 @@ impl ValueRef {
             }
             (Value::list_value(a), Value::int_value(b)) => {
                 let index = *b;
-                let index = if index < 0 {
-                    (index + a.values.len() as i64) as usize
-                } else {
-                    index as usize
-                };
+                let index = must_normalize_index(index as i32, a.values.len());
                 if index < a.values.len() {
                     a.values[index].clone()
                 } else {
@@ -345,6 +337,21 @@ impl ValueRef {
             self.bin_subscr(x)
         } else {
             Self::none()
+        }
+    }
+
+    pub fn bin_subscr_set(&mut self, ctx: &mut Context, x: &Self, v: &Self) {
+        if self.is_list() && x.is_int() {
+            self.list_set_value(x, v);
+        } else if self.is_config() && x.is_str() {
+            let key = x.as_str();
+            self.dict_set_value(ctx, &key, v);
+        } else {
+            panic!(
+                "'{}' object is not subscriptable with '{}'",
+                self.type_str(),
+                x.type_str()
+            );
         }
     }
 }

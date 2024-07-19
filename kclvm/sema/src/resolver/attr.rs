@@ -7,6 +7,7 @@ use crate::ty::TypeKind::Schema;
 use crate::ty::{
     DictType, ModuleKind, Parameter, Type, TypeKind, TypeRef, SCHEMA_MEMBER_FUNCTIONS,
 };
+use kclvm_ast::ast;
 use kclvm_error::diagnostic::Range;
 use kclvm_error::*;
 
@@ -156,5 +157,124 @@ impl<'ctx> Resolver<'ctx> {
             );
         }
         return_ty
+    }
+
+    pub fn subscript_index(
+        &mut self,
+        value_ty: TypeRef,
+        index: &'ctx ast::NodeRef<ast::Expr>,
+        range: Range,
+    ) -> ResolvedResult {
+        if value_ty.is_any() {
+            value_ty
+        } else {
+            match &value_ty.kind {
+                TypeKind::Str | TypeKind::StrLit(_) | TypeKind::List(_) => {
+                    self.must_be_type(index, self.int_ty());
+                    if value_ty.is_list() {
+                        value_ty.list_item_ty()
+                    } else {
+                        self.str_ty()
+                    }
+                }
+                TypeKind::Dict(DictType {
+                    key_ty: _, val_ty, ..
+                }) => {
+                    let index_key_ty = self.expr(index);
+                    if index_key_ty.is_none_or_any() {
+                        val_ty.clone()
+                    } else if !index_key_ty.is_key() {
+                        self.handler.add_compile_error(
+                            &format!("invalid dict/schema key type: '{}'", index_key_ty.ty_str()),
+                            range,
+                        );
+                        self.any_ty()
+                    } else if let TypeKind::StrLit(lit_value) = &index_key_ty.kind {
+                        self.load_attr(value_ty, lit_value, range)
+                    } else {
+                        val_ty.clone()
+                    }
+                }
+                TypeKind::Schema(schema_ty) => {
+                    let index_key_ty = self.expr(index);
+                    if index_key_ty.is_none_or_any() {
+                        schema_ty.val_ty()
+                    } else if !index_key_ty.is_key() {
+                        self.handler.add_compile_error(
+                            &format!("invalid dict/schema key type: '{}'", index_key_ty.ty_str()),
+                            range,
+                        );
+                        self.any_ty()
+                    } else if let TypeKind::StrLit(lit_value) = &index_key_ty.kind {
+                        self.load_attr(value_ty, lit_value, range)
+                    } else {
+                        schema_ty.val_ty()
+                    }
+                }
+                _ => {
+                    self.handler.add_compile_error(
+                        &format!("'{}' object is not subscriptable", value_ty.ty_str()),
+                        range,
+                    );
+                    self.any_ty()
+                }
+            }
+        }
+    }
+
+    pub fn subscript(
+        &mut self,
+        value_ty: TypeRef,
+        index: &'ctx Option<ast::NodeRef<ast::Expr>>,
+        lower: &'ctx Option<ast::NodeRef<ast::Expr>>,
+        upper: &'ctx Option<ast::NodeRef<ast::Expr>>,
+        step: &'ctx Option<ast::NodeRef<ast::Expr>>,
+        range: Range,
+    ) -> ResolvedResult {
+        if value_ty.is_any() {
+            value_ty
+        } else {
+            match &value_ty.kind {
+                TypeKind::Str | TypeKind::StrLit(_) | TypeKind::List(_) => {
+                    if let Some(index) = &index {
+                        self.subscript_index(value_ty, index, range)
+                    } else {
+                        for expr in [lower, upper, step].iter().copied().flatten() {
+                            self.must_be_type(expr, self.int_ty());
+                        }
+                        if value_ty.is_list() {
+                            value_ty
+                        } else {
+                            self.str_ty()
+                        }
+                    }
+                }
+                TypeKind::Dict(DictType { key_ty: _, .. }) => {
+                    if let Some(index) = &index {
+                        self.subscript_index(value_ty, index, range)
+                    } else {
+                        self.handler
+                            .add_compile_error("unhashable type: 'slice'", range);
+                        self.any_ty()
+                    }
+                }
+                TypeKind::Schema(_) => {
+                    if let Some(index) = &index {
+                        self.subscript_index(value_ty, index, range)
+                    } else {
+                        self.handler
+                            .add_compile_error("unhashable type: 'slice'", range);
+                        self.any_ty()
+                    }
+                }
+                _ => {
+                    self.handler.add_compile_error(
+                        &format!("'{}' object is not subscriptable", value_ty.ty_str()),
+                        range,
+                    );
+                    self.any_ty()
+                }
+            }
+        }
     }
 }

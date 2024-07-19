@@ -104,7 +104,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 }
                 ast::Stmt::Assign(assign_stmt) => {
                     for target in &assign_stmt.targets {
-                        let name = &target.node.names[0].node;
+                        let name = &target.node.name.node;
                         self.dict_merge(schema_value, name, value, 0, None);
                         if is_in_if {
                             in_if_names.push(name.to_string());
@@ -121,7 +121,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 }
                 ast::Stmt::AugAssign(aug_assign_stmt) => {
                     let target = &aug_assign_stmt.target;
-                    let name = &target.node.names[0].node;
+                    let name = &target.node.name.node;
                     self.dict_merge(schema_value, name, value, 0, None);
                     if is_in_if {
                         in_if_names.push(name.to_string());

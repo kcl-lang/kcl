@@ -5,10 +5,11 @@ use crate::{
 };
 use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast;
+use kclvm_ast::walker::TypedResultWalker;
 use kclvm_runtime::{ValueRef, _kclvm_get_fn_ptr_by_name, MAIN_PKG_PATH};
 use kclvm_sema::{builtin, plugin};
 
-use crate::{Evaluator, GLOBAL_LEVEL, INNER_LEVEL};
+use crate::{EvalResult, Evaluator, GLOBAL_LEVEL, INNER_LEVEL};
 
 /// The evaluator scope.
 #[derive(Debug, Default)]
@@ -496,52 +497,11 @@ impl<'ctx> Evaluator<'ctx> {
             return self.undefined_value();
         }
         let name = names[0];
-        // Get variable from the scope.
-        let get = |name: &str| {
-            match (
-                self.is_in_schema(),
-                self.is_in_lambda(),
-                self.is_local_var(name),
-            ) {
-                // Get variable from the global lazy scope.
-                (false, false, false) => {
-                    let variable = self.get_variable(name);
-                    match self.resolve_variable_level(name) {
-                        // Closure variable or local variables
-                        Some(level) if level <= GLOBAL_LEVEL => self.get_value_from_lazy_scope(
-                            &self.current_pkgpath(),
-                            name,
-                            &self.get_target_var(),
-                            variable,
-                        ),
-                        // Schema closure or global variables
-                        _ => variable,
-                    }
-                }
-                // Get variable from the local or global scope.
-                (false, _, _) | (_, _, true) => self.get_variable(name),
-                // Get variable from the current schema scope.
-                (true, false, false) => self.get_variable_in_schema_or_rule(name),
-                // Get from local scope including lambda arguments, lambda variables,
-                // loop variables or global variables.
-                (true, true, _) =>
-                // Get from local scope including lambda arguments, lambda variables,
-                // loop variables or global variables.
-                {
-                    match self.resolve_variable_level(name) {
-                        // Closure variable or local variables
-                        Some(level) if level > GLOBAL_LEVEL => self.get_variable(name),
-                        // Schema closure or global variables
-                        _ => self.get_variable_in_schema_or_rule(name),
-                    }
-                }
-            }
-        };
         if names.len() == 1 {
-            get(name)
+            self.load_name(name)
         } else {
             let mut value = if pkgpath.is_empty() {
-                get(name)
+                self.load_name(name)
             } else {
                 self.undefined_value()
             };
@@ -581,5 +541,98 @@ impl<'ctx> Evaluator<'ctx> {
             }
             value
         }
+    }
+
+    /// Load global or local value from name.
+    pub fn load_name(&self, name: &str) -> ValueRef {
+        match (
+            self.is_in_schema(),
+            self.is_in_lambda(),
+            self.is_local_var(name),
+        ) {
+            // Get variable from the global lazy scope.
+            (false, false, false) => {
+                let variable = self.get_variable(name);
+                match self.resolve_variable_level(name) {
+                    // Closure variable or local variables
+                    Some(level) if level <= GLOBAL_LEVEL => self.get_value_from_lazy_scope(
+                        &self.current_pkgpath(),
+                        name,
+                        &self.get_target_var(),
+                        variable,
+                    ),
+                    // Schema closure or global variables
+                    _ => variable,
+                }
+            }
+            // Get variable from the local or global scope.
+            (false, _, _) | (_, _, true) => self.get_variable(name),
+            // Get variable from the current schema scope.
+            (true, false, false) => self.get_variable_in_schema_or_rule(name),
+            // Get from local scope including lambda arguments, lambda variables,
+            // loop variables or global variables.
+            (true, true, _) =>
+            // Get from local scope including lambda arguments, lambda variables,
+            // loop variables or global variables.
+            {
+                match self.resolve_variable_level(name) {
+                    // Closure variable or local variables
+                    Some(level) if level > GLOBAL_LEVEL => self.get_variable(name),
+                    // Schema closure or global variables
+                    _ => self.get_variable_in_schema_or_rule(name),
+                }
+            }
+        }
+    }
+
+    /// Load assignment target value.
+    pub fn load_target(&self, target: &'ctx ast::Target) -> EvalResult {
+        let mut value = self.load_name(target.get_name());
+        for path in &target.paths {
+            match path {
+                ast::MemberOrIndex::Member(member) => {
+                    let attr = &member.node;
+                    value = value.load_attr(attr);
+                }
+                ast::MemberOrIndex::Index(index) => {
+                    let index = self.walk_expr(index)?;
+                    value = value.bin_subscr(&index);
+                }
+            }
+        }
+        Ok(value)
+    }
+
+    /// Load value from assignment target path.
+    pub fn load_target_path(&self, value: &ValueRef, path: &'ctx ast::MemberOrIndex) -> EvalResult {
+        Ok(match path {
+            ast::MemberOrIndex::Member(member) => {
+                let attr = &member.node;
+                value.load_attr(attr)
+            }
+            ast::MemberOrIndex::Index(index) => {
+                let index = self.walk_expr(index)?;
+                value.bin_subscr(&index)
+            }
+        })
+    }
+
+    pub fn store_target_path(
+        &self,
+        value: &mut ValueRef,
+        path: &'ctx ast::MemberOrIndex,
+        right_value: &ValueRef,
+    ) -> EvalResult {
+        match path {
+            ast::MemberOrIndex::Member(member) => {
+                let attr = &member.node;
+                self.dict_set_value(value, attr, &right_value);
+            }
+            ast::MemberOrIndex::Index(index) => {
+                let index = self.walk_expr(index)?;
+                value.bin_subscr_set(&mut self.runtime_ctx.borrow_mut(), &index, &right_value);
+            }
+        }
+        self.ok_result()
     }
 }

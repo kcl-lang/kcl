@@ -4,15 +4,15 @@ use crate::{ast, ast::*};
 
 /// Construct an AssignStmt node with assign_value as value
 fn build_assign_node(attr_name: &str, assign_value: NodeRef<Expr>) -> NodeRef<Stmt> {
-    let iden = node_ref!(Identifier {
-        names: vec![Node::dummy_node(attr_name.to_string())],
-        pkgpath: String::new(),
-        ctx: ExprContext::Store
+    let target = node_ref!(Target {
+        name: Node::dummy_node(attr_name.to_string()),
+        paths: vec![],
+        pkgpath: "".to_string()
     });
 
     node_ref!(Stmt::Assign(AssignStmt {
         value: assign_value,
-        targets: vec![iden],
+        targets: vec![target],
         ty: None
     }))
 }
@@ -26,10 +26,10 @@ fn get_dummy_assign_ast() -> ast::Node<ast::AssignStmt> {
     ast::Node::new(
         ast::AssignStmt {
             targets: vec![Box::new(ast::Node::new(
-                ast::Identifier {
-                    names: vec![Node::dummy_node(String::from("a"))],
-                    pkgpath: String::from(filename),
-                    ctx: ast::ExprContext::Load,
+                ast::Target {
+                    name: Node::dummy_node(String::from("a")),
+                    paths: vec![],
+                    pkgpath: "".to_string(),
                 },
                 String::from(filename),
                 line,
@@ -68,10 +68,10 @@ fn get_dummy_assign_binary_ast() -> ast::Node<ast::AssignStmt> {
     ast::Node::new(
         ast::AssignStmt {
             targets: vec![Box::new(ast::Node::new(
-                ast::Identifier {
-                    names: vec![Node::dummy_node(String::from("a"))],
-                    pkgpath: String::from(filename),
-                    ctx: ast::ExprContext::Load,
+                ast::Target {
+                    name: Node::dummy_node(String::from("a")),
+                    paths: vec![],
+                    pkgpath: "".to_string(),
                 },
                 String::from(filename),
                 line,
@@ -143,16 +143,15 @@ fn test_ast_print_assign_binary() {
 fn test_mut_walker() {
     pub struct VarMutSelfMutWalker;
     impl<'ctx> MutSelfMutWalker<'ctx> for VarMutSelfMutWalker {
-        fn walk_identifier(&mut self, identifier: &'ctx mut ast::Identifier) {
-            if identifier.names[0].node == "a" {
-                let id_mut = identifier.names.get_mut(0).unwrap();
-                id_mut.node = "x".to_string();
+        fn walk_target(&mut self, target: &'ctx mut ast::Target) {
+            if target.name.node == "a" {
+                target.name.node = "x".to_string();
             }
         }
     }
     let mut assign_stmt = get_dummy_assign_ast();
     VarMutSelfMutWalker {}.walk_assign_stmt(&mut assign_stmt.node);
-    assert_eq!(assign_stmt.node.targets[0].node.names[0].node, "x")
+    assert_eq!(assign_stmt.node.targets[0].node.name.node, "x")
 }
 
 #[test]

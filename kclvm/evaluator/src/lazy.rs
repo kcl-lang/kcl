@@ -209,7 +209,7 @@ impl<'ctx> Evaluator<'ctx> {
                 }
                 ast::Stmt::Assign(assign_stmt) => {
                     for target in &assign_stmt.targets {
-                        let name = &target.node.names[0].node;
+                        let name = &target.node.name.node;
                         if is_in_if {
                             in_if_names.push((name.to_string(), stmt.id.clone()));
                         } else {
@@ -219,7 +219,7 @@ impl<'ctx> Evaluator<'ctx> {
                 }
                 ast::Stmt::AugAssign(aug_assign_stmt) => {
                     let target = &aug_assign_stmt.target;
-                    let name = &target.node.names[0].node;
+                    let name = &target.node.name.node;
                     if is_in_if {
                         in_if_names.push((name.to_string(), stmt.id.clone()));
                     } else {

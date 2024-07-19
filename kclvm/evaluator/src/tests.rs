@@ -40,6 +40,18 @@ b = a + 1
 evaluator_snapshot! {assign_stmt_4, r#"a: int = 1
 b: int = a + 1
 "#}
+evaluator_snapshot! {assign_stmt_5, r#"_a = [0] * 2
+_a[0] = 1
+a = _a
+"#}
+evaluator_snapshot! {assign_stmt_6, r#"_a = [{"key": 0}] * 2
+_a[0].key = 1
+a = _a
+"#}
+evaluator_snapshot! {assign_stmt_7, r#"_a = [{key.key = [0] * 2}] * 2
+_a[0].key.key[0] = 1
+a = _a
+"#}
 
 evaluator_snapshot! {aug_assign_stmt_0, r#"_a = 1
 _a += 1
@@ -89,6 +101,18 @@ evaluator_snapshot! {aug_assign_stmt_11, r#"_a = 3
 _a //= 2
 a = _a
 "#}
+evaluator_snapshot! {aug_assign_stmt_12, r#"_a = [0] * 5
+_a[0] += 1
+a = _a
+"#}
+evaluator_snapshot! {aug_assign_stmt_13, r#"_a = [{"key": 1}] * 5
+_a[0].key += 1
+a = _a
+"#}
+evaluator_snapshot! {aug_assign_stmt_14, r#"_a = [{key.key = [0, 0]}] * 5
+_a[0].key.key[0] += 1
+a = _a
+"#}
 
 evaluator_snapshot! {assert_stmt_0, r#"assert True, "msg"
 a = 1
@@ -129,6 +153,15 @@ else:
         b = 2
     else:
         c = 3
+"#}
+evaluator_snapshot! {if_stmt_6, r#"
+if False:
+    a = 1
+else:
+    if True:
+        b = 1
+        if True:
+            c = 1
 "#}
 
 evaluator_snapshot! {import_stmt_0, r#"import math

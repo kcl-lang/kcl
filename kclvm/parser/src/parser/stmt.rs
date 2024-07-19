@@ -193,7 +193,7 @@ impl<'a> Parser<'a> {
     fn parse_expr_or_assign_stmt(&mut self, is_in_schema_stmt: bool) -> Option<NodeRef<Stmt>> {
         let token = self.token;
         let mut targets = vec![self.parse_expr()];
-
+        let mut target_spans = vec![Span::new(token.span.lo(), self.prev_token.span.hi())];
         let mut value_or_target = None;
         let mut type_annotation = None;
         let mut ty = None;
@@ -226,33 +226,42 @@ impl<'a> Parser<'a> {
         } else if let TokenKind::BinOpEq(x) = self.token.kind {
             let op = AugOp::from(x);
             self.bump_token(self.token.kind);
-
-            let value = self.parse_expr();
-            let mut ident = self.expr_as_identifier(targets[0].clone(), token);
-            ident.ctx = ExprContext::Store;
-
-            let t = node_ref!(
-                Stmt::AugAssign(AugAssignStmt {
-                    target: Box::new(Node::node_with_pos(ident, targets[0].pos())),
-                    value,
-                    op,
-                }),
-                self.token_span_pos(token, self.prev_token)
-            );
-
-            self.skip_newlines();
-
-            return Some(t);
+            let target = self.expr_as_assign_target(&targets[0]);
+            match target {
+                Ok(target) => {
+                    let value = self.parse_expr();
+                    let t = node_ref!(
+                        Stmt::AugAssign(AugAssignStmt {
+                            target: Box::new(Node::node_with_pos(target, targets[0].pos())),
+                            value,
+                            op,
+                        }),
+                        self.token_span_pos(token, self.prev_token)
+                    );
+                    self.skip_newlines();
+                    return Some(t);
+                }
+                // 'expression' is an illegal expression for augmented assignment and drop the whole statement.
+                Err(err) => {
+                    self.sess
+                        .struct_span_error(&err.to_string(), target_spans[0]);
+                    self.parse_expr();
+                    self.skip_newlines();
+                    return None;
+                }
+            }
         }
 
         while let TokenKind::Assign = self.token.kind {
             self.bump_token(TokenKind::Assign);
-
+            let token = self.token;
             let expr = self.parse_expr();
+            let expr_token = self.prev_token;
             if let Some(target) = value_or_target {
                 targets.push(target);
             }
-
+            // Put the `target = target = value` spans in the target_spans.
+            target_spans.push(Span::new(token.span.lo(), expr_token.span.hi()));
             value_or_target = Some(expr);
         }
 
@@ -288,18 +297,16 @@ impl<'a> Parser<'a> {
 
             let targets = targets
                 .iter()
-                .map(|expr| match &expr.node {
-                    Expr::Identifier(x) => {
-                        let mut x = x.clone();
-                        x.ctx = ExprContext::Store;
-                        Box::new(Node::node_with_pos(x, expr.pos()))
-                    }
-                    _ => {
+                .enumerate()
+                .map(|(i, expr)| match self.expr_as_assign_target(expr) {
+                    Ok(target) => Some(Box::new(Node::node_with_pos(target, expr.pos()))),
+                    Err(err) => {
                         self.sess
-                            .struct_token_error(&[TokenKind::ident_value()], self.token);
-                        Box::new(expr.into_missing_identifier())
+                            .struct_span_error(&err.to_string(), target_spans[i]);
+                        None
                     }
                 })
+                .flatten()
                 .collect();
 
             self.skip_newlines();
@@ -351,24 +358,22 @@ impl<'a> Parser<'a> {
                     pos.3 = targets.last().unwrap().end_line;
                     pos.4 = targets.last().unwrap().end_column;
 
-                    let targets: Vec<_> = targets
+                    let targets = targets
                         .iter()
-                        .map(|expr| match &expr.node {
-                            Expr::Identifier(x) => {
-                                let mut x = x.clone();
-                                x.ctx = ExprContext::Store;
-                                Box::new(Node::node_with_pos(x, expr.pos()))
-                            }
-                            _ => {
+                        .enumerate()
+                        .map(|(i, expr)| match self.expr_as_assign_target(expr) {
+                            Ok(target) => Some(Box::new(Node::node_with_pos(target, expr.pos()))),
+                            Err(err) => {
                                 self.sess
-                                    .struct_token_error(&[TokenKind::ident_value()], self.token);
-                                Box::new(expr.into_missing_identifier())
+                                    .struct_span_error(&err.to_string(), target_spans[i]);
+                                None
                             }
                         })
+                        .flatten()
                         .collect();
                     Some(Box::new(Node::node_with_pos(
                         Stmt::Assign(AssignStmt {
-                            targets: targets.clone(),
+                            targets,
                             value: miss_expr,
                             ty,
                         }),
@@ -1071,13 +1076,13 @@ impl<'a> Parser<'a> {
 
                 if let Stmt::Assign(assign) = x.node.clone() {
                     if assign.targets.len() == 1 {
-                        let ident = assign.targets[0].clone().node;
+                        let target = assign.targets[0].clone().node;
                         if assign.ty.is_some() {
                             body_body.push(node_ref!(
                                 Stmt::SchemaAttr(SchemaAttr {
                                     doc: "".to_string(),
                                     name: node_ref!(
-                                        ident.get_names().join("."),
+                                        target.get_name().to_string(),
                                         assign.targets[0].pos()
                                     ),
                                     ty: assign.ty.unwrap(),

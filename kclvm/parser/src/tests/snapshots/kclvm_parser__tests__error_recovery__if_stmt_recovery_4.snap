@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 203
 expression: "crate::tests::parsing_module_string(r#\"if True: else: b = 2\"#)"
 ---
 Module {
@@ -18,19 +17,17 @@ Module {
                                 AssignStmt {
                                     targets: [
                                         Node {
-                                            node: Identifier {
-                                                names: [
-                                                    Node {
-                                                        node: "else",
-                                                        filename: "",
-                                                        line: 1,
-                                                        column: 9,
-                                                        end_line: 1,
-                                                        end_column: 13,
-                                                    },
-                                                ],
+                                            node: Target {
+                                                name: Node {
+                                                    node: "else",
+                                                    filename: "",
+                                                    line: 1,
+                                                    column: 9,
+                                                    end_line: 1,
+                                                    end_column: 13,
+                                                },
+                                                paths: [],
                                                 pkgpath: "",
-                                                ctx: Store,
                                             },
                                             filename: "",
                                             line: 1,
@@ -112,4 +109,3 @@ Module {
     ],
     comments: [],
 }
-

@@ -201,14 +201,14 @@ impl MutSelfWalker for Linter<CombinedLintPass> {
     fn walk_assign_stmt(&mut self, assign_stmt: &ast::AssignStmt) {
         for target in &assign_stmt.targets {
             set_pos!(self, &target);
-            self.walk_identifier(&target.node)
+            self.walk_target(&target.node)
         }
         set_pos!(self, &assign_stmt.value);
         self.walk_expr(&assign_stmt.value.node);
     }
     fn walk_aug_assign_stmt(&mut self, aug_assign_stmt: &ast::AugAssignStmt) {
         set_pos!(self, &aug_assign_stmt.target);
-        self.walk_identifier(&aug_assign_stmt.target.node);
+        self.walk_target(&aug_assign_stmt.target.node);
         set_pos!(self, &aug_assign_stmt.value);
         self.walk_expr(&aug_assign_stmt.value.node);
     }
@@ -392,30 +392,11 @@ impl MutSelfWalker for Linter<CombinedLintPass> {
         self.walk_expr(&compare.left.node);
         walk_set_list!(self, walk_expr, compare.comparators);
     }
-    fn walk_identifier(&mut self, identifier: &ast::Identifier) {
-        // Nothing to do.
-        let _ = identifier;
-    }
-    fn walk_number_lit(&mut self, number_lit: &ast::NumberLit) {
-        let _ = number_lit;
-    }
-    fn walk_string_lit(&mut self, string_lit: &ast::StringLit) {
-        // Nothing to do.
-        let _ = string_lit;
-    }
-    fn walk_name_constant_lit(&mut self, name_constant_lit: &ast::NameConstantLit) {
-        // Nothing to do.
-        let _ = name_constant_lit;
-    }
     fn walk_joined_string(&mut self, joined_string: &ast::JoinedString) {
         walk_set_list!(self, walk_expr, joined_string.values);
     }
     fn walk_formatted_value(&mut self, formatted_value: &ast::FormattedValue) {
         set_pos!(self, &formatted_value.value);
         self.walk_expr(&formatted_value.value.node);
-    }
-    fn walk_comment(&mut self, comment: &ast::Comment) {
-        // Nothing to do.
-        let _ = comment;
     }
 }

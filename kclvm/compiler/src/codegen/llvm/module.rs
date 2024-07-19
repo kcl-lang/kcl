@@ -139,14 +139,11 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 }
                 ast::Stmt::Assign(assign_stmt) => {
                     for target in &assign_stmt.targets {
-                        let names = &target.node.names;
-                        if names.len() == 1 {
-                            self.add_or_update_global_variable(
-                                &names[0].node,
-                                self.undefined_value(),
-                                false,
-                            );
-                        }
+                        self.add_or_update_global_variable(
+                            target.node.get_name(),
+                            self.undefined_value(),
+                            false,
+                        );
                     }
                 }
                 ast::Stmt::If(if_stmt) => {
@@ -319,7 +316,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 }
                 ast::Stmt::Assign(assign_stmt) => {
                     for target in &assign_stmt.targets {
-                        let name = &target.node.names[0].node;
+                        let name = &target.node.name.node;
                         if is_in_if {
                             in_if_names.push(name.to_string());
                         } else {
@@ -335,7 +332,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                 }
                 ast::Stmt::AugAssign(aug_assign_stmt) => {
                     let target = &aug_assign_stmt.target;
-                    let name = &target.node.names[0].node;
+                    let name = &target.node.name.node;
                     if is_in_if {
                         in_if_names.push(name.to_string());
                     } else {

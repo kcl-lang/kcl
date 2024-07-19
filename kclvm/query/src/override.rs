@@ -3,12 +3,12 @@ use std::collections::HashSet;
 use anyhow::{anyhow, Result};
 
 use compiler_base_macros::bug;
-use kclvm_ast::ast;
 use kclvm_ast::config::try_get_config_expr_mut;
 use kclvm_ast::path::get_key_path;
 use kclvm_ast::walk_list_mut;
 use kclvm_ast::walker::MutSelfMutWalker;
 use kclvm_ast::MAIN_PKG;
+use kclvm_ast::{ast, path::get_target_path};
 use kclvm_ast_pretty::print_ast_module;
 use kclvm_parser::parse_expr;
 use kclvm_sema::pre_process::{fix_config_expr_nest_attr, transform_multi_assign};
@@ -323,11 +323,8 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                 module.body.iter_mut().for_each(|stmt| {
                     if let ast::Stmt::Assign(assign_stmt) = &mut stmt.node {
                         if assign_stmt.targets.len() == 1 && self.field_paths.len() == 0 {
-                            let target =
-                                &Some(Box::new(ast::Node::dummy_node(ast::Expr::Identifier(
-                                    assign_stmt.targets.get(0).unwrap().node.clone(),
-                                ))));
-                            let target = get_key_path(target);
+                            let target = assign_stmt.targets.get(0).unwrap().node.clone();
+                            let target = get_target_path(&target);
                             if target == self.target_id {
                                 let item = assign_stmt.value.clone();
 
@@ -372,11 +369,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                 module.body.retain(|stmt| {
                     if let ast::Stmt::Assign(assign_stmt) = &stmt.node {
                         if assign_stmt.targets.len() == 1 && self.field_paths.len() == 0 {
-                            let target =
-                                &Some(Box::new(ast::Node::dummy_node(ast::Expr::Identifier(
-                                    assign_stmt.targets.get(0).unwrap().node.clone(),
-                                ))));
-                            let target = get_key_path(target);
+                            let target = get_target_path(&assign_stmt.targets.get(0).unwrap().node);
                             if target == self.target_id {
                                 self.has_override = true;
                                 return false;
@@ -433,9 +426,9 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                     match &self.operation {
                         ast::ConfigEntryOperation::Override => {
                             let assign = ast::AssignStmt {
-                                targets: vec![Box::new(ast::Node::dummy_node(ast::Identifier {
-                                    names: vec![ast::Node::dummy_node(self.target_id.clone())],
-                                    ctx: ast::ExprContext::Store,
+                                targets: vec![Box::new(ast::Node::dummy_node(ast::Target {
+                                    name: ast::Node::dummy_node(self.target_id.clone()),
+                                    paths: vec![],
                                     pkgpath: "".to_string(),
                                 }))],
                                 ty: None,
@@ -467,11 +460,9 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                                 Err(_) => {
                                     let stmt = ast::AssignStmt {
                                         targets: vec![Box::new(ast::Node::dummy_node(
-                                            ast::Identifier {
-                                                names: vec![ast::Node::dummy_node(
-                                                    self.target_id.clone(),
-                                                )],
-                                                ctx: ast::ExprContext::Store,
+                                            ast::Target {
+                                                name: ast::Node::dummy_node(self.target_id.clone()),
+                                                paths: vec![],
                                                 pkgpath: "".to_string(),
                                             },
                                         ))],
@@ -486,9 +477,9 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                         }
                         ast::ConfigEntryOperation::Insert => {
                             let stmt = ast::AugAssignStmt {
-                                target: Box::new(ast::Node::dummy_node(ast::Identifier {
-                                    names: vec![ast::Node::dummy_node(self.target_id.clone())],
-                                    ctx: ast::ExprContext::Store,
+                                target: Box::new(ast::Node::dummy_node(ast::Target {
+                                    name: ast::Node::dummy_node(self.target_id.clone()),
+                                    paths: vec![],
                                     pkgpath: "".to_string(),
                                 })),
                                 op: ast::AugOp::Add,
@@ -534,10 +525,10 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
         if let ast::Expr::Schema(_) | ast::Expr::Config(_) = &assign_stmt.value.node {
             self.override_target_count = 0;
             for target in &assign_stmt.targets {
-                if target.node.names.len() != 1 {
+                if !target.node.paths.is_empty() {
                     continue;
                 }
-                if target.node.names[0].node != self.target_id {
+                if target.node.name.node != self.target_id {
                     continue;
                 }
                 self.override_target_count += 1;

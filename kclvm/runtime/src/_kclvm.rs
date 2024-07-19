@@ -325,6 +325,7 @@ pub enum ApiFunc {
     kclvm_value_slice_option,
     kclvm_value_subscr,
     kclvm_value_subscr_option,
+    kclvm_value_subscr_set,
     kclvm_value_to_json_value,
     kclvm_value_to_json_value_with_null,
     kclvm_value_to_str_value,

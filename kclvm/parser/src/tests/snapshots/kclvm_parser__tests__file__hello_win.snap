@@ -90,18 +90,16 @@ expression: "crate::tests::parsing_file_string(\"testdata/hello_win.k\")"
         "targets": [
           {
             "node": {
-              "names": [
-                {
-                  "node": "x0",
-                  "filename": "hello_win.k",
-                  "line": 5,
-                  "column": 0,
-                  "end_line": 5,
-                  "end_column": 2
-                }
-              ],
-              "pkgpath": "",
-              "ctx": "Store"
+              "name": {
+                "node": "x0",
+                "filename": "hello_win.k",
+                "line": 5,
+                "column": 0,
+                "end_line": 5,
+                "end_column": 2
+              },
+              "paths": [],
+              "pkgpath": ""
             },
             "filename": "hello_win.k",
             "line": 5,

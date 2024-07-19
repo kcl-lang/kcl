@@ -74,7 +74,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
 
     fn walk_assign_stmt(&mut self, assign_stmt: &'ctx ast::AssignStmt) -> Self::Result {
         for (i, target) in assign_stmt.targets.iter().enumerate() {
-            self.walk_identifier(&target.node);
+            self.walk_target(&target.node);
             if i == 0 {
                 if let Some(ty) = &assign_stmt.ty {
                     self.write(": ");
@@ -91,7 +91,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
     }
 
     fn walk_aug_assign_stmt(&mut self, aug_assign_stmt: &'ctx ast::AugAssignStmt) -> Self::Result {
-        self.walk_identifier(&aug_assign_stmt.target.node);
+        self.walk_target(&aug_assign_stmt.target.node);
         self.write_space();
         self.write(aug_assign_stmt.op.symbol());
         self.write_space();
@@ -747,6 +747,24 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
     #[inline]
     fn walk_identifier(&mut self, identifier: &'ctx ast::Identifier) -> Self::Result {
         self.write(&identifier.get_name());
+    }
+
+    #[inline]
+    fn walk_target(&mut self, target: &'ctx ast::Target) -> Self::Result {
+        self.write(target.get_name());
+        for path in &target.paths {
+            match path {
+                ast::MemberOrIndex::Member(member) => {
+                    self.write(".");
+                    self.write(&member.node)
+                }
+                ast::MemberOrIndex::Index(index) => {
+                    self.write("[");
+                    self.walk_expr(&index.node);
+                    self.write("]");
+                }
+            }
+        }
     }
 
     fn walk_number_lit(&mut self, number_lit: &'ctx ast::NumberLit) -> Self::Result {

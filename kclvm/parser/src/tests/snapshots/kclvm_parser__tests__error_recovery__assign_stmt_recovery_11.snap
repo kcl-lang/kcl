@@ -1,0 +1,87 @@
+---
+source: parser/src/tests/error_recovery.rs
+expression: "crate::tests::parsing_module_string(r#\"a[0].b -= 1\"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: None,
+    name: "",
+    body: [
+        Node {
+            node: AugAssign(
+                AugAssignStmt {
+                    target: Node {
+                        node: Target {
+                            name: Node {
+                                node: "a",
+                                filename: "",
+                                line: 1,
+                                column: 0,
+                                end_line: 1,
+                                end_column: 1,
+                            },
+                            paths: [
+                                Index(
+                                    Node {
+                                        node: NumberLit(
+                                            NumberLit {
+                                                binary_suffix: None,
+                                                value: Int(
+                                                    0,
+                                                ),
+                                            },
+                                        ),
+                                        filename: "",
+                                        line: 1,
+                                        column: 2,
+                                        end_line: 1,
+                                        end_column: 3,
+                                    },
+                                ),
+                                Member(
+                                    Node {
+                                        node: "b",
+                                        filename: "",
+                                        line: 1,
+                                        column: 5,
+                                        end_line: 1,
+                                        end_column: 6,
+                                    },
+                                ),
+                            ],
+                            pkgpath: "",
+                        },
+                        filename: "",
+                        line: 1,
+                        column: 0,
+                        end_line: 1,
+                        end_column: 6,
+                    },
+                    value: Node {
+                        node: NumberLit(
+                            NumberLit {
+                                binary_suffix: None,
+                                value: Int(
+                                    1,
+                                ),
+                            },
+                        ),
+                        filename: "",
+                        line: 1,
+                        column: 10,
+                        end_line: 1,
+                        end_column: 11,
+                    },
+                    op: Sub,
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 1,
+            end_column: 11,
+        },
+    ],
+    comments: [],
+}

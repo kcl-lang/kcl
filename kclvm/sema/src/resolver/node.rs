@@ -129,25 +129,24 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
     fn walk_assign_stmt(&mut self, assign_stmt: &'ctx ast::AssignStmt) -> Self::Result {
         self.ctx.local_vars.clear();
         let mut value_ty = self.any_ty();
-        let start = assign_stmt.targets[0].get_pos();
-        let end = assign_stmt.value.get_pos();
+        let start = if assign_stmt.targets.is_empty() {
+            assign_stmt.value.get_pos()
+        } else {
+            assign_stmt.targets[0].get_pos()
+        };
+        let end = assign_stmt.value.get_end_pos();
         let is_config = matches!(assign_stmt.value.node, ast::Expr::Schema(_));
         for target in &assign_stmt.targets {
-            // For invalid syntax assign statement, we just skip it
-            // and show a syntax error only.
-            if target.node.names.is_empty() {
-                continue;
-            }
-            let name = &target.node.names[0].node;
+            let name = &target.node.name.node;
             // Add global names.
             if (is_private_field(name) || is_config || !self.contains_global_name(name))
                 && self.scope_level == 0
             {
                 self.insert_global_name(name, &target.get_span_pos());
             }
-            if target.node.names.len() == 1 {
+            if target.node.paths.is_empty() {
                 self.ctx.l_value = true;
-                let expected_ty = self.walk_identifier_expr(target);
+                let expected_ty = self.walk_target_expr(target);
                 self.ctx.l_value = false;
                 match &expected_ty.kind {
                     TypeKind::Schema(ty) => {
@@ -197,7 +196,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 );
 
                 if !value_ty.is_any() && expected_ty.is_any() && assign_stmt.ty.is_none() {
-                    self.set_infer_type_to_scope(name, value_ty.clone(), &target.node.names[0]);
+                    // When the type is inferred and paths of target are empty, set the type to
+                    // the whole AST node `target` and the first name of node `target.node.name`
+                    self.set_infer_type_to_scope(name, value_ty.clone(), &target);
+                    self.set_infer_type_to_scope(name, value_ty.clone(), &target.node.name);
                     if let Some(schema_ty) = &self.ctx.schema {
                         let mut schema_ty = schema_ty.borrow_mut();
                         schema_ty.set_type_of_attr(
@@ -209,7 +211,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             } else {
                 self.lookup_type_from_scope(name, target.get_span_pos());
                 self.ctx.l_value = true;
-                let expected_ty = self.walk_identifier_expr(target);
+                let expected_ty = self.walk_target_expr(target);
                 self.ctx.l_value = false;
                 value_ty = self.expr(&assign_stmt.value);
                 // Check type annotation if exists.
@@ -237,38 +239,37 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
 
     fn walk_aug_assign_stmt(&mut self, aug_assign_stmt: &'ctx ast::AugAssignStmt) -> Self::Result {
         self.ctx.l_value = false;
-        if !aug_assign_stmt.target.node.names.is_empty() {
-            let is_config = matches!(aug_assign_stmt.value.node, ast::Expr::Schema(_));
-            let name = &aug_assign_stmt.target.node.names[0].node;
-            // Add global names.
-            if is_private_field(name) || is_config || !self.contains_global_name(name) {
-                if self.scope_level == 0 {
-                    self.insert_global_name(name, &aug_assign_stmt.target.get_span_pos());
-                }
-            } else {
-                let mut msgs = vec![Message {
-                    range: aug_assign_stmt.target.get_span_pos(),
-                    style: Style::LineAndColumn,
-                    message: format!("Immutable variable '{}' is modified during compiling", name),
-                    note: None,
-                    suggested_replacement: None,
-                }];
-                if let Some(pos) = self.get_global_name_pos(name) {
-                    msgs.push(Message {
-                        range: pos.clone(),
-                        style: Style::LineAndColumn,
-                        message: format!("The variable '{}' is declared here firstly", name),
-                        note: Some(format!(
-                            "change the variable name to '_{}' to make it mutable",
-                            name
-                        )),
-                        suggested_replacement: None,
-                    })
-                }
-                self.handler.add_error(ErrorKind::ImmutableError, &msgs);
+        let is_config = matches!(aug_assign_stmt.value.node, ast::Expr::Schema(_));
+        let name = &aug_assign_stmt.target.node.name.node;
+        // Add global names.
+        if is_private_field(name) || is_config || !self.contains_global_name(name) {
+            if self.scope_level == 0 {
+                self.insert_global_name(name, &aug_assign_stmt.target.get_span_pos());
             }
+        } else {
+            let mut msgs = vec![Message {
+                range: aug_assign_stmt.target.get_span_pos(),
+                style: Style::LineAndColumn,
+                message: format!("Immutable variable '{}' is modified during compiling", name),
+                note: None,
+                suggested_replacement: None,
+            }];
+            if let Some(pos) = self.get_global_name_pos(name) {
+                msgs.push(Message {
+                    range: pos.clone(),
+                    style: Style::LineAndColumn,
+                    message: format!("The variable '{}' is declared here firstly", name),
+                    note: Some(format!(
+                        "change the variable name to '_{}' to make it mutable",
+                        name
+                    )),
+                    suggested_replacement: None,
+                })
+            }
+            self.handler.add_error(ErrorKind::ImmutableError, &msgs);
         }
-        let left_ty = self.walk_identifier_expr(&aug_assign_stmt.target);
+
+        let left_ty = self.walk_target_expr(&aug_assign_stmt.target);
         let right_ty = self.expr(&aug_assign_stmt.value);
         let op = match aug_assign_stmt.op.clone().try_into() {
             Ok(op) => op,
@@ -281,7 +282,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
             aug_assign_stmt.target.get_span_pos(),
         );
         self.ctx.l_value = true;
-        let expected_ty = self.walk_identifier_expr(&aug_assign_stmt.target);
+        let expected_ty = self.walk_target_expr(&aug_assign_stmt.target);
         self.must_assignable_to(
             new_target_ty.clone(),
             expected_ty,
@@ -616,94 +617,14 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
     fn walk_subscript(&mut self, subscript: &'ctx ast::Subscript) -> Self::Result {
         let value_ty = self.expr(&subscript.value);
         let range = subscript.value.get_span_pos();
-        if value_ty.is_any() {
-            value_ty
-        } else {
-            match &value_ty.kind {
-                TypeKind::Str | TypeKind::StrLit(_) | TypeKind::List(_) => {
-                    if let Some(index) = &subscript.index {
-                        self.must_be_type(index, self.any_ty());
-                        if value_ty.is_list() {
-                            value_ty.list_item_ty()
-                        } else {
-                            self.str_ty()
-                        }
-                    } else {
-                        for expr in [&subscript.lower, &subscript.upper, &subscript.step]
-                            .iter()
-                            .copied()
-                            .flatten()
-                        {
-                            self.must_be_type(expr, self.int_ty());
-                        }
-                        if value_ty.is_list() {
-                            value_ty
-                        } else {
-                            self.str_ty()
-                        }
-                    }
-                }
-                TypeKind::Dict(DictType {
-                    key_ty: _, val_ty, ..
-                }) => {
-                    if let Some(index) = &subscript.index {
-                        let index_key_ty = self.expr(index);
-                        if index_key_ty.is_none_or_any() {
-                            val_ty.clone()
-                        } else if !index_key_ty.is_key() {
-                            self.handler.add_compile_error(
-                                &format!(
-                                    "invalid dict/schema key type: '{}'",
-                                    index_key_ty.ty_str()
-                                ),
-                                range,
-                            );
-                            self.any_ty()
-                        } else if let TypeKind::StrLit(lit_value) = &index_key_ty.kind {
-                            self.load_attr(value_ty, lit_value, range)
-                        } else {
-                            val_ty.clone()
-                        }
-                    } else {
-                        self.handler
-                            .add_compile_error("unhashable type: 'slice'", range);
-                        self.any_ty()
-                    }
-                }
-                TypeKind::Schema(schema_ty) => {
-                    if let Some(index) = &subscript.index {
-                        let index_key_ty = self.expr(index);
-                        if index_key_ty.is_none_or_any() {
-                            schema_ty.val_ty()
-                        } else if !index_key_ty.is_key() {
-                            self.handler.add_compile_error(
-                                &format!(
-                                    "invalid dict/schema key type: '{}'",
-                                    index_key_ty.ty_str()
-                                ),
-                                range,
-                            );
-                            self.any_ty()
-                        } else if let TypeKind::StrLit(lit_value) = &index_key_ty.kind {
-                            self.load_attr(value_ty, lit_value, range)
-                        } else {
-                            schema_ty.val_ty()
-                        }
-                    } else {
-                        self.handler
-                            .add_compile_error("unhashable type: 'slice'", range);
-                        self.any_ty()
-                    }
-                }
-                _ => {
-                    self.handler.add_compile_error(
-                        &format!("'{}' object is not subscriptable", value_ty.ty_str()),
-                        subscript.value.get_span_pos(),
-                    );
-                    self.any_ty()
-                }
-            }
-        }
+        self.subscript(
+            value_ty,
+            &subscript.index,
+            &subscript.lower,
+            &subscript.upper,
+            &subscript.step,
+            range,
+        )
     }
 
     fn walk_paren_expr(&mut self, paren_expr: &'ctx ast::ParenExpr) -> Self::Result {
@@ -1202,6 +1123,26 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
         tys.last().unwrap().clone()
     }
 
+    fn walk_target(&mut self, target: &'ctx ast::Target) -> Self::Result {
+        let tys = self.resolve_target(
+            &target,
+            (self.ctx.start_pos.clone(), self.ctx.end_pos.clone()),
+        );
+        if let Some(ty) = tys.first() {
+            self.node_ty_map
+                .borrow_mut()
+                .insert(self.get_node_key(target.name.id.clone()), ty.clone());
+        }
+        for (index, name) in target.paths.iter().enumerate() {
+            self.node_ty_map.borrow_mut().insert(
+                self.get_node_key(name.id()),
+                tys.get(index + 1).unwrap_or(&self.any_ty()).clone(),
+            );
+        }
+        let target_ty = tys.last().unwrap_or(&self.any_ty()).clone();
+        target_ty
+    }
+
     fn walk_number_lit(&mut self, number_lit: &'ctx ast::NumberLit) -> Self::Result {
         match &number_lit.binary_suffix {
             Some(binary_suffix) => {
@@ -1276,7 +1217,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
 }
 
 impl<'ctx> Resolver<'ctx> {
-    #[inline]
     pub fn stmts(&mut self, stmts: &'ctx [ast::NodeRef<ast::Stmt>]) -> ResolvedResult {
         let stmt_types: Vec<TypeRef> = stmts.iter().map(|stmt| self.stmt(&stmt)).collect();
         match stmt_types.last() {
@@ -1290,7 +1230,6 @@ impl<'ctx> Resolver<'ctx> {
         exprs.iter().map(|expr| self.expr(&expr)).collect()
     }
 
-    #[inline]
     pub fn expr(&mut self, expr: &'ctx ast::NodeRef<ast::Expr>) -> ResolvedResult {
         if let ast::Expr::Identifier(_) = &expr.node {
             let (start, end) = expr.get_span_pos();
@@ -1320,7 +1259,6 @@ impl<'ctx> Resolver<'ctx> {
         ty
     }
 
-    #[inline]
     pub fn stmt(&mut self, stmt: &'ctx ast::NodeRef<ast::Stmt>) -> ResolvedResult {
         let (start, end) = stmt.get_span_pos();
         self.ctx.start_pos = start;
@@ -1332,7 +1270,6 @@ impl<'ctx> Resolver<'ctx> {
         ty
     }
 
-    #[inline]
     pub fn expr_or_any_type(
         &mut self,
         expr: &'ctx Option<ast::NodeRef<ast::Expr>>,
@@ -1349,7 +1286,6 @@ impl<'ctx> Resolver<'ctx> {
         }
     }
 
-    #[inline]
     pub fn walk_identifier_expr(
         &mut self,
         identifier: &'ctx ast::NodeRef<ast::Identifier>,
@@ -1370,5 +1306,25 @@ impl<'ctx> Resolver<'ctx> {
             .insert(self.get_node_key(identifier.id.clone()), ident_ty.clone());
 
         ident_ty
+    }
+
+    pub fn walk_target_expr(&mut self, target: &'ctx ast::NodeRef<ast::Target>) -> ResolvedResult {
+        let tys = self.resolve_target(&target.node, target.get_span_pos());
+        if let Some(ty) = tys.first() {
+            self.node_ty_map
+                .borrow_mut()
+                .insert(self.get_node_key(target.node.name.id.clone()), ty.clone());
+        }
+        for (index, name) in target.node.paths.iter().enumerate() {
+            self.node_ty_map.borrow_mut().insert(
+                self.get_node_key(name.id()),
+                tys.get(index + 1).unwrap_or(&self.any_ty()).clone(),
+            );
+        }
+        let target_ty = tys.last().unwrap_or(&self.any_ty()).clone();
+        self.node_ty_map
+            .borrow_mut()
+            .insert(self.get_node_key(target.id.clone()), target_ty.clone());
+        target_ty
     }
 }
