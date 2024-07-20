@@ -57,17 +57,15 @@ pub type CompileResult<'a> = Result<BasicValueEnum<'a>, kcl_error::KCLError>;
 #[derive(Debug, Default)]
 pub struct Scope<'ctx> {
     /// Scalars denotes the expression statement values without attribute.
-    pub scalars: RefCell<Vec<BasicValueEnum<'ctx>>>,
+    pub(crate) scalars: RefCell<Vec<BasicValueEnum<'ctx>>>,
     /// schema_scalar_idx denotes whether a schema exists in the scalar list.
-    pub schema_scalar_idx: RefCell<usize>,
+    pub(crate) schema_scalar_idx: RefCell<usize>,
     /// Scope normal variables
-    pub variables: RefCell<IndexMap<String, PointerValue<'ctx>>>,
+    pub(crate) variables: RefCell<IndexMap<String, PointerValue<'ctx>>>,
     /// Scope normal initialized variables
-    pub uninitialized: RefCell<IndexSet<String>>,
-    /// Scope closures referenced by internal scope.
-    pub closures: RefCell<IndexMap<String, PointerValue<'ctx>>>,
+    pub(crate) uninitialized: RefCell<IndexSet<String>>,
     /// Potential arguments in the current scope, such as schema/lambda arguments.
-    pub arguments: RefCell<IndexSet<String>>,
+    pub(crate) arguments: RefCell<IndexSet<String>>,
 }
 
 /// Setter kind.
@@ -115,8 +113,6 @@ pub struct LLVMCodeGenContext<'ctx> {
     pub global_strings: RefCell<IndexMap<String, IndexMap<String, PointerValue<'ctx>>>>,
     /// Global variable pointers cross different packages.
     pub global_vars: RefCell<IndexMap<String, IndexMap<String, PointerValue<'ctx>>>>,
-    /// The filename of the source file corresponding to the current instruction
-    pub current_filename: RefCell<String>,
     /// The line number of the source file corresponding to the current instruction
     pub current_line: RefCell<u64>,
     /// Error handler to store compile errors.
@@ -127,8 +123,6 @@ pub struct LLVMCodeGenContext<'ctx> {
     pub import_names: IndexMap<String, IndexMap<String, String>>,
     /// No link mode
     pub no_link: bool,
-    /// Debug mode
-    pub debug: bool,
     /// Program modules according to AST modules
     pub modules: RefCell<HashMap<String, RefCell<DebugModule<'ctx>>>>,
     /// Program workdir
@@ -1309,13 +1303,11 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             target_vars: RefCell::new(vec![String::from("")]),
             global_strings: RefCell::new(IndexMap::default()),
             global_vars: RefCell::new(IndexMap::default()),
-            current_filename: RefCell::new(String::new()),
             current_line: RefCell::new(0),
             handler: RefCell::new(Handler::default()),
             backtrack_meta: RefCell::new(None),
             import_names,
             no_link,
-            debug: false,
             modules: RefCell::new(HashMap::new()),
             workdir,
         }
