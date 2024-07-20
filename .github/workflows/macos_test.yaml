@@ -1,6 +1,4 @@
 name: build-and-test-macos
-env:
-  MACOSX_DEPLOYMENT_TARGET: '10.13'
 on: ["push", "pull_request"]
 jobs:
   build-and-test:
