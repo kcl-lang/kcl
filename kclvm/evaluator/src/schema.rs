@@ -365,14 +365,6 @@ impl SchemaEvalContext {
     }
 }
 
-#[derive(Clone, Default, Debug)]
-pub struct ConfigMeta {
-    pub filename: String,
-    pub line: u64,
-    pub column: u64,
-    pub item_meta: IndexMap<String, ConfigMeta>,
-}
-
 #[derive(Clone)]
 pub struct SchemaCaller {
     pub ctx: SchemaEvalContextRef,

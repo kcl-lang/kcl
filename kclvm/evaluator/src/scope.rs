@@ -12,13 +12,6 @@ use crate::{Evaluator, GLOBAL_LEVEL, INNER_LEVEL};
 
 /// The evaluator scope.
 #[derive(Debug, Default)]
-pub struct SchemaSelf {
-    pub value: ValueRef,
-    pub config: ValueRef,
-}
-
-/// The evaluator scope.
-#[derive(Debug, Default)]
 pub struct Scope {
     /// Scalars denotes the expression statement values without attribute.
     pub scalars: Vec<ValueRef>,
