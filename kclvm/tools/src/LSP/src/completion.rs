@@ -2048,4 +2048,13 @@ mod tests {
         2,
         Some('.')
     );
+
+
+    completion_label_test_snapshot!(
+        func_doc_completion,
+        "src/test_data/completion_test/schema_doc/schema_doc.k",
+        7,
+        14,
+        Some('.')
+    );
 }

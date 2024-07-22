@@ -71,7 +71,7 @@ pub struct SymbolData {
     pub(crate) unresolved: Arena<UnresolvedSymbol>,
     pub(crate) rules: Arena<RuleSymbol>,
     pub(crate) exprs: Arena<ExpressionSymbol>,
-    pub(crate) comments: Arena<CommentSymbol>,
+    pub(crate) comments: Arena<CommentOrDocSymbol>,
     pub(crate) decorators: Arena<DecoratorSymbol>,
     pub(crate) functions: Arena<FunctionSymbol>,
 
@@ -792,7 +792,7 @@ impl SymbolData {
 
     pub fn alloc_comment_symbol(
         &mut self,
-        comment: CommentSymbol,
+        comment: CommentOrDocSymbol,
         node_key: NodeKey,
         pkg_name: String,
     ) -> Option<SymbolRef> {
@@ -2087,7 +2087,7 @@ impl ExpressionSymbol {
 }
 
 #[derive(Debug, Clone)]
-pub struct CommentSymbol {
+pub struct CommentOrDocSymbol {
     pub(crate) id: Option<SymbolRef>,
     pub(crate) start: Position,
     pub(crate) end: Position,
@@ -2095,7 +2095,7 @@ pub struct CommentSymbol {
     pub(crate) sema_info: SymbolSemanticInfo,
 }
 
-impl Symbol for CommentSymbol {
+impl Symbol for CommentOrDocSymbol {
     type SymbolData = SymbolData;
     type SemanticInfo = SymbolSemanticInfo;
     type SymbolHint = SymbolHint;
@@ -2183,7 +2183,7 @@ impl Symbol for CommentSymbol {
     }
 }
 
-impl CommentSymbol {
+impl CommentOrDocSymbol {
     pub fn new(start: Position, end: Position, content: String) -> Self {
         Self {
             id: None,
