@@ -11,8 +11,8 @@ use crate::{
     core::{
         scope::LocalSymbolScopeKind,
         symbol::{
-            CommentSymbol, DecoratorSymbol, ExpressionSymbol, Symbol, SymbolHint, SymbolHintKind,
-            SymbolRef, SymbolSemanticInfo, UnresolvedSymbol, ValueSymbol,
+            CommentOrDocSymbol, DecoratorSymbol, ExpressionSymbol, Symbol, SymbolHint,
+            SymbolHintKind, SymbolRef, SymbolSemanticInfo, UnresolvedSymbol, ValueSymbol,
         },
     },
     ty::{self, Type, TypeKind, SCHEMA_MEMBER_FUNCTIONS},
@@ -308,6 +308,17 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             }
             last_end_pos = index_signature.get_end_pos();
         }
+
+        if let Some(doc) = &schema_stmt.doc {
+            let (start, end) = doc.get_span_pos();
+            let comment_symbol = CommentOrDocSymbol::new(start, end, doc.node.clone());
+            self.gs.get_symbols_mut().alloc_comment_symbol(
+                comment_symbol,
+                self.ctx.get_node_key(&self.ctx.cur_node),
+                self.ctx.current_pkgpath.clone().unwrap(),
+            );
+        }
+
         for stmt in schema_stmt.body.iter() {
             if let Some(attribute_symbol) = self.stmt(&stmt)? {
                 let name = self
@@ -860,7 +871,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
 
     fn walk_comment(&mut self, comment: &'ctx ast::Comment) -> Self::Result {
         let (start, end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
-        let comment_symbol = CommentSymbol::new(start, end, comment.text.clone());
+        let comment_symbol = CommentOrDocSymbol::new(start, end, comment.text.clone());
         Ok(self.gs.get_symbols_mut().alloc_comment_symbol(
             comment_symbol,
             self.ctx.get_node_key(&self.ctx.cur_node),
