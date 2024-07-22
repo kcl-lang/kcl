@@ -11,8 +11,8 @@ use crate::{
     core::{
         scope::LocalSymbolScopeKind,
         symbol::{
-            CommentOrDocSymbol, DecoratorSymbol, ExpressionSymbol, Symbol, SymbolHint, SymbolHintKind,
-            SymbolRef, SymbolSemanticInfo, UnresolvedSymbol, ValueSymbol,
+            CommentOrDocSymbol, DecoratorSymbol, ExpressionSymbol, Symbol, SymbolHint,
+            SymbolHintKind, SymbolRef, SymbolSemanticInfo, UnresolvedSymbol, ValueSymbol,
         },
     },
     ty::{self, Type, TypeKind, SCHEMA_MEMBER_FUNCTIONS},
@@ -318,7 +318,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
                 self.ctx.current_pkgpath.clone().unwrap(),
             );
         }
-        
+
         for stmt in schema_stmt.body.iter() {
             if let Some(attribute_symbol) = self.stmt(&stmt)? {
                 let name = self
