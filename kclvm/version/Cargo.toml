@@ -1,6 +1,6 @@
 [package]
 name = "kclvm-version"
-version = "0.9.3"
+version = "0.10.0-alpha.1"
 edition = "2021"
 
 [build-dependencies]
