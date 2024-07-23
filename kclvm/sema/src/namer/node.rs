@@ -59,27 +59,41 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
                 .get_fully_qualified_name(owner)
                 .unwrap();
             let value_name = unification_stmt.target.node.get_name();
-            let value_fully_qualified_name = owner_fully_qualified_name + "." + &value_name;
-            if !self
-                .ctx
-                .value_fully_qualified_name_set
-                .contains(&value_fully_qualified_name)
-            {
-                let value_ref = self.gs.get_symbols_mut().alloc_value_symbol(
-                    ValueSymbol::new(value_name, start_pos, end_pos, Some(owner), true),
-                    self.ctx.get_node_key(&unification_stmt.target.id),
+            if self.gs.get_symbols().get_schema_symbol(owner).is_some() {
+                let attribute_ref = self.gs.get_symbols_mut().alloc_attribute_symbol(
+                    AttributeSymbol::new(value_name, start_pos, end_pos, owner, false),
+                    self.ctx
+                        .get_node_key(&unification_stmt.target.node.names[0].id),
                     self.ctx
                         .current_package_info
                         .clone()
                         .unwrap()
                         .fully_qualified_name,
                 );
-                self.ctx
-                    .value_fully_qualified_name_set
-                    .insert(value_fully_qualified_name);
-                Some(vec![value_ref])
+                Some(vec![attribute_ref])
             } else {
-                None
+                let value_fully_qualified_name = owner_fully_qualified_name + "." + &value_name;
+                if !self
+                    .ctx
+                    .value_fully_qualified_name_set
+                    .contains(&value_fully_qualified_name)
+                {
+                    let value_ref = self.gs.get_symbols_mut().alloc_value_symbol(
+                        ValueSymbol::new(value_name, start_pos, end_pos, Some(owner), true),
+                        self.ctx.get_node_key(&unification_stmt.target.id),
+                        self.ctx
+                            .current_package_info
+                            .clone()
+                            .unwrap()
+                            .fully_qualified_name,
+                    );
+                    self.ctx
+                        .value_fully_qualified_name_set
+                        .insert(value_fully_qualified_name);
+                    Some(vec![value_ref])
+                } else {
+                    None
+                }
             }
         } else {
             None
