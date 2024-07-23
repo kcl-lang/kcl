@@ -22,6 +22,7 @@ use std::rc::Rc;
 use std::str;
 
 use kclvm_ast::ast;
+use kclvm_ast::walker::TypedResultWalker;
 use kclvm_error::*;
 use kclvm_runtime::{ApiFunc, MAIN_PKG_PATH, PKG_PATH_PREFIX};
 use kclvm_sema::builtin;
@@ -2214,37 +2215,11 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             });
         }
         let name = names[0];
-        // Get variable from the scope.
-        let get = |name: &str| {
-            match (
-                self.is_in_schema(),
-                self.is_in_lambda(),
-                self.is_local_var(name),
-            ) {
-                // Get from local or global scope
-                (false, _, _) | (_, _, true) => self.get_variable(name),
-                // Get variable from the current schema scope.
-                (true, false, false) => self.get_variable_in_schema(name),
-                // Get from local scope including lambda arguments, lambda variables,
-                // loop variables or global variables.
-                (true, true, _) =>
-                // Get from local scope including lambda arguments, lambda variables,
-                // loop variables or global variables.
-                {
-                    match self.resolve_variable_level(name) {
-                        // Closure variable or local variables
-                        Some(level) if level > GLOBAL_LEVEL => self.get_variable(name),
-                        // Schema closure or global variables
-                        _ => self.get_variable_in_schema(name),
-                    }
-                }
-            }
-        };
         if names.len() == 1 {
-            get(name)
+            self.load_name(name)
         } else {
             let mut value = if pkgpath.is_empty() {
-                get(name)
+                self.load_name(name)
             } else {
                 self.ok_result()
             }
@@ -2268,6 +2243,93 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             }
             Ok(value)
         }
+    }
+
+    /// Load global or local value from name.
+    pub fn load_name(&self, name: &str) -> CompileResult<'ctx> {
+        match (
+            self.is_in_schema(),
+            self.is_in_lambda(),
+            self.is_local_var(name),
+        ) {
+            // Get from local or global scope
+            (false, _, _) | (_, _, true) => self.get_variable(name),
+            // Get variable from the current schema scope.
+            (true, false, false) => self.get_variable_in_schema(name),
+            // Get from local scope including lambda arguments, lambda variables,
+            // loop variables or global variables.
+            (true, true, _) =>
+            // Get from local scope including lambda arguments, lambda variables,
+            // loop variables or global variables.
+            {
+                match self.resolve_variable_level(name) {
+                    // Closure variable or local variables
+                    Some(level) if level > GLOBAL_LEVEL => self.get_variable(name),
+                    // Schema closure or global variables
+                    _ => self.get_variable_in_schema(name),
+                }
+            }
+        }
+    }
+
+    /// Load value from assignment target.
+    pub fn load_target(&self, target: &'ctx ast::Target) -> CompileResult<'ctx> {
+        let mut value = self.load_name(target.get_name())?;
+        for path in &target.paths {
+            value = self.load_target_path(value, path)?;
+        }
+        Ok(value)
+    }
+
+    /// Load value from assignment target path.
+    pub fn load_target_path(
+        &self,
+        value: BasicValueEnum<'ctx>,
+        path: &'ctx ast::MemberOrIndex,
+    ) -> CompileResult<'ctx> {
+        Ok(match path {
+            ast::MemberOrIndex::Member(member) => {
+                let attr = &member.node;
+                let attr = self.native_global_string(attr, "").into();
+                self.build_call(
+                    &ApiFunc::kclvm_value_load_attr.name(),
+                    &[self.current_runtime_ctx_ptr(), value, attr],
+                )
+            }
+            ast::MemberOrIndex::Index(index) => {
+                let index = self.walk_expr(index)?;
+                self.build_call(
+                    &ApiFunc::kclvm_value_subscr.name(),
+                    &[self.current_runtime_ctx_ptr(), value, index],
+                )
+            }
+        })
+    }
+
+    pub fn store_target_path(
+        &self,
+        value: BasicValueEnum<'ctx>,
+        path: &'ctx ast::MemberOrIndex,
+        right_value: BasicValueEnum<'ctx>,
+    ) -> CompileResult<'ctx> {
+        match path {
+            ast::MemberOrIndex::Member(member) => {
+                let attr = &member.node;
+                let attr = self.native_global_string(attr, "").into();
+                self.build_void_call(
+                    &ApiFunc::kclvm_dict_set_value.name(),
+                    &[self.current_runtime_ctx_ptr(), value, attr, right_value],
+                );
+            }
+            ast::MemberOrIndex::Index(index) => {
+                let index = self.walk_expr(index)?;
+                self.build_void_call(
+                    &ApiFunc::kclvm_value_subscr_set.name(),
+                    &[self.current_runtime_ctx_ptr(), value, index, right_value],
+                );
+            }
+        }
+        self.ok_result()
     }
 
     /// Push a lambda definition scope into the lambda stack

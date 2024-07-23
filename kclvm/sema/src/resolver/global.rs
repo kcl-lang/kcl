@@ -234,14 +234,7 @@ impl<'ctx> Resolver<'ctx> {
         unique_check: bool,
     ) {
         for target in &assign_stmt.targets {
-            if target.node.names.is_empty() {
-                self.handler.add_compile_error(
-                    "missing target in the assign statement",
-                    target.get_span_pos(),
-                );
-                continue;
-            }
-            let name = &target.node.names[0].node;
+            let name = &target.node.name.node;
             let (start, end) = target.get_span_pos();
             if self.contains_object(name) && !is_private_field(name) && unique_check {
                 self.handler.add_error(

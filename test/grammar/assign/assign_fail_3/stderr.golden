@@ -1,0 +1,1 @@
+'SelectorExpression' is an illegal expression for assignment, because the left-hand side of an assignment expression may not be an optional attribute access.

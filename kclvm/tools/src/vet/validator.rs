@@ -68,7 +68,7 @@ use super::expr_builder::ExprBuilder;
 pub use crate::util::loader::LoaderKind;
 use anyhow::Result;
 use kclvm_ast::{
-    ast::{AssignStmt, Expr, ExprContext, Identifier, Node, NodeRef, Program, SchemaStmt, Stmt},
+    ast::{AssignStmt, Expr, Node, NodeRef, Program, SchemaStmt, Stmt, Target},
     node_ref,
 };
 use kclvm_parser::{LoadProgramOptions, ParseSessionRef};
@@ -230,10 +230,10 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool> {
 
 fn build_assign(attr_name: &str, node: NodeRef<Expr>) -> NodeRef<Stmt> {
     node_ref!(Stmt::Assign(AssignStmt {
-        targets: vec![node_ref!(Identifier {
-            names: vec![Node::dummy_node(attr_name.to_string())],
-            pkgpath: String::new(),
-            ctx: ExprContext::Store,
+        targets: vec![node_ref!(Target {
+            name: Node::dummy_node(attr_name.to_string()),
+            paths: vec![],
+            pkgpath: "".to_string(),
         })],
         value: node,
         ty: None,

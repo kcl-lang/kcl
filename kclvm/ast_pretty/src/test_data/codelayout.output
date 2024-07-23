@@ -105,3 +105,10 @@ joined_data_3 = '''\
 joined_data_4 = '''\
   \${CC}
 '''
+# Member access and index assign targets
+a[0].b -= 1
+a.b[0] += 1
+a.b[1].c /= 1
+a.b[c.d].e == 1
+a.b[1 + 1].e = 1
+a.b[f()].e = 1

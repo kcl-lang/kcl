@@ -14,18 +14,16 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\ndata
         "targets": [
           {
             "node": {
-              "names": [
-                {
-                  "node": "data2",
-                  "filename": "hello.k",
-                  "line": 2,
-                  "column": 0,
-                  "end_line": 2,
-                  "end_column": 5
-                }
-              ],
-              "pkgpath": "",
-              "ctx": "Store"
+              "name": {
+                "node": "data2",
+                "filename": "hello.k",
+                "line": 2,
+                "column": 0,
+                "end_line": 2,
+                "end_column": 5
+              },
+              "paths": [],
+              "pkgpath": ""
             },
             "filename": "hello.k",
             "line": 2,

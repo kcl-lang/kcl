@@ -14,18 +14,16 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\", r####\"a=123\"####
         "targets": [
           {
             "node": {
-              "names": [
-                {
-                  "node": "a",
-                  "filename": "hello.k",
-                  "line": 1,
-                  "column": 0,
-                  "end_line": 1,
-                  "end_column": 1
-                }
-              ],
-              "pkgpath": "",
-              "ctx": "Store"
+              "name": {
+                "node": "a",
+                "filename": "hello.k",
+                "line": 1,
+                "column": 0,
+                "end_line": 1,
+                "end_column": 1
+              },
+              "paths": [],
+              "pkgpath": ""
             },
             "filename": "hello.k",
             "line": 1,

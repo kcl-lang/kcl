@@ -17,19 +17,17 @@ Module {
                                 AssignStmt {
                                     targets: [
                                         Node {
-                                            node: Identifier {
-                                                names: [
-                                                    Node {
-                                                        node: "a",
-                                                        filename: "",
-                                                        line: 1,
-                                                        column: 9,
-                                                        end_line: 1,
-                                                        end_column: 10,
-                                                    },
-                                                ],
+                                            node: Target {
+                                                name: Node {
+                                                    node: "a",
+                                                    filename: "",
+                                                    line: 1,
+                                                    column: 9,
+                                                    end_line: 1,
+                                                    end_column: 10,
+                                                },
+                                                paths: [],
                                                 pkgpath: "",
-                                                ctx: Store,
                                             },
                                             filename: "",
                                             line: 1,
@@ -79,20 +77,7 @@ Module {
                         Node {
                             node: Assign(
                                 AssignStmt {
-                                    targets: [
-                                        Node {
-                                            node: Identifier {
-                                                names: [],
-                                                pkgpath: "",
-                                                ctx: Load,
-                                            },
-                                            filename: "",
-                                            line: 1,
-                                            column: 25,
-                                            end_line: 1,
-                                            end_column: 26,
-                                        },
-                                    ],
+                                    targets: [],
                                     value: Node {
                                         node: NumberLit(
                                             NumberLit {

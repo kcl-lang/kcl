@@ -566,6 +566,10 @@
 // api-spec(c):    kclvm_value_ref_t* kclvm_value_subscr(kclvm_context_t* ctx, kclvm_value_ref_t* a, kclvm_value_ref_t* b);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_subscr(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %a, %kclvm_value_ref_t* %b);
 
+// api-spec:       kclvm_value_subscr_set
+// api-spec(c):    void kclvm_value_subscr_set(kclvm_context_t* ctx, kclvm_value_ref_t* p, kclvm_value_ref_t* index, kclvm_value_ref_t* val);
+// api-spec(llvm): declare void @kclvm_value_subscr_set(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p, %kclvm_value_ref_t* %index, %kclvm_value_ref_t* %val);
+
 // api-spec:       kclvm_value_subscr_option
 // api-spec(c):    kclvm_value_ref_t* kclvm_value_subscr_option(kclvm_context_t* ctx, kclvm_value_ref_t* a, kclvm_value_ref_t* b);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_value_subscr_option(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %a, %kclvm_value_ref_t* %b);

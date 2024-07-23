@@ -278,18 +278,16 @@ expression: "crate::tests::parsing_file_string(\"testdata/config_expr-04.k\")"
         "targets": [
           {
             "node": {
-              "names": [
-                {
-                  "node": "_main",
-                  "filename": "config_expr-04.k",
-                  "line": 13,
-                  "column": 0,
-                  "end_line": 13,
-                  "end_column": 5
-                }
-              ],
-              "pkgpath": "",
-              "ctx": "Store"
+              "name": {
+                "node": "_main",
+                "filename": "config_expr-04.k",
+                "line": 13,
+                "column": 0,
+                "end_line": 13,
+                "end_column": 5
+              },
+              "paths": [],
+              "pkgpath": ""
             },
             "filename": "config_expr-04.k",
             "line": 13,
@@ -504,18 +502,16 @@ expression: "crate::tests::parsing_file_string(\"testdata/config_expr-04.k\")"
         "targets": [
           {
             "node": {
-              "names": [
-                {
-                  "node": "config",
-                  "filename": "config_expr-04.k",
-                  "line": 19,
-                  "column": 0,
-                  "end_line": 19,
-                  "end_column": 6
-                }
-              ],
-              "pkgpath": "",
-              "ctx": "Store"
+              "name": {
+                "node": "config",
+                "filename": "config_expr-04.k",
+                "line": 19,
+                "column": 0,
+                "end_line": 19,
+                "end_column": 6
+              },
+              "paths": [],
+              "pkgpath": ""
             },
             "filename": "config_expr-04.k",
             "line": 19,

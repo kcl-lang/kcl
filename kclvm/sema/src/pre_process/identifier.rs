@@ -1,6 +1,5 @@
 use crate::info::is_private_field;
 use indexmap::{IndexMap, IndexSet};
-use kclvm_ast::ast::Node;
 use kclvm_ast::pos::GetPos;
 use kclvm_ast::walker::MutSelfMutWalker;
 use kclvm_ast::{ast, walk_if_mut, walk_list_mut};
@@ -55,23 +54,18 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
     fn walk_assign_stmt(&mut self, assign_stmt: &'ctx mut ast::AssignStmt) {
         let is_config = matches!(assign_stmt.value.node, ast::Expr::Schema(_));
         for target in &assign_stmt.targets {
-            if !target.node.names.is_empty() {
-                let name = &target.node.names[0].node;
-                if (is_private_field(name) || !self.global_names.contains_key(name) || is_config)
-                    && self.scope_level == 0
-                {
-                    self.global_names.insert(name.to_string(), target.get_pos());
-                }
+            let name = &target.node.name.node;
+            if (is_private_field(name) || !self.global_names.contains_key(name) || is_config)
+                && self.scope_level == 0
+            {
+                self.global_names.insert(name.to_string(), target.get_pos());
             }
         }
         self.walk_expr(&mut assign_stmt.value.node);
     }
     fn walk_aug_assign_stmt(&mut self, aug_assign_stmt: &'ctx mut ast::AugAssignStmt) {
         let is_config = matches!(aug_assign_stmt.value.node, ast::Expr::Schema(_));
-        if aug_assign_stmt.target.node.names.is_empty() {
-            return;
-        }
-        let name = &aug_assign_stmt.target.node.names[0].node;
+        let name = &aug_assign_stmt.target.node.name.node;
         if is_private_field(name) || !self.global_names.contains_key(name) || is_config {
             if self.scope_level == 0 {
                 self.global_names
@@ -145,6 +139,17 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
             }
         }
     }
+    fn walk_target(&mut self, target: &'ctx mut ast::Target) {
+        if !target.paths.is_empty() {
+            // skip global name and generator local variables in list/dict comp and quant expression
+            let name = &target.name.node;
+            if !self.global_names.contains_key(name) && !self.local_vars.contains(name) {
+                if let Some(pkgpath) = self.import_names.get(name) {
+                    target.pkgpath = pkgpath.clone()
+                }
+            }
+        }
+    }
 }
 
 #[inline]
@@ -159,18 +164,21 @@ fn remove_raw_ident_prefix(name: &str) -> String {
 struct RawIdentifierTransformer;
 
 impl<'ctx> MutSelfMutWalker<'ctx> for RawIdentifierTransformer {
+    fn walk_target(&mut self, target: &'ctx mut ast::Target) {
+        target.name.node = remove_raw_ident_prefix(&target.name.node);
+        for path in target.paths.iter_mut() {
+            match path {
+                ast::MemberOrIndex::Member(member) => {
+                    member.node = remove_raw_ident_prefix(&member.node);
+                }
+                ast::MemberOrIndex::Index(index) => self.walk_expr(&mut index.node),
+            }
+        }
+    }
     fn walk_identifier(&mut self, identifier: &'ctx mut ast::Identifier) {
-        identifier.names = identifier
-            .names
-            .iter()
-            .map(|name| {
-                Node::node_with_pos_and_id(
-                    remove_raw_ident_prefix(&name.node),
-                    name.pos(),
-                    name.id.clone(),
-                )
-            })
-            .collect::<Vec<Node<String>>>();
+        for name in identifier.names.iter_mut() {
+            name.node = remove_raw_ident_prefix(&name.node);
+        }
     }
     fn walk_schema_attr(&mut self, schema_attr: &'ctx mut ast::SchemaAttr) {
         // If the attribute is an identifier and then fix it.

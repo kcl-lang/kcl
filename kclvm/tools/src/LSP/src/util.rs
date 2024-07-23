@@ -1,6 +1,7 @@
 use indexmap::IndexSet;
 use kclvm_ast::ast::{
-    ConfigEntry, Expr, Identifier, Node, NodeRef, PosTuple, Program, SchemaStmt, Stmt, Type,
+    ConfigEntry, Expr, Identifier, MemberOrIndex, Node, NodeRef, PosTuple, Program, SchemaStmt,
+    Stmt, Type,
 };
 use kclvm_ast::node_ref;
 use kclvm_ast::pos::ContainsPos;
@@ -386,7 +387,7 @@ pub(crate) fn inner_most_expr_in_stmt(
             walk_if_contains!(assign_stmt.value, pos, schema_def);
 
             for expr in &assign_stmt.targets {
-                walk_if_contains_with_new_expr!(expr, pos, schema_def, Expr::Identifier);
+                walk_if_contains_with_new_expr!(expr, pos, schema_def, Expr::Target);
             }
             (None, schema_def)
         }
@@ -417,12 +418,7 @@ pub(crate) fn inner_most_expr_in_stmt(
         }
         Stmt::AugAssign(aug_assign_stmt) => {
             walk_if_contains!(aug_assign_stmt.value, pos, schema_def);
-            walk_if_contains_with_new_expr!(
-                aug_assign_stmt.target,
-                pos,
-                schema_def,
-                Expr::Identifier
-            );
+            walk_if_contains_with_new_expr!(aug_assign_stmt.target, pos, schema_def, Expr::Target);
             (None, schema_def)
         }
         Stmt::Assert(assert_stmt) => {
@@ -554,6 +550,16 @@ pub(crate) fn inner_most_expr(
     }
     match &expr.node {
         Expr::Identifier(_) => (Some(expr.clone()), schema_def),
+        Expr::Target(target) => {
+            for path in &target.paths {
+                if let MemberOrIndex::Index(index) = path {
+                    if index.contains_pos(pos) {
+                        return (Some(*index.clone()), schema_def);
+                    }
+                }
+            }
+            (Some(expr.clone()), schema_def)
+        }
         Expr::Selector(select_expr) => {
             walk_if_contains!(select_expr.value, pos, schema_def);
             (Some(expr.clone()), schema_def)

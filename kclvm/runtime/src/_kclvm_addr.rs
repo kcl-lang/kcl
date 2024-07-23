@@ -350,6 +350,7 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_value_slice_option" => crate::kclvm_value_slice_option as *const () as u64,
         "kclvm_value_subscr" => crate::kclvm_value_subscr as *const () as u64,
         "kclvm_value_subscr_option" => crate::kclvm_value_subscr_option as *const () as u64,
+        "kclvm_value_subscr_set" => crate::kclvm_value_subscr_set as *const () as u64,
         "kclvm_value_to_json_value" => crate::kclvm_value_to_json_value as *const () as u64,
         "kclvm_value_to_json_value_with_null" => {
             crate::kclvm_value_to_json_value_with_null as *const () as u64

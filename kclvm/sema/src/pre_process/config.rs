@@ -156,8 +156,8 @@ impl ConfigMergeTransformer {
                         ast::Stmt::Assign(assign_stmt) => {
                             if let ast::Expr::Schema(_) = assign_stmt.value.node {
                                 for target in &assign_stmt.targets {
-                                    if target.node.names.len() == 1 {
-                                        let name = &target.node.names[0].node;
+                                    if target.node.paths.is_empty() {
+                                        let name = &target.node.name.node;
                                         match name_declaration_mapping.get_mut(name) {
                                             Some(declarations) => {
                                                 // A hidden var is mutable.

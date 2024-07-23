@@ -150,7 +150,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         for name in &assign_stmt.targets {
             self.target_vars
                 .borrow_mut()
-                .push(name.node.names[0].node.clone());
+                .push(name.node.name.node.clone());
         }
         // Load the right value
         let mut value = self
@@ -172,13 +172,13 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         if assign_stmt.targets.len() == 1 {
             // Store the single target
             let name = &assign_stmt.targets[0];
-            self.walk_identifier_with_ctx(&name.node, &name.node.ctx, Some(value))
+            self.walk_target_with_value(&name.node, value)
                 .expect(kcl_error::COMPILE_ERROR_MSG);
         } else {
             // Store multiple targets
             for name in &assign_stmt.targets {
                 let value = self.value_deep_copy(value);
-                self.walk_identifier_with_ctx(&name.node, &name.node.ctx, Some(value))
+                self.walk_target_with_value(&name.node, value)
                     .expect(kcl_error::COMPILE_ERROR_MSG);
             }
         }
@@ -189,14 +189,14 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         check_backtrack_stop!(self);
         self.target_vars
             .borrow_mut()
-            .push(aug_assign_stmt.target.node.names[0].node.clone());
+            .push(aug_assign_stmt.target.node.name.node.clone());
         // Load the right value
         let right_value = self
             .walk_expr(&aug_assign_stmt.value)
             .expect(kcl_error::COMPILE_ERROR_MSG);
-        // Load the identifier value
+        // Load the value
         let org_value = self
-            .walk_identifier_with_ctx(&aug_assign_stmt.target.node, &ast::ExprContext::Load, None)
+            .load_target(&aug_assign_stmt.target.node)
             .expect(kcl_error::COMPILE_ERROR_MSG);
         let fn_name = match aug_assign_stmt.op {
             ast::AugOp::Add => ApiFunc::kclvm_value_op_aug_add,
@@ -219,13 +219,9 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             &fn_name.name(),
             &[self.current_runtime_ctx_ptr(), org_value, right_value],
         );
-        // Store the identifier value
-        self.walk_identifier_with_ctx(
-            &aug_assign_stmt.target.node,
-            &ast::ExprContext::Store,
-            Some(value),
-        )
-        .expect(kcl_error::COMPILE_ERROR_MSG);
+        // Store the target value
+        self.walk_target_with_value(&aug_assign_stmt.target.node, value)
+            .expect(kcl_error::COMPILE_ERROR_MSG);
         Ok(value)
     }
 
@@ -1269,6 +1265,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         utils::update_ctx_filename(self, expr);
         utils::update_ctx_line_col(self, expr);
         match &expr.node {
+            ast::Expr::Target(target) => self.walk_target(target),
             ast::Expr::Identifier(identifier) => self.walk_identifier(identifier),
             ast::Expr::Unary(unary_expr) => self.walk_unary_expr(unary_expr),
             ast::Expr::Binary(binary_expr) => self.walk_binary_expr(binary_expr),
@@ -2298,6 +2295,12 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
         self.walk_identifier_with_ctx(identifier, &identifier.ctx, None)
     }
 
+    #[inline]
+    fn walk_target(&self, target: &'ctx ast::Target) -> Self::Result {
+        check_backtrack_stop!(self);
+        self.load_target(target)
+    }
+
     fn walk_number_lit(&self, number_lit: &'ctx ast::NumberLit) -> Self::Result {
         check_backtrack_stop!(self);
         match number_lit.value {
@@ -2419,6 +2422,107 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             result = self.walk_stmt(stmt);
         }
         result
+    }
+
+    pub fn walk_target_with_value(
+        &self,
+        target: &'ctx ast::Target,
+        right_value: BasicValueEnum<'ctx>,
+    ) -> CompileResult<'ctx> {
+        check_backtrack_stop!(self);
+        let is_in_schema = self.is_in_schema();
+        if target.paths.is_empty() {
+            let name = target.get_name();
+            let tpe = self.value_ptr_type();
+            // Global variables
+            if self.scope_level() == GLOBAL_LEVEL {
+                self.add_or_update_global_variable(name, right_value, true);
+            // Lambda local variables.
+            } else if self.is_in_lambda() {
+                let value = right_value;
+                // If variable exists in the scope and update it, if not, add it to the scope.
+                if !self.store_variable_in_current_scope(name, value) {
+                    let cur_bb = self.builder.get_insert_block().unwrap();
+                    let lambda_func = cur_bb.get_parent().unwrap();
+                    let entry_bb = lambda_func.get_first_basic_block().unwrap();
+                    match entry_bb.get_first_instruction() {
+                        Some(inst) => self.builder.position_before(&inst),
+                        None => self.builder.position_at_end(entry_bb),
+                    };
+                    let var = self.builder.build_alloca(tpe, name);
+                    let undefined_val = self.undefined_value();
+                    self.builder.build_store(var, undefined_val);
+                    self.add_variable(name, var);
+                    self.builder.position_at_end(cur_bb);
+                    self.store_variable(name, value);
+                }
+            } else {
+                let is_local_var = self.is_local_var(name);
+                let value = right_value;
+                // Store schema attribute
+                if is_in_schema {
+                    let schema_value = self.get_variable(value::SCHEMA_SELF_NAME)?;
+                    // Schema config
+                    let config_value = self.get_variable(value::SCHEMA_CONFIG_NAME)?;
+                    // If is in the backtrack, return the schema value.
+                    if self.update_schema_scope_value(schema_value, config_value, name, Some(value))
+                    {
+                        return Ok(schema_value);
+                    }
+                }
+                // Store loop variable
+                if is_local_var || !is_in_schema {
+                    let var = self.builder.build_alloca(tpe, name);
+                    self.builder.build_store(var, value);
+                    self.add_variable(name, var);
+                }
+            }
+        } else {
+            let name = target.get_name();
+            // In KCL, we cannot modify global variables in other packages,
+            // so pkgpath is empty here.
+            let mut value = self
+                .load_value("", &[name])
+                .expect(kcl_error::INTERNAL_ERROR_MSG);
+            // Convert `store a.b.c = 1` -> `%t = load &a; %t = load_attr %t %b; store_attr %t %c with 1`
+            for (i, path) in target.paths.iter().enumerate() {
+                let ctx = if i < target.paths.len() - 1 {
+                    ast::ExprContext::Load
+                } else {
+                    ast::ExprContext::Store
+                };
+                match ctx {
+                    ast::ExprContext::Load => {
+                        value = self.load_target_path(value, path)?;
+                    }
+                    ast::ExprContext::Store => {
+                        self.store_target_path(value, path, right_value)?;
+
+                        let is_local_var = self.is_local_var(name);
+                        let is_in_lambda = self.is_in_lambda();
+                        // Set config value for the schema attribute if the attribute is in the schema and
+                        // it is not a local variable in the lambda function.
+                        if self.scope_level() >= INNER_LEVEL
+                            && is_in_schema
+                            && !is_in_lambda
+                            && !is_local_var
+                        {
+                            let schema_value = self.get_variable(value::SCHEMA_SELF_NAME)?;
+                            let config_value = self.get_variable(value::SCHEMA_CONFIG_NAME)?;
+                            if self.update_schema_scope_value(
+                                schema_value,
+                                config_value,
+                                name,
+                                None,
+                            ) {
+                                return Ok(schema_value);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Ok(right_value)
     }
 
     pub fn walk_identifier_with_ctx(

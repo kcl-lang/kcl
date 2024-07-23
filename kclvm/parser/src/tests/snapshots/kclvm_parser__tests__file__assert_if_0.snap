@@ -104,18 +104,16 @@ expression: "crate::tests::parsing_file_string(\"testdata/assert-if-0.k\")"
         "targets": [
           {
             "node": {
-              "names": [
-                {
-                  "node": "_x",
-                  "filename": "assert-if-0.k",
-                  "line": 3,
-                  "column": 0,
-                  "end_line": 3,
-                  "end_column": 2
-                }
-              ],
-              "pkgpath": "",
-              "ctx": "Store"
+              "name": {
+                "node": "_x",
+                "filename": "assert-if-0.k",
+                "line": 3,
+                "column": 0,
+                "end_line": 3,
+                "end_column": 2
+              },
+              "paths": [],
+              "pkgpath": ""
             },
             "filename": "assert-if-0.k",
             "line": 3,

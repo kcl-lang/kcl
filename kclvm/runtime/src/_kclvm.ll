@@ -628,6 +628,8 @@ declare %kclvm_value_ref_t* @kclvm_value_subscr(%kclvm_context_t* %ctx, %kclvm_v
 
 declare %kclvm_value_ref_t* @kclvm_value_subscr_option(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %a, %kclvm_value_ref_t* %b);
 
+declare void @kclvm_value_subscr_set(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p, %kclvm_value_ref_t* %index, %kclvm_value_ref_t* %val);
+
 declare %kclvm_value_ref_t* @kclvm_value_to_json_value(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p);
 
 declare %kclvm_value_ref_t* @kclvm_value_to_json_value_with_null(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %p);

@@ -27,13 +27,13 @@ fn test_fix_raw_identifier_prefix() {
     let mut module =
         parse_file_force_errors("./src/pre_process/test_data/raw_identifier.k", None).unwrap();
     if let ast::Stmt::Assign(assign_stmt) = &module.body[0].node {
-        assert_eq!(assign_stmt.targets[0].node.names[0].node, "$schema")
+        assert_eq!(assign_stmt.targets[0].node.name.node, "$schema")
     } else {
         panic!("invalid assign statement")
     }
     fix_raw_identifier_prefix(&mut module);
     if let ast::Stmt::Assign(assign_stmt) = &module.body[0].node {
-        assert_eq!(assign_stmt.targets[0].node.names[0].node, "schema")
+        assert_eq!(assign_stmt.targets[0].node.name.node, "schema")
     } else {
         panic!("invalid assign statement")
     }

@@ -103,6 +103,13 @@ impl ValueRef {
         }
     }
 
+    /// Set list element value `v` with the index `i`.
+    pub fn list_set_value(&mut self, i: &Self, v: &Self) {
+        let index = i.must_as_strict_int();
+        let index = must_normalize_index(index as i32, self.len());
+        self.list_must_set(index, v);
+    }
+
     pub fn list_set(&mut self, i: usize, v: &Self) {
         match &mut *self.rc.borrow_mut() {
             Value::list_value(list) => {

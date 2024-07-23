@@ -1,5 +1,6 @@
 use crate::resolver::Resolver;
 use indexmap::IndexMap;
+use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
 use kclvm_error::diagnostic::Range;
 use kclvm_error::*;
@@ -147,6 +148,45 @@ impl<'ctx> Resolver<'ctx> {
             self.handler
                 .add_compile_error("missing variable", range.clone());
             vec![self.any_ty()]
+        }
+    }
+
+    /// Resolve left-hand target in the assign statement.
+    pub fn resolve_target(
+        &mut self,
+        target: &'ctx ast::Target,
+        range: Range,
+    ) -> Vec<ResolvedResult> {
+        let mut tys = self.resolve_var(
+            &[target.get_name().to_string()],
+            &target.pkgpath,
+            range.clone(),
+        );
+        if target.paths.is_empty() {
+            tys
+        } else {
+            let mut ty = tys[0].clone();
+            let last_ctx_l_value = self.ctx.l_value;
+            self.ctx.l_value = false;
+            for path in &target.paths {
+                match path {
+                    ast::MemberOrIndex::Member(member) => {
+                        let attr = &member.node;
+                        self.must_check_config_attr(attr, &range, &ty);
+                        ty = self.load_attr(ty, attr, range.clone());
+                        tys.push(ty.clone());
+                    }
+                    ast::MemberOrIndex::Index(index) => {
+                        if let ast::Expr::StringLit(string_lit) = &index.node {
+                            self.must_check_config_attr(&string_lit.value, &range, &ty);
+                        }
+                        ty = self.subscript_index(ty, index, range.clone());
+                        tys.push(ty.clone());
+                    }
+                }
+            }
+            self.ctx.l_value = last_ctx_l_value;
+            tys
         }
     }
 

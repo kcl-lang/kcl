@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 316
 expression: "crate::tests::parsing_module_string(r#\"a:({i:i\"#)"
 ---
 Module {
@@ -14,19 +13,17 @@ Module {
                 AssignStmt {
                     targets: [
                         Node {
-                            node: Identifier {
-                                names: [
-                                    Node {
-                                        node: "a",
-                                        filename: "",
-                                        line: 1,
-                                        column: 0,
-                                        end_line: 1,
-                                        end_column: 1,
-                                    },
-                                ],
+                            node: Target {
+                                name: Node {
+                                    node: "a",
+                                    filename: "",
+                                    line: 1,
+                                    column: 0,
+                                    end_line: 1,
+                                    end_column: 1,
+                                },
+                                paths: [],
                                 pkgpath: "",
-                                ctx: Store,
                             },
                             filename: "",
                             line: 1,
@@ -135,4 +132,3 @@ Module {
     ],
     comments: [],
 }
-

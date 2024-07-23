@@ -60,14 +60,11 @@ impl<'ctx> Evaluator<'ctx> {
                 }
                 ast::Stmt::Assign(assign_stmt) => {
                     for target in &assign_stmt.targets {
-                        let names = &target.node.names;
-                        if names.len() == 1 {
-                            self.add_or_update_global_variable(
-                                &names[0].node,
-                                self.undefined_value(),
-                                false,
-                            );
-                        }
+                        self.add_or_update_global_variable(
+                            &target.node.get_name(),
+                            self.undefined_value(),
+                            false,
+                        );
                     }
                 }
                 ast::Stmt::If(if_stmt) => {

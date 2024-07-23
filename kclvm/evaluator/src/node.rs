@@ -132,7 +132,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         self.clear_local_vars();
         // Set target vars.
         for name in &assign_stmt.targets {
-            self.add_target_var(&name.node.names[0].node)
+            self.add_target_var(&name.node.name.node)
         }
         // Load the right value
         let mut value = self.walk_expr(&assign_stmt.value)?;
@@ -143,12 +143,12 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         if assign_stmt.targets.len() == 1 {
             // Store the single target
             let name = &assign_stmt.targets[0];
-            self.walk_identifier_with_ctx(&name.node, &name.node.ctx, Some(value.clone()))?;
+            self.walk_target_with_value(&name.node, value.clone())?;
         } else {
             // Store multiple targets
             for name in &assign_stmt.targets {
                 let value = self.value_deep_copy(&value);
-                self.walk_identifier_with_ctx(&name.node, &name.node.ctx, Some(value.clone()))?;
+                self.walk_target_with_value(&name.node, value.clone())?;
             }
         }
         // Pop target vars.
@@ -159,15 +159,11 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
     }
 
     fn walk_aug_assign_stmt(&self, aug_assign_stmt: &'ctx ast::AugAssignStmt) -> Self::Result {
-        self.add_target_var(&aug_assign_stmt.target.node.names[0].node);
+        self.add_target_var(&aug_assign_stmt.target.node.name.node);
         // Load the right value
         let right_value = self.walk_expr(&aug_assign_stmt.value)?;
         // Load the identifier value
-        let org_value = self.walk_identifier_with_ctx(
-            &aug_assign_stmt.target.node,
-            &ast::ExprContext::Load,
-            None,
-        )?;
+        let org_value = self.load_target(&aug_assign_stmt.target.node)?;
         let value = match aug_assign_stmt.op {
             ast::AugOp::Add => self.add(org_value, right_value),
             ast::AugOp::Sub => self.sub(org_value, right_value),
@@ -185,12 +181,8 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                 return Err(anyhow::anyhow!(kcl_error::INVALID_OPERATOR_MSG));
             }
         };
-        // Store the identifier value
-        self.walk_identifier_with_ctx(
-            &aug_assign_stmt.target.node,
-            &ast::ExprContext::Store,
-            Some(value.clone()),
-        )?;
+        // Store the target value
+        self.walk_target_with_value(&aug_assign_stmt.target.node, value.clone())?;
         self.pop_target_var();
         Ok(value)
     }
@@ -334,6 +326,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
     fn walk_expr(&self, expr: &'ctx ast::Node<ast::Expr>) -> Self::Result {
         self.update_ctx_panic_info(expr);
         match &expr.node {
+            ast::Expr::Target(target) => self.walk_target(target),
             ast::Expr::Identifier(identifier) => self.walk_identifier(identifier),
             ast::Expr::Unary(unary_expr) => self.walk_unary_expr(unary_expr),
             ast::Expr::Binary(binary_expr) => self.walk_binary_expr(binary_expr),
@@ -1058,8 +1051,14 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         }
     }
 
+    #[inline]
     fn walk_identifier(&self, identifier: &'ctx ast::Identifier) -> Self::Result {
         self.walk_identifier_with_ctx(identifier, &identifier.ctx, None)
+    }
+
+    #[inline]
+    fn walk_target(&self, target: &'ctx ast::Target) -> Self::Result {
+        self.load_target(target)
     }
 
     fn walk_number_lit(&self, number_lit: &'ctx ast::NumberLit) -> Self::Result {
@@ -1224,6 +1223,79 @@ impl<'ctx> Evaluator<'ctx> {
         } else {
             self.ok_result()
         }
+    }
+
+    pub fn walk_target_with_value(
+        &self,
+        target: &'ctx ast::Target,
+        right_value: ValueRef,
+    ) -> EvalResult {
+        let is_in_schema = self.is_in_schema();
+        if target.paths.is_empty() {
+            let name = target.get_name();
+            // Global variables
+            if self.scope_level() == GLOBAL_LEVEL {
+                self.add_or_update_global_variable(name, right_value.clone(), true);
+            // Lambda local variables.
+            } else if self.is_in_lambda() {
+                let value = right_value.clone();
+                // schema frame in the lambda
+                if self.is_schema_scope() {
+                    let is_local_var = self.is_local_var(name);
+                    let value = right_value.clone();
+                    match (is_local_var, is_in_schema) {
+                        (false, true) => self.update_schema_or_rule_scope_value(name, Some(&value)),
+                        _ => self.add_variable(name, value),
+                    }
+                } else {
+                    // If variable exists in the scope and update it, if not, add it to the scope.
+                    if !self.store_variable_in_current_scope(name, value.clone()) {
+                        self.add_variable(name, self.undefined_value());
+                        self.store_variable(name, value);
+                    }
+                }
+            } else {
+                let is_local_var = self.is_local_var(name);
+                let value = right_value.clone();
+                match (is_local_var, is_in_schema) {
+                    (false, true) => self.update_schema_or_rule_scope_value(name, Some(&value)),
+                    _ => self.add_variable(name, value),
+                }
+            }
+        } else {
+            let name = target.get_name();
+            // In KCL, we cannot modify global variables in other packages,
+            // so pkgpath is empty here.
+            let mut value = self.load_value("", &[name]);
+            // Convert `store a.b.c = 1` -> `%t = load &a; %t = load_attr %t %b; store_attr %t %c with 1`
+            for (i, path) in target.paths.iter().enumerate() {
+                let ctx = if i < target.paths.len() - 1 {
+                    ast::ExprContext::Load
+                } else {
+                    ast::ExprContext::Store
+                };
+                match ctx {
+                    ast::ExprContext::Load => {
+                        value = self.load_target_path(&value, path)?;
+                    }
+                    ast::ExprContext::Store => {
+                        self.store_target_path(&mut value, path, &right_value)?;
+                        let is_local_var = self.is_local_var(name);
+                        let is_in_lambda = self.is_in_lambda();
+                        // Set config value for the schema attribute if the attribute is in the schema and
+                        // it is not a local variable in the lambda function.
+                        if self.scope_level() >= INNER_LEVEL
+                            && is_in_schema
+                            && !is_in_lambda
+                            && !is_local_var
+                        {
+                            self.update_schema_or_rule_scope_value(name, None);
+                        }
+                    }
+                }
+            }
+        }
+        Ok(right_value)
     }
 
     pub fn walk_identifier_with_ctx(

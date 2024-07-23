@@ -122,18 +122,16 @@ expression: "crate::tests::parsing_file_string(\"testdata/assert-03.k\")"
               "targets": [
                 {
                   "node": {
-                    "names": [
-                      {
-                        "node": "_x",
-                        "filename": "assert-03.k",
-                        "line": 4,
-                        "column": 4,
-                        "end_line": 4,
-                        "end_column": 6
-                      }
-                    ],
-                    "pkgpath": "",
-                    "ctx": "Store"
+                    "name": {
+                      "node": "_x",
+                      "filename": "assert-03.k",
+                      "line": 4,
+                      "column": 4,
+                      "end_line": 4,
+                      "end_column": 6
+                    },
+                    "paths": [],
+                    "pkgpath": ""
                   },
                   "filename": "assert-03.k",
                   "line": 4,

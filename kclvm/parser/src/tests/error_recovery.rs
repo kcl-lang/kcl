@@ -242,6 +242,14 @@ parse_module_snapshot! { assign_stmt_recovery_7, r#"a: () = 0"#}
 parse_module_snapshot! { assign_stmt_recovery_8, r#"a: () = 0"#}
 parse_module_snapshot! { assign_stmt_recovery_9, r#"a ++= 1"#}
 parse_module_snapshot! { assign_stmt_recovery_10, r#"a[0] -= 1"#}
+parse_module_snapshot! { assign_stmt_recovery_11, r#"a[0].b -= 1"#}
+parse_module_snapshot! { assign_stmt_recovery_12, r#"a.b[0] = 1"#}
+parse_module_snapshot! { assign_stmt_recovery_13, r#"a().b = 1"#}
+parse_module_snapshot! { assign_stmt_recovery_14, r#"a.b[1:2] = 1"#}
+parse_module_snapshot! { assign_stmt_recovery_15, r#"a.b[1::2].c = 1"#}
+parse_module_snapshot! { assign_stmt_recovery_16, r#"a.b[c.d].e = 1"#}
+parse_module_snapshot! { assign_stmt_recovery_17, r#"a.b[1 + 1].e = 1"#}
+parse_module_snapshot! { assign_stmt_recovery_18, r#"a.b[f()].e = 1"#}
 parse_module_snapshot! { assert_stmt_recovery_0, r#"assert"#}
 parse_module_snapshot! { assert_stmt_recovery_1, r#"assert a."#}
 parse_module_snapshot! { assert_stmt_recovery_2, r#"assert True,,, 'msg'"#}

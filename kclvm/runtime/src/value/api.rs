@@ -1900,6 +1900,21 @@ pub unsafe extern "C" fn kclvm_value_subscr(
 
 #[no_mangle]
 #[runtime_fn]
+pub unsafe extern "C" fn kclvm_value_subscr_set(
+    ctx: *mut kclvm_context_t,
+    p: *mut kclvm_value_ref_t,
+    index: *const kclvm_value_ref_t,
+    val: *const kclvm_value_ref_t,
+) {
+    let ctx = mut_ptr_as_ref(ctx);
+    let p = mut_ptr_as_ref(p);
+    let index = ptr_as_ref(index);
+    let val = ptr_as_ref(val);
+    p.bin_subscr_set(ctx, index, val);
+}
+
+#[no_mangle]
+#[runtime_fn]
 pub unsafe extern "C" fn kclvm_value_subscr_option(
     ctx: *mut kclvm_context_t,
     a: *const kclvm_value_ref_t,

@@ -14,18 +14,16 @@ expression: "crate::tests::parsing_file_string(\"testdata/if-01.k\")"
         "targets": [
           {
             "node": {
-              "names": [
-                {
-                  "node": "a",
-                  "filename": "if-01.k",
-                  "line": 1,
-                  "column": 0,
-                  "end_line": 1,
-                  "end_column": 1
-                }
-              ],
-              "pkgpath": "",
-              "ctx": "Store"
+              "name": {
+                "node": "a",
+                "filename": "if-01.k",
+                "line": 1,
+                "column": 0,
+                "end_line": 1,
+                "end_column": 1
+              },
+              "paths": [],
+              "pkgpath": ""
             },
             "filename": "if-01.k",
             "line": 1,
@@ -67,18 +65,16 @@ expression: "crate::tests::parsing_file_string(\"testdata/if-01.k\")"
               "targets": [
                 {
                   "node": {
-                    "names": [
-                      {
-                        "node": "bbb",
-                        "filename": "if-01.k",
-                        "line": 4,
-                        "column": 4,
-                        "end_line": 4,
-                        "end_column": 7
-                      }
-                    ],
-                    "pkgpath": "",
-                    "ctx": "Store"
+                    "name": {
+                      "node": "bbb",
+                      "filename": "if-01.k",
+                      "line": 4,
+                      "column": 4,
+                      "end_line": 4,
+                      "end_column": 7
+                    },
+                    "paths": [],
+                    "pkgpath": ""
                   },
                   "filename": "if-01.k",
                   "line": 4,

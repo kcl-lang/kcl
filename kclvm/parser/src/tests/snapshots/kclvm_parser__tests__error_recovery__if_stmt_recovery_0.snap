@@ -1,6 +1,5 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 199
 expression: "crate::tests::parsing_module_string(r#\"if True a = 1\"#)"
 ---
 Module {
@@ -16,20 +15,7 @@ Module {
                         Node {
                             node: Assign(
                                 AssignStmt {
-                                    targets: [
-                                        Node {
-                                            node: Identifier {
-                                                names: [],
-                                                pkgpath: "",
-                                                ctx: Load,
-                                            },
-                                            filename: "",
-                                            line: 1,
-                                            column: 10,
-                                            end_line: 1,
-                                            end_column: 11,
-                                        },
-                                    ],
+                                    targets: [],
                                     value: Node {
                                         node: NumberLit(
                                             NumberLit {
@@ -79,4 +65,3 @@ Module {
     ],
     comments: [],
 }
-
