@@ -41,7 +41,7 @@ kclvm-evaluator = {path = "../evaluator"}
 
 [dev-dependencies]
 kclvm-parser = {path = "../parser"}
-criterion = "0.3"
+criterion = "0.5"
 
 [[bench]]
 name = "bench_runner"

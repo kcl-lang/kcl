@@ -16,7 +16,6 @@ kclvm-utils = {path = "../utils"}
 
 anyhow = "1.0"
 tracing = "0.1"
-atty = "0.2"
 annotate-snippets = { version = "0.9.2", default-features = false, features = ["color"] }
 serde = { version = "1.0", features = ["derive"] }
 termize = "0.1.1"
