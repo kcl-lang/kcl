@@ -455,4 +455,11 @@ mod tests {
         4,
         12
     );
+
+    goto_def_test_snapshot!(
+        goto_unification_schema_attr_test,
+        "src/test_data/goto_def_test/goto_unification_schema_attr_test/goto_unification_schema_attr_test.k",
+        7,
+        7
+    );
 }

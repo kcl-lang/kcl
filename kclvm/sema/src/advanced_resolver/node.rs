@@ -52,6 +52,61 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
     ) -> Self::Result {
         self.ctx.maybe_def = true;
         self.walk_identifier_expr(&unification_stmt.target)?;
+        // Set schema attribute if it is in the schema stmt.
+        if let Some(parent_scope) = self.ctx.scopes.last() {
+            if let Some(parent_scope) = self.gs.get_scopes().get_scope(&parent_scope) {
+                let mut doc = None;
+                if let Some(schema_symbol) = parent_scope.get_owner() {
+                    let schema_symbol = self
+                        .gs
+                        .get_symbols()
+                        .get_symbol(schema_symbol)
+                        .ok_or(anyhow!("schema_symbol not found"))?;
+                    if let Some(schema_ty) = schema_symbol.get_sema_info().ty.clone() {
+                        if !unification_stmt.target.node.names.is_empty() {
+                            let schema_ty = schema_ty.into_schema_type();
+                            if let Some(attr) = schema_ty
+                                .attrs
+                                .get(&unification_stmt.target.node.names[0].node)
+                            {
+                                doc = attr.doc.clone()
+                            }
+                            let attr_symbol = self
+                                .gs
+                                .get_symbols()
+                                .symbols_info
+                                .node_symbol_map
+                                .get(
+                                    &self
+                                        .ctx
+                                        .get_node_key(&unification_stmt.target.node.names[0].id),
+                                )
+                                .cloned();
+                            if let Some(attr_symbol) = attr_symbol {
+                                if let Some(symbol) = self
+                                    .gs
+                                    .get_symbols_mut()
+                                    .attributes
+                                    .get_mut(attr_symbol.get_id())
+                                {
+                                    symbol.sema_info = SymbolSemanticInfo {
+                                        ty: self
+                                            .ctx
+                                            .node_ty_map
+                                            .borrow()
+                                            .get(&self.ctx.get_node_key(
+                                                &unification_stmt.target.node.names[0].id,
+                                            ))
+                                            .map(|ty| ty.clone()),
+                                        doc,
+                                    };
+                                }
+                            }
+                        }
+                    }
+                };
+            }
+        }
         self.ctx.maybe_def = false;
         self.walk_schema_expr(&unification_stmt.value.node)?;
         Ok(None)
