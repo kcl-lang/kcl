@@ -57,7 +57,8 @@ macro_rules! call {
         unsafe {
             let serv_ref = &mut *$serv;
             let args = c_char_to_vec($args, $args_len);
-            let args = $arg_name::decode(args.as_slice()).unwrap();
+            let args = args.as_slice();
+            let args = $arg_name::decode(args).unwrap();
             let res = serv_ref.$serv_name(&args);
             let result_byte = match res {
                 Ok(res) => res.encode_to_vec(),
@@ -92,12 +93,11 @@ macro_rules! call {
 pub extern "C" fn kclvm_service_call(
     serv: *mut kclvm_service,
     name: *const c_char,
-    name_len: usize,
     args: *const c_char,
     args_len: usize,
 ) -> *const c_char {
     let mut _result_len = 0;
-    kclvm_service_call_with_length(serv, name, name_len, args, args_len, &mut _result_len)
+    kclvm_service_call_with_length(serv, name, args, args_len, &mut _result_len)
 }
 
 /// Call kclvm service by C API. **Note that it is not thread safe.**
@@ -123,14 +123,13 @@ pub extern "C" fn kclvm_service_call(
 pub extern "C" fn kclvm_service_call_with_length(
     serv: *mut kclvm_service,
     name: *const c_char,
-    name_len: usize,
     args: *const c_char,
     args_len: usize,
     result_len: *mut usize,
 ) -> *const c_char {
     let result = std::panic::catch_unwind(|| {
-        let name = String::from_utf8(c_char_to_vec(name, name_len)).unwrap();
-        let call = kclvm_get_service_fn_ptr_by_name(&name);
+        let name = unsafe { std::ffi::CStr::from_ptr(name) }.to_str().unwrap();
+        let call = kclvm_get_service_fn_ptr_by_name(name);
         if call == 0 {
             panic!("null fn ptr");
         }

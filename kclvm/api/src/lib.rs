@@ -37,7 +37,7 @@ pub use crate::gpyrpc::*;
 use crate::service::capi::{kclvm_service_call_with_length, kclvm_service_new};
 use crate::service::service_impl::KclvmServiceImpl;
 use anyhow::Result;
-use std::ffi::c_char;
+use std::ffi::{c_char, CString};
 
 pub type API = KclvmServiceImpl;
 
@@ -56,12 +56,14 @@ pub fn call_with_plugin_agent<'a>(
     let mut result_len: usize = 0;
     let result_ptr = {
         let serv = kclvm_service_new(plugin_agent);
+        let args_len = args.len();
+        let name = unsafe { CString::from_vec_unchecked(name.to_vec()) };
+        let args = unsafe { CString::from_vec_unchecked(args.to_vec()) };
         kclvm_service_call_with_length(
             serv,
-            name.as_ptr() as *const c_char,
-            name.len(),
+            name.as_ptr(),
             args.as_ptr() as *const c_char,
-            name.len(),
+            args_len,
             &mut result_len,
         )
     };
