@@ -20,11 +20,13 @@ jobs:
 
       - name: Unit test
         working-directory: ./kclvm
-        run: rustup target add wasm32-wasi && make build-wasm
+        run: |
+          rustup target add wasm32-wasi && make build-wasm
+          mv kclvm/target/wasm32-wasi/release/kclvm_cli_cdylib.wasm kclvm/target/wasm32-wasi/release/kcl.wasm
         shell: bash
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: kcl-wasm
           if-no-files-found: error
-          path: kclvm/target/wasm32-wasi/release/kclvm_cli_cdylib.wasm
+          path: kclvm/target/wasm32-wasi/release/kcl.wasm
