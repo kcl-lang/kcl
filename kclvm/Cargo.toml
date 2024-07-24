@@ -63,4 +63,4 @@ members = [
 ]
 
 [features]
-llvm = ["kclvm-compiler/llvm", "kclvm-runner/llvm", "kclvm-tools/llvm"]
+llvm = ["kclvm-compiler/llvm", "kclvm-runner/llvm", "kclvm-tools/llvm", "kclvm-api/llvm"]
