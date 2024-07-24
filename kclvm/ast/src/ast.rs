@@ -816,6 +816,7 @@ impl Target {
 /// - `a.<member>`
 /// - `b[<index>]`
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(tag = "type", content = "value")]
 pub enum MemberOrIndex {
     Member(NodeRef<String>),
     Index(NodeRef<Expr>),
