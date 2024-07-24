@@ -22,7 +22,7 @@ jobs:
         working-directory: ./kclvm
         run: |
           rustup target add wasm32-wasi && make build-wasm
-          mv kclvm/target/wasm32-wasi/release/kclvm_cli_cdylib.wasm kclvm/target/wasm32-wasi/release/kcl.wasm
+          mv target/wasm32-wasi/release/kclvm_cli_cdylib.wasm target/wasm32-wasi/release/kcl.wasm
         shell: bash
 
       - uses: actions/upload-artifact@v4
