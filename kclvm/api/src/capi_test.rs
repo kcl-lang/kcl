@@ -1,5 +1,5 @@
-use crate::gpyrpc::*;
 use crate::service::capi::*;
+use crate::{call, gpyrpc::*};
 use once_cell::sync::Lazy;
 use prost::Message;
 use serde::de::DeserializeOwned;
@@ -279,7 +279,6 @@ where
     let src_ptr = kclvm_service_call_with_length(
         serv,
         call.as_ptr(),
-        svc_name.len(),
         args.as_ptr(),
         args_vec.len(),
         &mut result_len,
@@ -328,13 +327,7 @@ where
         let args_vec = serde_json::from_str::<A>(&input).unwrap().encode_to_vec();
         let args = unsafe { CString::from_vec_unchecked(args_vec.clone()) };
         let call = CString::new(svc_name).unwrap();
-        kclvm_service_call(
-            serv,
-            call.as_ptr(),
-            svc_name.len(),
-            args.as_ptr(),
-            args_vec.len(),
-        )
+        kclvm_service_call(serv, call.as_ptr(), args.as_ptr(), args_vec.len())
     });
     std::panic::set_hook(prev_hook);
     match result {
@@ -358,4 +351,24 @@ where
             panic!("unreachable code")
         }
     }
+}
+
+#[test]
+fn test_call_exec_program() {
+    let name = b"KclvmService.ExecProgram";
+    let args = b"\x12\x1a./src/testdata/test_call.k";
+    let result = call(name, args).unwrap();
+    assert!(
+        !result.starts_with(b"ERROR"),
+        "{}",
+        String::from_utf8(result).unwrap()
+    );
+}
+
+#[test]
+fn test_call_get_version() {
+    let name = b"KclvmService.GetVersion";
+    let args = b"";
+    let result = call(name, args).unwrap();
+    assert!(!result.starts_with(b"ERROR"))
 }
