@@ -262,14 +262,14 @@ mod tests {
     goto_def_test_snapshot!(
         goto_lambda_param_goto_def1,
         "src/test_data/goto_def_test/goto_lambda_param_goto_def/goto_lambda_param_goto_def.k",
-        2,
+        3,
         5
     );
 
     goto_def_test_snapshot!(
         goto_lambda_param_goto_def2,
         "src/test_data/goto_def_test/goto_lambda_param_goto_def/goto_lambda_param_goto_def.k",
-        2,
+        3,
         9
     );
 
@@ -461,5 +461,12 @@ mod tests {
         "src/test_data/goto_def_test/goto_unification_schema_attr_test/goto_unification_schema_attr_test.k",
         7,
         7
+    );
+
+    goto_def_test_snapshot!(
+        goto_duplicate_var_name_in_schema,
+        "src/test_data/goto_def_test/duplicate_var_name_test/duplicate_var_name.k",
+        8,
+        11
     );
 }

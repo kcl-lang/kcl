@@ -81,6 +81,8 @@ pub struct Context<'ctx> {
     // which means advanced resolver will will create the corresponding
     // ValueSymbol instead of an UnresolvedSymbol
     maybe_def: bool,
+    // whether lookup def in scope owner, default true, only in schema attr value is false
+    look_up_in_owner: bool,
 }
 
 impl<'ctx> Context<'ctx> {
@@ -111,6 +113,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 end_pos: Position::dummy_pos(),
                 cur_node: AstIndex::default(),
                 maybe_def: false,
+                look_up_in_owner: true,
             },
         };
         // Scan all scehma symbol

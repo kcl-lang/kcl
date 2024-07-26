@@ -1043,6 +1043,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
             cur_scope,
             self.get_current_module_info(),
             maybe_def,
+            self.ctx.look_up_in_owner,
         );
         if first_symbol.is_none() {
             // Maybe import package symbol
@@ -1250,6 +1251,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
             cur_scope,
             self.get_current_module_info(),
             true,
+            self.ctx.look_up_in_owner,
         );
         match first_symbol {
             Some(symbol_ref) => {
@@ -1785,7 +1787,9 @@ impl<'ctx> AdvancedResolver<'ctx> {
         for entry in entries.iter() {
             if let Some(key) = &entry.node.key {
                 self.ctx.maybe_def = true;
+                self.ctx.look_up_in_owner = true;
                 self.expr(key)?;
+                self.ctx.look_up_in_owner = false;
                 self.ctx.maybe_def = false;
             }
 
@@ -1797,8 +1801,9 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 end,
                 LocalSymbolScopeKind::Value,
             );
-
+            self.ctx.look_up_in_owner = false;
             self.expr(&entry.node.value)?;
+            self.ctx.look_up_in_owner = true;
             self.leave_scope();
         }
         self.leave_scope();
