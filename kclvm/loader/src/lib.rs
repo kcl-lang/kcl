@@ -274,6 +274,18 @@ fn collect_scope_info(
         } else {
             kind
         };
+        let get_def_from_owner = match scope_ref.get_kind() {
+            kclvm_sema::core::scope::ScopeKind::Local => {
+                match scope_data.try_get_local_scope(&scope_ref) {
+                    Some(local) => match local.get_kind() {
+                        LocalSymbolScopeKind::SchemaConfig | LocalSymbolScopeKind::Check => true,
+                        _ => false,
+                    },
+                    None => false,
+                }
+            }
+            kclvm_sema::core::scope::ScopeKind::Root => false,
+        };
         scopes.insert(
             *scope_ref,
             ScopeInfo {
@@ -282,12 +294,13 @@ fn collect_scope_info(
                 owner: scope.get_owner(),
                 children: scope.get_children(),
                 defs: scope
-                    .get_all_defs(scope_data, symbol_data, None, false)
+                    .get_all_defs(scope_data, symbol_data, None, false, get_def_from_owner)
                     .values()
                     .copied()
                     .collect::<Vec<_>>(),
             },
         );
+
         for s in scope.get_children() {
             collect_scope_info(scopes, &s, scope_data, symbol_data, ScopeKind::Module);
         }

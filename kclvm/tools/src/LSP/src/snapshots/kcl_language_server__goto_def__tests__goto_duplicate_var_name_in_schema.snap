@@ -1,0 +1,5 @@
+---
+source: tools/src/LSP/src/goto_def.rs
+expression: "format!(\"{:?}\", { fmt_resp(& res) })"
+---
+"path: \"src/test_data/goto_def_test/duplicate_var_name_test/duplicate_var_name.k\", range: Range { start: Position { line: 4, character: 0 }, end: Position { line: 4, character: 3 } }"

@@ -18,3 +18,7 @@ Config{
     names: [{  }]
     names1: {"a": {  }}
 } 
+
+n = Name{
+    name: 
+}

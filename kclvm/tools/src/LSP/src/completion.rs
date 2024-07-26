@@ -2056,4 +2056,12 @@ mod tests {
         14,
         Some('.')
     );
+
+    completion_label_test_snapshot!(
+        schema_attr_in_right,
+        "src/test_data/completion_test/schema/schema.k",
+        23,
+        11,
+        None
+    );
 }

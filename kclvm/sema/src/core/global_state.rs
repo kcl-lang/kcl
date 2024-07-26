@@ -86,6 +86,7 @@ impl GlobalState {
         scope_ref: ScopeRef,
         module_info: Option<&ModuleInfo>,
         local: bool,
+        get_def_from_owner: bool,
     ) -> Option<SymbolRef> {
         match self.scopes.get_scope(&scope_ref)?.look_up_def(
             name,
@@ -93,6 +94,7 @@ impl GlobalState {
             &self.symbols,
             module_info,
             local,
+            get_def_from_owner,
         ) {
             None => self
                 .symbols
@@ -179,15 +181,28 @@ impl GlobalState {
     ///
     /// result: [Option<Vec<SymbolRef>>]
     ///      all definition symbols in the scope
-    pub fn get_all_defs_in_scope(&self, scope: ScopeRef) -> Option<Vec<SymbolRef>> {
+    pub fn get_all_defs_in_scope(&self, scope_ref: ScopeRef) -> Option<Vec<SymbolRef>> {
         let scopes = &self.scopes;
-        let scope = scopes.get_scope(&scope)?;
+        let scope = scopes.get_scope(&scope_ref)?;
+        let get_def_from_owner = match scope_ref.kind {
+            ScopeKind::Local => match scopes.try_get_local_scope(&scope_ref) {
+                Some(local) => match local.kind {
+                    super::scope::LocalSymbolScopeKind::SchemaConfig
+                    | super::scope::LocalSymbolScopeKind::Check => true,
+                    _ => false,
+                },
+                None => true,
+            },
+            ScopeKind::Root => true,
+        };
+
         let all_defs: Vec<SymbolRef> = scope
             .get_all_defs(
                 scopes,
                 &self.symbols,
                 self.packages.get_module_info(scope.get_filename()),
                 false,
+                get_def_from_owner,
             )
             .values()
             .into_iter()
@@ -208,15 +223,28 @@ impl GlobalState {
     ///
     /// result: [Option<Vec<SymbolRef>>]
     ///      all definition symbols in the scope
-    pub fn get_defs_within_scope(&self, scope: ScopeRef) -> Option<Vec<SymbolRef>> {
+    pub fn get_defs_within_scope(&self, scope_ref: ScopeRef) -> Option<Vec<SymbolRef>> {
         let scopes = &self.scopes;
-        let scope = scopes.get_scope(&scope)?;
+        let get_def_from_owner = match scope_ref.kind {
+            ScopeKind::Local => match scopes.try_get_local_scope(&scope_ref) {
+                Some(local) => match local.kind {
+                    super::scope::LocalSymbolScopeKind::SchemaConfig
+                    | super::scope::LocalSymbolScopeKind::Check => true,
+                    _ => false,
+                },
+                None => false,
+            },
+            ScopeKind::Root => false,
+        };
+
+        let scope = scopes.get_scope(&scope_ref)?;
         let all_defs: Vec<SymbolRef> = scope
             .get_defs_within_scope(
                 scopes,
                 &self.symbols,
                 self.packages.get_module_info(scope.get_filename()),
                 false,
+                get_def_from_owner,
             )
             .values()
             .into_iter()

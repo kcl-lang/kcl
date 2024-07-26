@@ -81,6 +81,8 @@ pub struct Context<'ctx> {
     // which means advanced resolver will will create the corresponding
     // ValueSymbol instead of an UnresolvedSymbol
     maybe_def: bool,
+    // whether lookup def in scope owner, default true, only in schema attr value is false
+    look_up_in_owner: bool,
 }
 
 impl<'ctx> Context<'ctx> {
@@ -111,6 +113,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 end_pos: Position::dummy_pos(),
                 cur_node: AstIndex::default(),
                 maybe_def: false,
+                look_up_in_owner: true,
             },
         };
         // Scan all scehma symbol
@@ -1404,7 +1407,7 @@ mod tests {
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 17_u64,
                 26_u64,
-                10_usize,
+                5_usize,
             ),
             // __main__.Main schema expr scope
             (
@@ -1422,7 +1425,7 @@ mod tests {
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 30,
                 20,
-                10,
+                5,
             ),
             // pkg.Person schema expr scope
             (
@@ -1440,7 +1443,7 @@ mod tests {
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 34,
                 17,
-                6,
+                5,
             ),
             // __main__ package scope
             (
@@ -1458,7 +1461,7 @@ mod tests {
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 15,
                 11,
-                6,
+                4,
             ),
             // import_test.a.Name expr scope
             (
@@ -1476,7 +1479,7 @@ mod tests {
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 12,
                 21,
-                8,
+                4,
             ),
         ];
 
@@ -1489,7 +1492,6 @@ mod tests {
                     column: Some(*col),
                 })
                 .unwrap();
-
             let all_defs = gs.get_all_defs_in_scope(scope_ref).unwrap();
             assert_eq!(all_defs.len(), *def_num)
         }

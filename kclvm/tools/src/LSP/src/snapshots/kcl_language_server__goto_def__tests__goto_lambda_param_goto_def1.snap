@@ -2,4 +2,4 @@
 source: tools/src/LSP/src/goto_def.rs
 expression: "format!(\"{:?}\", { fmt_resp(& res) })"
 ---
-"path: \"src/test_data/goto_def_test/goto_lambda_param_goto_def/goto_lambda_param_goto_def.k\", range: Range { start: Position { line: 0, character: 14 }, end: Position { line: 0, character: 15 } }"
+"path: \"src/test_data/goto_def_test/goto_lambda_param_goto_def/goto_lambda_param_goto_def.k\", range: Range { start: Position { line: 1, character: 14 }, end: Position { line: 1, character: 15 } }"
