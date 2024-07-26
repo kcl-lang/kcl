@@ -549,7 +549,7 @@ impl<'ctx> Resolver<'ctx> {
             let val_ty = match key {
                 Some(key) => match &key.node {
                     ast::Expr::Identifier(identifier) => {
-                        let mut val_ty = value_ty.unwrap_or(self.expr(value));
+                        let mut val_ty = value_ty.unwrap_or_else(|| self.expr(value));
 
                         for _ in 0..identifier.names.len() - 1 {
                             val_ty = Type::dict_ref(self.str_ty(), val_ty.clone());
@@ -600,7 +600,7 @@ impl<'ctx> Resolver<'ctx> {
                     ast::Expr::Subscript(subscript)
                         if matches!(subscript.value.node, ast::Expr::Identifier(_)) =>
                     {
-                        let val_ty = value_ty.unwrap_or(self.expr(value));
+                        let val_ty = value_ty.unwrap_or_else(|| self.expr(value));
                         key_types.push(self.str_ty());
                         val_types.push(Type::list_ref(val_ty.clone()));
                         val_ty
@@ -610,7 +610,7 @@ impl<'ctx> Resolver<'ctx> {
                         self.ctx.config_expr_context.push(None);
                         let key_ty = self.expr(key);
                         self.ctx.config_expr_context.pop();
-                        let val_ty = value_ty.unwrap_or(self.expr(value));
+                        let val_ty = value_ty.unwrap_or_else(|| self.expr(value));
                         self.check_attr_ty(&key_ty, key.get_span_pos());
                         if let ast::Expr::StringLit(string_lit) = &key.node {
                             let ty = if let Some(attr) = attrs.get(&string_lit.value) {
@@ -643,7 +643,7 @@ impl<'ctx> Resolver<'ctx> {
                     }
                 },
                 None => {
-                    let val_ty = value_ty.unwrap_or(self.expr(value));
+                    let val_ty = value_ty.unwrap_or_else(|| self.expr(value));
                     match &val_ty.kind {
                         TypeKind::None | TypeKind::Any => {
                             val_types.push(val_ty.clone());
