@@ -43,7 +43,7 @@ tokio = { version = "1.37.0", features = ["full"] }
 criterion = "0.5"
 
 [build-dependencies]
-protoc-bin-vendored = { git = "https://github.com/andermatt64/rust-protoc-bin-vendored", version = "3.1.0" }
+protoc-bin-vendored = { git = "https://github.com/kcl-lang/rust-protoc-bin-vendored", version = "3.2.0" }
 prost-build = "0.11.8"
 prost-wkt-build = {path = "../third-party/prost-wkt/wkt-build", version = "0.4.1"}
 
