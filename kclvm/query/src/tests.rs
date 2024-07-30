@@ -114,12 +114,18 @@ fn test_override_file_config() {
         "appConfigurationUnification.overQuota=False".to_string(),
         "appConfigurationUnification.resource.cpu-".to_string(),
         "appConfigurationUnification.svc=s.Service {}".to_string(),
-        "config.x:1".to_string(),
+        "appConfigurationUnification:{name=\"name\"}".to_string(),
+        "config.x:{a:1}".to_string(),
+        "config.x:{b:2}".to_string(),
+        "config.x:{b:3}".to_string(),
+        "config.x:{c.d:4}".to_string(),
         "config.y=1".to_string(),
         "config.z+=[1,2,3]".to_string(),
+        "config.z+=[4,5,6]".to_string(),
         "var1:1".to_string(),
         "var2=1".to_string(),
         "var3+=[1,2,3]".to_string(),
+        "var3+=[4,5,6]".to_string(),
         "var4:AppConfiguration {image:'image'}".to_string(),
     ];
     let import_paths = vec!["service as s".to_string()];
@@ -187,11 +193,12 @@ appConfigurationUnification: AppConfiguration {
     mainContainer: Main {name: "override_name"}
     overQuota: False
     svc = s.Service {}
+    name = "name"
 }
-config = {x: 1, y = 1, z += [1, 2, 3]}
+config = {x: {a: 1, b: 3, c: {d: 4}}, y = 1, z += [1, 2, 3, 4, 5, 6]}
 var1 = 1
 var2 = 1
-var3 += [1, 2, 3]
+var3 += [1, 2, 3, 4, 5, 6]
 var4: AppConfiguration {image: 'image'}
 "#
     );

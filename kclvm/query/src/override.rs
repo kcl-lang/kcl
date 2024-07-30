@@ -4,7 +4,7 @@ use anyhow::{anyhow, Result};
 
 use compiler_base_macros::bug;
 use kclvm_ast::config::try_get_config_expr_mut;
-use kclvm_ast::path::get_key_path;
+use kclvm_ast::path::{get_key_parts, get_key_path};
 use kclvm_ast::walk_list_mut;
 use kclvm_ast::walker::MutSelfMutWalker;
 use kclvm_ast::MAIN_PKG;
@@ -297,6 +297,76 @@ fn apply_import_paths_on_module(m: &mut ast::Module, import_paths: &[String]) ->
     Ok(())
 }
 
+macro_rules! override_top_level_stmt {
+    ($self:expr, $stmt: expr) => {
+        let item = $stmt.value.clone();
+        let mut value = $self.clone_override_value();
+        // Use position information that needs to override the expression.
+        value.set_pos(item.pos());
+        match &$self.operation {
+            ast::ConfigEntryOperation::Union => {
+                if let ast::Expr::Config(merged_config_expr) = &value.node {
+                    match &mut $stmt.value.node {
+                        ast::Expr::Schema(schema_expr) => {
+                            if let ast::Expr::Config(config_expr) = &mut schema_expr.config.node {
+                                $self.has_override = merge_config_expr(
+                                    config_expr,
+                                    merged_config_expr,
+                                    &$self.action,
+                                );
+                            }
+                        }
+                        ast::Expr::Config(config_expr) => {
+                            $self.has_override =
+                                merge_config_expr(config_expr, merged_config_expr, &$self.action);
+                        }
+                        _ => {}
+                    }
+                } else if let ast::Expr::Schema(merged_schema_expr) = &value.node {
+                    if let ast::Expr::Schema(schema_expr) = &mut $stmt.value.node {
+                        if schema_expr.name.node.get_name()
+                            == merged_schema_expr.name.node.get_name()
+                        {
+                            if let (
+                                ast::Expr::Config(merged_config_expr),
+                                ast::Expr::Config(config_expr),
+                            ) = (
+                                &merged_schema_expr.config.node,
+                                &mut schema_expr.config.node,
+                            ) {
+                                $self.has_override = merge_config_expr(
+                                    config_expr,
+                                    merged_config_expr,
+                                    &$self.action,
+                                );
+                            }
+                        }
+                    }
+                } else {
+                    // Override the node value.
+                    $stmt.value = value;
+                    $self.has_override = true;
+                }
+            }
+            ast::ConfigEntryOperation::Insert => {
+                if let ast::Expr::List(insert_list_expr) = &value.node {
+                    if let ast::Expr::List(list_expr) = &mut $stmt.value.node {
+                        for value in &insert_list_expr.elts {
+                            list_expr.elts.push(value.clone());
+                        }
+                        $self.has_override = true;
+                    }
+                }
+            }
+            ast::ConfigEntryOperation::Override => {
+                // Override the node value.
+                $stmt.value = value;
+                $self.has_override = true;
+            }
+        }
+    };
+}
+
 /// OverrideTransformer is used to walk AST and transform it with the override values.
 struct OverrideTransformer {
     pub target_id: String,
@@ -326,18 +396,18 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                             let target = assign_stmt.targets.get(0).unwrap().node.clone();
                             let target = get_target_path(&target);
                             if target == self.target_id {
-                                let item = assign_stmt.value.clone();
-
-                                let mut value = self.clone_override_value();
-                                // Use position information that needs to override the expression.
-                                value.set_pos(item.pos());
-                                // Override the node value.
-                                assign_stmt.value = value;
-                                self.has_override = true;
+                                override_top_level_stmt!(self, assign_stmt);
                             }
                         }
-                    }
-                    if let ast::Stmt::Unification(unification_stmt) = &mut stmt.node {
+                    } else if let ast::Stmt::AugAssign(aug_assign_stmt) = &mut stmt.node {
+                        if self.field_paths.len() == 0 {
+                            let target = aug_assign_stmt.target.node.clone();
+                            let target = get_target_path(&target);
+                            if target == self.target_id {
+                                override_top_level_stmt!(self, aug_assign_stmt);
+                            }
+                        }
+                    } else if let ast::Stmt::Unification(unification_stmt) = &mut stmt.node {
                         let target = match unification_stmt.target.node.names.get(0) {
                             Some(name) => name,
                             None => bug!(
@@ -347,17 +417,63 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                         };
                         if target.node == self.target_id {
                             let item = unification_stmt.value.clone();
-
                             let mut value = self.clone_override_value();
                             // Use position information that needs to override the expression.
                             value.set_pos(item.pos());
-
-                            // Unification is only support to override the schema expression.
-                            if let ast::Expr::Schema(schema_expr) = value.node {
-                                if self.field_paths.len() == 0 {
-                                    self.has_override = true;
-                                    unification_stmt.value =
-                                        Box::new(ast::Node::dummy_node(schema_expr));
+                            let schema_expr = &mut unification_stmt.value.node;
+                            match &self.operation {
+                                ast::ConfigEntryOperation::Union => {
+                                    if let ast::Expr::Config(merged_config_expr) = &value.node {
+                                        if let ast::Expr::Config(config_expr) =
+                                            &mut schema_expr.config.node
+                                        {
+                                            self.has_override = merge_config_expr(
+                                                config_expr,
+                                                merged_config_expr,
+                                                &self.action,
+                                            );
+                                        }
+                                    } else if let ast::Expr::Schema(merged_schema_expr) =
+                                        &value.node
+                                    {
+                                        if schema_expr.name.node.get_name()
+                                            == merged_schema_expr.name.node.get_name()
+                                        {
+                                            if let (
+                                                ast::Expr::Config(merged_config_expr),
+                                                ast::Expr::Config(config_expr),
+                                            ) = (
+                                                &merged_schema_expr.config.node,
+                                                &mut schema_expr.config.node,
+                                            ) {
+                                                self.has_override = merge_config_expr(
+                                                    config_expr,
+                                                    merged_config_expr,
+                                                    &self.action,
+                                                );
+                                            }
+                                        }
+                                    } else {
+                                        // Unification is only support to override the schema expression.
+                                        if let ast::Expr::Schema(schema_expr) = value.node {
+                                            if self.field_paths.len() == 0 {
+                                                unification_stmt.value =
+                                                    Box::new(ast::Node::dummy_node(schema_expr));
+                                                self.has_override = true;
+                                            }
+                                        }
+                                    }
+                                }
+                                ast::ConfigEntryOperation::Insert
+                                | ast::ConfigEntryOperation::Override => {
+                                    // Unification is only support to override the schema expression.
+                                    if let ast::Expr::Schema(schema_expr) = value.node {
+                                        if self.field_paths.len() == 0 {
+                                            unification_stmt.value =
+                                                Box::new(ast::Node::dummy_node(schema_expr));
+                                            self.has_override = true;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -604,81 +720,203 @@ impl OverrideTransformer {
             .iter()
             .map(|s| s.as_str())
             .collect::<Vec<&str>>();
-        self.replace_config_with_path_parts(config_expr, &parts)
+        replace_config_with_path_parts(
+            config_expr,
+            &parts,
+            &self.action,
+            &self.operation,
+            &self.override_value,
+        )
     }
 
-    /// Replace AST config expr with one part of path. The implementation of this function
-    /// uses recursive matching to find the config entry need to be modified.
-    fn replace_config_with_path_parts(
-        &self,
-        config_expr: &mut ast::ConfigExpr,
-        parts: &[&str],
-    ) -> bool {
-        // Do not replace empty path parts and out of index parts on the config expression.
-        if parts.is_empty() {
-            return false;
+    /// Clone a override value
+    #[inline]
+    fn clone_override_value(&self) -> ast::NodeRef<ast::Expr> {
+        match &self.override_value {
+            Some(v) => v.clone(),
+            None => bug!("Override value is None"),
         }
-        // Always take the first part to match, because recursive search is required.
-        let part = parts[0];
-        let mut delete_index_set = HashSet::new();
-        let mut changed = false;
-        // Loop all entries in the config expression and replace, because there may be duplicate
-        // configuration items in config.
-        for (i, item) in config_expr.items.iter_mut().enumerate() {
-            // Compare each field of the config structure one by one.
-            // - `part` denotes the path entered by the user to be modified.
-            // - `get_path_key` returns the real config key name.
-            // For example, the real config node is `a: {b: c: {}}`. The path
-            // that needs to be modified is `a.b.c`, and its parts are ["a", "b", "c"].
-            if part == get_key_path(&item.node.key) {
-                // When the last part of the path is successfully recursively matched,
-                // it indicates that the original value that needs to be overwritten
-                // is successfully found, and the new value is used to overwrite it.
-                // - `parts.len() == 1` denotes the path matches exactly.
-                if parts.len() == 1 {
-                    match self.action {
-                        ast::OverrideAction::CreateOrUpdate => {
-                            let mut value = self.clone_override_value();
-                            // Use position information that needs to override the expression.
-                            value.set_pos(item.pos());
-                            // Override the node value.
-                            item.node.value = value;
-                            changed = true;
-                        }
-                        ast::OverrideAction::Delete => {
-                            // Store the config entry delete index into the delete index set.
-                            // Because we can't delete the entry directly in the loop
-                            delete_index_set.insert(i);
-                            changed = true;
-                        }
-                    }
-                }
-                // Replace value recursively using the path composed by subsequent parts.
-                //
-                // The reason for using recursion instead of looping for path matching
-                // is that rust cannot directly hold shared references to AST nodes
-                // (ast::NodeRef<T> is a Box<T>), so recursive search is performed
-                // directly on AST nodes.
-                else if let Some(config_expr) = try_get_config_expr_mut(&mut item.node.value.node)
-                {
-                    changed = self.replace_config_with_path_parts(config_expr, &parts[1..]);
-                }
+    }
+}
+
+fn merge_config_expr(
+    config_expr: &mut ast::ConfigExpr,
+    merged_config_expr: &ast::ConfigExpr,
+    action: &ast::OverrideAction,
+) -> bool {
+    let mut changed = false;
+    for item in &merged_config_expr.items {
+        let parts = get_key_parts(&item.node.key);
+        // Deal double star and config if expr
+        if parts.is_empty() {
+            config_expr.items.push(item.clone());
+            changed = true;
+        } else {
+            if replace_config_with_path_parts(
+                config_expr,
+                &parts,
+                action,
+                &item.node.operation,
+                &Some(item.node.value.clone()),
+            ) {
+                changed = true;
             }
         }
-        // Delete entries according delete index set.
-        if !delete_index_set.is_empty() {
-            let items: Vec<(usize, &ast::NodeRef<ast::ConfigEntry>)> = config_expr
-                .items
-                .iter()
-                .enumerate()
-                .filter(|(i, _)| !delete_index_set.contains(i))
-                .collect();
-            config_expr.items = items
-                .iter()
-                .map(|(_, item)| <&ast::NodeRef<ast::ConfigEntry>>::clone(item).clone())
-                .collect();
-        } else if let ast::OverrideAction::CreateOrUpdate = self.action {
-            if !changed {
+    }
+    changed
+}
+
+/// Replace AST config expr with one part of path. The implementation of this function
+/// uses recursive matching to find the config entry need to be modified.
+fn replace_config_with_path_parts(
+    config_expr: &mut ast::ConfigExpr,
+    parts: &[&str],
+    action: &ast::OverrideAction,
+    operation: &ast::ConfigEntryOperation,
+    value: &Option<ast::NodeRef<ast::Expr>>,
+) -> bool {
+    // Do not replace empty path parts and out of index parts on the config expression.
+    if parts.is_empty() {
+        return false;
+    }
+    // Always take the first part to match, because recursive search is required.
+    let part = parts[0];
+    let mut delete_index_set = HashSet::new();
+    let mut changed = false;
+    // Loop all entries in the config expression and replace, because there may be duplicate
+    // configuration items in config.
+    for (i, item) in config_expr.items.iter_mut().enumerate() {
+        // Compare each field of the config structure one by one.
+        // - `part` denotes the path entered by the user to be modified.
+        // - `get_path_key` returns the real config key name.
+        // For example, the real config node is `a: {b: c: {}}`. The path
+        // that needs to be modified is `a.b.c`, and its parts are ["a", "b", "c"].
+        if part == get_key_path(&item.node.key) {
+            // When the last part of the path is successfully recursively matched,
+            // it indicates that the original value that needs to be overwritten
+            // is successfully found, and the new value is used to overwrite it.
+            // - `parts.len() == 1` denotes the path matches exactly.
+            if parts.len() == 1 {
+                match action {
+                    ast::OverrideAction::CreateOrUpdate => {
+                        if let Some(value) = value {
+                            let mut value = value.clone();
+                            // Use position information that needs to override the expression.
+                            value.set_pos(item.pos());
+                            match operation {
+                                ast::ConfigEntryOperation::Union => {
+                                    if let ast::Expr::Config(merged_config_expr) = &value.node {
+                                        match &mut item.node.value.node {
+                                            ast::Expr::Schema(schema_expr) => {
+                                                if let ast::Expr::Config(config_expr) =
+                                                    &mut schema_expr.config.node
+                                                {
+                                                    changed = merge_config_expr(
+                                                        config_expr,
+                                                        merged_config_expr,
+                                                        action,
+                                                    );
+                                                }
+                                            }
+                                            ast::Expr::Config(config_expr) => {
+                                                changed = merge_config_expr(
+                                                    config_expr,
+                                                    merged_config_expr,
+                                                    action,
+                                                );
+                                            }
+                                            _ => {}
+                                        }
+                                    } else if let ast::Expr::Schema(merged_schema_expr) =
+                                        &value.node
+                                    {
+                                        if let ast::Expr::Schema(schema_expr) =
+                                            &mut item.node.value.node
+                                        {
+                                            if schema_expr.name.node.get_name()
+                                                == merged_schema_expr.name.node.get_name()
+                                            {
+                                                if let (
+                                                    ast::Expr::Config(merged_config_expr),
+                                                    ast::Expr::Config(config_expr),
+                                                ) = (
+                                                    &merged_schema_expr.config.node,
+                                                    &mut schema_expr.config.node,
+                                                ) {
+                                                    changed = merge_config_expr(
+                                                        config_expr,
+                                                        merged_config_expr,
+                                                        action,
+                                                    );
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        // Override the node value.
+                                        item.node.value = value;
+                                        changed = true;
+                                    }
+                                }
+                                ast::ConfigEntryOperation::Insert => {
+                                    if let ast::Expr::List(insert_list_expr) = &value.node {
+                                        if let ast::Expr::List(list_expr) =
+                                            &mut item.node.value.node
+                                        {
+                                            for value in &insert_list_expr.elts {
+                                                list_expr.elts.push(value.clone());
+                                            }
+                                            changed = true;
+                                        }
+                                    }
+                                }
+                                ast::ConfigEntryOperation::Override => {
+                                    // Override the node value.
+                                    item.node.value = value;
+                                    changed = true;
+                                }
+                            }
+                        }
+                    }
+                    ast::OverrideAction::Delete => {
+                        // Store the config entry delete index into the delete index set.
+                        // Because we can't delete the entry directly in the loop
+                        delete_index_set.insert(i);
+                        changed = true;
+                    }
+                }
+            }
+            // Replace value recursively using the path composed by subsequent parts.
+            //
+            // The reason for using recursion instead of looping for path matching
+            // is that rust cannot directly hold shared references to AST nodes
+            // (ast::NodeRef<T> is a Box<T>), so recursive search is performed
+            // directly on AST nodes.
+            else if let Some(config_expr) = try_get_config_expr_mut(&mut item.node.value.node) {
+                changed = replace_config_with_path_parts(
+                    config_expr,
+                    &parts[1..],
+                    action,
+                    operation,
+                    value,
+                );
+            }
+        }
+    }
+    // Delete entries according delete index set.
+    if !delete_index_set.is_empty() {
+        let items: Vec<(usize, &ast::NodeRef<ast::ConfigEntry>)> = config_expr
+            .items
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| !delete_index_set.contains(i))
+            .collect();
+        config_expr.items = items
+            .iter()
+            .map(|(_, item)| <&ast::NodeRef<ast::ConfigEntry>>::clone(item).clone())
+            .collect();
+    } else if let ast::OverrideAction::CreateOrUpdate = action {
+        if !changed {
+            if let Some(value) = value {
                 let key = ast::Identifier {
                     names: parts
                         .iter()
@@ -691,21 +929,12 @@ impl OverrideTransformer {
                     .items
                     .push(Box::new(ast::Node::dummy_node(ast::ConfigEntry {
                         key: Some(Box::new(ast::Node::dummy_node(ast::Expr::Identifier(key)))),
-                        value: self.clone_override_value(),
-                        operation: self.operation.clone(),
+                        value: value.clone(),
+                        operation: operation.clone(),
                     })));
                 changed = true;
             }
         }
-        return changed;
     }
-
-    /// Clone a override value
-    #[inline]
-    fn clone_override_value(&self) -> ast::NodeRef<ast::Expr> {
-        match &self.override_value {
-            Some(v) => v.clone(),
-            None => bug!("Override value is None"),
-        }
-    }
+    return changed;
 }

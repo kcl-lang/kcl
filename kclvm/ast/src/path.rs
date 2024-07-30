@@ -34,6 +34,22 @@ pub fn get_key_path(key: &Option<ast::NodeRef<ast::Expr>>) -> String {
     }
 }
 
+/// Get config key parts from the AST key node and convert string-based AST nodes including
+/// `ast::Expr::Identifier` and `ast::Expr::StringLit` to strings.
+#[inline]
+pub fn get_key_parts(key: &Option<ast::NodeRef<ast::Expr>>) -> Vec<&str> {
+    match key {
+        Some(key) => match &key.node {
+            ast::Expr::Identifier(identifier) => {
+                identifier.names.iter().map(|v| v.node.as_str()).collect()
+            }
+            ast::Expr::StringLit(string_lit) => vec![string_lit.value.as_str()],
+            _ => vec![],
+        },
+        None => vec![],
+    }
+}
+
 /// Get assign target path from the AST key node and convert string-based AST nodes including
 /// `ast::Expr::Identifier` and `ast::Expr::StringLit` to strings.
 ///
