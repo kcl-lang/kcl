@@ -140,6 +140,7 @@ pub enum ApiFunc {
     kclvm_file_abs,
     kclvm_file_append,
     kclvm_file_cp,
+    kclvm_file_current,
     kclvm_file_delete,
     kclvm_file_exists,
     kclvm_file_glob,

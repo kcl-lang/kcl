@@ -1610,6 +1610,14 @@ register_file_member! {
         false,
         None,
     )
+    current => Type::function(
+        None,
+        Type::str_ref(),
+        &[],
+        r#"Read the path of the current script or module that is being executed"#,
+        false,
+        None,
+    )
     exists => Type::function(
         None,
         Type::bool_ref(),
