@@ -1218,6 +1218,10 @@
 // api-spec(c):    kclvm_value_ref_t* kclvm_file_workdir(kclvm_context_t* ctx, kclvm_value_ref_t* _args, kclvm_value_ref_t* _kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_file_workdir(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
 
+// api-spec:       kclvm_file_current
+// api-spec(c):    kclvm_value_ref_t* kclvm_file_current(kclvm_context_t* ctx, kclvm_value_ref_t* _args, kclvm_value_ref_t* _kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_file_current(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
+
 // api-spec:       kclvm_file_exists
 // api-spec(c):    kclvm_value_ref_t* kclvm_file_exists(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_file_exists(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);

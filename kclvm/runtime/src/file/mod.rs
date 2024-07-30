@@ -78,6 +78,19 @@ pub extern "C" fn kclvm_file_workdir(
     s.into_raw(ctx)
 }
 
+/// Read the path of the current script or module that is being executed
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_file_current(
+    ctx: *mut kclvm_context_t,
+    _args: *const kclvm_value_ref_t,
+    _kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let ctx = mut_ptr_as_ref(ctx);
+    let s = ValueRef::str(ctx.panic_info.kcl_file.as_ref());
+    s.into_raw(ctx)
+}
+
 /// Whether this file path exists. Returns true if the path points at
 /// an existing entity. This function will traverse symbolic links to
 /// query information about the destination file.

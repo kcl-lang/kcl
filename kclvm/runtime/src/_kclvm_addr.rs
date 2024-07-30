@@ -145,6 +145,7 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_file_abs" => crate::kclvm_file_abs as *const () as u64,
         "kclvm_file_append" => crate::kclvm_file_append as *const () as u64,
         "kclvm_file_cp" => crate::kclvm_file_cp as *const () as u64,
+        "kclvm_file_current" => crate::kclvm_file_current as *const () as u64,
         "kclvm_file_delete" => crate::kclvm_file_delete as *const () as u64,
         "kclvm_file_exists" => crate::kclvm_file_exists as *const () as u64,
         "kclvm_file_glob" => crate::kclvm_file_glob as *const () as u64,
