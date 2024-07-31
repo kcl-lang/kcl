@@ -30,7 +30,10 @@ jobs:
           docker run --rm \
             -v ${{ github.workspace }}:/workspace -w /workspace \
             kcllang/kcl-builder:centos7 \
-            /bin/bash -c "source ~/.bash_profile && export PATH=$PATH:/opt/build/bin/ && sed -i 's/llvm12/llvm7/g' kclvm/compiler/Cargo.toml && make && make release"
+            /bin/bash -c "yum install -y epel-release curl-devel expat-devel gettext-devel openssl-devel perl-devel zlib-devel asciidoc xmlto docbook2X gcc && rpm --import https://opensource.wandisco.com/RPM-GPG-KEY-WANdisco && wget https://opensource.wandisco.com/centos/7/git/x86_64/wandisco-git-release-7-2.noarch.rpm && rpm -i wandisco-git-release-7-2.noarch.rpm && yum install git -y && source ~/.bash_profile && export PATH=$PATH:/opt/build/bin/ && sed -i 's/llvm12/llvm7/g' kclvm/compiler/Cargo.toml && git config --global --add safe.directory /workspace && git config --global user.name 'GitHub Action' && git config --global user.email 'action@github.com' && git add . && git commit -m 'chore: bump llvm version to 7.0' && make && make release"
+
+      - name: Show Artifact Version
+        run: _build/dist/centos/kclvm/bin/kclvm_cli version
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
