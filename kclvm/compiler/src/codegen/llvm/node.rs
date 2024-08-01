@@ -2179,9 +2179,21 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             }
         }
         self.walk_arguments(&lambda_expr.args, args, kwargs);
-        let val = self
+        let mut val = self
             .walk_stmts(&lambda_expr.body)
             .expect(kcl_error::COMPILE_ERROR_MSG);
+        if let Some(ty) = &lambda_expr.return_ty {
+            let type_annotation = self.native_global_string_value(&ty.node.to_string());
+            val = self.build_call(
+                &ApiFunc::kclvm_convert_collection_value.name(),
+                &[
+                    self.current_runtime_ctx_ptr(),
+                    val,
+                    type_annotation,
+                    self.bool_value(false),
+                ],
+            );
+        }
         self.builder.build_return(Some(&val));
         // Exist the function
         self.builder.position_at_end(func_before_block);
@@ -2731,23 +2743,39 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         kwargs: BasicValueEnum<'ctx>,
     ) {
         // Arguments names and defaults
-        let (arg_names, arg_defaults) = if let Some(args) = &arguments {
+        let (arg_names, arg_types, arg_defaults) = if let Some(args) = &arguments {
             let names = &args.node.args;
+            let types = &args.node.ty_list;
             let defaults = &args.node.defaults;
             (
                 names.iter().map(|identifier| &identifier.node).collect(),
+                types.iter().collect(),
                 defaults.iter().collect(),
             )
         } else {
-            (vec![], vec![])
+            (vec![], vec![], vec![])
         };
         // Default parameter values
-        for (arg_name, value) in arg_names.iter().zip(arg_defaults.iter()) {
-            let arg_value = if let Some(value) = value {
+        for ((arg_name, arg_type), value) in
+            arg_names.iter().zip(&arg_types).zip(arg_defaults.iter())
+        {
+            let mut arg_value = if let Some(value) = value {
                 self.walk_expr(value).expect(kcl_error::COMPILE_ERROR_MSG)
             } else {
                 self.none_value()
             };
+            if let Some(ty) = arg_type {
+                let type_annotation = self.native_global_string_value(&ty.node.to_string());
+                arg_value = self.build_call(
+                    &ApiFunc::kclvm_convert_collection_value.name(),
+                    &[
+                        self.current_runtime_ctx_ptr(),
+                        arg_value,
+                        type_annotation,
+                        self.bool_value(false),
+                    ],
+                );
+            }
             // Arguments are immutable, so we place them in different scopes.
             self.store_argument_in_current_scope(&arg_name.get_name());
             self.walk_identifier_with_ctx(arg_name, &ast::ExprContext::Store, Some(arg_value))
@@ -2756,7 +2784,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         // for loop in 0..argument_len in LLVM begin
         let argument_len = self.build_call(&ApiFunc::kclvm_list_len.name(), &[args]);
         let end_block = self.append_block("");
-        for (i, arg_name) in arg_names.iter().enumerate() {
+        for (i, (arg_name, arg_type)) in arg_names.iter().zip(arg_types).enumerate() {
             // Positional arguments
             let is_in_range = self.builder.build_int_compare(
                 IntPredicate::ULT,
@@ -2768,7 +2796,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             self.builder
                 .build_conditional_branch(is_in_range, next_block, end_block);
             self.builder.position_at_end(next_block);
-            let arg_value = self.build_call(
+            let mut arg_value = self.build_call(
                 &ApiFunc::kclvm_list_get_option.name(),
                 &[
                     self.current_runtime_ctx_ptr(),
@@ -2776,6 +2804,18 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
                     self.native_int_value(i as i32),
                 ],
             );
+            if let Some(ty) = arg_type {
+                let type_annotation = self.native_global_string_value(&ty.node.to_string());
+                arg_value = self.build_call(
+                    &ApiFunc::kclvm_convert_collection_value.name(),
+                    &[
+                        self.current_runtime_ctx_ptr(),
+                        arg_value,
+                        type_annotation,
+                        self.bool_value(false),
+                    ],
+                );
+            }
             self.store_variable(&arg_name.names[0].node, arg_value);
         }
         // for loop in 0..argument_len in LLVM end

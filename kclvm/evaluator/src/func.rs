@@ -8,6 +8,7 @@ use kclvm_runtime::ValueRef;
 use scopeguard::defer;
 
 use crate::proxy::Proxy;
+use crate::ty::type_pack_and_check;
 use crate::Evaluator;
 use crate::{error as kcl_error, EvalContext};
 
@@ -125,8 +126,11 @@ pub fn func_body(
     }
     // Evaluate arguments and keyword arguments and store values to local variables.
     s.walk_arguments(&ctx.node.args, args, kwargs);
-    let result = s
+    let mut result = s
         .walk_stmts(&ctx.node.body)
         .expect(kcl_error::RUNTIME_ERROR_MSG);
+    if let Some(ty) = &ctx.node.return_ty {
+        result = type_pack_and_check(s, &result, vec![&ty.node.to_string()], false);
+    }
     result
 }

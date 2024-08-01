@@ -413,6 +413,8 @@ pub fn check_type(value: &ValueRef, tpe: &str, strict: bool) -> bool {
         // if value type is a built-in type e.g. str, int, float, bool
         if match_builtin_type(value, tpe) {
             return true;
+        } else if match_function_type(value, tpe) {
+            return true;
         }
         if value.is_schema() {
             if strict {
@@ -530,6 +532,16 @@ pub fn check_type_list(value: &ValueRef, tpe: &str) -> bool {
 #[inline]
 pub fn match_builtin_type(value: &ValueRef, tpe: &str) -> bool {
     value.type_str() == *tpe || (value.type_str() == BUILTIN_TYPE_INT && tpe == BUILTIN_TYPE_FLOAT)
+}
+
+/// match_function_type returns the value wether match the given the function type string
+#[inline]
+pub fn match_function_type(value: &ValueRef, tpe: &str) -> bool {
+    value.type_str() == *tpe
+        || (value.type_str() == KCL_TYPE_FUNCTION
+            && tpe.contains("(")
+            && tpe.contains(")")
+            && tpe.contains("->"))
 }
 
 /// is_literal_type returns the type string whether is a literal type
