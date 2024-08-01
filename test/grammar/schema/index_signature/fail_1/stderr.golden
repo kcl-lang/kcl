@@ -10,4 +10,3 @@ error[E2G22]: TypeError
 6 |     name: "test"
   |     ^ expected int, got str(test)
   |
-variable is defined here, its type is int, but got str(test)

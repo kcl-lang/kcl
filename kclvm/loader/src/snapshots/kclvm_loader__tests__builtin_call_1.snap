@@ -61,6 +61,18 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: STR,
                             },
                             has_default: false,
+                            range: (
+                                Position {
+                                    filename: "",
+                                    line: 1,
+                                    column: None,
+                                },
+                                Position {
+                                    filename: "",
+                                    line: 1,
+                                    column: None,
+                                },
+                            ),
                         },
                         Parameter {
                             name: "type",
@@ -70,6 +82,18 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: STR,
                             },
                             has_default: true,
+                            range: (
+                                Position {
+                                    filename: "",
+                                    line: 1,
+                                    column: None,
+                                },
+                                Position {
+                                    filename: "",
+                                    line: 1,
+                                    column: None,
+                                },
+                            ),
                         },
                         Parameter {
                             name: "required",
@@ -79,6 +103,18 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: BOOL,
                             },
                             has_default: true,
+                            range: (
+                                Position {
+                                    filename: "",
+                                    line: 1,
+                                    column: None,
+                                },
+                                Position {
+                                    filename: "",
+                                    line: 1,
+                                    column: None,
+                                },
+                            ),
                         },
                         Parameter {
                             name: "default",
@@ -88,6 +124,18 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: ANY,
                             },
                             has_default: true,
+                            range: (
+                                Position {
+                                    filename: "",
+                                    line: 1,
+                                    column: None,
+                                },
+                                Position {
+                                    filename: "",
+                                    line: 1,
+                                    column: None,
+                                },
+                            ),
                         },
                         Parameter {
                             name: "help",
@@ -97,6 +145,18 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: STR,
                             },
                             has_default: true,
+                            range: (
+                                Position {
+                                    filename: "",
+                                    line: 1,
+                                    column: None,
+                                },
+                                Position {
+                                    filename: "",
+                                    line: 1,
+                                    column: None,
+                                },
+                            ),
                         },
                     ],
                     self_ty: None,

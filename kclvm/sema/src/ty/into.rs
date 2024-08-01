@@ -1,4 +1,5 @@
 use super::*;
+use kclvm_ast::pos::GetPos;
 
 impl Type {
     /// Downcast ty into the list type.
@@ -185,6 +186,7 @@ impl From<ast::Type> for Type {
                                 name: "".to_string(),
                                 ty: Arc::new(ty.node.clone().into()),
                                 has_default: false,
+                                range: ty.get_span_pos(),
                             })
                             .collect::<Vec<Parameter>>()
                     })

@@ -753,6 +753,7 @@ impl<'ctx> Resolver<'ctx> {
                     name,
                     ty: ty.clone(),
                     has_default: args.node.defaults.get(i).map_or(false, |arg| arg.is_some()),
+                    range: args.node.args[i].get_span_pos(),
                 });
             }
         }
@@ -864,6 +865,7 @@ impl<'ctx> Resolver<'ctx> {
                     name,
                     ty: ty.clone(),
                     has_default: args.node.defaults.get(i).is_some(),
+                    range: args.node.args[i].get_span_pos(),
                 });
             }
         }

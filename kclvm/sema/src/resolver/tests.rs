@@ -21,7 +21,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 pub fn parse_program(filename: &str) -> Result<ast::Program> {
-    let abspath = std::fs::canonicalize(std::path::PathBuf::from(filename)).unwrap();
+    let abspath = std::fs::canonicalize(std::path::PathBuf::from(filename)).expect(filename);
 
     let mut prog = ast::Program {
         root: abspath.parent().unwrap().adjust_canonicalization(),
@@ -154,6 +154,10 @@ fn test_resolve_program_fail() {
         "comp_clause_error_4.k",
         "config_expr.k",
         "invalid_mixin_0.k",
+        "lambda_schema_ty_0.k",
+        "lambda_schema_ty_1.k",
+        "lambda_schema_ty_2.k",
+        "lambda_schema_ty_3.k",
         "module_optional_select.k",
         "mutable_error_0.k",
         "mutable_error_1.k",

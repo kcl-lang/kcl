@@ -388,6 +388,18 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: UNION,
                             },
                             has_default: false,
+                            range: (
+                                Position {
+                                    filename: "",
+                                    line: 1,
+                                    column: None,
+                                },
+                                Position {
+                                    filename: "",
+                                    line: 1,
+                                    column: None,
+                                },
+                            ),
                         },
                         Parameter {
                             name: "e",
@@ -397,6 +409,18 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: FLOAT,
                             },
                             has_default: true,
+                            range: (
+                                Position {
+                                    filename: "",
+                                    line: 1,
+                                    column: None,
+                                },
+                                Position {
+                                    filename: "",
+                                    line: 1,
+                                    column: None,
+                                },
+                            ),
                         },
                     ],
                     self_ty: None,
