@@ -184,12 +184,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     target.get_span_pos(),
                     None,
                 );
-
-                let upgrade_schema_type = self.upgrade_dict_to_schema(
-                    value_ty.clone(),
-                    expected_ty.clone(),
-                    &assign_stmt.value.get_span_pos(),
-                );
+                let upgrade_schema_type =
+                    self.upgrade_dict_to_schema(value_ty.clone(), expected_ty.clone());
                 self.node_ty_map.borrow_mut().insert(
                     self.get_node_key(assign_stmt.value.id.clone()),
                     upgrade_schema_type.clone(),
@@ -222,12 +218,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     target.get_span_pos(),
                     None,
                 );
-
-                let upgrade_schema_type = self.upgrade_dict_to_schema(
-                    value_ty.clone(),
-                    expected_ty.clone(),
-                    &assign_stmt.value.get_span_pos(),
-                );
+                let upgrade_schema_type =
+                    self.upgrade_dict_to_schema(value_ty.clone(), expected_ty.clone());
                 self.node_ty_map.borrow_mut().insert(
                     self.get_node_key(assign_stmt.value.id.clone()),
                     upgrade_schema_type.clone(),
@@ -992,6 +984,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     name,
                     ty: ty.clone(),
                     has_default: value.is_some(),
+                    range: args.node.args[i].get_span_pos(),
                 });
                 self.expr_or_any_type(value);
             }
@@ -1031,27 +1024,41 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 );
             }
         }
-        let real_ret_ty = self.stmts(&lambda_expr.body);
-        self.leave_scope();
-        self.ctx.in_lambda_expr.pop();
-        self.must_assignable_to(real_ret_ty.clone(), ret_ty.clone(), (start, end), None);
-
-        // upgrade return value type to schema if return type is schema
-        if let Some(stmt) = lambda_expr.body.last() {
+        // Walk lambda body statements except the last statement.
+        if lambda_expr.body.len() > 1 {
+            self.stmts(&lambda_expr.body[..lambda_expr.body.len() - 1]);
+        }
+        // Upgrade return value type to schema if return type is schema
+        let real_ret_ty = if let Some(stmt) = lambda_expr.body.last() {
             if let ast::Stmt::Expr(expr_stmt) = &stmt.node {
                 if let Some(expr) = expr_stmt.exprs.last() {
-                    let upgrade_schema_type = self.upgrade_dict_to_schema(
+                    self.upgrade_type_for_expr(
+                        ret_ty.clone(),
+                        expr,
+                        expr.get_span_pos(),
+                        lambda_expr.return_ty.as_ref().map(|ty| ty.get_span_pos()),
+                    )
+                } else {
+                    let real_ret_ty = self.stmt(stmt);
+                    self.must_assignable_to(
                         real_ret_ty.clone(),
                         ret_ty.clone(),
-                        &stmt.get_span_pos(),
+                        (start, end),
+                        None,
                     );
-                    self.node_ty_map.borrow_mut().insert(
-                        self.get_node_key(expr.id.clone()),
-                        upgrade_schema_type.clone(),
-                    );
+                    real_ret_ty
                 }
+            } else {
+                let real_ret_ty = self.stmt(stmt);
+                self.must_assignable_to(real_ret_ty.clone(), ret_ty.clone(), (start, end), None);
+                real_ret_ty
             }
-        }
+        } else {
+            self.any_ty()
+        };
+        // Leave the lambda scope.
+        self.leave_scope();
+        self.ctx.in_lambda_expr.pop();
 
         if !real_ret_ty.is_any() && ret_ty.is_any() && lambda_expr.return_ty.is_none() {
             ret_ty = real_ret_ty;
@@ -1245,8 +1252,7 @@ impl<'ctx> Resolver<'ctx> {
         let ty = self.walk_expr(&expr.node);
 
         if let Some(expected_ty) = expected_ty {
-            let upgrade_ty =
-                self.upgrade_dict_to_schema(ty.clone(), expected_ty, &expr.get_span_pos());
+            let upgrade_ty = self.upgrade_dict_to_schema(ty.clone(), expected_ty);
             self.node_ty_map
                 .borrow_mut()
                 .insert(self.get_node_key(expr.id.clone()), upgrade_ty);

@@ -4,9 +4,22 @@ error[E2G22]: TypeError
 6 | x1 = typeFunc("1", "Golang")
   |               ^ expected int, got str(1)
   |
+
+ --> ${CWD}/main.k:1:19
+  |
+1 | typeFunc = lambda age_: int, name_: "KCL"|"CUE" {
+  |                   ^ variable is defined here, its type is int, but got str(1)
+  |
+
 error[E2G22]: TypeError
  --> ${CWD}/main.k:6:20
   |
 6 | x1 = typeFunc("1", "Golang")
   |                    ^ expected str(KCL) | str(CUE), got str(Golang)
+  |
+
+ --> ${CWD}/main.k:1:30
+  |
+1 | typeFunc = lambda age_: int, name_: "KCL"|"CUE" {
+  |                              ^ variable is defined here, its type is str(KCL) | str(CUE), but got str(Golang)
   |

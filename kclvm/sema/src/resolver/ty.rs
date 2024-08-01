@@ -104,7 +104,7 @@ impl<'ctx> Resolver<'ctx> {
         ty: TypeRef,
         expected_ty: TypeRef,
         range: Range,
-        expected_pos: Option<Range>,
+        def_range: Option<Range>,
     ) {
         if !self.check_type(ty.clone(), expected_ty.clone(), &range) {
             let mut msgs = vec![Message {
@@ -115,42 +115,41 @@ impl<'ctx> Resolver<'ctx> {
                 suggested_replacement: None,
             }];
 
-            if let Some(expected_pos) = expected_pos {
-                msgs.push(Message {
-                    range: expected_pos,
-                    style: Style::LineAndColumn,
-                    message: format!(
-                        "variable is defined here, its type is {}, but got {}",
-                        expected_ty.ty_str(),
-                        ty.ty_str(),
-                    ),
-                    note: None,
-                    suggested_replacement: None,
-                });
+            if let Some(def_range) = def_range {
+                // If the range is not a dummy range, append the definition error message
+                // in the diagnostic.
+                if !def_range.0.filename.is_empty() && !def_range.1.filename.is_empty() {
+                    msgs.push(Message {
+                        range: def_range,
+                        style: Style::LineAndColumn,
+                        message: format!(
+                            "variable is defined here, its type is {}, but got {}",
+                            expected_ty.ty_str(),
+                            ty.ty_str(),
+                        ),
+                        note: None,
+                        suggested_replacement: None,
+                    });
+                }
             }
             self.handler.add_error(ErrorKind::TypeError, &msgs);
         }
     }
 
     // Upgrade the dict type into schema type if it is expected to schema
-    pub fn upgrade_dict_to_schema(
-        &mut self,
-        ty: TypeRef,
-        expected_ty: TypeRef,
-        range: &Range,
-    ) -> TypeRef {
+    pub(crate) fn upgrade_dict_to_schema(&mut self, ty: TypeRef, expected_ty: TypeRef) -> TypeRef {
         match (&ty.kind, &expected_ty.kind) {
-            (TypeKind::Dict(DictType { key_ty, .. }), TypeKind::Schema(schema_ty)) => {
-                if self.upgrade_dict_to_schema_attr_check(key_ty.clone(), schema_ty) {
+            (TypeKind::Dict(dict_ty), TypeKind::Schema(schema_ty)) => {
+                if self.upgrade_dict_to_schema_attr_check(dict_ty, schema_ty) {
                     expected_ty
                 } else {
                     ty
                 }
             }
-            (TypeKind::List(item_ty), TypeKind::List(expected_item_ty)) => Type::list(
-                self.upgrade_dict_to_schema(item_ty.clone(), expected_item_ty.clone(), range),
-            )
-            .into(),
+            (TypeKind::List(item_ty), TypeKind::List(expected_item_ty)) => {
+                Type::list(self.upgrade_dict_to_schema(item_ty.clone(), expected_item_ty.clone()))
+                    .into()
+            }
             (
                 TypeKind::Dict(DictType { key_ty, val_ty, .. }),
                 TypeKind::Dict(DictType {
@@ -159,11 +158,11 @@ impl<'ctx> Resolver<'ctx> {
                     ..
                 }),
             ) => Type::dict(
-                self.upgrade_dict_to_schema(key_ty.clone(), expected_key_ty.clone(), range),
-                self.upgrade_dict_to_schema(val_ty.clone(), expected_val_ty.clone(), range),
+                self.upgrade_dict_to_schema(key_ty.clone(), expected_key_ty.clone()),
+                self.upgrade_dict_to_schema(val_ty.clone(), expected_val_ty.clone()),
             )
             .into(),
-            (TypeKind::Dict(DictType { key_ty, .. }), TypeKind::Union(expected_union_type)) => {
+            (TypeKind::Dict(dict_ty), TypeKind::Union(expected_union_type)) => {
                 let types: Vec<Arc<Type>> = expected_union_type
                     .iter()
                     .filter(|ty| match ty.kind {
@@ -171,10 +170,7 @@ impl<'ctx> Resolver<'ctx> {
                         _ => false,
                     })
                     .filter(|ty| {
-                        self.upgrade_dict_to_schema_attr_check(
-                            key_ty.clone(),
-                            &ty.into_schema_type(),
-                        )
+                        self.upgrade_dict_to_schema_attr_check(dict_ty, &ty.into_schema_type())
                     })
                     .map(|ty| ty.clone())
                     .collect();
@@ -248,6 +244,7 @@ impl<'ctx> Resolver<'ctx> {
     /// The check type main function, returns a boolean result.
     #[inline]
     pub fn check_type(&mut self, ty: TypeRef, expected_ty: TypeRef, range: &Range) -> bool {
+        // Check assignable between types.
         match (&ty.kind, &expected_ty.kind) {
             (TypeKind::List(item_ty), TypeKind::List(expected_item_ty)) => {
                 self.check_type(item_ty.clone(), expected_item_ty.clone(), range)
@@ -263,8 +260,8 @@ impl<'ctx> Resolver<'ctx> {
                 self.check_type(key_ty.clone(), expected_key_ty.clone(), range)
                     && self.check_type(val_ty.clone(), expected_val_ty.clone(), range)
             }
-            (TypeKind::Dict(DictType { key_ty, val_ty, .. }), TypeKind::Schema(schema_ty)) => {
-                self.dict_assignable_to_schema(key_ty.clone(), val_ty.clone(), schema_ty, range)
+            (TypeKind::Dict(dict_ty), TypeKind::Schema(schema_ty)) => {
+                self.dict_assignable_to_schema(dict_ty, schema_ty, range)
             }
             (TypeKind::Union(types), _) => types
                 .iter()
@@ -278,13 +275,13 @@ impl<'ctx> Resolver<'ctx> {
 
     /// Judge a dict can be converted to schema in compile time
     /// Do relaxed schema check key and value type check.
-    pub fn dict_assignable_to_schema(
+    pub(crate) fn dict_assignable_to_schema(
         &mut self,
-        key_ty: TypeRef,
-        val_ty: TypeRef,
+        dict_ty: &DictType,
         schema_ty: &SchemaType,
         range: &Range,
     ) -> bool {
+        let (key_ty, val_ty) = (dict_ty.key_ty.clone(), dict_ty.val_ty.clone());
         if let Some(index_signature) = &schema_ty.index_signature {
             let val_ty = match (&key_ty.kind, &val_ty.kind) {
                 (TypeKind::Union(key_tys), TypeKind::Union(val_tys)) => {
@@ -339,13 +336,13 @@ impl<'ctx> Resolver<'ctx> {
     /// More strict than `dict_assign_to_schema()`: schema attr contains all attributes in key
     pub fn upgrade_dict_to_schema_attr_check(
         &mut self,
-        key_ty: TypeRef,
+        dict_ty: &DictType,
         schema_ty: &SchemaType,
     ) -> bool {
         if schema_ty.index_signature.is_some() {
             return true;
         }
-        match &key_ty.kind {
+        match &dict_ty.key_ty.kind {
             // empty dict {}
             TypeKind::Any => true,
             // single key: {key1: value1}
@@ -362,7 +359,7 @@ impl<'ctx> Resolver<'ctx> {
                         TypeKind::StrLit(s) => attrs.contains(s),
                         _ => false,
                     }),
-                    // Todo: do more index_signature check
+                    // TODO: do more index_signature check with dict type attrs
                     (false, true) => true,
                     (false, false) => false,
                 }
@@ -508,6 +505,7 @@ impl<'ctx> Resolver<'ctx> {
                                         Some(ast_ty.as_ref()),
                                     ),
                                     has_default: ty.has_default,
+                                    range: ty_node.get_span_pos(),
                                 });
                             }
                         }

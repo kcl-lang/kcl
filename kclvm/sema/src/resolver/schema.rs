@@ -4,11 +4,12 @@ use std::rc::Rc;
 
 use crate::builtin::BUILTIN_DECORATORS;
 use crate::resolver::Resolver;
-use crate::ty::{Decorator, DecoratorTarget, TypeKind};
+use crate::ty::{Decorator, DecoratorTarget, TypeKind, TypeRef};
 use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
 use kclvm_ast_pretty::{print_ast_node, ASTNode};
+use kclvm_error::diagnostic::Range;
 use kclvm_error::{ErrorKind, Message, Position, Style};
 
 use super::node::ResolvedResult;
@@ -243,6 +244,42 @@ impl<'ctx> Resolver<'ctx> {
             }
         }
         decorator_objs
+    }
+
+    /// Walk expr and check the type and return the value type.
+    pub(crate) fn upgrade_type_for_expr(
+        &mut self,
+        expected_ty: TypeRef,
+        expr: &'ctx ast::NodeRef<ast::Expr>,
+        target_range: Range,
+        def_range: Option<Range>,
+    ) -> TypeRef {
+        let (start, end) = expr.get_span_pos();
+        let value_ty = match &expected_ty.kind {
+            TypeKind::Schema(ty) => {
+                let obj =
+                    self.new_config_expr_context_item(&ty.name, expected_ty.clone(), start, end);
+                let init_stack_depth = self.switch_config_expr_context(Some(obj));
+                let value_ty = self.expr(expr);
+                self.clear_config_expr_context(init_stack_depth as usize, false);
+                value_ty
+            }
+            TypeKind::List(_) | TypeKind::Dict(_) | TypeKind::Union(_) => {
+                let obj = self.new_config_expr_context_item("[]", expected_ty.clone(), start, end);
+                let init_stack_depth = self.switch_config_expr_context(Some(obj));
+                let value_ty = self.expr(expr);
+                self.clear_config_expr_context(init_stack_depth as usize, false);
+                value_ty
+            }
+            _ => self.expr(expr),
+        };
+        self.must_assignable_to(
+            value_ty.clone(),
+            expected_ty.clone(),
+            target_range,
+            def_range,
+        );
+        value_ty
     }
 
     fn arguments_to_string(

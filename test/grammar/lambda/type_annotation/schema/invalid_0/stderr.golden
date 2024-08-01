@@ -1,0 +1,39 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:8:9
+  |
+8 |         version: 1
+  |         ^ expected str, got int(1)
+  |
+
+ --> ${CWD}/main.k:2:5
+  |
+2 |     version: str
+  |     ^ variable is defined here, its type is str, but got int(1)
+  |
+
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:9:9
+  |
+9 |         hello: "world"
+  |         ^ Cannot add member 'hello' to schema 'ProviderFamily'
+  |
+
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:14:5
+   |
+14 |     version: 1
+   |     ^ expected str, got int(1)
+   |
+
+ --> ${CWD}/main.k:2:5
+  |
+2 |     version: str
+  |     ^ variable is defined here, its type is str, but got int(1)
+  |
+
+error[E2L23]: CompileError
+  --> ${CWD}/main.k:15:5
+   |
+15 |     hello: "world"
+   |     ^ Cannot add member 'hello' to schema 'ProviderFamily'
+   |

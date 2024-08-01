@@ -136,6 +136,12 @@ impl Diagnostic {
 
 pub type Range = (Position, Position);
 
+/// Returns a dummy range whose filename is empty, line is 1 and column is None.
+#[inline]
+pub fn dummy_range() -> Range {
+    (Position::dummy_pos(), Position::dummy_pos())
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Message {
     pub range: Range,

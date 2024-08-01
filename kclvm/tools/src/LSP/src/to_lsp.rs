@@ -69,16 +69,20 @@ fn kcl_msg_to_lsp_diags(
         Some(
             related_msg
                 .iter()
-                .map(|m| DiagnosticRelatedInformation {
-                    location: Location {
-                        uri: Url::from_file_path(m.range.0.filename.clone()).unwrap(),
-                        range: Range {
-                            start: lsp_pos(&m.range.0),
-                            end: lsp_pos(&m.range.1),
+                .map(|m| match Url::from_file_path(m.range.0.filename.clone()) {
+                    Ok(uri) => Some(DiagnosticRelatedInformation {
+                        location: Location {
+                            uri,
+                            range: Range {
+                                start: lsp_pos(&m.range.0),
+                                end: lsp_pos(&m.range.1),
+                            },
                         },
-                    },
-                    message: m.message.clone(),
+                        message: m.message.clone(),
+                    }),
+                    Err(_) => None,
                 })
+                .flatten()
                 .collect(),
         )
     };

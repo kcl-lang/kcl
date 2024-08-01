@@ -1,0 +1,71 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:9:9
+  |
+9 |         version: 1
+  |         ^ expected str, got int(1)
+  |
+
+ --> ${CWD}/main.k:3:5
+  |
+3 |     version: str
+  |     ^ variable is defined here, its type is str, but got int(1)
+  |
+
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:10:9
+   |
+10 |         hello: "world"
+   |         ^ expected int, got str(world)
+   |
+
+ --> ${CWD}/main.k:7:5
+  |
+7 |     {
+  |     ^ variable is defined here, its type is int, but got str(world)
+  |
+
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:15:5
+   |
+15 |     version: 1
+   |     ^ expected str, got int(1)
+   |
+
+ --> ${CWD}/main.k:3:5
+  |
+3 |     version: str
+  |     ^ variable is defined here, its type is str, but got int(1)
+  |
+
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:16:5
+   |
+16 |     hello: "world"
+   |     ^ expected int, got str(world)
+   |
+
+  --> ${CWD}/main.k:14:20
+   |
+14 | v = providerFamily({
+   |                    ^ variable is defined here, its type is int, but got str(world)
+   |
+
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:14:20
+   |
+14 | v = providerFamily({
+   |                    ^ expected schema index signature value type int, got str(world)
+   |
+
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:14:20
+   |
+14 | v = providerFamily({
+   |                    ^ expected ProviderFamily, got {str(version) | str(hello):int(1) | str(world)}
+   |
+
+ --> ${CWD}/main.k:6:25
+  |
+6 | providerFamily = lambda family: ProviderFamily -> ProviderFamily {
+  |                         ^ variable is defined here, its type is ProviderFamily, but got {str(version) | str(hello):int(1) | str(world)}
+  |

@@ -5,6 +5,7 @@ use indexmap::IndexSet;
 use kclvm_ast::ast;
 
 use kclvm_ast::pos::GetPos;
+use kclvm_error::diagnostic::Range;
 
 use crate::ty::TypeRef;
 
@@ -34,11 +35,40 @@ impl<'ctx> Resolver<'ctx> {
         func_ty: &FunctionType,
     ) {
         let func_name = self.get_func_name(&func.node);
-        let arg_types = self.exprs(args);
-        let mut kwarg_types: Vec<(String, TypeRef)> = vec![];
         let mut check_table: IndexSet<String> = IndexSet::default();
         let mut prev_kw_pos = None;
-        for kw in kwargs {
+        for (i, arg) in args.iter().enumerate() {
+            match func_ty.params.get(i) {
+                Some(param) => {
+                    self.upgrade_type_for_expr(
+                        param.ty.clone(),
+                        arg,
+                        arg.get_span_pos(),
+                        Some(param.range.clone()),
+                    );
+                }
+                None => {
+                    // If the parameter has not a expected type, just check the argument type
+                    // and do not upgrade the type.
+                    self.expr(arg);
+                    if !func_ty.is_variadic {
+                        self.handler.add_compile_error_with_suggestions(
+                            &format!(
+                                "{} takes {} but {} were given",
+                                func_name,
+                                UnitUsize(func_ty.params.len(), "positional argument".to_string())
+                                    .into_string_with_unit(),
+                                args.len(),
+                            ),
+                            args[i].get_span_pos(),
+                            Some(vec![]),
+                        );
+                        break;
+                    }
+                }
+            };
+        }
+        for (i, kw) in kwargs.iter().enumerate() {
             if !kw.node.arg.node.names.is_empty() {
                 let previous_pos = if let Some(prev_pos) = prev_kw_pos {
                     prev_pos
@@ -55,11 +85,45 @@ impl<'ctx> Resolver<'ctx> {
                     );
                 }
                 check_table.insert(arg_name.to_string());
-                let arg_value_type = self.expr_or_any_type(&kw.node.value);
-                self.node_ty_map
-                    .borrow_mut()
-                    .insert(self.get_node_key(kw.id.clone()), arg_value_type.clone());
-                kwarg_types.push((arg_name.to_string(), arg_value_type.clone()));
+
+                if !func_ty
+                    .params
+                    .iter()
+                    .map(|p| p.name.clone())
+                    .any(|x| x == *arg_name)
+                    && !func_ty.is_variadic
+                {
+                    let (suggs, msg) = self.get_arg_kw_err_suggestion_from_name(arg_name, func_ty);
+                    self.handler.add_compile_error_with_suggestions(
+                        &format!(
+                            "{} got an unexpected keyword argument '{}'{}",
+                            func_name, arg_name, msg
+                        ),
+                        kwargs[i].node.arg.get_span_pos(),
+                        Some(suggs),
+                    );
+                }
+
+                let expected_types_and_ranges: Vec<(TypeRef, Range)> = func_ty
+                    .params
+                    .iter()
+                    .filter(|p| p.name == *arg_name)
+                    .map(|p| (p.ty.clone(), p.range.clone()))
+                    .collect();
+
+                if let Some((expected_ty, def_range)) = expected_types_and_ranges.first() {
+                    if let Some(value) = &kw.node.value {
+                        let arg_value_type = self.upgrade_type_for_expr(
+                            expected_ty.clone(),
+                            value,
+                            value.get_span_pos(),
+                            Some(def_range.clone()),
+                        );
+                        self.node_ty_map
+                            .borrow_mut()
+                            .insert(self.get_node_key(kw.id.clone()), arg_value_type.clone());
+                    }
+                }
             } else {
                 self.handler
                     .add_compile_error(&format!("missing argument"), kw.get_span_pos());
@@ -90,78 +154,6 @@ impl<'ctx> Resolver<'ctx> {
                     func.get_span_pos(),
                 );
             }
-        }
-        // Do normal argument type check
-        for (i, ty) in arg_types.iter().enumerate() {
-            let expected_ty = match func_ty.params.get(i) {
-                Some(param) => param.ty.clone(),
-                None => {
-                    if !func_ty.is_variadic {
-                        self.handler.add_compile_error_with_suggestions(
-                            &format!(
-                                "{} takes {} but {} were given",
-                                func_name,
-                                UnitUsize(func_ty.params.len(), "positional argument".to_string())
-                                    .into_string_with_unit(),
-                                args.len(),
-                            ),
-                            args[i].get_span_pos(),
-                            Some(vec![]),
-                        );
-                    }
-                    return;
-                }
-            };
-            self.must_assignable_to(
-                ty.clone(),
-                expected_ty.clone(),
-                args[i].get_span_pos(),
-                None,
-            );
-
-            let upgrade_schema_type = self.upgrade_dict_to_schema(
-                ty.clone(),
-                expected_ty.clone(),
-                &args[i].get_span_pos(),
-            );
-            self.node_ty_map.borrow_mut().insert(
-                self.get_node_key(args.get(i).unwrap().id.clone()),
-                upgrade_schema_type.clone(),
-            );
-        }
-        // Do keyword argument type check
-        for (i, (arg_name, kwarg_ty)) in kwarg_types.iter().enumerate() {
-            if !func_ty
-                .params
-                .iter()
-                .map(|p| p.name.clone())
-                .any(|x| x == *arg_name)
-                && !func_ty.is_variadic
-            {
-                let (suggs, msg) = self.get_arg_kw_err_suggestion_from_name(arg_name, func_ty);
-                self.handler.add_compile_error_with_suggestions(
-                    &format!(
-                        "{} got an unexpected keyword argument '{}'{}",
-                        func_name, arg_name, msg
-                    ),
-                    kwargs[i].node.arg.get_span_pos(),
-                    Some(suggs),
-                );
-            }
-            let expected_types: Vec<TypeRef> = func_ty
-                .params
-                .iter()
-                .filter(|p| p.name == *arg_name)
-                .map(|p| p.ty.clone())
-                .collect();
-            if !expected_types.is_empty() {
-                self.must_assignable_to(
-                    kwarg_ty.clone(),
-                    expected_types[0].clone(),
-                    kwargs[i].get_span_pos(),
-                    None,
-                );
-            };
         }
     }
 

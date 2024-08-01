@@ -4,9 +4,16 @@ error[E2G22]: TypeError
 4 |     c: str = a3
   |     ^ expected str, got int
   |
+
 error[E2G22]: TypeError
- --> ${CWD}/main.k:7:17
+ --> ${CWD}/main.k:7:20
   |
 7 | a = A(a1=1,a2=2,a3="3")
-  |                 ^ expected int, got str(3)
+  |                    ^ expected int, got str(3)
+  |
+
+ --> ${CWD}/main.k:1:23
+  |
+1 | schema A[a1, a2: int, a3: int]:
+  |                       ^ variable is defined here, its type is int, but got str(3)
   |

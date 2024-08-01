@@ -497,10 +497,11 @@ impl FunctionType {
     }
 }
 
-/// The function parameter.
+/// The function parameter type and position information.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Parameter {
     pub name: String,
     pub ty: TypeRef,
     pub has_default: bool,
+    pub range: Range,
 }

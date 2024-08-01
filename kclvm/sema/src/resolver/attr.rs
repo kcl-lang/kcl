@@ -8,7 +8,7 @@ use crate::ty::{
     DictType, ModuleKind, Parameter, Type, TypeKind, TypeRef, SCHEMA_MEMBER_FUNCTIONS,
 };
 use kclvm_ast::ast;
-use kclvm_error::diagnostic::Range;
+use kclvm_error::diagnostic::{dummy_range, Range};
 use kclvm_error::*;
 
 use super::node::ResolvedResult;
@@ -80,6 +80,7 @@ impl<'ctx> Resolver<'ctx> {
                                 ty: Type::bool_ref(),
                                 // Default value is False
                                 has_default: true,
+                                range: dummy_range(),
                             }],
                             "",
                             false,
