@@ -1449,23 +1449,31 @@ impl<'ctx> Evaluator<'ctx> {
         kwargs: &ValueRef,
     ) {
         // Arguments names and defaults
-        let (arg_names, arg_defaults) = if let Some(args) = &arguments {
+        let (arg_names, arg_types, arg_defaults) = if let Some(args) = &arguments {
             let names = &args.node.args;
+            let types = &args.node.ty_list;
             let defaults = &args.node.defaults;
             (
                 names.iter().map(|identifier| &identifier.node).collect(),
+                types.iter().collect(),
                 defaults.iter().collect(),
             )
         } else {
-            (vec![], vec![])
+            (vec![], vec![], vec![])
         };
         // Default parameter values
-        for (arg_name, value) in arg_names.iter().zip(arg_defaults.iter()) {
-            let arg_value = if let Some(value) = value {
+        for ((arg_name, arg_type), value) in
+            arg_names.iter().zip(&arg_types).zip(arg_defaults.iter())
+        {
+            let mut arg_value = if let Some(value) = value {
                 self.walk_expr(value).expect(kcl_error::RUNTIME_ERROR_MSG)
             } else {
                 self.none_value()
             };
+            if let Some(ty) = arg_type {
+                arg_value =
+                    type_pack_and_check(self, &arg_value, vec![&ty.node.to_string()], false);
+            }
             // Arguments are immutable, so we place them in different scopes.
             let name = arg_name.get_name();
             self.store_argument_in_current_scope(&name);
@@ -1477,14 +1485,18 @@ impl<'ctx> Evaluator<'ctx> {
         }
         // Positional arguments
         let argument_len = args.len();
-        for (i, arg_name) in arg_names.iter().enumerate() {
+        for (i, (arg_name, arg_type)) in arg_names.iter().zip(arg_types).enumerate() {
             // Positional arguments
             let is_in_range = i < argument_len;
             if is_in_range {
-                let arg_value = match args.list_get_option(i as isize) {
+                let mut arg_value = match args.list_get_option(i as isize) {
                     Some(v) => v,
                     None => self.undefined_value(),
                 };
+                if let Some(ty) = arg_type {
+                    arg_value =
+                        type_pack_and_check(self, &arg_value, vec![&ty.node.to_string()], false);
+                }
                 self.store_variable(&arg_name.names[0].node, arg_value);
             } else {
                 break;
