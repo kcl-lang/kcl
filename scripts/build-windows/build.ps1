@@ -3,7 +3,8 @@
 Set-Location $PSScriptRoot
 # 1. Install kclvm_cli_cdylib.dll
 Set-Location "..\..\kclvm"
-cargo build --release --features llvm
+# cargo build --release --features llvm
+cargo build --release
 Set-Location $PSScriptRoot
 
 New-Item -ErrorAction Ignore -Path ".\_output" -ItemType "directory"
