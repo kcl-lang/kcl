@@ -24,7 +24,10 @@ prepare_dirs
 
 cd $topdir/kclvm
 export PATH=$PATH:/root/.cargo/bin:/usr/lib/llvm-12/bin
+# Enable the llvm feature
 cargo build --release --features llvm
+# Disable the llvm feature
+# cargo build --release
 
 ## Switch dll file extension according to os.
 dll_extension="so"
