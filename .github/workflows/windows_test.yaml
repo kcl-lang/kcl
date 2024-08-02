@@ -42,7 +42,7 @@ jobs:
         working-directory: .
 
       # Rust unit test
-      - run: cargo test -p kclvm-* --features llvm
+      - run: cargo test -r -p kclvm-*
         working-directory: ./kclvm
 
       - uses: actions/upload-artifact@v4
