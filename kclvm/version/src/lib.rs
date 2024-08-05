@@ -3,11 +3,18 @@
 pub const VERSION: &str = include_str!("./../../../VERSION");
 pub const CHECK_SUM: &str = "c020ab3eb4b9179219d6837a57f5d323";
 pub const GIT_SHA: &str = env!("VERGEN_GIT_SHA");
+pub const HOST_TRIPLE: &str = env!("VERGEN_RUSTC_HOST_TRIPLE");
 
-/// Get kCL full version string with the format `{version}-{check_sum}`.
+/// Get KCL full version string with the format `{version}-{check_sum}`.
 #[inline]
 pub fn get_version_string() -> String {
     format!("{}-{}", VERSION, CHECK_SUM)
+}
+
+/// Get KCL build git sha.
+#[inline]
+pub fn get_git_sha() -> &'static str {
+    option_env!("KCL_BUILD_GIT_SHA").unwrap_or_else(|| GIT_SHA)
 }
 
 /// Get version info including version string, platform.
@@ -16,7 +23,7 @@ pub fn get_version_info() -> String {
     format!(
         "Version: {}\r\nPlatform: {}\r\nGitCommit: {}",
         get_version_string(),
-        env!("VERGEN_RUSTC_HOST_TRIPLE"),
-        env!("VERGEN_GIT_SHA")
+        HOST_TRIPLE,
+        get_git_sha(),
     )
 }

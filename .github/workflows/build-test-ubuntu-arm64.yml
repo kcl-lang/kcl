@@ -29,11 +29,7 @@ jobs:
           docker run --rm --platform linux/arm64 \
             -v ${{ github.workspace }}:/workspace -w /workspace \
             kcllang/kcl-builder-arm64 \
-            /bin/bash -c "make && make release"
-
-      - name: Release
-        shell: bash
-        run: os=ubuntu topdir=$PWD ./scripts/release.sh
+            /bin/bash -c "export KCL_BUILD_GIT_SHA=$(git rev-parse HEAD) && git config --global --add safe.directory /workspace && git config --global user.name 'GitHub Action' && git config --global user.email 'action@github.com' && make && make release && _build/dist/ubuntu/kclvm/bin/kclvm_cli version"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
