@@ -132,13 +132,26 @@ impl<'ctx> Evaluator<'ctx> {
     pub fn run(self: &Evaluator<'ctx>) -> Result<(String, String)> {
         if let Some(modules) = self.program.pkgs.get(kclvm_ast::MAIN_PKG) {
             self.init_scope(kclvm_ast::MAIN_PKG);
-            self.compile_ast_modules(modules)
+            self.compile_ast_modules(modules);
         }
         Ok(self.plan_globals_to_string())
     }
 
+    /// Evaluate the program with the function mode and return the JSON and YAML result,
+    /// which means treating the files in the entire main package as a function run to
+    /// return the result of the function run, rather than a dictionary composed of each
+    /// configuration attribute.
+    pub fn run_as_function(self: &Evaluator<'ctx>) -> ValueRef {
+        if let Some(modules) = self.program.pkgs.get(kclvm_ast::MAIN_PKG) {
+            self.init_scope(kclvm_ast::MAIN_PKG);
+            self.compile_ast_modules(modules)
+        } else {
+            ValueRef::undefined()
+        }
+    }
+
     /// Plan globals to a planed json and yaml string.
-    pub fn plan_globals_to_string(&self) -> (String, String) {
+    pub(crate) fn plan_globals_to_string(&self) -> (String, String) {
         let current_pkgpath = self.current_pkgpath();
         let pkg_scopes = &self.pkg_scopes.borrow();
         let scopes = pkg_scopes
@@ -177,7 +190,7 @@ impl<'ctx> Evaluator<'ctx> {
         Ok(self.undefined_value())
     }
 
-    fn plan_value(&self, value: &ValueRef) -> (String, String) {
+    pub fn plan_value(&self, value: &ValueRef) -> (String, String) {
         let mut ctx = self.runtime_ctx.borrow_mut();
         let value = match ctx.buffer.custom_manifests_output.clone() {
             Some(output) => ValueRef::from_yaml_stream(&mut ctx, &output).unwrap(),
