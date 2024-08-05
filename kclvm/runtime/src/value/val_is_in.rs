@@ -59,6 +59,17 @@ impl ValueRef {
     }
 
     #[inline]
+    pub fn is_builtin(&self) -> bool {
+        matches!(
+            &*self.rc.borrow(),
+            Value::int_value(_)
+                | Value::float_value(_)
+                | Value::bool_value(_)
+                | Value::str_value(_)
+        )
+    }
+
+    #[inline]
     pub fn is_config(&self) -> bool {
         matches!(
             &*self.rc.borrow(),

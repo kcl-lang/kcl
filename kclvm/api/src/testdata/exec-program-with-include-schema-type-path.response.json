@@ -1,4 +1,6 @@
 {
-    "json_result": "{\"alice\": {\"age\": 18, \"_type\": \"__main__.Person\"}}",
-    "yaml_result": "alice:\n  age: 18\n  _type: __main__.Person"
+    "json_result": "{\"alice\": {\"age\": 18, \"_type\": \"Person\"}}",
+    "yaml_result": "alice:\n  age: 18\n  _type: Person",
+    "log_message": "",
+    "err_message": ""
 }

@@ -48,7 +48,7 @@ impl Type {
     pub fn contains_flags(&self, flag: TypeFlags) -> bool {
         self.flags.contains(flag)
     }
-    /// Returns the type string used for error handler.
+    /// Returns the type string used for the error handler.
     pub fn ty_str(&self) -> String {
         match &self.kind {
             TypeKind::None => NONE_TYPE_STR.to_string(),
@@ -86,6 +86,23 @@ impl Type {
             TypeKind::Void => VOID_TYPE_STR.to_string(),
             TypeKind::Module(module_ty) => format!("{} '{}'", MODULE_TYPE_STR, module_ty.pkgpath),
             TypeKind::Named(name) => name.to_string(),
+        }
+    }
+
+    /// Returns the full type string with the package path used for the error handler.
+    pub fn full_ty_str(&self) -> String {
+        match &self.kind {
+            TypeKind::List(item_ty) => format!("[{}]", item_ty.full_ty_str()),
+            TypeKind::Dict(DictType { key_ty, val_ty, .. }) => {
+                format!("{{{}:{}}}", key_ty.full_ty_str(), val_ty.full_ty_str())
+            }
+            TypeKind::Union(types) => types
+                .iter()
+                .map(|ty| ty.full_ty_str())
+                .collect::<Vec<String>>()
+                .join(" | "),
+            TypeKind::Schema(schema_ty) => schema_ty.full_ty_str(),
+            _ => self.ty_str(),
         }
     }
 
@@ -232,12 +249,20 @@ pub struct SchemaType {
 }
 
 impl SchemaType {
-    /// Get the object type string with pkgpath
-    pub fn ty_str_with_pkgpath(&self) -> String {
+    /// Get the object type string with @pkgpath prefix.
+    pub fn ty_str_with_at_pkgpath_prefix(&self) -> String {
         if self.pkgpath.is_empty() || self.pkgpath == MAIN_PKG {
             self.name.clone()
         } else {
             format!("@{}.{}", self.pkgpath, self.name)
+        }
+    }
+    /// Get the object type string.
+    pub fn full_ty_str(&self) -> String {
+        if self.pkgpath.is_empty() || self.pkgpath == MAIN_PKG {
+            self.name.clone()
+        } else {
+            format!("{}.{}", self.pkgpath, self.name)
         }
     }
     /// Is `name` a schema member function

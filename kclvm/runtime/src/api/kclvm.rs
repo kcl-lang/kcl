@@ -1,6 +1,6 @@
 //! Copyright The KCL Authors. All rights reserved.
 
-use crate::{new_mut_ptr, IndexMap, PlanOptions};
+use crate::{new_mut_ptr, val_plan::PlanOptions, IndexMap};
 use generational_arena::Index;
 use indexmap::IndexSet;
 use serde::{Deserialize, Serialize};

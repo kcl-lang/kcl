@@ -316,7 +316,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
             return self.ok_result();
         } else {
             let pkgpath = format!("{}{}", PKG_PATH_PREFIX, import_stmt.path.node);
-            self.pkgpath_stack.borrow_mut().push(pkgpath.clone());
+            self.push_pkgpath(&pkgpath);
             let has_pkgpath = self.program.pkgs.contains_key(&import_stmt.path.node);
             let func_before_block = if self.no_link {
                 if has_pkgpath {
@@ -364,7 +364,7 @@ impl<'ctx> TypedResultWalker<'ctx> for LLVMCodeGenContext<'ctx> {
                         .expect(kcl_error::INTERNAL_ERROR_MSG),
                 );
             }
-            self.pkgpath_stack.borrow_mut().pop();
+            self.pop_pkgpath();
             if self.no_link {
                 let name = format!(
                     "${}.{}",

@@ -102,7 +102,7 @@ impl Type {
                 .map(|ty| ty.into_type_annotation_str())
                 .collect::<Vec<String>>()
                 .join(" | "),
-            TypeKind::Schema(schema_ty) => schema_ty.ty_str_with_pkgpath(),
+            TypeKind::Schema(schema_ty) => schema_ty.ty_str_with_at_pkgpath_prefix(),
             TypeKind::NumberMultiplier(number_multiplier) => {
                 if number_multiplier.is_literal {
                     format!(

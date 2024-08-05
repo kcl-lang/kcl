@@ -58,7 +58,6 @@ pub mod val_unary;
 pub mod val_bin;
 
 pub mod val_plan;
-pub use val_plan::*;
 
 pub mod val_str;
 

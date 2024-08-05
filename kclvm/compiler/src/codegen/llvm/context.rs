@@ -30,14 +30,14 @@ use kclvm_sema::pkgpath_without_prefix;
 use kclvm_sema::plugin;
 
 use crate::codegen::abi::Align;
+use crate::codegen::llvm::utils;
+use crate::codegen::OBJECT_FILE_SUFFIX;
 use crate::codegen::{error as kcl_error, EmitOptions};
 use crate::codegen::{
     traits::*, ENTRY_NAME, GLOBAL_VAL_ALIGNMENT, MODULE_NAME, PKG_INIT_FUNCTION_SUFFIX,
 };
 use crate::codegen::{CodeGenContext, GLOBAL_LEVEL};
 use crate::value;
-
-use crate::codegen::OBJECT_FILE_SUFFIX;
 
 /// SCALAR_KEY denotes the temp scalar key for the global variable json plan process.
 const SCALAR_KEY: &str = "";
@@ -1164,6 +1164,7 @@ impl<'ctx> TypeCodeGen for LLVMCodeGenContext<'ctx> {}
 
 impl<'ctx> ProgramCodeGen for LLVMCodeGenContext<'ctx> {
     /// Current package path
+    #[inline]
     fn current_pkgpath(&self) -> String {
         self.pkgpath_stack
             .borrow_mut()
@@ -1173,6 +1174,7 @@ impl<'ctx> ProgramCodeGen for LLVMCodeGenContext<'ctx> {
     }
 
     /// Current filename
+    #[inline]
     fn current_filename(&self) -> String {
         self.filename_stack
             .borrow_mut()
@@ -1385,7 +1387,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
         if self.no_link && !has_main_pkg {
             for pkgpath in self.program.pkgs.keys() {
                 let pkgpath = format!("{}{}", kclvm_runtime::PKG_PATH_PREFIX, pkgpath);
-                self.pkgpath_stack.borrow_mut().push(pkgpath.clone());
+                self.push_pkgpath(&pkgpath);
             }
         }
         if !self.import_names.is_empty() {
@@ -1413,7 +1415,7 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             // pkgs may not contains main pkg in no link mode
             for (pkgpath, modules) in &self.program.pkgs {
                 let pkgpath = format!("{}{}", kclvm_runtime::PKG_PATH_PREFIX, pkgpath);
-                self.pkgpath_stack.borrow_mut().push(pkgpath.clone());
+                self.push_pkgpath(&pkgpath);
                 // Init all builtin functions.
                 self.init_scope(pkgpath.as_str());
                 self.compile_ast_modules(modules);
@@ -2204,6 +2206,19 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             }
         }
         var_map
+    }
+
+    #[inline]
+    pub(crate) fn push_pkgpath(&self, pkgpath: &str) {
+        self.pkgpath_stack.borrow_mut().push(pkgpath.to_string());
+        utils::update_ctx_pkgpath(self, pkgpath);
+    }
+
+    #[inline]
+    pub(crate) fn pop_pkgpath(&self) {
+        if let Some(pkgpath) = self.pkgpath_stack.borrow_mut().pop() {
+            utils::update_ctx_pkgpath(self, &pkgpath);
+        }
     }
 
     /// Load value from name.

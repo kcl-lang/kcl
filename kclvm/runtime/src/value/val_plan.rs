@@ -166,28 +166,36 @@ fn handle_schema(ctx: &Context, value: &ValueRef) -> Vec<ValueRef> {
 
 /// Returns the type path of the runtime value `v`.
 pub(crate) fn value_type_path(v: &ValueRef, full_name: bool) -> String {
-    match v.get_potential_schema_type() {
-        Some(ty_str) => {
-            if full_name {
-                match ty_str.strip_prefix('@') {
-                    Some(ty_str) => ty_str.to_string(),
-                    None => ty_str.to_string(),
-                }
-            } else {
-                let parts: Vec<&str> = ty_str.rsplit('.').collect();
-                match parts.first() {
-                    Some(v) => v.to_string(),
-                    None => type_of(v, full_name),
+    if v.is_schema() {
+        type_of(v, full_name)
+    } else {
+        match v.get_potential_schema_type() {
+            Some(ty_str) => {
+                let ty = if full_name {
+                    match ty_str.strip_prefix('@') {
+                        Some(ty_str) => ty_str.to_string(),
+                        None => ty_str.to_string(),
+                    }
+                } else {
+                    let parts: Vec<&str> = ty_str.rsplit('.').collect();
+                    match parts.first() {
+                        Some(v) => v.to_string(),
+                        None => type_of(v, full_name),
+                    }
+                };
+                match ty.strip_prefix(&format!("{MAIN_PKG_PATH}.")) {
+                    Some(ty) => ty.to_string(),
+                    None => ty,
                 }
             }
+            None => type_of(v, full_name),
         }
-        None => type_of(v, full_name),
     }
 }
 
 /// Returns the type path of the runtime value `v`.
 #[inline]
-fn type_of(v: &ValueRef, full_name: bool) -> String {
+pub fn type_of(v: &ValueRef, full_name: bool) -> String {
     builtin::type_of(v, &ValueRef::bool(full_name)).as_str()
 }
 
@@ -272,7 +280,7 @@ impl ValueRef {
 
 #[cfg(test)]
 mod test_value_plan {
-    use crate::{schema_runtime_type, Context, PlanOptions, ValueRef, MAIN_PKG_PATH};
+    use crate::{schema_runtime_type, val_plan::PlanOptions, Context, ValueRef, MAIN_PKG_PATH};
 
     use super::filter_results;
 
@@ -282,6 +290,20 @@ mod test_value_plan {
         let mut schema = ValueRef::dict(None).dict_to_schema(
             TEST_SCHEMA_NAME,
             MAIN_PKG_PATH,
+            &[],
+            &ValueRef::dict(None),
+            &ValueRef::dict(None),
+            None,
+            None,
+        );
+        schema.set_potential_schema_type(&schema_runtime_type(TEST_SCHEMA_NAME, MAIN_PKG_PATH));
+        schema
+    }
+
+    fn get_test_schema_value_with_pkg() -> ValueRef {
+        let mut schema = ValueRef::dict(None).dict_to_schema(
+            TEST_SCHEMA_NAME,
+            "pkg",
             &[],
             &ValueRef::dict(None),
             &ValueRef::dict(None),
@@ -346,9 +368,8 @@ mod test_value_plan {
     fn test_value_plan_with_options() {
         let mut ctx = Context::new();
         ctx.plan_opts = PlanOptions::default();
-        let schema = get_test_schema_value();
         let mut config = ValueRef::dict(None);
-        config.dict_update_key_value("data", schema);
+        config.dict_update_key_value("data", get_test_schema_value());
         config.dict_update_key_value("_hidden", ValueRef::int(1));
         config.dict_update_key_value("vec", ValueRef::list(None));
         config.dict_update_key_value("empty", ValueRef::none());
@@ -360,53 +381,55 @@ mod test_value_plan {
         let (json_string, yaml_string) = config.plan(&ctx);
         assert_eq!(
             json_string,
-            "{\"data\": {\"_type\": \"__main__.Data\"}, \"vec\": [], \"empty\": null}"
+            "{\"data\": {\"_type\": \"Data\"}, \"vec\": [], \"empty\": null}"
         );
-        assert_eq!(
-            yaml_string,
-            "data:\n  _type: __main__.Data\nvec: []\nempty: null"
-        );
+        assert_eq!(yaml_string, "data:\n  _type: Data\nvec: []\nempty: null");
 
         ctx.plan_opts.show_hidden = true;
         let (json_string, yaml_string) = config.plan(&ctx);
         assert_eq!(
             json_string,
-            "{\"data\": {\"_type\": \"__main__.Data\"}, \"_hidden\": 1, \"vec\": [], \"empty\": null}"
+            "{\"data\": {\"_type\": \"Data\"}, \"_hidden\": 1, \"vec\": [], \"empty\": null}"
         );
         assert_eq!(
             yaml_string,
-            "data:\n  _type: __main__.Data\n_hidden: 1\nvec: []\nempty: null"
+            "data:\n  _type: Data\n_hidden: 1\nvec: []\nempty: null"
         );
 
         ctx.plan_opts.sort_keys = true;
         let (json_string, yaml_string) = config.plan(&ctx);
         assert_eq!(
             json_string,
-            "{\"_hidden\": 1, \"data\": {\"_type\": \"__main__.Data\"}, \"empty\": null, \"vec\": []}"
+            "{\"_hidden\": 1, \"data\": {\"_type\": \"Data\"}, \"empty\": null, \"vec\": []}"
         );
         assert_eq!(
             yaml_string,
-            "_hidden: 1\ndata:\n  _type: __main__.Data\nempty: null\nvec: []"
+            "_hidden: 1\ndata:\n  _type: Data\nempty: null\nvec: []"
         );
 
         ctx.plan_opts.disable_none = true;
         let (json_string, yaml_string) = config.plan(&ctx);
         assert_eq!(
             json_string,
-            "{\"_hidden\": 1, \"data\": {\"_type\": \"__main__.Data\"}, \"vec\": []}"
+            "{\"_hidden\": 1, \"data\": {\"_type\": \"Data\"}, \"vec\": []}"
         );
-        assert_eq!(
-            yaml_string,
-            "_hidden: 1\ndata:\n  _type: __main__.Data\nvec: []"
-        );
+        assert_eq!(yaml_string, "_hidden: 1\ndata:\n  _type: Data\nvec: []");
 
         ctx.plan_opts.disable_empty_list = true;
         let (json_string, yaml_string) = config.plan(&ctx);
         assert_eq!(
             json_string,
-            "{\"_hidden\": 1, \"data\": {\"_type\": \"__main__.Data\"}}"
+            "{\"_hidden\": 1, \"data\": {\"_type\": \"Data\"}}"
         );
-        assert_eq!(yaml_string, "_hidden: 1\ndata:\n  _type: __main__.Data");
+        assert_eq!(yaml_string, "_hidden: 1\ndata:\n  _type: Data");
+
+        config.dict_update_key_value("data_with_pkg", get_test_schema_value_with_pkg());
+        let (json_string, yaml_string) = config.plan(&ctx);
+        assert_eq!(json_string, "{\"_hidden\": 1, \"data\": {\"_type\": \"Data\"}, \"data_with_pkg\": {\"_type\": \"pkg.Data\"}}");
+        assert_eq!(
+            yaml_string,
+            "_hidden: 1\ndata:\n  _type: Data\ndata_with_pkg:\n  _type: pkg.Data"
+        );
 
         ctx.plan_opts.query_paths = vec!["data".to_string()];
         let (json_string, yaml_string) = config.plan(&ctx);

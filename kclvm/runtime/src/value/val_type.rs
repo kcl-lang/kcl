@@ -185,13 +185,16 @@ pub fn type_pack_and_check(
             converted_value = convert_collection_value(ctx, value, &tpe);
         }
         // Runtime type check
-        checked = check_type(&converted_value, &tpe, strict);
+        checked = check_type(&converted_value, &ctx.panic_info.kcl_pkgpath, &tpe, strict);
         if checked {
             break;
         }
     }
     if !checked {
-        panic!("expect {expected_type}, got {}", value.type_str());
+        panic!(
+            "expect {expected_type}, got {}",
+            val_plan::type_of(value, true)
+        );
     }
     converted_value
 }
@@ -375,7 +378,7 @@ pub fn convert_collection_value_with_union_types(
         for tpe in types {
             // Try match every type and convert the value, if matched, return the value.
             let value = convert_collection_value(ctx, value, tpe);
-            if check_type(&value, tpe, false) {
+            if check_type(&value, &ctx.panic_info.kcl_pkgpath, tpe, false) {
                 return value;
             }
         }
@@ -384,7 +387,7 @@ pub fn convert_collection_value_with_union_types(
 }
 
 /// check_type returns the value wether match the given the type string
-pub fn check_type(value: &ValueRef, tpe: &str, strict: bool) -> bool {
+pub fn check_type(value: &ValueRef, pkgpath: &str, tpe: &str, strict: bool) -> bool {
     if tpe.is_empty() || tpe == KCL_TYPE_ANY {
         return true;
     }
@@ -392,7 +395,7 @@ pub fn check_type(value: &ValueRef, tpe: &str, strict: bool) -> bool {
         return true;
     }
     if is_type_union(tpe) {
-        return check_type_union(value, tpe);
+        return check_type_union(value, pkgpath, tpe);
     }
 
     if check_type_literal(value, tpe) {
@@ -404,11 +407,11 @@ pub fn check_type(value: &ValueRef, tpe: &str, strict: bool) -> bool {
     }
     // if value type is a dict type e.g. {"k": "v"}
     else if value.is_dict() {
-        return check_type_dict(value, tpe);
+        return check_type_dict(value, pkgpath, tpe);
     }
     // if value type is a list type e.g. [1, 2, 3]
     else if value.is_list() {
-        return check_type_list(value, tpe);
+        return check_type_list(value, pkgpath, tpe);
     } else if !value.is_none_or_undefined() {
         // if value type is a built-in type e.g. str, int, float, bool
         if match_builtin_type(value, tpe) {
@@ -418,7 +421,12 @@ pub fn check_type(value: &ValueRef, tpe: &str, strict: bool) -> bool {
         }
         if value.is_schema() {
             if strict {
-                let value_ty = crate::val_plan::value_type_path(value, tpe.contains('.'));
+                let value_ty = crate::val_plan::value_type_path(value, true);
+                let tpe = if pkgpath != "" && pkgpath != MAIN_PKG_PATH && !tpe.contains(".") {
+                    format!("{pkgpath}.{tpe}")
+                } else {
+                    tpe.to_string()
+                };
                 let tpe = match tpe.strip_prefix('@') {
                     Some(ty_str) => ty_str.to_string(),
                     None => tpe.to_string(),
@@ -438,14 +446,14 @@ pub fn check_type(value: &ValueRef, tpe: &str, strict: bool) -> bool {
 }
 
 /// check_type_union returns the value wether match the given the union type string
-pub fn check_type_union(value: &ValueRef, tpe: &str) -> bool {
+pub fn check_type_union(value: &ValueRef, pkgpath: &str, tpe: &str) -> bool {
     let expected_types = split_type_union(tpe);
     if expected_types.len() <= 1 {
         false
     } else {
         expected_types
             .iter()
-            .any(|tpe| check_type(value, tpe, false))
+            .any(|tpe| check_type(value, pkgpath, tpe, false))
     }
 }
 
@@ -492,7 +500,7 @@ pub fn check_number_multiplier_type(value: &ValueRef, tpe: &str) -> bool {
 }
 
 /// check_type_dict returns the value wether match the given the dict type string
-pub fn check_type_dict(value: &ValueRef, tpe: &str) -> bool {
+pub fn check_type_dict(value: &ValueRef, pkgpath: &str, tpe: &str) -> bool {
     if tpe.is_empty() {
         return true;
     }
@@ -503,7 +511,7 @@ pub fn check_type_dict(value: &ValueRef, tpe: &str) -> bool {
     let (_, expected_value_type) = separate_kv(&expected_type);
     let dict_ref = value.as_dict_ref();
     for (_, v) in &dict_ref.values {
-        if !check_type(v, &expected_value_type, false) {
+        if !check_type(v, pkgpath, &expected_value_type, false) {
             return false;
         }
     }
@@ -511,7 +519,7 @@ pub fn check_type_dict(value: &ValueRef, tpe: &str) -> bool {
 }
 
 /// check_type_list returns the value wether match the given the list type string
-pub fn check_type_list(value: &ValueRef, tpe: &str) -> bool {
+pub fn check_type_list(value: &ValueRef, pkgpath: &str, tpe: &str) -> bool {
     if tpe.is_empty() {
         return true;
     }
@@ -521,27 +529,26 @@ pub fn check_type_list(value: &ValueRef, tpe: &str) -> bool {
     let expected_type = dereference_type(tpe);
     let list_ref = value.as_list_ref();
     for v in &list_ref.values {
-        if !check_type(v, &expected_type, false) {
+        if !check_type(v, pkgpath, &expected_type, false) {
             return false;
         }
     }
     true
 }
 
-/// match_builtin_type returns the value wether match the given the type string
+/// match_builtin_type returns the value wether match the given the type string.
 #[inline]
 pub fn match_builtin_type(value: &ValueRef, tpe: &str) -> bool {
-    value.type_str() == *tpe || (value.type_str() == BUILTIN_TYPE_INT && tpe == BUILTIN_TYPE_FLOAT)
+    (value.is_builtin() && value.type_str() == *tpe)
+        || (value.type_str() == BUILTIN_TYPE_INT && tpe == BUILTIN_TYPE_FLOAT)
 }
 
-/// match_function_type returns the value wether match the given the function type string
+/// match_function_type returns the value wether match the given the function type string.
 #[inline]
 pub fn match_function_type(value: &ValueRef, tpe: &str) -> bool {
-    value.type_str() == *tpe
-        || (value.type_str() == KCL_TYPE_FUNCTION
-            && tpe.contains("(")
-            && tpe.contains(")")
-            && tpe.contains("->"))
+    value.type_str() == KCL_TYPE_FUNCTION
+        && (tpe == KCL_TYPE_FUNCTION
+            || (tpe.contains("(") && tpe.contains(")") && tpe.contains("->")))
 }
 
 /// is_literal_type returns the type string whether is a literal type
@@ -754,7 +761,7 @@ mod test_value_type {
             (ValueRef::str("0"), "int", false),
         ];
         for (value, tpe, expected) in cases {
-            assert_eq!(check_type(&value, tpe, false), expected);
+            assert_eq!(check_type(&value, "", tpe, false), expected,);
         }
     }
 
@@ -775,7 +782,7 @@ mod test_value_type {
             (ValueRef::bool(true), "int|str", false),
         ];
         for (value, tpe, expected) in cases {
-            assert_eq!(check_type_union(&value, tpe), expected);
+            assert_eq!(check_type_union(&value, "", tpe), expected);
         }
     }
 
@@ -827,7 +834,7 @@ mod test_value_type {
             (ValueRef::dict_int(&[("key", 1)]), "{str:str}", false),
         ];
         for (value, tpe, expected) in cases {
-            assert_eq!(check_type_dict(&value, tpe), expected);
+            assert_eq!(check_type_dict(&value, "", tpe), expected);
         }
     }
 
@@ -866,7 +873,7 @@ mod test_value_type {
             (ValueRef::list_int(&[1, 2, 3]), "[bool]", false),
         ];
         for (value, tpe, expected) in cases {
-            assert_eq!(check_type_list(&value, tpe), expected);
+            assert_eq!(check_type_list(&value, "", tpe), expected);
         }
     }
 
