@@ -1,5 +1,5 @@
 use crate::state::LanguageServerState;
-use clap::Command;
+use clap::{builder::Str, Command};
 use lsp_server::Connection;
 use lsp_types::InitializeParams;
 
@@ -16,7 +16,7 @@ pub(crate) fn main_loop(
 /// Get the kcl language server CLI application.
 pub(crate) fn app() -> Command {
     Command::new("kcl-language-server")
-        .version(kclvm_version::VERSION)
+        .version(Str::from(kclvm_version::get_version_info()))
         .about("KCL language server CLI.")
         .subcommand(Command::new("version").about("Show the KCL language server version"))
 }
