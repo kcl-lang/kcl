@@ -185,8 +185,8 @@ impl<'ctx> Resolver<'ctx> {
                     self.handler.add_type_error(
                         &format!(
                             "Conversion of type '{}' to type '{}' may be a mistake because neither type sufficiently overlaps with the other",
-                            t1.ty_str(),
-                            t2.ty_str()
+                            t1.full_ty_str(),
+                            t2.full_ty_str()
                         ),
                         range.clone(),
                     );

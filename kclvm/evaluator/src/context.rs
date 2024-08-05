@@ -193,11 +193,14 @@ impl<'ctx> Evaluator<'ctx> {
     #[inline]
     pub(crate) fn push_pkgpath(&self, pkgpath: &str) {
         self.pkgpath_stack.borrow_mut().push(pkgpath.to_string());
+        self.runtime_ctx.borrow_mut().set_kcl_pkgpath(pkgpath);
     }
 
     #[inline]
     pub(crate) fn pop_pkgpath(&self) {
-        self.pkgpath_stack.borrow_mut().pop();
+        if let Some(pkgpath) = self.pkgpath_stack.borrow_mut().pop() {
+            self.runtime_ctx.borrow_mut().set_kcl_pkgpath(&pkgpath);
+        }
     }
 
     /// Append a global body into the scope.

@@ -102,7 +102,7 @@ pub fn equal(ty_lhs: TypeRef, ty_rhs: TypeRef) -> bool {
 
 /// Whether the schema is sub schema of another schema.
 pub fn is_sub_schema_of(schema_ty_lhs: &SchemaType, schema_ty_rhs: &SchemaType) -> bool {
-    if schema_ty_lhs.ty_str_with_pkgpath() == schema_ty_rhs.ty_str_with_pkgpath() {
+    if schema_ty_lhs.full_ty_str() == schema_ty_rhs.full_ty_str() {
         true
     } else {
         match &schema_ty_lhs.base {

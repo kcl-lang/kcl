@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+  --> ${CWD}/child/child.k:15:1
+   |
+15 | base_a: A = _base_a as A
+   |  expect A, got base.A
+   |

@@ -1,7 +1,7 @@
 use kclvm_runtime::{
     check_type, dereference_type, is_dict_type, is_list_type, is_type_union, schema_config_meta,
-    schema_runtime_type, separate_kv, split_type_union, ConfigEntryOperationKind, ValueRef,
-    BUILTIN_TYPES, KCL_TYPE_ANY, PKG_PATH_PREFIX,
+    schema_runtime_type, separate_kv, split_type_union, val_plan, ConfigEntryOperationKind,
+    ValueRef, BUILTIN_TYPES, KCL_TYPE_ANY, PKG_PATH_PREFIX,
 };
 use scopeguard::defer;
 
@@ -77,13 +77,21 @@ pub fn type_pack_and_check(
             converted_value = convert_collection_value(s, value, tpe);
         }
         // Runtime type check
-        checked = check_type(&converted_value, tpe, strict);
+        checked = check_type(
+            &converted_value,
+            &s.runtime_ctx.borrow().panic_info.kcl_pkgpath,
+            tpe,
+            strict,
+        );
         if checked {
             break;
         }
     }
     if !checked {
-        panic!("expect {expected_type}, got {}", value.type_str());
+        panic!(
+            "expect {expected_type}, got {}",
+            val_plan::type_of(value, true)
+        );
     }
     converted_value
 }
@@ -198,7 +206,12 @@ pub fn convert_collection_value_with_union_types(
         for tpe in types {
             // Try match every type and convert the value, if matched, return the value.
             let value = convert_collection_value(s, value, tpe);
-            if check_type(&value, tpe, false) {
+            if check_type(
+                &value,
+                &s.runtime_ctx.borrow().panic_info.kcl_pkgpath,
+                tpe,
+                false,
+            ) {
                 return value;
             }
         }

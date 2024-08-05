@@ -619,7 +619,7 @@ pub fn type_of(x: &ValueRef, full_name: &ValueRef) -> ValueRef {
                 result += full_type_str;
                 result += ".";
             }
-            result += &x.type_str();
+            result += &schema.name;
             return ValueRef::str(result.as_str());
         }
     } else if x.is_none() {

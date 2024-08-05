@@ -7,7 +7,7 @@ use serde::{
     Deserialize, Serialize,
 };
 
-use crate::{ConfigEntryOperationKind, Context, ValueRef, KCL_PRIVATE_VAR_PREFIX};
+use crate::{val_plan::KCL_PRIVATE_VAR_PREFIX, ConfigEntryOperationKind, Context, ValueRef};
 
 macro_rules! tri {
     ($e:expr $(,)?) => {
