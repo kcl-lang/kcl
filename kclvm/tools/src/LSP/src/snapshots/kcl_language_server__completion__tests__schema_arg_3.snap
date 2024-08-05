@@ -1,0 +1,5 @@
+---
+source: tools/src/LSP/src/completion.rs
+expression: "format!(\"{:?}\", got_labels)"
+---
+["Config", "Config{}", "Container", "Container{}", "Server", "Server(inputConfig){}", "config", "inputConfig", "mainContainer"]

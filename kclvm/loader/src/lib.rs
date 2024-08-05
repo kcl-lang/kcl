@@ -105,7 +105,8 @@ pub enum ScopeKind {
     Lambda,
     SchemaDef,
     SchemaConfig,
-    Value,
+    SchemaConfigRightValue,
+    SchemaConfigLeftKey,
     Check,
     Callable,
 }
@@ -254,9 +255,10 @@ impl From<LocalSymbolScopeKind> for ScopeKind {
             LocalSymbolScopeKind::Lambda => ScopeKind::Lambda,
             LocalSymbolScopeKind::SchemaDef => ScopeKind::SchemaDef,
             LocalSymbolScopeKind::SchemaConfig => ScopeKind::SchemaConfig,
-            LocalSymbolScopeKind::Value => ScopeKind::Value,
+            LocalSymbolScopeKind::SchemaConfigRightValue => ScopeKind::SchemaConfigRightValue,
             LocalSymbolScopeKind::Check => ScopeKind::Check,
             LocalSymbolScopeKind::Callable => ScopeKind::Callable,
+            LocalSymbolScopeKind::SchemaConfigLeftKey => ScopeKind::SchemaConfigLeftKey,
         }
     }
 }
@@ -278,8 +280,8 @@ fn collect_scope_info(
             kclvm_sema::core::scope::ScopeKind::Local => {
                 match scope_data.try_get_local_scope(&scope_ref) {
                     Some(local) => match local.get_kind() {
-                        LocalSymbolScopeKind::SchemaConfig | LocalSymbolScopeKind::Check => true,
-                        _ => false,
+                        LocalSymbolScopeKind::SchemaConfigRightValue => false,
+                        _ => true,
                     },
                     None => false,
                 }

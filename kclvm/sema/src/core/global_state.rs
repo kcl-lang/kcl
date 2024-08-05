@@ -88,7 +88,8 @@ impl GlobalState {
         local: bool,
         get_def_from_owner: bool,
     ) -> Option<SymbolRef> {
-        match self.scopes.get_scope(&scope_ref)?.look_up_def(
+        let scope = self.scopes.get_scope(&scope_ref)?;
+        match scope.look_up_def(
             name,
             &self.scopes,
             &self.symbols,
@@ -187,9 +188,8 @@ impl GlobalState {
         let get_def_from_owner = match scope_ref.kind {
             ScopeKind::Local => match scopes.try_get_local_scope(&scope_ref) {
                 Some(local) => match local.kind {
-                    super::scope::LocalSymbolScopeKind::SchemaConfig
-                    | super::scope::LocalSymbolScopeKind::Check => true,
-                    _ => false,
+                    super::scope::LocalSymbolScopeKind::SchemaConfigRightValue => false,
+                    _ => true,
                 },
                 None => true,
             },
@@ -228,9 +228,8 @@ impl GlobalState {
         let get_def_from_owner = match scope_ref.kind {
             ScopeKind::Local => match scopes.try_get_local_scope(&scope_ref) {
                 Some(local) => match local.kind {
-                    super::scope::LocalSymbolScopeKind::SchemaConfig
-                    | super::scope::LocalSymbolScopeKind::Check => true,
-                    _ => false,
+                    super::scope::LocalSymbolScopeKind::SchemaConfigRightValue => false,
+                    _ => true,
                 },
                 None => false,
             },

@@ -2064,4 +2064,28 @@ mod tests {
         11,
         None
     );
+
+    completion_label_test_snapshot!(
+        schema_arg_1,
+        "src/test_data/completion_test/schema_def/schema_def.k",
+        10,
+        22,
+        None
+    );
+
+    completion_label_test_snapshot!(
+        schema_arg_2,
+        "src/test_data/completion_test/schema_def/schema_def.k",
+        12,
+        5,
+        None
+    );
+
+    completion_label_test_snapshot!(
+        schema_arg_3,
+        "src/test_data/completion_test/schema_def/schema_def.k",
+        13,
+        8,
+        None
+    );
 }
