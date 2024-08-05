@@ -2,6 +2,7 @@
 
 use kclvm_ast::ast;
 use kclvm_ast::walker::TypedResultWalker;
+use kclvm_runtime::ValueRef;
 
 use super::Evaluator;
 use crate::error as kcl_error;
@@ -80,7 +81,7 @@ impl<'ctx> Evaluator<'ctx> {
     /// 1. scan all possible global variables and allocate undefined values to global pointers.
     /// 2. build all user-defined schema/rule types.
     /// 3. evaluate all codes for the third time.
-    pub(crate) fn compile_ast_modules(&self, modules: &'ctx [ast::Module]) {
+    pub(crate) fn compile_ast_modules(&self, modules: &'ctx [ast::Module]) -> ValueRef {
         // Scan global variables
         for ast_module in modules {
             // Pre define global variables with undefined values
@@ -90,10 +91,13 @@ impl<'ctx> Evaluator<'ctx> {
         for ast_module in modules {
             self.compile_module_import_and_types(ast_module);
         }
+        let mut result = ValueRef::undefined();
         // Compile the ast module in the pkgpath.
         for ast_module in modules {
-            self.walk_module(ast_module)
+            result = self
+                .walk_module(ast_module)
                 .expect(kcl_error::RUNTIME_ERROR_MSG);
         }
+        result
     }
 }

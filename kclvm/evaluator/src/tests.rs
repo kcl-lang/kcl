@@ -24,6 +24,37 @@ macro_rules! evaluator_snapshot {
     };
 }
 
+#[macro_export]
+macro_rules! evaluator_function_snapshot {
+    ($name:ident, $src:expr) => {
+        #[test]
+        fn $name() {
+            let p = load_packages(&LoadPackageOptions {
+                paths: vec!["test.k".to_string()],
+                load_opts: Some(LoadProgramOptions {
+                    k_code_list: vec![$src.to_string()],
+                    ..Default::default()
+                }),
+                load_builtin: false,
+                ..Default::default()
+            })
+            .unwrap();
+            let evaluator = Evaluator::new(&p.program);
+            insta::assert_snapshot!(format!("{}", evaluator.run_as_function().to_string()));
+        }
+    };
+}
+
+evaluator_function_snapshot! {function_stmt_0, r#"
+import json
+
+config = {
+  foo: "bar"
+}
+
+json.encode("${config.foo}")
+"#}
+
 evaluator_snapshot! {expr_stmt_0, "1"}
 evaluator_snapshot! {expr_stmt_1, "2.0"}
 evaluator_snapshot! {expr_stmt_2, "True"}
