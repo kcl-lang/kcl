@@ -291,7 +291,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             end.clone(),
             LocalSymbolScopeKind::SchemaDef,
         );
-        self.ctx.in_schema_def = true;
         let cur_scope = *self.ctx.scopes.last().unwrap();
         self.gs
             .get_scopes_mut()
@@ -408,7 +407,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
         if has_check {
             self.leave_scope();
         }
-        self.ctx.in_schema_def = false;
         self.leave_scope();
 
         Ok(Some(schema_symbol))
@@ -1044,7 +1042,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
             cur_scope,
             self.get_current_module_info(),
             maybe_def,
-            self.ctx.in_schema_def || !self.ctx.in_schema_config_r_value,
+            !self.ctx.in_schema_config_r_value,
         );
         if first_symbol.is_none() {
             // Maybe import package symbol
@@ -1119,14 +1117,12 @@ impl<'ctx> AdvancedResolver<'ctx> {
                                 if let crate::core::symbol::SymbolKind::Attribute =
                                     symbol_ref.get_kind()
                                 {
-                                    if !self.ctx.in_schema_def {
-                                        let parent = local_scope.parent;
-                                        self.gs.get_scopes_mut().add_def_to_scope(
-                                            parent,
-                                            name,
-                                            first_unresolved_ref,
-                                        );
-                                    }
+                                    let parent = local_scope.parent;
+                                    self.gs.get_scopes_mut().add_def_to_scope(
+                                        parent,
+                                        name,
+                                        first_unresolved_ref,
+                                    );
                                 }
                             }
                             _ => {}
@@ -1286,7 +1282,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
             cur_scope,
             self.get_current_module_info(),
             true,
-            self.ctx.in_schema_def || !self.ctx.in_schema_config_r_value,
+            !self.ctx.in_schema_config_r_value,
         );
         match first_symbol {
             Some(symbol_ref) => {
@@ -1834,7 +1830,6 @@ impl<'ctx> AdvancedResolver<'ctx> {
 
             if let Some(key) = &entry.node.key {
                 self.ctx.maybe_def = true;
-                self.ctx.in_schema_config_r_value = false;
                 self.enter_local_scope(
                     &self.ctx.current_filename.as_ref().unwrap().clone(),
                     key.get_pos(),
@@ -1849,7 +1844,6 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 }
                 self.expr(key)?;
                 self.leave_scope();
-                self.ctx.in_schema_config_r_value = true;
                 self.ctx.maybe_def = false;
             }
         }

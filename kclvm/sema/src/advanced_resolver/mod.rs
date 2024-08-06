@@ -83,8 +83,6 @@ pub struct Context<'ctx> {
     maybe_def: bool,
     // whether in schema config right value, affect lookup def
     in_schema_config_r_value: bool,
-    // whether in schema def, affect lookup def
-    in_schema_def: bool,
 }
 
 impl<'ctx> Context<'ctx> {
@@ -116,7 +114,6 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 cur_node: AstIndex::default(),
                 maybe_def: false,
                 in_schema_config_r_value: false,
-                in_schema_def: false,
             },
         };
         // Scan all scehma symbol
