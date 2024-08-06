@@ -188,7 +188,7 @@ impl GlobalState {
         let get_def_from_owner = match scope_ref.kind {
             ScopeKind::Local => match scopes.try_get_local_scope(&scope_ref) {
                 Some(local) => match local.kind {
-                    super::scope::LocalSymbolScopeKind::SchemaConfigRightValue => false,
+                    super::scope::LocalSymbolScopeKind::ConfigRightValue => false,
                     _ => true,
                 },
                 None => true,
@@ -228,7 +228,7 @@ impl GlobalState {
         let get_def_from_owner = match scope_ref.kind {
             ScopeKind::Local => match scopes.try_get_local_scope(&scope_ref) {
                 Some(local) => match local.kind {
-                    super::scope::LocalSymbolScopeKind::SchemaConfigRightValue => false,
+                    super::scope::LocalSymbolScopeKind::ConfigRightValue => false,
                     _ => true,
                 },
                 None => false,

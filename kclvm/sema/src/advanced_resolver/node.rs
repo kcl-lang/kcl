@@ -1113,7 +1113,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                             .try_get_local_scope(&cur_scope)
                             .unwrap();
                         match local_scope.get_kind() {
-                            LocalSymbolScopeKind::SchemaConfig => {
+                            LocalSymbolScopeKind::Config => {
                                 if let crate::core::symbol::SymbolKind::Attribute =
                                     symbol_ref.get_kind()
                                 {
@@ -1796,8 +1796,8 @@ impl<'ctx> AdvancedResolver<'ctx> {
 
         let schema_symbol = self.ctx.schema_symbol_stack.last().unwrap_or(&None).clone();
         let kind = match &schema_symbol {
-            Some(_) => LocalSymbolScopeKind::SchemaConfig,
-            None => LocalSymbolScopeKind::SchemaConfigRightValue,
+            Some(_) => LocalSymbolScopeKind::Config,
+            None => LocalSymbolScopeKind::ConfigRightValue,
         };
 
         self.enter_local_scope(
@@ -1820,7 +1820,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 &self.ctx.current_filename.as_ref().unwrap().clone(),
                 start,
                 end,
-                LocalSymbolScopeKind::SchemaConfigRightValue,
+                LocalSymbolScopeKind::ConfigRightValue,
             );
             self.ctx.in_schema_config_r_value = true;
             self.expr(&entry.node.value)?;

@@ -397,7 +397,7 @@ fn completion_newline(
     if let Some(scope) = gs.look_up_scope(pos) {
         if let ScopeKind::Local = scope.get_kind() {
             if let Some(locol_scope) = gs.get_scopes().try_get_local_scope(&scope) {
-                if let LocalSymbolScopeKind::SchemaConfig = locol_scope.get_kind() {
+                if let LocalSymbolScopeKind::Config = locol_scope.get_kind() {
                     if let Some(defs) = gs.get_defs_within_scope(scope) {
                         for symbol_ref in defs {
                             match gs.get_symbols().get_symbol(symbol_ref) {
