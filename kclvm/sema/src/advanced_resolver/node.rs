@@ -1119,12 +1119,14 @@ impl<'ctx> AdvancedResolver<'ctx> {
                                 if let crate::core::symbol::SymbolKind::Attribute =
                                     symbol_ref.get_kind()
                                 {
-                                    let parent = local_scope.parent;
-                                    self.gs.get_scopes_mut().add_def_to_scope(
-                                        parent,
-                                        name,
-                                        first_unresolved_ref,
-                                    );
+                                    if !self.ctx.in_schema_def {
+                                        let parent = local_scope.parent;
+                                        self.gs.get_scopes_mut().add_def_to_scope(
+                                            parent,
+                                            name,
+                                            first_unresolved_ref,
+                                        );
+                                    }
                                 }
                             }
                             _ => {}

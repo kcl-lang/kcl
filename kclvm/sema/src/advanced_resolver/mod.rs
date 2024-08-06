@@ -1410,7 +1410,7 @@ mod tests {
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 17_u64,
                 26_u64,
-                5_usize,
+                10_usize,
             ),
             // __main__.Main schema expr scope
             (
@@ -1428,7 +1428,7 @@ mod tests {
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 30,
                 20,
-                5,
+                7,
             ),
             // pkg.Person schema expr scope
             (
@@ -1446,7 +1446,7 @@ mod tests {
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 34,
                 17,
-                5,
+                6,
             ),
             // __main__ package scope
             (
@@ -1464,7 +1464,7 @@ mod tests {
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 15,
                 11,
-                4,
+                6,
             ),
             // import_test.a.Name expr scope
             (
@@ -1482,7 +1482,7 @@ mod tests {
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 12,
                 21,
-                4,
+                8,
             ),
         ];
 
