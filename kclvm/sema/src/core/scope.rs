@@ -411,7 +411,6 @@ pub enum LocalSymbolScopeKind {
     SchemaDef,
     SchemaConfig,
     SchemaConfigRightValue,
-    SchemaConfigLeftKey,
     Check,
     Callable,
 }
@@ -550,15 +549,13 @@ impl Scope for LocalSymbolScope {
         // #Root[
         // b = "bar"
         // foo = Foo #SchemaConfig[{
-        //   #SchemaConfigLeftKey[bar]: #SchemaConfigRightValue[b]
+        //   bar: #SchemaConfigRightValue[b]
         // }]
         // ]
         // ````
-        // At position of `bar`, the scope kind is SchemaConfigLeftKey, only get the definition of bar.
+        // At position of `bar`, the scope kind is SchemaConfig, only get the definition of bar.
         // At position of seconde `b`, the scope is the child scope of SchemaConfig, need to recursively find the definition of `b`` at a higher level
-        if self.kind == LocalSymbolScopeKind::SchemaConfig && !recursive
-            || self.kind == LocalSymbolScopeKind::SchemaConfigLeftKey
-        {
+        if self.kind == LocalSymbolScopeKind::SchemaConfig && !recursive {
             return all_defs_map;
         } else {
             for def_ref in self.defs.values() {

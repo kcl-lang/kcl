@@ -1113,13 +1113,12 @@ impl<'ctx> AdvancedResolver<'ctx> {
                             .try_get_local_scope(&cur_scope)
                             .unwrap();
                         match local_scope.get_kind() {
-                            LocalSymbolScopeKind::SchemaConfigLeftKey => {
+                            LocalSymbolScopeKind::SchemaConfig => {
                                 if let crate::core::symbol::SymbolKind::Attribute =
                                     symbol_ref.get_kind()
                                 {
-                                    let parent = local_scope.parent;
                                     self.gs.get_scopes_mut().add_def_to_scope(
-                                        parent,
+                                        cur_scope,
                                         name,
                                         first_unresolved_ref,
                                     );
@@ -1830,20 +1829,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
 
             if let Some(key) = &entry.node.key {
                 self.ctx.maybe_def = true;
-                self.enter_local_scope(
-                    &self.ctx.current_filename.as_ref().unwrap().clone(),
-                    key.get_pos(),
-                    key.get_end_pos(),
-                    LocalSymbolScopeKind::SchemaConfigLeftKey,
-                );
-                if let Some(owner) = schema_symbol {
-                    let cur_scope = self.ctx.scopes.last().unwrap();
-                    self.gs
-                        .get_scopes_mut()
-                        .set_owner_to_scope(*cur_scope, owner);
-                }
                 self.expr(key)?;
-                self.leave_scope();
                 self.ctx.maybe_def = false;
             }
         }

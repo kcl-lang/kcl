@@ -106,7 +106,6 @@ pub enum ScopeKind {
     SchemaDef,
     SchemaConfig,
     SchemaConfigRightValue,
-    SchemaConfigLeftKey,
     Check,
     Callable,
 }
@@ -258,7 +257,6 @@ impl From<LocalSymbolScopeKind> for ScopeKind {
             LocalSymbolScopeKind::SchemaConfigRightValue => ScopeKind::SchemaConfigRightValue,
             LocalSymbolScopeKind::Check => ScopeKind::Check,
             LocalSymbolScopeKind::Callable => ScopeKind::Callable,
-            LocalSymbolScopeKind::SchemaConfigLeftKey => ScopeKind::SchemaConfigLeftKey,
         }
     }
 }
