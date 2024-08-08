@@ -1042,7 +1042,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
             cur_scope,
             self.get_current_module_info(),
             maybe_def,
-            !self.ctx.in_schema_config_r_value,
+            !self.ctx.in_config_r_value,
         );
         if first_symbol.is_none() {
             // Maybe import package symbol
@@ -1281,7 +1281,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
             cur_scope,
             self.get_current_module_info(),
             true,
-            !self.ctx.in_schema_config_r_value,
+            !self.ctx.in_config_r_value,
         );
         match first_symbol {
             Some(symbol_ref) => {
@@ -1822,9 +1822,9 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 end,
                 LocalSymbolScopeKind::ConfigRightValue,
             );
-            self.ctx.in_schema_config_r_value = true;
+            self.ctx.in_config_r_value = true;
             self.expr(&entry.node.value)?;
-            self.ctx.in_schema_config_r_value = false;
+            self.ctx.in_config_r_value = false;
             self.leave_scope();
 
             if let Some(key) = &entry.node.key {

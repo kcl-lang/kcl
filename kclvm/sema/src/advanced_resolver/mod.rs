@@ -82,7 +82,7 @@ pub struct Context<'ctx> {
     // ValueSymbol instead of an UnresolvedSymbol
     maybe_def: bool,
     // whether in schema config right value, affect lookup def
-    in_schema_config_r_value: bool,
+    in_config_r_value: bool,
 }
 
 impl<'ctx> Context<'ctx> {
@@ -113,7 +113,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 end_pos: Position::dummy_pos(),
                 cur_node: AstIndex::default(),
                 maybe_def: false,
-                in_schema_config_r_value: false,
+                in_config_r_value: false,
             },
         };
         // Scan all scehma symbol
