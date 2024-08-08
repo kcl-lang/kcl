@@ -99,7 +99,7 @@ pub(crate) struct LanguageServerSnapshot {
     /// The virtual filesystem that holds all the file contents
     pub vfs: Arc<RwLock<Vfs>>,
     /// Holds the state of the analysis process
-    pub db: Arc<RwLock<HashMap<FileId, Arc<AnalysisDatabase>>>>,
+    pub db: Arc<RwLock<HashMap<FileId, Option<Arc<AnalysisDatabase>>>>>,
     /// Documents that are currently kept in memory from the client
     pub opened_files: Arc<RwLock<HashMap<FileId, DocumentVersion>>>,
     /// request retry time
@@ -241,7 +241,13 @@ impl LanguageServerState {
                                 Ok(uri) => {
                                     let version =
                                         snapshot.opened_files.read().get(&file.file_id).cloned();
-                                    let mut db = snapshot.db.write();
+
+                                    {
+                                        let mut db = snapshot.db.write();
+                                        if !db.contains_key(&file.file_id) {
+                                            db.insert(file.file_id, None);
+                                        }
+                                    }
                                     let (diags, compile_res) = compile_with_params(Params {
                                         file: filename.clone(),
                                         module_cache: Some(module_cache),
@@ -281,15 +287,16 @@ impl LanguageServerState {
                                                     },
                                                 ));
 
+                                                let mut db = snapshot.db.write();
                                                 match compile_res {
                                                     Ok((prog, gs)) => {
                                                         db.insert(
                                                             file.file_id,
-                                                            Arc::new(AnalysisDatabase {
+                                                            Some(Arc::new(AnalysisDatabase {
                                                                 prog,
                                                                 gs,
                                                                 version,
-                                                            }),
+                                                            })),
                                                         );
                                                     }
                                                     Err(err) => {

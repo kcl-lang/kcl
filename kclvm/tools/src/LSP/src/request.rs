@@ -109,7 +109,10 @@ impl LanguageServerSnapshot {
         let file_id = self.vfs.read().file_id(path);
         match file_id {
             Some(id) => match self.db.read().get(&id) {
-                Some(db) => Ok(Arc::clone(db)),
+                Some(db) => match db {
+                    Some(db) => Ok(Arc::clone(db)),
+                    None => Err(anyhow!(LSPError::Retry)),
+                },
                 None => Err(anyhow::anyhow!(LSPError::AnalysisDatabaseNotFound(
                     path.clone()
                 ))),
@@ -118,7 +121,10 @@ impl LanguageServerSnapshot {
         }
     }
 
-    ///  Attempts to get db in cache, this function does not block.
+    /// Attempts to get db in cache, this function does not block.
+    /// db.contains(file_id) && db.get(file_id).is_some() -> Compile completed
+    /// db.contains(file_id) && db.get(file_id).is_none() -> In compiling, retry to wait compile completed
+    /// !db.contains(file_id) ->  Compile failed
     pub(crate) fn try_get_db(
         &self,
         path: &VfsPath,
@@ -127,7 +133,7 @@ impl LanguageServerSnapshot {
             Some(vfs) => match vfs.file_id(path) {
                 Some(file_id) => match self.db.try_read() {
                     Some(db) => match db.get(&file_id) {
-                        Some(db) => Ok(Some(Arc::clone(db))),
+                        Some(db) => Ok(db.clone()),
                         None => Err(anyhow::anyhow!(LSPError::AnalysisDatabaseNotFound(
                             path.clone()
                         ))),

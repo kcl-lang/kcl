@@ -15,10 +15,10 @@ use kclvm_parser::parse_file_force_errors;
 use kclvm_parser::LoadProgramOptions;
 use kclvm_parser::ParseSession;
 use kclvm_utils::path::PathPrefix;
+use parking_lot::lock_api::RwLock;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
-use std::sync::Mutex;
 
 pub fn parse_program(filename: &str) -> Result<ast::Program> {
     let abspath = std::fs::canonicalize(std::path::PathBuf::from(filename)).expect(filename);
@@ -82,7 +82,7 @@ fn test_resolve_program_with_cache() {
         },
         None,
     );
-    let cached_scope = Arc::new(Mutex::new(CachedScope::new(&scope, &program)));
+    let cached_scope = Arc::new(RwLock::new(CachedScope::new(&scope, &program)));
     let scope = resolve_program_with_opts(
         &mut program,
         Options {

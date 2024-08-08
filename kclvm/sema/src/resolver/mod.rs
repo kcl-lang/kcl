@@ -180,12 +180,12 @@ pub fn resolve_program_with_opts(
     let mut resolver = Resolver::new(program, opts.clone());
     resolver.resolve_import();
     if let Some(cached_scope) = cached_scope.as_ref() {
-        if let Ok(mut cached_scope) = cached_scope.try_lock() {
+        if let Some(mut cached_scope) = cached_scope.try_write() {
             cached_scope.invalidate_pkgs.clear();
             cached_scope.update(program);
             resolver.scope_map = cached_scope.scope_map.clone();
             resolver.scope_map.remove(kclvm_ast::MAIN_PKG);
-            resolver.node_ty_map = cached_scope.node_ty_map.clone();
+            resolver.node_ty_map = Rc::new(RefCell::new(cached_scope.node_ty_map.clone()));
             resolver.ctx.schema_mapping = cached_scope.schema_mapping.clone();
             cached_scope
                 .invalidate_pkgs
@@ -194,10 +194,10 @@ pub fn resolve_program_with_opts(
     }
     let scope = resolver.check_and_lint(kclvm_ast::MAIN_PKG);
     if let Some(cached_scope) = cached_scope.as_ref() {
-        if let Ok(mut cached_scope) = cached_scope.try_lock() {
+        if let Some(mut cached_scope) = cached_scope.try_write() {
             cached_scope.update(program);
             cached_scope.scope_map = scope.scope_map.clone();
-            cached_scope.node_ty_map = scope.node_ty_map.clone();
+            cached_scope.node_ty_map = scope.node_ty_map.borrow().clone();
             cached_scope.scope_map.remove(kclvm_ast::MAIN_PKG);
             cached_scope.schema_mapping = resolver.ctx.schema_mapping;
             cached_scope

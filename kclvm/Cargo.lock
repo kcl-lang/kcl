@@ -2029,6 +2029,7 @@ dependencies = [
  "kclvm-utils",
  "lazy_static",
  "once_cell",
+ "parking_lot 0.12.3",
  "petgraph",
  "phf",
  "regex",
