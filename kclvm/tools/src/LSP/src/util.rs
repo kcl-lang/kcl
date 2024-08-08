@@ -207,7 +207,7 @@ pub(crate) fn compile_with_params(
 
     // Resolver
     if let Some(cached_scope) = params.scope_cache.as_ref() {
-        if let Ok(mut cached_scope) = cached_scope.try_lock() {
+        if let Some(mut cached_scope) = cached_scope.try_write() {
             let mut invalidate_main_pkg_modules = HashSet::new();
             invalidate_main_pkg_modules.insert(params.file);
             cached_scope.invalidate_main_pkg_modules = Some(invalidate_main_pkg_modules);
@@ -240,9 +240,9 @@ pub(crate) fn compile_with_params(
     };
 
     gs.new_or_invalidate_pkgs = match &params.scope_cache {
-        Some(cache) => match cache.try_lock() {
-            Ok(scope) => scope.invalidate_pkgs.clone(),
-            Err(_) => HashSet::new(),
+        Some(cache) => match cache.try_write() {
+            Some(scope) => scope.invalidate_pkgs.clone(),
+            None => HashSet::new(),
         },
         None => HashSet::new(),
     };

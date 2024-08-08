@@ -11,7 +11,6 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::VecDeque;
 use std::sync::Arc;
-use std::sync::Mutex;
 use std::{
     cell::RefCell,
     rc::{Rc, Weak},
@@ -25,6 +24,7 @@ use kclvm_ast::ast::AstIndex;
 use kclvm_ast::pos::ContainsPos;
 use kclvm_ast::pos::GetPos;
 use kclvm_error::Position;
+use parking_lot::RwLock;
 use serde::Serialize;
 
 /// The object stored in the scope.
@@ -523,7 +523,7 @@ pub struct NodeKey {
 }
 
 pub type NodeTyMap = IndexMap<NodeKey, TypeRef>;
-pub type KCLScopeCache = Arc<Mutex<CachedScope>>;
+pub type KCLScopeCache = Arc<RwLock<CachedScope>>;
 
 /// For CachedScope, we assume that all changed files must be located in kclvm_ast::MAIN_PKG ,
 /// if this is not the case, please clear the cache directly
@@ -532,7 +532,7 @@ pub struct CachedScope {
     pub program_root: String,
     pub scope_map: IndexMap<String, Rc<RefCell<Scope>>>,
     pub schema_mapping: IndexMap<String, Arc<RefCell<SchemaType>>>,
-    pub node_ty_map: Rc<RefCell<NodeTyMap>>,
+    pub node_ty_map: NodeTyMap,
     pub invalidate_pkgs: HashSet<String>,
     /// Specify the invalid module in the main package, used for invalidate_module().
     /// If it is None, all modules in the main package will be invalidated
@@ -718,7 +718,7 @@ impl CachedScope {
         let mut cached_scope = Self {
             program_root: program.root.to_string(),
             scope_map: scope.scope_map.clone(),
-            node_ty_map: scope.node_ty_map.clone(),
+            node_ty_map: scope.node_ty_map.borrow().clone(),
             invalidate_pkgs: HashSet::default(),
             dependency_graph: DependencyGraph::default(),
             schema_mapping: scope.schema_mapping.clone(),
@@ -733,7 +733,7 @@ impl CachedScope {
 
     pub fn clear(&mut self) {
         self.scope_map.clear();
-        self.node_ty_map.borrow_mut().clear();
+        self.node_ty_map.clear();
         self.dependency_graph.clear();
         self.invalidate_pkgs.clear();
         self.invalidate_main_pkg_modules = None;

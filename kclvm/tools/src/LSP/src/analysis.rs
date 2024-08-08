@@ -9,7 +9,7 @@ pub type DocumentVersion = i32;
 /// Analysis holds the analysis mapping (FileId -> AnalysisDatabase)
 #[derive(Default)]
 pub struct Analysis {
-    pub db: Arc<RwLock<HashMap<FileId, Arc<AnalysisDatabase>>>>,
+    pub db: Arc<RwLock<HashMap<FileId, Option<Arc<AnalysisDatabase>>>>>,
 }
 
 /// AnalysisDatabase holds the result of the compile
