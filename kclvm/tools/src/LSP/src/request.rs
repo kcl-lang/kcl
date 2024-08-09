@@ -105,22 +105,6 @@ impl LanguageServerSnapshot {
         valid
     }
 
-    pub(crate) fn get_db(&self, path: &VfsPath) -> anyhow::Result<Arc<AnalysisDatabase>> {
-        let file_id = self.vfs.read().file_id(path);
-        match file_id {
-            Some(id) => match self.db.read().get(&id) {
-                Some(db) => match db {
-                    Some(db) => Ok(Arc::clone(db)),
-                    None => Err(anyhow!(LSPError::Retry)),
-                },
-                None => Err(anyhow::anyhow!(LSPError::AnalysisDatabaseNotFound(
-                    path.clone()
-                ))),
-            },
-            None => Err(anyhow::anyhow!(LSPError::FileIdNotFound(path.clone()))),
-        }
-    }
-
     /// Attempts to get db in cache, this function does not block.
     /// db.contains(file_id) && db.get(file_id).is_some() -> Compile completed
     /// db.contains(file_id) && db.get(file_id).is_none() -> In compiling, retry to wait compile completed
@@ -252,8 +236,11 @@ pub(crate) fn handle_goto_definition(
     if !snapshot.verify_request_path(&path.clone().into(), &sender) {
         return Ok(None);
     }
-    let db = match snapshot.get_db(&path.clone().into()) {
-        Ok(db) => db,
+    let db = match snapshot.try_get_db(&path.clone().into()) {
+        Ok(option_db) => match option_db {
+            Some(db) => db,
+            None => return Err(anyhow!(LSPError::Retry)),
+        },
         Err(_) => return Ok(None),
     };
     let kcl_pos = kcl_pos(&file, params.text_document_position_params.position);
@@ -278,8 +265,11 @@ pub(crate) fn handle_reference(
     if !snapshot.verify_request_path(&path.clone().into(), &sender) {
         return Ok(None);
     }
-    let db = match snapshot.get_db(&path.clone().into()) {
-        Ok(db) => db,
+    let db = match snapshot.try_get_db(&path.clone().into()) {
+        Ok(option_db) => match option_db {
+            Some(db) => db,
+            None => return Err(anyhow!(LSPError::Retry)),
+        },
         Err(_) => return Ok(None),
     };
     let pos = kcl_pos(&file, params.text_document_position.position);
@@ -315,8 +305,11 @@ pub(crate) fn handle_completion(
         return Ok(None);
     }
 
-    let db = match snapshot.get_db(&path.clone().into()) {
-        Ok(db) => db,
+    let db = match snapshot.try_get_db(&path.clone().into()) {
+        Ok(option_db) => match option_db {
+            Some(db) => db,
+            None => return Err(anyhow!(LSPError::Retry)),
+        },
         Err(_) => return Ok(None),
     };
 
@@ -367,8 +360,11 @@ pub(crate) fn handle_hover(
     if !snapshot.verify_request_path(&path.clone().into(), &sender) {
         return Ok(None);
     }
-    let db = match snapshot.get_db(&path.clone().into()) {
-        Ok(db) => db,
+    let db = match snapshot.try_get_db(&path.clone().into()) {
+        Ok(option_db) => match option_db {
+            Some(db) => db,
+            None => return Err(anyhow!(LSPError::Retry)),
+        },
         Err(_) => return Ok(None),
     };
     let kcl_pos = kcl_pos(&file, params.text_document_position_params.position);
@@ -421,8 +417,11 @@ pub(crate) fn handle_rename(
     if !snapshot.verify_request_path(&path.clone().into(), &sender) {
         return Ok(None);
     }
-    let db = match snapshot.get_db(&path.clone().into()) {
-        Ok(db) => db,
+    let db = match snapshot.try_get_db(&path.clone().into()) {
+        Ok(option_db) => match option_db {
+            Some(db) => db,
+            None => return Err(anyhow!(LSPError::Retry)),
+        },
         Err(_) => return Ok(None),
     };
     let kcl_pos = kcl_pos(&file, params.text_document_position.position);
