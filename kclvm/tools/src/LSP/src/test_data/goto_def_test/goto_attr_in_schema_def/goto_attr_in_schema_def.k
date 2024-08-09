@@ -10,3 +10,10 @@ name = Name{
     name2 = name1 # (8,4) (8,9)
     name3 = name2 # (9,4) (9,9)
 }
+
+schema Nested:
+    a: bool
+    b: {:} = {
+        if a:
+            aa: "aa"
+    }

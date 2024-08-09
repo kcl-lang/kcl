@@ -1,0 +1,6 @@
+---
+source: tools/src/LSP/src/goto_def.rs
+assertion_line: 494
+expression: "format!(\"{:?}\", { fmt_resp(& res) })"
+---
+"path: \"src/test_data/goto_def_test/goto_attr_in_schema_def/goto_attr_in_schema_def.k\", range: Range { start: Position { line: 14, character: 4 }, end: Position { line: 14, character: 5 } }"

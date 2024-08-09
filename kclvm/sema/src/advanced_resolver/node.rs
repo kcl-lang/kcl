@@ -567,6 +567,16 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
         }
 
         self.resolve_decorator(&schema_attr.decorators);
+        let cur_scope = *self.ctx.scopes.last().unwrap();
+        let name = self
+            .gs
+            .get_symbols()
+            .get_symbol(attr_symbol)
+            .ok_or(anyhow!("attribute_symbol not found"))?
+            .get_name();
+        self.gs
+            .get_scopes_mut()
+            .add_def_to_scope(cur_scope, name, attr_symbol);
         Ok(Some(attr_symbol))
     }
 

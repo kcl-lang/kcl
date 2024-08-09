@@ -490,4 +490,11 @@ mod tests {
         11,
         14
     );
+
+    goto_def_test_snapshot!(
+        goto_attr_in_schema_def_4,
+        "src/test_data/goto_def_test/goto_attr_in_schema_def/goto_attr_in_schema_def.k",
+        17,
+        12
+    );
 }
