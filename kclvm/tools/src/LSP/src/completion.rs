@@ -156,7 +156,7 @@ pub(crate) fn completion(
                 }
 
                 // Complete all usable symbol obj in inner most scope
-                if let Some(defs) = gs.get_all_defs_in_scope(scope) {
+                if let Some(defs) = gs.get_all_defs_in_scope(scope, pos) {
                     for symbol_ref in defs {
                         match gs.get_symbols().get_symbol(symbol_ref) {
                             Some(def) => {
@@ -398,7 +398,7 @@ fn completion_newline(
         if let ScopeKind::Local = scope.get_kind() {
             if let Some(locol_scope) = gs.get_scopes().try_get_local_scope(&scope) {
                 if let LocalSymbolScopeKind::Config = locol_scope.get_kind() {
-                    if let Some(defs) = gs.get_defs_within_scope(scope) {
+                    if let Some(defs) = gs.get_defs_within_scope(scope, pos) {
                         for symbol_ref in defs {
                             match gs.get_symbols().get_symbol(symbol_ref) {
                                 Some(def) => {

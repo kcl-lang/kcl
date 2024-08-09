@@ -1485,14 +1485,13 @@ mod tests {
 
         for (filepath, line, col, def_num) in scope_test_cases.iter() {
             let abs_scope_file_path = adjust_canonicalization(base_path.join(filepath));
-            let scope_ref = gs
-                .look_up_scope(&Position {
-                    filename: abs_scope_file_path.clone(),
-                    line: *line,
-                    column: Some(*col),
-                })
-                .unwrap();
-            let all_defs = gs.get_all_defs_in_scope(scope_ref).unwrap();
+            let pos = Position {
+                filename: abs_scope_file_path.clone(),
+                line: *line,
+                column: Some(*col),
+            };
+            let scope_ref = gs.look_up_scope(&pos).unwrap();
+            let all_defs = gs.get_all_defs_in_scope(scope_ref, &pos).unwrap();
             assert_eq!(all_defs.len(), *def_num)
         }
     }

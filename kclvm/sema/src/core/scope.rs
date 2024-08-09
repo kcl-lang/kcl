@@ -1,7 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
 use indexmap::{IndexMap, IndexSet};
-use kclvm_error::Position;
+use kclvm_ast::pos::ContainsPos;
+use kclvm_error::{diagnostic::Range, Position};
 use serde::Serialize;
 
 use crate::core::symbol::SymbolRef;
@@ -36,7 +37,7 @@ pub trait Scope {
         scope_data: &ScopeData,
         symbol_data: &Self::SymbolData,
         module_info: Option<&ModuleInfo>,
-        recursive: bool,
+        maybe_in_key: bool,
         get_def_from_owner: bool,
     ) -> HashMap<String, SymbolRef>;
 
@@ -46,7 +47,7 @@ pub trait Scope {
         scope_data: &ScopeData,
         symbol_data: &Self::SymbolData,
         module_info: Option<&ModuleInfo>,
-        recursive: bool,
+        maybe_in_key: bool,
         get_def_from_owner: bool,
     ) -> HashMap<String, SymbolRef>;
 
@@ -106,6 +107,40 @@ pub struct ScopeData {
     pub(crate) schema_scope_map: IndexMap<String, ScopeRef>,
     pub(crate) locals: generational_arena::Arena<LocalSymbolScope>,
     pub(crate) roots: generational_arena::Arena<RootSymbolScope>,
+    pub(crate) config_scope_context: IndexMap<generational_arena::Index, ConfigScopeContext>,
+}
+
+/// Determine the position of pos in the config scope for completion in lsp.
+/// Refer to gopls `compLitInfo`: https://github.com/golang/tools/blob/28ba9914c6b79f6cf3a56cc477398f7fd686c84d/gopls/internal/golang/completion/completion.go#L298
+/// But the semantics are different. Complete item in:
+/// Go: left = keys + right  right = all def in scope and parent scope
+/// kcl: left = keys if in schema, right = all def in left and parent scope
+#[derive(Default, Debug, Clone)]
+pub struct ConfigScopeContext {
+    pub entries_range: Vec<(Option<Range>, Range)>,
+}
+
+impl ConfigScopeContext {
+    pub fn in_entry(&self, pos: &Position) -> bool {
+        self.entries_range.iter().any(|(key, value)| {
+            let start = if key.is_some() {
+                key.clone().unwrap().0
+            } else {
+                value.0.clone()
+            };
+            start.less_equal(pos) && pos.less_equal(&value.1)
+        })
+    }
+
+    pub fn maybe_in_key(&self, pos: &Position) -> bool {
+        !self.in_right_value(pos)
+    }
+
+    pub fn in_right_value(&self, pos: &Position) -> bool {
+        self.entries_range
+            .iter()
+            .any(|(_, value)| value.contains_pos(pos))
+    }
 }
 
 impl ScopeData {
@@ -228,6 +263,14 @@ impl ScopeData {
         }
         self.remove_scope(&scope_ref)
     }
+
+    pub fn set_config_scope_ctx(&mut self, scope: ScopeRef, ctx: ConfigScopeContext) {
+        self.config_scope_context.insert(scope.get_id(), ctx);
+    }
+
+    pub fn get_config_scope_ctx(&self, scope: ScopeRef) -> Option<ConfigScopeContext> {
+        self.config_scope_context.get(&scope.get_id()).cloned()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -291,7 +334,7 @@ impl Scope for RootSymbolScope {
         _scope_data: &ScopeData,
         symbol_data: &Self::SymbolData,
         module_info: Option<&ModuleInfo>,
-        _recursive: bool,
+        _maybe_in_key: bool,
         _owner: bool,
     ) -> HashMap<String, SymbolRef> {
         let mut all_defs_map = HashMap::new();
@@ -355,11 +398,11 @@ impl Scope for RootSymbolScope {
         scope_data: &ScopeData,
         symbol_data: &Self::SymbolData,
         module_info: Option<&ModuleInfo>,
-        recursive: bool,
+        maybe_in_key: bool,
         owner: bool,
     ) -> HashMap<String, SymbolRef> {
         // get defs within root scope equal to get all defs
-        self.get_all_defs(scope_data, symbol_data, module_info, recursive, owner)
+        self.get_all_defs(scope_data, symbol_data, module_info, maybe_in_key, owner)
     }
 }
 
@@ -410,7 +453,6 @@ pub enum LocalSymbolScopeKind {
     Lambda,
     SchemaDef,
     Config,
-    ConfigRightValue,
     Check,
     Callable,
 }
@@ -518,7 +560,7 @@ impl Scope for LocalSymbolScope {
         scope_data: &ScopeData,
         symbol_data: &Self::SymbolData,
         module_info: Option<&ModuleInfo>,
-        recursive: bool,
+        maybe_in_key: bool,
         owner: bool,
     ) -> HashMap<String, SymbolRef> {
         let mut all_defs_map = HashMap::new();
@@ -537,40 +579,31 @@ impl Scope for LocalSymbolScope {
             }
         }
         // In Config, available definitions only contain keys of schema attr，i.e., `left` values in schema expr.
-        // but in child scope, i.e., right value in schema expr, available definitions contain all parent definitions.
+        // but right value in schema expr, available definitions contain all def in left parent definitions.
         // ```
         // b = "bar"
         // foo = Foo{
         //   bar: b
         // }
         // ````
-        // and scope range is(use `#kind[]` to represent the range of the scope`)
-        // ```
-        // #Root[
-        // b = "bar"
-        // foo = Foo #Config[{
-        //   bar: #ConfigRightValue[b]
-        // }]
-        // ]
-        // ````
-        // At position of `bar`, the scope kind is SchemaConfig, only get the definition of bar.
-        // At position of seconde `b`, the scope is the child scope of SchemaConfig, need to recursively find the definition of `b`` at a higher level
-        if self.kind == LocalSymbolScopeKind::Config && !recursive {
+        // At position of `bar`, only get def from keys of Foo
+        // At position of seconde `b`, get def from left([bar]) and parent scope
+        if maybe_in_key {
             return all_defs_map;
-        } else {
-            for def_ref in self.defs.values() {
-                if let Some(def) = symbol_data.get_symbol(*def_ref) {
-                    all_defs_map.insert(def.get_name(), *def_ref);
-                }
-            }
+        }
 
-            if let Some(parent) = scope_data.get_scope(&self.parent) {
-                for (name, def_ref) in
-                    parent.get_all_defs(scope_data, symbol_data, module_info, true, owner)
-                {
-                    if !all_defs_map.contains_key(&name) {
-                        all_defs_map.insert(name, def_ref);
-                    }
+        for def_ref in self.defs.values() {
+            if let Some(def) = symbol_data.get_symbol(*def_ref) {
+                all_defs_map.insert(def.get_name(), *def_ref);
+            }
+        }
+
+        if let Some(parent) = scope_data.get_scope(&self.parent) {
+            for (name, def_ref) in
+                parent.get_all_defs(scope_data, symbol_data, module_info, false, owner)
+            {
+                if !all_defs_map.contains_key(&name) {
+                    all_defs_map.insert(name, def_ref);
                 }
             }
         }
@@ -639,7 +672,7 @@ impl Scope for LocalSymbolScope {
         _scope_data: &ScopeData,
         symbol_data: &Self::SymbolData,
         module_info: Option<&ModuleInfo>,
-        _recursive: bool,
+        _maybe_in_key: bool,
         owner: bool,
     ) -> HashMap<String, SymbolRef> {
         let mut all_defs_map = HashMap::new();

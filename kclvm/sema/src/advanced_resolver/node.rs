@@ -9,7 +9,7 @@ use kclvm_error::{diagnostic::Range, Position};
 
 use crate::{
     core::{
-        scope::LocalSymbolScopeKind,
+        scope::{ConfigScopeContext, LocalSymbolScopeKind},
         symbol::{
             CommentOrDocSymbol, DecoratorSymbol, ExpressionSymbol, Symbol, SymbolHint,
             SymbolHintKind, SymbolRef, SymbolSemanticInfo, UnresolvedSymbol, ValueSymbol,
@@ -1795,10 +1795,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
         let (start, end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
 
         let schema_symbol = self.ctx.schema_symbol_stack.last().unwrap_or(&None).clone();
-        let kind = match &schema_symbol {
-            Some(_) => LocalSymbolScopeKind::Config,
-            None => LocalSymbolScopeKind::ConfigRightValue,
-        };
+        let kind = LocalSymbolScopeKind::Config;
 
         self.enter_local_scope(
             &self.ctx.current_filename.as_ref().unwrap().clone(),
@@ -1814,18 +1811,15 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 .set_owner_to_scope(*cur_scope, owner);
         }
 
+        let mut entries_range = vec![];
         for entry in entries.iter() {
-            let (start, end) = entry.node.value.get_span_pos();
-            self.enter_local_scope(
-                &self.ctx.current_filename.as_ref().unwrap().clone(),
-                start,
-                end,
-                LocalSymbolScopeKind::ConfigRightValue,
-            );
+            entries_range.push((
+                entry.node.key.clone().map(|k| k.get_span_pos()),
+                entry.node.value.get_span_pos(),
+            ));
             self.ctx.in_config_r_value = true;
             self.expr(&entry.node.value)?;
             self.ctx.in_config_r_value = false;
-            self.leave_scope();
 
             if let Some(key) = &entry.node.key {
                 self.ctx.maybe_def = true;
@@ -1833,6 +1827,12 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 self.ctx.maybe_def = false;
             }
         }
+
+        let cur_scope = self.ctx.scopes.last().unwrap();
+        self.gs
+            .get_scopes_mut()
+            .config_scope_context
+            .insert(cur_scope.get_id(), ConfigScopeContext { entries_range });
         self.leave_scope();
         Ok(())
     }

@@ -105,7 +105,6 @@ pub enum ScopeKind {
     Lambda,
     SchemaDef,
     Config,
-    ConfigRightValue,
     Check,
     Callable,
 }
@@ -254,7 +253,6 @@ impl From<LocalSymbolScopeKind> for ScopeKind {
             LocalSymbolScopeKind::Lambda => ScopeKind::Lambda,
             LocalSymbolScopeKind::SchemaDef => ScopeKind::SchemaDef,
             LocalSymbolScopeKind::Config => ScopeKind::Config,
-            LocalSymbolScopeKind::ConfigRightValue => ScopeKind::ConfigRightValue,
             LocalSymbolScopeKind::Check => ScopeKind::Check,
             LocalSymbolScopeKind::Callable => ScopeKind::Callable,
         }
@@ -274,18 +272,6 @@ fn collect_scope_info(
         } else {
             kind
         };
-        let get_def_from_owner = match scope_ref.get_kind() {
-            kclvm_sema::core::scope::ScopeKind::Local => {
-                match scope_data.try_get_local_scope(&scope_ref) {
-                    Some(local) => match local.get_kind() {
-                        LocalSymbolScopeKind::ConfigRightValue => false,
-                        _ => true,
-                    },
-                    None => false,
-                }
-            }
-            kclvm_sema::core::scope::ScopeKind::Root => false,
-        };
         scopes.insert(
             *scope_ref,
             ScopeInfo {
@@ -294,7 +280,7 @@ fn collect_scope_info(
                 owner: scope.get_owner(),
                 children: scope.get_children(),
                 defs: scope
-                    .get_all_defs(scope_data, symbol_data, None, false, get_def_from_owner)
+                    .get_all_defs(scope_data, symbol_data, None, false, true)
                     .values()
                     .copied()
                     .collect::<Vec<_>>(),
