@@ -52,7 +52,7 @@ fn main() -> Result<(), anyhow::Error> {
                 Ok(())
             }
         },
-        Err(e) => Err(e.into()),
+        Err(e) => e.exit(),
     }
 }
 
