@@ -2066,7 +2066,7 @@ mod tests {
     );
 
     completion_label_test_snapshot!(
-        schema_arg_1,
+        schema_def_1,
         "src/test_data/completion_test/schema_def/schema_def.k",
         10,
         22,
@@ -2074,7 +2074,7 @@ mod tests {
     );
 
     completion_label_test_snapshot!(
-        schema_arg_2,
+        schema_def_2,
         "src/test_data/completion_test/schema_def/schema_def.k",
         12,
         5,
@@ -2082,10 +2082,18 @@ mod tests {
     );
 
     completion_label_test_snapshot!(
-        schema_arg_3,
+        schema_def_3,
         "src/test_data/completion_test/schema_def/schema_def.k",
         13,
         8,
+        None
+    );
+
+    completion_label_test_snapshot!(
+        schema_def_4,
+        "src/test_data/completion_test/schema_def/schema_def.k",
+        3,
+        12,
         None
     );
 }
