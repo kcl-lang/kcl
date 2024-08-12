@@ -9,7 +9,7 @@ use kclvm_error::{diagnostic::Range, Position};
 
 use crate::{
     core::{
-        scope::LocalSymbolScopeKind,
+        scope::{ConfigScopeContext, LocalSymbolScopeKind},
         symbol::{
             CommentOrDocSymbol, DecoratorSymbol, ExpressionSymbol, Symbol, SymbolHint,
             SymbolHintKind, SymbolRef, SymbolSemanticInfo, UnresolvedSymbol, ValueSymbol,
@@ -407,7 +407,6 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
         if has_check {
             self.leave_scope();
         }
-
         self.leave_scope();
 
         Ok(Some(schema_symbol))
@@ -568,6 +567,16 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
         }
 
         self.resolve_decorator(&schema_attr.decorators);
+        let cur_scope = *self.ctx.scopes.last().unwrap();
+        let name = self
+            .gs
+            .get_symbols()
+            .get_symbol(attr_symbol)
+            .ok_or(anyhow!("attribute_symbol not found"))?
+            .get_name();
+        self.gs
+            .get_scopes_mut()
+            .add_def_to_scope(cur_scope, name, attr_symbol);
         Ok(Some(attr_symbol))
     }
 
@@ -1043,7 +1052,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
             cur_scope,
             self.get_current_module_info(),
             maybe_def,
-            self.ctx.look_up_in_owner,
+            !self.ctx.in_config_r_value,
         );
         if first_symbol.is_none() {
             // Maybe import package symbol
@@ -1083,29 +1092,60 @@ impl<'ctx> AdvancedResolver<'ctx> {
         match first_symbol {
             Some(symbol_ref) => {
                 let (start_pos, end_pos): Range = first_name.get_span_pos();
-                let (def_start_pos, def_end_pos) = self
+                let def_symbol = self
                     .gs
                     .get_symbols()
                     .get_symbol(symbol_ref)
-                    .ok_or(anyhow!("first name symbol not found"))?
-                    .get_range();
+                    .ok_or(anyhow!("first name symbol not found"))?;
+                let (def_start_pos, def_end_pos) = def_symbol.get_range();
 
-                // Get an unresolved symbol
+                let cur_scope = *self.ctx.scopes.last().unwrap();
+                let ast_id = first_name.id.clone();
+                let mut first_unresolved = UnresolvedSymbol::new(
+                    first_name.node.clone(),
+                    start_pos.clone(),
+                    end_pos.clone(),
+                    None,
+                );
+                let name = def_symbol.get_name();
+                first_unresolved.def = Some(symbol_ref);
+                let first_unresolved_ref = self.gs.get_symbols_mut().alloc_unresolved_symbol(
+                    first_unresolved,
+                    self.ctx.get_node_key(&ast_id),
+                    self.ctx.current_pkgpath.clone().unwrap(),
+                );
+
+                match cur_scope.get_kind() {
+                    crate::core::scope::ScopeKind::Local => {
+                        let local_scope = self
+                            .gs
+                            .get_scopes()
+                            .try_get_local_scope(&cur_scope)
+                            .unwrap();
+                        match local_scope.get_kind() {
+                            LocalSymbolScopeKind::Config => {
+                                if let crate::core::symbol::SymbolKind::Attribute =
+                                    symbol_ref.get_kind()
+                                {
+                                    self.gs.get_scopes_mut().add_def_to_scope(
+                                        cur_scope,
+                                        name,
+                                        first_unresolved_ref,
+                                    );
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                    _ => {}
+                }
+
                 if def_start_pos != start_pos || def_end_pos != end_pos {
-                    let ast_id = first_name.id.clone();
-                    let mut first_unresolved =
-                        UnresolvedSymbol::new(first_name.node.clone(), start_pos, end_pos, None);
-                    first_unresolved.def = Some(symbol_ref);
-                    let first_unresolved_ref = self.gs.get_symbols_mut().alloc_unresolved_symbol(
-                        first_unresolved,
-                        self.ctx.get_node_key(&ast_id),
-                        self.ctx.current_pkgpath.clone().unwrap(),
-                    );
-                    let cur_scope = *self.ctx.scopes.last().unwrap();
                     self.gs
                         .get_scopes_mut()
                         .add_ref_to_scope(cur_scope, first_unresolved_ref);
                 }
+
                 if names.len() > 1 {
                     let mut parent_ty = match self
                         .ctx
@@ -1251,7 +1291,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
             cur_scope,
             self.get_current_module_info(),
             true,
-            self.ctx.look_up_in_owner,
+            !self.ctx.in_config_r_value,
         );
         match first_symbol {
             Some(symbol_ref) => {
@@ -1765,10 +1805,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
         let (start, end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
 
         let schema_symbol = self.ctx.schema_symbol_stack.last().unwrap_or(&None).clone();
-        let kind = match &schema_symbol {
-            Some(_) => LocalSymbolScopeKind::SchemaConfig,
-            None => LocalSymbolScopeKind::Value,
-        };
+        let kind = LocalSymbolScopeKind::Config;
 
         self.enter_local_scope(
             &self.ctx.current_filename.as_ref().unwrap().clone(),
@@ -1784,28 +1821,28 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 .set_owner_to_scope(*cur_scope, owner);
         }
 
+        let mut entries_range = vec![];
         for entry in entries.iter() {
+            entries_range.push((
+                entry.node.key.clone().map(|k| k.get_span_pos()),
+                entry.node.value.get_span_pos(),
+            ));
+            self.ctx.in_config_r_value = true;
+            self.expr(&entry.node.value)?;
+            self.ctx.in_config_r_value = false;
+
             if let Some(key) = &entry.node.key {
                 self.ctx.maybe_def = true;
-                self.ctx.look_up_in_owner = true;
                 self.expr(key)?;
-                self.ctx.look_up_in_owner = false;
                 self.ctx.maybe_def = false;
             }
-
-            let (start, end) = entry.node.value.get_span_pos();
-
-            self.enter_local_scope(
-                &self.ctx.current_filename.as_ref().unwrap().clone(),
-                start,
-                end,
-                LocalSymbolScopeKind::Value,
-            );
-            self.ctx.look_up_in_owner = false;
-            self.expr(&entry.node.value)?;
-            self.ctx.look_up_in_owner = true;
-            self.leave_scope();
         }
+
+        let cur_scope = self.ctx.scopes.last().unwrap();
+        self.gs
+            .get_scopes_mut()
+            .config_scope_context
+            .insert(cur_scope.get_id(), ConfigScopeContext { entries_range });
         self.leave_scope();
         Ok(())
     }

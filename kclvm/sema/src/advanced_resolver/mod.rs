@@ -81,8 +81,8 @@ pub struct Context<'ctx> {
     // which means advanced resolver will will create the corresponding
     // ValueSymbol instead of an UnresolvedSymbol
     maybe_def: bool,
-    // whether lookup def in scope owner, default true, only in schema attr value is false
-    look_up_in_owner: bool,
+    // whether in schema config right value, affect lookup def
+    in_config_r_value: bool,
 }
 
 impl<'ctx> Context<'ctx> {
@@ -113,7 +113,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 end_pos: Position::dummy_pos(),
                 cur_node: AstIndex::default(),
                 maybe_def: false,
-                look_up_in_owner: true,
+                in_config_r_value: false,
             },
         };
         // Scan all scehma symbol
@@ -1407,7 +1407,7 @@ mod tests {
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 17_u64,
                 26_u64,
-                5_usize,
+                10_usize,
             ),
             // __main__.Main schema expr scope
             (
@@ -1425,7 +1425,7 @@ mod tests {
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 30,
                 20,
-                5,
+                7,
             ),
             // pkg.Person schema expr scope
             (
@@ -1443,7 +1443,7 @@ mod tests {
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 34,
                 17,
-                5,
+                6,
             ),
             // __main__ package scope
             (
@@ -1461,7 +1461,7 @@ mod tests {
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 15,
                 11,
-                4,
+                6,
             ),
             // import_test.a.Name expr scope
             (
@@ -1479,20 +1479,19 @@ mod tests {
                     .replace("/", &std::path::MAIN_SEPARATOR.to_string()),
                 12,
                 21,
-                4,
+                8,
             ),
         ];
 
         for (filepath, line, col, def_num) in scope_test_cases.iter() {
             let abs_scope_file_path = adjust_canonicalization(base_path.join(filepath));
-            let scope_ref = gs
-                .look_up_scope(&Position {
-                    filename: abs_scope_file_path.clone(),
-                    line: *line,
-                    column: Some(*col),
-                })
-                .unwrap();
-            let all_defs = gs.get_all_defs_in_scope(scope_ref).unwrap();
+            let pos = Position {
+                filename: abs_scope_file_path.clone(),
+                line: *line,
+                column: Some(*col),
+            };
+            let scope_ref = gs.look_up_scope(&pos).unwrap();
+            let all_defs = gs.get_all_defs_in_scope(scope_ref, &pos).unwrap();
             assert_eq!(all_defs.len(), *def_num)
         }
     }

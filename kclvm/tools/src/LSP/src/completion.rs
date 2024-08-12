@@ -156,7 +156,7 @@ pub(crate) fn completion(
                 }
 
                 // Complete all usable symbol obj in inner most scope
-                if let Some(defs) = gs.get_all_defs_in_scope(scope) {
+                if let Some(defs) = gs.get_all_defs_in_scope(scope, pos) {
                     for symbol_ref in defs {
                         match gs.get_symbols().get_symbol(symbol_ref) {
                             Some(def) => {
@@ -397,8 +397,8 @@ fn completion_newline(
     if let Some(scope) = gs.look_up_scope(pos) {
         if let ScopeKind::Local = scope.get_kind() {
             if let Some(locol_scope) = gs.get_scopes().try_get_local_scope(&scope) {
-                if let LocalSymbolScopeKind::SchemaConfig = locol_scope.get_kind() {
-                    if let Some(defs) = gs.get_defs_within_scope(scope) {
+                if let LocalSymbolScopeKind::Config = locol_scope.get_kind() {
+                    if let Some(defs) = gs.get_defs_within_scope(scope, pos) {
                         for symbol_ref in defs {
                             match gs.get_symbols().get_symbol(symbol_ref) {
                                 Some(def) => {
@@ -2062,6 +2062,38 @@ mod tests {
         "src/test_data/completion_test/schema/schema.k",
         23,
         11,
+        None
+    );
+
+    completion_label_test_snapshot!(
+        schema_def_1,
+        "src/test_data/completion_test/schema_def/schema_def.k",
+        10,
+        22,
+        None
+    );
+
+    completion_label_test_snapshot!(
+        schema_def_2,
+        "src/test_data/completion_test/schema_def/schema_def.k",
+        12,
+        5,
+        None
+    );
+
+    completion_label_test_snapshot!(
+        schema_def_3,
+        "src/test_data/completion_test/schema_def/schema_def.k",
+        13,
+        8,
+        None
+    );
+
+    completion_label_test_snapshot!(
+        schema_def_4,
+        "src/test_data/completion_test/schema_def/schema_def.k",
+        3,
+        12,
         None
     );
 }
