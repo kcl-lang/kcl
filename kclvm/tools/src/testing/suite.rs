@@ -76,12 +76,15 @@ impl TestRun for TestSuite {
             let artifact = None;
             artifact
         };
+        // Save the user argument options.
+        let user_args = args.args;
         // Test every case in the suite.
         for (name, _) in &self.cases {
             args.args = vec![ast::Argument {
                 name: TEST_CASE_RUN_OPTION.into(),
                 value: format!("{:?}", name),
             }];
+            args.args.append(&mut user_args.clone());
             let start = Instant::now();
             // Check if is the fast eval mode.
             let exec_result = if let Some(_artifact) = &artifact {
