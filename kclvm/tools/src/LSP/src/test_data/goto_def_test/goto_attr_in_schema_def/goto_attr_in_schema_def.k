@@ -17,3 +17,18 @@ schema Nested:
         if a:
             aa: "aa"
     }
+
+schema Baz:
+    foo: [str]
+    bar: Name
+
+schema RoleBinding:
+
+    foo?: [str]
+
+    bar: Name
+
+    baz: Baz = Baz {
+        foo: foo
+        bar: bar
+    }
