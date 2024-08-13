@@ -1,0 +1,6 @@
+error[E2G22]: TypeError
+  --> ${CWD}/main.k:14:33
+   |
+14 | expected: Container = config | {name = 1}
+   |                                 ^ expected str, got int(1)
+   |

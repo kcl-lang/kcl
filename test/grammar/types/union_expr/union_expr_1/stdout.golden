@@ -1,0 +1,7 @@
+config:
+  expected:
+    name: test-repo/test-image:test-tag
+    image: test/test-container:test-cluster
+    volumeMounts:
+    - name: config
+      mountPath: /app/config
