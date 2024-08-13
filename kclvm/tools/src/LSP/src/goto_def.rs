@@ -497,4 +497,32 @@ mod tests {
         17,
         12
     );
+
+    goto_def_test_snapshot!(
+        goto_attr_in_schema_def_5,
+        "src/test_data/goto_def_test/goto_attr_in_schema_def/goto_attr_in_schema_def.k",
+        32,
+        15
+    );
+
+    goto_def_test_snapshot!(
+        goto_attr_in_schema_def_6,
+        "src/test_data/goto_def_test/goto_attr_in_schema_def/goto_attr_in_schema_def.k",
+        33,
+        15
+    );
+
+    goto_def_test_snapshot!(
+        goto_attr_in_schema_def_7,
+        "src/test_data/goto_def_test/goto_attr_in_schema_def/goto_attr_in_schema_def.k",
+        32,
+        10
+    );
+
+    goto_def_test_snapshot!(
+        goto_attr_in_schema_def_8,
+        "src/test_data/goto_def_test/goto_attr_in_schema_def/goto_attr_in_schema_def.k",
+        33,
+        10
+    );
 }
