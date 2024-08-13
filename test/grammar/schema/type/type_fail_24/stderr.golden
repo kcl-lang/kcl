@@ -35,10 +35,10 @@ error[E2G22]: TypeError
  --> ${CWD}/main.k:4:5
   |
 4 |     name: {
-  |     ^ expected [Container], got {str(image) | str(name):str(image) | str(name)}
+  |     ^ expected [Container], got {str:str}
   |
  --> ${CWD}/pkg/person.k:3:5
   |
 3 |     spec: [Container]
-  |     ^ variable is defined here, its type is [Container], but got {str(image) | str(name):str(image) | str(name)}
+  |     ^ variable is defined here, its type is [Container], but got {str:str}
   |

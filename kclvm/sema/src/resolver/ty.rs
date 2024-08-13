@@ -297,21 +297,44 @@ impl<'ctx> Resolver<'ctx> {
                 }
                 _ => val_ty,
             };
-
-            if !self.check_type(val_ty.clone(), index_signature.val_ty.clone(), range) {
-                self.handler.add_type_error(
-                    &format!(
-                        "expected schema index signature value type {}, got {}",
-                        index_signature.val_ty.ty_str(),
-                        val_ty.ty_str()
-                    ),
-                    range.clone(),
-                );
-            }
-
-            if index_signature.any_other {
-                return self.check_type(key_ty, index_signature.key_ty.clone(), range)
-                    && self.check_type(val_ty, index_signature.val_ty.clone(), range);
+            if dict_ty.attrs.is_empty() {
+                if !self.check_type(val_ty.clone(), index_signature.val_ty.clone(), range) {
+                    self.handler.add_type_error(
+                        &format!(
+                            "expected schema index signature value type {}, got {}",
+                            index_signature.val_ty.ty_str(),
+                            val_ty.ty_str()
+                        ),
+                        range.clone(),
+                    );
+                }
+            } else {
+                for (name, attr) in &dict_ty.attrs {
+                    if index_signature.any_other {
+                        if let Some(attr_obj) = schema_ty.attrs.get(name) {
+                            self.must_assignable_to(
+                                attr.ty.clone(),
+                                attr_obj.ty.clone(),
+                                range.clone(),
+                                Some(attr_obj.range.clone()),
+                            );
+                        } else {
+                            self.must_assignable_to(
+                                attr.ty.clone(),
+                                index_signature.val_ty.clone(),
+                                attr.range.clone(),
+                                None,
+                            );
+                        }
+                    } else {
+                        self.must_assignable_to(
+                            attr.ty.clone(),
+                            index_signature.val_ty.clone(),
+                            attr.range.clone(),
+                            None,
+                        );
+                    }
+                }
             }
             true
         } else {
@@ -319,12 +342,14 @@ impl<'ctx> Resolver<'ctx> {
             // check whether the type of key value pair in dict matches the attribute type in the schema.
             if let TypeKind::StrLit(key_name) = &key_ty.kind {
                 if let Some(attr_obj) = schema_ty.attrs.get(key_name) {
-                    self.must_assignable_to(
-                        val_ty.clone(),
-                        attr_obj.ty.clone(),
-                        range.clone(),
-                        Some(attr_obj.range.clone()),
-                    );
+                    if let Some(attr) = dict_ty.attrs.get(key_name) {
+                        self.must_assignable_to(
+                            attr.ty.clone(),
+                            attr_obj.ty.clone(),
+                            range.clone(),
+                            Some(attr_obj.range.clone()),
+                        );
+                    }
                     return true;
                 }
             }

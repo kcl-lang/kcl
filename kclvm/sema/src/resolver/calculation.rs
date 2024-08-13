@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use crate::resolver::Resolver;
 use crate::ty::{
-    has_any_type, is_upper_bound, sup, Type, TypeInferMethods, TypeRef, ZERO_LIT_TYPES,
+    has_any_type, is_upper_bound, sup, Type, TypeInferMethods, TypeKind, TypeRef, ZERO_LIT_TYPES,
 };
+use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_error::diagnostic::Range;
 
@@ -162,12 +163,23 @@ impl<'ctx> Resolver<'ctx> {
                         true,
                         Type::list_ref(sup(&[t1.list_item_ty(), t2.list_item_ty()])),
                     )
-                } else if t1.is_dict() && t2.is_dict() {
-                    let (t1_key_ty, t1_val_ty) = t1.dict_entry_ty();
-                    let (t2_key_ty, t2_val_ty) = t2.dict_entry_ty();
+                } else if let (TypeKind::Dict(t1_dict_ty), TypeKind::Dict(t2_dict_ty)) =
+                    (&t1.kind, &t2.kind)
+                {
+                    let mut attrs = IndexMap::new();
+                    for (k, v) in &t1_dict_ty.attrs {
+                        attrs.insert(k.to_string(), v.clone());
+                    }
+                    for (k, v) in &t2_dict_ty.attrs {
+                        attrs.insert(k.to_string(), v.clone());
+                    }
                     (
                         true,
-                        Type::dict_ref(sup(&[t1_key_ty, t2_key_ty]), sup(&[t1_val_ty, t2_val_ty])),
+                        Arc::new(Type::dict_with_attrs(
+                            sup(&[t1_dict_ty.key_ty.clone(), t2_dict_ty.key_ty.clone()]),
+                            sup(&[t1_dict_ty.val_ty.clone(), t2_dict_ty.val_ty.clone()]),
+                            attrs,
+                        )),
                     )
                 } else if t1.is_schema() && (t2.is_schema() || t2.is_dict()) {
                     (true, t1)
