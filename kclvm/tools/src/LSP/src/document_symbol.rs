@@ -66,6 +66,10 @@ pub(crate) fn document_symbol(
                                                         }
 
                                                         schema_symbol.children = Some(children);
+                                                        schema_symbol.name = format!(
+                                                            "schema {}",
+                                                            schema_symbol.name
+                                                        );
                                                         document_symbols
                                                             .push(schema_symbol.clone());
                                                     }
@@ -186,7 +190,7 @@ mod tests {
         let mut res = document_symbol(file.as_str(), &gs).unwrap();
         let mut expect = vec![];
         expect.push(build_document_symbol(
-            "Person4",
+            "schema Person4",
             SymbolKind::STRUCT,
             ((0, 7), (0, 14)),
             Some(vec![build_document_symbol(
@@ -205,6 +209,8 @@ mod tests {
             None,
             Some("Person4".to_string()),
         ));
+
+        expect.sort_by(|a, b| a.name.cmp(&b.name));
 
         match &mut res {
             DocumentSymbolResponse::Flat(_) => panic!("test failed"),
