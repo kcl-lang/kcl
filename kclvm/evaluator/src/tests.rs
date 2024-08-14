@@ -194,6 +194,40 @@ else:
         if True:
             c = 1
 "#}
+evaluator_snapshot! {if_stmt_7, r#"
+_a = 1
+if True:
+    _a = 2
+    _a += 1
+a = _a
+
+schema Config:
+    _a = 1
+    if True:
+        _a = 2
+        _a += 1
+    a = _a
+
+c = Config {}
+"#}
+evaluator_snapshot! {if_stmt_8, r#"
+_items = []
+if False:
+    _items += [ {key1 = "value1"} ]
+if True:
+    _items += [ {key2 = "value2"} ]
+items = _items
+
+schema Config:
+    _items = []
+    if False:
+        _items += [ {key1 = "value1"} ]
+    if True:
+        _items += [ {key2 = "value2"} ]
+    items = _items
+
+c = Config {}
+"#}
 
 evaluator_snapshot! {import_stmt_0, r#"import math
 a = 1

@@ -356,7 +356,9 @@ impl SchemaEvalContext {
     pub fn set_value(&self, s: &Evaluator, key: &str) {
         if let Some(scope) = &self.scope {
             let mut scope = scope.borrow_mut();
-            if scope.cal_increment(key) && scope.cache.get(key).is_none() {
+            if (scope.cal_increment(key) || scope.is_last_setter_ast_index(key, &s.ast_id.borrow()))
+                && scope.cache.get(key).is_none()
+            {
                 scope
                     .cache
                     .insert(key.to_string(), s.dict_get_value(&self.value, key));
