@@ -72,7 +72,7 @@ impl<'ctx> Resolver<'ctx> {
                                 &[Message {
                                     range: stmt.get_span_pos(),
                                     style: Style::LineAndColumn,
-                                    message: format!("unique key error name '{}'", name),
+                                    message: format!("Unique key error name '{}'", name),
                                     note: None,
                                     suggested_replacement: None,
                                 }],
