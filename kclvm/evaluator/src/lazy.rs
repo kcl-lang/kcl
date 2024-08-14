@@ -76,6 +76,28 @@ impl LazyEvalScope {
             next_cal_time >= self.setter_len(key)
         }
     }
+
+    /// Whether the current target walker stmt index is the last setter stmt index.
+    #[inline]
+    pub fn is_last_setter_ast_index(&mut self, key: &str, id: &AstIndex) -> bool {
+        if self.is_backtracking(key) {
+            false
+        } else {
+            if let Some(setters) = self.setters.get(key) {
+                if let Some(s) = setters.last() {
+                    if let Some(stopped) = &s.stopped {
+                        stopped == id
+                    } else {
+                        &s.stmt_id == id
+                    }
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        }
+    }
 }
 
 /// Setter kind.
@@ -97,6 +119,8 @@ pub struct Setter {
     pub index: Option<Index>,
     /// Statement index in the schema or body in the body array.
     pub stmt: usize,
+    /// Statement AST index.
+    pub stmt_id: AstIndex,
     /// If the statement is a if statement, stop the backtrack process at the stopped statement index.
     pub stopped: Option<AstIndex>,
     /// Setter kind.
@@ -183,6 +207,7 @@ impl<'ctx> Evaluator<'ctx> {
     ) {
         let add_stmt = |name: &str,
                         i: usize,
+                        stmt_id: &AstIndex,
                         stopped: Option<AstIndex>,
                         body_map: &mut IndexMap<String, Vec<Setter>>,
                         kind: SetterKind| {
@@ -193,6 +218,7 @@ impl<'ctx> Evaluator<'ctx> {
             body_vec.push(Setter {
                 index,
                 stmt: i,
+                stmt_id: stmt_id.clone(),
                 stopped,
                 kind,
             });
@@ -204,7 +230,7 @@ impl<'ctx> Evaluator<'ctx> {
                     if is_in_if {
                         in_if_names.push((name.to_string(), stmt.id.clone()));
                     } else {
-                        add_stmt(name, i, None, body_map, SetterKind::Normal);
+                        add_stmt(name, i, &stmt.id, None, body_map, SetterKind::Normal);
                     }
                 }
                 ast::Stmt::Assign(assign_stmt) => {
@@ -213,7 +239,7 @@ impl<'ctx> Evaluator<'ctx> {
                         if is_in_if {
                             in_if_names.push((name.to_string(), stmt.id.clone()));
                         } else {
-                            add_stmt(name, i, None, body_map, SetterKind::Normal);
+                            add_stmt(name, i, &stmt.id, None, body_map, SetterKind::Normal);
                         }
                     }
                 }
@@ -223,7 +249,7 @@ impl<'ctx> Evaluator<'ctx> {
                     if is_in_if {
                         in_if_names.push((name.to_string(), stmt.id.clone()));
                     } else {
-                        add_stmt(name, i, None, body_map, SetterKind::Normal);
+                        add_stmt(name, i, &stmt.id, None, body_map, SetterKind::Normal);
                     }
                 }
                 ast::Stmt::If(if_stmt) => {
@@ -235,7 +261,14 @@ impl<'ctx> Evaluator<'ctx> {
                         }
                     } else {
                         for (name, id) in &if_names {
-                            add_stmt(name, i, Some(id.clone()), body_map, SetterKind::If);
+                            add_stmt(
+                                name,
+                                i,
+                                &stmt.id,
+                                Some(id.clone()),
+                                body_map,
+                                SetterKind::If,
+                            );
                         }
                     }
                     let mut or_else_names: Vec<(String, AstIndex)> = vec![];
@@ -252,7 +285,14 @@ impl<'ctx> Evaluator<'ctx> {
                         }
                     } else {
                         for (name, id) in &or_else_names {
-                            add_stmt(name, i, Some(id.clone()), body_map, SetterKind::OrElse);
+                            add_stmt(
+                                name,
+                                i,
+                                &stmt.id,
+                                Some(id.clone()),
+                                body_map,
+                                SetterKind::OrElse,
+                            );
                         }
                     }
                 }
@@ -261,7 +301,7 @@ impl<'ctx> Evaluator<'ctx> {
                     if is_in_if {
                         in_if_names.push((name.to_string(), stmt.id.clone()));
                     } else {
-                        add_stmt(name, i, None, body_map, SetterKind::Normal);
+                        add_stmt(name, i, &stmt.id, None, body_map, SetterKind::Normal);
                     }
                 }
                 _ => {}
@@ -343,7 +383,9 @@ impl<'ctx> Evaluator<'ctx> {
     pub(crate) fn set_value_to_lazy_scope(&self, pkgpath: &str, key: &str, value: &ValueRef) {
         let mut lazy_scopes = self.lazy_scopes.borrow_mut();
         let scope = lazy_scopes.get_mut(pkgpath).expect(INTERNAL_ERROR_MSG);
-        if scope.cal_increment(key) && scope.cache.get(key).is_none() {
+        if (scope.cal_increment(key) || scope.is_last_setter_ast_index(key, &self.ast_id.borrow()))
+            && scope.cache.get(key).is_none()
+        {
             scope.cache.insert(key.to_string(), value.clone());
         }
     }

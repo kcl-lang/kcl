@@ -36,12 +36,18 @@ impl<'ctx> Evaluator<'ctx> {
             .to_string()
     }
 
-    /// Current runtime context kcl line
+    /// Update current runtime context kcl filename and line
     #[inline]
     pub(crate) fn update_ctx_panic_info<T>(&self, node: &'ctx ast::Node<T>) {
         let mut ctx = self.runtime_ctx.borrow_mut();
         ctx.panic_info.kcl_file = node.filename.clone();
         ctx.panic_info.kcl_line = node.line as i32;
+    }
+
+    /// Update current AST index.
+    #[inline]
+    pub(crate) fn update_ast_id<T>(&self, node: &'ctx ast::Node<T>) {
+        *self.ast_id.borrow_mut() = node.id.clone();
     }
 
     /// Push a lambda definition scope into the lambda stack

@@ -38,7 +38,7 @@ use std::{cell::RefCell, panic::UnwindSafe};
 
 use crate::error as kcl_error;
 use anyhow::Result;
-use kclvm_ast::ast;
+use kclvm_ast::ast::{self, AstIndex};
 use kclvm_runtime::{Context, ValueRef};
 
 /// SCALAR_KEY denotes the temp scalar key for the global variable json plan process.
@@ -84,8 +84,10 @@ pub struct Evaluator<'ctx> {
     pub scope_covers: RefCell<Vec<(usize, usize)>>,
     /// Local variables in the loop.
     pub local_vars: RefCell<HashSet<String>>,
-    /// Schema attr backtrack meta
+    /// Schema attr backtrack meta.
     pub backtrack_meta: RefCell<Vec<BacktrackMeta>>,
+    /// Current AST id for the evaluator walker.
+    pub ast_id: RefCell<AstIndex>,
 }
 
 #[derive(Clone)]
@@ -125,6 +127,7 @@ impl<'ctx> Evaluator<'ctx> {
             scope_covers: RefCell::new(Default::default()),
             local_vars: RefCell::new(Default::default()),
             backtrack_meta: RefCell::new(Default::default()),
+            ast_id: RefCell::new(AstIndex::default()),
         }
     }
 
