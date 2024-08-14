@@ -23,6 +23,16 @@ fn strip_quotes(original: &str) -> &str {
             },
             None => original,
         },
+        // Raw string prefix 'r'
+        Some('r') => match original.strip_prefix('r') {
+            Some(s) => strip_quotes(s),
+            None => original,
+        },
+        // Raw string prefix 'R'
+        Some('R') => match original.strip_prefix('R') {
+            Some(s) => strip_quotes(s),
+            None => original,
+        },
         _ => original,
     }
 }
