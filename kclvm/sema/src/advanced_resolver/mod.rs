@@ -206,7 +206,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
         let parent = *self.ctx.scopes.last().unwrap();
         let local_scope = LocalSymbolScope::new(parent, start, end, kind);
         let scope_ref = self.gs.get_scopes_mut().alloc_local_scope(local_scope);
-        
+
         match parent.get_kind() {
             ScopeKind::Root => {
                 self.gs
