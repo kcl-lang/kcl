@@ -2,7 +2,7 @@ error[E2L28]: UniqueKeyError
  --> ${CWD}/main.k:5:1
   |
 5 | schema Person:
-  | ^ unique key error name 'Person'
+  | ^ Unique key error name 'Person'
   |
 error[E2L28]: UniqueKeyError
  --> ${CWD}/main.k:5:8
