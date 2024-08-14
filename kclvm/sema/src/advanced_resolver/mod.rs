@@ -242,7 +242,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
         let parent = *self.ctx.scopes.last().unwrap();
         let local_scope = LocalSymbolScope::new(parent, start, end, kind);
         let pkg_path = self.ctx.current_pkgpath.clone().unwrap();
-        let fqn_name = format!("{pkg_path}.{name}");
+        let fqn_name = format!("{pkg_path}.{filepath}.{name}");
         let scope_ref = match self.gs.get_scopes().schema_scope_map.get(&fqn_name) {
             Some(scope_ref) => scope_ref.clone(),
             None => {
