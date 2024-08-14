@@ -1669,7 +1669,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
             match &ty_node.node {
                 ast::Type::Any => {}
                 ast::Type::Named(identifier) => {
-                    let r = self.walk_identifier(identifier)?;
+                    self.walk_identifier(identifier)?;
                 }
                 ast::Type::Basic(_) => {}
                 ast::Type::List(list_type) => {
