@@ -191,8 +191,13 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             .unwrap_or(import_stmt.path.clone())
             .get_span_pos();
 
-        let mut unresolved =
-            UnresolvedSymbol::new(import_stmt.path.node.clone(), start_pos, end_pos, None);
+        let mut unresolved = UnresolvedSymbol::new(
+            import_stmt.path.node.clone(),
+            start_pos,
+            end_pos,
+            None,
+            self.ctx.is_type_expr,
+        );
         let package_symbol = match self
             .gs
             .get_symbols()
@@ -622,7 +627,13 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
 
             let (start_pos, end_pos): Range = name.get_span_pos();
             let ast_id = name.id.clone();
-            let mut unresolved = UnresolvedSymbol::new(name.node.clone(), start_pos, end_pos, None);
+            let mut unresolved = UnresolvedSymbol::new(
+                name.node.clone(),
+                start_pos,
+                end_pos,
+                None,
+                self.ctx.is_type_expr,
+            );
             unresolved.def = Some(def_symbol_ref);
             let unresolved_ref = self.gs.get_symbols_mut().alloc_unresolved_symbol(
                 unresolved,
@@ -1106,6 +1117,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                     start_pos.clone(),
                     end_pos.clone(),
                     None,
+                    self.ctx.is_type_expr,
                 );
                 let name = def_symbol.get_name();
                 first_unresolved.def = Some(symbol_ref);
@@ -1172,8 +1184,13 @@ impl<'ctx> AdvancedResolver<'ctx> {
 
                         let (start_pos, end_pos): Range = name.get_span_pos();
                         let ast_id = name.id.clone();
-                        let mut unresolved =
-                            UnresolvedSymbol::new(name.node.clone(), start_pos, end_pos, None);
+                        let mut unresolved = UnresolvedSymbol::new(
+                            name.node.clone(),
+                            start_pos,
+                            end_pos,
+                            None,
+                            self.ctx.is_type_expr,
+                        );
                         unresolved.def = Some(def_symbol_ref);
 
                         unresolved.sema_info = SymbolSemanticInfo {
@@ -1308,8 +1325,13 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 // Get an unresolved symbol
                 if def_start_pos != start_pos || def_end_pos != end_pos {
                     let ast_id = first_name.id.clone();
-                    let mut first_unresolved =
-                        UnresolvedSymbol::new(first_name.node.clone(), start_pos, end_pos, None);
+                    let mut first_unresolved = UnresolvedSymbol::new(
+                        first_name.node.clone(),
+                        start_pos,
+                        end_pos,
+                        None,
+                        self.ctx.is_type_expr,
+                    );
                     first_unresolved.def = Some(symbol_ref);
                     let first_unresolved_ref = self.gs.get_symbols_mut().alloc_unresolved_symbol(
                         first_unresolved,
@@ -1352,6 +1374,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                                     start_pos,
                                     end_pos,
                                     None,
+                                    self.ctx.is_type_expr,
                                 );
                                 unresolved.def = Some(def_symbol_ref);
                                 unresolved.sema_info = SymbolSemanticInfo {
@@ -1641,11 +1664,12 @@ impl<'ctx> AdvancedResolver<'ctx> {
         &mut self,
         ty_node: Option<&'ctx ast::Node<ast::Type>>,
     ) -> ResolvedResult {
+        self.ctx.is_type_expr = true;
         if let Some(ty_node) = ty_node {
             match &ty_node.node {
                 ast::Type::Any => {}
                 ast::Type::Named(identifier) => {
-                    self.walk_identifier(identifier)?;
+                    let r = self.walk_identifier(identifier)?;
                 }
                 ast::Type::Basic(_) => {}
                 ast::Type::List(list_type) => {
@@ -1673,6 +1697,30 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 }
             }
         }
+
+        if let Some(ty_node) = ty_node {
+            match self
+                .ctx
+                .node_ty_map
+                .borrow()
+                .get(&self.ctx.get_node_key(&ty_node.id))
+            {
+                Some(ty) => {
+                    let (_, end) = ty_node.get_span_pos();
+                    let mut expr_symbol =
+                        ExpressionSymbol::new(format!("@{}", ty.ty_str()), end.clone(), end, None);
+
+                    expr_symbol.sema_info.ty = Some(ty.clone());
+                    self.gs.get_symbols_mut().alloc_expression_symbol(
+                        expr_symbol,
+                        self.ctx.get_node_key(&ty_node.id),
+                        self.ctx.current_pkgpath.clone().unwrap(),
+                    );
+                }
+                None => {}
+            }
+        }
+        self.ctx.is_type_expr = false;
         Ok(None)
     }
 

@@ -166,6 +166,14 @@ impl SymbolData {
         }
     }
 
+    pub fn get_unresolved_symbol(&self, id: SymbolRef) -> Option<&UnresolvedSymbol> {
+        if matches!(id.get_kind(), SymbolKind::Unresolved) {
+            self.unresolved.get(id.get_id())
+        } else {
+            None
+        }
+    }
+
     pub fn get_symbol(&self, id: SymbolRef) -> Option<&KCLSymbol> {
         match id.get_kind() {
             SymbolKind::Schema => self
@@ -1825,6 +1833,7 @@ pub struct UnresolvedSymbol {
     pub(crate) owner: Option<SymbolRef>,
     pub(crate) sema_info: SymbolSemanticInfo,
     pub(crate) hint: Option<SymbolHint>,
+    pub(crate) is_type: bool,
 }
 
 impl Symbol for UnresolvedSymbol {
@@ -1861,8 +1870,12 @@ impl Symbol for UnresolvedSymbol {
         data: &Self::SymbolData,
         module_info: Option<&ModuleInfo>,
     ) -> Option<SymbolRef> {
-        data.get_symbol(self.def?)?
-            .get_attribute(name, data, module_info)
+        if self.is_type() {
+            None
+        } else {
+            data.get_symbol(self.def?)?
+                .get_attribute(name, data, module_info)
+        }
     }
 
     fn get_all_attributes(
@@ -1870,11 +1883,14 @@ impl Symbol for UnresolvedSymbol {
         data: &Self::SymbolData,
         module_info: Option<&ModuleInfo>,
     ) -> Vec<SymbolRef> {
-        if let Some(def) = self.def {
-            if let Some(def_symbol) = data.get_symbol(def) {
-                return def_symbol.get_all_attributes(data, module_info);
+        if !self.is_type() {
+            if let Some(def) = self.def {
+                if let Some(def_symbol) = data.get_symbol(def) {
+                    return def_symbol.get_all_attributes(data, module_info);
+                }
             }
         }
+
         vec![]
     }
 
@@ -1928,7 +1944,13 @@ impl Symbol for UnresolvedSymbol {
 }
 
 impl UnresolvedSymbol {
-    pub fn new(name: String, start: Position, end: Position, owner: Option<SymbolRef>) -> Self {
+    pub fn new(
+        name: String,
+        start: Position,
+        end: Position,
+        owner: Option<SymbolRef>,
+        is_type: bool,
+    ) -> Self {
         Self {
             id: None,
             def: None,
@@ -1938,6 +1960,7 @@ impl UnresolvedSymbol {
             sema_info: SymbolSemanticInfo::default(),
             owner,
             hint: None,
+            is_type,
         }
     }
 
@@ -1955,6 +1978,10 @@ impl UnresolvedSymbol {
         };
 
         pkg_path + "." + names.last().unwrap()
+    }
+
+    pub fn is_type(&self) -> bool {
+        self.is_type
     }
 }
 

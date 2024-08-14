@@ -18,7 +18,7 @@
 use std::io;
 use std::{fs, path::Path};
 
-use crate::goto_def::find_def;
+use crate::goto_def::{find_def, find_symbol};
 use indexmap::IndexSet;
 use kclvm_ast::ast::{self, ImportStmt, Program, Stmt};
 use kclvm_ast::MAIN_PKG;
@@ -248,10 +248,26 @@ fn completion_dot(
     }
 
     // look_up_exact_symbol
-    let mut def = find_def(&pre_pos, gs, true);
-    if def.is_none() {
-        def = find_def(pos, gs, false);
+    let mut symbol = find_symbol(&pre_pos, gs, true);
+    if symbol.is_none() {
+        symbol = find_symbol(pos, gs, false);
     }
+
+    let def = match symbol {
+        Some(symbol_ref) => {
+            if let SymbolKind::Unresolved = symbol_ref.get_kind() {
+                let unresolved_symbol = gs.get_symbols().get_unresolved_symbol(symbol_ref).unwrap();
+                if unresolved_symbol.is_type() {
+                    return Some(into_completion_items(&items).into());
+                }
+            }
+            match gs.get_symbols().get_symbol(symbol_ref) {
+                Some(symbol) => symbol.get_definition(),
+                None => None,
+            }
+        }
+        None => None,
+    };
 
     match def {
         Some(def_ref) => {
@@ -2095,5 +2111,45 @@ mod tests {
         3,
         12,
         None
+    );
+
+    completion_label_test_snapshot!(
+        schema_attr_ty_0,
+        "src/test_data/completion_test/dot/schema_attr_ty/schema_attr_ty.k",
+        5,
+        13,
+        Some('.')
+    );
+
+    completion_label_test_snapshot!(
+        schema_attr_ty_1,
+        "src/test_data/completion_test/dot/schema_attr_ty/schema_attr_ty.k",
+        6,
+        14,
+        Some('.')
+    );
+
+    completion_label_test_snapshot!(
+        schema_attr_ty_2,
+        "src/test_data/completion_test/dot/schema_attr_ty/schema_attr_ty.k",
+        7,
+        18,
+        Some('.')
+    );
+
+    completion_label_test_snapshot!(
+        schema_attr_ty_3,
+        "src/test_data/completion_test/dot/schema_attr_ty/schema_attr_ty.k",
+        8,
+        17,
+        Some('.')
+    );
+
+    completion_label_test_snapshot!(
+        schema_attr_ty_4,
+        "src/test_data/completion_test/dot/schema_attr_ty/schema_attr_ty.k",
+        10,
+        15,
+        Some('.')
     );
 }

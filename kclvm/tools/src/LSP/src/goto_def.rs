@@ -72,6 +72,14 @@ pub(crate) fn find_def(kcl_pos: &KCLPos, gs: &GlobalState, exact: bool) -> Optio
     }
 }
 
+pub(crate) fn find_symbol(kcl_pos: &KCLPos, gs: &GlobalState, exact: bool) -> Option<SymbolRef> {
+    if exact {
+        gs.look_up_exact_symbol(kcl_pos)
+    } else {
+        gs.look_up_closest_symbol(kcl_pos)
+    }
+}
+
 // Convert kcl position to GotoDefinitionResponse. This function will convert to
 // None, Scalar or Array according to the number of positions
 fn positions_to_goto_def_resp(
