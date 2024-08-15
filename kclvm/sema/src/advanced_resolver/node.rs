@@ -670,28 +670,51 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             .map(|ty| ty.clone());
 
         if let Some(ty) = call_ty {
-            if let TypeKind::Function(func_ty) = &ty.kind {
-                self.enter_local_scope(
-                    &self.ctx.current_filename.as_ref().unwrap().clone(),
-                    start,
-                    end,
-                    LocalSymbolScopeKind::Callable,
-                );
+            match &ty.kind {
+                TypeKind::Schema(schema_ty) => {
+                    if !schema_ty.is_instance {
+                        self.enter_local_scope(
+                            &self.ctx.current_filename.as_ref().unwrap().clone(),
+                            start,
+                            end,
+                            LocalSymbolScopeKind::Config,
+                        );
 
-                if let Some(owner) = func_symbol {
-                    let cur_scope = self.ctx.scopes.last().unwrap();
-                    self.gs
-                        .get_scopes_mut()
-                        .set_owner_to_scope(*cur_scope, owner);
+                        if let Some(owner) = func_symbol {
+                            let cur_scope = self.ctx.scopes.last().unwrap();
+                            self.gs
+                                .get_scopes_mut()
+                                .set_owner_to_scope(*cur_scope, owner);
+                        }
+                        self.do_arguments_symbol_resolve(&call_expr.args, &call_expr.keywords)?;
+
+                        self.leave_scope();
+                    }
                 }
+                TypeKind::Function(func_ty) => {
+                    self.enter_local_scope(
+                        &self.ctx.current_filename.as_ref().unwrap().clone(),
+                        start,
+                        end,
+                        LocalSymbolScopeKind::Callable,
+                    );
 
-                self.do_arguments_symbol_resolve_with_hint(
-                    &call_expr.args,
-                    &call_expr.keywords,
-                    true,
-                    &func_ty,
-                )?;
-                self.leave_scope();
+                    if let Some(owner) = func_symbol {
+                        let cur_scope = self.ctx.scopes.last().unwrap();
+                        self.gs
+                            .get_scopes_mut()
+                            .set_owner_to_scope(*cur_scope, owner);
+                    }
+
+                    self.do_arguments_symbol_resolve_with_hint(
+                        &call_expr.args,
+                        &call_expr.keywords,
+                        true,
+                        &func_ty,
+                    )?;
+                    self.leave_scope();
+                }
+                _ => {}
             }
         }
 

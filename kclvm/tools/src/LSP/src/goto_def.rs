@@ -332,6 +332,27 @@ mod tests {
     );
 
     goto_def_test_snapshot!(
+        goto_dict_to_schema_attr_test6,
+        "src/test_data/goto_def_test/dict_to_schema/dict_to_schema.k",
+        52,
+        7
+    );
+
+    goto_def_test_snapshot!(
+        goto_dict_to_schema_attr_test7,
+        "src/test_data/goto_def_test/dict_to_schema/dict_to_schema.k",
+        55,
+        7
+    );
+
+    goto_def_test_snapshot!(
+        goto_dict_to_schema_attr_test8,
+        "src/test_data/goto_def_test/dict_to_schema/dict_to_schema.k",
+        58,
+        7
+    );
+
+    goto_def_test_snapshot!(
         list_if_expr_test,
         "src/test_data/goto_def_test/list_if_expr_test/list_if_expr_test.k",
         3,
