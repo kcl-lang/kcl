@@ -1,0 +1,5 @@
+---
+source: tools/src/LSP/src/goto_def.rs
+expression: "format!(\"{:?}\", { fmt_resp(& res) })"
+---
+"path: \"src/test_data/goto_def_test/dict_to_schema/dict_to_schema.k\", range: Range { start: Position { line: 39, character: 4 }, end: Position { line: 39, character: 8 } }"
