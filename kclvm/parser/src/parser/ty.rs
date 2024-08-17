@@ -12,13 +12,14 @@ impl<'a> Parser<'a> {
     /// Syntax:
     ///
     /// type: type_element (OR type_element)*
-    /// type_element: schema_type | basic_type | compound_type | literal_type
+    /// type_element: schema_type | function_type | basic_type | compound_type | literal_type
+    /// function_type: LEFT_PARENTHESES [type_element (COMMA type_element)*] RIGHT_PARENTHESES [RIGHT_ARROW type_element]
     /// schema_type: identifier
     /// basic_type: STRING_TYPE | INT_TYPE | FLOAT_TYPE | BOOL_TYPE | ANY_TYPE
     /// compound_type: list_type | dict_type
     /// list_type: LEFT_BRACKETS (type)? RIGHT_BRACKETS
     /// dict_type: LEFT_BRACE (type)? COLON (type)? RIGHT_BRACE
-    /// literal_type: string | number | TRUE | FALSE | NONE
+    /// literal_type: string | number | TRUE | FALSE
     pub(crate) fn parse_type_annotation(&mut self) -> NodeRef<Type> {
         let token = self.token;
         let mut type_node_list = vec![self.parse_type_element()];
