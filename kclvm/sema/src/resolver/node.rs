@@ -456,7 +456,13 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                         None,
                     ),
                 },
-                None => bug!("invalid ast schema attr op kind"),
+                // Default is Assign
+                None => self.must_assignable_to(
+                    value_ty,
+                    expected_ty,
+                    schema_attr.name.get_span_pos(),
+                    None,
+                ),
             }
         }
         self.any_ty()

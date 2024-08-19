@@ -1347,15 +1347,13 @@ pub struct StringLit {
 }
 
 /// Generate ast.StringLit from String
-impl TryFrom<String> for StringLit {
-    type Error = &'static str;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        Ok(Self {
+impl From<String> for StringLit {
+    fn from(value: String) -> Self {
+        Self {
             value: value.clone(),
             raw_value: format!("{:?}", value),
             is_long_string: false,
-        })
+        }
     }
 }
 

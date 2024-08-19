@@ -107,7 +107,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for ConfigNestAttrTransformer {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct ConfigMergeTransformer {}
 
 #[derive(Debug)]
@@ -355,9 +355,10 @@ fn unify_config_entries(
     entries
 }
 
-/// Merge program
+/// Merge program for multiple file config.
+#[inline]
 pub fn merge_program(program: &mut ast::Program) {
-    let mut merger = ConfigMergeTransformer {};
+    let mut merger = ConfigMergeTransformer::default();
     merger.merge(program);
 }
 
