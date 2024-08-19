@@ -51,7 +51,6 @@ mod tests {
             "collection_if",
             "comment",
             "comp_for",
-            // "empty",
             "import",
             "indent",
             "inline_comment",
@@ -127,7 +126,7 @@ mod tests {
 
         let expected = vec![TextEdit {
             range: lsp_range,
-            new_text: "a = 1\nb = 2\nc = 3\n".to_string(),
+            new_text: "a = 1\n\nb = 2\n\nc = 3\n".to_string(),
         }];
         assert_eq!(got, expected)
     }

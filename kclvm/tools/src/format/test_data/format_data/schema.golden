@@ -23,4 +23,3 @@ schema Person[para1: str = "value", para2 = "value"](Base):
         bool(math.log(10))
 
 person = Person(para1="12") {}
-

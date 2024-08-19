@@ -85,9 +85,6 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         }
         self.expr(&assign_stmt.value);
         self.write_newline_without_fill();
-        if matches!(assign_stmt.value.node, ast::Expr::Schema(_)) {
-            self.write_newline_without_fill();
-        }
     }
 
     fn walk_aug_assign_stmt(&mut self, aug_assign_stmt: &'ctx ast::AugAssignStmt) -> Self::Result {
@@ -315,7 +312,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
     }
 
     fn walk_quant_expr(&mut self, quant_expr: &'ctx ast::QuantExpr) -> Self::Result {
-        let in_one_line = false;
+        let in_one_line = self.last_ast_line > 0 && quant_expr.test.line == self.last_ast_line;
         let quant_op_string: String = quant_expr.op.clone().into();
         self.write(&quant_op_string);
         self.write_space();
@@ -451,11 +448,15 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
     }
 
     fn walk_list_expr(&mut self, list_expr: &'ctx ast::ListExpr) -> Self::Result {
-        let line_set = list_expr
+        let mut line_set = list_expr
             .elts
             .iter()
             .map(|e| e.line)
+            .filter(|l| *l > 0)
             .collect::<HashSet<u64>>();
+        if self.last_ast_line > 0 {
+            line_set.insert(self.last_ast_line);
+        }
         // There are comments in the configuration block.
         let has_comment = !list_expr.elts.is_empty()
             && list_expr
@@ -618,7 +619,15 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
     }
 
     fn walk_config_expr(&mut self, config_expr: &'ctx ast::ConfigExpr) -> Self::Result {
-        let line_set: HashSet<u64> = config_expr.items.iter().map(|item| item.line).collect();
+        let mut line_set: HashSet<u64> = config_expr
+            .items
+            .iter()
+            .map(|item| item.line)
+            .filter(|l| *l > 0)
+            .collect();
+        if self.last_ast_line > 0 {
+            line_set.insert(self.last_ast_line);
+        }
         // There are comments in the configuration block.
         let has_comment = !config_expr.items.is_empty()
             && config_expr
@@ -948,18 +957,28 @@ impl<'p> Printer<'p> {
     }
 
     pub fn stmts(&mut self, stmts: &[ast::NodeRef<ast::Stmt>]) {
-        let mut prev_stmt: Option<ast::Stmt> = None;
+        // Hold the prev statement pointer.
+        let mut prev_stmt: Option<&ast::NodeRef<ast::Stmt>> = None;
         for stmt in stmts {
-            let import_stmt_alter = match (prev_stmt.as_ref(), stmt.as_ref().node.to_owned()) {
+            let import_stmt_alter = match (prev_stmt.map(|s| &s.node).as_ref(), &stmt.node) {
                 (Some(ast::Stmt::Import(_)), ast::Stmt::Import(_)) => false,
                 (Some(ast::Stmt::Import(_)), _) => true,
                 _ => false,
             };
-            if import_stmt_alter {
-                self.write_newline();
+            // Do not format out user-reserved blank lines: which does not mean that to preserve all user-written blank lines.
+            // For situations where there are more than two blank lines, we only keep one blank line.
+            let need_newline = if let Some(prev_stmt) = prev_stmt {
+                stmt.line > 0
+                    && stmt.line >= prev_stmt.end_line + 2
+                    && !self.has_comments_on_node(stmt)
+            } else {
+                false
+            };
+            if import_stmt_alter || need_newline {
+                self.write_newline_without_fill();
             }
             self.stmt(stmt);
-            prev_stmt = Some(stmt.node.to_owned());
+            prev_stmt = Some(stmt);
         }
     }
 }

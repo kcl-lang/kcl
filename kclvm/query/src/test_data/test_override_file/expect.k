@@ -13,8 +13,11 @@ import .values
 #   2. The configuration file is written in KCL.
 c = {
     "a": 1
-    b = {"a": "b"}
+    b = {
+        "a": "b"
+    }
 }
+
 _access = test.ServiceAccess {
     iType = "kkkkkkk"
     sType = dsType
@@ -22,31 +25,52 @@ _access = test.ServiceAccess {
     ports = [80, 443]
     booltest = True
     mergedattr = 1
-    a: {b: {c = 2}, c: {b = 3}}
+    a: {
+        b: {
+            c = 2
+        }
+        c: {
+            b = 3
+        }
+    }
 }
 
 _access3 = test.ServiceAccess {
     iType = "kkkkkkk"
     sType = dsType
-    TestStr = ["${test_str}"]
-    ports = [80, 443]
+    TestStr = [
+        "${test_str}"
+    ]
+    ports = [
+        80
+        443
+    ]
     booltest = True
 }
-
-b = {"c": 2}
+b = {
+    "c": 2
+}
 d = {
     e: {
-        f: {g = 3}
+        f: {
+            g = 3
+        }
     }
 }
 _access4 = test.ServiceAccess {
     iType = "kkkkkkk"
     sType = dsType
-    TestStr = ["${test_str}"]
-    ports = [80, 443]
+    TestStr = [
+        "${test_str}"
+    ]
+    ports = [
+        80
+        443
+    ]
     booltest = True
 }
-
-_access5 = {iType = "dddddd"}
+_access5 = {
+    iType = "dddddd"
+}
 a = b
 _access6 = "a6"

@@ -9,4 +9,3 @@ schema Data:
     value?: str = "value"
 
 data = Data {value = "override_value"}
-

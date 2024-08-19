@@ -7,4 +7,3 @@ schema Person(Base):
     age: int
 
 person = Person {}
-

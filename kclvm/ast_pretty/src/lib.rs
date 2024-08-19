@@ -65,22 +65,23 @@ pub struct Printer<'p> {
     pub indent: usize,
     pub cfg: Config,
     /// Print comments,
-    pub last_ast_line: u64,
     pub comments: VecDeque<ast::NodeRef<ast::Comment>>,
     pub import_spec: IndexMap<String, String>,
     pub hook: &'p (dyn PrinterHook + 'p),
+    /// Last AST expr/stmt line, default is 0.
+    last_ast_line: u64,
 }
 
 impl Default for Printer<'_> {
     fn default() -> Self {
         Self {
+            hook: &NoHook,
             out: Default::default(),
             indent: Default::default(),
             cfg: Default::default(),
-            last_ast_line: Default::default(),
             comments: Default::default(),
             import_spec: Default::default(),
-            hook: &NoHook,
+            last_ast_line: Default::default(),
         }
     }
 }
@@ -91,10 +92,10 @@ impl<'p> Printer<'p> {
             out: "".to_string(),
             indent: 0,
             cfg,
-            last_ast_line: 0,
             comments: VecDeque::default(),
             import_spec: IndexMap::default(),
             hook,
+            last_ast_line: 0,
         }
     }
 

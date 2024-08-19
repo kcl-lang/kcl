@@ -10,4 +10,3 @@ JohnDoe = Person {
     "lastName": "Doe"
     "times": 10
 }
-

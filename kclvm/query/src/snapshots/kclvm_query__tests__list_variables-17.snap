@@ -1,0 +1,16 @@
+---
+source: query/src/tests.rs
+expression: got_json
+---
+{
+  "sha.name": [
+    {
+      "name": "name",
+      "type_name": "",
+      "op_sym": ":",
+      "value": "\"Hello\"",
+      "list_items": [],
+      "dict_entries": []
+    }
+  ]
+}
