@@ -1422,7 +1422,7 @@ fn formatting_test() {
         res.result.unwrap(),
         to_json(Some(vec![TextEdit {
             range: Range::new(Position::new(0, 0), Position::new(u32::MAX, u32::MAX),),
-            new_text: "a = 1\nb = 2\nc = 3\nd = 4\n".to_string()
+            new_text: "a = 1\n\nb = 2\n\nc = 3\n\nd = 4\n".to_string()
         }]))
         .unwrap()
     )
@@ -1493,7 +1493,7 @@ fn formatting_unsaved_test() {
         res.result.unwrap(),
         to_json(Some(vec![TextEdit {
             range: Range::new(Position::new(0, 0), Position::new(u32::MAX, u32::MAX),),
-            new_text: "unsaved = 0\na = 1\nb = 2\nc = 3\nd = 4\n".to_string()
+            new_text: "unsaved = 0\n\na = 1\n\nb = 2\n\nc = 3\n\nd = 4\n".to_string()
         }]))
         .unwrap()
     )

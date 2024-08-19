@@ -680,7 +680,6 @@ impl KclvmServiceImpl {
     ///     name = "Alice"
     ///     age = 18
     /// }
-    ///
     /// "#.to_string();
     /// let result = serv.format_code(&FormatCodeArgs {
     ///     source: source.clone(),

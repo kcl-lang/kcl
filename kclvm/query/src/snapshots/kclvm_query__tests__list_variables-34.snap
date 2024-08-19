@@ -1,0 +1,39 @@
+---
+source: query/src/tests.rs
+expression: got_json
+---
+{
+  "a_dict": [
+    {
+      "name": "a_dict",
+      "type_name": "",
+      "op_sym": "=",
+      "value": "{\n    **_part1\n    **_part2\n}",
+      "list_items": [],
+      "dict_entries": [
+        {
+          "key": "",
+          "value": {
+            "name": "",
+            "type_name": "",
+            "op_sym": ":",
+            "value": "_part1",
+            "list_items": [],
+            "dict_entries": []
+          }
+        },
+        {
+          "key": "",
+          "value": {
+            "name": "",
+            "type_name": "",
+            "op_sym": ":",
+            "value": "_part2",
+            "list_items": [],
+            "dict_entries": []
+          }
+        }
+      ]
+    }
+  ]
+}

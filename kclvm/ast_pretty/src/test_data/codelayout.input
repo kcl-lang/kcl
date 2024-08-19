@@ -7,6 +7,7 @@ import           math   as  alias_math
 schema Person (  Base):
   name:str
   age:int
+
   "attr": str
   "attr-x":  str
   check   :
@@ -17,6 +18,11 @@ person = Person{
 }
 if True:
     a = 1
+  
+    b = 2
+
+    
+    c = 3
 elif True:
   b = 2
 else:
@@ -108,3 +114,33 @@ a.b[1].c /= 1
 a.b[c.d].e == 1
 a.b[1 + 1].e = 1
 a.b[f()].e = 1
+
+
+a=1
+
+
+b= 2
+
+
+c =3
+
+
+
+d  =  4
+e = 5
+f = lambda {
+
+
+a=1
+
+
+b= 2
+
+
+c =3
+
+
+
+d  =  4
+e = 5
+}

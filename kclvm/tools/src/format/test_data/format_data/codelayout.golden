@@ -12,7 +12,6 @@ person = Person {
     name: "Alice"
     age: 18
 }
-
 if True:
     a = 1
 elif True:
@@ -40,12 +39,14 @@ _c = (a + b) * (a - b)
 _b = 2
 _c = 3
 _d = 4
+
 _value = (1 + 2 * 3)
 _value = (1 + 2 * 3)
 _value = 1 + -2 * ~3
 _list = [1, 2, 3]
 _list = [*_list, [4, 5, 6]]
 _list = [*_list, [4, 5, 6]]
+
 _dict = {**{"k": "v"}, **{"k": "v"}}
 a = [1, 2, 3]
 b = [

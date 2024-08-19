@@ -3,7 +3,7 @@
         "c": {
             "variables": [
                 {
-                    "value": "{\"a\": \"b\"}",
+                    "value": "{\n    \"a\": \"b\"\n}",
                     "type_name": "",
                     "op_sym": "=",
                     "list_items": [],
@@ -36,7 +36,7 @@
         "b": {
             "variables": [
                 {
-                    "value": "[1, 2, 3]",
+                    "value": "[\n    1\n    2\n    3\n]",
                     "type_name": "",
                     "op_sym": "=",
                     "list_items": [

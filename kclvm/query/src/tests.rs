@@ -1,8 +1,4 @@
-use std::{
-    fs::{self, File},
-    io::Read,
-    path::PathBuf,
-};
+use std::{fs, path::PathBuf};
 
 use super::{r#override::apply_override_on_module, *};
 use crate::{
@@ -12,7 +8,6 @@ use kclvm_error::{DiagnosticId, ErrorKind, Level};
 use kclvm_parser::parse_file_force_errors;
 use pretty_assertions::assert_eq;
 use selector::ListOptions;
-use serde_json::Value;
 
 const CARGO_FILE_PATH: &str = env!("CARGO_MANIFEST_DIR");
 
@@ -46,7 +41,7 @@ fn test_override_file_simple() {
 
     let simple_path = get_test_dir("simple.k".to_string());
     let simple_bk_path = get_test_dir("simple.bk.k".to_string());
-    let except_path = get_test_dir("except.k".to_string());
+    let expect_path = get_test_dir("expect.k".to_string());
     fs::copy(simple_bk_path.clone(), simple_path.clone()).unwrap();
     if simple_path.exists() {
         fs::remove_file(simple_path.clone()).unwrap();
@@ -63,10 +58,10 @@ fn test_override_file_simple() {
     );
 
     let simple_content = fs::read_to_string(simple_path.clone()).unwrap();
-    let expect_content = fs::read_to_string(except_path).unwrap();
+    let expect_content = fs::read_to_string(expect_path).unwrap();
 
-    let simple_content = simple_content.replace("\r\n", "").replace("\n", "");
-    let expect_content = expect_content.replace("\r\n", "").replace("\n", "");
+    let simple_content = simple_content.replace("\r\n", "\n");
+    let expect_content = expect_content.replace("\r\n", "\n");
 
     assert_eq!(simple_content, expect_content);
 
@@ -176,7 +171,9 @@ appConfiguration = AppConfiguration {
     mainContainer: Main {name: "override_name"}
     overQuota = False
     overQuota = False
-    probe: {periodSeconds = 20}
+    probe: {
+        periodSeconds = 20
+    }
     svc = s.Service {}
 }
 
@@ -195,11 +192,37 @@ appConfigurationUnification: AppConfiguration {
     svc = s.Service {}
     name = "name"
 }
-config = {x: {a: 1, b: 3, c: {d: 4}}, y = 1, z += [1, 2, 3, 4, 5, 6]}
+config = {
+    x: {
+        a: 1
+        b: 3
+        c: {
+            d: 4
+        }
+    }
+    y = 1
+    z += [
+        1
+        2
+        3
+        4
+        5
+        6
+    ]
+}
 var1 = 1
 var2 = 1
-var3 += [1, 2, 3, 4, 5, 6]
-var4: AppConfiguration {image: 'image'}
+var3 += [
+    1
+    2
+    3
+    4
+    5
+    6
+]
+var4: AppConfiguration {
+    image: 'image'
+}
 "#
     );
 }
@@ -266,8 +289,25 @@ fn test_list_variables() {
         ("b1", "True", "", "="),
         ("b2", "False", "", "="),
         ("s1", "\"Hello\"", "", "="),
-        ("array1", "[1, 2, 3]", "", "="),
-        ("dict1", "{\"a\": 1, \"b\": 2}", "", "="),
+        (
+            "array1",
+            r#"[
+    1
+    2
+    3
+]"#,
+            "",
+            "=",
+        ),
+        (
+            "dict1",
+            r#"{
+    "a": 1
+    "b": 2
+}"#,
+            "",
+            "=",
+        ),
         ("dict1.a", "1", "", ":"),
         ("dict1.b", "2", "", ":"),
         (
@@ -301,7 +341,9 @@ fn test_list_variables() {
     ids: [1, 2, 3]
     data: {
         "a": {
-            "b": {"c": 2}
+            "b": {
+                "c": 2
+            }
         }
     }
 }"#,
@@ -309,12 +351,23 @@ fn test_list_variables() {
             "=",
         ),
         ("sha.name", "\"Hello\"", "", ":"),
-        ("sha.ids", "[1, 2, 3]", "", ":"),
+        (
+            "sha.ids",
+            r#"[
+    1
+    2
+    3
+]"#,
+            "",
+            ":",
+        ),
         (
             "sha.data",
             r#"{
     "a": {
-        "b": {"c": 2}
+        "b": {
+            "c": 2
+        }
     }
 }"#,
             "",
@@ -323,12 +376,21 @@ fn test_list_variables() {
         (
             "sha.data.a",
             r#"{
-    "b": {"c": 2}
+    "b": {
+        "c": 2
+    }
 }"#,
             "",
             ":",
         ),
-        ("sha.data.a.b", r#"{"c": 2}"#, "", ":"),
+        (
+            "sha.data.a.b",
+            r#"{
+    "c": 2
+}"#,
+            "",
+            ":",
+        ),
         ("sha.data.a.b.c", "2", "", ":"),
         (
             "shb",
@@ -338,7 +400,9 @@ fn test_list_variables() {
         ids: [4, 5, 6]
         data: {
             "d": {
-                "e": {"f": 3}
+                "e": {
+                    "f": 3
+                }
             }
         }
     }
@@ -353,7 +417,9 @@ fn test_list_variables() {
     ids: [4, 5, 6]
     data: {
         "d": {
-            "e": {"f": 3}
+            "e": {
+                "f": 3
+            }
         }
     }
 }"#,
@@ -361,12 +427,23 @@ fn test_list_variables() {
             ":",
         ),
         ("shb.a.name", "\"HelloB\"", "", ":"),
-        ("shb.a.ids", "[4, 5, 6]", "", ":"),
+        (
+            "shb.a.ids",
+            r#"[
+    4
+    5
+    6
+]"#,
+            "",
+            ":",
+        ),
         (
             "shb.a.data",
             r#"{
     "d": {
-        "e": {"f": 3}
+        "e": {
+            "f": 3
+        }
     }
 }"#,
             "",
@@ -375,31 +452,63 @@ fn test_list_variables() {
         (
             "shb.a.data.d",
             r#"{
-    "e": {"f": 3}
+    "e": {
+        "f": 3
+    }
 }"#,
             "",
             ":",
         ),
-        ("shb.a.data.d.e", "{\"f\": 3}", "", ":"),
+        (
+            "shb.a.data.d.e",
+            r#"{
+    "f": 3
+}"#,
+            "",
+            ":",
+        ),
         ("uconfa.name", "\"b\"", "", "="),
-        ("c.a", r#"{name: "Hello"}"#, "", ":"),
+        (
+            "c.a",
+            r#"{
+    name: "Hello"
+}"#,
+            "",
+            ":",
+        ),
         (
             "job.name",
             r#""{}-{}".format("app", "test").lower()"#,
             "",
             "=",
         ),
-        ("union_list", r#"[*_list0, *_list1]"#, "", "="),
-        ("a_dict", r#"{**_part1, **_part2}"#, "", "="),
+        (
+            "union_list",
+            r#"[
+    *_list0
+    *_list1
+]"#,
+            "",
+            "=",
+        ),
+        (
+            "a_dict",
+            r#"{
+    **_part1
+    **_part2
+}"#,
+            "",
+            "=",
+        ),
     ];
 
     for (spec, expected, expected_name, op_sym) in test_cases {
         let specs = vec![spec.to_string()];
         let result = list_variables(vec![file.clone()], specs, None).unwrap();
-        println!("{:?}", spec);
         assert_eq!(
             result.variables.get(spec).unwrap().get(0).unwrap().value,
-            expected
+            expected,
+            "{spec}"
         );
         assert_eq!(
             result
@@ -409,25 +518,17 @@ fn test_list_variables() {
                 .get(0)
                 .unwrap()
                 .type_name,
-            expected_name
+            expected_name,
+            "{spec}"
         );
         assert_eq!(
             result.variables.get(spec).unwrap().get(0).unwrap().op_sym,
-            op_sym
+            op_sym,
+            "{spec}"
         );
 
-        let path = PathBuf::from("./src/test_data/test_list_variables/test_list_variables");
-        let mut file = File::open(path.join(format!("{}.json", spec))).unwrap();
-        let mut contents = String::new();
-        file.read_to_string(&mut contents).unwrap();
-
-        let expect_json: Value = serde_json::from_str(&contents).unwrap();
-
-        let got_json: Value =
-            serde_json::from_str(&serde_json::to_string_pretty(&result.variables).unwrap())
-                .unwrap();
-
-        assert_eq!(expect_json, got_json);
+        let got_json = serde_json::to_string_pretty(&result.variables).unwrap();
+        insta::assert_snapshot!(got_json);
     }
 }
 
@@ -445,8 +546,25 @@ fn test_list_all_variables() {
         ("b1", "True", "", "="),
         ("b2", "False", "", "="),
         ("s1", "\"Hello\"", "", "="),
-        ("array1", "[1, 2, 3]", "", "="),
-        ("dict1", "{\"a\": 1, \"b\": 2}", "", "="),
+        (
+            "array1",
+            r#"[
+    1
+    2
+    3
+]"#,
+            "",
+            "=",
+        ),
+        (
+            "dict1",
+            r#"{
+    "a": 1
+    "b": 2
+}"#,
+            "",
+            "=",
+        ),
         (
             "dict2",
             r#"{
@@ -466,7 +584,9 @@ fn test_list_all_variables() {
     ids: [1, 2, 3]
     data: {
         "a": {
-            "b": {"c": 2}
+            "b": {
+                "c": 2
+            }
         }
     }
 }"#,
@@ -481,7 +601,9 @@ fn test_list_all_variables() {
         ids: [4, 5, 6]
         data: {
             "d": {
-                "e": {"f": 3}
+                "e": {
+                    "f": 3
+                }
             }
         }
     }
@@ -491,13 +613,38 @@ fn test_list_all_variables() {
         ),
         (
             "job",
-            r#"Job {name = "{}-{}".format("app", "test").lower()}"#,
+            r#"Job {
+    name = "{}-{}".format("app", "test").lower()
+}"#,
             "Job",
             "=",
         ),
-        ("select", r#"a.b.c {a: 1}"#, "a.b.c", "="),
-        ("union_list", r#"[*_list0, *_list1]"#, "", "="),
-        ("a_dict", r#"{**_part1, **_part2}"#, "", "="),
+        (
+            "select",
+            r#"a.b.c {
+    a: 1
+}"#,
+            "a.b.c",
+            "=",
+        ),
+        (
+            "union_list",
+            r#"[
+    *_list0
+    *_list1
+]"#,
+            "",
+            "=",
+        ),
+        (
+            "a_dict",
+            r#"{
+    **_part1
+    **_part2
+}"#,
+            "",
+            "=",
+        ),
     ];
 
     for (spec, expected, expected_name, op_sym) in test_cases {
@@ -505,7 +652,8 @@ fn test_list_all_variables() {
         let result = list_variables(vec![file.clone()], vec![], None).unwrap();
         assert_eq!(
             result.variables.get(spec).unwrap().get(0).unwrap().value,
-            expected
+            expected,
+            "{spec}"
         );
         assert_eq!(
             result
@@ -515,25 +663,18 @@ fn test_list_all_variables() {
                 .get(0)
                 .unwrap()
                 .type_name,
-            expected_name
+            expected_name,
+            "{spec}"
         );
         assert_eq!(
             result.variables.get(spec).unwrap().get(0).unwrap().op_sym,
-            op_sym
+            op_sym,
+            "{spec}"
         );
         assert_eq!(result.parse_errors.len(), 0);
 
-        let path = PathBuf::from("./src/test_data/test_list_variables/test_list_all_variables");
-        let mut file = File::open(path.join(format!("{}.json", spec))).unwrap();
-        let mut contents = String::new();
-        file.read_to_string(&mut contents).unwrap();
-
-        let expect_json: Value = serde_json::from_str(&contents).unwrap();
-        let got_json: Value =
-            serde_json::from_str(&serde_json::to_string_pretty(&result.variables).unwrap())
-                .unwrap();
-
-        assert_eq!(expect_json, got_json);
+        let got_json = serde_json::to_string_pretty(&result.variables).unwrap();
+        insta::assert_snapshot!(got_json);
     }
 }
 
@@ -578,15 +719,35 @@ fn test_list_unsupported_variables() {
     let test_cases = vec![
         ("if_schema.name", r#""name""#),
         ("if_schema.age", "1"),
-        ("if_schema.inner", r#"IfSchemaInner {innerValue: 1}"#),
+        (
+            "if_schema.inner",
+            r#"IfSchemaInner {
+    innerValue: 1
+}"#,
+        ),
         ("if_schema.inner.innerValue", "1"),
-        ("if_schema.inner2", r#"{innerValue: 2}"#),
+        (
+            "if_schema.inner2",
+            r#"{
+    innerValue: 2
+}"#,
+        ),
         ("if_schema.inner2.innerValue", "2"),
         ("if_schema1.name", r#""name""#),
         ("if_schema1.age", "1"),
-        ("if_schema1.inner", r#"IfSchemaInner {innerValue: 1}"#),
+        (
+            "if_schema1.inner",
+            r#"IfSchemaInner {
+    innerValue: 1
+}"#,
+        ),
         ("if_schema1.inner.innerValue", "1"),
-        ("if_schema1.inner2", r#"{innerValue: 2}"#),
+        (
+            "if_schema1.inner2",
+            r#"{
+    innerValue: 2
+}"#,
+        ),
         ("if_schema1.inner2.innerValue", "2"),
     ];
 
@@ -595,13 +756,14 @@ fn test_list_unsupported_variables() {
         let result = list_variables(vec![file.clone()], specs, None).unwrap();
         assert_eq!(
             result.variables.get(spec).unwrap().get(0).unwrap().value,
-            expected_code
+            expected_code,
+            "{spec}",
         );
     }
 }
 
 #[test]
-fn test_overridefile_insert() {
+fn test_override_file_insert() {
     let specs = vec![
         r#"b={
             "c": 2
@@ -636,7 +798,7 @@ fn test_overridefile_insert() {
 
     let simple_path = get_test_dir("test_override_file/main.k".to_string());
     let simple_bk_path = get_test_dir("test_override_file/main.bk.k".to_string());
-    let except_path = get_test_dir("test_override_file/expect.k".to_string());
+    let expect_path = get_test_dir("test_override_file/expect.k".to_string());
     fs::copy(simple_bk_path.clone(), simple_path.clone()).unwrap();
     let import_paths = vec![
         "base.pkg.kusion_models.app".to_string(),
@@ -657,10 +819,10 @@ fn test_overridefile_insert() {
         );
 
         let simple_content = fs::read_to_string(simple_path.clone()).unwrap();
-        let expect_content = fs::read_to_string(except_path.clone()).unwrap();
+        let expect_content = fs::read_to_string(expect_path.clone()).unwrap();
 
-        let simple_content = simple_content.replace("\r\n", "").replace("\n", "");
-        let expect_content = expect_content.replace("\r\n", "").replace("\n", "");
+        let simple_content = simple_content.replace("\r\n", "\n");
+        let expect_content = expect_content.replace("\r\n", "\n");
 
         assert_eq!(simple_content, expect_content);
     }
@@ -838,10 +1000,19 @@ fn test_list_merged_variables() {
                     ],
                     vec!["config".to_string()],
                     vec![r#"Config {
-    args: ["kcl", "main.k"]
-    labels: {key1: "value1"}
-    labels: {key2: "value2"}
-    "labels": {"key3": "value3"}
+    args: [
+        "kcl"
+        "main.k"
+    ]
+    labels: {
+        key1: "value1"
+    }
+    labels: {
+        key2: "value2"
+    }
+    "labels": {
+        "key3": "value3"
+    }
 }"#.to_string()],
                 ),
                 (
@@ -850,11 +1021,20 @@ fn test_list_merged_variables() {
                     ],
                     vec!["config".to_string()],
                     vec![r#"Config {
-    args: ["kcl", "main.k"]
-    labels: {key1: "value1"}
-    labels: {key2: "value2"}
+    args: [
+        "kcl"
+        "main.k"
+    ]
+    labels: {
+        key1: "value1"
+    }
+    labels: {
+        key2: "value2"
+    }
     name: {
-        name: {name: "name"}
+        name: {
+            name: "name"
+        }
     }
     name: {
         name: Name0 {data: 1}
@@ -866,7 +1046,9 @@ fn test_list_merged_variables() {
                         file.join("merge_10/main.k").display().to_string(),
                     ],
                     vec!["alice.hc".to_string()],
-                    vec![r#"[2]"#.to_string()],
+                    vec![r#"[
+    2
+]"#.to_string()],
                 ),
                 (
                     vec![

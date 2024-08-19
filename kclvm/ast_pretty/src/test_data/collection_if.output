@@ -14,7 +14,6 @@ data1 = Config {
         env = "name"
         data += [1]
 }
-
 data1 = Config {
     if env == "env":
         name: env
@@ -23,7 +22,6 @@ data1 = Config {
         name: "name"
         env: "name"
 }
-
 data2 = Config {
     if env != "env":
         name: env
@@ -32,7 +30,6 @@ data2 = Config {
         name: "name"
         env: "name"
 }
-
 data3 = {
     if True:
         key1: "value1"
@@ -43,6 +40,7 @@ data3 = {
     else:
         key4: "value4"
 }
+
 data4 = [
     if True:
         "value1"

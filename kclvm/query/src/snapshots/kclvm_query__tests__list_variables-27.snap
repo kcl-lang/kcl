@@ -1,0 +1,52 @@
+---
+source: query/src/tests.rs
+expression: got_json
+---
+{
+  "shb.a.data": [
+    {
+      "name": "data",
+      "type_name": "",
+      "op_sym": ":",
+      "value": "{\n    \"d\": {\n        \"e\": {\n            \"f\": 3\n        }\n    }\n}",
+      "list_items": [],
+      "dict_entries": [
+        {
+          "key": "d",
+          "value": {
+            "name": "d",
+            "type_name": "",
+            "op_sym": ":",
+            "value": "{\n    \"e\": {\n        \"f\": 3\n    }\n}",
+            "list_items": [],
+            "dict_entries": [
+              {
+                "key": "e",
+                "value": {
+                  "name": "e",
+                  "type_name": "",
+                  "op_sym": ":",
+                  "value": "{\n    \"f\": 3\n}",
+                  "list_items": [],
+                  "dict_entries": [
+                    {
+                      "key": "f",
+                      "value": {
+                        "name": "f",
+                        "type_name": "",
+                        "op_sym": ":",
+                        "value": "3",
+                        "list_items": [],
+                        "dict_entries": []
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 age = 1
+
 protocol MainProtocol:
     """Protocol doc"""
     var: int

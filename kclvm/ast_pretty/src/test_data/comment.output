@@ -24,13 +24,17 @@ appConfiguration = AppConfiguration {
         memory: "12Gi"
     }
     labels: {
-        key: {key: 12}
+        key1: {
+            key1: 12
+        }
+        key2: {key2: 34}
     }
     # Comment Six
-    mainContainer: Main {name: "kusion_override"}
+    mainContainer: Main {
+        name: "kusion_override"
+    }
     # Comment Seven
     # Comment Eight
     overQuota: True
 }
-
 # Comment Nine

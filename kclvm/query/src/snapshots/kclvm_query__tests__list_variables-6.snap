@@ -1,0 +1,16 @@
+---
+source: query/src/tests.rs
+expression: got_json
+---
+{
+  "s1": [
+    {
+      "name": "s1",
+      "type_name": "",
+      "op_sym": "=",
+      "value": "\"Hello\"",
+      "list_items": [],
+      "dict_entries": []
+    }
+  ]
+}

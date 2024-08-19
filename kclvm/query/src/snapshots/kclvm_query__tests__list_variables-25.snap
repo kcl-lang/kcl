@@ -1,0 +1,16 @@
+---
+source: query/src/tests.rs
+expression: got_json
+---
+{
+  "shb.a.name": [
+    {
+      "name": "name",
+      "type_name": "",
+      "op_sym": ":",
+      "value": "\"HelloB\"",
+      "list_items": [],
+      "dict_entries": []
+    }
+  ]
+}
