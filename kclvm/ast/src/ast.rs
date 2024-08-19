@@ -397,6 +397,17 @@ impl Program {
         }
         None
     }
+
+    pub fn get_module(&self, module_name: &str) -> Option<&Module> {
+        for (_, modules) in &self.pkgs {
+            for module in modules {
+                if module.filename == module_name {
+                    return Some(module);
+                }
+            }
+        }
+        None
+    }
 }
 
 /// Module is an abstract syntax tree for a single KCL file.
