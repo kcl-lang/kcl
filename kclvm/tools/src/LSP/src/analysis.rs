@@ -1,4 +1,5 @@
 use kclvm_ast::ast::Program;
+use kclvm_driver::WorkSpace;
 use kclvm_sema::core::global_state::GlobalState;
 use parking_lot::RwLock;
 use ra_ap_vfs::FileId;
@@ -10,6 +11,7 @@ pub type DocumentVersion = i32;
 #[derive(Default)]
 pub struct Analysis {
     pub db: Arc<RwLock<HashMap<FileId, Option<Arc<AnalysisDatabase>>>>>,
+    pub workspaecs: Arc<RwLock<HashMap<WorkSpace, Option<Arc<AnalysisDatabase>>>>>,
 }
 
 /// AnalysisDatabase holds the result of the compile

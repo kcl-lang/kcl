@@ -9,11 +9,12 @@ use kclvm_ast::pos::ContainsPos;
 use kclvm_config::modfile::KCL_MOD_FILE;
 use kclvm_driver::toolchain::Toolchain;
 use kclvm_driver::{
-    lookup_compile_unit, lookup_compile_unit_path, CompileUnitOptions, CompileUnitPath,
+    lookup_compile_unit_path, lookup_compile_workspace, CompileUnitOptions, CompileUnitPath,
 };
 use kclvm_error::Diagnostic;
 use kclvm_error::Position as KCLPos;
 use kclvm_parser::entry::get_dir_files;
+use kclvm_parser::LoadProgramOptions;
 use kclvm_parser::{
     entry::get_normalized_k_files_from_paths, load_program, KCLModuleCache, ParseSessionRef,
 };
@@ -107,7 +108,7 @@ pub(crate) fn lookup_compile_unit_with_cache(
                             if cached_timestamp == &current_timestamp {
                                 compile_unit.clone()
                             } else {
-                                let res = lookup_compile_unit(tool, file, true);
+                                let res = lookup_compile_workspace(tool, file, true);
                                 map.insert(
                                     file.to_string(),
                                     (res.clone(), Some(current_timestamp)),
@@ -116,20 +117,20 @@ pub(crate) fn lookup_compile_unit_with_cache(
                             }
                         }
                         (_, current_timestamp) => {
-                            let res = lookup_compile_unit(tool, file, true);
+                            let res = lookup_compile_workspace(tool, file, true);
                             map.insert(file.to_string(), (res.clone(), current_timestamp));
                             res
                         }
                     }
                 }
                 None => {
-                    let res = lookup_compile_unit(tool, file, true);
+                    let res = lookup_compile_workspace(tool, file, true);
                     map.insert(file.to_string(), (res.clone(), current_timestamp));
                     res
                 }
             }
         }
-        None => lookup_compile_unit(tool, file, true),
+        None => lookup_compile_workspace(tool, file, true),
     }
 }
 
@@ -167,6 +168,14 @@ pub(crate) fn compile_with_params(
     if !files.contains(&params.file) {
         files.push(params.file.clone());
     }
+    compile(params, &mut files, opts)
+}
+
+pub(crate) fn compile(
+    params: Params,
+    files: &mut Vec<String>,
+    opts: Option<LoadProgramOptions>,
+) -> (IndexSet<Diagnostic>, anyhow::Result<(Program, GlobalState)>) {
     // Ignore the kcl plugin sematic check.
     let mut opts = opts.unwrap_or_default();
     opts.load_plugins = true;
@@ -182,7 +191,7 @@ pub(crate) fn compile_with_params(
     };
     let files: Vec<&str> = files.iter().map(|s| s.as_str()).collect();
     // Update opt.k_code_list
-    if let Some(vfs) = params.vfs {
+    if let Some(vfs) = &params.vfs {
         let mut k_code_list = match load_files_code_from_vfs(&files, vfs) {
             Ok(code_list) => code_list,
             Err(e) => {
@@ -274,7 +283,7 @@ pub(crate) fn apply_document_changes(
     }
 }
 
-fn load_files_code_from_vfs(files: &[&str], vfs: KCLVfs) -> anyhow::Result<Vec<String>> {
+fn load_files_code_from_vfs(files: &[&str], vfs: &KCLVfs) -> anyhow::Result<Vec<String>> {
     let mut res = vec![];
     let vfs = &mut vfs.read();
     for file in files {
