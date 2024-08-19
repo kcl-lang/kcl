@@ -931,7 +931,6 @@ fn test_clear_cache_by_module() {
         None,
     );
     let cached_scope = Arc::new(RwLock::new(CachedScope::new(&scope, &program)));
-
     // first compile
     let _ = resolve_program_with_opts(
         &mut program,
@@ -950,7 +949,8 @@ fn test_clear_cache_by_module() {
     .unwrap()
     .to_str()
     .unwrap()
-    .to_string();
+    .to_string()
+    .adjust_canonicalization();
 
     if let Some(mut cached_scope) = cached_scope.try_write() {
         let mut invalidate_pkg_modules = HashSet::new();
@@ -967,14 +967,13 @@ fn test_clear_cache_by_module() {
         },
         Some(cached_scope.clone()),
     );
-    if let Some(mut cached_scope) = cached_scope.try_write() {
+    if let Some(cached_scope) = cached_scope.try_write() {
         // main - a
         //      - b - c
         // invalidate main, invalidate_pkgs main
         let mut expect = HashSet::new();
         expect.insert(MAIN_PKG.to_string());
         assert_eq!(cached_scope.invalidate_pkgs, expect);
-        cached_scope.invalidate_pkg_modules = None;
     };
 
     // recompile and clear cache
@@ -984,7 +983,8 @@ fn test_clear_cache_by_module() {
     .unwrap()
     .to_str()
     .unwrap()
-    .to_string();
+    .to_string()
+    .adjust_canonicalization();
 
     if let Some(mut cached_scope) = cached_scope.try_write() {
         let mut invalidate_pkg_modules = HashSet::new();
@@ -1002,7 +1002,7 @@ fn test_clear_cache_by_module() {
         Some(cached_scope.clone()),
     );
 
-    if let Some(mut cached_scope) = cached_scope.try_write() {
+    if let Some(cached_scope) = cached_scope.try_write() {
         // main - a
         //      - b - c
         // invalidate a, invalidate_pkgs a, main
@@ -1010,7 +1010,6 @@ fn test_clear_cache_by_module() {
         expect.insert(MAIN_PKG.to_string());
         expect.insert("cache.a".to_string());
         assert_eq!(cached_scope.invalidate_pkgs, expect);
-        cached_scope.invalidate_pkg_modules = None;
     };
 
     // recompile and clear cache
@@ -1020,7 +1019,8 @@ fn test_clear_cache_by_module() {
     .unwrap()
     .to_str()
     .unwrap()
-    .to_string();
+    .to_string()
+    .adjust_canonicalization();
 
     if let Some(mut cached_scope) = cached_scope.try_write() {
         let mut invalidate_pkg_modules = HashSet::new();
@@ -1038,7 +1038,7 @@ fn test_clear_cache_by_module() {
         Some(cached_scope.clone()),
     );
 
-    if let Some(mut cached_scope) = cached_scope.try_write() {
+    if let Some(cached_scope) = cached_scope.try_write() {
         // main - a
         //      - b - c
         // invalidate b, invalidate_pkgs b, main
@@ -1046,7 +1046,6 @@ fn test_clear_cache_by_module() {
         expect.insert(MAIN_PKG.to_string());
         expect.insert("cache.b".to_string());
         assert_eq!(cached_scope.invalidate_pkgs, expect);
-        cached_scope.invalidate_pkg_modules = None;
     };
 
     // recompile and clear cache
@@ -1056,7 +1055,8 @@ fn test_clear_cache_by_module() {
     .unwrap()
     .to_str()
     .unwrap()
-    .to_string();
+    .to_string()
+    .adjust_canonicalization();
 
     if let Some(mut cached_scope) = cached_scope.try_write() {
         let mut invalidate_pkg_modules = HashSet::new();
@@ -1074,7 +1074,7 @@ fn test_clear_cache_by_module() {
         Some(cached_scope.clone()),
     );
 
-    if let Some(mut cached_scope) = cached_scope.try_write() {
+    if let Some(cached_scope) = cached_scope.try_write() {
         // main - a
         //      - b - c
         // invalidate c, invalidate_pkgs c, b, main
@@ -1083,6 +1083,5 @@ fn test_clear_cache_by_module() {
         expect.insert("cache.b".to_string());
         expect.insert("cache.c".to_string());
         assert_eq!(cached_scope.invalidate_pkgs, expect);
-        cached_scope.invalidate_pkg_modules = None;
     };
 }
