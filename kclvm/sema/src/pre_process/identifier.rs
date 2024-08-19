@@ -242,6 +242,7 @@ pub fn fix_qualified_identifier<'ctx>(
 }
 
 /// Fix AST raw identifier prefix `$`, e.g., $filter -> filter
+#[inline]
 pub fn fix_raw_identifier_prefix(module: &'_ mut ast::Module) {
     RawIdentifierTransformer::default().walk_module(module);
 }

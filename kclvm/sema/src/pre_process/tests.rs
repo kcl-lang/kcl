@@ -23,6 +23,82 @@ fn test_fix_qualified_identifier() {
 }
 
 #[test]
+fn test_fix_lit_ty_default_value() {
+    let mut module =
+        parse_file_force_errors("./src/pre_process/test_data/lit_ty_default_val.k", None).unwrap();
+    fix_lit_ty_default_value(&mut module);
+    if let ast::Stmt::Schema(schema_stmt) = &module.body[0].node {
+        if let ast::Stmt::SchemaAttr(schema_attr) = &schema_stmt.body[0].node {
+            assert_eq!(
+                schema_attr.value.as_ref().unwrap().node,
+                ast::Expr::StringLit(ast::StringLit {
+                    is_long_string: false,
+                    raw_value: "\"val\"".to_string(),
+                    value: "val".to_string(),
+                })
+            )
+        } else {
+            panic!("invalid schema attr value")
+        }
+        if let ast::Stmt::SchemaAttr(schema_attr) = &schema_stmt.body[1].node {
+            assert_eq!(
+                schema_attr.value.as_ref().unwrap().node,
+                ast::Expr::NumberLit(ast::NumberLit {
+                    value: ast::NumberLitValue::Int(1),
+                    binary_suffix: None,
+                })
+            )
+        } else {
+            panic!("invalid schema attr value")
+        }
+        if let ast::Stmt::SchemaAttr(schema_attr) = &schema_stmt.body[2].node {
+            assert_eq!(
+                schema_attr.value.as_ref().unwrap().node,
+                ast::Expr::NumberLit(ast::NumberLit {
+                    value: ast::NumberLitValue::Int(1),
+                    binary_suffix: Some(ast::NumberBinarySuffix::Ki),
+                })
+            )
+        } else {
+            panic!("invalid schema attr value")
+        }
+        if let ast::Stmt::SchemaAttr(schema_attr) = &schema_stmt.body[3].node {
+            assert_eq!(
+                schema_attr.value.as_ref().unwrap().node,
+                ast::Expr::NumberLit(ast::NumberLit {
+                    value: ast::NumberLitValue::Float(2.0),
+                    binary_suffix: None,
+                })
+            )
+        } else {
+            panic!("invalid schema attr value")
+        }
+        if let ast::Stmt::SchemaAttr(schema_attr) = &schema_stmt.body[4].node {
+            assert_eq!(
+                schema_attr.value.as_ref().unwrap().node,
+                ast::Expr::NameConstantLit(ast::NameConstantLit {
+                    value: ast::NameConstant::True,
+                })
+            )
+        } else {
+            panic!("invalid schema attr value")
+        }
+        if let ast::Stmt::SchemaAttr(schema_attr) = &schema_stmt.body[5].node {
+            assert_eq!(
+                schema_attr.value.as_ref().unwrap().node,
+                ast::Expr::NameConstantLit(ast::NameConstantLit {
+                    value: ast::NameConstant::False,
+                })
+            )
+        } else {
+            panic!("invalid schema attr value")
+        }
+    } else {
+        panic!("invalid schema statement")
+    }
+}
+
+#[test]
 fn test_fix_raw_identifier_prefix() {
     let mut module =
         parse_file_force_errors("./src/pre_process/test_data/raw_identifier.k", None).unwrap();

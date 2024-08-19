@@ -1,5 +1,6 @@
 mod config;
 mod identifier;
+mod lit_ty_default_value;
 mod multi_assign;
 
 use indexmap::IndexMap;
@@ -10,6 +11,7 @@ mod tests;
 
 pub use config::{fix_config_expr_nest_attr, merge_program};
 pub use identifier::{fix_qualified_identifier, fix_raw_identifier_prefix};
+pub use lit_ty_default_value::fix_lit_ty_default_value;
 pub use multi_assign::transform_multi_assign;
 
 use crate::resolver::Options;
@@ -36,6 +38,7 @@ pub fn pre_process_program(program: &mut ast::Program, opts: &Options) {
             fix_raw_identifier_prefix(module);
             fix_qualified_identifier(module, &mut import_names);
             fix_config_expr_nest_attr(module);
+            fix_lit_ty_default_value(module);
         }
     }
     if opts.merge_program {
