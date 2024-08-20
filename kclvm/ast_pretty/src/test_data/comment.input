@@ -37,3 +37,9 @@ appConfiguration = AppConfiguration {
     overQuota: True
 }
 # Comment Nine
+
+schema Foo:
+    # Comment for index signature
+    [k: str]: int
+    # Comment for `x` field
+    x: int
