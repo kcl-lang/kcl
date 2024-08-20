@@ -7,7 +7,7 @@ use anyhow::Result;
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
 use kclvm_driver::toolchain::{self, Toolchain};
 use kclvm_driver::{
-    lookup_compile_workspaces, lookup_workspace, CompileUnitOptions, WorkSpace,
+    lookup_compile_workspaces, lookup_workspace, CompileUnitOptions, WorkSpaceKind,
 };
 use kclvm_parser::KCLModuleCache;
 use kclvm_sema::core::global_state::GlobalState;
@@ -102,7 +102,7 @@ pub(crate) struct LanguageServerSnapshot {
     pub vfs: Arc<RwLock<Vfs>>,
     /// Holds the state of the analysis process
     pub db: Arc<RwLock<HashMap<FileId, Option<Arc<AnalysisDatabase>>>>>,
-    pub workspaces: Arc<RwLock<HashMap<WorkSpace, Option<Arc<AnalysisDatabase>>>>>,
+    pub workspaces: Arc<RwLock<HashMap<WorkSpaceKind, Option<Arc<AnalysisDatabase>>>>>,
     /// Documents that are currently kept in memory from the client
     pub opened_files: Arc<RwLock<HashMap<FileId, DocumentVersion>>>,
     /// request retry time
@@ -190,6 +190,7 @@ impl LanguageServerState {
     fn handle_event(&mut self, event: Event) -> anyhow::Result<()> {
         let start_time = Instant::now();
         // 1. Process the incoming event
+        eprintln!("{:?}", self.analysis.workspaecs.read().keys());
         match event {
             Event::Task(task) => self.handle_task(task, start_time)?,
             Event::Lsp(msg) => {
@@ -421,7 +422,14 @@ impl LanguageServerState {
             for folder in workspace_folders {
                 let path = file_path_from_url(&folder.uri).unwrap();
                 let tool = Arc::clone(&self.tool);
-                let workspaces = lookup_compile_workspaces(&*tool.read(), &path, true);
+                let (workspaces, failed) = lookup_compile_workspaces(&*tool.read(), &path, true);
+
+                if let Some(failed) = failed {
+                    for (key, err) in failed {
+                        self.log_message(format!("parse kcl.work failed: {}: {}", key, err));
+                    }
+                }
+
                 for (workspace, entrys) in workspaces {
                     self.thread_pool.execute({
                         let mut snapshot = self.snapshot();
