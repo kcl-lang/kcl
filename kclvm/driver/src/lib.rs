@@ -130,7 +130,7 @@ pub fn canonicalize_input_files(
     Ok(kcl_paths)
 }
 
-/// Get compile workspaec(files and options) from a single file input.
+/// Get compile workspace(files and options) from a single file input.
 /// 1. Lookup entry files in kcl.yaml
 /// 2. Lookup entry files in kcl.mod
 /// 3. If not found, consider the path or folder where the file is

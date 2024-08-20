@@ -190,7 +190,6 @@ impl LanguageServerState {
     fn handle_event(&mut self, event: Event) -> anyhow::Result<()> {
         let start_time = Instant::now();
         // 1. Process the incoming event
-        eprintln!("{:?}", self.analysis.workspaecs.read().keys());
         match event {
             Event::Task(task) => self.handle_task(task, start_time)?,
             Event::Lsp(msg) => {

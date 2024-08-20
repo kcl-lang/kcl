@@ -24,7 +24,7 @@ pub struct WorkSpace {
     pub abs_path: String,
 }
 
-/// Load kcl mod file from path
+/// Load kcl work file from path
 pub fn load_work_file<P: AsRef<Path> + std::fmt::Debug>(path: P) -> Result<WorkFile> {
     let file = if path.as_ref().is_dir() {
         let file_path = path.as_ref().join(KCL_WORK_FILE);
