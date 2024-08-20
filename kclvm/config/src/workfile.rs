@@ -1,5 +1,6 @@
 //! The config for IDE/LSP workspace config file `kcl.work'
 
+use kclvm_utils::path::PathPrefix;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -71,7 +72,7 @@ impl WorkFile {
                     Ok(path) => new_workspaces.push(WorkSpace {
                         content: workspace.content.clone(),
                         path: workspace.path.clone(),
-                        abs_path: path.to_string_lossy().to_string(),
+                        abs_path: path.adjust_canonicalization(),
                     }),
                     Err(e) => {
                         self.failed.insert(
