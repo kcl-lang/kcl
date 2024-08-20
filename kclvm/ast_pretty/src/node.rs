@@ -222,6 +222,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         }
         if let Some(index_signature) = &schema_stmt.index_signature {
             self.fill("");
+            self.write_ast_comments(index_signature);
             self.write_token(TokenKind::OpenDelim(DelimToken::Bracket));
             if index_signature.node.any_other {
                 self.write_token(TokenKind::DotDotDot);
