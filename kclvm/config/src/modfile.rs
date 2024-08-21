@@ -15,6 +15,7 @@ use crate::path::ModRelativePath;
 
 pub const KCL_MOD_FILE: &str = "kcl.mod";
 pub const KCL_MOD_LOCK_FILE: &str = "kcl.mod.lock";
+pub const KCL_WORK_FILE: &str = "kcl.work";
 pub const KCL_FILE_SUFFIX: &str = ".k";
 pub const KCL_FILE_EXTENSION: &str = "k";
 pub const KCL_MOD_PATH_ENV: &str = "${KCL_MOD}";

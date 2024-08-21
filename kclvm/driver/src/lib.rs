@@ -11,15 +11,16 @@ use glob::glob;
 use kclvm_config::{
     modfile::{
         get_pkg_root, load_mod_file, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE,
-        KCL_MOD_PATH_ENV,
+        KCL_MOD_PATH_ENV, KCL_WORK_FILE,
     },
     path::ModRelativePath,
     settings::{build_settings_pathbuf, DEFAULT_SETTING_FILE},
+    workfile::{load_work_file, WorkFile},
 };
 use kclvm_parser::LoadProgramOptions;
 use kclvm_utils::path::PathPrefix;
-use std::env;
 use std::iter;
+use std::{collections::HashMap, env};
 use std::{
     collections::HashSet,
     fs::read_dir,
@@ -129,12 +130,16 @@ pub fn canonicalize_input_files(
     Ok(kcl_paths)
 }
 
-/// Get compile uint(files and options) from a single file input.
+/// Get compile workspace(files and options) from a single file input.
 /// 1. Lookup entry files in kcl.yaml
 /// 2. Lookup entry files in kcl.mod
 /// 3. If not found, consider the path or folder where the file is
 ///    located as the compilation entry point
-pub fn lookup_compile_unit(tool: &dyn Toolchain, file: &str, load_pkg: bool) -> CompileUnitOptions {
+pub fn lookup_compile_workspace(
+    tool: &dyn Toolchain,
+    file: &str,
+    load_pkg: bool,
+) -> CompileUnitOptions {
     match lookup_compile_unit_path(file) {
         Ok(CompileUnitPath::SettingFile(dir)) => {
             let settings_files = lookup_setting_files(&dir);
@@ -225,6 +230,91 @@ pub fn lookup_compile_unit(tool: &dyn Toolchain, file: &str, load_pkg: bool) -> 
     }
 }
 
+pub fn lookup_compile_workspaces(
+    tool: &dyn Toolchain,
+    path: &str,
+    load_pkg: bool,
+) -> (
+    HashMap<WorkSpaceKind, CompileUnitOptions>,
+    Option<HashMap<String, String>>,
+) {
+    let mut workspaces = HashMap::new();
+    match lookup_workspace(path) {
+        Ok(workspace) => match &workspace {
+            WorkSpaceKind::WorkFile(work_file_path) => {
+                if let Ok(mut workfile) = load_work_file(work_file_path) {
+                    let root = work_file_path.parent().unwrap();
+                    workfile.canonicalize(root.to_path_buf());
+                    for work in workfile.workspaces {
+                        match lookup_workspace(&work.abs_path) {
+                            Ok(workspace) => {
+                                workspaces.insert(
+                                    workspace.clone(),
+                                    lookup_compile_workspace(tool, &work.abs_path, load_pkg),
+                                );
+                            }
+                            Err(_) => {}
+                        }
+                    }
+                    return (workspaces, Some(workfile.failed.clone()));
+                }
+            }
+            WorkSpaceKind::Folder(folder) => {
+                let mut load_opt = kclvm_parser::LoadProgramOptions::default();
+                let metadata =
+                    fill_pkg_maps_for_k_file(tool, path.into(), &mut load_opt).unwrap_or(None);
+
+                if load_pkg {
+                    if folder.is_file() {
+                        if let Ok(files) = get_kcl_files(folder.clone(), false) {
+                            // return (files, Some(load_opt), metadata);
+                            workspaces.insert(workspace, (files, Some(load_opt), metadata));
+                            return (workspaces, None);
+                        }
+                    }
+                }
+                workspaces.insert(
+                    workspace,
+                    (vec![path.to_string()], Some(load_opt), metadata),
+                );
+            }
+
+            WorkSpaceKind::SettingFile(setting_file) => {
+                workspaces.insert(
+                    workspace.clone(),
+                    lookup_compile_workspace(
+                        tool,
+                        &setting_file.as_path().adjust_canonicalization(),
+                        load_pkg,
+                    ),
+                );
+            }
+
+            WorkSpaceKind::ModFile(mod_file) => {
+                workspaces.insert(
+                    workspace.clone(),
+                    lookup_compile_workspace(
+                        tool,
+                        &mod_file.as_path().adjust_canonicalization(),
+                        load_pkg,
+                    ),
+                );
+            }
+
+            WorkSpaceKind::File(_) | WorkSpaceKind::NotFound => {
+                let pathbuf = PathBuf::from(path);
+                let file_path = pathbuf.as_path();
+                if file_path.is_file() {
+                    workspaces.insert(workspace, lookup_compile_workspace(tool, path, load_pkg));
+                }
+            }
+        },
+        Err(_) => {}
+    }
+
+    (workspaces, None)
+}
+
 /// Lookup default setting files e.g. kcl.yaml
 pub fn lookup_setting_files(dir: &Path) -> Vec<PathBuf> {
     let mut settings = vec![];
@@ -255,6 +345,17 @@ pub type CompileUnitOptions = (Vec<String>, Option<LoadProgramOptions>, Option<M
 pub enum CompileUnitPath {
     SettingFile(PathBuf),
     ModFile(PathBuf),
+    NotFound,
+}
+
+/// LSP workspace, will replace CompileUnitPath
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
+pub enum WorkSpaceKind {
+    WorkFile(PathBuf),
+    ModFile(PathBuf),
+    SettingFile(PathBuf),
+    Folder(PathBuf),
+    File(PathBuf),
     NotFound,
 }
 
@@ -298,6 +399,44 @@ pub fn lookup_compile_unit_path(file: &str) -> io::Result<CompileUnitPath> {
         }
     }
     Ok(CompileUnitPath::NotFound)
+}
+
+/// It will replace lookup_compile_unit_path()
+pub fn lookup_workspace(path: &str) -> io::Result<WorkSpaceKind> {
+    let pathbuf = PathBuf::from(path);
+    let path = pathbuf.as_path();
+    if path.is_dir() {
+        for entry in read_dir(path)? {
+            let entry = entry?;
+            if entry.file_name() == *KCL_WORK_FILE {
+                return Ok(WorkSpaceKind::WorkFile(entry.path()));
+            }
+        }
+
+        for entry in read_dir(path)? {
+            let entry = entry?;
+            if entry.file_name() == *KCL_MOD_FILE {
+                return Ok(WorkSpaceKind::ModFile(entry.path()));
+            }
+        }
+
+        for entry in read_dir(path)? {
+            let entry = entry?;
+            if entry.file_name() == *DEFAULT_SETTING_FILE {
+                return Ok(WorkSpaceKind::SettingFile(entry.path()));
+            }
+        }
+
+        return Ok(WorkSpaceKind::Folder(PathBuf::from(path)));
+    }
+    if path.is_file() {
+        if let Some(ext) = path.extension() {
+            if ext.to_str().unwrap() == KCL_FILE_EXTENSION {
+                return Ok(WorkSpaceKind::File(PathBuf::from(path)));
+            }
+        }
+    }
+    Ok(WorkSpaceKind::NotFound)
 }
 
 /// Get kcl files from path.

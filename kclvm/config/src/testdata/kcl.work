@@ -1,0 +1,3 @@
+workspace ./a
+workspace ./b
+workspace ./c/d

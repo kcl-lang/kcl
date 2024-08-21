@@ -2,8 +2,10 @@ use crossbeam_channel::after;
 use crossbeam_channel::select;
 use indexmap::IndexSet;
 use kclvm_ast::MAIN_PKG;
+use kclvm_config::workfile::WorkSpace;
 use kclvm_driver::toolchain;
 use kclvm_driver::toolchain::Metadata;
+use kclvm_driver::WorkSpaceKind;
 use kclvm_sema::core::global_state::GlobalState;
 
 use kclvm_sema::resolver::scope::KCLScopeCache;
@@ -45,6 +47,7 @@ use serde::Serialize;
 use std::cell::Cell;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::env;
 use std::path::Path;
 use std::path::PathBuf;
@@ -2257,4 +2260,135 @@ fn compile_unit_test() {
         .unwrap()
         .iter()
         .any(|m| m.filename == file))
+}
+
+#[test]
+fn kcl_workspace_init_kclwork_test() {
+    let tool: crate::state::KCLToolChain = Arc::new(RwLock::new(toolchain::default()));
+    let tool = Arc::clone(&tool);
+
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("src")
+        .join("test_data")
+        .join("workspace")
+        .join("init");
+
+    let mut work = root.clone();
+    work.push("work");
+
+    let (workspaces, failed) =
+        kclvm_driver::lookup_compile_workspaces(&*tool.read(), &work.to_str().unwrap(), true);
+
+    let mut expected = HashSet::new();
+
+    expected.insert(WorkSpaceKind::Folder(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("src")
+            .join("test_data")
+            .join("workspace")
+            .join("init")
+            .join("work")
+            .join("a"),
+    ));
+
+    expected.insert(WorkSpaceKind::Folder(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("src")
+            .join("test_data")
+            .join("workspace")
+            .join("init")
+            .join("work")
+            .join("b"),
+    ));
+
+    expected.insert(WorkSpaceKind::File(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("src")
+            .join("test_data")
+            .join("workspace")
+            .join("init")
+            .join("work")
+            .join("c.k"),
+    ));
+
+    assert_eq!(
+        expected,
+        workspaces.keys().into_iter().map(|w| w.clone()).collect()
+    );
+
+    assert!(failed.is_some());
+    assert!(failed.unwrap().is_empty());
+}
+
+#[test]
+fn kcl_workspace_init_kclmod_test() {
+    let tool: crate::state::KCLToolChain = Arc::new(RwLock::new(toolchain::default()));
+    let tool = Arc::clone(&tool);
+
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("src")
+        .join("test_data")
+        .join("workspace")
+        .join("init");
+
+    let mut work = root.clone();
+    work.push("mod");
+
+    let (workspaces, failed) =
+        kclvm_driver::lookup_compile_workspaces(&*tool.read(), &work.to_str().unwrap(), true);
+
+    let mut expected = HashSet::new();
+
+    expected.insert(WorkSpaceKind::ModFile(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("src")
+            .join("test_data")
+            .join("workspace")
+            .join("init")
+            .join("mod")
+            .join("kcl.mod"),
+    ));
+
+    assert_eq!(
+        expected,
+        workspaces.keys().into_iter().map(|w| w.clone()).collect()
+    );
+
+    assert!(failed.is_none());
+}
+
+#[test]
+fn kcl_workspace_init_folder_test() {
+    let tool: crate::state::KCLToolChain = Arc::new(RwLock::new(toolchain::default()));
+    let tool = Arc::clone(&tool);
+
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("src")
+        .join("test_data")
+        .join("workspace")
+        .join("init");
+
+    let mut work = root.clone();
+    work.push("folder");
+
+    let (workspaces, failed) =
+        kclvm_driver::lookup_compile_workspaces(&*tool.read(), &work.to_str().unwrap(), true);
+
+    let mut expected = HashSet::new();
+
+    expected.insert(WorkSpaceKind::Folder(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("src")
+            .join("test_data")
+            .join("workspace")
+            .join("init")
+            .join("folder"),
+    ));
+
+    assert_eq!(
+        expected,
+        workspaces.keys().into_iter().map(|w| w.clone()).collect()
+    );
+
+    assert!(failed.is_none());
 }

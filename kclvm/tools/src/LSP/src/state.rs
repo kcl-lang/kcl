@@ -1,12 +1,14 @@
 use crate::analysis::{Analysis, AnalysisDatabase, DocumentVersion};
 use crate::from_lsp::file_path_from_url;
 use crate::to_lsp::{kcl_diag_to_lsp_diags, url};
-use crate::util::{compile_with_params, get_file_name, to_json, Params};
+use crate::util::{compile, compile_with_params, get_file_name, to_json, Params};
 use crate::word_index::build_word_index;
 use anyhow::Result;
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
 use kclvm_driver::toolchain::{self, Toolchain};
-use kclvm_driver::CompileUnitOptions;
+use kclvm_driver::{
+    lookup_compile_workspaces, lookup_workspace, CompileUnitOptions, WorkSpaceKind,
+};
 use kclvm_parser::KCLModuleCache;
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::resolver::scope::KCLScopeCache;
@@ -100,6 +102,7 @@ pub(crate) struct LanguageServerSnapshot {
     pub vfs: Arc<RwLock<Vfs>>,
     /// Holds the state of the analysis process
     pub db: Arc<RwLock<HashMap<FileId, Option<Arc<AnalysisDatabase>>>>>,
+    pub workspaces: Arc<RwLock<HashMap<WorkSpaceKind, Option<Arc<AnalysisDatabase>>>>>,
     /// Documents that are currently kept in memory from the client
     pub opened_files: Arc<RwLock<HashMap<FileId, DocumentVersion>>>,
     /// request retry time
@@ -129,7 +132,7 @@ impl LanguageServerState {
             Handle { handle, _receiver }
         };
 
-        let state = LanguageServerState {
+        let mut state = LanguageServerState {
             sender,
             request_queue: ReqQueue::default(),
             vfs: Arc::new(RwLock::new(Default::default())),
@@ -148,6 +151,8 @@ impl LanguageServerState {
             gs_cache: KCLGlobalStateCache::default(),
             request_retry: Arc::new(RwLock::new(HashMap::new())),
         };
+
+        state.init_workspaces(initialize_params.clone());
 
         let word_index_map = state.word_index_map.clone();
         state.thread_pool.execute(move || {
@@ -394,6 +399,7 @@ impl LanguageServerState {
             entry_cache: self.entry_cache.clone(),
             tool: self.tool.clone(),
             request_retry: self.request_retry.clone(),
+            workspaces: self.analysis.workspaces.clone(),
         }
     }
 
@@ -408,6 +414,65 @@ impl LanguageServerState {
 
     pub(crate) fn is_completed(&self, request: &lsp_server::Request) -> bool {
         self.request_queue.incoming.is_completed(&request.id)
+    }
+
+    fn init_workspaces(&mut self, initialize_params: InitializeParams) {
+        if let Some(workspace_folders) = initialize_params.workspace_folders {
+            for folder in workspace_folders {
+                let path = file_path_from_url(&folder.uri).unwrap();
+                let tool = Arc::clone(&self.tool);
+                let (workspaces, failed) = lookup_compile_workspaces(&*tool.read(), &path, true);
+
+                if let Some(failed) = failed {
+                    for (key, err) in failed {
+                        self.log_message(format!("parse kcl.work failed: {}: {}", key, err));
+                    }
+                }
+
+                for (workspace, entrys) in workspaces {
+                    self.thread_pool.execute({
+                        let mut snapshot = self.snapshot();
+                        let sender = self.task_sender.clone();
+                        let module_cache = Arc::clone(&self.module_cache);
+                        let scope_cache = Arc::clone(&self.scope_cache);
+                        let entry = Arc::clone(&self.entry_cache);
+                        let tool = Arc::clone(&self.tool);
+                        let gs_cache = Arc::clone(&self.gs_cache);
+
+                        let mut files = entrys.0.clone();
+                        move || {
+                            let (_, compile_res) = compile(
+                                Params {
+                                    file: "".to_string(),
+                                    module_cache: Some(module_cache),
+                                    scope_cache: Some(scope_cache),
+                                    vfs: Some(snapshot.vfs),
+                                    entry_cache: Some(entry),
+                                    tool,
+                                    gs_cache: Some(gs_cache),
+                                },
+                                &mut files,
+                                entrys.1,
+                            );
+                            let mut workspaces = snapshot.workspaces.write();
+                            match compile_res {
+                                Ok((prog, gs)) => {
+                                    workspaces.insert(
+                                        workspace,
+                                        Some(Arc::new(AnalysisDatabase {
+                                            prog,
+                                            gs,
+                                            version: -1,
+                                        })),
+                                    );
+                                }
+                                Err(err) => {}
+                            }
+                        }
+                    })
+                }
+            }
+        }
     }
 }
 
