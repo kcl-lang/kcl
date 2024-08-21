@@ -6,9 +6,7 @@ use crate::word_index::build_word_index;
 use anyhow::Result;
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
 use kclvm_driver::toolchain::{self, Toolchain};
-use kclvm_driver::{
-    lookup_compile_workspaces, lookup_workspace, CompileUnitOptions, WorkSpaceKind,
-};
+use kclvm_driver::{lookup_compile_workspaces, CompileUnitOptions, WorkSpaceKind};
 use kclvm_parser::KCLModuleCache;
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::resolver::scope::KCLScopeCache;

@@ -332,15 +332,20 @@ impl<'ctx> Resolver<'ctx> {
     ) -> Option<TypeRef> {
         if let Some(key) = key {
             if let Some(Some(_)) = self.ctx.config_expr_context.last() {
-                let mut has_index = false;
                 let names: Vec<String> = match &key.node {
                     ast::Expr::Identifier(identifier) => identifier.get_names(),
                     ast::Expr::Subscript(subscript) => {
                         if let ast::Expr::Identifier(identifier) = &subscript.value.node {
                             if let Some(index) = &subscript.index {
                                 if matches!(index.node, ast::Expr::NumberLit(_)) {
-                                    has_index = true;
                                     identifier.get_names()
+                                } else if let ast::Expr::Unary(unary_expr) = &index.node {
+                                    // Negative index constant
+                                    if matches!(unary_expr.operand.node, ast::Expr::NumberLit(_)) {
+                                        identifier.get_names()
+                                    } else {
+                                        return None;
+                                    }
                                 } else {
                                     return None;
                                 }
@@ -365,9 +370,6 @@ impl<'ctx> Resolver<'ctx> {
 
                 for _ in 0..names.len() - 1 {
                     val_ty = Type::dict_ref(self.str_ty(), val_ty);
-                }
-                if has_index {
-                    val_ty = Type::list_ref(val_ty);
                 }
                 if let Some(Some(obj_last)) = self.ctx.config_expr_context.last() {
                     let ty = obj_last.ty.clone();
@@ -597,12 +599,14 @@ impl<'ctx> Resolver<'ctx> {
                         val_types.push(val_ty.clone());
                         val_ty
                     }
-                    ast::Expr::Subscript(subscript)
-                        if matches!(subscript.value.node, ast::Expr::Identifier(_)) =>
-                    {
+                    ast::Expr::Subscript(subscript) if subscript.has_name_and_constant_index() => {
                         let val_ty = value_ty.unwrap_or_else(|| self.expr(value));
                         key_types.push(self.str_ty());
-                        val_types.push(Type::list_ref(val_ty.clone()));
+                        if matches!(op, ast::ConfigEntryOperation::Insert) {
+                            val_types.push(val_ty.clone());
+                        } else {
+                            val_types.push(Type::list_ref(val_ty.clone()));
+                        }
                         val_ty
                     }
                     _ => {
