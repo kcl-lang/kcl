@@ -11,7 +11,7 @@ pub type DocumentVersion = i32;
 #[derive(Default)]
 pub struct Analysis {
     pub db: Arc<RwLock<HashMap<FileId, Option<Arc<AnalysisDatabase>>>>>,
-    pub workspaecs: Arc<RwLock<HashMap<WorkSpaceKind, Option<Arc<AnalysisDatabase>>>>>,
+    pub workspaces: Arc<RwLock<HashMap<WorkSpaceKind, Option<Arc<AnalysisDatabase>>>>>,
 }
 
 /// AnalysisDatabase holds the result of the compile

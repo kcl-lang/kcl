@@ -399,7 +399,7 @@ impl LanguageServerState {
             entry_cache: self.entry_cache.clone(),
             tool: self.tool.clone(),
             request_retry: self.request_retry.clone(),
-            workspaces: self.analysis.workspaecs.clone(),
+            workspaces: self.analysis.workspaces.clone(),
         }
     }
 
