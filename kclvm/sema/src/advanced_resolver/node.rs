@@ -867,6 +867,28 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
     }
 
     fn walk_config_expr(&mut self, config_expr: &'ctx ast::ConfigExpr) -> Self::Result {
+        let (start, end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
+        let schema_symbol = self.ctx.schema_symbol_stack.last().unwrap_or(&None).clone();
+        let kind = LocalSymbolScopeKind::Config;
+
+        if let Some(schema_expr) = self
+            .gs
+            .get_symbols_mut()
+            .exprs
+            .get_mut(schema_symbol.unwrap().get_id())
+        {
+            let mut expr_symbol = ExpressionSymbol::new(
+                schema_expr.name.to_string(),
+                start.clone(),
+                end.clone(),
+                None,
+            );
+            expr_symbol.hint = Some(SymbolHint {
+                pos: start.clone(),
+                kind: SymbolHintKind::VarHint(schema_expr.name.to_string()),
+            })
+        }
+
         self.walk_config_entries(&config_expr.items)?;
         Ok(None)
     }
