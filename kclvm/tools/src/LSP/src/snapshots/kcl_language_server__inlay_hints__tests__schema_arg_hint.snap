@@ -1,0 +1,119 @@
+---
+source: tools/src/LSP/src/inlay_hints.rs
+assertion_line: 122
+expression: "format!(\"{:#?}\", res)"
+---
+Some(
+    [
+        InlayHint {
+            position: Position {
+                line: 1,
+                character: 5,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: ": int",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: None,
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 2,
+                character: 5,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: ": str",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: None,
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 4,
+                character: 1,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: ": Person",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: None,
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 4,
+                character: 11,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: "age: ",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: None,
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 4,
+                character: 14,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: "name: ",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: None,
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+    ],
+)

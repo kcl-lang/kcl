@@ -118,4 +118,9 @@ mod tests {
         test_function_call_arg_hint,
         "src/test_data/inlay_hints/function_call/function_call.k"
     );
+
+    inlay_hints_test_snapshot!(
+        test_schema_arg_hint,
+        "src/test_data/inlay_hints/schema_args/schema_args_hint.k"
+    );
 }
