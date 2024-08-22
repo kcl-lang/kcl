@@ -1,0 +1,6 @@
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:3:5
+  |
+3 |     a[b] += [1, 2, 3]
+  |     ^ name 'a' is not defined
+  |

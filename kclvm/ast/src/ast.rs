@@ -1175,6 +1175,33 @@ pub struct Subscript {
     pub has_question: bool,
 }
 
+impl Subscript {
+    /// Whether the subscript is the a[1] or a[-1] form.
+    pub fn has_name_and_constant_index(&self) -> bool {
+        if let Expr::Identifier(_) = &self.value.node {
+            if let Some(index_node) = &self.index {
+                // Positive index constant
+                if let Expr::NumberLit(number) = &index_node.node {
+                    matches!(number.value, NumberLitValue::Int(_))
+                } else if let Expr::Unary(unary_expr) = &index_node.node {
+                    // Negative index constant
+                    if let Expr::NumberLit(number) = &unary_expr.operand.node {
+                        matches!(number.value, NumberLitValue::Int(_))
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+}
+
 /// Keyword, e.g.
 /// ```kcl
 /// arg=value
