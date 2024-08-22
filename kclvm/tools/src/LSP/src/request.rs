@@ -4,13 +4,13 @@ use crossbeam_channel::Sender;
 use kclvm_sema::info::is_valid_kcl_name;
 use lsp_server::RequestId;
 use lsp_types::{Location, SemanticTokensResult, TextEdit};
-use ra_ap_vfs::{AbsPathBuf, VfsPath};
+use ra_ap_vfs::VfsPath;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
 
 use crate::{
-    analysis::{AnalysisDatabase, DocumentVersion},
+    analysis::AnalysisDatabase,
     completion::completion,
     dispatcher::RequestDispatcher,
     document_symbol::document_symbol,
@@ -73,7 +73,7 @@ impl LanguageServerState {
 impl LanguageServerSnapshot {
     // defend against non-kcl files
     pub(crate) fn verify_request_path(&self, path: &VfsPath, sender: &Sender<Task>) -> bool {
-        self.verify_vfs(path, sender) && self.verify_db(path, sender)
+        self.verify_vfs(path, sender)
     }
 
     pub(crate) fn verify_vfs(&self, path: &VfsPath, sender: &Sender<Task>) -> bool {
@@ -87,64 +87,54 @@ impl LanguageServerSnapshot {
         valid
     }
 
-    pub(crate) fn verify_db(&self, path: &VfsPath, sender: &Sender<Task>) -> bool {
-        let valid = self
-            .db
-            .read()
-            .get(&self.vfs.read().file_id(path).unwrap())
-            .is_some();
-        if !valid {
-            let _ = log_message(
-                format!(
-                    "LSP AnalysisDatabase not contains: {}, request failed",
-                    path
-                ),
-                sender,
-            );
-        }
-        valid
-    }
-
     /// Attempts to get db in cache, this function does not block.
-    /// db.contains(file_id) && db.get(file_id).is_some() -> Compile completed
-    /// db.contains(file_id) && db.get(file_id).is_none() -> In compiling, retry to wait compile completed
-    /// !db.contains(file_id) ->  Compile failed
+    /// return Ok(Some(db)) -> Compile completed
+    /// return Ok(None) -> In compiling, retry to wait compile completed
+    /// return Err(_) ->  Compile failed
     pub(crate) fn try_get_db(
         &self,
         path: &VfsPath,
     ) -> anyhow::Result<Option<Arc<AnalysisDatabase>>> {
         match self.vfs.try_read() {
             Some(vfs) => match vfs.file_id(path) {
-                Some(file_id) => match self.db.try_read() {
-                    Some(db) => match db.get(&file_id) {
-                        Some(db) => Ok(db.clone()),
-                        None => Err(anyhow::anyhow!(LSPError::AnalysisDatabaseNotFound(
-                            path.clone()
-                        ))),
-                    },
-                    None => Ok(None),
-                },
+                Some(file_id) => {
+                    let open_file = self.opened_files.read();
+                    let file_info = open_file.get(&file_id).unwrap();
+                    match self.temporary_workspace.read().get(&file_id) {
+                        Some(work_space) => match self.workspaces.try_read() {
+                            Some(workspaces) => match workspaces.get(work_space) {
+                                Some(db) => Ok(db.clone()),
+                                None => Err(anyhow::anyhow!(LSPError::AnalysisDatabaseNotFound(
+                                    path.clone()
+                                ))),
+                            },
+                            None => Ok(None),
+                        },
+                        None => {
+                            if file_info.workspaces.is_empty() {
+                                return Err(anyhow::anyhow!(LSPError::FileIdNotFound(
+                                    path.clone()
+                                )));
+                            }
+                            // todo: now just get first, need get all workspaces
+                            let work_space = file_info.workspaces.iter().next().unwrap();
+                            match self.workspaces.try_read() {
+                                Some(workspaces) => match workspaces.get(work_space) {
+                                    Some(db) => Ok(db.clone()),
+                                    None => Err(anyhow::anyhow!(
+                                        LSPError::AnalysisDatabaseNotFound(path.clone())
+                                    )),
+                                },
+                                None => Ok(None),
+                            }
+                        }
+                    }
+                }
+
                 None => Err(anyhow::anyhow!(LSPError::FileIdNotFound(path.clone()))),
             },
             None => Ok(None),
         }
-    }
-
-    fn verify_request_version(
-        &self,
-        db_version: DocumentVersion,
-        path: &AbsPathBuf,
-    ) -> anyhow::Result<bool> {
-        let file_id = self
-            .vfs
-            .read()
-            .file_id(&path.clone().into())
-            .ok_or_else(|| anyhow::anyhow!(LSPError::FileIdNotFound(path.clone().into())))?;
-
-        let current_version = *self.opened_files.read().get(&file_id).ok_or_else(|| {
-            anyhow::anyhow!(LSPError::DocumentVersionNotFound(path.clone().into()))
-        })?;
-        Ok(db_version == current_version)
     }
 }
 
@@ -163,10 +153,6 @@ pub(crate) fn handle_semantic_tokens_full(
         Err(_) => return Ok(None),
     };
     let res = semantic_tokens_full(&file, &db.gs);
-
-    if !snapshot.verify_request_version(db.version, &path)? {
-        return Err(anyhow!(LSPError::Retry));
-    }
     Ok(res)
 }
 
@@ -235,7 +221,7 @@ pub(crate) fn handle_goto_definition(
     let path = from_lsp::abs_path(&params.text_document_position_params.text_document.uri)?;
     if !snapshot.verify_request_path(&path.clone().into(), &sender) {
         return Ok(None);
-    }
+    };
     let db = match snapshot.try_get_db(&path.clone().into()) {
         Ok(option_db) => match option_db {
             Some(db) => db,
@@ -321,8 +307,6 @@ pub(crate) fn handle_completion(
     if matches!(completion_trigger_character, Some('\n')) {
         if snapshot.request_retry.read().get(&id).is_none() {
             return Err(anyhow!(LSPError::Retry));
-        } else if !snapshot.verify_request_version(db.version, &path)? {
-            return Err(anyhow!(LSPError::Retry));
         }
     }
 
@@ -391,11 +375,6 @@ pub(crate) fn handle_document_symbol(
         Err(_) => return Ok(None),
     };
     let res = document_symbol(&file, &db.gs);
-
-    if !snapshot.verify_request_version(db.version, &path)? {
-        return Err(anyhow!(LSPError::Retry));
-    }
-
     Ok(res)
 }
 
@@ -482,10 +461,6 @@ pub(crate) fn handle_inlay_hint(
         Err(_) => return Ok(None),
     };
     let res = inlay_hints(&file, &db.gs);
-
-    if !snapshot.verify_request_version(db.version, &path)? {
-        return Err(anyhow!(LSPError::Retry));
-    }
     Ok(res)
 }
 

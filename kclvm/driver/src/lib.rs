@@ -15,7 +15,7 @@ use kclvm_config::{
     },
     path::ModRelativePath,
     settings::{build_settings_pathbuf, DEFAULT_SETTING_FILE},
-    workfile::load_work_file,
+    workfile::{load_work_file, WorkFile},
 };
 use kclvm_parser::LoadProgramOptions;
 use kclvm_utils::path::PathPrefix;

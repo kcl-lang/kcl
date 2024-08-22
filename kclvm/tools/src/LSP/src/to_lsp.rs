@@ -1,13 +1,12 @@
+use im_rc::HashMap;
 use kclvm_error::Diagnostic as KCLDiagnostic;
 use kclvm_error::DiagnosticId;
 use kclvm_error::Level;
 use kclvm_error::Message;
 use kclvm_error::Position as KCLPos;
 use lsp_types::*;
-use ra_ap_vfs::FileId;
 use serde_json::json;
 
-use crate::state::LanguageServerSnapshot;
 use std::{
     path::{Component, Path, Prefix},
     str::FromStr,
@@ -109,8 +108,9 @@ fn kcl_err_level_to_severity(level: Level) -> DiagnosticSeverity {
     }
 }
 
+#[cfg(test)]
 /// Convert KCL Diagnostic to LSP Diagnostics.
-pub fn kcl_diag_to_lsp_diags(diag: &KCLDiagnostic, file_name: &str) -> Vec<Diagnostic> {
+pub fn kcl_diag_to_lsp_diags_by_file(diag: &KCLDiagnostic, file_name: &str) -> Vec<Diagnostic> {
     let mut diags = vec![];
     for (idx, msg) in diag.messages.iter().enumerate() {
         if msg.range.0.filename == file_name {
@@ -135,6 +135,33 @@ pub fn kcl_diag_to_lsp_diags(diag: &KCLDiagnostic, file_name: &str) -> Vec<Diagn
     diags
 }
 
+/// Convert KCL Diagnostic to LSP Diagnostics.
+pub fn kcl_diag_to_lsp_diags(diag: &KCLDiagnostic) -> HashMap<String, Vec<Diagnostic>> {
+    let mut diags_map: HashMap<String, Vec<Diagnostic>> = HashMap::new();
+
+    for (idx, msg) in diag.messages.iter().enumerate() {
+        let filename = msg.range.0.filename.clone();
+
+        let mut related_msg = diag.messages.clone();
+        related_msg.remove(idx);
+        let code = if diag.code.is_some() {
+            Some(kcl_diag_id_to_lsp_diag_code(diag.code.clone().unwrap()))
+        } else {
+            None
+        };
+
+        let lsp_diag = kcl_msg_to_lsp_diags(
+            msg,
+            kcl_err_level_to_severity(diag.level),
+            related_msg,
+            code,
+        );
+
+        diags_map.entry(filename).or_insert(vec![]).push(lsp_diag);
+    }
+    diags_map
+}
+
 /// Convert KCL Diagnostic ID to LSP Diagnostics code.
 /// Todo: use unique id/code instead of name()
 pub(crate) fn kcl_diag_id_to_lsp_diag_code(id: DiagnosticId) -> NumberOrString {
@@ -145,17 +172,8 @@ pub(crate) fn kcl_diag_id_to_lsp_diag_code(id: DiagnosticId) -> NumberOrString {
     }
 }
 
-/// Returns the `Url` associated with the specified `FileId`.
-pub(crate) fn url(snapshot: &LanguageServerSnapshot, file_id: FileId) -> anyhow::Result<Url> {
-    let vfs = snapshot.vfs.read();
-    if let Some(path) = vfs.file_path(FileId(file_id.0)).as_path() {
-        Ok(url_from_path_with_drive_lowercasing(path)?)
-    } else {
-        Err(anyhow::anyhow!(
-            "{} isn't on the file system.",
-            vfs.file_path(FileId(file_id.0))
-        ))
-    }
+pub(crate) fn url_from_path(path: impl AsRef<Path>) -> anyhow::Result<Url> {
+    url_from_path_with_drive_lowercasing(path)
 }
 
 /// Returns a `Url` object from a given path, will lowercase drive letters if present.

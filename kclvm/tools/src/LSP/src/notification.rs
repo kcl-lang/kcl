@@ -1,11 +1,15 @@
-use kclvm_config::{modfile::KCL_MOD_FILE, settings::DEFAULT_SETTING_FILE};
+use kclvm_config::{
+    modfile::{KCL_MOD_FILE, KCL_WORK_FILE},
+    settings::DEFAULT_SETTING_FILE,
+};
 use lsp_types::notification::{
     Cancel, DidChangeTextDocument, DidChangeWatchedFiles, DidCloseTextDocument,
     DidOpenTextDocument, DidSaveTextDocument,
 };
-use std::path::Path;
+use std::{collections::HashSet, path::Path};
 
 use crate::{
+    analysis::OpenFileInfo,
     dispatcher::NotificationDispatcher,
     from_lsp,
     state::LanguageServerState,
@@ -52,9 +56,13 @@ impl LanguageServerState {
         );
 
         if let Some(id) = self.vfs.read().file_id(&path.into()) {
-            self.opened_files
-                .write()
-                .insert(id, params.text_document.version);
+            self.opened_files.write().insert(
+                id,
+                OpenFileInfo {
+                    version: params.text_document.version,
+                    workspaces: HashSet::new(),
+                },
+            );
         }
         Ok(())
     }
@@ -97,9 +105,11 @@ impl LanguageServerState {
         let old_text = text.clone();
         apply_document_changes(&mut text, content_changes);
         vfs.set_file_contents(path.into(), Some(text.clone().into_bytes()));
-        self.opened_files
-            .write()
-            .insert(file_id, text_document.version);
+        let mut opened_files = self.opened_files.write();
+        let file_info = opened_files.get_mut(&file_id).unwrap();
+        file_info.version = text_document.version;
+        drop(opened_files);
+
         // Update word index
         let old_word_index = build_word_index_with_content(&old_text, &text_document.uri, true);
         let new_word_index = build_word_index_with_content(&text, &text_document.uri, true);
@@ -147,6 +157,7 @@ impl LanguageServerState {
             self.loader.handle.invalidate(path.clone());
             if KCL_CONFIG_FILE.contains(&path.file_name().unwrap().to_str().unwrap()) {
                 self.entry_cache.write().clear();
+                self.init_workspaces();
             }
         }
 
@@ -154,4 +165,4 @@ impl LanguageServerState {
     }
 }
 
-const KCL_CONFIG_FILE: [&str; 2] = [DEFAULT_SETTING_FILE, KCL_MOD_FILE];
+const KCL_CONFIG_FILE: [&str; 3] = [DEFAULT_SETTING_FILE, KCL_MOD_FILE, KCL_WORK_FILE];

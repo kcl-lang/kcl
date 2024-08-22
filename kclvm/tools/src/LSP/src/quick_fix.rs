@@ -171,7 +171,7 @@ mod tests {
     use super::quick_fix;
     use crate::{
         state::KCLVfs,
-        to_lsp::kcl_diag_to_lsp_diags,
+        to_lsp::kcl_diag_to_lsp_diags_by_file,
         util::{compile_with_params, Params},
     };
 
@@ -196,7 +196,7 @@ mod tests {
 
         let diagnostics = diags
             .iter()
-            .flat_map(|diag| kcl_diag_to_lsp_diags(diag, file))
+            .flat_map(|diag| kcl_diag_to_lsp_diags_by_file(diag, file))
             .collect::<Vec<Diagnostic>>();
 
         let uri = Url::from_file_path(file).unwrap();

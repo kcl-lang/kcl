@@ -82,7 +82,7 @@ use crate::main_loop::main_loop;
 use crate::state::KCLEntryCache;
 use crate::state::KCLGlobalStateCache;
 use crate::state::KCLVfs;
-use crate::to_lsp::kcl_diag_to_lsp_diags;
+use crate::to_lsp::kcl_diag_to_lsp_diags_by_file;
 use crate::util::lookup_compile_unit_with_cache;
 use crate::util::to_json;
 use crate::util::{apply_document_changes, compile_with_params, Params};
@@ -343,7 +343,7 @@ fn diagnostics_test() {
 
     let diagnostics = diags
         .iter()
-        .flat_map(|diag| kcl_diag_to_lsp_diags(diag, file))
+        .flat_map(|diag| kcl_diag_to_lsp_diags_by_file(diag, file))
         .collect::<Vec<Diagnostic>>();
 
     let expected_diags: Vec<Diagnostic> = build_expect_diags();
