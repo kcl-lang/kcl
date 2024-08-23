@@ -1907,6 +1907,7 @@ dependencies = [
  "kclvm-span",
  "kclvm-utils",
  "num-bigint",
+ "parking_lot 0.12.3",
  "petgraph",
  "regex",
  "rustc_lexer",

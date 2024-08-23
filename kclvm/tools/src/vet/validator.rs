@@ -179,7 +179,7 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool> {
     let sess = ParseSessionRef::default();
     let mut compile_res = kclvm_parser::load_program(
         sess,
-        vec![k_path]
+        [k_path]
             .iter()
             .map(|s| s.as_str())
             .collect::<Vec<&str>>()
@@ -196,7 +196,7 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool> {
     let schemas = filter_schema_stmt_from_prog(&compile_res.program);
     let schema_name = match val_opt.schema_name {
         Some(name) => Some(name),
-        None => schemas.get(0).map(|schema| schema.name.node.clone()),
+        None => schemas.first().map(|schema| schema.name.node.clone()),
     };
 
     let expr_builder =

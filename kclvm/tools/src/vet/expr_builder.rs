@@ -3,7 +3,6 @@ use kclvm_ast::{
     ast::{
         ConfigEntry, ConfigEntryOperation, ConfigExpr, Expr, ExprContext, Identifier, ListExpr,
         NameConstant, NameConstantLit, Node, NodeRef, NumberLit, NumberLitValue, SchemaExpr,
-        StringLit,
     },
     node_ref,
 };
@@ -116,12 +115,7 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
                 }
             }
             serde_yaml::Value::String(j_string) => {
-                let str_lit = match StringLit::try_from(j_string.to_string()) {
-                    Ok(s) => s,
-                    Err(_) => {
-                        bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}")
-                    }
-                };
+                let str_lit = From::from(j_string.to_string());
                 Ok(node_ref!(Expr::StringLit(str_lit)))
             }
             serde_yaml::Value::Sequence(j_arr) => {
@@ -251,12 +245,7 @@ impl ExprGenerator<located_yaml::Yaml> for ExprBuilder {
                 }
             }
             located_yaml::YamlElt::String(j_string) => {
-                let str_lit = match StringLit::try_from(j_string.to_string()) {
-                    Ok(s) => s,
-                    Err(_) => {
-                        bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}")
-                    }
-                };
+                let str_lit = From::from(j_string.to_string());
                 Ok(node_ref!(Expr::StringLit(str_lit), loc))
             }
             located_yaml::YamlElt::Array(j_arr) => {
@@ -409,12 +398,7 @@ impl ExprGenerator<json_spanned_value::Spanned<json_spanned_value::Value>> for E
                 }
             }
             json_spanned_value::Value::String(j_string) => {
-                let str_lit = match StringLit::try_from(j_string.to_string()) {
-                    Ok(s) => s,
-                    Err(_) => {
-                        bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}")
-                    }
-                };
+                let str_lit = From::from(j_string.to_string());
 
                 Ok(node_ref!(Expr::StringLit(str_lit), loc))
             }
@@ -439,12 +423,7 @@ impl ExprGenerator<json_spanned_value::Spanned<json_spanned_value::Value>> for E
 
                 for (k, v) in j_map.iter() {
                     let k_span = k.span();
-                    let k = match StringLit::try_from(k.to_string()) {
-                        Ok(s) => s,
-                        Err(err) => {
-                            bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}, {err}")
-                        }
-                    };
+                    let k = From::from(k.to_string());
                     let v = self
                         .generate(v, &None)
                         .with_context(|| FAIL_LOAD_VALIDATED_ERR_MSG)?;
@@ -559,12 +538,7 @@ impl ExprGenerator<serde_json::Value> for ExprBuilder {
                 }
             }
             serde_json::Value::String(j_string) => {
-                let str_lit = match StringLit::try_from(j_string.to_string()) {
-                    Ok(s) => s,
-                    Err(_) => {
-                        bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}")
-                    }
-                };
+                let str_lit = From::from(j_string.to_string());
 
                 Ok(node_ref!(Expr::StringLit(str_lit)))
             }
@@ -585,12 +559,7 @@ impl ExprGenerator<serde_json::Value> for ExprBuilder {
                 let mut config_entries: Vec<NodeRef<ConfigEntry>> = Vec::new();
 
                 for (k, v) in j_map.iter() {
-                    let k = match StringLit::try_from(k.to_string()) {
-                        Ok(s) => s,
-                        Err(err) => {
-                            bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}, {err}")
-                        }
-                    };
+                    let k = From::from(k.to_string());
                     let v = self
                         .generate(v, &None)
                         .with_context(|| FAIL_LOAD_VALIDATED_ERR_MSG)?;

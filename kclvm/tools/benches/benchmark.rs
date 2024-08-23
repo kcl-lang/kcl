@@ -65,7 +65,7 @@ impl fmt::Display for StopWatchSpan {
 /// Utility for writing benchmark tests.
 ///
 /// If you need to benchmark the entire test, you can directly add the macro `#[bench_test]` like this:
-/// ```
+/// ```no_check
 /// #[test]
 /// #[bench_test]
 /// fn benchmark_foo() {
@@ -76,7 +76,7 @@ impl fmt::Display for StopWatchSpan {
 /// If you need to skip some preparation stages and only test some parts of test, you can use the `bench()` method.
 /// A benchmark test looks like this:
 ///
-/// ```
+/// ```no_check
 /// #[test]
 /// fn benchmark_foo() {
 ///     let data = bench_fixture::some_fixture();

@@ -133,7 +133,7 @@ impl Loader<located_yaml::Yaml> for DataLoader {
         };
 
         v.docs
-            .get(0)
+            .first()
             .map_or_else(|| bail!("Failed to Load YAML"), |res| Ok(res.clone()))
     }
 }

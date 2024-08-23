@@ -14,9 +14,7 @@ pub fn signature_help(
     gs: &GlobalState,
     trigger_character: Option<String>,
 ) -> Option<SignatureHelp> {
-    if trigger_character.is_none() {
-        return None;
-    }
+    trigger_character.as_ref()?;
     match trigger_character.unwrap().as_str() {
         // func<cursor>
         "(" => {
@@ -32,7 +30,7 @@ pub fn signature_help(
                             .get_sema_info()
                             .doc
                             .clone()
-                            .and_then(|s| Some(lsp_types::Documentation::String(s)));
+                            .map(lsp_types::Documentation::String);
 
                         return Some(SignatureHelp {
                             signatures: vec![SignatureInformation {
@@ -68,7 +66,7 @@ pub fn signature_help(
                             .get_sema_info()
                             .doc
                             .clone()
-                            .and_then(|s| Some(lsp_types::Documentation::String(s)));
+                            .map(lsp_types::Documentation::String);
 
                         // highlight parameter's index
                         // if None, it will highlight first param(maybe default)
@@ -90,7 +88,7 @@ pub fn signature_help(
                                     .collect();
                                 let mut index: usize = 0;
                                 for (i, symbol) in actually_symbol.iter().enumerate() {
-                                    let s = gs.get_symbols().get_symbol(symbol.clone()).unwrap();
+                                    let s = gs.get_symbols().get_symbol(*symbol).unwrap();
                                     let start = s.get_range().0;
                                     if pos.less_equal(&start) {
                                         index = i;

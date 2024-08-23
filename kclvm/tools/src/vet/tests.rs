@@ -381,7 +381,7 @@ mod test_validater {
 
                 match validate(opt) {
                     Ok(res) => assert!(res),
-                    Err(err) => assert!(false, "{:?}", err),
+                    Err(err) => unreachable!("{:?}", err),
                 }
             }
         }

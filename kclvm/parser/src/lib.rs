@@ -402,7 +402,7 @@ impl Loader {
                     .map(|path| format!("- {}\n", path.to_string_lossy()))
                     .collect::<String>();
 
-                self.sess.1.borrow_mut().add_error(
+                self.sess.1.write().add_error(
                     ErrorKind::RecursiveLoad,
                     &[Message {
                         range: (Position::dummy_pos(), Position::dummy_pos()),
@@ -423,7 +423,7 @@ impl Loader {
 
         Ok(LoadProgramResult {
             program,
-            errors: self.sess.1.borrow().diagnostics.clone(),
+            errors: self.sess.1.read().diagnostics.clone(),
             paths,
         })
     }
@@ -452,7 +452,7 @@ impl Loader {
 
         // 3. Internal and external packages cannot be duplicated
         if is_external.is_some() && is_internal.is_some() {
-            self.sess.1.borrow_mut().add_error(
+            self.sess.1.write().add_error(
                 ErrorKind::CannotFindModule,
                 &[Message {
                     range: Into::<Range>::into(pos),
@@ -472,7 +472,7 @@ impl Loader {
         match is_internal.or(is_external) {
             Some(pkg_info) => Ok(Some(pkg_info)),
             None => {
-                self.sess.1.borrow_mut().add_error(
+                self.sess.1.write().add_error(
                     ErrorKind::CannotFindModule,
                     &[Message {
                         range: Into::<Range>::into(pos),
@@ -494,7 +494,7 @@ impl Loader {
                         ),
                     );
                 }
-                self.sess.1.borrow_mut().add_suggestions(suggestions);
+                self.sess.1.write().add_suggestions(suggestions);
                 Ok(None)
             }
         }
@@ -574,7 +574,7 @@ impl Loader {
         // plugin pkgs
         if self.is_plugin_pkg(pkgpath.as_str()) {
             if !self.opts.load_plugins {
-                self.sess.1.borrow_mut().add_error(
+                self.sess.1.write().add_error(
                     ErrorKind::CannotFindModule,
                     &[Message {
                         range: Into::<Range>::into(pos),

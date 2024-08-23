@@ -91,11 +91,11 @@ pub(crate) fn lookup_compile_unit_with_cache(
                 match &mut lookup_compile_unit_path(file) {
                     Ok(CompileUnitPath::SettingFile(dir)) => {
                         dir.push(DEFAULT_SETTING_FILE);
-                        get_last_modified_time(&dir).ok()
+                        get_last_modified_time(dir).ok()
                     }
                     Ok(CompileUnitPath::ModFile(dir)) => {
                         dir.push(KCL_MOD_FILE);
-                        get_last_modified_time(&dir).ok()
+                        get_last_modified_time(dir).ok()
                     }
                     _ => None,
                 }
@@ -136,9 +136,9 @@ pub(crate) fn lookup_compile_unit_with_cache(
 
 pub(crate) fn get_last_modified_time(path: &PathBuf) -> std::io::Result<std::time::SystemTime> {
     if path.is_file() {
-        return fs::metadata(path)
+        fs::metadata(path)
             .map(|meta| meta.modified())
-            .and_then(|t| t);
+            .and_then(|t| t)
     } else if path.is_dir() {
         let mut last_modified_time = std::time::SystemTime::UNIX_EPOCH;
         for entry in fs::read_dir(path)? {
@@ -173,14 +173,14 @@ pub(crate) fn compile_with_params(
 
 pub(crate) fn compile(
     params: Params,
-    files: &mut Vec<String>,
+    files: &mut [String],
     opts: Option<LoadProgramOptions>,
 ) -> (IndexSet<Diagnostic>, anyhow::Result<(Program, GlobalState)>) {
     // Ignore the kcl plugin sematic check.
     let mut opts = opts.unwrap_or_default();
     opts.load_plugins = true;
     // Get input files
-    let files = match get_normalized_k_files_from_paths(&files, &opts) {
+    let files = match get_normalized_k_files_from_paths(files, &opts) {
         Ok(file_list) => file_list,
         Err(e) => {
             return (
@@ -212,7 +212,7 @@ pub(crate) fn compile(
         Ok(r) => r.program,
         Err(e) => return (diags, Err(anyhow::anyhow!("Parse failed: {:?}", e))),
     };
-    diags.extend(sess.1.borrow().diagnostics.clone());
+    diags.extend(sess.1.read().diagnostics.clone());
 
     // Resolver
     if let Some(cached_scope) = params.scope_cache.as_ref() {
@@ -237,7 +237,7 @@ pub(crate) fn compile(
     let mut default = GlobalState::default();
     let mut gs_ref;
 
-    let mut gs = match &params.gs_cache {
+    let gs = match &params.gs_cache {
         Some(cache) => match cache.try_lock() {
             Ok(locked_state) => {
                 gs_ref = locked_state;
@@ -257,7 +257,7 @@ pub(crate) fn compile(
     };
     gs.clear_cache();
 
-    Namer::find_symbols(&program, &mut gs);
+    Namer::find_symbols(&program, gs);
 
     match AdvancedResolver::resolve_program(&program, gs, prog_scope.node_ty_map) {
         Ok(_) => (diags, Ok((program, gs.clone()))),
