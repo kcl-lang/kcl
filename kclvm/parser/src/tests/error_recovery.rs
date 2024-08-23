@@ -254,6 +254,13 @@ parse_module_snapshot! { assert_stmt_recovery_0, r#"assert"#}
 parse_module_snapshot! { assert_stmt_recovery_1, r#"assert a."#}
 parse_module_snapshot! { assert_stmt_recovery_2, r#"assert True,,, 'msg'"#}
 parse_module_snapshot! { assert_stmt_recovery_3, r#"assert True if data else 'msg'"#}
+parse_module_snapshot! { unification_stmt_recovery_0, r#"s: Server {"#}
+parse_module_snapshot! { unification_stmt_recovery_1, r#"s: Server {}"#}
+parse_module_snapshot! { unification_stmt_recovery_2, r#"s: Server ("#}
+parse_module_snapshot! { unification_stmt_recovery_3, r#"s: Server ()"#}
+parse_module_snapshot! { unification_stmt_recovery_4, r#"s: Server () {"#}
+parse_module_snapshot! { unification_stmt_recovery_5, r#"s: Server ( {"#}
+parse_module_snapshot! { unification_stmt_recovery_6, r#"s: Server ( }"#}
 parse_module_snapshot! { import_stmt_recovery_0, r#"import"#}
 parse_module_snapshot! { import_stmt_recovery_1, r#"import 'pkg_path'"#}
 parse_module_snapshot! { import_stmt_recovery_2, r#"import pkg_path."#}

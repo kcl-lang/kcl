@@ -421,7 +421,7 @@ impl<'a> Parser<'a> {
         ))
     }
 
-    fn parse_call(&mut self, func: NodeRef<Expr>) -> CallExpr {
+    pub(crate) fn parse_call(&mut self, func: NodeRef<Expr>) -> CallExpr {
         // LEFT_PARENTHESES
         match self.token.kind {
             TokenKind::OpenDelim(DelimToken::Paren) => self.bump(),
@@ -1906,7 +1906,11 @@ impl<'a> Parser<'a> {
 
     /// Syntax:
     /// schema_expr: identifier LEFT_PARENTHESES [arguments] RIGHT_PARENTHESES config_expr
-    fn parse_schema_expr_with_args(&mut self, call: CallExpr, lo: token::Token) -> NodeRef<Expr> {
+    pub(crate) fn parse_schema_expr_with_args(
+        &mut self,
+        call: CallExpr,
+        lo: token::Token,
+    ) -> NodeRef<Expr> {
         let result = call.func.as_ref().clone().try_into();
 
         let name = match result {
