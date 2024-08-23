@@ -7,7 +7,7 @@ use compiler_base_span::{span::new_byte_pos, FilePathMapping, SourceMap};
 use expect_test::{expect, Expect};
 use kclvm_error::Handler;
 use kclvm_span::create_session_globals_then;
-use std::cell::RefCell;
+use parking_lot::RwLock;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -16,7 +16,7 @@ impl ParseSession {
     pub(crate) fn with_source_map(sm: Arc<SourceMap>) -> Self {
         Self(
             Arc::new(Session::new(sm, Arc::new(DiagnosticHandler::default()))),
-            RefCell::new(Handler::default()),
+            RwLock::new(Handler::default()),
         )
     }
 }
