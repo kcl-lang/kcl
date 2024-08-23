@@ -519,30 +519,34 @@ impl LanguageServerState {
 
                 for (file, diags) in old_diags_maps {
                     if !new_diags_maps.contains_key(&file) {
-                        let uri = url_from_path(&file).unwrap();
+
+                        if let Ok(uri) = url_from_path(file){
+                            sender.send(Task::Notify(lsp_server::Notification {
+                                method: PublishDiagnostics::METHOD.to_owned(),
+                                params: to_json(PublishDiagnosticsParams {
+                                    uri: uri.clone(),
+                                    diagnostics: vec![],
+                                    version: None,
+                                })
+                                .unwrap(),
+                            }));
+                        }
+                    }
+                }
+
+                for (filename, diagnostics) in new_diags_maps {
+                    if let Ok(uri) = url_from_path(filename){
                         sender.send(Task::Notify(lsp_server::Notification {
                             method: PublishDiagnostics::METHOD.to_owned(),
                             params: to_json(PublishDiagnosticsParams {
                                 uri: uri.clone(),
-                                diagnostics: vec![],
+                                diagnostics,
                                 version: None,
                             })
                             .unwrap(),
                         }));
                     }
-                }
 
-                for (filename, diagnostics) in new_diags_maps {
-                    let uri = url_from_path(filename).unwrap();
-                    sender.send(Task::Notify(lsp_server::Notification {
-                        method: PublishDiagnostics::METHOD.to_owned(),
-                        params: to_json(PublishDiagnosticsParams {
-                            uri: uri.clone(),
-                            diagnostics,
-                            version: None,
-                        })
-                        .unwrap(),
-                    }));
                 }
 
                 match compile_res {
