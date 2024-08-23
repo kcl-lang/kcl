@@ -247,9 +247,7 @@ impl LanguageServerState {
 
                                     {
                                         let mut db = snapshot.db.write();
-                                        if !db.contains_key(&file.file_id) {
-                                            db.insert(file.file_id, None);
-                                        }
+                                        db.entry(file.file_id).or_insert(None);
                                     }
                                     let (diags, compile_res) = compile_with_params(Params {
                                         file: filename.clone(),

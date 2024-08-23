@@ -5,20 +5,21 @@ use indexmap::IndexSet;
 use kclvm_ast::token::Token;
 use kclvm_error::{Diagnostic, Handler, ParseError, ParseErrorMessage};
 use kclvm_span::{BytePos, Loc, Span};
-use std::{cell::RefCell, sync::Arc};
+use parking_lot::RwLock;
+use std::sync::Arc;
 
 pub type ParseSessionRef = Arc<ParseSession>;
 
 /// ParseSession represents the data associated with a parse session such as the
 /// source map and the error handler.
-#[derive(Default, Clone)]
-pub struct ParseSession(pub Arc<Session>, pub RefCell<Handler>);
+#[derive(Default)]
+pub struct ParseSession(pub Arc<Session>, pub RwLock<Handler>);
 
 impl ParseSession {
     /// New a parse session with the global session.
     #[inline]
     pub fn with_session(sess: Arc<Session>) -> Self {
-        Self(sess, RefCell::new(Handler::default()))
+        Self(sess, RwLock::new(Handler::default()))
     }
 
     /// Lookup char pos from span.
@@ -96,7 +97,7 @@ impl ParseSession {
     fn add_parse_err(&self, err: ParseError) {
         let add_error = || -> Result<()> {
             self.0.add_err(err.clone().into_diag(&self.0)?)?;
-            self.1.borrow_mut().add_diagnostic(err.into_diag(&self.0)?);
+            self.1.write().add_diagnostic(err.into_diag(&self.0)?);
             Ok(())
         };
         if let Err(err) = add_error() {
@@ -110,13 +111,13 @@ impl ParseSession {
     /// Append diagnostics into the parse session.
     pub fn append_diagnostic(&self, diagnostics: IndexSet<Diagnostic>) -> &Self {
         for diagnostic in diagnostics {
-            self.1.borrow_mut().add_diagnostic(diagnostic);
+            self.1.write().add_diagnostic(diagnostic);
         }
         self
     }
 
     /// Classify diagnostics into errors and warnings.
     pub fn classification(&self) -> (IndexSet<Diagnostic>, IndexSet<Diagnostic>) {
-        self.1.borrow().classification()
+        self.1.read().classification()
     }
 }

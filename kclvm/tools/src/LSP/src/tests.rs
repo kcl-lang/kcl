@@ -2,7 +2,6 @@ use crossbeam_channel::after;
 use crossbeam_channel::select;
 use indexmap::IndexSet;
 use kclvm_ast::MAIN_PKG;
-use kclvm_config::workfile::WorkSpace;
 use kclvm_driver::toolchain;
 use kclvm_driver::toolchain::Metadata;
 use kclvm_driver::WorkSpaceKind;
@@ -2277,7 +2276,7 @@ fn kcl_workspace_init_kclwork_test() {
     work.push("work");
 
     let (workspaces, failed) =
-        kclvm_driver::lookup_compile_workspaces(&*tool.read(), &work.to_str().unwrap(), true);
+        kclvm_driver::lookup_compile_workspaces(&*tool.read(), work.to_str().unwrap(), true);
 
     let mut expected = HashSet::new();
 
@@ -2311,10 +2310,7 @@ fn kcl_workspace_init_kclwork_test() {
             .join("c.k"),
     ));
 
-    assert_eq!(
-        expected,
-        workspaces.keys().into_iter().map(|w| w.clone()).collect()
-    );
+    assert_eq!(expected, workspaces.keys().cloned().collect());
 
     assert!(failed.is_some());
     assert!(failed.unwrap().is_empty());
@@ -2335,7 +2331,7 @@ fn kcl_workspace_init_kclmod_test() {
     work.push("mod");
 
     let (workspaces, failed) =
-        kclvm_driver::lookup_compile_workspaces(&*tool.read(), &work.to_str().unwrap(), true);
+        kclvm_driver::lookup_compile_workspaces(&*tool.read(), work.to_str().unwrap(), true);
 
     let mut expected = HashSet::new();
 
@@ -2349,10 +2345,7 @@ fn kcl_workspace_init_kclmod_test() {
             .join("kcl.mod"),
     ));
 
-    assert_eq!(
-        expected,
-        workspaces.keys().into_iter().map(|w| w.clone()).collect()
-    );
+    assert_eq!(expected, workspaces.keys().cloned().collect());
 
     assert!(failed.is_none());
 }
@@ -2372,7 +2365,7 @@ fn kcl_workspace_init_folder_test() {
     work.push("folder");
 
     let (workspaces, failed) =
-        kclvm_driver::lookup_compile_workspaces(&*tool.read(), &work.to_str().unwrap(), true);
+        kclvm_driver::lookup_compile_workspaces(&*tool.read(), work.to_str().unwrap(), true);
 
     let mut expected = HashSet::new();
 
@@ -2385,10 +2378,7 @@ fn kcl_workspace_init_folder_test() {
             .join("folder"),
     ));
 
-    assert_eq!(
-        expected,
-        workspaces.keys().into_iter().map(|w| w.clone()).collect()
-    );
+    assert_eq!(expected, workspaces.keys().cloned().collect());
 
     assert!(failed.is_none());
 }

@@ -476,7 +476,7 @@ fn completion_import_stmt(
     if let Some(node) = program.pos_to_stmt(line_start_pos) {
         if let Stmt::Import(_) = node.node {
             completions.extend(completion_import_builtin_pkg());
-            completions.extend(completion_import_internal_pkg(&program, &line_start_pos));
+            completions.extend(completion_import_internal_pkg(program, line_start_pos));
             completions.extend(completion_import_external_pkg(metadata));
         }
     }
@@ -558,7 +558,6 @@ fn completion_import_external_pkg(metadata: Option<Metadata>) -> IndexSet<KCLCom
         Some(metadata) => metadata
             .packages
             .keys()
-            .into_iter()
             .map(|name| KCLCompletionItem {
                 label: name.to_string(),
                 detail: None,

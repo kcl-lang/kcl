@@ -395,7 +395,7 @@ fn emit_compile_diag_to_string(
     scope: &ProgramScope,
     include_warnings: bool,
 ) -> Result<()> {
-    let mut res_str = sess.1.borrow_mut().emit_to_string()?;
+    let mut res_str = sess.1.write().emit_to_string()?;
     let sema_err = scope.emit_diagnostics_to_string(sess.0.clone(), include_warnings);
     if let Err(err) = &sema_err {
         #[cfg(not(target_os = "windows"))]

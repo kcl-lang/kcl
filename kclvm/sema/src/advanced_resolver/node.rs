@@ -15,7 +15,7 @@ use crate::{
             SymbolHintKind, SymbolRef, SymbolSemanticInfo, UnresolvedSymbol, ValueSymbol,
         },
     },
-    ty::{self, Type, TypeKind, SCHEMA_MEMBER_FUNCTIONS},
+    ty::{Parameter, Type, TypeKind, SCHEMA_MEMBER_FUNCTIONS},
 };
 
 use super::AdvancedResolver;
@@ -686,11 +686,11 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
                                 .get_scopes_mut()
                                 .set_owner_to_scope(*cur_scope, owner);
                         }
-                        self.do_arguments_symbol_resolve_with_hint_schema(
+                        self.do_arguments_symbol_resolve_with_hint(
                             &call_expr.args,
                             &call_expr.keywords,
+                            &schema_ty.func.params,
                             true,
-                            schema_ty,
                         )?;
 
                         self.leave_scope();
@@ -711,11 +711,11 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
                             .set_owner_to_scope(*cur_scope, owner);
                     }
 
-                    self.do_arguments_symbol_resolve_with_hint_func(
+                    self.do_arguments_symbol_resolve_with_hint(
                         &call_expr.args,
                         &call_expr.keywords,
+                        &func_ty.params,
                         true,
-                        &func_ty,
                     )?;
                     self.leave_scope();
                 }
@@ -1786,107 +1786,17 @@ impl<'ctx> AdvancedResolver<'ctx> {
         Ok(())
     }
 
-    pub fn do_arguments_symbol_resolve_with_hint_func(
+    pub fn do_arguments_symbol_resolve_with_hint(
         &mut self,
         args: &'ctx [ast::NodeRef<ast::Expr>],
         kwargs: &'ctx [ast::NodeRef<ast::Keyword>],
+        params: &[Parameter],
         with_hint: bool,
-        func_ty: &ty::FunctionType,
     ) -> anyhow::Result<()> {
-        if func_ty.params.is_empty() {
+        if params.is_empty() {
             self.do_arguments_symbol_resolve(args, kwargs)?;
         } else {
-            for (arg, param) in args.iter().zip(func_ty.params.iter()) {
-                self.expr(arg)?;
-
-                if with_hint {
-                    let symbol_data = self.gs.get_symbols_mut();
-                    let id = match &arg.node {
-                        ast::Expr::Identifier(id) => id.names.last().unwrap().id.clone(),
-                        _ => arg.id.clone(),
-                    };
-                    if let Some(arg_ref) = symbol_data
-                        .symbols_info
-                        .node_symbol_map
-                        .get(&self.ctx.get_node_key(&id))
-                    {
-                        match arg_ref.get_kind() {
-                            crate::core::symbol::SymbolKind::Expression => {
-                                if let Some(expr) = symbol_data.exprs.get_mut(arg_ref.get_id()) {
-                                    expr.hint = Some(SymbolHint {
-                                        pos: arg.get_pos(),
-                                        kind: SymbolHintKind::VarHint(param.name.clone()),
-                                    });
-                                }
-                            }
-                            crate::core::symbol::SymbolKind::Unresolved => {
-                                let mut has_hint = false;
-                                if let Some(unresolved) =
-                                    symbol_data.unresolved.get(arg_ref.get_id())
-                                {
-                                    if let Some(def) = unresolved.def {
-                                        if let Some(def) = symbol_data.get_symbol(def) {
-                                            if def.get_name() != param.name {
-                                                has_hint = true;
-                                            }
-                                        }
-                                    }
-                                }
-                                if has_hint {
-                                    if let Some(unresolved) =
-                                        symbol_data.unresolved.get_mut(arg_ref.get_id())
-                                    {
-                                        unresolved.hint = Some(SymbolHint {
-                                            kind: SymbolHintKind::VarHint(param.name.clone()),
-                                            pos: arg.get_pos(),
-                                        });
-                                    }
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
-                }
-            }
-
-            for kw in kwargs.iter() {
-                if let Some(value) = &kw.node.value {
-                    self.expr(value)?;
-                }
-                let (start_pos, end_pos): Range = kw.node.arg.get_span_pos();
-                let value = self.gs.get_symbols_mut().alloc_value_symbol(
-                    ValueSymbol::new(kw.node.arg.node.get_name(), start_pos, end_pos, None, false),
-                    self.ctx.get_node_key(&kw.id),
-                    self.ctx.current_pkgpath.clone().unwrap(),
-                );
-
-                if let Some(value) = self.gs.get_symbols_mut().values.get_mut(value.get_id()) {
-                    value.sema_info = SymbolSemanticInfo {
-                        ty: self
-                            .ctx
-                            .node_ty_map
-                            .borrow()
-                            .get(&self.ctx.get_node_key(&kw.id))
-                            .map(|ty| ty.clone()),
-                        doc: None,
-                    };
-                }
-            }
-        }
-        Ok(())
-    }
-
-    pub fn do_arguments_symbol_resolve_with_hint_schema(
-        &mut self,
-        args: &'ctx [ast::NodeRef<ast::Expr>],
-        kwargs: &'ctx [ast::NodeRef<ast::Keyword>],
-        with_hint: bool,
-        schema_ty: &ty::SchemaType,
-    ) -> anyhow::Result<()> {
-        if schema_ty.func.params.is_empty() {
-            self.do_arguments_symbol_resolve(args, kwargs)?;
-        } else {
-            for (arg, param) in args.iter().zip(schema_ty.func.params.iter()) {
+            for (arg, param) in args.iter().zip(params.iter()) {
                 self.expr(arg)?;
 
                 if with_hint {

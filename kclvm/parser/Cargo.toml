@@ -23,6 +23,7 @@ num-bigint = "0.4"
 regex = "1.7.0"
 anyhow = "1.0"
 indexmap = "1.0"
+parking_lot = "0.12.3"
 
 kclvm-lexer = {path = "../lexer"}
 kclvm-ast = {path = "../ast"}
