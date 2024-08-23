@@ -203,12 +203,21 @@ impl<'a> Parser<'a> {
             let typ = self.parse_type_annotation();
 
             type_annotation = Some(node_ref!(typ.node.to_string(), typ.pos()));
-            // Unification statement
-            if let TokenKind::OpenDelim(DelimToken::Brace) = self.token.kind {
-                // schema expression without args
+            // Maybe the unification statement with optional schema arguments
+            // `s: Schema {` or `s: Schema(`
+            if matches!(
+                self.token.kind,
+                TokenKind::OpenDelim(DelimToken::Brace) | TokenKind::OpenDelim(DelimToken::Paren)
+            ) {
                 if let Type::Named(ref identifier) = typ.node {
                     let identifier = node_ref!(Expr::Identifier(identifier.clone()), typ.pos());
-                    let schema_expr = self.parse_schema_expr(*identifier, token);
+                    let schema_expr =
+                        if matches!(self.token.kind, TokenKind::OpenDelim(DelimToken::Paren)) {
+                            let call = self.parse_call(identifier);
+                            self.parse_schema_expr_with_args(call, token)
+                        } else {
+                            self.parse_schema_expr(*identifier, token)
+                        };
                     let mut ident = self.expr_as_identifier(targets[0].clone(), token);
                     ident.ctx = ExprContext::Store;
                     let unification_stmt = UnificationStmt {

@@ -1,0 +1,89 @@
+---
+source: parser/src/tests/error_recovery.rs
+expression: "crate::tests::parsing_module_string(r#\"s: Server ( }\"#)"
+---
+Module {
+    filename: "",
+    pkg: "",
+    doc: None,
+    name: "",
+    body: [
+        Node {
+            node: Unification(
+                UnificationStmt {
+                    target: Node {
+                        node: Identifier {
+                            names: [
+                                Node {
+                                    node: "s",
+                                    filename: "",
+                                    line: 1,
+                                    column: 0,
+                                    end_line: 1,
+                                    end_column: 1,
+                                },
+                            ],
+                            pkgpath: "",
+                            ctx: Store,
+                        },
+                        filename: "",
+                        line: 1,
+                        column: 0,
+                        end_line: 1,
+                        end_column: 1,
+                    },
+                    value: Node {
+                        node: SchemaExpr {
+                            name: Node {
+                                node: Identifier {
+                                    names: [
+                                        Node {
+                                            node: "Server",
+                                            filename: "",
+                                            line: 1,
+                                            column: 3,
+                                            end_line: 1,
+                                            end_column: 9,
+                                        },
+                                    ],
+                                    pkgpath: "",
+                                    ctx: Load,
+                                },
+                                filename: "",
+                                line: 1,
+                                column: 3,
+                                end_line: 1,
+                                end_column: 9,
+                            },
+                            args: [],
+                            kwargs: [],
+                            config: Node {
+                                node: Config(
+                                    ConfigExpr {
+                                        items: [],
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 13,
+                                end_line: 1,
+                                end_column: 13,
+                            },
+                        },
+                        filename: "",
+                        line: 1,
+                        column: 0,
+                        end_line: 1,
+                        end_column: 13,
+                    },
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 1,
+            end_column: 13,
+        },
+    ],
+    comments: [],
+}
