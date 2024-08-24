@@ -2,6 +2,7 @@ use crate::Evaluator;
 use kclvm_ast::MAIN_PKG;
 use kclvm_loader::{load_packages, LoadPackageOptions};
 use kclvm_parser::LoadProgramOptions;
+use kclvm_runtime::{Context, ValueRef};
 
 #[macro_export]
 macro_rules! evaluator_snapshot {
@@ -504,6 +505,8 @@ fn test_if_stmt_setters() {
     assert_eq!(var_setters.len(), 3);
 }
 
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::sync::Arc;
 use std::thread;
 
@@ -554,4 +557,46 @@ fn run_code(source: &str) -> (String, String) {
     .unwrap();
     let evaluator = Evaluator::new(&p.program);
     evaluator.run().unwrap()
+}
+
+fn testing_sum(_: &Context, args: &ValueRef, _: &ValueRef) -> anyhow::Result<ValueRef> {
+    let a = args
+        .arg_i_int(0, Some(0))
+        .ok_or(anyhow::anyhow!("expect int value for the first param"))?;
+    let b = args
+        .arg_i_int(1, Some(0))
+        .ok_or(anyhow::anyhow!("expect int value for the second param"))?;
+    Ok((a + b).into())
+}
+
+fn context_with_plugin() -> Rc<RefCell<Context>> {
+    let mut plugin_functions: kclvm_runtime::IndexMap<String, kclvm_runtime::PluginFunction> =
+        Default::default();
+    let func = Arc::new(testing_sum);
+    plugin_functions.insert("testing.add".to_string(), func);
+    let mut ctx = Context::new();
+    ctx.plugin_functions = plugin_functions;
+    Rc::new(RefCell::new(ctx))
+}
+
+#[test]
+fn test_exec_with_plugin() {
+    let src = r#"
+import kcl_plugin.testing
+
+sum = testing.add(1, 1)
+"#;
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            load_plugins: true,
+            k_code_list: vec![src.to_string()],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new_with_runtime_ctx(&p.program, context_with_plugin());
+    insta::assert_snapshot!(format!("{}", evaluator.run().unwrap().1));
 }

@@ -20,6 +20,9 @@ lazy_static! {
     > = Mutex::new(None);
 }
 
+/// KCL plugin module prefix
+pub const PLUGIN_MODULE_PREFIX: &str = "kcl_plugin.";
+
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_plugin_init(
@@ -46,6 +49,18 @@ pub unsafe extern "C" fn kclvm_plugin_invoke(
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
+    let ctx_ref = mut_ptr_as_ref(ctx);
+    let method_ref = c2str(method);
+    let plugin_short_method = match method_ref.strip_prefix(PLUGIN_MODULE_PREFIX) {
+        Some(s) => s,
+        None => method_ref,
+    };
+    if let Some(func) = ctx_ref.plugin_functions.get(plugin_short_method) {
+        let args = ptr_as_ref(args);
+        let kwargs = ptr_as_ref(kwargs);
+        let result = func(ctx_ref, args, kwargs);
+        return result.unwrap().into_raw(ctx_ref);
+    }
     let args_s = kclvm_value_to_json_value_with_null(ctx, args);
     let kwargs_s = kclvm_value_to_json_value_with_null(ctx, kwargs);
 
