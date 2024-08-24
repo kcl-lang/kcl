@@ -1978,6 +1978,7 @@ name = "kclvm-runtime"
 version = "0.10.0-beta.2"
 dependencies = [
  "ahash",
+ "anyhow",
  "base64 0.13.1",
  "bstr",
  "chrono",

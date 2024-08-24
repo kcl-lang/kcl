@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::rc::Rc;
+use std::sync::Arc;
 use std::{
     cell::RefCell,
     cmp::Ordering,
@@ -329,15 +330,19 @@ impl Default for ContextBuffer {
     }
 }
 
-#[derive(PartialEq, Clone, Default, Debug)]
+/// Plugin functions
+pub type PluginFunction =
+    Arc<dyn Fn(&Context, &ValueRef, &ValueRef) -> anyhow::Result<ValueRef> + Send + Sync>;
+
+#[derive(Clone, Default)]
 pub struct Context {
     /// Runtime evaluation config.
     pub cfg: ContextConfig,
-
     /// kcl.mod path or the pwd path
     pub module_path: String,
     /// Program work directory
     pub workdir: String,
+    /// Runtime backtrace frame for the debugger.
     pub backtrace: Vec<BacktraceFrame>,
     /// Imported package path to check the cyclic import process.
     pub imported_pkgpath: HashSet<String>,
@@ -352,7 +357,7 @@ pub struct Context {
     pub import_names: IndexMap<String, IndexMap<String, String>>,
     /// A buffer to store plugin or hooks function calling results.
     pub buffer: ContextBuffer,
-    /// Objects is to store all KCL object pointers at runtime.
+    /// Objects is to store all KCL object pointers at runtime for GC.
     pub objects: IndexSet<usize>,
     /// Log message used to store print results.
     pub log_message: String,
@@ -364,6 +369,8 @@ pub struct Context {
     pub panic_info: PanicInfo,
     /// Planning options
     pub plan_opts: PlanOptions,
+    /// Builtin plugin functions, the key of the map is the form <module_name>.<module_func> e.g., `hello.say_hello`
+    pub plugin_functions: IndexMap<String, PluginFunction>,
 }
 
 impl UnwindSafe for Context {}
