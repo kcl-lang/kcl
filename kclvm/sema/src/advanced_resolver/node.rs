@@ -871,6 +871,18 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
         let schema_symbol = self.ctx.schema_symbol_stack.last().unwrap_or(&None).clone();
         let kind = LocalSymbolScopeKind::Config;
 
+        self.enter_local_scope(
+            &self.ctx.current_filename.as_ref().unwrap().clone(),
+            start.clone(),
+            end.clone(),
+            kind,
+        );
+
+        let cur_scope = *self.ctx.scopes.last().unwrap();
+        self.gs
+            .get_scopes_mut()
+            .set_owner_to_scope(cur_scope, schema_symbol.unwrap());
+
         if let Some(schema_expr) = self
             .gs
             .get_symbols_mut()
@@ -886,8 +898,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             expr_symbol.hint = Some(SymbolHint {
                 pos: start.clone(),
                 kind: SymbolHintKind::VarHint(schema_expr.name.to_string()),
-            })
+            });
         }
+
+        self.leave_scope();
 
         self.walk_config_entries(&config_expr.items)?;
         Ok(None)
