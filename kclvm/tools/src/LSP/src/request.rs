@@ -101,15 +101,19 @@ impl LanguageServerSnapshot {
                     let open_file = self.opened_files.read();
                     let file_info = open_file.get(&file_id).unwrap();
                     match self.temporary_workspace.read().get(&file_id) {
-                        Some(work_space) => match self.workspaces.try_read() {
-                            Some(workspaces) => match workspaces.get(work_space) {
-                                Some(db) => Ok(db.clone()),
-                                None => Err(anyhow::anyhow!(LSPError::AnalysisDatabaseNotFound(
-                                    path.clone()
-                                ))),
+                        Some(option_workspace) => match option_workspace {
+                            Some(work_space) => match self.workspaces.try_read() {
+                                Some(workspaces) => match workspaces.get(work_space) {
+                                    Some(db) => Ok(db.clone()),
+                                    None => Err(anyhow::anyhow!(
+                                        LSPError::AnalysisDatabaseNotFound(path.clone())
+                                    )),
+                                },
+                                None => Ok(None),
                             },
                             None => Ok(None),
                         },
+
                         None => {
                             if file_info.workspaces.is_empty() {
                                 return Err(anyhow::anyhow!(LSPError::FileIdNotFound(

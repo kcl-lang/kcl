@@ -99,7 +99,7 @@ pub(crate) struct LanguageServerState {
 
     pub workspace_config_cache: KCLWorkSpaceConfigCache,
     /// Process files that are not in any defined workspace and delete the workspace when closing the file
-    pub temporary_workspace: Arc<RwLock<HashMap<FileId, WorkSpaceKind>>>,
+    pub temporary_workspace: Arc<RwLock<HashMap<FileId, Option<WorkSpaceKind>>>>,
     pub workspace_folders: Option<Vec<WorkspaceFolder>>,
 }
 
@@ -125,7 +125,7 @@ pub(crate) struct LanguageServerSnapshot {
     /// Toolchain is used to provider KCL tool features for the language server.
     pub tool: KCLToolChain,
     /// Process files that are not in any defined workspace and delete the work
-    pub temporary_workspace: Arc<RwLock<HashMap<FileId, WorkSpaceKind>>>,
+    pub temporary_workspace: Arc<RwLock<HashMap<FileId, Option<WorkSpaceKind>>>>,
 }
 
 #[allow(unused)]
@@ -249,6 +249,7 @@ impl LanguageServerState {
                     Ok(filename) => {
                         let uri = url_from_path(&filename).unwrap();
                         let mut state_workspaces = self.analysis.workspaces.read();
+                        self.temporary_workspace.write().insert(file.file_id, None);
                         let mut contains = false;
                         // If some workspace has compiled this file, record open file's workspace
                         for (workspace, res) in state_workspaces.iter() {
@@ -259,7 +260,6 @@ impl LanguageServerState {
                                         let file_info = openfiles.get_mut(&file.file_id).unwrap();
                                         file_info.workspaces.insert(workspace.clone());
                                         drop(openfiles);
-
                                         contains = true;
                                     }
                                 }
@@ -280,6 +280,8 @@ impl LanguageServerState {
                             for (workspace, opts) in workspaces {
                                 self.async_compile(workspace, opts, Some(file.file_id), true);
                             }
+                        } else {
+                            self.temporary_workspace.write().remove(&file.file_id);
                         }
                     }
                     Err(err) => self.log_message(format!("{:?} not found: {}", file.file_id, err)),
@@ -308,11 +310,20 @@ impl LanguageServerState {
                             }
                         } else {
                             // In temporary_workspace
-                            let workspace = self
-                                .temporary_workspace
-                                .read()
-                                .get(&file.file_id)
-                                .map(|w| w.clone());
+                            let workspace = match self.temporary_workspace.read().get(&file.file_id)
+                            {
+                                Some(w) => match w {
+                                    Some(w) => Some(w.clone()),
+                                    None => {
+                                        // In compiling, retry and wait for compile complete
+                                        self.task_sender
+                                            .send(Task::ChangedFile(file.file_id, file.change_kind))
+                                            .unwrap();
+                                        None
+                                    }
+                                },
+                                None => None,
+                            };
                             if let Some(workspace) = workspace {
                                 let opts = self
                                     .workspace_config_cache
@@ -335,7 +346,9 @@ impl LanguageServerState {
                 let mut temporary_workspace = self.temporary_workspace.write();
                 if let Some(workspace) = temporary_workspace.remove(&file.file_id) {
                     let mut workspaces = self.analysis.workspaces.write();
-                    workspaces.remove(&workspace);
+                    if let Some(w) = workspace {
+                        workspaces.remove(&w);
+                    }
                 }
             }
         }
@@ -519,8 +532,7 @@ impl LanguageServerState {
 
                 for (file, diags) in old_diags_maps {
                     if !new_diags_maps.contains_key(&file) {
-
-                        if let Ok(uri) = url_from_path(file){
+                        if let Ok(uri) = url_from_path(file) {
                             sender.send(Task::Notify(lsp_server::Notification {
                                 method: PublishDiagnostics::METHOD.to_owned(),
                                 params: to_json(PublishDiagnosticsParams {
@@ -535,7 +547,7 @@ impl LanguageServerState {
                 }
 
                 for (filename, diagnostics) in new_diags_maps {
-                    if let Ok(uri) = url_from_path(filename){
+                    if let Ok(uri) = url_from_path(filename) {
                         sender.send(Task::Notify(lsp_server::Notification {
                             method: PublishDiagnostics::METHOD.to_owned(),
                             params: to_json(PublishDiagnosticsParams {
@@ -546,7 +558,6 @@ impl LanguageServerState {
                             .unwrap(),
                         }));
                     }
-
                 }
 
                 match compile_res {
@@ -558,11 +569,15 @@ impl LanguageServerState {
                         );
                         if temp && changed_file_id.is_some() {
                             let mut temporary_workspace = snapshot.temporary_workspace.write();
-                            temporary_workspace.insert(changed_file_id.unwrap(), workspace.clone());
+                            temporary_workspace
+                                .insert(changed_file_id.unwrap(), Some(workspace.clone()));
                             drop(temporary_workspace);
                         }
                     }
-                    Err(err) => {}
+                    Err(_) => {
+                        let mut workspaces = snapshot.workspaces.write();
+                        workspaces.remove(&workspace);
+                    }
                 }
             }
         })

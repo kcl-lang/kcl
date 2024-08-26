@@ -49,13 +49,12 @@ impl LanguageServerState {
     ) -> anyhow::Result<()> {
         let path = from_lsp::abs_path(&params.text_document.uri)?;
         self.log_message(format!("on did open file: {:?}", path));
-
-        self.vfs.write().set_file_contents(
+        let mut vfs = self.vfs.write();
+        vfs.set_file_contents(
             path.clone().into(),
             Some(params.text_document.text.into_bytes()),
         );
-
-        if let Some(id) = self.vfs.read().file_id(&path.into()) {
+        if let Some(id) = vfs.file_id(&path.into()) {
             self.opened_files.write().insert(
                 id,
                 OpenFileInfo {
