@@ -6,8 +6,8 @@ use chrono::prelude::Local;
 
 use crate::*;
 
-// today() -> str:
-
+/// Return the "%Y-%m-%d %H:%M:%S.%{ticks}" format date.
+/// `today() -> str`
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_datetime_today(
@@ -15,13 +15,14 @@ pub extern "C" fn kclvm_datetime_today(
     _args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
-    let s = Local::now().to_string();
+    let s = Local::now();
     let ctx = mut_ptr_as_ref(ctx);
-    return ValueRef::str(s.as_ref()).into_raw(ctx);
+    ValueRef::str(&(s.format("%Y-%m-%d %H:%M:%S").to_string() + "." + &s.timestamp().to_string()))
+        .into_raw(ctx)
 }
 
-// now() -> str:
-
+/// Return the local time. e.g. 'Sat Jun 06 16:26:11 1998'
+/// `now() -> str`
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_datetime_now(
@@ -29,13 +30,13 @@ pub extern "C" fn kclvm_datetime_now(
     _args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
-    let s = Local::now().to_string();
+    let s = Local::now();
     let ctx = mut_ptr_as_ref(ctx);
-    return ValueRef::str(s.as_ref()).into_raw(ctx);
+    ValueRef::str(&s.format("%a %b %d %H:%M:%S %Y").to_string()).into_raw(ctx)
 }
 
-// ticks() -> float:
-
+/// Return the current time in seconds since the Epoch. Fractions of a second may be present if the system clock provides them.
+/// `ticks() -> float`
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_datetime_ticks(
@@ -48,8 +49,8 @@ pub extern "C" fn kclvm_datetime_ticks(
     ValueRef::float(x as f64).into_raw(ctx)
 }
 
-// date() -> str:
-
+/// Return the %Y-%m-%d %H:%M:%S format date.
+/// `date() -> str`
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_datetime_date(
@@ -57,7 +58,7 @@ pub extern "C" fn kclvm_datetime_date(
     _args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
-    let s = Local::now().to_string();
+    let s = Local::now();
     let ctx = mut_ptr_as_ref(ctx);
-    return ValueRef::str(s.as_ref()).into_raw(ctx);
+    ValueRef::str(&s.format("%Y-%m-%d %H:%M:%S").to_string()).into_raw(ctx)
 }
