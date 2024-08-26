@@ -1,5 +1,6 @@
 #![allow(clippy::missing_safety_doc)]
 
+use kclvm_api::FormatCodeArgs;
 use kclvm_api::{gpyrpc::ExecProgramArgs as ExecProgramOptions, API};
 use kclvm_parser::ParseSession;
 use kclvm_runner::exec_program;
@@ -142,6 +143,31 @@ fn intern_run(filename: &str, src: &str) -> Result<String, String> {
                 Err(result.err_message)
             }
         }
+        Err(err) => Err(err.to_string()),
+    }
+}
+
+/// Exposes a normal kcl fmt function to the WASM host.
+#[no_mangle]
+pub unsafe extern "C" fn kcl_fmt(src_ptr: *const c_char) -> *const c_char {
+    if src_ptr.is_null() {
+        return std::ptr::null();
+    }
+    let src = unsafe { CStr::from_ptr(src_ptr).to_str().unwrap() };
+
+    match intern_fmt(src) {
+        Ok(result) => CString::new(result).unwrap().into_raw(),
+        Err(err) => CString::new(format!("ERROR:{}", err)).unwrap().into_raw(),
+    }
+}
+
+fn intern_fmt(src: &str) -> Result<String, String> {
+    let api = API::default();
+    let args = &FormatCodeArgs {
+        source: src.to_string(),
+    };
+    match api.format_code(args) {
+        Ok(result) => String::from_utf8(result.formatted).map_err(|err| err.to_string()),
         Err(err) => Err(err.to_string()),
     }
 }
