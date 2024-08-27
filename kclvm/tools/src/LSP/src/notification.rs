@@ -6,15 +6,12 @@ use lsp_types::notification::{
     Cancel, DidChangeTextDocument, DidChangeWatchedFiles, DidCloseTextDocument,
     DidOpenTextDocument, DidSaveTextDocument,
 };
-use std::{collections::HashSet, path::Path};
+use std::collections::HashSet;
 
+use crate::util::apply_document_changes;
 use crate::{
-    analysis::OpenFileInfo,
-    dispatcher::NotificationDispatcher,
-    from_lsp,
+    analysis::OpenFileInfo, dispatcher::NotificationDispatcher, from_lsp,
     state::LanguageServerState,
-    util::apply_document_changes,
-    word_index::{build_word_index_with_content, word_index_add, word_index_subtract},
 };
 
 impl LanguageServerState {
@@ -101,27 +98,12 @@ impl LanguageServerState {
             .ok_or(anyhow::anyhow!("Already checked that the file_id exists!"))?;
 
         let mut text = String::from_utf8(vfs.file_contents(file_id).to_vec())?;
-        let old_text = text.clone();
         apply_document_changes(&mut text, content_changes);
         vfs.set_file_contents(path.into(), Some(text.clone().into_bytes()));
         let mut opened_files = self.opened_files.write();
         let file_info = opened_files.get_mut(&file_id).unwrap();
         file_info.version = text_document.version;
         drop(opened_files);
-
-        // Update word index
-        let old_word_index = build_word_index_with_content(&old_text, &text_document.uri, true);
-        let new_word_index = build_word_index_with_content(&text, &text_document.uri, true);
-        let binding = from_lsp::file_path_from_url(&text_document.uri)?;
-        let file_path = Path::new(&binding);
-        let word_index_map = &mut *self.word_index_map.write();
-        for (key, value) in word_index_map {
-            let workspace_folder_path = Path::new(key.path());
-            if file_path.starts_with(workspace_folder_path) {
-                word_index_subtract(value, old_word_index.clone());
-                word_index_add(value, new_word_index.clone());
-            }
-        }
 
         Ok(())
     }

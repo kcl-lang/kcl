@@ -70,7 +70,7 @@ pub(crate) fn get_file_name(vfs: RwLockReadGuard<Vfs>, file_id: FileId) -> anyho
 }
 
 pub(crate) struct Params {
-    pub file: String,
+    pub file: Option<String>,
     pub module_cache: Option<KCLModuleCache>,
     pub scope_cache: Option<KCLScopeCache>,
     pub entry_cache: Option<KCLEntryCache>,
@@ -79,6 +79,7 @@ pub(crate) struct Params {
     pub gs_cache: Option<KCLGlobalStateCache>,
 }
 
+#[cfg(test)]
 pub(crate) fn lookup_compile_unit_with_cache(
     tool: &dyn Toolchain,
     entry_map: &Option<KCLEntryCache>,
@@ -134,6 +135,7 @@ pub(crate) fn lookup_compile_unit_with_cache(
     }
 }
 
+#[cfg(test)]
 pub(crate) fn get_last_modified_time(path: &PathBuf) -> std::io::Result<std::time::SystemTime> {
     if path.is_file() {
         fs::metadata(path)
@@ -159,14 +161,16 @@ pub(crate) fn get_last_modified_time(path: &PathBuf) -> std::io::Result<std::tim
     }
 }
 
+#[cfg(test)]
 pub(crate) fn compile_with_params(
     params: Params,
 ) -> (IndexSet<Diagnostic>, anyhow::Result<(Program, GlobalState)>) {
     // Lookup compile unit (kcl.mod or kcl.yaml) from the entry file.
+    let file = params.file.clone().unwrap();
     let (mut files, opts, _) =
-        lookup_compile_unit_with_cache(&*params.tool.read(), &params.entry_cache, &params.file);
-    if !files.contains(&params.file) {
-        files.push(params.file.clone());
+        lookup_compile_unit_with_cache(&*params.tool.read(), &params.entry_cache, &file);
+    if !files.contains(&file) {
+        files.push(file.clone());
     }
     compile(params, &mut files, opts)
 }
@@ -207,19 +211,23 @@ pub(crate) fn compile(
     let mut diags = IndexSet::new();
 
     if let Some(module_cache) = params.module_cache.as_ref() {
-        let code = if let Some(vfs) = &params.vfs {
-            match load_files_code_from_vfs(&vec![params.file.as_str()], vfs) {
-                Ok(code_list) => code_list.get(0).map(|c| c.clone()),
-                Err(_) => None,
-            }
-        } else {
-            None
-        };
+        if let Some(file) = &params.file {
+            if !files.contains(&file.as_str()) {
+                let code = if let Some(vfs) = &params.vfs {
+                    match load_files_code_from_vfs(&vec![file.as_str()], vfs) {
+                        Ok(code_list) => code_list.get(0).map(|c| c.clone()),
+                        Err(_) => None,
+                    }
+                } else {
+                    None
+                };
 
-        let mut module_cache_ref = module_cache.write().unwrap();
-        module_cache_ref
-            .invalidate_module
-            .insert(params.file.clone(), code);
+                let mut module_cache_ref = module_cache.write().unwrap();
+                module_cache_ref
+                    .invalidate_module
+                    .insert(file.clone(), code);
+            }
+        }
     }
 
     // Parser
@@ -232,10 +240,12 @@ pub(crate) fn compile(
 
     // Resolver
     if let Some(cached_scope) = params.scope_cache.as_ref() {
-        if let Some(mut cached_scope) = cached_scope.try_write() {
-            let mut invalidate_pkg_modules = HashSet::new();
-            invalidate_pkg_modules.insert(params.file);
-            cached_scope.invalidate_pkg_modules = Some(invalidate_pkg_modules);
+        if let Some(file) = &params.file {
+            if let Some(mut cached_scope) = cached_scope.try_write() {
+                let mut invalidate_pkg_modules = HashSet::new();
+                invalidate_pkg_modules.insert(file.clone());
+                cached_scope.invalidate_pkg_modules = Some(invalidate_pkg_modules);
+            }
         }
     }
 

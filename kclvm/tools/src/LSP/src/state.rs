@@ -2,8 +2,6 @@ use crate::analysis::{Analysis, AnalysisDatabase, DBState, OpenFileInfo};
 use crate::from_lsp::file_path_from_url;
 use crate::to_lsp::{kcl_diag_to_lsp_diags, url_from_path};
 use crate::util::{compile, get_file_name, to_json, Params};
-use crate::word_index::build_word_index;
-use anyhow::Result;
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
 use indexmap::IndexSet;
 use kclvm_driver::toolchain::{self, Toolchain};
@@ -13,10 +11,9 @@ use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::resolver::scope::KCLScopeCache;
 use lsp_server::RequestId;
 use lsp_server::{ReqQueue, Request, Response};
-use lsp_types::Url;
 use lsp_types::{
     notification::{Notification, PublishDiagnostics},
-    InitializeParams, Location, PublishDiagnosticsParams, WorkspaceFolder,
+    InitializeParams, PublishDiagnosticsParams, WorkspaceFolder,
 };
 use parking_lot::RwLock;
 use ra_ap_vfs::{ChangeKind, ChangedFile, FileId, Vfs};
@@ -51,7 +48,6 @@ pub(crate) struct Handle<H, C> {
 }
 
 pub(crate) type KCLVfs = Arc<RwLock<Vfs>>;
-pub(crate) type KCLWordIndexMap = Arc<RwLock<HashMap<Url, HashMap<String, Vec<Location>>>>>;
 pub(crate) type KCLEntryCache =
     Arc<RwLock<HashMap<String, (CompileUnitOptions, Option<SystemTime>)>>>;
 
@@ -84,8 +80,6 @@ pub(crate) struct LanguageServerState {
     pub loader: Handle<Box<dyn ra_ap_vfs::loader::Handle>, Receiver<ra_ap_vfs::loader::Message>>,
     /// request retry time
     pub request_retry: Arc<RwLock<HashMap<RequestId, i32>>>,
-    /// The word index map
-    pub word_index_map: KCLWordIndexMap,
     /// KCL parse cache
     pub module_cache: KCLModuleCache,
     /// KCL resolver cache
@@ -114,8 +108,6 @@ pub(crate) struct LanguageServerSnapshot {
     pub opened_files: Arc<RwLock<HashMap<FileId, OpenFileInfo>>>,
     /// request retry time
     pub request_retry: Arc<RwLock<HashMap<RequestId, i32>>>,
-    /// The word index map
-    pub word_index_map: KCLWordIndexMap,
     /// KCL parse cache
     pub module_cache: KCLModuleCache,
     /// KCL resolver cache
@@ -151,7 +143,6 @@ impl LanguageServerState {
             shutdown_requested: false,
             analysis: Analysis::default(),
             opened_files: Arc::new(RwLock::new(HashMap::new())),
-            word_index_map: Arc::new(RwLock::new(HashMap::new())),
             loader,
             module_cache: KCLModuleCache::default(),
             scope_cache: KCLScopeCache::default(),
@@ -165,13 +156,6 @@ impl LanguageServerState {
         };
 
         state.init_workspaces();
-
-        let word_index_map = state.word_index_map.clone();
-        state.thread_pool.execute(move || {
-            if let Err(err) = update_word_index_state(word_index_map, initialize_params, true) {
-                log_message(err.to_string(), &task_sender);
-            }
-        });
 
         state
     }
@@ -251,7 +235,8 @@ impl LanguageServerState {
                         let mut state_workspaces = self.analysis.workspaces.read();
                         self.temporary_workspace.write().insert(file.file_id, None);
 
-                        let mut contains = false;
+                        let mut may_contain = false;
+
                         // If some workspace has compiled this file, record open file's workspace
                         for (workspace, state) in state_workspaces.iter() {
                             match state {
@@ -261,10 +246,11 @@ impl LanguageServerState {
                                         let file_info = openfiles.get_mut(&file.file_id).unwrap();
                                         file_info.workspaces.insert(workspace.clone());
                                         drop(openfiles);
-                                        contains = true;
+                                        may_contain = true;
                                     }
                                 }
                                 DBState::Compiling(_) | DBState::Init => {
+                                    may_contain = true;
                                     self.task_sender
                                         .send(Task::ChangedFile(file.file_id, file.change_kind))
                                         .unwrap();
@@ -273,7 +259,7 @@ impl LanguageServerState {
                         }
 
                         // If all workspaces do not contain the current file, get files workspace and store in temporary_workspace
-                        if !contains {
+                        if !may_contain {
                             let tool = Arc::clone(&self.tool);
                             let (workspaces, failed) =
                                 lookup_compile_workspaces(&*tool.read(), &filename, true);
@@ -426,7 +412,6 @@ impl LanguageServerState {
         LanguageServerSnapshot {
             vfs: self.vfs.clone(),
             opened_files: self.opened_files.clone(),
-            word_index_map: self.word_index_map.clone(),
             module_cache: self.module_cache.clone(),
             scope_cache: self.scope_cache.clone(),
             entry_cache: self.entry_cache.clone(),
@@ -467,7 +452,6 @@ impl LanguageServerState {
             for folder in workspace_folders {
                 let path = file_path_from_url(&folder.uri).unwrap();
                 let tool = Arc::clone(&self.tool);
-
                 let (workspaces, failed) = lookup_compile_workspaces(&*tool.read(), &path, true);
 
                 if let Some(failed) = failed {
@@ -491,8 +475,8 @@ impl LanguageServerState {
         temp: bool,
     ) {
         let filename = match changed_file_id {
-            Some(id) => get_file_name(self.vfs.read(), id).unwrap_or("".to_string()),
-            None => "".to_string(),
+            Some(id) => get_file_name(self.vfs.read(), id).ok(),
+            None => None,
         };
 
         let mut workspace_config_cache = self.workspace_config_cache.write();
@@ -610,7 +594,7 @@ impl LanguageServerState {
                             drop(temporary_workspace);
                         }
                     }
-                    Err(_) => {
+                    Err(e) => {
                         let mut workspaces = snapshot.workspaces.write();
                         workspaces.remove(&workspace);
                         if temp && changed_file_id.is_some() {
@@ -631,26 +615,5 @@ pub(crate) fn log_message(message: String, sender: &Sender<Task>) -> anyhow::Res
         lsp_types::notification::LogMessage::METHOD.to_string(),
         lsp_types::LogMessageParams { typ, message },
     )))?;
-    Ok(())
-}
-
-fn update_word_index_state(
-    word_index_map: KCLWordIndexMap,
-    initialize_params: InitializeParams,
-    prune: bool,
-) -> Result<()> {
-    if let Some(workspace_folders) = initialize_params.workspace_folders {
-        for folder in workspace_folders {
-            let path = file_path_from_url(&folder.uri)?;
-            if let Ok(word_index) = build_word_index(&path, prune) {
-                word_index_map.write().insert(folder.uri, word_index);
-            }
-        }
-    } else if let Some(root_uri) = initialize_params.root_uri {
-        let path = file_path_from_url(&root_uri)?;
-        if let Ok(word_index) = build_word_index(path, prune) {
-            word_index_map.write().insert(root_uri, word_index);
-        }
-    }
     Ok(())
 }

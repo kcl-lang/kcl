@@ -184,7 +184,7 @@ mod tests {
         let file = test_file.to_str().unwrap();
 
         let diags = compile_with_params(Params {
-            file: file.to_string(),
+            file: Some(file.to_string()),
             module_cache: None,
             scope_cache: None,
             vfs: Some(KCLVfs::default()),
