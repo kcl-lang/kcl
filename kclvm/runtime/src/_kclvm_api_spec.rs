@@ -807,8 +807,8 @@
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_datetime_today(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
 
 // api-spec:       kclvm_datetime_now
-// api-spec(c):    kclvm_value_ref_t* kclvm_datetime_now(kclvm_context_t* ctx, kclvm_value_ref_t* _args, kclvm_value_ref_t* _kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_datetime_now(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
+// api-spec(c):    kclvm_value_ref_t* kclvm_datetime_now(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_datetime_now(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_datetime_ticks
 // api-spec(c):    kclvm_value_ref_t* kclvm_datetime_ticks(kclvm_context_t* ctx, kclvm_value_ref_t* _args, kclvm_value_ref_t* _kwargs);
@@ -817,6 +817,10 @@
 // api-spec:       kclvm_datetime_date
 // api-spec(c):    kclvm_value_ref_t* kclvm_datetime_date(kclvm_context_t* ctx, kclvm_value_ref_t* _args, kclvm_value_ref_t* _kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_datetime_date(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
+
+// api-spec:       kclvm_datetime_validate
+// api-spec(c):    kclvm_value_ref_t* kclvm_datetime_validate(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_datetime_validate(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_json_encode
 // api-spec(c):    kclvm_value_ref_t* kclvm_json_encode(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);

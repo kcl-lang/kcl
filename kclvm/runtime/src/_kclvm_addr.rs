@@ -117,6 +117,7 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_datetime_now" => crate::kclvm_datetime_now as *const () as u64,
         "kclvm_datetime_ticks" => crate::kclvm_datetime_ticks as *const () as u64,
         "kclvm_datetime_today" => crate::kclvm_datetime_today as *const () as u64,
+        "kclvm_datetime_validate" => crate::kclvm_datetime_validate as *const () as u64,
         "kclvm_default_collection_insert_int_pointer" => {
             crate::kclvm_default_collection_insert_int_pointer as *const () as u64
         }
