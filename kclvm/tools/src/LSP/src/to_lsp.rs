@@ -16,7 +16,7 @@ use std::{
 /// The position in lsp protocol is different with position in ast node whose line number is 1 based.
 pub fn lsp_pos(pos: &KCLPos) -> Position {
     Position {
-        line: pos.line.checked_sub(1).unwrap_or(0) as u32,
+        line: pos.line.saturating_sub(1) as u32,
         character: pos.column.unwrap_or(0) as u32,
     }
 }
@@ -35,7 +35,7 @@ pub fn lsp_location(file_path: String, start: &KCLPos, end: &KCLPos) -> Option<L
 }
 
 /// Convert KCL message to the LSP diagnostic.
-fn kcl_msg_to_lsp_diags(
+pub(crate) fn kcl_msg_to_lsp_diags(
     msg: &Message,
     severity: DiagnosticSeverity,
     related_msg: Vec<Message>,
@@ -99,7 +99,7 @@ fn kcl_msg_to_lsp_diags(
 }
 
 /// Convert KCL error level to the LSP diagnostic severity.
-fn kcl_err_level_to_severity(level: Level) -> DiagnosticSeverity {
+pub(crate) fn kcl_err_level_to_severity(level: Level) -> DiagnosticSeverity {
     match level {
         Level::Error => DiagnosticSeverity::ERROR,
         Level::Warning => DiagnosticSeverity::WARNING,
@@ -108,32 +108,7 @@ fn kcl_err_level_to_severity(level: Level) -> DiagnosticSeverity {
     }
 }
 
-#[cfg(test)]
-/// Convert KCL Diagnostic to LSP Diagnostics.
-pub fn kcl_diag_to_lsp_diags_by_file(diag: &KCLDiagnostic, file_name: &str) -> Vec<Diagnostic> {
-    let mut diags = vec![];
-    for (idx, msg) in diag.messages.iter().enumerate() {
-        if msg.range.0.filename == file_name {
-            let mut related_msg = diag.messages.clone();
-            related_msg.remove(idx);
-            let code = if diag.code.is_some() {
-                Some(kcl_diag_id_to_lsp_diag_code(diag.code.clone().unwrap()))
-            } else {
-                None
-            };
 
-            let lsp_diag = kcl_msg_to_lsp_diags(
-                msg,
-                kcl_err_level_to_severity(diag.level),
-                related_msg,
-                code,
-            );
-
-            diags.push(lsp_diag);
-        }
-    }
-    diags
-}
 
 /// Convert KCL Diagnostic to LSP Diagnostics.
 pub fn kcl_diag_to_lsp_diags(diag: &KCLDiagnostic) -> HashMap<String, Vec<Diagnostic>> {
@@ -157,7 +132,7 @@ pub fn kcl_diag_to_lsp_diags(diag: &KCLDiagnostic) -> HashMap<String, Vec<Diagno
             code,
         );
 
-        diags_map.entry(filename).or_insert(vec![]).push(lsp_diag);
+        diags_map.entry(filename).or_default().push(lsp_diag);
     }
     diags_map
 }

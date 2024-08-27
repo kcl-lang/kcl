@@ -97,13 +97,13 @@ impl LanguageServerSnapshot {
         match self.try_get_db_state(path) {
             Ok(db) => match db {
                 Some(db) => match db {
-                    DBState::Ready(db) => return Ok(Some(db.clone())),
-                    DBState::Compiling(_) | DBState::Init => return Ok(None),
+                    DBState::Ready(db) => Ok(Some(db.clone())),
+                    DBState::Compiling(_) | DBState::Init => Ok(None),
                 },
-                None => return Ok(None),
+                None => Ok(None),
             },
-            Err(e) => return Err(e),
-        };
+            Err(e) => Err(e),
+        }
     }
 
     /// Attempts to get db in cache, this function does not block.
@@ -281,7 +281,7 @@ pub(crate) fn handle_reference(
     };
     let pos = kcl_pos(&file, params.text_document_position.position);
     let log = |msg: String| log_message(msg, &sender);
-    let entry_cache = snapshot.entry_cache.clone();
+    let _entry_cache = snapshot.entry_cache.clone();
     match find_refs(
         &pos,
         include_declaration,
@@ -289,7 +289,6 @@ pub(crate) fn handle_reference(
         Some(snapshot.vfs.clone()),
         log,
         &db.gs,
-        Some(entry_cache),
     ) {
         core::result::Result::Ok(locations) => Ok(Some(locations)),
         Err(msg) => {
@@ -308,7 +307,7 @@ pub(crate) fn handle_completion(
     let file = file_path_from_url(&params.text_document_position.text_document.uri)?;
     let path: VfsPath =
         from_lsp::abs_path(&params.text_document_position.text_document.uri)?.into();
-    if !snapshot.verify_request_path(&path.clone().into(), &sender) {
+    if !snapshot.verify_request_path(&path.clone(), &sender) {
         return Ok(None);
     }
 
@@ -440,7 +439,6 @@ pub(crate) fn handle_rename(
         Some(snapshot.vfs.clone()),
         log,
         &db.gs,
-        Some(snapshot.entry_cache),
     );
     match references {
         Result::Ok(locations) => {

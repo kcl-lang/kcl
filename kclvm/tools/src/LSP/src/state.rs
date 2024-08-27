@@ -539,8 +539,6 @@ impl LanguageServerState {
                         module_cache: Some(module_cache),
                         scope_cache: Some(scope_cache),
                         vfs: Some(snapshot.vfs),
-                        entry_cache: Some(entry),
-                        tool,
                         gs_cache: Some(gs_cache),
                     },
                     &mut files,

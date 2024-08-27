@@ -6,11 +6,8 @@ use kclvm_ast::ast::{
 use kclvm_ast::node_ref;
 use kclvm_ast::pos::ContainsPos;
 
-use kclvm_config::modfile::KCL_MOD_FILE;
-use kclvm_driver::toolchain::Toolchain;
-use kclvm_driver::{
-    lookup_compile_unit_path, lookup_compile_workspace, CompileUnitOptions, CompileUnitPath,
-};
+use kclvm_driver::lookup_compile_workspace;
+use kclvm_driver::toolchain::{self};
 use kclvm_error::Diagnostic;
 use kclvm_error::Position as KCLPos;
 use kclvm_parser::entry::get_dir_files;
@@ -22,12 +19,11 @@ use kclvm_sema::advanced_resolver::AdvancedResolver;
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::namer::Namer;
 
-use kclvm_config::settings::DEFAULT_SETTING_FILE;
 use kclvm_sema::resolver::resolve_program_with_opts;
 use kclvm_sema::resolver::scope::KCLScopeCache;
 
 use crate::from_lsp;
-use crate::state::{KCLEntryCache, KCLToolChain};
+
 use crate::state::{KCLGlobalStateCache, KCLVfs};
 use lsp_types::Url;
 use parking_lot::RwLockReadGuard;
@@ -36,7 +32,7 @@ use serde::{de::DeserializeOwned, Serialize};
 
 use std::collections::HashSet;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 #[allow(unused)]
 /// Deserializes a `T` from a json value.
@@ -73,98 +69,15 @@ pub(crate) struct Params {
     pub file: String,
     pub module_cache: Option<KCLModuleCache>,
     pub scope_cache: Option<KCLScopeCache>,
-    pub entry_cache: Option<KCLEntryCache>,
     pub vfs: Option<KCLVfs>,
-    pub tool: KCLToolChain,
     pub gs_cache: Option<KCLGlobalStateCache>,
-}
-
-pub(crate) fn lookup_compile_unit_with_cache(
-    tool: &dyn Toolchain,
-    entry_map: &Option<KCLEntryCache>,
-    file: &str,
-) -> CompileUnitOptions {
-    match entry_map {
-        Some(cache) => {
-            let mut map = cache.write();
-            let current_timestamp = {
-                match &mut lookup_compile_unit_path(file) {
-                    Ok(CompileUnitPath::SettingFile(dir)) => {
-                        dir.push(DEFAULT_SETTING_FILE);
-                        get_last_modified_time(dir).ok()
-                    }
-                    Ok(CompileUnitPath::ModFile(dir)) => {
-                        dir.push(KCL_MOD_FILE);
-                        get_last_modified_time(dir).ok()
-                    }
-                    _ => None,
-                }
-            };
-
-            match map.get(file) {
-                Some((compile_unit, cached_timestamp)) => {
-                    match (cached_timestamp, current_timestamp) {
-                        (Some(cached_timestamp), Some(current_timestamp)) => {
-                            if cached_timestamp == &current_timestamp {
-                                compile_unit.clone()
-                            } else {
-                                let res = lookup_compile_workspace(tool, file, true);
-                                map.insert(
-                                    file.to_string(),
-                                    (res.clone(), Some(current_timestamp)),
-                                );
-                                res
-                            }
-                        }
-                        (_, current_timestamp) => {
-                            let res = lookup_compile_workspace(tool, file, true);
-                            map.insert(file.to_string(), (res.clone(), current_timestamp));
-                            res
-                        }
-                    }
-                }
-                None => {
-                    let res = lookup_compile_workspace(tool, file, true);
-                    map.insert(file.to_string(), (res.clone(), current_timestamp));
-                    res
-                }
-            }
-        }
-        None => lookup_compile_workspace(tool, file, true),
-    }
-}
-
-pub(crate) fn get_last_modified_time(path: &PathBuf) -> std::io::Result<std::time::SystemTime> {
-    if path.is_file() {
-        fs::metadata(path)
-            .map(|meta| meta.modified())
-            .and_then(|t| t)
-    } else if path.is_dir() {
-        let mut last_modified_time = std::time::SystemTime::UNIX_EPOCH;
-        for entry in fs::read_dir(path)? {
-            let entry = entry?;
-            let metadata = entry.metadata()?;
-            let modified_time = metadata.modified()?;
-            if modified_time > last_modified_time {
-                last_modified_time = modified_time;
-            }
-        }
-
-        return Ok(last_modified_time);
-    } else {
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "Not a file or directory",
-        ));
-    }
 }
 
 pub(crate) fn compile_with_params(
     params: Params,
 ) -> (IndexSet<Diagnostic>, anyhow::Result<(Program, GlobalState)>) {
     // Lookup compile unit (kcl.mod or kcl.yaml) from the entry file.
-    let (mut files, opts, _) =
-        lookup_compile_unit_with_cache(&*params.tool.read(), &params.entry_cache, &params.file);
+    let (mut files, opts, _) = lookup_compile_workspace(&toolchain::default(), &params.file, true);
     if !files.contains(&params.file) {
         files.push(params.file.clone());
     }
@@ -208,8 +121,8 @@ pub(crate) fn compile(
 
     if let Some(module_cache) = params.module_cache.as_ref() {
         let code = if let Some(vfs) = &params.vfs {
-            match load_files_code_from_vfs(&vec![params.file.as_str()], vfs) {
-                Ok(code_list) => code_list.get(0).map(|c| c.clone()),
+            match load_files_code_from_vfs(&[params.file.as_str()], vfs) {
+                Ok(code_list) => code_list.first().cloned(),
                 Err(_) => None,
             }
         } else {

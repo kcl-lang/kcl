@@ -1,17 +1,13 @@
-use std::sync::Arc;
-
 use crate::from_lsp::{file_path_from_url, kcl_pos};
 use crate::goto_def::{find_def, goto_def};
 use crate::to_lsp::lsp_location;
 use crate::util::{compile_with_params, Params};
 
-use crate::state::{KCLEntryCache, KCLVfs, KCLWordIndexMap};
+use crate::state::{KCLVfs, KCLWordIndexMap};
 use anyhow::Result;
-use kclvm_driver::toolchain;
 use kclvm_error::Position as KCLPos;
 use kclvm_sema::core::global_state::GlobalState;
 use lsp_types::Location;
-use parking_lot::lock_api::RwLock;
 
 const FIND_REFS_LIMIT: usize = 20;
 
@@ -22,7 +18,6 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
     vfs: Option<KCLVfs>,
     logger: F,
     gs: &GlobalState,
-    entry_cache: Option<KCLEntryCache>,
 ) -> Result<Vec<Location>, String> {
     let def = find_def(kcl_pos, gs, true);
     match def {
@@ -39,7 +34,6 @@ pub(crate) fn find_refs<F: Fn(String) -> Result<(), anyhow::Error>>(
                         include_declaration,
                         Some(FIND_REFS_LIMIT),
                         logger,
-                        entry_cache,
                     ))
                 } else {
                     Err(format!("Invalid file path: {0}", start.filename))
@@ -63,7 +57,6 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
     include_declaration: bool,
     limit: Option<usize>,
     logger: F,
-    entry_cache: Option<KCLEntryCache>,
 ) -> Vec<Location> {
     let mut ref_locations = vec![];
     for word_index in (*word_index_map.write()).values_mut() {
@@ -90,8 +83,6 @@ pub(crate) fn find_refs_from_def<F: Fn(String) -> Result<(), anyhow::Error>>(
                                 scope_cache: None,
                                 vfs: vfs.clone(),
                                 gs_cache: None,
-                                entry_cache: entry_cache.clone(),
-                                tool: Arc::new(RwLock::new(toolchain::default())),
                             })
                             .1
                             {
@@ -214,7 +205,6 @@ mod tests {
                         true,
                         Some(20),
                         logger,
-                        None,
                     ),
                 );
             }
@@ -270,7 +260,6 @@ mod tests {
                         false,
                         Some(20),
                         logger,
-                        None,
                     ),
                 );
             }
@@ -326,7 +315,6 @@ mod tests {
                         true,
                         Some(20),
                         logger,
-                        None,
                     ),
                 );
             }
@@ -375,7 +363,6 @@ mod tests {
                         true,
                         Some(20),
                         logger,
-                        None,
                     ),
                 );
             }
