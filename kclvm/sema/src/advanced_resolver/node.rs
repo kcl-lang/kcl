@@ -867,43 +867,24 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
     }
 
     fn walk_config_expr(&mut self, config_expr: &'ctx ast::ConfigExpr) -> Self::Result {
-        let (start, end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
-        let schema_symbol = self.ctx.schema_symbol_stack.last().unwrap_or(&None).clone();
-        let kind = LocalSymbolScopeKind::Config;
+        let (start, _end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
 
-        self.enter_local_scope(
-            &self.ctx.current_filename.as_ref().unwrap().clone(),
-            start.clone(),
-            end.clone(),
-            kind,
-        );
+        let pre_pos = Position {
+            filename: start.filename.clone(),
+            line: start.line.clone(),
+            column: start.column.map(|c| if c >= 1 { c - 1 } else { 0 }),
+        };
 
-        let cur_scope = *self.ctx.scopes.last().unwrap();
-        self.gs
-            .get_scopes_mut()
-            .set_owner_to_scope(cur_scope, schema_symbol.unwrap());
+        let with_hint = if let Some(stmt) = self.ctx.program.pos_to_stmt(&pre_pos) {
+            match stmt.node {
+                ast::Stmt::Assign(ref assign_stmt) => assign_stmt.ty.is_some(),
+                _ => false,
+            }
+        } else {
+            false
+        };
 
-        if let Some(schema_expr) = self
-            .gs
-            .get_symbols_mut()
-            .exprs
-            .get_mut(schema_symbol.unwrap().get_id())
-        {
-            let mut expr_symbol = ExpressionSymbol::new(
-                schema_expr.name.to_string(),
-                start.clone(),
-                end.clone(),
-                None,
-            );
-            expr_symbol.hint = Some(SymbolHint {
-                pos: start.clone(),
-                kind: SymbolHintKind::VarHint(schema_expr.name.to_string()),
-            });
-        }
-
-        self.leave_scope();
-
-        self.walk_config_entries(&config_expr.items)?;
+        self.walk_config_entries_with_hint(&config_expr.items, with_hint)?;
         Ok(None)
     }
 
@@ -1916,6 +1897,14 @@ impl<'ctx> AdvancedResolver<'ctx> {
         &mut self,
         entries: &'ctx [ast::NodeRef<ast::ConfigEntry>],
     ) -> anyhow::Result<()> {
+        self.walk_config_entries_with_hint(entries, false)
+    }
+
+    pub(crate) fn walk_config_entries_with_hint(
+        &mut self,
+        entries: &'ctx [ast::NodeRef<ast::ConfigEntry>],
+        with_hint: bool,
+    ) -> anyhow::Result<()> {
         let (start, end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
 
         let schema_symbol = self.ctx.schema_symbol_stack.last().unwrap_or(&None).clone();
@@ -1923,8 +1912,8 @@ impl<'ctx> AdvancedResolver<'ctx> {
 
         self.enter_local_scope(
             &self.ctx.current_filename.as_ref().unwrap().clone(),
-            start,
-            end,
+            start.clone(),
+            end.clone(),
             kind,
         );
 
@@ -1933,6 +1922,43 @@ impl<'ctx> AdvancedResolver<'ctx> {
             self.gs
                 .get_scopes_mut()
                 .set_owner_to_scope(*cur_scope, owner);
+        }
+
+        if with_hint {
+            if let Some(schema_symbol) = schema_symbol {
+                let symbol_data = self.gs.get_symbols_mut();
+                if let Some(schema_data) = symbol_data.get_symbol(schema_symbol) {
+                    if let Some(ty) = &schema_data.get_sema_info().ty {
+                        let mut expr_symbol = ExpressionSymbol::new(
+                            format!("@{}", ty.ty_str()),
+                            end.clone(),
+                            end.clone(),
+                            None,
+                        );
+
+                        expr_symbol.sema_info = SymbolSemanticInfo {
+                            ty: self
+                                .ctx
+                                .node_ty_map
+                                .borrow()
+                                .get(&self.ctx.get_node_key(&ast::AstIndex::default()))
+                                .cloned(),
+                            doc: None,
+                        };
+
+                        expr_symbol.hint = Some(SymbolHint {
+                            pos: start.clone(),
+                            kind: SymbolHintKind::VarHint(schema_data.get_name().to_owned()),
+                        });
+
+                        symbol_data.alloc_expression_symbol(
+                            expr_symbol,
+                            self.ctx.get_node_key(&ast::AstIndex::default()),
+                            self.ctx.current_pkgpath.clone().unwrap(),
+                        );
+                    }
+                }
+            }
         }
 
         let mut entries_range = vec![];

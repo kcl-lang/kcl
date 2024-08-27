@@ -1,0 +1,31 @@
+---
+source: tools/src/LSP/src/inlay_hints.rs
+assertion_line: 127
+expression: "format!(\"{:#?}\", res)"
+---
+Some(
+    [
+        InlayHint {
+            position: Position {
+                line: 3,
+                character: 10,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: "Name: ",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: None,
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+    ],
+)
