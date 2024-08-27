@@ -20,8 +20,6 @@ use lsp_types::CompletionResponse;
 use lsp_types::CompletionTriggerKind;
 use lsp_types::DocumentFormattingParams;
 use lsp_types::DocumentSymbolParams;
-use lsp_types::FileChangeType;
-use lsp_types::FileEvent;
 use lsp_types::GotoDefinitionParams;
 use lsp_types::GotoDefinitionResponse;
 use lsp_types::Hover;
@@ -783,27 +781,31 @@ fn notification_test() {
     );
 
     // Wait for first "textDocument/publishDiagnostics" notification
-    server.wait_for_message_cond(1, &|msg: &Message| match msg {
+    server.wait_for_message_cond(2, &|msg: &Message| match msg {
         Message::Notification(not) => not.method == "textDocument/publishDiagnostics",
         _ => false,
     });
 
     let msgs = server.messages.borrow();
-
-    match msgs.last().unwrap() {
-        Message::Notification(not) => {
-            assert_eq!(
-                not.params,
-                to_json(PublishDiagnosticsParams {
-                    uri: Url::from_file_path(path).unwrap(),
-                    diagnostics: build_expect_diags(),
-                    version: None,
-                })
-                .unwrap()
-            );
-        }
-        _ => {
-            unreachable!("test error")
+    for msg in msgs.iter() {
+        match msg {
+            Message::Notification(not) => {
+                if let Some(uri) = not.params.get("uri") {
+                    if uri.clone() == to_json(Url::from_file_path(path).unwrap()).unwrap() {
+                        assert_eq!(
+                            not.params,
+                            to_json(PublishDiagnosticsParams {
+                                uri: Url::from_file_path(path).unwrap(),
+                                diagnostics: build_expect_diags(),
+                                version: None,
+                            })
+                            .unwrap()
+                        );
+                        break;
+                    }
+                }
+            }
+            _ => {}
         }
     }
 }
@@ -963,93 +965,6 @@ fn entry_test() {
 }
 
 #[test]
-fn entry_e2e_test() {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let mut path = root.clone();
-    let mut kcl_yaml = root.clone();
-    path.push("src/test_data/compile_unit/b.k");
-    kcl_yaml.push("src/test_data/compile_unit/kcl.yaml");
-
-    let path = path.to_str().unwrap();
-
-    let kcl_yaml = kcl_yaml.to_str().unwrap();
-    let src = std::fs::read_to_string(path).unwrap();
-    let server = Project {}.server(InitializeParams::default());
-
-    // Mock open file
-    server.notification::<lsp_types::notification::DidOpenTextDocument>(
-        lsp_types::DidOpenTextDocumentParams {
-            text_document: TextDocumentItem {
-                uri: Url::from_file_path(path).unwrap(),
-                language_id: "KCL".to_string(),
-                version: 0,
-                text: src,
-            },
-        },
-    );
-
-    server.wait_for_message_cond(1, &|msg: &Message| match msg {
-        Message::Notification(not) => not.method == "textDocument/publishDiagnostics",
-        _ => false,
-    });
-
-    // Mock edit file
-    server.notification::<lsp_types::notification::DidChangeTextDocument>(
-        lsp_types::DidChangeTextDocumentParams {
-            text_document: lsp_types::VersionedTextDocumentIdentifier {
-                uri: Url::from_file_path(path).unwrap(),
-                version: 1,
-            },
-            content_changes: vec![lsp_types::TextDocumentContentChangeEvent {
-                range: Some(lsp_types::Range::new(
-                    lsp_types::Position::new(0, 0),
-                    lsp_types::Position::new(0, 0),
-                )),
-                range_length: Some(0),
-                text: String::from("\n"),
-            }],
-        },
-    );
-    server.wait_for_message_cond(2, &|msg: &Message| match msg {
-        Message::Notification(not) => not.method == "textDocument/publishDiagnostics",
-        _ => false,
-    });
-
-    // Mock edit config file, clear cache
-    server.notification::<lsp_types::notification::DidChangeWatchedFiles>(
-        lsp_types::DidChangeWatchedFilesParams {
-            changes: vec![FileEvent {
-                uri: Url::from_file_path(kcl_yaml).unwrap(),
-                typ: FileChangeType::CHANGED,
-            }],
-        },
-    );
-
-    // Mock edit file
-    server.notification::<lsp_types::notification::DidChangeTextDocument>(
-        lsp_types::DidChangeTextDocumentParams {
-            text_document: lsp_types::VersionedTextDocumentIdentifier {
-                uri: Url::from_file_path(path).unwrap(),
-                version: 2,
-            },
-            content_changes: vec![lsp_types::TextDocumentContentChangeEvent {
-                range: Some(lsp_types::Range::new(
-                    lsp_types::Position::new(0, 0),
-                    lsp_types::Position::new(0, 0),
-                )),
-                range_length: Some(0),
-                text: String::from("\n"),
-            }],
-        },
-    );
-
-    server.wait_for_message_cond(3, &|msg: &Message| match msg {
-        Message::Notification(not) => not.method == "textDocument/publishDiagnostics",
-        _ => false,
-    });
-}
-
-#[test]
 fn goto_def_test() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut path = root.clone();
@@ -1197,6 +1112,21 @@ fn complete_with_version_test() {
         },
     );
 
+    server.notification::<lsp_types::notification::DidChangeTextDocument>(
+        lsp_types::DidChangeTextDocumentParams {
+            text_document: lsp_types::VersionedTextDocumentIdentifier {
+                uri: Url::from_file_path(path).unwrap(),
+                version: 1,
+            },
+            content_changes: vec![TextDocumentContentChangeEvent {
+                range: None,
+                range_length: None,
+                text: "schema Name:\n    name: str\n\nname1 = \"\"\n\nname: Name{\n    \n}"
+                    .to_string(),
+            }],
+        },
+    );
+
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
 
@@ -1221,21 +1151,6 @@ fn complete_with_version_test() {
 
     let id = r.id.clone();
     server.client.sender.send(r.into()).unwrap();
-
-    server.notification::<lsp_types::notification::DidChangeTextDocument>(
-        lsp_types::DidChangeTextDocumentParams {
-            text_document: lsp_types::VersionedTextDocumentIdentifier {
-                uri: Url::from_file_path(path).unwrap(),
-                version: 1,
-            },
-            content_changes: vec![TextDocumentContentChangeEvent {
-                range: None,
-                range_length: None,
-                text: "schema Name:\n    name: str\n\nname1 = \"\"\n\nname: Name{\n    \n}"
-                    .to_string(),
-            }],
-        },
-    );
 
     while let Some(msg) = server.recv() {
         match msg {

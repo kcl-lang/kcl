@@ -16,7 +16,7 @@ use std::{
 /// The position in lsp protocol is different with position in ast node whose line number is 1 based.
 pub fn lsp_pos(pos: &KCLPos) -> Position {
     Position {
-        line: pos.line as u32 - 1,
+        line: pos.line.checked_sub(1).unwrap_or(0) as u32,
         character: pos.column.unwrap_or(0) as u32,
     }
 }

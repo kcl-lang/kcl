@@ -250,6 +250,7 @@ impl LanguageServerState {
                         let uri = url_from_path(&filename).unwrap();
                         let mut state_workspaces = self.analysis.workspaces.read();
                         self.temporary_workspace.write().insert(file.file_id, None);
+
                         let mut contains = false;
                         // If some workspace has compiled this file, record open file's workspace
                         for (workspace, state) in state_workspaces.iter() {
@@ -278,6 +279,15 @@ impl LanguageServerState {
                                 lookup_compile_workspaces(&*tool.read(), &filename, true);
                             for (workspace, opts) in workspaces {
                                 self.async_compile(workspace, opts, Some(file.file_id), true);
+                            }
+                            if self
+                                .temporary_workspace
+                                .read()
+                                .get(&file.file_id)
+                                .unwrap_or(&None)
+                                .is_none()
+                            {
+                                self.temporary_workspace.write().remove(&file.file_id);
                             }
                         } else {
                             self.temporary_workspace.write().remove(&file.file_id);
@@ -603,6 +613,11 @@ impl LanguageServerState {
                     Err(_) => {
                         let mut workspaces = snapshot.workspaces.write();
                         workspaces.remove(&workspace);
+                        if temp && changed_file_id.is_some() {
+                            let mut temporary_workspace = snapshot.temporary_workspace.write();
+                            temporary_workspace.remove(&changed_file_id.unwrap());
+                            drop(temporary_workspace);
+                        }
                     }
                 }
             }
