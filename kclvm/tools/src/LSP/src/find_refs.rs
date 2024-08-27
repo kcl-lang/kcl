@@ -28,7 +28,7 @@ pub(crate) fn find_refs(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<Vec<Locati
                                         .map(|loc| loc)
                                 })
                                 .collect();
-                            res.sort_by_key(|e|e.range.start.line);
+                            res.sort_by_key(|e| e.range.start.line);
                             return Some(res);
                         }
                     }
