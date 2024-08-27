@@ -234,7 +234,7 @@ pub fn get_call_arg(
 }
 
 #[inline]
-pub(crate) fn get_call_arg_str(
+pub fn get_call_arg_str(
     args: &ValueRef,
     kwargs: &ValueRef,
     index: usize,
@@ -244,7 +244,7 @@ pub(crate) fn get_call_arg_str(
 }
 
 #[inline]
-pub(crate) fn get_call_arg_bool(
+pub fn get_call_arg_bool(
     args: &ValueRef,
     kwargs: &ValueRef,
     index: usize,

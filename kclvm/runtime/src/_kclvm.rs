@@ -116,6 +116,7 @@ pub enum ApiFunc {
     kclvm_datetime_now,
     kclvm_datetime_ticks,
     kclvm_datetime_today,
+    kclvm_datetime_validate,
     kclvm_default_collection_insert_int_pointer,
     kclvm_default_collection_insert_value,
     kclvm_dict_clear,

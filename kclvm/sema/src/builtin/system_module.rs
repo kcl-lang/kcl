@@ -698,8 +698,15 @@ register_datetime_member! {
     now => Type::function(
         None,
         Type::str_ref(),
-        &[],
-        r#"Return the local time. e.g. 'Sat Jun 06 16:26:11 1998'."#,
+        &[
+            Parameter {
+                name: "format".to_string(),
+                ty: Type::str_ref(),
+                has_default: true,
+                range: dummy_range(),
+            },
+        ],
+        r#"Return the local time format. e.g. 'Sat Jun 06 16:26:11 1998' or format the combined date and time per the specified format string, and the default date format is "%a %b %d %H:%M:%S %Y"."#,
         false,
         None,
     )
@@ -708,6 +715,27 @@ register_datetime_member! {
         Type::str_ref(),
         &[],
         r#"Return the `%Y-%m-%d %H:%M:%S.%{ticks}` format date."#,
+        false,
+        None,
+    )
+    validate => Type::function(
+        None,
+        Type::bool_ref(),
+        &[
+            Parameter {
+                name: "date".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                range: dummy_range(),
+            },
+            Parameter {
+                name: "format".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                range: dummy_range(),
+            },
+        ],
+        r#"Validate whether the provided date string matches the specified format."#,
         false,
         None,
     )

@@ -204,11 +204,13 @@ declare %kclvm_value_ref_t* @kclvm_crypto_uuid(%kclvm_context_t* %ctx, %kclvm_va
 
 declare %kclvm_value_ref_t* @kclvm_datetime_date(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_datetime_now(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_datetime_now(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_datetime_ticks(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_datetime_today(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
+
+declare %kclvm_value_ref_t* @kclvm_datetime_validate(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare void @kclvm_default_collection_insert_int_pointer(%kclvm_value_ref_t* %p, %kclvm_char_t* %key, i64* %ptr);
 
