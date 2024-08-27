@@ -206,6 +206,22 @@ pub(crate) fn compile(
 
     let mut diags = IndexSet::new();
 
+    if let Some(module_cache) = params.module_cache.as_ref() {
+        let code = if let Some(vfs) = &params.vfs {
+            match load_files_code_from_vfs(&vec![params.file.as_str()], vfs) {
+                Ok(code_list) => code_list.get(0).map(|c| c.clone()),
+                Err(_) => None,
+            }
+        } else {
+            None
+        };
+
+        let mut module_cache_ref = module_cache.write().unwrap();
+        module_cache_ref
+            .invalidate_module
+            .insert(params.file.clone(), code);
+    }
+
     // Parser
     let sess = ParseSessionRef::default();
     let mut program = match load_program(sess.clone(), &files, Some(opts), params.module_cache) {
