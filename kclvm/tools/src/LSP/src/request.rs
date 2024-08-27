@@ -264,7 +264,6 @@ pub(crate) fn handle_reference(
     params: lsp_types::ReferenceParams,
     sender: Sender<Task>,
 ) -> anyhow::Result<Option<Vec<Location>>> {
-    let include_declaration = params.context.include_declaration;
     let file = file_path_from_url(&params.text_document_position.text_document.uri)?;
 
     let path = from_lsp::abs_path(&params.text_document_position.text_document.uri)?;
@@ -280,23 +279,8 @@ pub(crate) fn handle_reference(
         Err(_) => return Ok(None),
     };
     let pos = kcl_pos(&file, params.text_document_position.position);
-    let log = |msg: String| log_message(msg, &sender);
-    let entry_cache = snapshot.entry_cache.clone();
-    match find_refs(
-        &pos,
-        include_declaration,
-        snapshot.word_index_map.clone(),
-        Some(snapshot.vfs.clone()),
-        log,
-        &db.gs,
-        Some(entry_cache),
-    ) {
-        core::result::Result::Ok(locations) => Ok(Some(locations)),
-        Err(msg) => {
-            log(format!("Find references failed: {msg}"))?;
-            Ok(None)
-        }
-    }
+    let res = find_refs(&pos, &db.gs);
+    Ok(res)
 }
 
 /// Called when a `textDocument/completion` request was received.
@@ -432,46 +416,27 @@ pub(crate) fn handle_rename(
         Err(_) => return Ok(None),
     };
     let kcl_pos = kcl_pos(&file, params.text_document_position.position);
-    let log = |msg: String| log_message(msg, &sender);
-    let references = find_refs(
-        &kcl_pos,
-        true,
-        snapshot.word_index_map.clone(),
-        Some(snapshot.vfs.clone()),
-        log,
-        &db.gs,
-        Some(snapshot.entry_cache),
-    );
+    let references = find_refs(&kcl_pos, &db.gs);
     match references {
-        Result::Ok(locations) => {
-            if locations.is_empty() {
-                let _ = log("Symbol not found".to_string());
-                anyhow::Ok(None)
-            } else {
-                // 3. return the workspaceEdit to rename all the references with the new name
-                let mut workspace_edit = lsp_types::WorkspaceEdit::default();
-
-                let changes = locations.into_iter().fold(
-                    HashMap::new(),
-                    |mut map: HashMap<lsp_types::Url, Vec<TextEdit>>, location| {
-                        let uri = location.uri;
-                        map.entry(uri.clone()).or_default().push(TextEdit {
-                            range: location.range,
-                            new_text: new_name.clone(),
-                        });
-                        map
-                    },
-                );
-                workspace_edit.changes = Some(changes);
-                anyhow::Ok(Some(workspace_edit))
-            }
+        Some(locations) => {
+            let mut workspace_edit = lsp_types::WorkspaceEdit::default();
+            let changes = locations.into_iter().fold(
+                HashMap::new(),
+                |mut map: HashMap<lsp_types::Url, Vec<TextEdit>>, location| {
+                    let uri = location.uri;
+                    map.entry(uri.clone()).or_default().push(TextEdit {
+                        range: location.range,
+                        new_text: new_name.clone(),
+                    });
+                    map
+                },
+            );
+            workspace_edit.changes = Some(changes);
+            return anyhow::Ok(Some(workspace_edit));
         }
-        Err(msg) => {
-            let err_msg = format!("Can not rename symbol: {msg}");
-            log(err_msg.clone())?;
-            Err(anyhow!(err_msg))
-        }
+        None => {}
     }
+    Ok(None)
 }
 
 pub(crate) fn handle_inlay_hint(

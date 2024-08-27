@@ -130,7 +130,7 @@ pub(crate) fn compile_test_file(
     let file = test_file.to_str().unwrap().to_string();
 
     let (diags, compile_res) = compile_with_params(Params {
-        file: file.clone(),
+        file: Some(file.clone()),
         module_cache: Some(KCLModuleCache::default()),
         scope_cache: Some(KCLScopeCache::default()),
         vfs: Some(KCLVfs::default()),
@@ -159,7 +159,7 @@ pub(crate) fn compile_test_file_and_metadata(
 
     let entry_cache = KCLEntryCache::default();
     let (diags, compile_res) = compile_with_params(Params {
-        file: file.clone(),
+        file: Some(file.clone()),
         module_cache: Some(KCLModuleCache::default()),
         scope_cache: Some(KCLScopeCache::default()),
         vfs: Some(KCLVfs::default()),
@@ -329,7 +329,7 @@ fn diagnostics_test() {
     let file = test_file.to_str().unwrap();
 
     let diags = compile_with_params(Params {
-        file: file.to_string(),
+        file: Some(file.to_string()),
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
@@ -520,7 +520,7 @@ fn complete_import_external_file_test() {
         .unwrap();
 
     let (program, gs) = compile_with_params(Params {
-        file: path.to_string(),
+        file: Some(path.to_string()),
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
@@ -582,7 +582,7 @@ fn goto_import_external_file_test() {
         .unwrap();
 
     let (diags, compile_res) = compile_with_params(Params {
-        file: path.to_string(),
+        file: Some(path.to_string()),
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
@@ -1442,7 +1442,7 @@ fn konfig_goto_def_test_base() {
     base_path.push("appops/nginx-example/base/base.k");
     let base_path_str = base_path.to_str().unwrap().to_string();
     let (_program, gs) = compile_with_params(Params {
-        file: base_path_str.clone(),
+        file: Some(base_path_str.clone()),
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
@@ -1537,7 +1537,7 @@ fn konfig_goto_def_test_main() {
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
     let (_program, gs) = compile_with_params(Params {
-        file: main_path_str.clone(),
+        file: Some(main_path_str.clone()),
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
@@ -1604,7 +1604,7 @@ fn konfig_completion_test_main() {
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
     let (program, gs) = compile_with_params(Params {
-        file: main_path_str.clone(),
+        file: Some(main_path_str.clone()),
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
@@ -1720,7 +1720,7 @@ fn konfig_hover_test_main() {
     main_path.push("appops/nginx-example/dev/main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
     let (_program, gs) = compile_with_params(Params {
-        file: main_path_str.clone(),
+        file: Some(main_path_str.clone()),
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
@@ -2067,7 +2067,6 @@ fn rename_test() {
     };
     let server = Project {}.server(initialize_params);
 
-    // Wait for async build word_index_map
     wait_async_compile!();
 
     let url = Url::from_file_path(path).unwrap();
@@ -2156,7 +2155,7 @@ fn compile_unit_test() {
     let file = test_file.to_str().unwrap();
 
     let prog = compile_with_params(Params {
-        file: file.to_string(),
+        file: Some(file.to_string()),
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),

@@ -1,0 +1,7 @@
+---
+source: tools/src/LSP/src/find_refs.rs
+expression: "format!(\"{}\", { fmt_resp(& res) })"
+---
+path: "src/test_data/find_refs_test/main.k", range: Range { start: Position { line: 4, character: 7 }, end: Position { line: 4, character: 11 } }
+path: "src/test_data/find_refs_test/main.k", range: Range { start: Position { line: 8, character: 7 }, end: Position { line: 8, character: 11 } }
+path: "src/test_data/find_refs_test/main.k", range: Range { start: Position { line: 11, character: 7 }, end: Position { line: 11, character: 11 } }

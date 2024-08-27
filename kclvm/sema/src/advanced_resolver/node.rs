@@ -191,7 +191,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             .unwrap_or(import_stmt.path.clone())
             .get_span_pos();
 
-        let mut unresolved = UnresolvedSymbol::new(
+        let unresolved = UnresolvedSymbol::new(
             import_stmt.path.node.clone(),
             start_pos,
             end_pos,
@@ -206,12 +206,14 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             Some(symbol) => symbol,
             None => return Ok(None),
         };
-        unresolved.def = Some(package_symbol);
         let unresolved_ref = self.gs.get_symbols_mut().alloc_unresolved_symbol(
             unresolved,
             self.ctx.get_node_key(&ast_id),
             self.ctx.current_pkgpath.clone().unwrap(),
         );
+        self.gs
+            .get_symbols_mut()
+            .set_def_and_ref(package_symbol, unresolved_ref);
         self.gs
             .get_symbols_mut()
             .symbols_info
@@ -627,19 +629,23 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
 
             let (start_pos, end_pos): Range = name.get_span_pos();
             let ast_id = name.id.clone();
-            let mut unresolved = UnresolvedSymbol::new(
+            let unresolved = UnresolvedSymbol::new(
                 name.node.clone(),
                 start_pos,
                 end_pos,
                 None,
                 self.ctx.is_type_expr,
             );
-            unresolved.def = Some(def_symbol_ref);
             let unresolved_ref = self.gs.get_symbols_mut().alloc_unresolved_symbol(
                 unresolved,
                 self.ctx.get_node_key(&ast_id),
                 self.ctx.current_pkgpath.clone().unwrap(),
             );
+
+            self.gs
+                .get_symbols_mut()
+                .set_def_and_ref(def_symbol_ref, unresolved_ref);
+
             let cur_scope = *self.ctx.scopes.last().unwrap();
             self.gs
                 .get_scopes_mut()
@@ -1184,6 +1190,11 @@ impl<'ctx> AdvancedResolver<'ctx> {
 
                 if def_start_pos != start_pos || def_end_pos != end_pos {
                     self.gs
+                        .get_symbols_mut()
+                        .set_def_and_ref(symbol_ref, first_unresolved_ref);
+
+                    let cur_scope = *self.ctx.scopes.last().unwrap();
+                    self.gs
                         .get_scopes_mut()
                         .add_ref_to_scope(cur_scope, first_unresolved_ref);
                 }
@@ -1219,7 +1230,6 @@ impl<'ctx> AdvancedResolver<'ctx> {
                             None,
                             self.ctx.is_type_expr,
                         );
-                        unresolved.def = Some(def_symbol_ref);
 
                         unresolved.sema_info = SymbolSemanticInfo {
                             ty: self
@@ -1236,6 +1246,10 @@ impl<'ctx> AdvancedResolver<'ctx> {
                             self.ctx.get_node_key(&ast_id),
                             self.ctx.current_pkgpath.clone().unwrap(),
                         );
+
+                        self.gs
+                            .get_symbols_mut()
+                            .set_def_and_ref(def_symbol_ref, unresolved_ref);
 
                         let cur_scope = *self.ctx.scopes.last().unwrap();
                         self.gs
