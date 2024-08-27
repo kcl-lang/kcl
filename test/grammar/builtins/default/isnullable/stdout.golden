@@ -1,0 +1,24 @@
+a:
+- 100
+- 10
+- 100
+b:
+- 100
+- 10
+c:
+- Hello
+- world
+- world
+d:
+- Hello
+- world
+e: null
+g:
+- null
+A: false
+B: false
+C: false
+D: false
+E: true
+F: true
+G: false

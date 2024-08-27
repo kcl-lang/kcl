@@ -121,6 +121,21 @@ end:   string appended after the last value, default a newline."#,
         false,
         None,
     )
+    isnullish => Type::function(
+        None,
+        Arc::new(Type::BOOL),
+        &[
+            Parameter {
+                name: "inval".to_string(),
+                ty: Type::any_ref(),
+                has_default: false,
+                range: dummy_range(),
+            },
+        ],
+        "Return `True` if the input value is `None` or `Undefined`, and `False` otherwise.",
+        false,
+        None,
+    )
     len => Type::function(
         None,
         Arc::new(Type::INT),

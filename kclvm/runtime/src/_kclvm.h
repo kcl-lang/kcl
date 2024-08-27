@@ -91,6 +91,8 @@ kclvm_value_ref_t* kclvm_builtin_hex(kclvm_context_t* ctx, kclvm_value_ref_t* ar
 
 kclvm_value_ref_t* kclvm_builtin_int(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
+kclvm_value_ref_t* kclvm_builtin_isnullish(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+
 kclvm_value_ref_t* kclvm_builtin_isunique(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_builtin_len(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);

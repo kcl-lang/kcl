@@ -1114,6 +1114,10 @@
 // api-spec(c):    kclvm_value_ref_t* kclvm_builtin_range(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_range(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
+// api-spec:       kclvm_builtin_isnullish
+// api-spec(c):    kclvm_value_ref_t* kclvm_builtin_isnullish(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_isnullish(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
 // api-spec:       kclvm_plugin_init
 // api-spec(c):    void kclvm_plugin_init(void* fn_ptr);
 // api-spec(llvm): declare void @kclvm_plugin_init(i8* %fn_ptr);

@@ -1,0 +1,14 @@
+a = [100, 10, 100]
+b = [100, 10]
+c = ["Hello", "world", "world"]
+d = ["Hello", "world"]
+e = None
+f = Undefined
+g = [None]
+A = isnullish(a)
+B = isnullish(b)
+C = isnullish(c)
+D = isnullish(d)
+E = isnullish(e)
+F = isnullish(f)
+G = isnullish(g)
