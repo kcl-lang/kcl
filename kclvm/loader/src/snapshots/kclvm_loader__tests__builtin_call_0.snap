@@ -90,13 +90,6 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
         attrs: [
             SymbolRef {
                 id: Index {
-                    index: 139,
-                    generation: 0,
-                },
-                kind: Function,
-            },
-            SymbolRef {
-                id: Index {
                     index: 140,
                     generation: 0,
                 },
@@ -287,6 +280,13 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
             SymbolRef {
                 id: Index {
                     index: 167,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 168,
                     generation: 0,
                 },
                 kind: Function,

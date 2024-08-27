@@ -670,3 +670,21 @@ pub unsafe extern "C" fn kclvm_builtin_range(
         _ => kclvm_value_Undefined(ctx),
     }
 }
+
+/// Return `True` if the input value is `None` or `Undefined`, and `False` otherwise.
+#[no_mangle]
+#[runtime_fn]
+pub unsafe extern "C" fn kclvm_builtin_isnullish(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *mut kclvm_value_ref_t {
+    let ctx = mut_ptr_as_ref(ctx);
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+
+    if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("inval")) {
+        return ValueRef::bool(arg0.is_none_or_undefined()).into_raw(ctx);
+    }
+    panic!("is_nullable() takes exactly one argument (0 given)");
+}

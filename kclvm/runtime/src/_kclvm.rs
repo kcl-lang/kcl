@@ -38,6 +38,7 @@ pub enum ApiFunc {
     kclvm_builtin_float,
     kclvm_builtin_hex,
     kclvm_builtin_int,
+    kclvm_builtin_isnullish,
     kclvm_builtin_isunique,
     kclvm_builtin_len,
     kclvm_builtin_list,
