@@ -1,4 +1,4 @@
-use crate::analysis::{Analysis, AnalysisDatabase, OpenFileInfo};
+use crate::analysis::{Analysis, AnalysisDatabase, DBState, OpenFileInfo};
 use crate::from_lsp::file_path_from_url;
 use crate::to_lsp::{kcl_diag_to_lsp_diags, url_from_path};
 use crate::util::{compile, get_file_name, to_json, Params};
@@ -109,7 +109,7 @@ pub(crate) struct LanguageServerSnapshot {
     /// The virtual filesystem that holds all the file contents
     pub vfs: Arc<RwLock<Vfs>>,
     /// Holds the state of the analysis process
-    pub workspaces: Arc<RwLock<HashMap<WorkSpaceKind, Option<Arc<AnalysisDatabase>>>>>,
+    pub workspaces: Arc<RwLock<HashMap<WorkSpaceKind, DBState>>>,
     /// Documents that are currently kept in memory from the client
     pub opened_files: Arc<RwLock<HashMap<FileId, OpenFileInfo>>>,
     /// request retry time
@@ -252,9 +252,9 @@ impl LanguageServerState {
                         self.temporary_workspace.write().insert(file.file_id, None);
                         let mut contains = false;
                         // If some workspace has compiled this file, record open file's workspace
-                        for (workspace, res) in state_workspaces.iter() {
-                            match res {
-                                Some(db) => {
+                        for (workspace, state) in state_workspaces.iter() {
+                            match state {
+                                DBState::Ready(db) => {
                                     if db.prog.get_module(&filename).is_some() {
                                         let mut openfiles = self.opened_files.write();
                                         let file_info = openfiles.get_mut(&file.file_id).unwrap();
@@ -263,8 +263,7 @@ impl LanguageServerState {
                                         contains = true;
                                     }
                                 }
-                                None => {
-                                    // In compiling, retry and wait for compile complete
+                                DBState::Compiling(_) | DBState::Init => {
                                     self.task_sender
                                         .send(Task::ChangedFile(file.file_id, file.change_kind))
                                         .unwrap();
@@ -292,9 +291,9 @@ impl LanguageServerState {
                 let filename = get_file_name(self.vfs.read(), file.file_id);
                 match filename {
                     Ok(filename) => {
-                        let open_files = self.opened_files.read();
+                        let opened_files = self.opened_files.read();
                         let file_workspaces =
-                            open_files.get(&file.file_id).unwrap().workspaces.clone();
+                            opened_files.get(&file.file_id).unwrap().workspaces.clone();
 
                         // In workspace
                         if !file_workspaces.is_empty() {
@@ -381,9 +380,14 @@ impl LanguageServerState {
     /// Sends a response to the client. This method logs the time it took us to reply
     /// to a request from the client.
     pub(super) fn respond(&mut self, response: lsp_server::Response) -> anyhow::Result<()> {
-        if let Some((_method, start)) = self.request_queue.incoming.complete(response.id.clone()) {
+        if let Some((method, start)) = self.request_queue.incoming.complete(response.id.clone()) {
             let duration = start.elapsed();
             self.send(response.into())?;
+            self.log_message(format!(
+                "Finished request {:?} in {:?} micros",
+                method,
+                duration.as_micros()
+            ));
         }
         Ok(())
     }
@@ -436,7 +440,19 @@ impl LanguageServerState {
         self.request_queue.incoming.is_completed(&request.id)
     }
 
+    fn init_state(&mut self) {
+        self.log_message("Init state".to_string());
+        self.module_cache = KCLModuleCache::default();
+        self.scope_cache = KCLScopeCache::default();
+        self.entry_cache = KCLEntryCache::default();
+        self.gs_cache = KCLGlobalStateCache::default();
+        self.workspace_config_cache = KCLWorkSpaceConfigCache::default();
+        self.temporary_workspace = Arc::new(RwLock::new(HashMap::new()));
+    }
+
     pub(crate) fn init_workspaces(&mut self) {
+        self.log_message("Init workspaces".to_string());
+        self.init_state();
         if let Some(workspace_folders) = &self.workspace_folders {
             for folder in workspace_folders {
                 let path = file_path_from_url(&folder.uri).unwrap();
@@ -487,8 +503,9 @@ impl LanguageServerState {
                 let old_diags = {
                     match snapshot.workspaces.read().get(&workspace) {
                         Some(option_db) => match option_db {
-                            Some(db) => db.diags.clone(),
-                            None => IndexSet::new(),
+                            DBState::Ready(db) => db.diags.clone(),
+                            DBState::Compiling(db) => db.diags.clone(),
+                            DBState::Init => IndexSet::new(),
                         },
                         None => IndexSet::new(),
                     }
@@ -496,7 +513,15 @@ impl LanguageServerState {
 
                 {
                     let mut workspaces = snapshot.workspaces.write();
-                    workspaces.insert(workspace.clone(), None);
+                    let state = match workspaces.get_mut(&workspace) {
+                        Some(state) => match state {
+                            DBState::Ready(db) => DBState::Compiling(db.clone()),
+                            DBState::Compiling(db) => DBState::Compiling(db.clone()),
+                            DBState::Init => DBState::Init,
+                        },
+                        None => DBState::Init,
+                    };
+                    workspaces.insert(workspace.clone(), state);
                 }
                 let (diags, compile_res) = compile(
                     Params {
@@ -565,8 +590,9 @@ impl LanguageServerState {
                         let mut workspaces = snapshot.workspaces.write();
                         workspaces.insert(
                             workspace.clone(),
-                            Some(Arc::new(AnalysisDatabase { prog, gs, diags })),
+                            DBState::Ready(Arc::new(AnalysisDatabase { prog, gs, diags })),
                         );
+                        drop(workspaces);
                         if temp && changed_file_id.is_some() {
                             let mut temporary_workspace = snapshot.temporary_workspace.write();
                             temporary_workspace

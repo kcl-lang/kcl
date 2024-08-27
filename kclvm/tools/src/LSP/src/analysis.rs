@@ -20,7 +20,15 @@ pub struct OpenFileInfo {
 /// Analysis holds the analysis mapping (FileId -> AnalysisDatabase)
 #[derive(Default)]
 pub struct Analysis {
-    pub workspaces: Arc<RwLock<HashMap<WorkSpaceKind, Option<Arc<AnalysisDatabase>>>>>,
+    pub workspaces: Arc<RwLock<HashMap<WorkSpaceKind, DBState>>>,
+}
+
+#[derive(Clone)]
+pub enum DBState {
+    Ready(Arc<AnalysisDatabase>),
+    // The previous version of db
+    Compiling(Arc<AnalysisDatabase>),
+    Init,
 }
 
 /// AnalysisDatabase holds the result of the compile

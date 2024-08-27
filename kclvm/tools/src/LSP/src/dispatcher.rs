@@ -1,5 +1,5 @@
 use crossbeam_channel::Sender;
-use lsp_server::{ExtractError, Request, RequestId};
+use lsp_server::{ExtractError, Request};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::error::Error;
@@ -148,7 +148,6 @@ impl<'a> RequestDispatcher<'a> {
             LanguageServerSnapshot,
             R::Params,
             Sender<Task>,
-            RequestId,
         ) -> anyhow::Result<R::Result>,
     ) -> anyhow::Result<&mut Self>
     where
@@ -166,7 +165,7 @@ impl<'a> RequestDispatcher<'a> {
             let sender = self.state.task_sender.clone();
             let request_retry = self.state.request_retry.clone();
             move || {
-                let result = compute_response_fn(snapshot, params, sender.clone(), req.id.clone());
+                let result = compute_response_fn(snapshot, params, sender.clone());
                 match &result {
                     Err(e)
                         if e.downcast_ref::<LSPError>()

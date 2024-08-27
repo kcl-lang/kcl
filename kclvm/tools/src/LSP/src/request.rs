@@ -2,7 +2,6 @@ use anyhow::anyhow;
 use crossbeam_channel::Sender;
 
 use kclvm_sema::info::is_valid_kcl_name;
-use lsp_server::RequestId;
 use lsp_types::{Location, SemanticTokensResult, TextEdit};
 use ra_ap_vfs::VfsPath;
 use std::collections::HashMap;
@@ -10,7 +9,7 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use crate::{
-    analysis::AnalysisDatabase,
+    analysis::{AnalysisDatabase, DBState},
     completion::completion,
     dispatcher::RequestDispatcher,
     document_symbol::document_symbol,
@@ -89,12 +88,29 @@ impl LanguageServerSnapshot {
 
     /// Attempts to get db in cache, this function does not block.
     /// return Ok(Some(db)) -> Compile completed
-    /// return Ok(None) -> In compiling, retry to wait compile completed
+    /// return Ok(None) -> In compiling or rw lock, retry to wait compile completed
     /// return Err(_) ->  Compile failed
     pub(crate) fn try_get_db(
         &self,
         path: &VfsPath,
     ) -> anyhow::Result<Option<Arc<AnalysisDatabase>>> {
+        match self.try_get_db_state(path) {
+            Ok(db) => match db {
+                Some(db) => match db {
+                    DBState::Ready(db) => return Ok(Some(db.clone())),
+                    DBState::Compiling(_) | DBState::Init => return Ok(None),
+                },
+                None => return Ok(None),
+            },
+            Err(e) => return Err(e),
+        };
+    }
+
+    /// Attempts to get db in cache, this function does not block.
+    /// return Ok(Some(db)) -> Compile completed
+    /// return Ok(None) -> RWlock, retry to unlock
+    /// return Err(_) ->  Compile failed
+    pub(crate) fn try_get_db_state(&self, path: &VfsPath) -> anyhow::Result<Option<DBState>> {
         match self.vfs.try_read() {
             Some(vfs) => match vfs.file_id(path) {
                 Some(file_id) => {
@@ -104,7 +120,7 @@ impl LanguageServerSnapshot {
                         Some(option_workspace) => match option_workspace {
                             Some(work_space) => match self.workspaces.try_read() {
                                 Some(workspaces) => match workspaces.get(work_space) {
-                                    Some(db) => Ok(db.clone()),
+                                    Some(db) => Ok(Some(db.clone())),
                                     None => Err(anyhow::anyhow!(
                                         LSPError::AnalysisDatabaseNotFound(path.clone())
                                     )),
@@ -124,7 +140,7 @@ impl LanguageServerSnapshot {
                             let work_space = file_info.workspaces.iter().next().unwrap();
                             match self.workspaces.try_read() {
                                 Some(workspaces) => match workspaces.get(work_space) {
-                                    Some(db) => Ok(db.clone()),
+                                    Some(db) => Ok(Some(db.clone())),
                                     None => Err(anyhow::anyhow!(
                                         LSPError::AnalysisDatabaseNotFound(path.clone())
                                     )),
@@ -148,8 +164,8 @@ pub(crate) fn handle_semantic_tokens_full(
     _sender: Sender<Task>,
 ) -> anyhow::Result<Option<SemanticTokensResult>> {
     let file = file_path_from_url(&params.text_document.uri)?;
-    let path = from_lsp::abs_path(&params.text_document.uri)?;
-    let db = match snapshot.try_get_db(&path.clone().into()) {
+    let path: VfsPath = from_lsp::abs_path(&params.text_document.uri)?.into();
+    let db = match snapshot.try_get_db(&path) {
         Ok(option_db) => match option_db {
             Some(db) => db,
             None => return Err(anyhow!(LSPError::Retry)),
@@ -157,6 +173,7 @@ pub(crate) fn handle_semantic_tokens_full(
         Err(_) => return Ok(None),
     };
     let res = semantic_tokens_full(&file, &db.gs);
+
     Ok(res)
 }
 
@@ -287,16 +304,16 @@ pub(crate) fn handle_completion(
     snapshot: LanguageServerSnapshot,
     params: lsp_types::CompletionParams,
     sender: Sender<Task>,
-    id: RequestId,
 ) -> anyhow::Result<Option<lsp_types::CompletionResponse>> {
     let file = file_path_from_url(&params.text_document_position.text_document.uri)?;
-    let path = from_lsp::abs_path(&params.text_document_position.text_document.uri)?;
+    let path: VfsPath =
+        from_lsp::abs_path(&params.text_document_position.text_document.uri)?.into();
     if !snapshot.verify_request_path(&path.clone().into(), &sender) {
         return Ok(None);
     }
 
-    let db = match snapshot.try_get_db(&path.clone().into()) {
-        Ok(option_db) => match option_db {
+    let db_state = match snapshot.try_get_db_state(&path) {
+        Ok(option_state) => match option_state {
             Some(db) => db,
             None => return Err(anyhow!(LSPError::Retry)),
         },
@@ -309,10 +326,17 @@ pub(crate) fn handle_completion(
         .and_then(|s| s.chars().next());
 
     if matches!(completion_trigger_character, Some('\n')) {
-        if snapshot.request_retry.read().get(&id).is_none() {
-            return Err(anyhow!(LSPError::Retry));
+        match db_state {
+            DBState::Compiling(_) | DBState::Init => return Err(anyhow!(LSPError::Retry)),
+            _ => {}
         }
     }
+
+    let db = match db_state {
+        DBState::Ready(db) => db,
+        DBState::Compiling(db) => db,
+        DBState::Init => return Err(anyhow!(LSPError::Retry)),
+    };
 
     let kcl_pos = kcl_pos(&file, params.text_document_position.position);
 
