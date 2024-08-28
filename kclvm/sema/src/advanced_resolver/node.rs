@@ -867,7 +867,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
     }
 
     fn walk_config_expr(&mut self, config_expr: &'ctx ast::ConfigExpr) -> Self::Result {
-        let (start, _end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
+        let (start, _) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
 
         let pre_pos = Position {
             filename: start.filename.clone(),
@@ -875,14 +875,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
             column: start.column.map(|c| if c >= 1 { c - 1 } else { 0 }),
         };
 
-        let with_hint = if let Some(stmt) = self.ctx.program.pos_to_stmt(&pre_pos) {
-            match stmt.node {
-                ast::Stmt::Assign(ref assign_stmt) => assign_stmt.ty.is_some(),
-                _ => false,
-            }
-        } else {
-            false
-        };
+        let with_hint = self.ctx.program.pos_to_stmt(&pre_pos).map_or(
+            false,
+            |stmt| matches!(stmt.node, ast::Stmt::Assign(assign_stmt) if assign_stmt.ty.is_some()),
+        );
 
         self.walk_config_entries_with_hint(&config_expr.items, with_hint)?;
         Ok(None)
