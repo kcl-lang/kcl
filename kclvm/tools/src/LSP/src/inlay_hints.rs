@@ -89,6 +89,13 @@ fn get_hint_label(hint: &SymbolHint) -> (InlayHintLabelPart, LspPosition) {
             },
             lsp_pos(&hint.pos),
         ),
+        SymbolHintKind::SchemaHint(schema) => (
+            InlayHintLabelPart {
+                value: format!("{schema} "),
+                ..Default::default()
+            },
+            lsp_pos(&hint.pos),
+        ),
     }
 }
 

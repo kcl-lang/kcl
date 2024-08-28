@@ -99,6 +99,7 @@ pub struct SymbolHint {
 pub enum SymbolHintKind {
     TypeHint(String),
     VarHint(String),
+    SchemaHint(String),
 }
 
 impl SymbolData {

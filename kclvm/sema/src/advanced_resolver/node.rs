@@ -1948,7 +1948,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
 
                         expr_symbol.hint = Some(SymbolHint {
                             pos: start.clone(),
-                            kind: SymbolHintKind::VarHint(schema_data.get_name().to_owned()),
+                            kind: SymbolHintKind::SchemaHint(schema_data.get_name().to_owned()),
                         });
 
                         symbol_data.alloc_expression_symbol(
