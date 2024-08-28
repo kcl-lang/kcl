@@ -8,7 +8,51 @@ Some(
         InlayHint {
             position: Position {
                 line: 3,
-                character: 10,
+                character: 13,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: "People ",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: None,
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 16,
+                character: 13,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: "Config ",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: None,
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 14,
+                character: 12,
             },
             label: LabelParts(
                 [
