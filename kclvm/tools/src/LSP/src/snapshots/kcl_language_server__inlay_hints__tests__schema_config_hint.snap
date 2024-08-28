@@ -1,6 +1,6 @@
 ---
 source: tools/src/LSP/src/inlay_hints.rs
-assertion_line: 127
+assertion_line: 134
 expression: "format!(\"{:#?}\", res)"
 ---
 Some(
@@ -13,7 +13,7 @@ Some(
             label: LabelParts(
                 [
                     InlayHintLabelPart {
-                        value: "Name: ",
+                        value: "Name ",
                         tooltip: None,
                         location: None,
                         command: None,
