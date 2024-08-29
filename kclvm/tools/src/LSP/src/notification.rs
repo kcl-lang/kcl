@@ -2,11 +2,12 @@ use kclvm_config::{
     modfile::{KCL_MOD_FILE, KCL_WORK_FILE},
     settings::DEFAULT_SETTING_FILE,
 };
+use kclvm_driver::lookup_compile_workspaces;
 use lsp_types::notification::{
     Cancel, DidChangeTextDocument, DidChangeWatchedFiles, DidCloseTextDocument,
     DidOpenTextDocument, DidSaveTextDocument,
 };
-use std::collections::HashSet;
+use std::{collections::HashSet, sync::Arc};
 
 use crate::util::apply_document_changes;
 use crate::{
@@ -138,7 +139,20 @@ impl LanguageServerState {
             self.loader.handle.invalidate(path.clone());
             if KCL_CONFIG_FILE.contains(&path.file_name().unwrap().to_str().unwrap()) {
                 self.entry_cache.write().clear();
-                self.init_workspaces();
+                let parent_path = path.parent().unwrap();
+                let path = parent_path.as_os_str().to_str().unwrap().to_string();
+                let tool = Arc::clone(&self.tool);
+                let (workspaces, failed) = lookup_compile_workspaces(&*tool.read(), &path, true);
+
+                if let Some(failed) = failed {
+                    for (key, err) in failed {
+                        self.log_message(format!("parse kcl.work failed: {}: {}", key, err));
+                    }
+                }
+
+                for (workspace, opts) in workspaces {
+                    self.async_compile(workspace, opts, None, false);
+                }
             }
         }
 

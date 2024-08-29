@@ -2199,6 +2199,9 @@ fn kcl_workspace_init_kclmod_test() {
     let mut work = root.clone();
     work.push("mod");
 
+    let mut main = work.clone();
+    main.push("main.k");
+
     let (workspaces, failed) =
         kclvm_driver::lookup_compile_workspaces(&*tool.read(), work.to_str().unwrap(), true);
 
@@ -2215,7 +2218,50 @@ fn kcl_workspace_init_kclmod_test() {
     ));
 
     assert_eq!(expected, workspaces.keys().cloned().collect());
+    assert_eq!(
+        vec![main.to_str().unwrap().to_string()],
+        workspaces.values().next().unwrap().0
+    );
+    assert!(failed.is_none());
+}
 
+#[test]
+fn kcl_workspace_init_kclsettings_test() {
+    let tool: crate::state::KCLToolChain = Arc::new(RwLock::new(toolchain::default()));
+    let tool = Arc::clone(&tool);
+
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("src")
+        .join("test_data")
+        .join("workspace")
+        .join("init");
+
+    let mut work = root.clone();
+    work.push("setting");
+
+    let mut a = work.clone();
+    a.push("a.k");
+
+    let (workspaces, failed) =
+        kclvm_driver::lookup_compile_workspaces(&*tool.read(), work.to_str().unwrap(), true);
+
+    let mut expected = HashSet::new();
+
+    expected.insert(WorkSpaceKind::SettingFile(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("src")
+            .join("test_data")
+            .join("workspace")
+            .join("init")
+            .join("setting")
+            .join("kcl.yaml"),
+    ));
+
+    assert_eq!(expected, workspaces.keys().cloned().collect());
+    assert_eq!(
+        vec![a.to_str().unwrap().to_string(),],
+        workspaces.values().next().unwrap().0
+    );
     assert!(failed.is_none());
 }
 
