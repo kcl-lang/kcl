@@ -322,15 +322,21 @@ impl LanguageServerState {
                                 },
                                 None => None,
                             };
-                            if let Some(workspace) = workspace {
-                                let opts = self
-                                    .workspace_config_cache
-                                    .read()
-                                    .get(&workspace)
-                                    .unwrap()
-                                    .clone();
+                            match workspace {
+                                Some(workspace) => {
+                                    let opts = self
+                                        .workspace_config_cache
+                                        .read()
+                                        .get(&workspace)
+                                        .unwrap()
+                                        .clone();
 
-                                self.async_compile(workspace, opts, Some(file.file_id), true);
+                                    self.async_compile(workspace, opts, Some(file.file_id), true);
+                                }
+                                None => self.log_message(format!(
+                                    "Internal Bug: not found any workspace for file {:?}",
+                                    filename
+                                )),
                             }
                         }
                     }
@@ -438,19 +444,8 @@ impl LanguageServerState {
         self.request_queue.incoming.is_completed(&request.id)
     }
 
-    fn init_state(&mut self) {
-        self.log_message("Init state".to_string());
-        self.module_cache = KCLModuleCache::default();
-        self.scope_cache = KCLScopeCache::default();
-        self.entry_cache = KCLEntryCache::default();
-        self.gs_cache = KCLGlobalStateCache::default();
-        self.workspace_config_cache = KCLWorkSpaceConfigCache::default();
-        self.temporary_workspace = Arc::new(RwLock::new(HashMap::new()));
-    }
-
     pub(crate) fn init_workspaces(&mut self) {
         self.log_message("Init workspaces".to_string());
-        self.init_state();
         if let Some(workspace_folders) = &self.workspace_folders {
             for folder in workspace_folders {
                 let path = file_path_from_url(&folder.uri).unwrap();
@@ -470,7 +465,7 @@ impl LanguageServerState {
         }
     }
 
-    fn async_compile(
+    pub(crate) fn async_compile(
         &self,
         workspace: WorkSpaceKind,
         opts: CompileUnitOptions,

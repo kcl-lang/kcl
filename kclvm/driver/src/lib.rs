@@ -140,15 +140,34 @@ pub fn lookup_compile_workspace(
     file: &str,
     load_pkg: bool,
 ) -> CompileUnitOptions {
+    let mut default_res: CompileUnitOptions = (vec![], None, None);
+    let mut load_opt = kclvm_parser::LoadProgramOptions::default();
+    let metadata = fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt).unwrap_or(None);
+    let path = Path::new(file);
+    if let Some(ext) = path.extension() {
+        if load_pkg {
+            if let Some(parent) = path.parent() {
+                if let Ok(files) = get_kcl_files(parent, false) {
+                    default_res = (files, Some(load_opt), metadata);
+                }
+            }
+        } else {
+            if ext == KCL_FILE_EXTENSION && path.is_file() {
+                default_res = (vec![file.to_string()], Some(load_opt), metadata);
+            }
+        }
+    }
+
     match lookup_compile_unit_path(file) {
         Ok(CompileUnitPath::SettingFile(dir)) => {
             let settings_files = lookup_setting_files(&dir);
             let files = if settings_files.is_empty() {
-                vec![file]
+                default_res.0.iter().map(|s| s.as_str()).collect()
             } else {
                 vec![]
             };
-            let settings_files = settings_files.iter().map(|f| f.to_str().unwrap()).collect();
+            let settings_files: Vec<&str> =
+                settings_files.iter().map(|f| f.to_str().unwrap()).collect();
             match build_settings_pathbuf(&files, Some(settings_files), None) {
                 Ok(setting_buf) => {
                     let setting = setting_buf.settings();
@@ -172,10 +191,10 @@ pub fn lookup_compile_workspace(
                                     .unwrap_or(None);
                             (kcl_paths, Some(load_opt), metadata)
                         }
-                        Err(_) => (vec![file.to_string()], None, None),
+                        Err(_) => default_res,
                     }
                 }
-                Err(_) => (vec![file.to_string()], None, None),
+                Err(_) => default_res,
             }
         }
         Ok(CompileUnitPath::ModFile(dir)) => match load_mod_file(&dir) {
@@ -188,45 +207,15 @@ pub fn lookup_compile_workspace(
                     load_opt.work_dir = work_dir.clone();
                     match canonicalize_input_files(&files, work_dir, true) {
                         Ok(kcl_paths) => (kcl_paths, Some(load_opt), metadata),
-                        Err(_) => (vec![file.to_string()], None, None),
+                        Err(_) => default_res,
                     }
                 } else {
-                    if load_pkg {
-                        let path = Path::new(file);
-                        if let Some(ext) = path.extension() {
-                            if ext == KCL_FILE_EXTENSION && path.is_file() {
-                                if let Some(parent) = path.parent() {
-                                    if let Ok(files) = get_kcl_files(parent, false) {
-                                        return (files, Some(load_opt), metadata);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    (vec![file.to_string()], Some(load_opt), metadata)
+                    default_res
                 }
             }
-            Err(_) => (vec![file.to_string()], None, None),
+            Err(_) => default_res,
         },
-        Ok(CompileUnitPath::NotFound) | Err(_) => {
-            let mut load_opt = kclvm_parser::LoadProgramOptions::default();
-            let metadata =
-                fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt).unwrap_or(None);
-
-            if load_pkg {
-                let path = Path::new(file);
-                if let Some(ext) = path.extension() {
-                    if ext == KCL_FILE_EXTENSION && path.is_file() {
-                        if let Some(parent) = path.parent() {
-                            if let Ok(files) = get_kcl_files(parent, false) {
-                                return (files, Some(load_opt), metadata);
-                            }
-                        }
-                    }
-                }
-            }
-            (vec![file.to_string()], Some(load_opt), metadata)
-        }
+        Ok(CompileUnitPath::NotFound) | Err(_) => default_res,
     }
 }
 
