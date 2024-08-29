@@ -1386,6 +1386,27 @@ register_crypto_member! {
         false,
         None,
     )
+    blake3 => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "value".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                range: dummy_range(),
+            },
+            Parameter {
+                name: "encoding".to_string(),
+                ty: Type::str_ref(),
+                has_default: true,
+                range: dummy_range(),
+            },
+        ],
+        r#"Encrypt the string `value` using `BLAKE3` and the codec registered for encoding."#,
+        false,
+        None,
+    )
     uuid => Type::function(
         None,
         Type::str_ref(),

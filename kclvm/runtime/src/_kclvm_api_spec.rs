@@ -794,6 +794,10 @@
 // api-spec(c):    kclvm_value_ref_t* kclvm_crypto_sha512(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_crypto_sha512(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
+/// api-spec:       kclvm_crypto_blake3
+/// api-spec(c):    kclvm_value_ref_t* kclvm_crypto_blake3(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+/// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_crypto_blake3(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+
 // api-spec:       kclvm_crypto_uuid
 // api-spec(c):    kclvm_value_ref_t* kclvm_crypto_uuid(kclvm_context_t* ctx, kclvm_value_ref_t* _args, kclvm_value_ref_t* _kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_crypto_uuid(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
