@@ -76,7 +76,7 @@ pub(crate) struct KCLCompletionItem {
 }
 
 /// Computes completions at the given position.
-pub(crate) fn completion(
+pub fn completion(
     trigger_character: Option<char>,
     program: &Program,
     pos: &KCLPos,

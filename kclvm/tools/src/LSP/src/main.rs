@@ -1,18 +1,17 @@
-use crate::main_loop::main_loop;
-use main_loop::app;
-
 mod analysis;
+mod app;
 mod capabilities;
+mod compile;
 mod completion;
 mod dispatcher;
 mod document_symbol;
 mod error;
 mod find_refs;
+mod formatting;
 mod from_lsp;
 mod goto_def;
 mod hover;
 mod inlay_hints;
-mod main_loop;
 mod notification;
 mod quick_fix;
 mod request;
@@ -23,9 +22,10 @@ mod to_lsp;
 mod util;
 mod word_index;
 
-mod formatting;
 #[cfg(test)]
 mod tests;
+
+use app::{app, main_loop};
 
 /// Main entry point for the `kcl-language-server` executable.
 fn main() -> Result<(), anyhow::Error> {

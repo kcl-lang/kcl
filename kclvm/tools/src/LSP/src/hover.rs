@@ -15,7 +15,7 @@ enum MarkedStringType {
 
 /// Returns a short text describing element at position.
 /// Specifically, the doc for schema and schema attr(todo)
-pub(crate) fn hover(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Hover> {
+pub fn hover(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Hover> {
     let mut docs: Vec<(String, MarkedStringType)> = vec![];
     let def = find_def(kcl_pos, gs, true);
     match def {

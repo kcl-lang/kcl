@@ -8,7 +8,6 @@ use lsp_types::{
 use crate::semantic_token::LEGEND_TYPE;
 
 /// Returns the capabilities of this LSP server implementation given the capabilities of the client.
-#[allow(dead_code)]
 pub fn server_capabilities(client_caps: &ClientCapabilities) -> ServerCapabilities {
     ServerCapabilities {
         text_document_sync: Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::FULL)),

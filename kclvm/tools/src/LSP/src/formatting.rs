@@ -1,7 +1,7 @@
 use kclvm_tools::format::{format_source, FormatOptions};
 use lsp_types::{Position, Range, TextEdit};
 
-pub(crate) fn format(
+pub fn format(
     file: String,
     src: String,
     range: Option<Range>,

@@ -97,13 +97,13 @@ impl LanguageServerSnapshot {
         match self.try_get_db_state(path) {
             Ok(db) => match db {
                 Some(db) => match db {
-                    DBState::Ready(db) => return Ok(Some(db.clone())),
-                    DBState::Compiling(_) | DBState::Init => return Ok(None),
+                    DBState::Ready(db) => Ok(Some(db.clone())),
+                    DBState::Compiling(_) | DBState::Init => Ok(None),
                 },
-                None => return Ok(None),
+                None => Ok(None),
             },
-            Err(e) => return Err(e),
-        };
+            Err(e) => Err(e),
+        }
     }
 
     /// Attempts to get db in cache, this function does not block.

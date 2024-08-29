@@ -35,7 +35,7 @@ pub fn lsp_location(file_path: String, start: &KCLPos, end: &KCLPos) -> Option<L
 }
 
 /// Convert KCL message to the LSP diagnostic.
-fn kcl_msg_to_lsp_diags(
+pub fn kcl_msg_to_lsp_diags(
     msg: &Message,
     severity: DiagnosticSeverity,
     related_msg: Vec<Message>,
@@ -99,40 +99,13 @@ fn kcl_msg_to_lsp_diags(
 }
 
 /// Convert KCL error level to the LSP diagnostic severity.
-fn kcl_err_level_to_severity(level: Level) -> DiagnosticSeverity {
+pub fn kcl_err_level_to_severity(level: Level) -> DiagnosticSeverity {
     match level {
         Level::Error => DiagnosticSeverity::ERROR,
         Level::Warning => DiagnosticSeverity::WARNING,
         Level::Note => DiagnosticSeverity::HINT,
         Level::Suggestions => DiagnosticSeverity::HINT,
     }
-}
-
-#[cfg(test)]
-/// Convert KCL Diagnostic to LSP Diagnostics.
-pub fn kcl_diag_to_lsp_diags_by_file(diag: &KCLDiagnostic, file_name: &str) -> Vec<Diagnostic> {
-    let mut diags = vec![];
-    for (idx, msg) in diag.messages.iter().enumerate() {
-        if msg.range.0.filename == file_name {
-            let mut related_msg = diag.messages.clone();
-            related_msg.remove(idx);
-            let code = if diag.code.is_some() {
-                Some(kcl_diag_id_to_lsp_diag_code(diag.code.clone().unwrap()))
-            } else {
-                None
-            };
-
-            let lsp_diag = kcl_msg_to_lsp_diags(
-                msg,
-                kcl_err_level_to_severity(diag.level),
-                related_msg,
-                code,
-            );
-
-            diags.push(lsp_diag);
-        }
-    }
-    diags
 }
 
 /// Convert KCL Diagnostic to LSP Diagnostics.
@@ -160,6 +133,36 @@ pub fn kcl_diag_to_lsp_diags(diag: &KCLDiagnostic) -> HashMap<String, Vec<Diagno
         diags_map.entry(filename).or_insert(vec![]).push(lsp_diag);
     }
     diags_map
+}
+
+/// Convert KCL Diagnostic to LSP Diagnostics.
+#[allow(unused)]
+pub(crate) fn kcl_diag_to_lsp_diags_by_file(
+    diag: &KCLDiagnostic,
+    file_name: &str,
+) -> Vec<Diagnostic> {
+    let mut diags = vec![];
+    for (idx, msg) in diag.messages.iter().enumerate() {
+        if msg.range.0.filename == file_name {
+            let mut related_msg = diag.messages.clone();
+            related_msg.remove(idx);
+            let code = if diag.code.is_some() {
+                Some(kcl_diag_id_to_lsp_diag_code(diag.code.clone().unwrap()))
+            } else {
+                None
+            };
+
+            let lsp_diag = kcl_msg_to_lsp_diags(
+                msg,
+                kcl_err_level_to_severity(diag.level),
+                related_msg,
+                code,
+            );
+
+            diags.push(lsp_diag);
+        }
+    }
+    diags
 }
 
 /// Convert KCL Diagnostic ID to LSP Diagnostics code.

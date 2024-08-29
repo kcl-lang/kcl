@@ -4,7 +4,7 @@ use kclvm_sema::core::global_state::GlobalState;
 use lsp_types::Location;
 use std::collections::HashSet;
 
-pub(crate) fn find_refs(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<Vec<Location>> {
+pub fn find_refs(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<Vec<Location>> {
     match gs.look_up_exact_symbol(kcl_pos) {
         Some(symbol_ref) => match gs.get_symbols().get_symbol(symbol_ref) {
             Some(symbol) => match symbol.get_definition() {

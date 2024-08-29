@@ -10,10 +10,7 @@ use lsp_types::{DocumentSymbol, DocumentSymbolResponse, SymbolKind};
 
 use crate::to_lsp::lsp_pos;
 
-pub(crate) fn document_symbol(
-    file: &str,
-    gs: &GlobalState,
-) -> Option<lsp_types::DocumentSymbolResponse> {
+pub fn document_symbol(file: &str, gs: &GlobalState) -> Option<lsp_types::DocumentSymbolResponse> {
     let mut document_symbols: Vec<DocumentSymbol> = vec![];
 
     let dummy_pos = Position {
