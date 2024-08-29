@@ -200,6 +200,7 @@ impl LanguageServerState {
         };
 
         // 2. Process changes
+
         self.process_vfs_changes();
         Ok(())
     }
@@ -256,6 +257,7 @@ impl LanguageServerState {
                                         .send(Task::ChangedFile(file.file_id, file.change_kind))
                                         .unwrap();
                                 }
+                                DBState::Failed(_) => continue,
                             }
                         }
 
@@ -264,17 +266,17 @@ impl LanguageServerState {
                             let tool = Arc::clone(&self.tool);
                             let (workspaces, failed) =
                                 lookup_compile_workspaces(&*tool.read(), &filename, true);
-                            for (workspace, opts) in workspaces {
-                                self.async_compile(workspace, opts, Some(file.file_id), true);
-                            }
-                            if self
-                                .temporary_workspace
-                                .read()
-                                .get(&file.file_id)
-                                .unwrap_or(&None)
-                                .is_none()
-                            {
+
+                            if workspaces.is_empty() {
                                 self.temporary_workspace.write().remove(&file.file_id);
+                                self.log_message(format!(
+                                    "Not found any workspace for {:?}",
+                                    filename
+                                ));
+                            } else {
+                                for (workspace, opts) in workspaces {
+                                    self.async_compile(workspace, opts, Some(file.file_id), true);
+                                }
                             }
                         } else {
                             self.temporary_workspace.write().remove(&file.file_id);
@@ -500,7 +502,7 @@ impl LanguageServerState {
                         Some(option_db) => match option_db {
                             DBState::Ready(db) => db.diags.clone(),
                             DBState::Compiling(db) => db.diags.clone(),
-                            DBState::Init => IndexSet::new(),
+                            DBState::Init | DBState::Failed(_) => IndexSet::new(),
                         },
                         None => IndexSet::new(),
                     }
@@ -512,15 +514,17 @@ impl LanguageServerState {
                         Some(state) => match state {
                             DBState::Ready(db) => DBState::Compiling(db.clone()),
                             DBState::Compiling(db) => DBState::Compiling(db.clone()),
-                            DBState::Init => DBState::Init,
+                            DBState::Init | DBState::Failed(_) => DBState::Init,
                         },
                         None => DBState::Init,
                     };
                     workspaces.insert(workspace.clone(), state);
                 }
+                let start = Instant::now();
+
                 let (diags, compile_res) = compile(
                     Params {
-                        file: filename,
+                        file: filename.clone(),
                         module_cache: Some(module_cache),
                         scope_cache: Some(scope_cache),
                         vfs: Some(snapshot.vfs),
@@ -528,6 +532,16 @@ impl LanguageServerState {
                     },
                     &mut files,
                     opts.1,
+                );
+
+                log_message(
+                    format!(
+                        "Compile workspace: {:?}, changed file: {:?}, use {:?} micros",
+                        workspace,
+                        filename,
+                        start.elapsed().as_micros()
+                    ),
+                    &sender,
                 );
 
                 let mut old_diags_maps = HashMap::new();
@@ -538,7 +552,7 @@ impl LanguageServerState {
                     }
                 }
 
-                // publich diags
+                // publish diags
                 let mut new_diags_maps = HashMap::new();
 
                 for diag in &diags {
@@ -595,7 +609,7 @@ impl LanguageServerState {
                     }
                     Err(e) => {
                         let mut workspaces = snapshot.workspaces.write();
-                        workspaces.remove(&workspace);
+                        workspaces.insert(workspace, DBState::Failed(e.to_string()));
                         if temp && changed_file_id.is_some() {
                             let mut temporary_workspace = snapshot.temporary_workspace.write();
                             temporary_workspace.remove(&changed_file_id.unwrap());

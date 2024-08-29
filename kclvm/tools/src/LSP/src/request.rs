@@ -99,6 +99,7 @@ impl LanguageServerSnapshot {
                 Some(db) => match db {
                     DBState::Ready(db) => Ok(Some(db.clone())),
                     DBState::Compiling(_) | DBState::Init => Ok(None),
+                    DBState::Failed(e) => Err(anyhow::anyhow!(e)),
                 },
                 None => Ok(None),
             },
@@ -312,6 +313,7 @@ pub(crate) fn handle_completion(
     if matches!(completion_trigger_character, Some('\n')) {
         match db_state {
             DBState::Compiling(_) | DBState::Init => return Err(anyhow!(LSPError::Retry)),
+            DBState::Failed(_) => return Ok(None),
             _ => {}
         }
     }
@@ -320,6 +322,7 @@ pub(crate) fn handle_completion(
         DBState::Ready(db) => db,
         DBState::Compiling(db) => db,
         DBState::Init => return Err(anyhow!(LSPError::Retry)),
+        DBState::Failed(_) => return Ok(None),
     };
 
     let kcl_pos = kcl_pos(&file, params.text_document_position.position);
