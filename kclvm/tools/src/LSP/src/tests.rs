@@ -2,6 +2,7 @@ use crossbeam_channel::after;
 use crossbeam_channel::select;
 use indexmap::IndexSet;
 use kclvm_ast::MAIN_PKG;
+use kclvm_driver::lookup_compile_workspace;
 use kclvm_driver::toolchain;
 use kclvm_driver::toolchain::Metadata;
 use kclvm_driver::WorkSpaceKind;
@@ -78,7 +79,6 @@ use crate::app::main_loop;
 use crate::compile::Params;
 use crate::goto_def::goto_def;
 use crate::hover::hover;
-use crate::state::KCLEntryCache;
 use crate::state::KCLGlobalStateCache;
 use crate::state::KCLVfs;
 use crate::to_lsp::kcl_diag_to_lsp_diags_by_file;
@@ -155,7 +155,7 @@ pub(crate) fn compile_test_file_and_metadata(
 
     let file = test_file.to_str().unwrap().to_string();
 
-    let entry_cache = KCLEntryCache::default();
+    let metadata = lookup_compile_workspace(&toolchain::default(), &file, true).2;
     let (diags, compile_res) = compile_with_params(Params {
         file: Some(file.clone()),
         module_cache: Some(KCLModuleCache::default()),
@@ -164,11 +164,6 @@ pub(crate) fn compile_test_file_and_metadata(
         gs_cache: Some(KCLGlobalStateCache::default()),
     });
     let (program, gs) = compile_res.unwrap();
-
-    let metadata = entry_cache
-        .read()
-        .get(&file)
-        .and_then(|metadata| metadata.0 .2.clone());
 
     (file, program, diags, gs, metadata)
 }
