@@ -28,15 +28,18 @@ use lsp_types::HoverContents;
 use lsp_types::HoverParams;
 use lsp_types::InitializeParams;
 use lsp_types::MarkedString;
+use lsp_types::PartialResultParams;
 use lsp_types::PublishDiagnosticsParams;
 use lsp_types::ReferenceContext;
 use lsp_types::ReferenceParams;
 use lsp_types::RenameParams;
+use lsp_types::SemanticTokensParams;
 use lsp_types::TextDocumentIdentifier;
 use lsp_types::TextDocumentItem;
 use lsp_types::TextDocumentPositionParams;
 use lsp_types::TextEdit;
 use lsp_types::Url;
+use lsp_types::WorkDoneProgressParams;
 use lsp_types::WorkspaceEdit;
 use lsp_types::WorkspaceFolder;
 
@@ -2247,4 +2250,101 @@ fn kcl_workspace_init_folder_test() {
     assert_eq!(expected, workspaces.keys().cloned().collect());
 
     assert!(failed.is_none());
+}
+
+#[test]
+fn init_workspace_sema_token_test() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("src")
+        .join("test_data")
+        .join("workspace")
+        .join("init")
+        .join("folder");
+
+    let mut a_path = root.clone();
+    a_path.push("a.k");
+
+    let mut c_path = root.clone();
+    c_path.push("sub");
+    c_path.push("c.k");
+
+    let a_path = a_path.to_str().unwrap();
+    let c_path = c_path.to_str().unwrap();
+    let a_src = std::fs::read_to_string(a_path).unwrap();
+    let c_src = std::fs::read_to_string(c_path).unwrap();
+    let initialize_params = InitializeParams {
+        workspace_folders: Some(vec![WorkspaceFolder {
+            uri: Url::from_file_path(root.clone()).unwrap(),
+            name: "test".to_string(),
+        }]),
+        ..Default::default()
+    };
+    let server = Project {}.server(initialize_params);
+
+    let a_url = Url::from_file_path(a_path).unwrap();
+    let c_url = Url::from_file_path(c_path).unwrap();
+
+    // Mock open file in init workspace
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: a_url.clone(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: a_src,
+            },
+        },
+    );
+
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+
+    let r: Request = Request::new(
+        id.into(),
+        "textDocument/semanticTokens/full".to_string(),
+        SemanticTokensParams {
+            text_document: TextDocumentIdentifier { uri: a_url },
+            work_done_progress_params: WorkDoneProgressParams {
+                work_done_token: None,
+            },
+            partial_result_params: PartialResultParams {
+                partial_result_token: None,
+            },
+        },
+    );
+
+    let res = server.send_and_receive(r);
+    assert!(res.result.is_some());
+
+    // Mock open file not in init workspace
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: c_url.clone(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: c_src,
+            },
+        },
+    );
+
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+
+    let r: Request = Request::new(
+        id.into(),
+        "textDocument/semanticTokens/full".to_string(),
+        SemanticTokensParams {
+            text_document: TextDocumentIdentifier { uri: c_url },
+            work_done_progress_params: WorkDoneProgressParams {
+                work_done_token: None,
+            },
+            partial_result_params: PartialResultParams {
+                partial_result_token: None,
+            },
+        },
+    );
+
+    let res = server.send_and_receive(r);
+    assert!(res.result.is_some());
 }

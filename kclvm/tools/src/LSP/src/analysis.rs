@@ -29,6 +29,7 @@ pub enum DBState {
     // The previous version of db
     Compiling(Arc<AnalysisDatabase>),
     Init,
+    Failed(String),
 }
 
 /// AnalysisDatabase holds the result of the compile
