@@ -53,7 +53,6 @@ use std::process::Command;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
-use std::time::Instant;
 
 use kclvm_ast::ast::Program;
 use kclvm_error::Diagnostic as KCLDiagnostic;
@@ -71,19 +70,20 @@ use proc_macro_crate::bench_test;
 
 use lsp_server::{Connection, Message, Notification, Request};
 
+use crate::compile::compile_with_params;
 use crate::completion::completion;
 use crate::from_lsp::file_path_from_url;
 
+use crate::app::main_loop;
+use crate::compile::Params;
 use crate::goto_def::goto_def;
 use crate::hover::hover;
-use crate::main_loop::main_loop;
 use crate::state::KCLEntryCache;
 use crate::state::KCLGlobalStateCache;
 use crate::state::KCLVfs;
 use crate::to_lsp::kcl_diag_to_lsp_diags_by_file;
-use crate::util::lookup_compile_unit_with_cache;
+use crate::util::apply_document_changes;
 use crate::util::to_json;
-use crate::util::{apply_document_changes, compile_with_params, Params};
 
 macro_rules! wait_async_compile {
     () => {
@@ -134,8 +134,6 @@ pub(crate) fn compile_test_file(
         module_cache: Some(KCLModuleCache::default()),
         scope_cache: Some(KCLScopeCache::default()),
         vfs: Some(KCLVfs::default()),
-        entry_cache: Some(KCLEntryCache::default()),
-        tool: Arc::new(RwLock::new(toolchain::default())),
         gs_cache: Some(KCLGlobalStateCache::default()),
     });
     let (program, gs) = compile_res.unwrap();
@@ -163,8 +161,6 @@ pub(crate) fn compile_test_file_and_metadata(
         module_cache: Some(KCLModuleCache::default()),
         scope_cache: Some(KCLScopeCache::default()),
         vfs: Some(KCLVfs::default()),
-        entry_cache: Some(entry_cache.clone()),
-        tool: Arc::new(RwLock::new(toolchain::default())),
         gs_cache: Some(KCLGlobalStateCache::default()),
     });
     let (program, gs) = compile_res.unwrap();
@@ -333,8 +329,6 @@ fn diagnostics_test() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        entry_cache: Some(KCLEntryCache::default()),
-        tool: Arc::new(RwLock::new(toolchain::default())),
         gs_cache: Some(KCLGlobalStateCache::default()),
     })
     .0;
@@ -524,8 +518,6 @@ fn complete_import_external_file_test() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        entry_cache: Some(KCLEntryCache::default()),
-        tool: Arc::new(RwLock::new(toolchain::default())),
         gs_cache: Some(KCLGlobalStateCache::default()),
     })
     .1
@@ -586,8 +578,6 @@ fn goto_import_external_file_test() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        entry_cache: Some(KCLEntryCache::default()),
-        tool: Arc::new(RwLock::new(toolchain::default())),
         gs_cache: Some(KCLGlobalStateCache::default()),
     });
     let gs = compile_res.unwrap().1;
@@ -939,29 +929,6 @@ fn cancel_test() {
     });
 
     assert!(server.receive_response(id.into()).is_none());
-}
-
-#[test]
-fn entry_test() {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let mut path = root.clone();
-    path.push("src/test_data/compile_unit/b.k");
-
-    let path = path.to_str().unwrap();
-
-    let tool = toolchain::default();
-    let entry = KCLEntryCache::default();
-    let start = Instant::now();
-    let _ = lookup_compile_unit_with_cache(&tool, &Some(Arc::clone(&entry)), path);
-
-    assert!(entry.read().get(&path.to_string()).is_some());
-    let first_compile_time = start.elapsed();
-
-    let start = Instant::now();
-    let _ = lookup_compile_unit_with_cache(&tool, &Some(entry), path);
-    let second_compile_time = start.elapsed();
-
-    assert!(first_compile_time > second_compile_time);
 }
 
 #[test]
@@ -1446,8 +1413,6 @@ fn konfig_goto_def_test_base() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        entry_cache: Some(KCLEntryCache::default()),
-        tool: Arc::new(RwLock::new(toolchain::default())),
         gs_cache: Some(KCLGlobalStateCache::default()),
     })
     .1
@@ -1541,8 +1506,6 @@ fn konfig_goto_def_test_main() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        entry_cache: Some(KCLEntryCache::default()),
-        tool: Arc::new(RwLock::new(toolchain::default())),
         gs_cache: Some(KCLGlobalStateCache::default()),
     })
     .1
@@ -1608,8 +1571,6 @@ fn konfig_completion_test_main() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        entry_cache: Some(KCLEntryCache::default()),
-        tool: Arc::new(RwLock::new(toolchain::default())),
         gs_cache: Some(KCLGlobalStateCache::default()),
     })
     .1
@@ -1724,8 +1685,6 @@ fn konfig_hover_test_main() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        entry_cache: Some(KCLEntryCache::default()),
-        tool: Arc::new(RwLock::new(toolchain::default())),
         gs_cache: Some(KCLGlobalStateCache::default()),
     })
     .1
@@ -1800,7 +1759,7 @@ fn konfig_hover_test_main() {
 #[test]
 fn lsp_version_test() {
     let args = vec!["kcl-language-server".to_string(), "version".to_string()];
-    let matches = crate::main_loop::app()
+    let matches = crate::app::app()
         .arg_required_else_help(false)
         .try_get_matches_from(args);
     match matches {
@@ -1815,7 +1774,7 @@ fn lsp_version_test() {
 #[test]
 fn lsp_run_test() {
     let args = vec!["kcl-language-server".to_string()];
-    let matches = crate::main_loop::app()
+    let matches = crate::app::app()
         .arg_required_else_help(false)
         .try_get_matches_from(args);
     match matches {
@@ -1830,7 +1789,7 @@ fn lsp_run_test() {
 #[test]
 fn lsp_invalid_subcommand_test() {
     let args = vec!["kcl-language-server".to_string(), "invalid".to_string()];
-    let matches = crate::main_loop::app()
+    let matches = crate::app::app()
         .arg_required_else_help(false)
         .try_get_matches_from(args);
     match matches {
@@ -2159,8 +2118,6 @@ fn compile_unit_test() {
         module_cache: None,
         scope_cache: None,
         vfs: Some(KCLVfs::default()),
-        entry_cache: Some(KCLEntryCache::default()),
-        tool: Arc::new(RwLock::new(toolchain::default())),
         gs_cache: Some(KCLGlobalStateCache::default()),
     })
     .1

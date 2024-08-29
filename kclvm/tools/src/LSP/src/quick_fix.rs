@@ -6,7 +6,7 @@ use lsp_types::{
 };
 use serde_json::Value;
 
-pub(crate) fn quick_fix(uri: &Url, diags: &[Diagnostic]) -> Vec<lsp_types::CodeActionOrCommand> {
+pub fn quick_fix(uri: &Url, diags: &[Diagnostic]) -> Vec<lsp_types::CodeActionOrCommand> {
     let mut code_actions: Vec<lsp_types::CodeActionOrCommand> = vec![];
     for diag in diags {
         if let Some(code) = &diag.code {
@@ -158,21 +158,18 @@ pub(crate) fn convert_code_to_kcl_diag_id(code: &NumberOrString) -> Option<Diagn
 
 #[cfg(test)]
 mod tests {
-
-    use kclvm_driver::toolchain;
     use lsp_types::{
         CodeAction, CodeActionKind, CodeActionOrCommand, Diagnostic, Position, Range, TextEdit,
         Url, WorkspaceEdit,
     };
-    use parking_lot::RwLock;
     use proc_macro_crate::bench_test;
-    use std::{path::PathBuf, sync::Arc};
+    use std::path::PathBuf;
 
     use super::quick_fix;
     use crate::{
+        compile::{compile_with_params, Params},
         state::KCLVfs,
         to_lsp::kcl_diag_to_lsp_diags_by_file,
-        util::{compile_with_params, Params},
     };
 
     #[test]
@@ -188,8 +185,6 @@ mod tests {
             module_cache: None,
             scope_cache: None,
             vfs: Some(KCLVfs::default()),
-            entry_cache: None,
-            tool: Arc::new(RwLock::new(toolchain::default())),
             gs_cache: None,
         })
         .0;

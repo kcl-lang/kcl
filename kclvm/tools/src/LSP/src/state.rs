@@ -1,7 +1,8 @@
 use crate::analysis::{Analysis, AnalysisDatabase, DBState, OpenFileInfo};
+use crate::compile::{compile, Params};
 use crate::from_lsp::file_path_from_url;
 use crate::to_lsp::{kcl_diag_to_lsp_diags, url_from_path};
-use crate::util::{compile, get_file_name, to_json, Params};
+use crate::util::{get_file_name, to_json};
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
 use indexmap::IndexSet;
 use kclvm_driver::toolchain::{self, Toolchain};
@@ -519,12 +520,10 @@ impl LanguageServerState {
                 }
                 let (diags, compile_res) = compile(
                     Params {
-                        file: filename.clone(),
+                        file: filename,
                         module_cache: Some(module_cache),
                         scope_cache: Some(scope_cache),
                         vfs: Some(snapshot.vfs),
-                        entry_cache: Some(entry),
-                        tool,
                         gs_cache: Some(gs_cache),
                     },
                     &mut files,

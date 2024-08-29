@@ -302,12 +302,13 @@ pub fn match_pkgpath_and_code(
     }
 }
 
-/// the rename_symbol API
-/// find all the occurrences of the target symbol and return the text edit actions to rename them
-/// pkg_root: the absolute file path to the root package
-/// vfs: contains all the files and contents to be renamed
-/// symbol_path: path to the symbol. The symbol path should be in the format of: `pkg.sub_pkg:name.sub_name`
-/// new_name: the new name of the symbol
+/// Find all the occurrences of the target symbol and return the text edit actions to rename them.
+///
+/// ## Parameters
+/// - pkg_root: the absolute file path to the root package
+/// - vfs: contains all the files and contents to be renamed
+/// - symbol_path: path to the symbol. The symbol path should be in the format of: `pkg.sub_pkg:name.sub_name`
+/// - new_name: the new name of the symbol
 pub fn rename_symbol<F>(
     pkg_root: &str,
     vfs: KCLVfs,

@@ -26,7 +26,7 @@ pub(crate) struct KCLSemanticToken {
     pub length: u32,
 }
 
-pub(crate) fn semantic_tokens_full(file: &str, gs: &GlobalState) -> Option<SemanticTokensResult> {
+pub fn semantic_tokens_full(file: &str, gs: &GlobalState) -> Option<SemanticTokensResult> {
     let mut kcl_tokens: Vec<KCLSemanticToken> = vec![];
     let sema_db = gs.get_sema_db();
     if let Some(file_sema) = sema_db.get_file_sema(file) {

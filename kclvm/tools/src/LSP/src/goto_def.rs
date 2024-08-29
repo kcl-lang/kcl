@@ -14,11 +14,8 @@ use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::core::symbol::SymbolRef;
 use lsp_types::GotoDefinitionResponse;
 
-// Navigates to the definition of an identifier.
-pub(crate) fn goto_def(
-    kcl_pos: &KCLPos,
-    gs: &GlobalState,
-) -> Option<lsp_types::GotoDefinitionResponse> {
+/// Navigates to the definition of an identifier.
+pub fn goto_def(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::GotoDefinitionResponse> {
     let mut res = IndexSet::new();
     let def = find_def(kcl_pos, gs, true);
     match def {
