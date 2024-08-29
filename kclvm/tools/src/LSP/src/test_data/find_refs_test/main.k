@@ -13,3 +13,6 @@ p2 = Person {
         name: a
     }
 }
+
+schema Inpust[input: str]:
+    s: str = input

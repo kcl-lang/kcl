@@ -9,8 +9,8 @@ pub fn find_refs(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<Vec<Location>> {
         Some(symbol_ref) => match gs.get_symbols().get_symbol(symbol_ref) {
             Some(symbol) => match symbol.get_definition() {
                 Some(def_ref) => {
-                    if def_ref.get_id() == symbol_ref.get_id() {
-                        if let Some(def) = gs.get_symbols().get_symbol(def_ref) {
+                    if let Some(def) = gs.get_symbols().get_symbol(def_ref) {
+                        if def.get_range() == symbol.get_range() {
                             let refs = def.get_references();
                             let mut refs_locs: HashSet<(KCLPos, KCLPos)> = refs
                                 .iter()
@@ -109,5 +109,19 @@ mod tests {
         "src/test_data/find_refs_test/main.k",
         6,
         7
+    );
+
+    find_ref_test_snapshot!(
+        find_refs_schema_arg_test,
+        "src/test_data/find_refs_test/main.k",
+        17,
+        17
+    );
+
+    find_ref_test_snapshot!(
+        find_refs_schema_arg_1_test,
+        "src/test_data/find_refs_test/main.k",
+        18,
+        17
     );
 }
