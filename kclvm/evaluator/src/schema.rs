@@ -474,7 +474,7 @@ pub(crate) fn schema_body(
         let index_sign_key_name = if let Some(index_signature) = &ctx.borrow().node.index_signature
         {
             if let Some(key_name) = &index_signature.node.key_name {
-                key_name.clone()
+                key_name.node.clone()
             } else {
                 "".to_string()
             }
@@ -663,7 +663,7 @@ fn update_schema_relaxed_attr(
                 s.undefined_value()
             };
             let key_name = if let Some(key_name) = &index_signature.node.key_name {
-                key_name.as_str()
+                key_name.node.as_str()
             } else {
                 ""
             };

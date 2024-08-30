@@ -511,13 +511,13 @@ impl<'ctx> Resolver<'ctx> {
             .collect();
         let index_signature = if let Some(index_signature) = &schema_stmt.index_signature {
             if let Some(index_sign_name) = &index_signature.node.key_name {
-                if schema_attr_names.contains(index_sign_name) {
+                if schema_attr_names.contains(&index_sign_name.node) {
                     self.handler.add_error(
                         ErrorKind::IndexSignatureError,
                         &[Message {
                             range: index_signature.get_span_pos(),
                             style: Style::LineAndColumn,
-                            message: format!("index signature attribute name '{}' cannot have the same name as schema attributes", index_sign_name),
+                            message: format!("index signature attribute name '{}' cannot have the same name as schema attributes", index_sign_name.node),
                             note: None,
                             suggested_replacement: None,
                         }],
@@ -549,7 +549,7 @@ impl<'ctx> Resolver<'ctx> {
                 );
             }
             Some(Box::new(SchemaIndexSignature {
-                key_name: index_signature.node.key_name.clone(),
+                key_name: index_signature.node.key_name.clone().map(|n| n.node),
                 key_ty,
                 val_ty,
                 any_other: index_signature.node.any_other,

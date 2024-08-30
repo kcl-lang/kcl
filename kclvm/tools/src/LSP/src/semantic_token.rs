@@ -139,6 +139,7 @@ pub(crate) fn kcl_semantic_tokens_to_semantic_tokens(
             pre_start = start;
             ret
         })
+        .filter(|token| token.delta_line != 0 || token.delta_start != 0)
         .collect();
     semantic_tokens
 }
@@ -189,6 +190,8 @@ mod tests {
                     // (1, 0, 1, 0),  // b
                     // (0, 4, 4, 8),  // func
                     // (0, 5, 1, 0)   // x
+                    // (2, 7, 8, 1)   // Manifest
+                    // (1, 5, 4, 0)]  // name
                     insta::assert_snapshot!(format!("{:?}", get));
                 }
                 lsp_types::SemanticTokensResult::Partial(_) => {

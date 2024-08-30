@@ -1341,7 +1341,11 @@ impl<'a> Parser<'a> {
                 } else {
                     false
                 };
-                (Some(key_name), self.parse_type_annotation(), any_other)
+                (
+                    Some(node_ref!(key_name, pos)),
+                    self.parse_type_annotation(),
+                    any_other,
+                )
             }
         };
 
