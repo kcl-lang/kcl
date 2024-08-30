@@ -14,3 +14,7 @@ func = lambda x{
 
 a = func("123")
 b = func(x="123")
+
+schema Manifest:
+    [name: str] = ""
+

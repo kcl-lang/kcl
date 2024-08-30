@@ -338,9 +338,15 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
         }
         if let Some(index_signature) = &schema_stmt.index_signature {
             if let Some(key_name) = &index_signature.node.key_name {
-                let (start, end) = index_signature.get_span_pos();
+                let (start, end) = key_name.get_span_pos();
                 let value = self.gs.get_symbols_mut().alloc_value_symbol(
-                    ValueSymbol::new(key_name.clone(), start, end, Some(schema_symbol), false),
+                    ValueSymbol::new(
+                        key_name.node.clone(),
+                        start,
+                        end,
+                        Some(schema_symbol),
+                        false,
+                    ),
                     self.ctx.get_node_key(&index_signature.id),
                     self.ctx.current_pkgpath.clone().unwrap(),
                 );
@@ -358,7 +364,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
 
                 self.gs
                     .get_scopes_mut()
-                    .add_def_to_scope(cur_scope, key_name.clone(), value);
+                    .add_def_to_scope(cur_scope, key_name.node.clone(), value);
 
                 self.walk_type_expr(Some(&index_signature.node.value_ty))?;
                 if let Some(value) = &index_signature.node.value {

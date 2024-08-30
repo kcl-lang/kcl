@@ -678,7 +678,7 @@ impl SchemaStmt {
 /// ```
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SchemaIndexSignature {
-    pub key_name: Option<String>,
+    pub key_name: Option<NodeRef<String>>,
     pub value: Option<NodeRef<Expr>>,
     pub any_other: bool,
     pub key_ty: NodeRef<Type>,
