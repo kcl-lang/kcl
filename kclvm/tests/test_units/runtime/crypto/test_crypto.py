@@ -84,7 +84,7 @@ class BaseTest(unittest.TestCase):
     def test_blake3(self):
         self.assertEqual(
             self.blake3(""),
-            "af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262e00f03e7b69af26b7faaf09fcd333050338ddfe085b8cc869ca98b206c08243a",
+            "af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
         )
 
 

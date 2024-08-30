@@ -36,10 +36,10 @@ use std::rc::Rc;
 use std::str::FromStr;
 
 use md5::Digest;
+use blake3::Hash as Blake3;
 use md5::Md5;
 use sha1::Sha1;
 use sha2::Sha256;
-use blake3::Hash as Blake3;
 
 use tracing::debug;
 
@@ -647,7 +647,10 @@ impl SourceFileHash {
                 value.copy_from_slice(&Sha256::digest(data));
             }
             SourceFileHashAlgorithm::Blake3 => {
-                value.copy_from_slice(&Blake3::hash(data).as_bytes());
+                let mut hasher = Blake3::new();
+                hasher.update(data);
+                let result = hasher.finalize();
+                value.copy_from_slice(result.as_bytes());
             }
         }
         hash

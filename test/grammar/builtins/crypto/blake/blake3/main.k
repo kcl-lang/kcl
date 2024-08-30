@@ -1,3 +1,3 @@
 import crypto
 
-sha = crypto.blake3("ABCDEF")
+blake3 = crypto.blake3("ABCDEF")
