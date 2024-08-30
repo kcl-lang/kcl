@@ -93,13 +93,26 @@ impl LanguageServerSnapshot {
     pub(crate) fn try_get_db(
         &self,
         path: &VfsPath,
+        sender: &Sender<Task>,
     ) -> anyhow::Result<Option<Arc<AnalysisDatabase>>> {
         match self.try_get_db_state(path) {
             Ok(db) => match db {
                 Some(db) => match db {
                     DBState::Ready(db) => Ok(Some(db.clone())),
-                    DBState::Compiling(_) | DBState::Init => Ok(None),
-                    DBState::Failed(e) => Err(anyhow::anyhow!(e)),
+                    DBState::Compiling(_) | DBState::Init => {
+                        log_message(
+                            format!("Try get {:?} db state: In compiling, retry", path),
+                            sender,
+                        )?;
+                        Ok(None)
+                    }
+                    DBState::Failed(e) => {
+                        log_message(
+                            format!("Try get {:?} db state: Failed: {:?}", path, e),
+                            sender,
+                        )?;
+                        Err(anyhow::anyhow!(e))
+                    }
                 },
                 None => Ok(None),
             },
@@ -133,7 +146,7 @@ impl LanguageServerSnapshot {
 
                         None => {
                             if file_info.workspaces.is_empty() {
-                                return Err(anyhow::anyhow!(LSPError::FileIdNotFound(
+                                return Err(anyhow::anyhow!(LSPError::WorkSpaceIsEmpty(
                                     path.clone()
                                 )));
                             }
@@ -162,11 +175,11 @@ impl LanguageServerSnapshot {
 pub(crate) fn handle_semantic_tokens_full(
     snapshot: LanguageServerSnapshot,
     params: lsp_types::SemanticTokensParams,
-    _sender: Sender<Task>,
+    sender: Sender<Task>,
 ) -> anyhow::Result<Option<SemanticTokensResult>> {
     let file = file_path_from_url(&params.text_document.uri)?;
     let path: VfsPath = from_lsp::abs_path(&params.text_document.uri)?.into();
-    let db = match snapshot.try_get_db(&path) {
+    let db = match snapshot.try_get_db(&path, &sender) {
         Ok(option_db) => match option_db {
             Some(db) => db,
             None => return Err(anyhow!(LSPError::Retry)),
@@ -244,7 +257,7 @@ pub(crate) fn handle_goto_definition(
     if !snapshot.verify_request_path(&path.clone().into(), &sender) {
         return Ok(None);
     };
-    let db = match snapshot.try_get_db(&path.clone().into()) {
+    let db = match snapshot.try_get_db(&path.clone().into(), &sender) {
         Ok(option_db) => match option_db {
             Some(db) => db,
             None => return Err(anyhow!(LSPError::Retry)),
@@ -272,7 +285,7 @@ pub(crate) fn handle_reference(
     if !snapshot.verify_request_path(&path.clone().into(), &sender) {
         return Ok(None);
     }
-    let db = match snapshot.try_get_db(&path.clone().into()) {
+    let db = match snapshot.try_get_db(&path.clone().into(), &sender) {
         Ok(option_db) => match option_db {
             Some(db) => db,
             None => return Err(anyhow!(LSPError::Retry)),
@@ -359,7 +372,7 @@ pub(crate) fn handle_hover(
     if !snapshot.verify_request_path(&path.clone().into(), &sender) {
         return Ok(None);
     }
-    let db = match snapshot.try_get_db(&path.clone().into()) {
+    let db = match snapshot.try_get_db(&path.clone().into(), &sender) {
         Ok(option_db) => match option_db {
             Some(db) => db,
             None => return Err(anyhow!(LSPError::Retry)),
@@ -378,11 +391,11 @@ pub(crate) fn handle_hover(
 pub(crate) fn handle_document_symbol(
     snapshot: LanguageServerSnapshot,
     params: lsp_types::DocumentSymbolParams,
-    _sender: Sender<Task>,
+    sender: Sender<Task>,
 ) -> anyhow::Result<Option<lsp_types::DocumentSymbolResponse>> {
     let file = file_path_from_url(&params.text_document.uri)?;
     let path = from_lsp::abs_path(&params.text_document.uri)?;
-    let db = match snapshot.try_get_db(&path.clone().into()) {
+    let db = match snapshot.try_get_db(&path.clone().into(), &sender) {
         Ok(option_db) => match option_db {
             Some(db) => db,
             None => return Err(anyhow!(LSPError::Retry)),
@@ -411,7 +424,7 @@ pub(crate) fn handle_rename(
     if !snapshot.verify_request_path(&path.clone().into(), &sender) {
         return Ok(None);
     }
-    let db = match snapshot.try_get_db(&path.clone().into()) {
+    let db = match snapshot.try_get_db(&path.clone().into(), &sender) {
         Ok(option_db) => match option_db {
             Some(db) => db,
             None => return Err(anyhow!(LSPError::Retry)),
@@ -445,11 +458,11 @@ pub(crate) fn handle_rename(
 pub(crate) fn handle_inlay_hint(
     snapshot: LanguageServerSnapshot,
     params: lsp_types::InlayHintParams,
-    _sender: Sender<Task>,
+    sender: Sender<Task>,
 ) -> anyhow::Result<Option<Vec<lsp_types::InlayHint>>> {
     let file = file_path_from_url(&params.text_document.uri)?;
     let path = from_lsp::abs_path(&params.text_document.uri)?;
-    let db = match snapshot.try_get_db(&path.clone().into()) {
+    let db = match snapshot.try_get_db(&path.clone().into(), &sender) {
         Ok(option_db) => match option_db {
             Some(db) => db,
             None => return Err(anyhow!(LSPError::Retry)),
@@ -463,13 +476,13 @@ pub(crate) fn handle_inlay_hint(
 pub(crate) fn handle_signature_help(
     snapshot: LanguageServerSnapshot,
     params: lsp_types::SignatureHelpParams,
-    _sender: Sender<Task>,
+    sender: Sender<Task>,
 ) -> anyhow::Result<Option<lsp_types::SignatureHelp>> {
     let file = file_path_from_url(&params.text_document_position_params.text_document.uri)?;
     let pos = kcl_pos(&file, params.text_document_position_params.position);
     let trigger_character = params.context.and_then(|ctx| ctx.trigger_character);
     let path = from_lsp::abs_path(&params.text_document_position_params.text_document.uri)?;
-    let db = match snapshot.try_get_db(&path.clone().into()) {
+    let db = match snapshot.try_get_db(&path.clone().into(), &sender) {
         Ok(option_db) => match option_db {
             Some(db) => db,
             None => return Err(anyhow!(LSPError::Retry)),
