@@ -231,6 +231,7 @@ impl LanguageServerState {
             // open file
             ChangeKind::Create => {
                 let filename = get_file_name(self.vfs.read(), file.file_id);
+                self.log_message(format!("Process changed file, open {:?}", filename));
                 match filename {
                     Ok(filename) => {
                         let uri = url_from_path(&filename).unwrap();
@@ -288,6 +289,7 @@ impl LanguageServerState {
             // edit file
             ChangeKind::Modify => {
                 let filename = get_file_name(self.vfs.read(), file.file_id);
+                self.log_message(format!("Process changed file, modify {:?}", filename));
                 match filename {
                     Ok(filename) => {
                         let opened_files = self.opened_files.read();
@@ -347,11 +349,25 @@ impl LanguageServerState {
             }
             // close file
             ChangeKind::Delete => {
+                let filename = get_file_name(self.vfs.read(), file.file_id);
+                self.log_message(format!("Process changed file, close {:?}", filename));
+
                 let mut temporary_workspace = self.temporary_workspace.write();
                 if let Some(workspace) = temporary_workspace.remove(&file.file_id) {
                     let mut workspaces = self.analysis.workspaces.write();
                     if let Some(w) = workspace {
-                        workspaces.remove(&w);
+                        let mut contains = false;
+                        let opened_file = self.opened_files.read();
+                        for file_info in opened_file.values() {
+                            if file_info.workspaces.contains(&w) {
+                                contains = true;
+                                break;
+                            }
+                        }
+                        if !contains {
+                            self.log_message(format!("Remove workspace {:?}", w));
+                            workspaces.remove(&w);
+                        }
                     }
                 }
             }
@@ -531,8 +547,9 @@ impl LanguageServerState {
 
                 log_message(
                     format!(
-                        "Compile workspace: {:?}, changed file: {:?}, use {:?} micros",
+                        "Compile workspace: {:?}, main_pkg files: {:?}, changed file: {:?}, use {:?} micros",
                         workspace,
+                        files,
                         filename,
                         start.elapsed().as_micros()
                     ),
@@ -590,6 +607,12 @@ impl LanguageServerState {
                 match compile_res {
                     Ok((prog, gs)) => {
                         let mut workspaces = snapshot.workspaces.write();
+                        log_message(
+                            format!(
+                                "Workspace {:?} compile success",workspace
+                            ),
+                            &sender,
+                        );
                         workspaces.insert(
                             workspace.clone(),
                             DBState::Ready(Arc::new(AnalysisDatabase { prog, gs, diags })),
@@ -597,6 +620,13 @@ impl LanguageServerState {
                         drop(workspaces);
                         if temp && changed_file_id.is_some() {
                             let mut temporary_workspace = snapshot.temporary_workspace.write();
+
+                            log_message(
+                                format!(
+                                    "Insert file {:?} and workspace {:?} to temporary workspace", filename, workspace
+                                ),
+                                &sender,
+                            );
                             temporary_workspace
                                 .insert(changed_file_id.unwrap(), Some(workspace.clone()));
                             drop(temporary_workspace);
@@ -604,9 +634,22 @@ impl LanguageServerState {
                     }
                     Err(e) => {
                         let mut workspaces = snapshot.workspaces.write();
+                        let mut temporary_workspace = snapshot.temporary_workspace.write();
+                        log_message(
+                            format!(
+                                "Workspace {:?} compile failed: {:?}",workspace, e
+                            ),
+                            &sender,
+                        );
                         workspaces.insert(workspace, DBState::Failed(e.to_string()));
                         if temp && changed_file_id.is_some() {
                             let mut temporary_workspace = snapshot.temporary_workspace.write();
+                            log_message(
+                                format!(
+                                    "Reomve temporary workspace file id: {:?}",changed_file_id
+                                ),
+                                &sender,
+                            );
                             temporary_workspace.remove(&changed_file_id.unwrap());
                             drop(temporary_workspace);
                         }
