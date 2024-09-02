@@ -356,15 +356,11 @@ impl LanguageServerState {
                 if let Some(workspace) = temporary_workspace.remove(&file.file_id) {
                     let mut workspaces = self.analysis.workspaces.write();
                     if let Some(w) = workspace {
-                        let mut contains = false;
+                        let mut contain = false;
                         let opened_file = self.opened_files.read();
-                        for file_info in opened_file.values() {
-                            if file_info.workspaces.contains(&w) {
-                                contains = true;
-                                break;
-                            }
-                        }
-                        if !contains {
+                        let contain = opened_file.values().any(|f| f.workspaces.contains(&w));
+
+                        if !contain {
                             self.log_message(format!("Remove workspace {:?}", w));
                             workspaces.remove(&w);
                         }
@@ -634,7 +630,6 @@ impl LanguageServerState {
                     }
                     Err(e) => {
                         let mut workspaces = snapshot.workspaces.write();
-                        let mut temporary_workspace = snapshot.temporary_workspace.write();
                         log_message(
                             format!(
                                 "Workspace {:?} compile failed: {:?}",workspace, e
