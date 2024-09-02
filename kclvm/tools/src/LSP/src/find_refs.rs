@@ -10,27 +10,25 @@ pub fn find_refs(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<Vec<Location>> {
             Some(symbol) => match symbol.get_definition() {
                 Some(def_ref) => {
                     if let Some(def) = gs.get_symbols().get_symbol(def_ref) {
-                        if def.get_range() == symbol.get_range() {
-                            let refs = def.get_references();
-                            let mut refs_locs: HashSet<(KCLPos, KCLPos)> = refs
-                                .iter()
-                                .filter_map(|symbol| {
-                                    gs.get_symbols()
-                                        .get_symbol(*symbol)
-                                        .map(|sym| sym.get_range())
-                                })
-                                .collect();
-                            refs_locs.insert(symbol.get_range());
-                            let mut res: Vec<Location> = refs_locs
-                                .iter()
-                                .filter_map(|(start, end)| {
-                                    lsp_location(start.filename.clone(), &start, &end)
-                                        .map(|loc| loc)
-                                })
-                                .collect();
-                            res.sort_by_key(|e| e.range.start.line);
-                            return Some(res);
-                        }
+                        let refs = def.get_references();
+                        let mut refs_locs: HashSet<(KCLPos, KCLPos)> = refs
+                            .iter()
+                            .filter_map(|symbol| {
+                                gs.get_symbols()
+                                    .get_symbol(*symbol)
+                                    .map(|sym| sym.get_range())
+                            })
+                            .collect();
+                        refs_locs.insert(symbol.get_range());
+                        refs_locs.insert(def.get_range());
+                        let mut res: Vec<Location> = refs_locs
+                            .iter()
+                            .filter_map(|(start, end)| {
+                                lsp_location(start.filename.clone(), &start, &end).map(|loc| loc)
+                            })
+                            .collect();
+                        res.sort_by_key(|e| e.range.start.line);
+                        return Some(res);
                     }
                 }
                 None => {}
@@ -91,10 +89,17 @@ mod tests {
     }
 
     find_ref_test_snapshot!(
-        find_refs_variable_test,
+        find_refs_variable_def_test,
         "src/test_data/find_refs_test/main.k",
         1,
         1
+    );
+
+    find_ref_test_snapshot!(
+        find_refs_variable_ref_test,
+        "src/test_data/find_refs_test/main.k",
+        2,
+        5
     );
 
     find_ref_test_snapshot!(
@@ -105,10 +110,24 @@ mod tests {
     );
 
     find_ref_test_snapshot!(
+        find_refs_schema_name_ref_test,
+        "src/test_data/find_refs_test/main.k",
+        9,
+        8
+    );
+
+    find_ref_test_snapshot!(
         find_refs_schema_attr_test,
         "src/test_data/find_refs_test/main.k",
         6,
         7
+    );
+
+    find_ref_test_snapshot!(
+        find_refs_schema_attr_ref_test,
+        "src/test_data/find_refs_test/main.k",
+        13,
+        11
     );
 
     find_ref_test_snapshot!(
