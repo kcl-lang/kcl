@@ -56,12 +56,6 @@ register_base64_member! {
                 has_default: false,
                 range: dummy_range(),
             },
-            Parameter {
-                name: "encoding".to_string(),
-                ty: Type::str_ref(),
-                has_default: true,
-                range: dummy_range(),
-            },
         ],
         r#"Decode the string `value` using the codec registered for encoding."#,
         false,

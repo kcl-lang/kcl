@@ -21,7 +21,6 @@ regex = "1.5.5"
 md5 = "0.7.0"
 sha2 = "0.9.8"
 sha1 = "0.6.0"
-blake3 = "1.5.4"
 chrono = "0.4.19"
 ahash = "0.7.2"
 indexmap = "1.0"
@@ -33,6 +32,8 @@ uuid = { version = "1.7.0", features = ["serde", "v4"] }
 handlebars = "5.1.2"
 walkdir = "2.5.0"
 anyhow = "1"
+blake3 = "1.5.4"
+encoding = "0.2.33"
 
 [[bin]]
 name = "gen-api-spec"
