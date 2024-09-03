@@ -35,8 +35,9 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::str::FromStr;
 
-use md5::Digest;
+use blake3;
 use blake3::Hash as Blake3;
+use md5::Digest;
 use md5::Md5;
 use sha1::Sha1;
 use sha2::Sha256;
@@ -647,10 +648,7 @@ impl SourceFileHash {
                 value.copy_from_slice(&Sha256::digest(data));
             }
             SourceFileHashAlgorithm::Blake3 => {
-                let mut hasher = Blake3::new();
-                hasher.update(data);
-                let result = hasher.finalize();
-                value.copy_from_slice(result.as_bytes());
+                value.copy_from_slice(blake3::hash(data).as_bytes());
             }
         }
         hash

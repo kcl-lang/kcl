@@ -356,7 +356,6 @@ impl LanguageServerState {
                 if let Some(workspace) = temporary_workspace.remove(&file.file_id) {
                     let mut workspaces = self.analysis.workspaces.write();
                     if let Some(w) = workspace {
-                        let mut contain = false;
                         let opened_file = self.opened_files.read();
                         let contain = opened_file.values().any(|f| f.workspaces.contains(&w));
 

@@ -86,6 +86,8 @@ mod eval;
 pub mod datetime;
 pub use self::datetime::*;
 
+pub mod encoding;
+
 pub mod json;
 pub use self::json::*;
 

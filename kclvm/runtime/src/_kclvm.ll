@@ -32,9 +32,9 @@
 
 declare void @kclvm_assert(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %value, %kclvm_value_ref_t* %msg);
 
-declare %kclvm_value_ref_t* @kclvm_base64_decode(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_base64_decode(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_base64_encode(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_base64_encode(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_builtin_abs(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
@@ -188,19 +188,21 @@ declare void @kclvm_context_set_strict_range_check(%kclvm_context_t* %p, %kclvm_
 
 declare %kclvm_value_ref_t* @kclvm_convert_collection_value(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %value, %kclvm_char_t* %tpe, %kclvm_value_ref_t* %is_in_schema);
 
-declare %kclvm_value_ref_t* @kclvm_crypto_filesha256(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_crypto_blake3(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_crypto_md5(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_crypto_filesha256(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_crypto_sha1(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_crypto_md5(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_crypto_sha224(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_crypto_sha1(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_crypto_sha256(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_crypto_sha224(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_crypto_sha384(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_crypto_sha256(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_crypto_sha512(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
+declare %kclvm_value_ref_t* @kclvm_crypto_sha384(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
+declare %kclvm_value_ref_t* @kclvm_crypto_sha512(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_crypto_uuid(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %_args, %kclvm_value_ref_t* %_kwargs);
 
