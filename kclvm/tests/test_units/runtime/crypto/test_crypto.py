@@ -38,6 +38,9 @@ class BaseTest(unittest.TestCase):
     def sha512(self, value: str) -> str:
         return self.dylib.Invoke(f"crypto.sha512", value)
 
+    def blake3(self, value: str) -> str:
+        return self.dylib.Invoke(f"crypto.blake3", value)
+
     def test_md5(self):
         self.assertEqual(
             self.md5("The quick brown fox jumps over the lazy dog"),
@@ -76,6 +79,12 @@ class BaseTest(unittest.TestCase):
         self.assertEqual(
             self.sha512(""),
             "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e",
+        )
+    
+    def test_blake3(self):
+        self.assertEqual(
+            self.blake3(""),
+            "af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262",
         )
 
 

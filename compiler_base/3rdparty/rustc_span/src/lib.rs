@@ -36,6 +36,7 @@ use std::rc::Rc;
 use std::str::FromStr;
 
 use md5::Digest;
+use blake3::Hash as Blake3;
 use md5::Md5;
 use sha1::Sha1;
 use sha2::Sha256;
@@ -602,6 +603,7 @@ pub enum SourceFileHashAlgorithm {
     Md5,
     Sha1,
     Sha256,
+    Blake3,
 }
 
 impl FromStr for SourceFileHashAlgorithm {
@@ -612,6 +614,7 @@ impl FromStr for SourceFileHashAlgorithm {
             "md5" => Ok(SourceFileHashAlgorithm::Md5),
             "sha1" => Ok(SourceFileHashAlgorithm::Sha1),
             "sha256" => Ok(SourceFileHashAlgorithm::Sha256),
+            "blake3" => Ok(SourceFileHashAlgorithm::Blake3),
             _ => Err(()),
         }
     }
@@ -643,6 +646,12 @@ impl SourceFileHash {
             SourceFileHashAlgorithm::Sha256 => {
                 value.copy_from_slice(&Sha256::digest(data));
             }
+            SourceFileHashAlgorithm::Blake3 => {
+                let mut hasher = Blake3::new();
+                hasher.update(data);
+                let result = hasher.finalize();
+                value.copy_from_slice(result.as_bytes());
+            }
         }
         hash
     }
@@ -663,6 +672,7 @@ impl SourceFileHash {
             SourceFileHashAlgorithm::Md5 => 16,
             SourceFileHashAlgorithm::Sha1 => 20,
             SourceFileHashAlgorithm::Sha256 => 32,
+            SourceFileHashAlgorithm::Blake3 => 32,
         }
     }
 }

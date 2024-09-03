@@ -1,5 +1,6 @@
 //! Copyright The KCL Authors. All rights reserved.
 
+extern crate blake3;
 extern crate md5;
 extern crate sha1;
 extern crate sha2;
@@ -165,6 +166,34 @@ pub extern "C" fn kclvm_crypto_sha512(
         return ValueRef::str(hex.as_ref()).into_raw(ctx);
     }
     panic!("sha512() missing 1 required positional argument: 'value'");
+}
+
+// blake3(value: str, encoding: str = "utf-8") -> str
+
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_crypto_blake3(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    _kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let ctx = mut_ptr_as_ref(ctx);
+    if let Some(s) = args.arg_i_str(0, None) {
+        let mut hasher = blake3::Hasher::new();
+        hasher.update(s.as_bytes());
+        let result = hasher.finalize();
+
+        let mut hex = String::with_capacity(2 * Sha256::output_size());
+        use std::fmt::Write;
+
+        for byte in result.as_bytes() {
+            let _ = write!(&mut hex, "{byte:02x}");
+        }
+
+        return ValueRef::str(hex.as_ref()).into_raw(ctx);
+    }
+    panic!("blake3() missing 1 required positional argument: 'value'");
 }
 
 #[no_mangle]
