@@ -1,12 +1,13 @@
 use indexmap::IndexMap;
 use petgraph::visit::EdgeRef;
-use std::path::{Path, PathBuf};
+
+use crate::File;
 
 /// A graph of files, where each file depends on zero or more other files.
 #[derive(Default)]
 pub struct FileGraph {
-    graph: petgraph::stable_graph::StableDiGraph<PathBuf, ()>,
-    path_to_node_index: IndexMap<PathBuf, petgraph::graph::NodeIndex>,
+    graph: petgraph::stable_graph::StableDiGraph<File, ()>,
+    path_to_node_index: IndexMap<File, petgraph::graph::NodeIndex>,
 }
 
 impl FileGraph {
@@ -15,9 +16,9 @@ impl FileGraph {
     /// For example, if the current graph has file A depending on B, and
     /// `update_file(pathA, &[pathC])` was called, then this function will remove the edge
     /// from A to B, and add an edge from A to C.
-    pub fn update_file<'a, I: IntoIterator<Item = &'a PathBuf>>(
+    pub fn update_file<'a, I: IntoIterator<Item = &'a File>>(
         &mut self,
-        from_path: &Path,
+        from_path: &File,
         to_paths: I,
     ) {
         let from_node_index = self.get_or_insert_node_index(from_path);
@@ -39,18 +40,18 @@ impl FileGraph {
     }
 
     /// Returns true if the given file is in the graph
-    pub fn contains_file(&mut self, path: &Path) -> bool {
-        self.path_to_node_index.contains_key(path)
+    pub fn contains_file(&self, file: &File) -> bool {
+        self.path_to_node_index.contains_key(file)
     }
 
     /// Returns a list of the direct dependencies of the given file.
     /// (does not include all transitive dependencies)
     /// The file path must be relative to the root of the file graph.
-    pub fn dependencies_of(&self, path: &Path) -> Vec<&PathBuf> {
+    pub fn dependencies_of(&self, file: &File) -> Vec<&File> {
         let node_index = self
             .path_to_node_index
-            .get(path)
-            .expect("path not in graph");
+            .get(file)
+            .expect("file not in graph");
         self.graph
             .edges(*node_index)
             .map(|edge| &self.graph[edge.target()])
@@ -59,7 +60,7 @@ impl FileGraph {
 
     /// Returns a list of files in the order they should be compiled
     /// Or a list of files that are part of a cycle, if one exists
-    pub fn toposort(&self) -> Result<Vec<PathBuf>, Vec<PathBuf>> {
+    pub fn toposort(&self) -> Result<Vec<File>, Vec<File>> {
         match petgraph::algo::toposort(&self.graph, None) {
             Ok(indices) => Ok(indices
                 .into_iter()
@@ -90,17 +91,17 @@ impl FileGraph {
 
     /// Returns all paths.
     #[inline]
-    pub fn paths(&self) -> Vec<PathBuf> {
+    pub fn paths(&self) -> Vec<File> {
         self.path_to_node_index.keys().cloned().collect::<Vec<_>>()
     }
 
-    fn get_or_insert_node_index(&mut self, path: &Path) -> petgraph::graph::NodeIndex {
-        if let Some(node_index) = self.path_to_node_index.get(path) {
+    fn get_or_insert_node_index(&mut self, file: &File) -> petgraph::graph::NodeIndex {
+        if let Some(node_index) = self.path_to_node_index.get(file) {
             return *node_index;
         }
 
-        let node_index = self.graph.add_node(path.to_owned());
-        self.path_to_node_index.insert(path.to_owned(), node_index);
+        let node_index = self.graph.add_node(file.to_owned());
+        self.path_to_node_index.insert(file.to_owned(), node_index);
         node_index
     }
 }

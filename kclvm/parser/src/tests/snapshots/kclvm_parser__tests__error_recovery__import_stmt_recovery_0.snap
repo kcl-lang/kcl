@@ -4,7 +4,6 @@ expression: "crate::tests::parsing_module_string(r#\"import\"#)"
 ---
 Module {
     filename: "",
-    pkg: "",
     doc: None,
     name: "",
     body: [
@@ -34,4 +33,3 @@ Module {
     ],
     comments: [],
 }
-

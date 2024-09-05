@@ -4,7 +4,6 @@ expression: "crate::tests::parsing_module_string(r#\"schema A:\na!!: int \"#)"
 ---
 Module {
     filename: "",
-    pkg: "",
     doc: None,
     name: "",
     body: [
@@ -183,4 +182,3 @@ Module {
     ],
     comments: [],
 }
-

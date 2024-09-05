@@ -9,6 +9,7 @@ use crate::{
 use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast;
 use kclvm_error::*;
+use std::io::Write;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::{cell::RefCell, path::Path};
@@ -121,7 +122,7 @@ impl<'ctx> Resolver<'ctx> {
             Some(modules) => {
                 for module in modules {
                     self.ctx.filename = module.filename.clone();
-                    self.ctx.pkgpath = module.pkg.clone();
+                    // self.ctx.pkgpath = module.pkg.clone();
                     for stmt in &module.body {
                         if let ast::Stmt::Import(import_stmt) = &stmt.node {
                             {

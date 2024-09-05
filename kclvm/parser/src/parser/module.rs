@@ -12,7 +12,6 @@ impl<'a> Parser<'a> {
         let body = self.parse_body();
         Module {
             filename: "".to_string(),
-            pkg: "".to_string(),
             name: "".to_string(),
             doc,
             comments: self.comments.clone(),

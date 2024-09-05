@@ -4,7 +4,6 @@ expression: "crate::tests::parsing_module_string(r#\"a() = b. = c\"#)"
 ---
 Module {
     filename: "",
-    pkg: "",
     doc: None,
     name: "",
     body: [

@@ -4,7 +4,6 @@ expression: "crate::tests::parsing_file_string(\"testdata/hello_win.k\")"
 ---
 {
   "filename": "hello_win.k",
-  "pkg": "__main__",
   "doc": null,
   "name": "__main__",
   "body": [
