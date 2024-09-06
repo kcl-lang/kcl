@@ -1,6 +1,7 @@
 use std::{
     env,
     panic::{catch_unwind, set_hook},
+    path::Path,
 };
 
 use compiler_base_span::{FilePathMapping, SourceMap};
