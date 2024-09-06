@@ -302,6 +302,7 @@ pub type KCLModuleCache = Arc<RwLock<ModuleCache>>;
 #[derive(Default, Debug)]
 pub struct ModuleCache {
     pub ast_cache: IndexMap<String, ast::Module>,
+    pub asts: ASTCache,
     /// Invalid modules and new code, equivalent to paths and k_code_list. The difference is that paths is in the main package.
     pub invalidate_module: HashMap<String, Option<String>>,
 }
@@ -341,7 +342,11 @@ impl Loader {
 
     fn _load_main(&mut self) -> Result<LoadProgramResult> {
         // for test:
-        // let asts = ASTCache::default();
+        
+        // let asts = match &self.module_cache {
+        //     Some(c) => c.read().unwrap().asts.clone(),
+        //     None => ASTCache::default(),
+        // };
         // return parse_kcl_program(
         //     self.sess.clone(),
         //     self.paths.clone(),
