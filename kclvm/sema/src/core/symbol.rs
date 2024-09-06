@@ -1078,15 +1078,6 @@ impl Symbol for SchemaSymbol {
         match self.attributes.get(name) {
             Some(attribute) => Some(*attribute),
             None => {
-                if let Some(parent_schema) = self.parent_schema {
-                    if let Some(attribute) =
-                        data.get_symbol(parent_schema)?
-                            .get_attribute(name, data, module_info)
-                    {
-                        return Some(attribute);
-                    }
-                }
-
                 if let Some(for_host) = self.for_host {
                     if let Some(attribute) =
                         data.get_symbol(for_host)?
@@ -1105,6 +1096,25 @@ impl Symbol for SchemaSymbol {
                     }
                 }
 
+                if let Some(_) = self.parent_schema {
+                    let mut parents = vec![];
+                    parents.push(self.id.unwrap());
+                    self.get_parents(data, &mut parents);
+                    if parents.len() > 1 {
+                        for parent_schema in &parents[1..] {
+                            if let Some(parent_schema) = data.get_schema_symbol(*parent_schema) {
+                                let parent_attr = parent_schema.get_self_attr(data, module_info);
+                                for attr in parent_attr {
+                                    if let Some(attribute) = data.get_symbol(attr) {
+                                        if attribute.get_name() == name {
+                                            return Some(attr);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 None
             }
         }
@@ -1115,24 +1125,17 @@ impl Symbol for SchemaSymbol {
         data: &Self::SymbolData,
         module_info: Option<&ModuleInfo>,
     ) -> Vec<SymbolRef> {
-        let mut result = vec![];
-        for attribute in self.attributes.values() {
-            result.push(*attribute);
-        }
-        if let Some(parent_schema) = self.parent_schema {
-            if let Some(parent) = data.get_symbol(parent_schema) {
-                result.append(&mut parent.get_all_attributes(data, module_info))
-            }
-        }
-
-        if let Some(for_host) = self.for_host {
-            if let Some(for_host) = data.get_symbol(for_host) {
-                result.append(&mut for_host.get_all_attributes(data, module_info))
-            }
-        }
-        for mixin in self.mixins.iter() {
-            if let Some(mixin) = data.get_symbol(*mixin) {
-                result.append(&mut mixin.get_all_attributes(data, module_info))
+        let mut result = self.get_self_attr(data, module_info);
+        if let Some(_) = self.parent_schema {
+            let mut parents = vec![];
+            parents.push(self.id.unwrap());
+            self.get_parents(data, &mut parents);
+            if parents.len() > 1 {
+                for parent in &parents[1..] {
+                    if let Some(schema_symbol) = data.get_schema_symbol(*parent) {
+                        result.append(&mut schema_symbol.get_self_attr(data, module_info))
+                    }
+                }
             }
         }
         result
@@ -1232,6 +1235,45 @@ impl SchemaSymbol {
             attributes: IndexMap::default(),
             r#ref: HashSet::default(),
         }
+    }
+
+    pub fn get_parents(&self, data: &SymbolData, parents: &mut Vec<SymbolRef>) {
+        if let Some(parent_schema_ref) = self.parent_schema {
+            if let Some(parent_schema) = data.get_symbol(parent_schema_ref) {
+                if let Some(schema_def) = parent_schema.get_definition() {
+                    if let Some(parent_schema) = data.get_schema_symbol(schema_def) {
+                        // circular reference
+                        if !parents.contains(&schema_def) {
+                            parents.push(schema_def);
+                            parent_schema.get_parents(data, parents);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn get_self_attr(
+        &self,
+        data: &SymbolData,
+        module_info: Option<&ModuleInfo>,
+    ) -> Vec<SymbolRef> {
+        let mut result = vec![];
+        for attribute in self.attributes.values() {
+            result.push(*attribute);
+        }
+
+        if let Some(for_host) = self.for_host {
+            if let Some(for_host) = data.get_symbol(for_host) {
+                result.append(&mut for_host.get_all_attributes(data, module_info))
+            }
+        }
+        for mixin in self.mixins.iter() {
+            if let Some(mixin) = data.get_symbol(*mixin) {
+                result.append(&mut mixin.get_all_attributes(data, module_info))
+            }
+        }
+        result
     }
 }
 

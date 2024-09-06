@@ -1526,4 +1526,20 @@ mod tests {
             2
         );
     }
+
+    #[test]
+    fn test_schema_circle_dep() {
+        let sess = Arc::new(ParseSession::default());
+
+        let path = "src/advanced_resolver/test_data/circle_dep/circle_dep.k"
+            .to_string()
+            .replace("/", &std::path::MAIN_SEPARATOR.to_string());
+        let mut program = load_program(sess.clone(), &[&path], None, None)
+            .unwrap()
+            .program;
+        let mut gs = GlobalState::default();
+        Namer::find_symbols(&program, &mut gs);
+        let node_ty_map = resolver::resolve_program(&mut program).node_ty_map;
+        AdvancedResolver::resolve_program(&program, &mut gs, node_ty_map).unwrap();
+    }
 }
