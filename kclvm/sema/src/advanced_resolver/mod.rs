@@ -1531,7 +1531,7 @@ mod tests {
     fn test_schema_circle_dep() {
         let sess = Arc::new(ParseSession::default());
 
-        let path = "src/advanced_resolver/test_data/circle_dep.k"
+        let path = "src/advanced_resolver/test_data/circle_dep/circle_dep.k"
             .to_string()
             .replace("/", &std::path::MAIN_SEPARATOR.to_string());
         let mut program = load_program(sess.clone(), &[&path], None, None)

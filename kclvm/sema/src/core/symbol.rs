@@ -1239,11 +1239,15 @@ impl SchemaSymbol {
 
     pub fn get_parents(&self, data: &SymbolData, parents: &mut Vec<SymbolRef>) {
         if let Some(parent_schema_ref) = self.parent_schema {
-            if let Some(parent_schema) = data.get_schema_symbol(parent_schema_ref) {
-                // circular reference
-                if !parents.contains(&parent_schema_ref) {
-                    parents.push(parent_schema_ref);
-                    parent_schema.get_parents(data, parents);
+            if let Some(parent_schema) = data.get_symbol(parent_schema_ref) {
+                if let Some(schema_def) = parent_schema.get_definition() {
+                    if let Some(parent_schema) = data.get_schema_symbol(schema_def) {
+                        // circular reference
+                        if !parents.contains(&schema_def) {
+                            parents.push(schema_def);
+                            parent_schema.get_parents(data, parents);
+                        }
+                    }
                 }
             }
         }
