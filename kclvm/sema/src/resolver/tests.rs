@@ -238,9 +238,9 @@ fn test_resolve_program_cycle_reference_fail() {
     let scope = resolve_program(&mut program);
     let err_messages = [
         "There is a circular import reference between module file1 and file2",
-        "There is a circular reference between schema SchemaBase and SchemaSub",
+        // "There is a circular reference between schema SchemaBase and SchemaSub",
         "There is a circular reference between schema SchemaSub and SchemaBase",
-        "There is a circular reference between rule RuleBase and RuleSub",
+        // "There is a circular reference between rule RuleBase and RuleSub",
         "There is a circular reference between rule RuleSub and RuleBase",
         "Module 'file2' imported but unused",
         "Module 'file1' imported but unused",

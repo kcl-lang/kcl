@@ -7,7 +7,7 @@ use crate::{
     ty::{Type, TypeKind},
 };
 use indexmap::{IndexMap, IndexSet};
-use kclvm_ast::ast;
+use kclvm_ast::{ast, MAIN_PKG};
 use kclvm_error::*;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -236,11 +236,16 @@ impl<'ctx> Resolver<'ctx> {
                             self.ctx
                                 .ty_ctx
                                 .add_dependencies(&self.ctx.pkgpath, &import_stmt.path.node);
-                            if self.ctx.ty_ctx.is_cyclic() {
+                            if self.ctx.ty_ctx.is_cyclic_from_node(&self.ctx.pkgpath) {
+                                let pkg_path = if self.ctx.pkgpath == MAIN_PKG {
+                                    self.ctx.filename.clone()
+                                } else {
+                                    self.ctx.pkgpath.clone()
+                                };
                                 self.handler.add_compile_error(
                                     &format!(
                                         "There is a circular import reference between module {} and {}",
-                                        self.ctx.pkgpath, import_stmt.path.node,
+                                        pkg_path, import_stmt.path.node,
                                     ),
                                     stmt.get_span_pos(),
                                 );

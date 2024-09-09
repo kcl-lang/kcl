@@ -959,7 +959,7 @@ impl SymbolData {
                     .insert(r#ref);
             }
             SymbolKind::Rule => {
-                self.attributes
+                self.rules
                     .get_mut(def.get_id())
                     .unwrap()
                     .r#ref
