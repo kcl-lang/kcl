@@ -1253,16 +1253,12 @@ impl SchemaSymbol {
         }
     }
 
-    pub fn get_self_attr(
+    pub fn get_protocol_and_mixin_attrs(
         &self,
         data: &SymbolData,
         module_info: Option<&ModuleInfo>,
     ) -> Vec<SymbolRef> {
         let mut result = vec![];
-        for attribute in self.attributes.values() {
-            result.push(*attribute);
-        }
-
         if let Some(for_host) = self.for_host {
             if let Some(for_host) = data.get_symbol(for_host) {
                 result.append(&mut for_host.get_all_attributes(data, module_info))
@@ -1273,6 +1269,20 @@ impl SchemaSymbol {
                 result.append(&mut mixin.get_all_attributes(data, module_info))
             }
         }
+
+        result
+    }
+
+    pub fn get_self_attr(
+        &self,
+        data: &SymbolData,
+        module_info: Option<&ModuleInfo>,
+    ) -> Vec<SymbolRef> {
+        let mut result = vec![];
+        for attribute in self.attributes.values() {
+            result.push(*attribute);
+        }
+        result.extend(self.get_protocol_and_mixin_attrs(data, module_info));
         result
     }
 }

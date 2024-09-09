@@ -1,0 +1,5 @@
+---
+source: tools/src/LSP/src/goto_def.rs
+expression: "format!(\"{:?}\", { fmt_resp(& res) })"
+---
+"path: \"src/test_data/goto_def_test/goto_protocol/goto_protocol.k\", range: Range { start: Position { line: 1, character: 4 }, end: Position { line: 1, character: 8 } }"
