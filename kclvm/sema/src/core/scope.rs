@@ -493,65 +493,74 @@ impl Scope for LocalSymbolScope {
     ) -> Option<SymbolRef> {
         match self.defs.get(name) {
             Some(symbol_ref) => return Some(*symbol_ref),
-            None => match (local, get_def_from_owner) {
-                // Search in the current scope and owner
-                (true, true) => {
+            None => {
+                // Try to get the attributes in the schema's protocol and mixin, and get the schema attr by `get_def_from_owner`
+                if let LocalSymbolScopeKind::SchemaDef = self.kind {
                     if let Some(owner) = self.owner.as_ref() {
-                        let owner_symbol = symbol_data.get_symbol(*owner)?;
-                        if let Some(symbol_ref) =
-                            owner_symbol.get_attribute(name, symbol_data, module_info)
-                        {
-                            return Some(symbol_ref);
+                        if let Some(owner_schema) = symbol_data.get_schema_symbol(*owner) {
+                            let attrs =
+                                owner_schema.get_protocol_and_mixin_attrs(symbol_data, module_info);
+                            for attr in attrs {
+                                if let Some(symbol) = symbol_data.get_symbol(attr) {
+                                    if symbol.get_name() == name {
+                                        return Some(attr);
+                                    }
+                                }
+                            }
                         }
                     }
-                    None
                 }
-                // Search only in the current scope
-                (true, false) => {
-                    let parent = scope_data.get_scope(&self.parent)?;
-                    return parent.look_up_def(
-                        name,
-                        scope_data,
-                        symbol_data,
-                        module_info,
-                        local,
-                        get_def_from_owner,
-                    );
-                }
-                // Search in the current scope, parent scope and owner
-                (false, true) => {
-                    if let Some(owner) = self.owner.as_ref() {
-                        let owner_symbol = symbol_data.get_symbol(*owner)?;
-                        if let Some(symbol_ref) =
-                            owner_symbol.get_attribute(name, symbol_data, module_info)
-                        {
-                            return Some(symbol_ref);
-                        }
-                    };
 
-                    let parent = scope_data.get_scope(&self.parent)?;
-                    return parent.look_up_def(
-                        name,
-                        scope_data,
-                        symbol_data,
-                        module_info,
-                        local,
-                        get_def_from_owner,
-                    );
+                match (local, get_def_from_owner) {
+                    // Search in the current scope and owner
+                    (true, true) => {
+                        if let Some(owner) = self.owner.as_ref() {
+                            let owner_symbol = symbol_data.get_symbol(*owner)?;
+                            if let Some(symbol_ref) =
+                                owner_symbol.get_attribute(name, symbol_data, module_info)
+                            {
+                                return Some(symbol_ref);
+                            }
+                        }
+                        None
+                    }
+                    // Search only in the current scope
+                    (true, false) => None,
+                    // Search in the current scope, parent scope and owner
+                    (false, true) => {
+                        if let Some(owner) = self.owner.as_ref() {
+                            let owner_symbol = symbol_data.get_symbol(*owner)?;
+                            if let Some(symbol_ref) =
+                                owner_symbol.get_attribute(name, symbol_data, module_info)
+                            {
+                                return Some(symbol_ref);
+                            }
+                        };
+
+                        let parent = scope_data.get_scope(&self.parent)?;
+                        return parent.look_up_def(
+                            name,
+                            scope_data,
+                            symbol_data,
+                            module_info,
+                            local,
+                            get_def_from_owner,
+                        );
+                    }
+                    // Search in the current and parent scope
+                    (false, false) => {
+                        let parent = scope_data.get_scope(&self.parent)?;
+                        return parent.look_up_def(
+                            name,
+                            scope_data,
+                            symbol_data,
+                            module_info,
+                            local,
+                            get_def_from_owner,
+                        );
+                    }
                 }
-                // Search in the current and parent scope
-                (false, false) => {
-                    let parent = scope_data.get_scope(&self.parent)?;
-                    return parent.look_up_def(
-                        name,
-                        scope_data,
-                        symbol_data,
-                        module_info,
-                        local,
-                        get_def_from_owner,
-                    );
-                }
-            },
+            }
         }
     }
 

@@ -551,4 +551,18 @@ mod tests {
         33,
         10
     );
+
+    goto_def_test_snapshot!(
+        goto_protocol_attr,
+        "src/test_data/goto_def_test/goto_protocol/goto_protocol.k",
+        6,
+        17
+    );
+
+    goto_def_test_snapshot!(
+        goto_protocol_attr_1,
+        "src/test_data/goto_def_test/goto_protocol/goto_protocol.k",
+        8,
+        13
+    );
 }
