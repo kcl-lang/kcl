@@ -161,6 +161,24 @@ pub unsafe extern "C" fn kcl_fmt(src_ptr: *const c_char) -> *const c_char {
     }
 }
 
+/// Exposes a normal kcl runtime error function to the WASM host.
+#[no_mangle]
+pub unsafe extern "C" fn kcl_runtime_err(buffer: *mut u8, length: usize) -> isize {
+    KCL_RUNTIME_PANIC_RECORD.with(|e| {
+        let message = &e.borrow().message;
+        if !message.is_empty() {
+            let bytes = message.as_bytes();
+            let copy_len = std::cmp::min(bytes.len(), length);
+            unsafe {
+                std::ptr::copy_nonoverlapping(bytes.as_ptr(), buffer, copy_len);
+            }
+            copy_len as isize
+        } else {
+            0
+        }
+    })
+}
+
 fn intern_fmt(src: &str) -> Result<String, String> {
     let api = API::default();
     let args = &FormatCodeArgs {
@@ -182,12 +200,12 @@ pub unsafe extern "C" fn kcl_malloc(size: usize) -> *mut u8 {
     if layout.size() > 0 {
         let ptr = alloc(layout);
         if !ptr.is_null() {
-            return ptr;
+            ptr
         } else {
             std::alloc::handle_alloc_error(layout);
         }
     } else {
-        return align as *mut u8;
+        align as *mut u8
     }
 }
 
