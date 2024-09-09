@@ -396,7 +396,7 @@ impl LanguageServerState {
     /// Sends a response to the client. This method logs the time it took us to reply
     /// to a request from the client.
     pub(super) fn respond(&mut self, response: lsp_server::Response) -> anyhow::Result<()> {
-        if let Some((method, start)) = self.request_queue.incoming.complete(response.id.clone()) {
+        if let Some((method, start)) = self.request_queue.incoming.complete(&response.id) {
             let duration = start.elapsed();
             self.send(response.into())?;
             self.log_message(format!(
