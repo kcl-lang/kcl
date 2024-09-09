@@ -1,6 +1,0 @@
-error[E2F04]: CannotFindModule
- --> ${CWD}/main.k:1:1
-  |
-1 | import pkg_empty
-  | ^ Cannot import the module pkg_empty from ${CWD}/pkg_empty, attempted import folder with no kcl files
-  |

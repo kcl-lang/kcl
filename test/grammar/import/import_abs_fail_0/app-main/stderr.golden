@@ -4,8 +4,8 @@ error[E2F04]: CannotFindModule
 1 | import .some0.pkg1 as some00  # some0 not found in app-main package
   | ^ Cannot find the module .some0.pkg1 from ${CWD}/some0/pkg1
   |
-suggestion: try 'kcl mod add app-main' to download the package not found
-suggestion: find more package on 'https://artifacthub.io'
+suggestion: try 'kcl mod add app-main' to download the missing package
+suggestion: browse more packages at 'https://artifacthub.io'
 error[E2G22]: TypeError
  --> ${CWD}/main.k:3:9
   |
