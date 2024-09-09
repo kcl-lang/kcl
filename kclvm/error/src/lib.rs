@@ -554,11 +554,26 @@ impl SessionDiagnostic for Diagnostic {
                             diag.append_component(Box::new(format!("{dl}\n")));
                         }
                         None => {
-                            diag.append_component(Box::new(format!("{}\n", msg.message)));
+                            let info = msg.range.0.info();
+                            if !info.is_empty() {
+                                diag.append_component(Box::new(format!(
+                                    "{}: {}\n",
+                                    info, msg.message
+                                )));
+                            } else {
+                                diag.append_component(Box::new(format!("{}\n", msg.message)));
+                            }
                         }
                     };
                 }
-                Err(_) => diag.append_component(Box::new(format!("{}\n", msg.message))),
+                Err(_) => {
+                    let info = msg.range.0.info();
+                    if !info.is_empty() {
+                        diag.append_component(Box::new(format!("{}: {}\n", info, msg.message)));
+                    } else {
+                        diag.append_component(Box::new(format!("{}\n", msg.message)));
+                    }
+                }
             };
             if let Some(note) = &msg.note {
                 diag.append_component(Box::new(Label::Note));

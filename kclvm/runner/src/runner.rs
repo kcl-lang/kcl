@@ -460,7 +460,7 @@ impl LibRunner {
 }
 
 thread_local! {
-    static KCL_RUNTIME_PANIC_RECORD: RefCell<RuntimePanicRecord>  = RefCell::new(RuntimePanicRecord::default())
+    pub static KCL_RUNTIME_PANIC_RECORD: RefCell<RuntimePanicRecord>  = RefCell::new(RuntimePanicRecord::default())
 }
 
 pub struct FastRunner {
@@ -491,7 +491,7 @@ impl FastRunner {
                 } else if let Some(s) = info.payload().downcast_ref::<String>() {
                     (*s).clone()
                 } else {
-                    "".to_string()
+                    "unknown runtime error".to_string()
                 };
                 if let Some(location) = info.location() {
                     record.rust_file = location.file().to_string();
