@@ -505,13 +505,13 @@ impl Loader {
                     }],
                 );
                 let mut suggestions =
-                    vec![format!("find more package on 'https://artifacthub.io'")];
+                    vec![format!("browse more packages at 'https://artifacthub.io'")];
 
                 if let Ok(pkg_name) = parse_external_pkg_name(pkg_path) {
                     suggestions.insert(
                         0,
                         format!(
-                            "try 'kcl mod add {}' to download the package not found",
+                            "try 'kcl mod add {}' to download the missing package",
                             pkg_name
                         ),
                     );
@@ -623,11 +623,6 @@ impl Loader {
 
         // If there is a circular import, return the information of the found package.
         if pkgs.contains_key(&pkg_info.pkg_path) {
-            return Ok(Some(pkg_info));
-        }
-
-        if pkg_info.k_files.is_empty() {
-            self.missing_pkgs.push(pkgpath);
             return Ok(Some(pkg_info));
         }
 
@@ -769,9 +764,9 @@ impl Loader {
         pkg_root: &str,
         pkg_path: &str,
     ) -> Result<Option<PkgInfo>> {
-        match self.pkg_exists(vec![pkg_root.to_string()], pkg_path) {
+        match self.pkg_exists(&[pkg_root.to_string()], pkg_path) {
             Some(internal_pkg_root) => {
-                let fullpath = if pkg_name == kclvm_ast::MAIN_PKG {
+                let full_pkg_path = if pkg_name == kclvm_ast::MAIN_PKG {
                     pkg_path.to_string()
                 } else {
                     format!("{}.{}", pkg_name, pkg_path)
@@ -780,7 +775,7 @@ impl Loader {
                 Ok(Some(PkgInfo::new(
                     pkg_name.to_string(),
                     internal_pkg_root,
-                    fullpath,
+                    full_pkg_path,
                     k_files,
                 )))
             }
@@ -800,7 +795,7 @@ impl Loader {
         let external_pkg_root = if let Some(root) = self.opts.package_maps.get(&pkg_name) {
             PathBuf::from(root).join(KCL_MOD_FILE)
         } else {
-            match self.pkg_exists(self.opts.vendor_dirs.clone(), pkg_path) {
+            match self.pkg_exists(&self.opts.vendor_dirs, pkg_path) {
                 Some(path) => PathBuf::from(path).join(&pkg_name).join(KCL_MOD_FILE),
                 None => return Ok(None),
             }
@@ -831,17 +826,17 @@ impl Loader {
     ///
     /// # Notes
     ///
-    /// All paths in [`pkgpath`] must contain the kcl.mod file.
     /// It returns the parent directory of kcl.mod if present, or none if not.
-    fn pkg_exists(&self, pkgroots: Vec<String>, pkgpath: &str) -> Option<String> {
+    fn pkg_exists(&self, pkgroots: &[String], pkgpath: &str) -> Option<String> {
         pkgroots
             .into_iter()
-            .find(|root| self.pkg_exists_in_path(root.to_string(), pkgpath))
+            .find(|root| self.pkg_exists_in_path(root, pkgpath))
+            .cloned()
     }
 
     /// Search for [`pkgpath`] under [`path`].
-    /// It only returns [`true`] if [`path`]/[`pkgpath`] or [`path`]/[`kcl.mod`] exists.
-    fn pkg_exists_in_path(&self, path: String, pkgpath: &str) -> bool {
+    /// It only returns [`true`] if [`path`]/[`pkgpath`] or [`path`]/[`pkgpath.k`] exists.
+    fn pkg_exists_in_path(&self, path: &str, pkgpath: &str) -> bool {
         let mut pathbuf = PathBuf::from(path);
         pkgpath.split('.').for_each(|s| pathbuf.push(s));
         pathbuf.exists() || pathbuf.with_extension(KCL_FILE_EXTENSION).exists()

@@ -428,9 +428,9 @@ fn get_main_files_from_pkg_path(
 
     for (i, path) in path_list.iter().enumerate() {
         // read dir/*.k
-        if is_dir(path) {
+        if !path.is_empty() && is_dir(path) {
             if opts.k_code_list.len() > i {
-                return Err(anyhow::anyhow!("Invalid code list"));
+                return Err(anyhow::anyhow!("Invalid code list for the path {}", path));
             }
             // k_code_list
             for s in get_dir_files(path, false)? {

@@ -376,8 +376,8 @@ pub fn test_import_vendor_without_vendor_home() {
             let errors = sess.classification().0;
             let msgs = [
                 "pkgpath assign not found in the program",
-                "try 'kcl mod add assign' to download the package not found",
-                "find more package on 'https://artifacthub.io'",
+                "try 'kcl mod add assign' to download the missing package",
+                "browse more packages at 'https://artifacthub.io'",
                 "pkgpath assign.assign not found in the program",
             ];
             assert_eq!(errors.len(), msgs.len());
@@ -400,8 +400,8 @@ pub fn test_import_vendor_without_vendor_home() {
             let errors = sess.classification().0;
             let msgs = [
                 "pkgpath assign not found in the program",
-                "try 'kcl mod add assign' to download the package not found",
-                "find more package on 'https://artifacthub.io'",
+                "try 'kcl mod add assign' to download the missing package",
+                "browse more packages at 'https://artifacthub.io'",
                 "pkgpath assign.assign not found in the program",
             ];
             assert_eq!(errors.len(), msgs.len());
@@ -724,8 +724,8 @@ pub fn test_pkg_not_found_suggestion() {
             let errors = sess.classification().0;
             let msgs = [
                 "pkgpath k9s not found in the program",
-                "try 'kcl mod add k9s' to download the package not found",
-                "find more package on 'https://artifacthub.io'",
+                "try 'kcl mod add k9s' to download the missing package",
+                "browse more packages at 'https://artifacthub.io'",
             ];
             assert_eq!(errors.len(), msgs.len());
             for (diag, m) in errors.iter().zip(msgs.iter()) {

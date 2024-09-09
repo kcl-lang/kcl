@@ -29,8 +29,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
 
     fn walk_expr_stmt(&mut self, expr_stmt: &'ctx ast::ExprStmt) -> Self::Result {
         let expr_types = self.exprs(&expr_stmt.exprs);
-        if !expr_types.is_empty() {
-            let ty = expr_types.last().unwrap().clone();
+        if let Some(last) = expr_types.last() {
+            let ty = last.clone();
             if expr_types.len() > 1 {
                 self.handler.add_compile_error(
                     "expression statement can only have one expression",
@@ -296,9 +296,9 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
 
     fn walk_if_stmt(&mut self, if_stmt: &'ctx ast::IfStmt) -> Self::Result {
         self.expr(&if_stmt.cond);
-        self.stmts(&if_stmt.body);
-        self.stmts(&if_stmt.orelse);
-        self.any_ty()
+        let if_ty = self.stmts(&if_stmt.body);
+        let orelse_ty = self.stmts(&if_stmt.orelse);
+        sup(&[if_ty, orelse_ty])
     }
 
     fn walk_import_stmt(&mut self, _import_stmt: &'ctx ast::ImportStmt) -> Self::Result {

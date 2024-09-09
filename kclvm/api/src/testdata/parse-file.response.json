@@ -21,7 +21,7 @@
             "code": "Suggestions",
             "messages": [
                 {
-                    "msg": "try 'kcl mod add data' to download the package not found",
+                    "msg": "try 'kcl mod add data' to download the missing package",
                     "pos": {
                         "line": 0,
                         "column": 0,
@@ -35,7 +35,7 @@
             "code": "Suggestions",
             "messages": [
                 {
-                    "msg": "find more package on 'https://artifacthub.io'",
+                    "msg": "browse more packages at 'https://artifacthub.io'",
                     "pos": {
                         "line": 0,
                         "column": 0,

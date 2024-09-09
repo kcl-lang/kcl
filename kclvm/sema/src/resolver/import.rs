@@ -44,9 +44,9 @@ impl<'ctx> Resolver<'ctx> {
                                         range: stmt.get_span_pos(),
                                         style: Style::Line,
                                         message: format!(
-                                            "Cannot import the module {} from {}, attempted import folder with no kcl files",
+                                            "Failed to import the module {} from {}. No KCL files found in the specified folder",
                                             import_stmt.rawpath,
-                                            real_path.to_str().unwrap()
+                                            real_path.to_str().unwrap(),
                                         ),
                                         note: None,
                                         suggested_replacement: None,
@@ -67,14 +67,15 @@ impl<'ctx> Resolver<'ctx> {
                                         suggested_replacement: None,
                                     }],
                                 );
-                                let mut suggestions =
-                                    vec![format!("find more package on 'https://artifacthub.io'")];
+                                let mut suggestions = vec![format!(
+                                    "browse more packages at 'https://artifacthub.io'"
+                                )];
 
                                 if let Ok(pkg_name) = parse_external_pkg_name(pkgpath) {
                                     suggestions.insert(
                                         0,
                                         format!(
-                                            "try 'kcl mod add {}' to download the package not found",
+                                            "try 'kcl mod add {}' to download the missing package",
                                             pkg_name
                                         ),
                                     );
