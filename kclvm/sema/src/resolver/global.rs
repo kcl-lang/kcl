@@ -765,7 +765,7 @@ impl<'ctx> Resolver<'ctx> {
                 self.ctx
                     .ty_ctx
                     .add_dependencies(&schema_runtime_ty, &parent_schema_runtime_ty);
-                if self.ctx.ty_ctx.is_cyclic() {
+                if self.ctx.ty_ctx.is_cyclic_from_node(&schema_runtime_ty) {
                     self.handler.add_compile_error(
                         &format!(
                             "There is a circular reference between schema {} and {}",
@@ -877,7 +877,7 @@ impl<'ctx> Resolver<'ctx> {
                 self.ctx
                     .ty_ctx
                     .add_dependencies(&schema_runtime_ty, &parent_schema_runtime_ty);
-                if self.ctx.ty_ctx.is_cyclic() {
+                if self.ctx.ty_ctx.is_cyclic_from_node(&schema_runtime_ty) {
                     self.handler.add_compile_error(
                         &format!(
                             "There is a circular reference between rule {} and {}",

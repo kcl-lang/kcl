@@ -4,6 +4,7 @@ use std::sync::Arc;
 use super::{sup, DictType, Type, TypeFlags, TypeKind, TypeRef};
 use petgraph::algo::is_cyclic_directed;
 use petgraph::graph::{DiGraph, NodeIndex};
+use petgraph::visit::{depth_first_search, DfsEvent};
 
 /// TypeContext responsible for type generation, calculation,
 /// and equality and subtype judgment between types.
@@ -49,10 +50,18 @@ impl TypeContext {
         }
     }
 
-    /// Return true if the dep graph contains a cycle.
+    /// Return true if the dep graph contains a cycle from node.
     #[inline]
-    pub fn is_cyclic(&self) -> bool {
-        is_cyclic_directed(&self.dep_graph)
+    pub fn is_cyclic_from_node(&self, node: &String) -> bool {
+        let idx = match self.node_index_map.get(node) {
+            Some(idx) => idx,
+            None => return false,
+        };
+        depth_first_search(&self.dep_graph, vec![idx.clone()], |event| match event {
+            DfsEvent::BackEdge(_, _) => Err(()),
+            _ => Ok(()),
+        })
+        .is_err()
     }
 
     /// Add dependencies between "from" and "to".
