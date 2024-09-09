@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use super::{sup, DictType, Type, TypeFlags, TypeKind, TypeRef};
-use petgraph::algo::is_cyclic_directed;
 use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::visit::{depth_first_search, DfsEvent};
 

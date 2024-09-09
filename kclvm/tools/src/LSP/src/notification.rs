@@ -36,7 +36,7 @@ impl LanguageServerState {
             lsp_types::NumberOrString::Number(id) => id.into(),
             lsp_types::NumberOrString::String(id) => id.into(),
         };
-        self.request_queue.incoming.complete(id);
+        self.request_queue.incoming.complete(&id);
         Ok(())
     }
 
