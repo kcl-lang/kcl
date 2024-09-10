@@ -78,48 +78,17 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         self.add_target_var(name);
         // The right value of the unification_stmt is a schema_expr.
         let value = self.walk_schema_expr(&unification_stmt.value.node)?;
-        if self.scope_level() == GLOBAL_LEVEL || self.is_in_lambda() {
-            if self.resolve_variable(name) {
-                let mut org_value = self.walk_identifier_with_ctx(
-                    &unification_stmt.target.node,
-                    &ast::ExprContext::Load,
-                    None,
-                )?;
-                let value = org_value.bin_aug_bit_or(&mut self.runtime_ctx.borrow_mut(), &value);
-                // Store the identifier value
-                self.walk_identifier_with_ctx(
-                    &unification_stmt.target.node,
-                    &ast::ExprContext::Store,
-                    Some(value.clone()),
-                )?;
-                return Ok(value.clone());
-            } else {
-                self.walk_identifier_with_ctx(
-                    &unification_stmt.target.node,
-                    &unification_stmt.target.node.ctx,
-                    Some(value.clone()),
-                )?;
-                return Ok(value);
-            }
-        // Local variables including schema/rule/lambda
-        } else if self.is_in_schema() {
-            // Load the identifier value
-            let org_value = self
-                .walk_identifier_with_ctx(
-                    &unification_stmt.target.node,
-                    &ast::ExprContext::Load,
-                    None,
-                )
-                .unwrap_or(self.undefined_value());
-            let value = self.bit_or(org_value, value);
-            // Store the identifier value
-            self.walk_identifier_with_ctx(
-                &unification_stmt.target.node,
-                &ast::ExprContext::Store,
-                Some(value.clone()),
-            )?;
-            return Ok(value);
-        }
+        // Load the identifier value
+        let org_value = self
+            .walk_identifier_with_ctx(&unification_stmt.target.node, &ast::ExprContext::Load, None)
+            .unwrap_or(self.undefined_value());
+        let value = self.bit_or(org_value, value);
+        // Store the identifier value
+        self.walk_identifier_with_ctx(
+            &unification_stmt.target.node,
+            &ast::ExprContext::Store,
+            Some(value.clone()),
+        )?;
         self.pop_target_var();
         Ok(value)
     }
