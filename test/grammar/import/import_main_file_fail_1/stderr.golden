@@ -1,3 +1,3 @@
 error[E3M38]: error[E1001]: RecursiveLoad
 Could not compiles due to cyclic import statements
-- /Users/zz/code/he1pa/KCLVM/test/grammar/import/import_main_file_fail_1/main.k
+- ${CWD}/main.k
