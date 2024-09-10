@@ -1,0 +1,27 @@
+frontEnd:
+  name: app
+res1:
+- resources:
+    resource1:
+    - a: a
+    resource2:
+    - b: b
+    resource3:
+    - c: c
+    - c: c
+  count: 4
+res2:
+- resources:
+    resource1:
+    - a: a
+    resource2:
+    - b: b
+    resource3:
+    - c: c
+    - c: c
+  count: 4
+resources:
+  resource1:
+  - a: a
+  resource2:
+  - b: b
