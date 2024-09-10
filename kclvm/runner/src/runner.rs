@@ -14,6 +14,8 @@ use kclvm_runtime::kclvm_plugin_init;
 #[cfg(feature = "llvm")]
 use kclvm_runtime::FFIRunOptions;
 use kclvm_runtime::{Context, PanicInfo, RuntimePanicRecord};
+#[cfg(target_arch = "wasm32")]
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::ffi::OsStr;
 use std::os::raw::c_char;
@@ -460,8 +462,32 @@ impl LibRunner {
 }
 
 thread_local! {
-    pub static KCL_RUNTIME_PANIC_RECORD: RefCell<RuntimePanicRecord>  = RefCell::new(RuntimePanicRecord::default())
+    pub static KCL_RUNTIME_PANIC_RECORD: RefCell<RuntimePanicRecord> = RefCell::new(RuntimePanicRecord::default())
 }
+
+#[cfg(target_arch = "wasm32")]
+static ONCE_PANIC_HOOK: Lazy<()> = Lazy::new(|| {
+    std::panic::set_hook(Box::new(|info: &std::panic::PanicInfo| {
+        KCL_RUNTIME_PANIC_RECORD.with(|record| {
+            let mut record = record.borrow_mut();
+            record.kcl_panic_info = true;
+            record.message = if let Some(s) = info.payload().downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = info.payload().downcast_ref::<&String>() {
+                (*s).clone()
+            } else if let Some(s) = info.payload().downcast_ref::<String>() {
+                (*s).clone()
+            } else {
+                "unknown runtime error".to_string()
+            };
+            if let Some(location) = info.location() {
+                record.rust_file = location.file().to_string();
+                record.rust_line = location.line() as i32;
+                record.rust_col = location.column() as i32;
+            }
+        })
+    }));
+});
 
 pub struct FastRunner {
     opts: RunnerOptions,
@@ -479,7 +505,13 @@ impl FastRunner {
     pub fn run(&self, program: &ast::Program, args: &ExecProgramArgs) -> Result<ExecProgramResult> {
         let ctx = Rc::new(RefCell::new(args_to_ctx(program, args)));
         let evaluator = Evaluator::new_with_runtime_ctx(program, ctx.clone());
+        #[cfg(target_arch = "wasm32")]
+        // Ensure the panic hook is set (this will only happen once) for the WASM target,
+        // because it is single threaded.
+        Lazy::force(&ONCE_PANIC_HOOK);
+        #[cfg(not(target_arch = "wasm32"))]
         let prev_hook = std::panic::take_hook();
+        #[cfg(not(target_arch = "wasm32"))]
         std::panic::set_hook(Box::new(|info: &std::panic::PanicInfo| {
             KCL_RUNTIME_PANIC_RECORD.with(|record| {
                 let mut record = record.borrow_mut();
@@ -514,6 +546,7 @@ impl FastRunner {
             }
             evaluator.run()
         });
+        #[cfg(not(target_arch = "wasm32"))]
         std::panic::set_hook(prev_hook);
         KCL_RUNTIME_PANIC_RECORD.with(|record| {
             let record = record.borrow();
