@@ -1051,33 +1051,38 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 .borrow()
                 .get(&self.ctx.get_node_key(&expr.id))
             {
-                Some(ty) => {
-                    if let ast::Expr::Missing(_) = expr.node {
-                        return Ok(None);
-                    }
-                    let (_, end) = expr.get_span_pos();
-                    let mut expr_symbol = ExpressionSymbol::new(
-                        format!("@{}", expr.node.get_expr_name()),
-                        end.clone(),
-                        end,
-                        None,
-                    );
-                    expr_symbol.sema_info.ty = if matches!(&expr.node, | ast::Expr::Call(_)) {
-                        if let TypeKind::Function(func_ty) = &ty.kind {
-                            Some(func_ty.return_ty.clone())
+                Some(ty) => match expr.node {
+                    ast::Expr::Missing(_)
+                    | ast::Expr::Binary(_)
+                    | ast::Expr::CompClause(_)
+                    | ast::Expr::Keyword(_)
+                    | ast::Expr::Arguments(_)
+                    | ast::Expr::Compare(_) => return Ok(None),
+                    _ => {
+                        let (_, end) = expr.get_span_pos();
+                        let mut expr_symbol = ExpressionSymbol::new(
+                            format!("@{}", expr.node.get_expr_name()),
+                            end.clone(),
+                            end,
+                            None,
+                        );
+                        expr_symbol.sema_info.ty = if matches!(&expr.node, | ast::Expr::Call(_)) {
+                            if let TypeKind::Function(func_ty) = &ty.kind {
+                                Some(func_ty.return_ty.clone())
+                            } else {
+                                Some(ty.clone())
+                            }
                         } else {
                             Some(ty.clone())
-                        }
-                    } else {
-                        Some(ty.clone())
-                    };
+                        };
 
-                    Ok(self.gs.get_symbols_mut().alloc_expression_symbol(
-                        expr_symbol,
-                        self.ctx.get_node_key(&expr.id),
-                        self.ctx.current_pkgpath.clone().unwrap(),
-                    ))
-                }
+                        Ok(self.gs.get_symbols_mut().alloc_expression_symbol(
+                            expr_symbol,
+                            self.ctx.get_node_key(&expr.id),
+                            self.ctx.current_pkgpath.clone().unwrap(),
+                        ))
+                    }
+                },
                 None => Ok(None),
             },
             res => res,

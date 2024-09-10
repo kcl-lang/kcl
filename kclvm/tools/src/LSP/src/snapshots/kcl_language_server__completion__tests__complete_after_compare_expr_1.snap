@@ -1,0 +1,5 @@
+---
+source: tools/src/LSP/src/completion.rs
+expression: "format!(\"{:?}\", got_labels)"
+---
+["capitalize(…)", "count(…)", "endswith(…)", "find(…)", "format(…)", "index(…)", "isalnum(…)", "isalpha(…)", "isdigit(…)", "islower(…)", "isspace(…)", "istitle(…)", "isupper(…)", "join(…)", "lower(…)", "lstrip(…)", "removeprefix(…)", "removesuffix(…)", "replace(…)", "rfind(…)", "rindex(…)", "rsplit(…)", "rstrip(…)", "split(…)", "splitlines(…)", "startswith(…)", "strip(…)", "title(…)", "upper(…)"]
