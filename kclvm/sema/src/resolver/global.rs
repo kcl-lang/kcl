@@ -762,17 +762,38 @@ impl<'ctx> Resolver<'ctx> {
             if let Some(ref parent_ty) = parent_ty {
                 let parent_schema_runtime_ty =
                     kclvm_runtime::schema_runtime_type(&parent_ty.name, &parent_ty.pkgpath);
-                self.ctx
-                    .ty_ctx
-                    .add_dependencies(&schema_runtime_ty, &parent_schema_runtime_ty);
+                self.ctx.ty_ctx.add_dependencies(
+                    &schema_runtime_ty,
+                    &parent_schema_runtime_ty,
+                    schema_stmt.name.get_span_pos(),
+                );
+
                 if self.ctx.ty_ctx.is_cyclic_from_node(&schema_runtime_ty) {
-                    self.handler.add_compile_error(
-                        &format!(
-                            "There is a circular reference between schema {} and {}",
-                            name, parent_ty.name,
-                        ),
-                        schema_stmt.get_span_pos(),
-                    );
+                    let cycles = self.ctx.ty_ctx.find_cycle_nodes(&schema_runtime_ty);
+                    for cycle in cycles {
+                        let node_names: Vec<String> = cycle
+                            .iter()
+                            .map(|node| {
+                                self.ctx
+                                    .ty_ctx
+                                    .dep_graph
+                                    .node_weight(*node)
+                                    .unwrap()
+                                    .clone()
+                            })
+                            .collect();
+                        for node in &cycle {
+                            if let Some(range) = self.ctx.ty_ctx.get_node_range(node) {
+                                self.handler.add_compile_error(
+                                    &format!(
+                                        "There is a circular reference between schemas {}",
+                                        node_names.join(", "),
+                                    ),
+                                    range,
+                                );
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -874,17 +895,37 @@ impl<'ctx> Resolver<'ctx> {
             for parent_ty in &parent_types {
                 let parent_schema_runtime_ty =
                     kclvm_runtime::schema_runtime_type(&parent_ty.name, &parent_ty.pkgpath);
-                self.ctx
-                    .ty_ctx
-                    .add_dependencies(&schema_runtime_ty, &parent_schema_runtime_ty);
+                self.ctx.ty_ctx.add_dependencies(
+                    &schema_runtime_ty,
+                    &parent_schema_runtime_ty,
+                    rule_stmt.name.get_span_pos(),
+                );
                 if self.ctx.ty_ctx.is_cyclic_from_node(&schema_runtime_ty) {
-                    self.handler.add_compile_error(
-                        &format!(
-                            "There is a circular reference between rule {} and {}",
-                            name, parent_ty.name,
-                        ),
-                        rule_stmt.get_span_pos(),
-                    );
+                    let cycles = self.ctx.ty_ctx.find_cycle_nodes(&schema_runtime_ty);
+                    for cycle in cycles {
+                        let node_names: Vec<String> = cycle
+                            .iter()
+                            .map(|node| {
+                                self.ctx
+                                    .ty_ctx
+                                    .dep_graph
+                                    .node_weight(*node)
+                                    .unwrap()
+                                    .clone()
+                            })
+                            .collect();
+                        for node in &cycle {
+                            if let Some(range) = self.ctx.ty_ctx.get_node_range(node) {
+                                self.handler.add_compile_error(
+                                    &format!(
+                                        "There is a circular reference between rules {}",
+                                        node_names.join(", "),
+                                    ),
+                                    range,
+                                );
+                            }
+                        }
+                    }
                 }
             }
         }

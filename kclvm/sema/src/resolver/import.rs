@@ -7,7 +7,7 @@ use crate::{
     ty::{Type, TypeKind},
 };
 use indexmap::{IndexMap, IndexSet};
-use kclvm_ast::{ast, MAIN_PKG};
+use kclvm_ast::ast;
 use kclvm_error::*;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -233,22 +233,37 @@ impl<'ctx> Resolver<'ctx> {
                             }
                             let current_pkgpath = self.ctx.pkgpath.clone();
                             let current_filename = self.ctx.filename.clone();
-                            self.ctx
-                                .ty_ctx
-                                .add_dependencies(&self.ctx.pkgpath, &import_stmt.path.node);
+                            self.ctx.ty_ctx.add_dependencies(
+                                &self.ctx.pkgpath,
+                                &import_stmt.path.node,
+                                stmt.get_span_pos(),
+                            );
                             if self.ctx.ty_ctx.is_cyclic_from_node(&self.ctx.pkgpath) {
-                                let pkg_path = if self.ctx.pkgpath == MAIN_PKG {
-                                    self.ctx.filename.clone()
-                                } else {
-                                    self.ctx.pkgpath.clone()
-                                };
-                                self.handler.add_compile_error(
-                                    &format!(
-                                        "There is a circular import reference between module {} and {}",
-                                        pkg_path, import_stmt.path.node,
-                                    ),
-                                    stmt.get_span_pos(),
-                                );
+                                let cycles = self.ctx.ty_ctx.find_cycle_nodes(&self.ctx.pkgpath);
+                                for cycle in cycles {
+                                    let node_names: Vec<String> = cycle
+                                        .iter()
+                                        .map(|node| {
+                                            self.ctx
+                                                .ty_ctx
+                                                .dep_graph
+                                                .node_weight(*node)
+                                                .unwrap()
+                                                .clone()
+                                        })
+                                        .collect();
+                                    for node in &cycle {
+                                        if let Some(range) = self.ctx.ty_ctx.get_node_range(node) {
+                                            self.handler.add_compile_error(
+                                                &format!(
+                                                    "There is a circular reference between modules {}",
+                                                    node_names.join(", "),
+                                                ),
+                                                range
+                                            );
+                                        }
+                                    }
+                                }
                             }
                             // Switch pkgpath context
                             if !self.scope_map.contains_key(&import_stmt.path.node) {
