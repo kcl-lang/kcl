@@ -13,12 +13,13 @@ use crate::*;
 pub extern "C" fn kclvm_net_split_host_port(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
 
-    if let Some(string) = args.arg_i_str(0, None) {
+    if let Some(string) = get_call_arg_str(args, kwargs, 0, Some("ip_end_point")) {
         let mut list = ValueRef::list(None);
         for s in string.split(':') {
             list.list_append(&ValueRef::str(s));
@@ -36,17 +37,18 @@ pub extern "C" fn kclvm_net_split_host_port(
 pub extern "C" fn kclvm_net_join_host_port(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
 
-    if let Some(host) = args.arg_i_str(0, None) {
-        if let Some(port) = args.arg_i_int(1, None) {
+    if let Some(host) = get_call_arg_str(args, kwargs, 0, Some("host")) {
+        if let Some(port) = args.arg_i_int(1, None).or(kwargs.kwarg_int("port", None)) {
             let s = format!("{host}:{port}");
             return ValueRef::str(s.as_ref()).into_raw(ctx);
         }
-        if let Some(port) = args.arg_i_str(1, None) {
+        if let Some(port) = args.arg_i_str(1, None).or(kwargs.kwarg_str("port", None)) {
             let s = format!("{host}:{port}");
             return ValueRef::str(s.as_ref()).into_raw(ctx);
         }
@@ -56,19 +58,52 @@ pub extern "C" fn kclvm_net_join_host_port(
 
 // fqdn(name: str = '') -> str
 
+#[cfg(not(target_arch = "wasm32"))]
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_net_fqdn(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    use std::net::ToSocketAddrs;
+    let ctx = mut_ptr_as_ref(ctx);
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+    let name = get_call_arg_str(args, kwargs, 0, Some("name")).unwrap_or_default();
+    let hostname = if name.is_empty() {
+        match hostname::get() {
+            Ok(name) => name.to_string_lossy().into_owned(),
+            Err(_) => return ValueRef::str("").into_raw(ctx),
+        }
+    } else {
+        name
+    };
+    match (hostname.as_str(), 0).to_socket_addrs() {
+        Ok(mut addrs) => {
+            if let Some(addr) = addrs.next() {
+                match dns_lookup::lookup_addr(&addr.ip()) {
+                    Ok(fqdn) => ValueRef::str(&fqdn),
+                    Err(_) => ValueRef::str(&hostname),
+                }
+            } else {
+                ValueRef::str(&hostname)
+            }
+        }
+        Err(_) => ValueRef::str(&hostname),
+    }
+    .into_raw(ctx)
+}
+
+#[cfg(target_arch = "wasm32")]
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_net_fqdn(
     _ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
+    _args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
-    let args = ptr_as_ref(args);
-
-    if let Some(_name) = args.arg_i_str(0, Some("".to_string())) {
-        todo!("todo");
-    }
-    panic!("fqdn() missing 1 required positional argument: 'name'");
+    panic!("fqdn() do not support the WASM target");
 }
 
 // parse_IP(ip) -> str
@@ -114,11 +149,12 @@ pub extern "C" fn kclvm_net_to_IP16(
 pub extern "C" fn kclvm_net_IP_string(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
-    if let Some(ip) = args.arg_i_str(0, None) {
+    if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
         if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
             let s = format!("{addr}");
             return ValueRef::str(s.as_ref()).into_raw(ctx);
@@ -141,11 +177,12 @@ pub extern "C" fn kclvm_net_IP_string(
 pub extern "C" fn kclvm_net_is_IPv4(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
 
-    if let Some(ip) = args.arg_i_str(0, None) {
+    if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
         if let Ok(_addr) = Ipv4Addr::from_str(ip.as_ref()) {
             return kclvm_value_True(ctx);
         }
@@ -166,11 +203,12 @@ pub extern "C" fn kclvm_net_is_IPv4(
 pub extern "C" fn kclvm_net_is_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
 
-    if let Some(ip) = args.arg_i_str(0, None) {
+    if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
         if Ipv4Addr::from_str(ip.as_ref()).is_ok() || Ipv6Addr::from_str(ip.as_ref()).is_ok() {
             kclvm_value_True(ctx)
         } else {
@@ -188,11 +226,12 @@ pub extern "C" fn kclvm_net_is_IP(
 pub extern "C" fn kclvm_net_is_loopback_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
 
-    if let Some(ip) = args.arg_i_str(0, None) {
+    if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
         if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
             let x = addr.is_loopback();
             return kclvm_value_Bool(ctx, x as i8);
@@ -215,11 +254,12 @@ pub extern "C" fn kclvm_net_is_loopback_IP(
 pub extern "C" fn kclvm_net_is_multicast_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
 
-    if let Some(ip) = args.arg_i_str(0, None) {
+    if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
         if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
             let x = addr.is_multicast();
             return kclvm_value_Bool(ctx, x as i8);
@@ -242,23 +282,26 @@ pub extern "C" fn kclvm_net_is_multicast_IP(
 pub extern "C" fn kclvm_net_is_interface_local_multicast_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
-
-    if let Some(ip) = args.arg_i_str(0, None) {
+    let kwargs = ptr_as_ref(kwargs);
+    if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
         if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
-            let is_site_local = false; // TODO
-            let x = is_site_local && addr.is_multicast();
+            // For IPv4, interface-local multicast addresses are in the range 224.0.0.0/24
+            let is_interface_local =
+                addr.octets()[0] == 224 && addr.octets()[1] == 0 && addr.octets()[2] == 0;
+            let x = is_interface_local && addr.is_multicast();
             return kclvm_value_Bool(ctx, x as i8);
         }
-        if let Ok(_addr) = Ipv6Addr::from_str(ip.as_ref()) {
-            todo!("todo");
+        if let Ok(addr) = Ipv6Addr::from_str(ip.as_ref()) {
+            // For IPv6, interface-local multicast addresses start with ff01::/16
+            let is_interface_local = addr.segments()[0] == 0xff01;
+            let x = is_interface_local && addr.is_multicast();
+            return kclvm_value_Bool(ctx, x as i8);
         }
-
-        return kclvm_value_False(ctx);
+        return kclvm_value_Bool(ctx, 0); // False for invalid IP addresses
     }
-
     panic!("is_interface_local_multicast_IP() missing 1 required positional argument: 'ip'");
 }
 
@@ -269,22 +312,26 @@ pub extern "C" fn kclvm_net_is_interface_local_multicast_IP(
 pub extern "C" fn kclvm_net_is_link_local_multicast_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
 
-    if let Some(ip) = args.arg_i_str(0, None) {
+    if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
         if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
-            let x = addr.is_link_local() && addr.is_multicast();
+            // For IPv4, link-local multicast addresses are in the range 224.0.0.0/24
+            let is_link_local_multicast =
+                addr.octets()[0] == 224 && addr.octets()[1] == 0 && addr.octets()[2] == 0;
+            let x = is_link_local_multicast && addr.is_multicast();
             return kclvm_value_Bool(ctx, x as i8);
         }
         if let Ok(addr) = Ipv6Addr::from_str(ip.as_ref()) {
-            let is_link_local = false; // TODO
-            let x = is_link_local && addr.is_multicast();
+            // For IPv6, link-local multicast addresses start with ff02::/16
+            let is_link_local_multicast = addr.segments()[0] == 0xff02;
+            let x = is_link_local_multicast && addr.is_multicast();
             return kclvm_value_Bool(ctx, x as i8);
         }
-
-        return kclvm_value_False(ctx);
+        return kclvm_value_Bool(ctx, 0); // False for invalid IP addresses
     }
 
     panic!("is_link_local_multicast_IP() missing 1 required positional argument: 'ip'");
@@ -300,9 +347,9 @@ pub extern "C" fn kclvm_net_is_link_local_unicast_IP(
     kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
-    let _kwargs = ptr_as_ref(kwargs);
+    let kwargs = ptr_as_ref(kwargs);
 
-    if let Some(ip) = args.arg_i_str(0, None) {
+    if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
         if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
             let x = addr.is_link_local() && (!addr.is_multicast());
             return kclvm_value_Bool(ctx, x as i8);
@@ -329,11 +376,12 @@ pub const fn Ipv6Addr_is_unicast_link_local(_self: &Ipv6Addr) -> bool {
 pub extern "C" fn kclvm_net_is_global_unicast_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
 
-    if let Some(ip) = args.arg_i_str(0, None) {
+    if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
         if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
             let x = Ipv4Addr_is_global(&addr) && (!addr.is_multicast());
             return kclvm_value_Bool(ctx, x as i8);
@@ -394,11 +442,12 @@ const fn Ipv4Addr_is_benchmarking(_self: &std::net::Ipv4Addr) -> bool {
 pub extern "C" fn kclvm_net_is_unspecified_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
 
-    if let Some(ip) = args.arg_i_str(0, None) {
+    if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
         if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
             return kclvm_value_Bool(ctx, addr.is_unspecified() as i8);
         }

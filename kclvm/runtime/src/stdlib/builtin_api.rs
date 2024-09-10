@@ -186,7 +186,8 @@ pub unsafe extern "C" fn kclvm_builtin_option(
     }
     let required = get_call_arg_bool(args, kwargs, 2, Some("required")).unwrap_or_default();
     if required {
-        let name = args.arg_i_str(0, Some("?".to_string())).unwrap();
+        let name =
+            get_call_arg_str(args, kwargs, 0, Some("key")).unwrap_or_else(|| "?".to_string());
         panic!("option('{name}') must be initialized, try '-D {name}=?' argument");
     }
     ValueRef::none().into_raw(ctx)

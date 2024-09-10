@@ -253,6 +253,26 @@ pub fn get_call_arg_bool(
     get_call_arg(args, kwargs, index, key).map(|v| v.as_bool())
 }
 
+#[inline]
+pub fn get_call_arg_int(
+    args: &ValueRef,
+    kwargs: &ValueRef,
+    index: usize,
+    key: Option<&str>,
+) -> Option<i64> {
+    get_call_arg(args, kwargs, index, key).map(|v| v.must_as_strict_int())
+}
+
+#[inline]
+pub fn get_call_arg_num(
+    args: &ValueRef,
+    kwargs: &ValueRef,
+    index: usize,
+    key: Option<&str>,
+) -> Option<f64> {
+    get_call_arg(args, kwargs, index, key).map(|v| v.as_num())
+}
+
 #[cfg(test)]
 mod test_value_args {
     use crate::*;

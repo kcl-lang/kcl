@@ -93,7 +93,7 @@ pub extern "C" fn kclvm_manifests_yaml_stream(
         None => YamlEncodeOptions::default(),
     };
 
-    if let Some(value) = args.arg_i(0) {
+    if let Some(value) = get_call_arg(args, kwargs, 0, Some("values")) {
         self::yaml::encode_yaml_stream_to_manifests(ctx, &value, opts);
     } else {
         panic!("yaml_stream() missing 1 required positional argument: 'values'");
