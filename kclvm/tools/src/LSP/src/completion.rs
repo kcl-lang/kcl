@@ -2151,4 +2151,12 @@ mod tests {
         15,
         Some('.')
     );
+
+    completion_label_test_snapshot!(
+        complete_after_compare_expr_1,
+        "src/test_data/completion_test/dot/special_expr/compare.k",
+        2,
+        23,
+        Some('.')
+    );
 }
