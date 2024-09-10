@@ -35,6 +35,10 @@ anyhow = "1"
 blake3 = "1.5.4"
 encoding = "0.2.33"
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+hostname = "0.4.0"
+dns-lookup = "2.0.4"
+
 [[bin]]
 name = "gen-api-spec"
 path = "scripts/gen-api-spec.rs"

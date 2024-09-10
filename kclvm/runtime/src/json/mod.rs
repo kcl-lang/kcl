@@ -15,9 +15,9 @@ pub extern "C" fn kclvm_json_encode(
     let ctx = mut_ptr_as_ref(ctx);
     let kwargs = ptr_as_ref(kwargs);
 
-    if let Some(arg0) = args.arg_i(0) {
+    if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("data")) {
         let s = ValueRef::str(
-            arg0.to_json_string_with_options(&kwargs_to_opts(kwargs))
+            arg0.to_json_string_with_options(&args_to_opts(args, kwargs, 1))
                 .as_ref(),
         );
         return s.into_raw(ctx);
@@ -30,12 +30,13 @@ pub extern "C" fn kclvm_json_encode(
 pub extern "C" fn kclvm_json_decode(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
 
-    if let Some(arg0) = args.arg_i(0) {
+    if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("value")) {
         match ValueRef::from_json(ctx, arg0.as_str().as_ref()) {
             Ok(x) => return x.into_raw(ctx),
             Err(err) => panic!("{}", err),
@@ -49,12 +50,13 @@ pub extern "C" fn kclvm_json_decode(
 pub extern "C" fn kclvm_json_validate(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
     let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
 
-    if let Some(arg0) = args.arg_i(0) {
+    if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("value")) {
         match ValueRef::from_json(ctx, arg0.as_str().as_ref()) {
             Ok(_) => return kclvm_value_True(ctx),
             Err(_) => return kclvm_value_False(ctx),
@@ -77,7 +79,7 @@ pub extern "C" fn kclvm_json_dump_to_file(
     match (data, filename) {
         (Some(data), Some(filename)) => {
             let filename = filename.as_str();
-            let json = data.to_json_string_with_options(&kwargs_to_opts(kwargs));
+            let json = data.to_json_string_with_options(&args_to_opts(args, kwargs, 2));
             std::fs::write(&filename, json)
                 .unwrap_or_else(|e| panic!("Unable to write file '{}': {}", filename, e));
             kclvm_value_Undefined(ctx)
@@ -88,18 +90,19 @@ pub extern "C" fn kclvm_json_dump_to_file(
     }
 }
 
-fn kwargs_to_opts(kwargs: &ValueRef) -> JsonEncodeOptions {
+fn args_to_opts(args: &ValueRef, kwargs: &ValueRef, index: usize) -> JsonEncodeOptions {
     let mut opts = JsonEncodeOptions::default();
-    if let Some(sort_keys) = kwargs.kwarg_bool("sort_keys", None) {
+    if let Some(sort_keys) = get_call_arg_bool(args, kwargs, index, Some("sort_keys")) {
         opts.sort_keys = sort_keys;
     }
-    if let Some(indent) = kwargs.kwarg_int("indent", None) {
+    if let Some(indent) = get_call_arg_int(args, kwargs, index + 1, Some("indent")) {
         opts.indent = indent;
     }
-    if let Some(ignore_private) = kwargs.kwarg_bool("ignore_private", None) {
+    if let Some(ignore_private) = get_call_arg_bool(args, kwargs, index + 2, Some("ignore_private"))
+    {
         opts.ignore_private = ignore_private;
     }
-    if let Some(ignore_none) = kwargs.kwarg_bool("ignore_none", None) {
+    if let Some(ignore_none) = get_call_arg_bool(args, kwargs, index + 3, Some("ignore_none")) {
         opts.ignore_none = ignore_none;
     }
     opts
