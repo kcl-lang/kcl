@@ -8,7 +8,7 @@ use crate::ty::{
     SchemaType, Type, TypeKind, RESERVED_TYPE_IDENTIFIERS,
 };
 use indexmap::IndexMap;
-use kclvm_ast::ast;
+use kclvm_ast::{ast, MAIN_PKG};
 use kclvm_ast_pretty::{print_ast_node, print_schema_expr, ASTNode};
 use kclvm_error::*;
 
@@ -63,7 +63,6 @@ impl<'ctx> Resolver<'ctx> {
                                 false,
                                 true,
                             ),
-
                             _ => continue,
                         };
                         if self.contains_object(name) {
@@ -757,11 +756,19 @@ impl<'ctx> Resolver<'ctx> {
                 });
             }
         }
-        let schema_runtime_ty = kclvm_runtime::schema_runtime_type(name, &self.ctx.pkgpath);
+        let schema_runtime_ty = if self.ctx.pkgpath == MAIN_PKG {
+            name.to_string()
+        } else {
+            kclvm_runtime::schema_runtime_type(name, &self.ctx.pkgpath)
+        };
         if should_add_schema_ref {
             if let Some(ref parent_ty) = parent_ty {
-                let parent_schema_runtime_ty =
-                    kclvm_runtime::schema_runtime_type(&parent_ty.name, &parent_ty.pkgpath);
+                let parent_schema_runtime_ty = if parent_ty.pkgpath == MAIN_PKG {
+                    parent_ty.name.clone()
+                } else {
+                    kclvm_runtime::schema_runtime_type(&parent_ty.name, &parent_ty.pkgpath)
+                };
+
                 self.ctx.ty_ctx.add_dependencies(
                     &schema_runtime_ty,
                     &parent_schema_runtime_ty,
@@ -773,14 +780,14 @@ impl<'ctx> Resolver<'ctx> {
                     for cycle in cycles {
                         let node_names: Vec<String> = cycle
                             .iter()
-                            .map(|node| {
-                                self.ctx
-                                    .ty_ctx
-                                    .dep_graph
-                                    .node_weight(*node)
-                                    .unwrap()
-                                    .clone()
+                            .map(|idx| {
+                                if let Some(name) = self.ctx.ty_ctx.dep_graph.node_weight(*idx) {
+                                    name.clone()
+                                } else {
+                                    "".to_string()
+                                }
                             })
+                            .filter(|name| !name.is_empty())
                             .collect();
                         for node in &cycle {
                             if let Some(range) = self.ctx.ty_ctx.get_node_range(node) {
@@ -891,10 +898,17 @@ impl<'ctx> Resolver<'ctx> {
             }
         }
         if should_add_schema_ref {
-            let schema_runtime_ty = kclvm_runtime::schema_runtime_type(name, &self.ctx.pkgpath);
+            let schema_runtime_ty = if self.ctx.pkgpath == MAIN_PKG {
+                name.to_string()
+            } else {
+                kclvm_runtime::schema_runtime_type(name, &self.ctx.pkgpath)
+            };
             for parent_ty in &parent_types {
-                let parent_schema_runtime_ty =
-                    kclvm_runtime::schema_runtime_type(&parent_ty.name, &parent_ty.pkgpath);
+                let parent_schema_runtime_ty = if parent_ty.pkgpath == MAIN_PKG {
+                    parent_ty.name.clone()
+                } else {
+                    kclvm_runtime::schema_runtime_type(&parent_ty.name, &parent_ty.pkgpath)
+                };
                 self.ctx.ty_ctx.add_dependencies(
                     &schema_runtime_ty,
                     &parent_schema_runtime_ty,
@@ -905,14 +919,14 @@ impl<'ctx> Resolver<'ctx> {
                     for cycle in cycles {
                         let node_names: Vec<String> = cycle
                             .iter()
-                            .map(|node| {
-                                self.ctx
-                                    .ty_ctx
-                                    .dep_graph
-                                    .node_weight(*node)
-                                    .unwrap()
-                                    .clone()
+                            .map(|idx| {
+                                if let Some(name) = self.ctx.ty_ctx.dep_graph.node_weight(*idx) {
+                                    name.clone()
+                                } else {
+                                    "".to_string()
+                                }
                             })
+                            .filter(|name| !name.is_empty())
                             .collect();
                         for node in &cycle {
                             if let Some(range) = self.ctx.ty_ctx.get_node_range(node) {
