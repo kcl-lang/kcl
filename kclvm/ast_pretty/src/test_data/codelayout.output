@@ -137,3 +137,31 @@ f = lambda {
     d = 4
     e = 5
 }
+config_if_entry = {
+    if True:
+        a = 1
+    elif False:
+        b = 2
+    else:
+        c = 3
+        d = 4
+        **e
+    if a > 3:
+        e = 5
+    elif a < 2:
+        f = 6
+    if True:
+        g = 7
+}
+list_if_item = [
+    if True:
+        1
+    elif False:
+        2
+    else:
+        3
+        4
+        *[5, 6]
+    if False:
+        2
+]
