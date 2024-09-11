@@ -13,10 +13,8 @@ d = [
     else:
         if True:
             2
-        
         if True:
             3
-        
 ]
 e = {
     if True:
@@ -24,8 +22,6 @@ e = {
     else:
         if True:
             b = 2
-        
         if True:
             c = 3
-        
 }
