@@ -5,10 +5,8 @@ use std::string::String;
 
 use crate::gpyrpc::*;
 
-use anyhow::anyhow;
 use kcl_language_server::rename;
 use kclvm_config::settings::build_settings_pathbuf;
-use kclvm_driver::canonicalize_input_files;
 use kclvm_loader::option::list_options;
 use kclvm_loader::{load_packages_with_cache, LoadPackageOptions};
 use kclvm_parser::load_program;
@@ -860,16 +858,7 @@ impl KclvmServiceImpl {
     ) -> anyhow::Result<LoadSettingsFilesResult> {
         let settings_files = args.files.iter().map(|f| f.as_str()).collect::<Vec<&str>>();
         let settings_pathbuf = build_settings_pathbuf(&[], Some(settings_files), None)?;
-        let files = if !settings_pathbuf.settings().input().is_empty() {
-            canonicalize_input_files(
-                &settings_pathbuf.settings().input(),
-                args.work_dir.clone(),
-                false,
-            )
-            .map_err(|e| anyhow!(e))?
-        } else {
-            vec![]
-        };
+        let files = settings_pathbuf.settings().input();
         Ok(settings_pathbuf
             .settings()
             .clone()

@@ -11,9 +11,8 @@ use glob::glob;
 use kclvm_config::{
     modfile::{
         get_pkg_root, load_mod_file, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE,
-        KCL_MOD_PATH_ENV, KCL_WORK_FILE,
+        KCL_WORK_FILE,
     },
-    path::ModRelativePath,
     settings::{build_settings_pathbuf, DEFAULT_SETTING_FILE},
     workfile::load_work_file,
 };
@@ -57,77 +56,6 @@ pub fn expand_input_files(k_files: &[String]) -> Vec<String> {
         }
     }
     res
-}
-
-/// Normalize input files with the working directory and replace ${KCL_MOD} with the module root path.
-pub fn canonicalize_input_files(
-    k_files: &[String],
-    work_dir: String,
-    check_exist: bool,
-) -> Result<Vec<String>, String> {
-    let mut kcl_paths = Vec::<String>::new();
-    // The first traversal changes the relative path to an absolute path
-    for file in k_files.iter() {
-        let path = Path::new(file);
-
-        let is_absolute = path.is_absolute();
-        let is_exist_maybe_symlink = path.exists();
-        // If the input file or path is a relative path and it is not a absolute path in the KCL module VFS,
-        // join with the work directory path and convert it to a absolute path.
-        let path = ModRelativePath::from(file.to_string());
-        let abs_path = if !is_absolute && !path.is_relative_path().map_err(|err| err.to_string())? {
-            let filepath = Path::new(&work_dir).join(file);
-            match filepath.canonicalize() {
-                Ok(path) => Some(path.adjust_canonicalization()),
-                Err(_) => {
-                    if check_exist {
-                        return Err(format!(
-                            "Cannot find the kcl file, please check the file path {}",
-                            file
-                        ));
-                    }
-                    Some(filepath.to_string_lossy().to_string())
-                }
-            }
-        } else {
-            None
-        };
-        // If the input file or path is a symlink, convert it to a real path.
-        let real_path = if is_exist_maybe_symlink {
-            match PathBuf::from(file.to_string()).canonicalize() {
-                Ok(real_path) => Some(String::from(real_path.to_str().unwrap())),
-                Err(_) => {
-                    if check_exist {
-                        return Err(format!(
-                            "Cannot find the kcl file, please check the file path {}",
-                            file
-                        ));
-                    }
-                    Some(file.to_string())
-                }
-            }
-        } else {
-            None
-        };
-
-        kcl_paths.push(abs_path.unwrap_or(real_path.unwrap_or(file.to_string())));
-    }
-
-    // Get the root path of the project
-    let pkgroot = kclvm_config::modfile::get_pkg_root_from_paths(&kcl_paths, work_dir)?;
-
-    // The second traversal replaces ${KCL_MOD} with the project root path
-    kcl_paths = kcl_paths
-        .iter()
-        .map(|file| {
-            if file.contains(KCL_MOD_PATH_ENV) {
-                file.replace(KCL_MOD_PATH_ENV, pkgroot.as_str())
-            } else {
-                file.clone()
-            }
-        })
-        .collect();
-    Ok(kcl_paths)
 }
 
 /// Get compile workspace(files and options) from a single file input.

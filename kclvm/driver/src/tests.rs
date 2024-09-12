@@ -9,23 +9,8 @@ use walkdir::WalkDir;
 use crate::arguments::parse_key_value_pair;
 use crate::toolchain::Toolchain;
 use crate::toolchain::{fill_pkg_maps_for_k_file, CommandToolchain, NativeToolchain};
-use crate::{canonicalize_input_files, expand_input_files, get_pkg_list};
+use crate::{expand_input_files, get_pkg_list};
 use crate::{lookup_the_nearest_file_dir, toolchain};
-
-#[test]
-fn test_canonicalize_input_files() {
-    let input_files = vec!["file1.k".to_string(), "file2.k".to_string()];
-    let work_dir = ".".to_string();
-    let expected_files = vec![
-        Path::new(".").join("file1.k").to_string_lossy().to_string(),
-        Path::new(".").join("file2.k").to_string_lossy().to_string(),
-    ];
-    assert_eq!(
-        canonicalize_input_files(&input_files, work_dir.clone(), false).unwrap(),
-        expected_files
-    );
-    assert!(canonicalize_input_files(&input_files, work_dir, true).is_err());
-}
 
 #[test]
 fn test_expand_input_files_with_kcl_mod() {
