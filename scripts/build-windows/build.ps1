@@ -13,8 +13,7 @@ New-Item -ErrorAction Ignore -Path ".\_output\kclvm-windows\bin" -ItemType "dire
 New-Item -ErrorAction Ignore -Path ".\_output\kclvm-windows\include" -ItemType "directory"
 
 Copy-Item -Path "..\..\kclvm\target\release\kclvm_cli_cdylib.dll" -Destination ".\_output\kclvm-windows\bin\kclvm_cli_cdylib.dll" -Force
-Copy-Item -Path "..\..\kclvm\target\release\kclvm_cli_cdylib.dll.lib" -Destination ".\_output\kclvm-windows\bin\kclvm_cli_cdylib.lib" -Force
-Copy-Item -Path "..\..\kclvm\target\release\kclvm_cli_cdylib.dll.lib" -Destination "..\..\kclvm\target\release\kclvm_cli_cdylib.lib" -Force
+Copy-Item -Path "..\..\kclvm\target\release\kclvm_cli_cdylib.lib" -Destination ".\_output\kclvm-windows\bin\kclvm_cli_cdylib.lib" -Force
 
 Set-Location $PSScriptRoot
 # 2. Install kclvm CLI
