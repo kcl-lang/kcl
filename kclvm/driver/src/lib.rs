@@ -183,15 +183,13 @@ pub fn lookup_compile_workspace(
                         work_dir: work_dir.clone(),
                         ..Default::default()
                     };
-                    match canonicalize_input_files(&files, work_dir, true) {
-                        Ok(kcl_paths) => {
-                            // 1. find the kcl.mod path
-                            let metadata =
-                                fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt)
-                                    .unwrap_or(None);
-                            (kcl_paths, Some(load_opt), metadata)
-                        }
-                        Err(_) => default_res,
+
+                    let metadata =
+                        fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt).unwrap_or(None);
+                    if files.is_empty() {
+                        default_res
+                    } else {
+                        (files, Some(load_opt), metadata)
                     }
                 }
                 Err(_) => default_res,
@@ -205,10 +203,7 @@ pub fn lookup_compile_workspace(
                 if let Some(files) = mod_file.get_entries() {
                     let work_dir = dir.to_string_lossy().to_string();
                     load_opt.work_dir = work_dir.clone();
-                    match canonicalize_input_files(&files, work_dir, true) {
-                        Ok(kcl_paths) => (kcl_paths, Some(load_opt), metadata),
-                        Err(_) => default_res,
-                    }
+                    (files, Some(load_opt), metadata)
                 } else {
                     default_res
                 }

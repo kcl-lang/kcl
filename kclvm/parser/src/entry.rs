@@ -297,9 +297,10 @@ pub fn get_compile_entries_from_paths(
     }
     let mut result = Entries::default();
     let mut k_code_queue = VecDeque::from(opts.k_code_list.clone());
-    for s in file_paths {
-        let path = ModRelativePath::from(s.to_string());
+    for file in file_paths {
+        let abs_path = abs_path(file, &opts.work_dir);
 
+        let path = ModRelativePath::from(abs_path.to_string());
         // If the path is a [`ModRelativePath`] with prefix '${<package_name>:KCL_MOD}',
         // calculate the real path and the package name.
         if let Some((pkg_name, pkg_path)) = path.get_root_pkg_name()?.and_then(|name| {
@@ -325,11 +326,11 @@ pub fn get_compile_entries_from_paths(
             entry.push_k_code(k_code_queue.pop_front());
             result.push_entry(entry);
             continue;
-        } else if let Some(root) = get_pkg_root(s) {
+        } else if let Some(root) = get_pkg_root(&abs_path) {
             // If the path is a normal path.
             let mut entry: Entry = Entry::new(kclvm_ast::MAIN_PKG.to_string(), root.clone());
             entry.extend_k_files_and_codes(
-                get_main_files_from_pkg_path(s, &root, kclvm_ast::MAIN_PKG, opts)?,
+                get_main_files_from_pkg_path(&abs_path, &root, kclvm_ast::MAIN_PKG, opts)?,
                 &mut k_code_queue,
             );
             result.push_entry(entry);
@@ -388,8 +389,69 @@ pub fn get_compile_entries_from_paths(
         }
         Ok(())
     })?;
-
     Ok(result)
+}
+
+pub fn abs_path(file: &String, work_dir: &String) -> String {
+    let path = std::path::Path::new(file);
+    let is_absolute = path.is_absolute();
+    // If the input file or path is a relative path and it is not a absolute path in the KCL module VFS,
+    // join with the work directory path and convert it to a absolute path.
+    let path = ModRelativePath::from(file.to_string());
+    let abs_path = if !is_absolute
+        && !path
+            .is_relative_path()
+            .map_err(|err| err.to_string())
+            .unwrap()
+    {
+        let filepath = std::path::Path::new(work_dir).join(file);
+        match filepath.canonicalize() {
+            Ok(path) => Some(path.adjust_canonicalization()),
+            Err(_) => Some(filepath.to_string_lossy().to_string()),
+        }
+    } else {
+        None
+    };
+    abs_path.unwrap_or(file.clone())
+}
+
+/// fix relative path, ${<pkg_name>:KCL_MOD} and ${KCL_MOD} to absolute path
+pub fn fix_path(file_paths: &[String], opts: &LoadProgramOptions) -> Result<Vec<String>> {
+    let mut fixed_files = vec![];
+    let abs_paths: Vec<String> = file_paths
+        .iter()
+        .map(|f| abs_path(f, &opts.work_dir))
+        .collect();
+    let root =
+        match kclvm_config::modfile::get_pkg_root_from_paths(&abs_paths, opts.work_dir.clone()) {
+            Ok(root) => root,
+            Err(e) => {
+                return Err(anyhow::anyhow!(format!("Get pkg root failed: {:?}", e)));
+            }
+        };
+
+    for file in abs_paths {
+        let path = ModRelativePath::from(file.clone());
+        // If the path is a [`ModRelativePath`] with prefix '${<package_name>:KCL_MOD}',
+        // calculate the real path and the package name.
+        if let Some((_, pkg_path)) = path.get_root_pkg_name()?.and_then(|name| {
+            opts.package_maps
+                .get(&name)
+                .map(|pkg_path: &String| (name, pkg_path))
+        }) {
+            // Replace the mod relative path prefix '${<pkg_name>:KCL_MOD}' with the real path.
+            let s = path.canonicalize_by_root_path(pkg_path)?;
+            fixed_files.push(s);
+        } else if path.is_relative_path()? && path.get_root_pkg_name()?.is_none() {
+            // Replace the mod relative path prefix '${KCL_MOD}' with the real path.
+            let s = path.canonicalize_by_root_path(&root)?;
+            fixed_files.push(s);
+        } else {
+            fixed_files.push(file);
+        }
+    }
+
+    Ok(fixed_files)
 }
 
 /// Get files in the main package with the package root.

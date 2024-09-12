@@ -2258,10 +2258,7 @@ fn kcl_workspace_init_kclsettings_test() {
     ));
 
     assert_eq!(expected, workspaces.keys().cloned().collect());
-    assert_eq!(
-        vec![a.to_str().unwrap().to_string(),],
-        workspaces.values().next().unwrap().0
-    );
+    assert_eq!(vec!["a.k",], workspaces.values().next().unwrap().0);
     assert!(failed.is_none());
 }
 
@@ -2393,4 +2390,11 @@ fn init_workspace_sema_token_test() {
 
     let res = server.send_and_receive(r);
     assert!(res.result.is_some());
+}
+
+#[test]
+fn pkg_mod_test() {
+    let (_file, _program, diags, _gs) =
+        compile_test_file("src/test_data/workspace/pkg_mod_test/test/main.k");
+    assert_eq!(diags.iter().filter(|diag| diag.is_error()).count(), 0);
 }

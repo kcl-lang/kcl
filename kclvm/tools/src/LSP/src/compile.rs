@@ -5,8 +5,7 @@ use kclvm_ast::ast::Program;
 use kclvm_driver::{lookup_compile_workspace, toolchain};
 use kclvm_error::Diagnostic;
 use kclvm_parser::{
-    entry::get_normalized_k_files_from_paths, load_program, KCLModuleCache, LoadProgramOptions,
-    ParseSessionRef,
+    entry::fix_path, load_program, KCLModuleCache, LoadProgramOptions, ParseSessionRef,
 };
 use kclvm_sema::{
     advanced_resolver::AdvancedResolver,
@@ -36,20 +35,22 @@ pub fn compile(
     // Ignore the kcl plugin sematic check.
     let mut opts = opts.unwrap_or_default();
     opts.load_plugins = true;
-    // Get input files
-    let files = match get_normalized_k_files_from_paths(files, &opts) {
-        Ok(file_list) => file_list,
+
+    let fixed_paths = match fix_path(files, &opts) {
+        Ok(fixed_paths) => fixed_paths,
         Err(e) => {
             return (
                 IndexSet::new(),
-                Err(anyhow::anyhow!("Compile failed: {:?}", e)),
+                Err(anyhow::anyhow!("Fix paths error: {:?}", e)),
             )
         }
     };
-    let files: Vec<&str> = files.iter().map(|s| s.as_str()).collect();
+
+    let fixed_paths: Vec<&str> = fixed_paths.iter().map(|s| s.as_str()).collect();
+
     // Update opt.k_code_list
     if let Some(vfs) = &params.vfs {
-        let mut k_code_list = match load_files_code_from_vfs(&files, vfs) {
+        let mut k_code_list = match load_files_code_from_vfs(&fixed_paths, vfs) {
             Ok(code_list) => code_list,
             Err(e) => {
                 return (
@@ -80,6 +81,7 @@ pub fn compile(
         }
     }
 
+    let files: Vec<&str> = files.iter().map(|s| s.as_str()).collect();
     // Parser
     let sess = ParseSessionRef::default();
     let mut program = match load_program(sess.clone(), &files, Some(opts), params.module_cache) {
