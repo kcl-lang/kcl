@@ -398,12 +398,12 @@ pub fn abs_path(file: &String, work_dir: &String) -> String {
     // If the input file or path is a relative path and it is not a absolute path in the KCL module VFS,
     // join with the work directory path and convert it to a absolute path.
     let path = ModRelativePath::from(file.to_string());
-    let abs_path = if !is_absolute
-        && !path
-            .is_relative_path()
-            .map_err(|err| err.to_string())
-            .unwrap()
-    {
+    let is_relative_path = match path.is_relative_path() {
+        Ok(is_relative_path) => is_relative_path,
+        _ => return file.clone(),
+    };
+
+    let abs_path = if !is_absolute && !is_relative_path {
         let filepath = std::path::Path::new(work_dir).join(file);
         match filepath.canonicalize() {
             Ok(path) => Some(path.adjust_canonicalization()),
