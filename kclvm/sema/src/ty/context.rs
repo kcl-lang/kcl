@@ -67,7 +67,6 @@ impl TypeContext {
         .is_err()
     }
 
-    #[inline]
     pub fn find_cycle_nodes(&self, node: &String) -> Vec<Vec<NodeIndex>> {
         let idx = match self.node_index_map.get(node) {
             Some(idx) => idx,

@@ -243,14 +243,16 @@ impl<'ctx> Resolver<'ctx> {
                                 for cycle in cycles {
                                     let node_names: Vec<String> = cycle
                                         .iter()
-                                        .map(|node| {
-                                            self.ctx
-                                                .ty_ctx
-                                                .dep_graph
-                                                .node_weight(*node)
-                                                .unwrap()
-                                                .clone()
+                                        .map(|idx| {
+                                            if let Some(name) =
+                                                self.ctx.ty_ctx.dep_graph.node_weight(*idx)
+                                            {
+                                                name.clone()
+                                            } else {
+                                                "".to_string()
+                                            }
                                         })
+                                        .filter(|name| !name.is_empty())
                                         .collect();
                                     for node in &cycle {
                                         if let Some(range) = self.ctx.ty_ctx.get_node_range(node) {

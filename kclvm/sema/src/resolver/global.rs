@@ -756,27 +756,23 @@ impl<'ctx> Resolver<'ctx> {
                 });
             }
         }
-        let schema_runtime_ty = if self.ctx.pkgpath == MAIN_PKG {
+
+        let schema_full_ty_str = if self.ctx.pkgpath == MAIN_PKG || self.ctx.pkgpath.is_empty() {
             name.to_string()
         } else {
             kclvm_runtime::schema_runtime_type(name, &self.ctx.pkgpath)
         };
         if should_add_schema_ref {
             if let Some(ref parent_ty) = parent_ty {
-                let parent_schema_runtime_ty = if parent_ty.pkgpath == MAIN_PKG {
-                    parent_ty.name.clone()
-                } else {
-                    kclvm_runtime::schema_runtime_type(&parent_ty.name, &parent_ty.pkgpath)
-                };
-
+                let parent_full_ty_str = parent_ty.full_ty_str();
                 self.ctx.ty_ctx.add_dependencies(
-                    &schema_runtime_ty,
-                    &parent_schema_runtime_ty,
+                    &schema_full_ty_str,
+                    &parent_full_ty_str,
                     schema_stmt.name.get_span_pos(),
                 );
 
-                if self.ctx.ty_ctx.is_cyclic_from_node(&schema_runtime_ty) {
-                    let cycles = self.ctx.ty_ctx.find_cycle_nodes(&schema_runtime_ty);
+                if self.ctx.ty_ctx.is_cyclic_from_node(&schema_full_ty_str) {
+                    let cycles = self.ctx.ty_ctx.find_cycle_nodes(&schema_full_ty_str);
                     for cycle in cycles {
                         let node_names: Vec<String> = cycle
                             .iter()
@@ -834,6 +830,7 @@ impl<'ctx> Resolver<'ctx> {
             index_signature,
             decorators,
         };
+        let schema_runtime_ty = kclvm_runtime::schema_runtime_type(name, &self.ctx.pkgpath);
         self.ctx
             .schema_mapping
             .insert(schema_runtime_ty, Arc::new(RefCell::new(schema_ty.clone())));
@@ -898,24 +895,21 @@ impl<'ctx> Resolver<'ctx> {
             }
         }
         if should_add_schema_ref {
-            let schema_runtime_ty = if self.ctx.pkgpath == MAIN_PKG {
+            let schema_full_ty_str = if self.ctx.pkgpath == MAIN_PKG || self.ctx.pkgpath.is_empty()
+            {
                 name.to_string()
             } else {
                 kclvm_runtime::schema_runtime_type(name, &self.ctx.pkgpath)
             };
             for parent_ty in &parent_types {
-                let parent_schema_runtime_ty = if parent_ty.pkgpath == MAIN_PKG {
-                    parent_ty.name.clone()
-                } else {
-                    kclvm_runtime::schema_runtime_type(&parent_ty.name, &parent_ty.pkgpath)
-                };
+                let parent_full_ty_str = parent_ty.full_ty_str();
                 self.ctx.ty_ctx.add_dependencies(
-                    &schema_runtime_ty,
-                    &parent_schema_runtime_ty,
+                    &schema_full_ty_str,
+                    &parent_full_ty_str,
                     rule_stmt.name.get_span_pos(),
                 );
-                if self.ctx.ty_ctx.is_cyclic_from_node(&schema_runtime_ty) {
-                    let cycles = self.ctx.ty_ctx.find_cycle_nodes(&schema_runtime_ty);
+                if self.ctx.ty_ctx.is_cyclic_from_node(&schema_full_ty_str) {
+                    let cycles = self.ctx.ty_ctx.find_cycle_nodes(&schema_full_ty_str);
                     for cycle in cycles {
                         let node_names: Vec<String> = cycle
                             .iter()
