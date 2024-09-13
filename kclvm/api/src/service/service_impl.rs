@@ -5,12 +5,11 @@ use std::string::String;
 
 use crate::gpyrpc::*;
 
-use anyhow::anyhow;
 use kcl_language_server::rename;
 use kclvm_config::settings::build_settings_pathbuf;
-use kclvm_driver::canonicalize_input_files;
 use kclvm_loader::option::list_options;
 use kclvm_loader::{load_packages_with_cache, LoadPackageOptions};
+use kclvm_parser::entry::get_normalized_k_files_from_paths;
 use kclvm_parser::load_program;
 use kclvm_parser::parse_file;
 use kclvm_parser::KCLModuleCache;
@@ -861,12 +860,13 @@ impl KclvmServiceImpl {
         let settings_files = args.files.iter().map(|f| f.as_str()).collect::<Vec<&str>>();
         let settings_pathbuf = build_settings_pathbuf(&[], Some(settings_files), None)?;
         let files = if !settings_pathbuf.settings().input().is_empty() {
-            canonicalize_input_files(
+            get_normalized_k_files_from_paths(
                 &settings_pathbuf.settings().input(),
-                args.work_dir.clone(),
-                false,
-            )
-            .map_err(|e| anyhow!(e))?
+                &LoadProgramOptions {
+                    work_dir: args.work_dir.clone(),
+                    ..Default::default()
+                },
+            )?
         } else {
             vec![]
         };

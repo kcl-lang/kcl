@@ -7,7 +7,6 @@ use kclvm_ast::{
     MAIN_PKG,
 };
 use kclvm_config::cache::KCL_CACHE_PATH_ENV_VAR;
-use kclvm_driver::{canonicalize_input_files, expand_input_files};
 use kclvm_parser::{load_program, KCLModuleCache, ParseSessionRef};
 use kclvm_query::apply_overrides;
 use kclvm_sema::resolver::{
@@ -78,8 +77,11 @@ pub const KCL_FAST_EVAL_ENV_VAR: &str = "KCL_FAST_EVAL";
 pub fn exec_program(sess: ParseSessionRef, args: &ExecProgramArgs) -> Result<ExecProgramResult> {
     // parse args from json string
     let opts = args.get_load_program_options();
-    let kcl_paths = expand_files(args)?;
-    let kcl_paths_str = kcl_paths.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
+    let kcl_paths_str = args
+        .k_filename_list
+        .iter()
+        .map(|s| s.as_str())
+        .collect::<Vec<&str>>();
     let module_cache = KCLModuleCache::default();
     let mut program = load_program(
         sess.clone(),
@@ -270,8 +272,11 @@ pub fn build_program<P: AsRef<Path>>(
 ) -> Result<Artifact> {
     // Parse program.
     let opts = args.get_load_program_options();
-    let kcl_paths = expand_files(args)?;
-    let kcl_paths_str = kcl_paths.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
+    let kcl_paths_str = args
+        .k_filename_list
+        .iter()
+        .map(|s| s.as_str())
+        .collect::<Vec<&str>>();
     let mut program =
         load_program(sess.clone(), kcl_paths_str.as_slice(), Some(opts), None)?.program;
     // Resolve program.
@@ -345,16 +350,6 @@ fn build<P: AsRef<Path>>(
 
     // Return the library artifact.
     Artifact::from_path(lib_path)
-}
-
-/// Expand and return the normalized file paths for the input file list.
-pub fn expand_files(args: &ExecProgramArgs) -> Result<Vec<String>> {
-    let k_files = &args.k_filename_list;
-    let work_dir = args.work_dir.clone().unwrap_or_default();
-    let k_files = expand_input_files(k_files);
-    let kcl_paths =
-        canonicalize_input_files(&k_files, work_dir, false).map_err(|err| anyhow!(err))?;
-    Ok(kcl_paths)
 }
 
 /// Clean all the tmp files generated during lib generating and linking.

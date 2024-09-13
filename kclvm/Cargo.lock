@@ -1907,7 +1907,6 @@ version = "0.10.0-rc.1"
 dependencies = [
  "anyhow",
  "flate2",
- "glob",
  "indexmap 2.2.6",
  "kclvm-ast",
  "kclvm-config",
@@ -2012,6 +2011,7 @@ dependencies = [
  "either",
  "enquote",
  "expect-test",
+ "glob",
  "indexmap 1.9.3",
  "insta",
  "kclvm-ast",
