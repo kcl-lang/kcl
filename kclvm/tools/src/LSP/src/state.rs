@@ -264,6 +264,10 @@ impl LanguageServerState {
 
                         // If all workspaces do not contain the current file, get files workspace and store in temporary_workspace
                         if !may_contain {
+                            self.log_message(format!(
+                                "Not contains in any workspace, compile: {:?}",
+                                filename
+                            ));
                             let tool = Arc::clone(&self.tool);
                             let (workspaces, failed) =
                                 lookup_compile_workspaces(&*tool.read(), &filename, true);

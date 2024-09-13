@@ -1,4 +1,5 @@
 use anyhow::Result;
+use glob::glob;
 use kclvm_config::modfile::get_pkg_root;
 use kclvm_config::modfile::KCL_FILE_SUFFIX;
 use kclvm_config::path::ModRelativePath;
@@ -297,8 +298,10 @@ pub fn get_compile_entries_from_paths(
     }
     let mut result = Entries::default();
     let mut k_code_queue = VecDeque::from(opts.k_code_list.clone());
-    for s in file_paths {
-        let path = ModRelativePath::from(s.to_string());
+    let file_paths = expand_input_files(file_paths);
+    for file in &file_paths {
+        let file = canonicalize_input_file(file, &opts.work_dir);
+        let path = ModRelativePath::from(file.to_string());
 
         // If the path is a [`ModRelativePath`] with prefix '${<package_name>:KCL_MOD}',
         // calculate the real path and the package name.
@@ -308,11 +311,11 @@ pub fn get_compile_entries_from_paths(
                 .map(|pkg_path: &String| (name, pkg_path))
         }) {
             // Replace the mod relative path prefix '${<pkg_name>:KCL_MOD}' with the real path.
-            let s = path.canonicalize_by_root_path(pkg_path)?;
-            if let Some(root) = get_pkg_root(&s) {
+            let file = path.canonicalize_by_root_path(pkg_path)?;
+            if let Some(root) = get_pkg_root(&file) {
                 let mut entry: Entry = Entry::new(pkg_name.clone(), root.clone());
                 entry.extend_k_files_and_codes(
-                    get_main_files_from_pkg_path(&s, &root, &pkg_name, opts)?,
+                    get_main_files_from_pkg_path(&file, &root, &pkg_name, opts)?,
                     &mut k_code_queue,
                 );
                 result.push_entry(entry);
@@ -325,11 +328,11 @@ pub fn get_compile_entries_from_paths(
             entry.push_k_code(k_code_queue.pop_front());
             result.push_entry(entry);
             continue;
-        } else if let Some(root) = get_pkg_root(s) {
+        } else if let Some(root) = get_pkg_root(&file) {
             // If the path is a normal path.
             let mut entry: Entry = Entry::new(kclvm_ast::MAIN_PKG.to_string(), root.clone());
             entry.extend_k_files_and_codes(
-                get_main_files_from_pkg_path(s, &root, kclvm_ast::MAIN_PKG, opts)?,
+                get_main_files_from_pkg_path(&file, &root, kclvm_ast::MAIN_PKG, opts)?,
                 &mut k_code_queue,
             );
             result.push_entry(entry);
@@ -342,9 +345,9 @@ pub fn get_compile_entries_from_paths(
         .is_empty()
     {
         let mut entry = Entry::new(kclvm_ast::MAIN_PKG.to_string(), "".to_string());
-        for s in file_paths {
+        for file in &file_paths {
             entry.extend_k_files_and_codes(
-                get_main_files_from_pkg_path(s, "", kclvm_ast::MAIN_PKG, opts)?,
+                get_main_files_from_pkg_path(&file, "", kclvm_ast::MAIN_PKG, opts)?,
                 &mut k_code_queue,
             );
         }
@@ -514,4 +517,57 @@ fn is_ignored_file(filename: &str) -> bool {
     (!filename.ends_with(KCL_FILE_SUFFIX))
         || (filename.ends_with("_test.k"))
         || (filename.starts_with('_'))
+}
+
+/// Normalize the input file with the working directory and replace ${KCL_MOD} with the module root path.
+fn canonicalize_input_file(file: &str, work_dir: &str) -> String {
+    let path = std::path::Path::new(file);
+    let is_absolute = path.is_absolute();
+    // If the input file or path is a relative path and it is not a absolute path in the KCL module VFS,
+    // join with the work directory path and convert it to a absolute path.
+    let path = ModRelativePath::from(file.to_string());
+    let is_relative_path = match path.is_relative_path() {
+        Ok(is_relative_path) => is_relative_path,
+        _ => return file.to_string(),
+    };
+
+    let abs_path = if !is_absolute && !is_relative_path {
+        let filepath = std::path::Path::new(work_dir).join(file);
+        match filepath.canonicalize() {
+            Ok(path) => Some(path.adjust_canonicalization()),
+            Err(_) => Some(filepath.to_string_lossy().to_string()),
+        }
+    } else {
+        None
+    };
+    abs_path.unwrap_or(file.to_string())
+}
+
+/// Expand the single file pattern to a list of files.
+pub fn expand_if_file_pattern(file_pattern: String) -> Result<Vec<String>> {
+    let paths = glob(&file_pattern)?;
+    let mut matched_files = vec![];
+
+    for path in paths.flatten() {
+        matched_files.push(path.to_string_lossy().to_string());
+    }
+
+    Ok(matched_files)
+}
+
+/// Expand input kcl files with the file patterns e.g. `/path/to/kcl/*.k`, `**/**/*.k`
+pub fn expand_input_files(k_files: &[String]) -> Vec<String> {
+    let mut res = vec![];
+    for file in k_files {
+        if let Ok(files) = expand_if_file_pattern(file.to_string()) {
+            if !files.is_empty() {
+                res.extend(files);
+            } else {
+                res.push(file.to_string())
+            }
+        } else {
+            res.push(file.to_string())
+        }
+    }
+    res
 }
