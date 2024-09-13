@@ -365,12 +365,11 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
                 self.gs
                     .get_scopes_mut()
                     .add_def_to_scope(cur_scope, key_name.node.clone(), value);
-
-                self.walk_type_expr(Some(&index_signature.node.value_ty))?;
-                if let Some(value) = &index_signature.node.value {
-                    self.expr(value)?;
-                };
             }
+            self.walk_type_expr(Some(&index_signature.node.value_ty))?;
+            if let Some(value) = &index_signature.node.value {
+                self.expr(value)?;
+            };
             last_end_pos = index_signature.get_end_pos();
         }
 

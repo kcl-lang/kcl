@@ -95,7 +95,21 @@ impl<'ctx> Resolver<'ctx> {
             // Check index signature default value type.
             if let Some(value) = &index_signature_node.node.value {
                 let expected_ty = index_signature.val_ty;
-                let value_ty = self.expr(value);
+                let value_ty = if let TypeKind::Schema(ty) = &expected_ty.kind {
+                    let (start, end) = value.get_span_pos();
+                    let obj = self.new_config_expr_context_item(
+                        &ty.name,
+                        expected_ty.clone(),
+                        start,
+                        end,
+                    );
+                    let init_stack_depth = self.switch_config_expr_context(Some(obj));
+                    let value_ty = self.expr(value);
+                    self.clear_config_expr_context(init_stack_depth as usize, false);
+                    value_ty
+                } else {
+                    self.expr(value)
+                };
                 self.must_assignable_to(
                     value_ty,
                     expected_ty,
