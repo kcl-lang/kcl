@@ -30,4 +30,7 @@ jobs:
         with:
           name: kcl-windows-mingw
           if-no-files-found: error
-          path: kclvm/target/x86_64-pc-windows-gnu/release/libkclvm_cli_cdylib.a
+          path: |
+            kclvm/target/x86_64-pc-windows-gnu/release/libkclvm_cli_cdylib.a
+            kclvm/target/x86_64-pc-windows-gnu/release/libkclvm_cli_cdylib.dll.a
+            kclvm/target/x86_64-pc-windows-gnu/release/kclvm_cli_cdylib.dll
