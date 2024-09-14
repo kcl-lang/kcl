@@ -13,8 +13,14 @@ const CARGO_FILE_PATH: &str = env!("CARGO_MANIFEST_DIR");
 
 fn get_test_dir(sub: String) -> PathBuf {
     let mut cargo_file_path = PathBuf::from(CARGO_FILE_PATH);
-    cargo_file_path.push("src/test_data");
-    cargo_file_path.push(sub);
+    cargo_file_path.push("src");
+    cargo_file_path.push("test_data");
+    // Split unix and windows path
+    for part in sub.split("/") {
+        for p in part.split("\\") {
+            cargo_file_path.push(p);
+        }
+    }
     cargo_file_path
 }
 
