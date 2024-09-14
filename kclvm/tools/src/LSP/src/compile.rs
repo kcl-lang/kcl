@@ -36,8 +36,8 @@ pub fn compile(
     // Ignore the kcl plugin sematic check.
     let mut opts = opts.unwrap_or_default();
     opts.load_plugins = true;
-    // Get input files
-    let files = match get_normalized_k_files_from_paths(files, &opts) {
+    // Get input files code from vfs
+    let normalized_files = match get_normalized_k_files_from_paths(files, &opts) {
         Ok(file_list) => file_list,
         Err(e) => {
             return (
@@ -46,10 +46,10 @@ pub fn compile(
             )
         }
     };
-    let files: Vec<&str> = files.iter().map(|s| s.as_str()).collect();
+    let normalized_files: Vec<&str> = normalized_files.iter().map(|s| s.as_str()).collect();
     // Update opt.k_code_list
     if let Some(vfs) = &params.vfs {
-        let mut k_code_list = match load_files_code_from_vfs(&files, vfs) {
+        let mut k_code_list = match load_files_code_from_vfs(&normalized_files, vfs) {
             Ok(code_list) => code_list,
             Err(e) => {
                 return (
@@ -60,7 +60,6 @@ pub fn compile(
         };
         opts.k_code_list.append(&mut k_code_list);
     }
-
     let mut diags = IndexSet::new();
 
     if let Some(module_cache) = params.module_cache.as_ref() {
@@ -79,6 +78,8 @@ pub fn compile(
                 .insert(file.clone(), code);
         }
     }
+
+    let files: Vec<&str> = files.iter().map(|s| s.as_str()).collect();
 
     // Parser
     let sess = ParseSessionRef::default();
