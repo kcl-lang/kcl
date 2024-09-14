@@ -1,0 +1,36 @@
+name: build-and-test-windows-mingw
+on: ["push", "pull_request"]
+jobs:
+  build-and-test:
+    name: build and test on windows mingw
+    runs-on: windows-latest
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: "true"
+
+      - name: Install rust nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.79
+          override: true
+          components: clippy, rustfmt
+
+      - run: C:\msys64\usr\bin\pacman.exe -S --needed mingw-w64-x86_64-gcc --noconfirm
+      - shell: pwsh
+        run: echo "C:\msys64\mingw64\bin" >> $Env:GITHUB_PATH
+
+      - working-directory: ./kclvm
+        run: |
+          rustup target add x86_64-pc-windows-gnu
+          cargo build -r --target x86_64-pc-windows-gnu
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kcl-windows-mingw
+          if-no-files-found: error
+          path: |
+            kclvm/target/x86_64-pc-windows-gnu/release/libkclvm_cli_cdylib.a
+            kclvm/target/x86_64-pc-windows-gnu/release/libkclvm_cli_cdylib.dll.a
+            kclvm/target/x86_64-pc-windows-gnu/release/kclvm_cli_cdylib.dll
