@@ -259,11 +259,7 @@ impl SchemaType {
     }
     /// Get the object type string.
     pub fn full_ty_str(&self) -> String {
-        if self.pkgpath.is_empty() || self.pkgpath == MAIN_PKG {
-            self.name.clone()
-        } else {
-            format!("{}.{}", self.pkgpath, self.name)
-        }
+        full_ty_str(&self.pkgpath, &self.name)
     }
     /// Is `name` a schema member function
     pub fn is_member_functions(&self, name: &str) -> bool {
@@ -372,6 +368,14 @@ impl SchemaType {
             "".to_string()
         };
         format!("schema {}{}", self.name, params_str)
+    }
+}
+
+pub fn full_ty_str(pkgpath: &str, name: &str) -> String {
+    if pkgpath.is_empty() || pkgpath == MAIN_PKG {
+        name.to_string()
+    } else {
+        format!("{}.{}", pkgpath, name)
     }
 }
 

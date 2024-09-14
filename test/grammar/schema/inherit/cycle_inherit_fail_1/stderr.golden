@@ -1,6 +1,20 @@
 error[E2L23]: CompileError
+ --> ${CWD}/main.k:1:8
+  |
+1 | schema Parent(Son):
+  |        ^ There is a circular reference between schemas Parent, Son, GrandSon
+  |
+
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:4:8
+  |
+4 | schema Son(GrandSon):
+  |        ^ There is a circular reference between schemas Parent, Son, GrandSon
+  |
+
+error[E2L23]: CompileError
  --> ${CWD}/main.k:7:8
   |
 7 | schema GrandSon(Parent):
-  |        ^ There is a circular reference between schema GrandSon and Parent
+  |        ^ There is a circular reference between schemas Parent, Son, GrandSon
   |

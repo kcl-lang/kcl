@@ -4,8 +4,8 @@ use std::sync::Arc;
 use crate::info::is_private_field;
 use crate::resolver::Resolver;
 use crate::ty::{
-    is_upper_bound, DecoratorTarget, FunctionType, Parameter, SchemaAttr, SchemaIndexSignature,
-    SchemaType, Type, TypeKind, RESERVED_TYPE_IDENTIFIERS,
+    full_ty_str, is_upper_bound, DecoratorTarget, FunctionType, Parameter, SchemaAttr,
+    SchemaIndexSignature, SchemaType, Type, TypeKind, RESERVED_TYPE_IDENTIFIERS,
 };
 use indexmap::IndexMap;
 use kclvm_ast::ast;
@@ -63,7 +63,6 @@ impl<'ctx> Resolver<'ctx> {
                                 false,
                                 true,
                             ),
-
                             _ => continue,
                         };
                         if self.contains_object(name) {
@@ -757,22 +756,44 @@ impl<'ctx> Resolver<'ctx> {
                 });
             }
         }
-        let schema_runtime_ty = kclvm_runtime::schema_runtime_type(name, &self.ctx.pkgpath);
+
+        let schema_full_ty_str = full_ty_str(&self.ctx.pkgpath, name);
+
         if should_add_schema_ref {
             if let Some(ref parent_ty) = parent_ty {
-                let parent_schema_runtime_ty =
-                    kclvm_runtime::schema_runtime_type(&parent_ty.name, &parent_ty.pkgpath);
-                self.ctx
-                    .ty_ctx
-                    .add_dependencies(&schema_runtime_ty, &parent_schema_runtime_ty);
-                if self.ctx.ty_ctx.is_cyclic_from_node(&schema_runtime_ty) {
-                    self.handler.add_compile_error(
-                        &format!(
-                            "There is a circular reference between schema {} and {}",
-                            name, parent_ty.name,
-                        ),
-                        schema_stmt.get_span_pos(),
-                    );
+                let parent_full_ty_str = parent_ty.full_ty_str();
+                self.ctx.ty_ctx.add_dependencies(
+                    &schema_full_ty_str,
+                    &parent_full_ty_str,
+                    schema_stmt.name.get_span_pos(),
+                );
+
+                if self.ctx.ty_ctx.is_cyclic_from_node(&schema_full_ty_str) {
+                    let cycles = self.ctx.ty_ctx.find_cycle_nodes(&schema_full_ty_str);
+                    for cycle in cycles {
+                        let node_names: Vec<String> = cycle
+                            .iter()
+                            .map(|idx| {
+                                if let Some(name) = self.ctx.ty_ctx.dep_graph.node_weight(*idx) {
+                                    name.clone()
+                                } else {
+                                    "".to_string()
+                                }
+                            })
+                            .filter(|name| !name.is_empty())
+                            .collect();
+                        for node in &cycle {
+                            if let Some(range) = self.ctx.ty_ctx.get_node_range(node) {
+                                self.handler.add_compile_error(
+                                    &format!(
+                                        "There is a circular reference between schemas {}",
+                                        node_names.join(", "),
+                                    ),
+                                    range,
+                                );
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -806,6 +827,7 @@ impl<'ctx> Resolver<'ctx> {
             index_signature,
             decorators,
         };
+        let schema_runtime_ty = kclvm_runtime::schema_runtime_type(name, &self.ctx.pkgpath);
         self.ctx
             .schema_mapping
             .insert(schema_runtime_ty, Arc::new(RefCell::new(schema_ty.clone())));
@@ -870,21 +892,41 @@ impl<'ctx> Resolver<'ctx> {
             }
         }
         if should_add_schema_ref {
-            let schema_runtime_ty = kclvm_runtime::schema_runtime_type(name, &self.ctx.pkgpath);
+            let schema_full_ty_str = full_ty_str(&self.ctx.pkgpath, &name);
+
             for parent_ty in &parent_types {
-                let parent_schema_runtime_ty =
-                    kclvm_runtime::schema_runtime_type(&parent_ty.name, &parent_ty.pkgpath);
-                self.ctx
-                    .ty_ctx
-                    .add_dependencies(&schema_runtime_ty, &parent_schema_runtime_ty);
-                if self.ctx.ty_ctx.is_cyclic_from_node(&schema_runtime_ty) {
-                    self.handler.add_compile_error(
-                        &format!(
-                            "There is a circular reference between rule {} and {}",
-                            name, parent_ty.name,
-                        ),
-                        rule_stmt.get_span_pos(),
-                    );
+                let parent_full_ty_str = parent_ty.full_ty_str();
+                self.ctx.ty_ctx.add_dependencies(
+                    &schema_full_ty_str,
+                    &parent_full_ty_str,
+                    rule_stmt.name.get_span_pos(),
+                );
+                if self.ctx.ty_ctx.is_cyclic_from_node(&schema_full_ty_str) {
+                    let cycles = self.ctx.ty_ctx.find_cycle_nodes(&schema_full_ty_str);
+                    for cycle in cycles {
+                        let node_names: Vec<String> = cycle
+                            .iter()
+                            .map(|idx| {
+                                if let Some(name) = self.ctx.ty_ctx.dep_graph.node_weight(*idx) {
+                                    name.clone()
+                                } else {
+                                    "".to_string()
+                                }
+                            })
+                            .filter(|name| !name.is_empty())
+                            .collect();
+                        for node in &cycle {
+                            if let Some(range) = self.ctx.ty_ctx.get_node_range(node) {
+                                self.handler.add_compile_error(
+                                    &format!(
+                                        "There is a circular reference between rules {}",
+                                        node_names.join(", "),
+                                    ),
+                                    range,
+                                );
+                            }
+                        }
+                    }
                 }
             }
         }

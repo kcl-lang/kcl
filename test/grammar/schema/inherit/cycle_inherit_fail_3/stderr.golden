@@ -1,15 +1,17 @@
 error[E2L23]: CompileError
+ --> ${CWD}/pkg/b.k:1:8
+  |
+1 | schema B(C):
+  |        ^ There is a circular reference between schemas pkg.B, pkg.C
+  |
+
+error[E2L23]: CompileError
  --> ${CWD}/pkg/c.k:1:8
   |
 1 | schema C(B):
-  |        ^ There is a circular reference between schema C and B
+  |        ^ There is a circular reference between schemas pkg.B, pkg.C
   |
-error[E2L23]: CompileError
- --> ${CWD}/main.k:3:8
-  |
-3 | schema Son(pkg.B):
-  |        ^ There is a circular reference between schema Son and B
-  |
+
 error[E2L23]: CompileError
  --> ${CWD}/main.k:9:5
   |

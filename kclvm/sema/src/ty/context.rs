@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use super::{sup, DictType, Type, TypeFlags, TypeKind, TypeRef};
+use kclvm_error::diagnostic::Range;
+use petgraph::algo::kosaraju_scc;
 use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::visit::{depth_first_search, DfsEvent};
 
@@ -12,6 +14,7 @@ pub struct TypeContext {
     pub dep_graph: DiGraph<String, ()>,
     pub builtin_types: BuiltinTypes,
     node_index_map: HashMap<String, NodeIndex>,
+    node_range_map: HashMap<NodeIndex, Range>,
 }
 
 #[derive(Debug)]
@@ -46,6 +49,7 @@ impl TypeContext {
                 none: Arc::new(Type::NONE),
             },
             node_index_map: HashMap::new(),
+            node_range_map: HashMap::new(),
         }
     }
 
@@ -63,11 +67,32 @@ impl TypeContext {
         .is_err()
     }
 
+    pub fn find_cycle_nodes(&self, node: &String) -> Vec<Vec<NodeIndex>> {
+        let idx = match self.node_index_map.get(node) {
+            Some(idx) => idx,
+            None => return vec![],
+        };
+        let mut res = vec![];
+        let strongly_connected_components: Vec<Vec<NodeIndex>> = kosaraju_scc(&self.dep_graph);
+        for comp in strongly_connected_components {
+            if comp.len() > 1 && comp.contains(idx) {
+                res.push(comp)
+            }
+        }
+        res
+    }
+
+    #[inline]
+    pub fn get_node_range(&self, idx: &NodeIndex) -> Option<Range> {
+        self.node_range_map.get(idx).cloned()
+    }
+
     /// Add dependencies between "from" and "to".
-    pub fn add_dependencies(&mut self, from: &str, to: &str) {
+    pub fn add_dependencies(&mut self, from: &str, to: &str, from_node_range: Range) {
         let from_idx = self.get_or_insert_node_index(from);
         let to_idx = self.get_or_insert_node_index(to);
         self.dep_graph.add_edge(from_idx, to_idx, ());
+        self.node_range_map.insert(from_idx, from_node_range);
     }
 
     /// Get the node index from the node index map or insert it into the dependency graph.

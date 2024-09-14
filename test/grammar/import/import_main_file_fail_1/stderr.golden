@@ -1,6 +1,3 @@
-error[E2L23]: CompileError
- --> ${CWD}/main.k:1:1
-  |
-1 | import main
-  | ^ There is a circular import reference between module main and main
-  |
+error[E3M38]: error[E1001]: RecursiveLoad
+Could not compiles due to cyclic import statements
+- ${CWD}/main.k
