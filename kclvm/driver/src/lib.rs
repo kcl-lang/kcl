@@ -55,7 +55,6 @@ pub fn lookup_compile_workspace(
             }
         }
     }
-
     match lookup_compile_unit_path(file) {
         Ok(CompileUnitPath::SettingFile(dir)) => {
             let settings_files = lookup_setting_files(&dir);
