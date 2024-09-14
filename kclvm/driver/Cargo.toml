@@ -15,9 +15,10 @@ kclvm-utils ={ path = "../utils"}
 kclvm-parser ={ path = "../parser"}
 kclvm-ast ={ path = "../ast"}
 walkdir = "2"
+
 serde = { version = "1.0", features = ["derive"] }
 anyhow = { version = "1.0.70", features = ["backtrace"] }
-
+glob = "0.3.1"
 flate2 = "1.0.30"
 tar = "0.4.40"
 indexmap = "2.2.6"

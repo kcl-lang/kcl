@@ -13,7 +13,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.23
+          go-version: 1.21
 
       # Prerequisite
 
@@ -52,10 +52,7 @@ jobs:
         run: export PATH=$PATH:$PWD/../_build/dist/ubuntu/kclvm/bin && make test-runtime
         shell: bash
       - name: Install KCL CLI
-        run: |
-          go install kcl-lang.io/cli/cmd/kcl@main
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-          echo "${{ github.workspace }}/go/bin" >> $GITHUB_PATH
+        run: go install kcl-lang.io/cli/cmd/kcl@main
 
       - name: Unit test
         working-directory: ./kclvm

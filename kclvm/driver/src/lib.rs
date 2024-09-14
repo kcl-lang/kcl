@@ -7,11 +7,13 @@ pub mod toolchain;
 mod tests;
 
 use anyhow::Result;
+use glob::glob;
 use kclvm_config::{
     modfile::{
         get_pkg_root, load_mod_file, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE,
-        KCL_WORK_FILE,
+        KCL_MOD_PATH_ENV, KCL_WORK_FILE,
     },
+    path::ModRelativePath,
     settings::{build_settings_pathbuf, DEFAULT_SETTING_FILE},
     workfile::load_work_file,
 };
@@ -27,6 +29,106 @@ use std::{
 };
 use toolchain::{fill_pkg_maps_for_k_file, Metadata, Toolchain};
 use walkdir::WalkDir;
+
+/// Expand the single file pattern to a list of files.
+pub fn expand_if_file_pattern(file_pattern: String) -> Result<Vec<String>, String> {
+    let paths = glob(&file_pattern).map_err(|_| format!("invalid file pattern {file_pattern}"))?;
+    let mut matched_files = vec![];
+
+    for path in paths.flatten() {
+        matched_files.push(path.to_string_lossy().to_string());
+    }
+
+    Ok(matched_files)
+}
+
+/// Expand input kcl files with the file patterns.
+pub fn expand_input_files(k_files: &[String]) -> Vec<String> {
+    let mut res = vec![];
+    for file in k_files {
+        if let Ok(files) = expand_if_file_pattern(file.to_string()) {
+            if !files.is_empty() {
+                res.extend(files);
+            } else {
+                res.push(file.to_string())
+            }
+        } else {
+            res.push(file.to_string())
+        }
+    }
+    res
+}
+
+/// Normalize input files with the working directory and replace ${KCL_MOD} with the module root path.
+pub fn canonicalize_input_files(
+    k_files: &[String],
+    work_dir: String,
+    check_exist: bool,
+) -> Result<Vec<String>, String> {
+    let mut kcl_paths = Vec::<String>::new();
+    // The first traversal changes the relative path to an absolute path
+    for file in k_files.iter() {
+        let path = Path::new(file);
+
+        let is_absolute = path.is_absolute();
+        let is_exist_maybe_symlink = path.exists();
+        // If the input file or path is a relative path and it is not a absolute path in the KCL module VFS,
+        // join with the work directory path and convert it to a absolute path.
+        let path = ModRelativePath::from(file.to_string());
+        let abs_path = if !is_absolute && !path.is_relative_path().map_err(|err| err.to_string())? {
+            let filepath = Path::new(&work_dir).join(file);
+            match filepath.canonicalize() {
+                Ok(path) => Some(path.adjust_canonicalization()),
+                Err(_) => {
+                    if check_exist {
+                        return Err(format!(
+                            "Cannot find the kcl file, please check the file path {}",
+                            file
+                        ));
+                    }
+                    Some(filepath.to_string_lossy().to_string())
+                }
+            }
+        } else {
+            None
+        };
+        // If the input file or path is a symlink, convert it to a real path.
+        let real_path = if is_exist_maybe_symlink {
+            match PathBuf::from(file.to_string()).canonicalize() {
+                Ok(real_path) => Some(String::from(real_path.to_str().unwrap())),
+                Err(_) => {
+                    if check_exist {
+                        return Err(format!(
+                            "Cannot find the kcl file, please check the file path {}",
+                            file
+                        ));
+                    }
+                    Some(file.to_string())
+                }
+            }
+        } else {
+            None
+        };
+
+        kcl_paths.push(abs_path.unwrap_or(real_path.unwrap_or(file.to_string())));
+    }
+
+    // Get the root path of the project
+    let pkgroot = kclvm_config::modfile::get_pkg_root_from_paths(&kcl_paths, work_dir)?;
+
+    // The second traversal replaces ${KCL_MOD} with the project root path
+    kcl_paths = kcl_paths
+        .iter()
+        .map(|file| {
+            if file.contains(KCL_MOD_PATH_ENV) {
+                file.replace(KCL_MOD_PATH_ENV, pkgroot.as_str())
+            } else {
+                file.clone()
+            }
+        })
+        .collect();
+    Ok(kcl_paths)
+}
 
 /// Get compile workspace(files and options) from a single file input.
 /// 1. Lookup entry files in kcl.yaml
@@ -81,12 +183,15 @@ pub fn lookup_compile_workspace(
                         work_dir: work_dir.clone(),
                         ..Default::default()
                     };
-                    let metadata =
-                        fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt).unwrap_or(None);
-                    if files.is_empty() {
-                        default_res
-                    } else {
-                        (files, Some(load_opt), metadata)
+                    match canonicalize_input_files(&files, work_dir, true) {
+                        Ok(kcl_paths) => {
+                            // 1. find the kcl.mod path
+                            let metadata =
+                                fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt)
+                                    .unwrap_or(None);
+                            (kcl_paths, Some(load_opt), metadata)
+                        }
+                        Err(_) => default_res,
                     }
                 }
                 Err(_) => default_res,
@@ -100,7 +205,10 @@ pub fn lookup_compile_workspace(
                 if let Some(files) = mod_file.get_entries() {
                     let work_dir = dir.to_string_lossy().to_string();
                     load_opt.work_dir = work_dir.clone();
-                    (files, Some(load_opt), metadata)
+                    match canonicalize_input_files(&files, work_dir, true) {
+                        Ok(kcl_paths) => (kcl_paths, Some(load_opt), metadata),
+                        Err(_) => default_res,
+                    }
                 } else {
                     default_res
                 }
@@ -159,6 +267,7 @@ pub fn lookup_compile_workspaces(
                     (vec![path.to_string()], Some(load_opt), metadata),
                 );
             }
+
             WorkSpaceKind::SettingFile(setting_file) => {
                 workspaces.insert(
                     workspace.clone(),
@@ -169,6 +278,7 @@ pub fn lookup_compile_workspaces(
                     ),
                 );
             }
+
             WorkSpaceKind::ModFile(mod_file) => {
                 workspaces.insert(
                     workspace.clone(),
@@ -179,6 +289,7 @@ pub fn lookup_compile_workspaces(
                     ),
                 );
             }
+
             WorkSpaceKind::File(_) | WorkSpaceKind::NotFound => {
                 let pathbuf = PathBuf::from(path);
                 let file_path = pathbuf.as_path();
