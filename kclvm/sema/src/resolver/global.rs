@@ -4,11 +4,11 @@ use std::sync::Arc;
 use crate::info::is_private_field;
 use crate::resolver::Resolver;
 use crate::ty::{
-    is_upper_bound, DecoratorTarget, FunctionType, Parameter, SchemaAttr, SchemaIndexSignature,
-    SchemaType, Type, TypeKind, RESERVED_TYPE_IDENTIFIERS,
+    full_ty_str, is_upper_bound, DecoratorTarget, FunctionType, Parameter, SchemaAttr,
+    SchemaIndexSignature, SchemaType, Type, TypeKind, RESERVED_TYPE_IDENTIFIERS,
 };
 use indexmap::IndexMap;
-use kclvm_ast::{ast, MAIN_PKG};
+use kclvm_ast::ast;
 use kclvm_ast_pretty::{print_ast_node, print_schema_expr, ASTNode};
 use kclvm_error::*;
 
@@ -757,11 +757,8 @@ impl<'ctx> Resolver<'ctx> {
             }
         }
 
-        let schema_full_ty_str = if self.ctx.pkgpath == MAIN_PKG || self.ctx.pkgpath.is_empty() {
-            name.to_string()
-        } else {
-            kclvm_runtime::schema_runtime_type(name, &self.ctx.pkgpath)
-        };
+        let schema_full_ty_str = full_ty_str(&self.ctx.pkgpath, name);
+
         if should_add_schema_ref {
             if let Some(ref parent_ty) = parent_ty {
                 let parent_full_ty_str = parent_ty.full_ty_str();
@@ -895,12 +892,8 @@ impl<'ctx> Resolver<'ctx> {
             }
         }
         if should_add_schema_ref {
-            let schema_full_ty_str = if self.ctx.pkgpath == MAIN_PKG || self.ctx.pkgpath.is_empty()
-            {
-                name.to_string()
-            } else {
-                kclvm_runtime::schema_runtime_type(name, &self.ctx.pkgpath)
-            };
+            let schema_full_ty_str = full_ty_str(&self.ctx.pkgpath, &name);
+
             for parent_ty in &parent_types {
                 let parent_full_ty_str = parent_ty.full_ty_str();
                 self.ctx.ty_ctx.add_dependencies(
