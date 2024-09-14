@@ -21,7 +21,7 @@ jobs:
       - name: Install KCL
         shell: powershell
         run: |
-          go install kcl-lang.io/cli/cmd/kcl@latest
+          go install kcl-lang.io/cli/cmd/kcl@main
           $GoPath = go env GOPATH
           $GoInstallBin = Join-Path $GoPath "bin"
           $Env:PATH += ";$GoInstallBin"

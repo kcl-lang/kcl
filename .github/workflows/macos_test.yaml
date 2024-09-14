@@ -25,7 +25,7 @@ jobs:
 
       - name: Install KCL CLI
         run: |
-          go install kcl-lang.io/cli/cmd/kcl@latest
+          go install kcl-lang.io/cli/cmd/kcl@main
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
           echo "${{ github.workspace }}/go/bin" >> $GITHUB_PATH
 
