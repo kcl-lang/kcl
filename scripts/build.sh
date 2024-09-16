@@ -53,6 +53,7 @@ if [ -e $topdir/kclvm/target/release/libkclvm_cli_cdylib.$dll_extension ]; then
     touch $install_dir/bin/libkclvm_cli_cdylib.$dll_extension
     rm $install_dir/bin/libkclvm_cli_cdylib.$dll_extension
     cp $topdir/kclvm/target/release/libkclvm_cli_cdylib.$dll_extension $install_dir/bin/libkclvm_cli_cdylib.$dll_extension
+    cp $topdir/kclvm/target/release/libkclvm_cli_cdylib.a $install_dir/bin/libkclvm_cli_cdylib.a
 fi
 
 ## 2. Build KCL language server binary
