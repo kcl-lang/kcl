@@ -1,7 +1,11 @@
 name: Build and Test on centos7 amd64
-
-on: ["push", "pull_request"]
-
+on:
+  pull_request:
+    branches:
+     - main
+  push:
+    branches:
+     - main
 jobs:
   build-and-test-centos7:
     name: Build and Test on centos7 amd64

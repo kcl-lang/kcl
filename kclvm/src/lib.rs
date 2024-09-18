@@ -160,6 +160,23 @@ pub unsafe extern "C" fn kcl_fmt(src_ptr: *const c_char) -> *const c_char {
     }
 }
 
+fn intern_fmt(src: &str) -> Result<String, String> {
+    let api = API::default();
+    let args = &FormatCodeArgs {
+        source: src.to_string(),
+    };
+    match api.format_code(args) {
+        Ok(result) => String::from_utf8(result.formatted).map_err(|err| err.to_string()),
+        Err(err) => Err(err.to_string()),
+    }
+}
+
+/// Exposes a normal kcl version function to the WASM host.
+#[no_mangle]
+pub unsafe extern "C" fn kcl_version() -> *const c_char {
+    CString::new(kclvm_version::VERSION).unwrap().into_raw()
+}
+
 /// Exposes a normal kcl runtime error function to the WASM host.
 #[no_mangle]
 pub unsafe extern "C" fn kcl_runtime_err(buffer: *mut u8, length: usize) -> isize {
@@ -176,17 +193,6 @@ pub unsafe extern "C" fn kcl_runtime_err(buffer: *mut u8, length: usize) -> isiz
             0
         }
     })
-}
-
-fn intern_fmt(src: &str) -> Result<String, String> {
-    let api = API::default();
-    let args = &FormatCodeArgs {
-        source: src.to_string(),
-    };
-    match api.format_code(args) {
-        Ok(result) => String::from_utf8(result.formatted).map_err(|err| err.to_string()),
-        Err(err) => Err(err.to_string()),
-    }
 }
 
 /// Exposes an allocation function to the WASM host.
