@@ -6,6 +6,8 @@ on:
   push:
     branches:
      - main
+env:
+  MACOSX_DEPLOYMENT_TARGET: '11.0'
 jobs:
   build-and-test:
     # Ref: https://github.com/actions/runner-images/tree/main/images/macos
