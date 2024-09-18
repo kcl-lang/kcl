@@ -1,7 +1,11 @@
 name: Build and Test on Linux ARCH64
-
-on: ["push", "pull_request"]
-
+on:
+  pull_request:
+    branches:
+     - main
+  push:
+    branches:
+     - main
 jobs:
   build-and-test-arm64:
     name: Build and Test on Linux ARM64

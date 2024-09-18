@@ -1,5 +1,11 @@
 name: build-and-test-wasm
-on: ["push", "pull_request"]
+on:
+  pull_request:
+    branches:
+     - main
+  push:
+    branches:
+     - main
 jobs:
   build-and-test:
     # Ref: https://github.com/actions/runner-images/tree/main/images/linux
