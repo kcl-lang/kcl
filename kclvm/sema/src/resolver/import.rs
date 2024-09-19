@@ -9,7 +9,6 @@ use crate::{
 use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast;
 use kclvm_error::*;
-use std::io::Write;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::{cell::RefCell, path::Path};

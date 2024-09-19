@@ -863,7 +863,7 @@ fn find_packages(
                 suggestions.insert(
                     0,
                     format!(
-                        "try 'kcl mod add {}' to download the package not found",
+                        "try 'kcl mod add {}' to download the missing package",
                         pkg_name
                     ),
                 );
