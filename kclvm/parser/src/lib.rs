@@ -16,7 +16,7 @@ pub use crate::session::{ParseSession, ParseSessionRef};
 use compiler_base_macros::bug;
 use compiler_base_session::Session;
 use compiler_base_span::span::new_byte_pos;
-use file_graph::FileGraph;
+use file_graph::{toposort, FileGraph, PkgFile};
 use indexmap::IndexMap;
 use kclvm_ast::ast::Module;
 use kclvm_ast::{ast, MAIN_PKG};
@@ -94,7 +94,7 @@ pub struct ParseFileResult {
     /// Parse errors
     pub errors: Errors,
     /// Dependency paths.
-    pub deps: Vec<File>,
+    pub deps: Vec<PkgFile>,
 }
 
 /// Parse a KCL file to the AST module with parse errors.
@@ -544,7 +544,7 @@ impl Loader {
         pkgs: &mut HashMap<String, Vec<ast::Module>>,
     ) -> Result<()> {
         for m in pkg {
-            let mut to_paths: Vec<File> = vec![];
+            let mut to_paths: Vec<PkgFile> = vec![];
             for stmt in &mut m.body {
                 let pos = stmt.pos().clone();
                 if let ast::Stmt::Import(ref mut import_spec) = &mut stmt.node {
@@ -567,10 +567,10 @@ impl Loader {
                         import_spec.path.node = pkg_info.pkg_path.to_string();
                         import_spec.pkg_name = pkg_info.pkg_name.clone();
                         // Add file dependencies.
-                        let mut paths: Vec<File> = pkg_info
+                        let mut paths: Vec<PkgFile> = pkg_info
                             .k_files
                             .iter()
-                            .map(|p| File {
+                            .map(|p| PkgFile {
                                 path: p.into(),
                                 pkg_name: pkg_info.pkg_name.clone(),
                                 pkg_path: pkg_info.pkg_path.clone(),
@@ -582,7 +582,7 @@ impl Loader {
                 }
             }
             self.file_graph.write().unwrap().update_file(
-                &File {
+                &PkgFile {
                     path: m.filename.clone().into(),
                     pkg_name: pkg_name.clone(),
                     pkg_root: pkgroot.into(),
@@ -797,6 +797,28 @@ fn find_packages(
         return Ok(None);
     }
 
+    // plugin pkgs
+    if is_plugin_pkg(pkg_path) {
+        if !opts.load_plugins {
+            sess.1.write().add_error(
+                ErrorKind::CannotFindModule,
+                &[Message {
+                    range: Into::<Range>::into(pos),
+                    style: Style::Line,
+                    message: format!("the plugin package `{}` is not found, please confirm if plugin mode is enabled", pkg_path),
+                    note: None,
+                    suggested_replacement: None,
+                }],
+            );
+        }
+        return Ok(None);
+    }
+
+    // builtin pkgs
+    if is_builtin_pkg(pkg_path) {
+        return Ok(None);
+    }
+
     // 1. Look for in the current package's directory.
     let is_internal = is_internal_pkg(pkg_name, pkg_root, pkg_path)?;
     // 2. Look for in the vendor path.
@@ -821,6 +843,7 @@ fn find_packages(
     }
 
     // 4. Get package information based on whether the package is internal or external.
+
     match is_internal.or(is_external) {
         Some(pkg_info) => Ok(Some(pkg_info)),
         None => {
@@ -1009,24 +1032,16 @@ fn is_external_pkg(pkg_path: &str, opts: LoadProgramOptions) -> Result<Option<Pk
 pub type ASTCache = Arc<RwLock<IndexMap<PathBuf, Arc<ast::Module>>>>;
 pub type FileGraphCache = Arc<RwLock<FileGraph>>;
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub struct File {
-    pub path: PathBuf,
-    pub pkg_name: String,
-    pub pkg_path: String,
-    pub pkg_root: String,
-}
-
 pub fn parse_kcl_file(
     sess: ParseSessionRef,
-    file: File,
+    file: PkgFile,
     src: Option<String>,
     asts: ASTCache,
     file_graph: FileGraphCache,
     opts: &LoadProgramOptions,
-) -> Result<Vec<File>> {
+) -> Result<Vec<PkgFile>> {
     let mut m = parse_file_with_session(sess.clone(), file.path.to_str().unwrap(), src)?;
-    let mut deps: Vec<File> = vec![];
+    let mut deps: Vec<PkgFile> = vec![];
     for stmt in &mut m.body {
         let pos = stmt.pos().clone();
         if let ast::Stmt::Import(ref mut import_spec) = &mut stmt.node {
@@ -1050,10 +1065,10 @@ pub fn parse_kcl_file(
                 import_spec.path.node = pkg_info.pkg_path.to_string();
                 import_spec.pkg_name = pkg_info.pkg_name.clone();
                 // Add file dependencies.
-                let mut paths: Vec<File> = pkg_info
+                let mut paths: Vec<PkgFile> = pkg_info
                     .k_files
                     .iter()
-                    .map(|p| File {
+                    .map(|p| PkgFile {
                         path: p.into(),
                         pkg_name: pkg_info.pkg_name.clone(),
                         pkg_root: pkg_info.pkg_root.clone().into(),
@@ -1072,11 +1087,11 @@ pub fn parse_kcl_file(
 
 pub fn parse_kcl_pkg(
     sess: ParseSessionRef,
-    files: Vec<(File, Option<String>)>,
+    files: Vec<(PkgFile, Option<String>)>,
     asts: ASTCache,
     file_graph: FileGraphCache,
     opts: &LoadProgramOptions,
-) -> Result<Vec<File>> {
+) -> Result<Vec<PkgFile>> {
     let mut dependent = vec![];
     for (file, src) in files {
         let deps = parse_kcl_file(
@@ -1104,7 +1119,7 @@ pub fn parse_kcl_entry(
     let mut files = vec![];
     for (i, f) in k_files.iter().enumerate() {
         files.push((
-            File {
+            PkgFile {
                 path: f.into(),
                 pkg_name: entry.name().clone(),
                 pkg_root: entry.path().into(),
@@ -1153,31 +1168,33 @@ pub fn parse_kcl_program(
     let file_graph = file_graph.read().unwrap();
     let files = match file_graph.toposort() {
         Ok(files) => files,
-        Err(cycle) => {
-            let formatted_cycle = cycle
-                .iter()
-                .map(|file| format!("- {}\n", file.path.to_string_lossy()))
-                .collect::<String>();
-
-            sess.1.write().add_error(
-                ErrorKind::RecursiveLoad,
-                &[Message {
-                    range: (Position::dummy_pos(), Position::dummy_pos()),
-                    style: Style::Line,
-                    message: format!(
-                        "Could not compiles due to cyclic import statements\n{}",
-                        formatted_cycle.trim_end()
-                    ),
-                    note: None,
-                    suggested_replacement: None,
-                }],
-            );
-
-            // Return a list of all paths.
-            file_graph.paths()
-        }
+        Err(_) => file_graph.paths(),
     };
+
+    let file_path_graph = file_graph.file_path_graph();
+    if let Err(cycle) = toposort(&file_path_graph) {
+        let formatted_cycle = cycle
+            .iter()
+            .map(|file| format!("- {}\n", file.to_string_lossy()))
+            .collect::<String>();
+
+        sess.1.write().add_error(
+            ErrorKind::RecursiveLoad,
+            &[Message {
+                range: (Position::dummy_pos(), Position::dummy_pos()),
+                style: Style::Line,
+                message: format!(
+                    "Could not compiles due to cyclic import statements\n{}",
+                    formatted_cycle.trim_end()
+                ),
+                note: None,
+                suggested_replacement: None,
+            }],
+        );
+    }
+
     let mut pkgs: HashMap<String, Vec<Module>> = HashMap::new();
+
     let asts = asts.read().unwrap();
     for file in files.iter() {
         let m = asts.get(&file.path).unwrap().as_ref().clone();

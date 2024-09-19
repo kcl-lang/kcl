@@ -1,13 +1,21 @@
-use indexmap::IndexMap;
-use petgraph::visit::EdgeRef;
+use std::{collections::HashMap, path::PathBuf};
 
-use crate::File;
+use indexmap::IndexMap;
+use petgraph::{prelude::StableDiGraph, visit::EdgeRef};
+/// File with package info
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+pub struct PkgFile {
+    pub path: PathBuf,
+    pub pkg_name: String,
+    pub pkg_path: String,
+    pub pkg_root: String,
+}
 
 /// A graph of files, where each file depends on zero or more other files.
 #[derive(Default)]
 pub struct FileGraph {
-    graph: petgraph::stable_graph::StableDiGraph<File, ()>,
-    path_to_node_index: IndexMap<File, petgraph::graph::NodeIndex>,
+    graph: StableDiGraph<PkgFile, ()>,
+    path_to_node_index: IndexMap<PkgFile, petgraph::graph::NodeIndex>,
 }
 
 impl FileGraph {
@@ -16,9 +24,9 @@ impl FileGraph {
     /// For example, if the current graph has file A depending on B, and
     /// `update_file(pathA, &[pathC])` was called, then this function will remove the edge
     /// from A to B, and add an edge from A to C.
-    pub fn update_file<'a, I: IntoIterator<Item = &'a File>>(
+    pub fn update_file<'a, I: IntoIterator<Item = &'a PkgFile>>(
         &mut self,
-        from_path: &File,
+        from_path: &PkgFile,
         to_paths: I,
     ) {
         let from_node_index = self.get_or_insert_node_index(from_path);
@@ -40,14 +48,14 @@ impl FileGraph {
     }
 
     /// Returns true if the given file is in the graph
-    pub fn contains_file(&self, file: &File) -> bool {
+    pub fn contains_file(&self, file: &PkgFile) -> bool {
         self.path_to_node_index.contains_key(file)
     }
 
     /// Returns a list of the direct dependencies of the given file.
     /// (does not include all transitive dependencies)
     /// The file path must be relative to the root of the file graph.
-    pub fn dependencies_of(&self, file: &File) -> Vec<&File> {
+    pub fn dependencies_of(&self, file: &PkgFile) -> Vec<&PkgFile> {
         let node_index = self
             .path_to_node_index
             .get(file)
@@ -60,7 +68,7 @@ impl FileGraph {
 
     /// Returns a list of files in the order they should be compiled
     /// Or a list of files that are part of a cycle, if one exists
-    pub fn toposort(&self) -> Result<Vec<File>, Vec<File>> {
+    pub fn toposort(&self) -> Result<Vec<PkgFile>, Vec<PkgFile>> {
         match petgraph::algo::toposort(&self.graph, None) {
             Ok(indices) => Ok(indices
                 .into_iter()
@@ -91,11 +99,11 @@ impl FileGraph {
 
     /// Returns all paths.
     #[inline]
-    pub fn paths(&self) -> Vec<File> {
+    pub fn paths(&self) -> Vec<PkgFile> {
         self.path_to_node_index.keys().cloned().collect::<Vec<_>>()
     }
 
-    fn get_or_insert_node_index(&mut self, file: &File) -> petgraph::graph::NodeIndex {
+    fn get_or_insert_node_index(&mut self, file: &PkgFile) -> petgraph::graph::NodeIndex {
         if let Some(node_index) = self.path_to_node_index.get(file) {
             return *node_index;
         }
@@ -103,5 +111,77 @@ impl FileGraph {
         let node_index = self.graph.add_node(file.to_owned());
         self.path_to_node_index.insert(file.to_owned(), node_index);
         node_index
+    }
+
+    pub fn file_path_graph(&self) -> StableDiGraph<PathBuf, ()> {
+        let mut graph = StableDiGraph::new();
+        let mut node_map = HashMap::new();
+        for node in self.graph.node_indices() {
+            let path = self.graph[node].path.clone();
+            let idx = graph.add_node(path.clone());
+            node_map.insert(path, idx);
+        }
+        for edge in self.graph.edge_indices() {
+            if let Some((source, target)) = self.graph.edge_endpoints(edge) {
+                let source_path = self.graph[source].path.clone();
+                let target_path = self.graph[target].path.clone();
+                graph.add_edge(
+                    node_map.get(&source_path).unwrap().clone(),
+                    node_map.get(&target_path).unwrap().clone(),
+                    (),
+                );
+            }
+        }
+        graph
+    }
+
+    pub fn pkg_graph(&self) -> StableDiGraph<String, ()> {
+        let mut graph = StableDiGraph::new();
+        let mut node_map = HashMap::new();
+        for node in self.graph.node_indices() {
+            let path = self.graph[node].pkg_path.clone();
+            let idx = graph.add_node(path.clone());
+            node_map.insert(path, idx);
+        }
+        for edge in self.graph.edge_indices() {
+            if let Some((source, target)) = self.graph.edge_endpoints(edge) {
+                let source_path = self.graph[source].pkg_path.clone();
+                let target_path = self.graph[target].pkg_path.clone();
+                graph.add_edge(
+                    node_map.get(&source_path).unwrap().clone(),
+                    node_map.get(&target_path).unwrap().clone(),
+                    (),
+                );
+            }
+        }
+        graph
+    }
+}
+
+pub fn toposort<T>(graph: &StableDiGraph<T, ()>) -> Result<Vec<T>, Vec<T>>
+where
+    T: Clone,
+{
+    match petgraph::algo::toposort(graph, None) {
+        Ok(indices) => Ok(indices
+            .into_iter()
+            .rev()
+            .map(|n| graph[n].clone())
+            .collect::<Vec<_>>()),
+        Err(err) => {
+            // toposort function in the `petgraph` library doesn't return the cycle itself,
+            // so we need to use Tarjan's algorithm to find one instead
+            let strongly_connected_components = petgraph::algo::tarjan_scc(&graph);
+            // a strongly connected component is a cycle if it has more than one node
+            // let's just return the first one we find
+            let cycle = match strongly_connected_components
+                .into_iter()
+                .find(|component| component.len() > 1)
+            {
+                Some(vars) => vars,
+                None => vec![err.node_id()],
+            };
+            Err(cycle.iter().map(|n| graph[*n].clone()).collect::<Vec<_>>())
+        }
     }
 }
