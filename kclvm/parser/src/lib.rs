@@ -1065,6 +1065,8 @@ pub fn parse_kcl_file(
                 // Add the external package name as prefix of the [`kclvm_ast::ImportStmt`]'s member [`path`].
                 import_spec.path.node = pkg_info.pkg_path.to_string();
                 import_spec.pkg_name = pkg_info.pkg_name.clone();
+                // If k_files is empty, the pkg information will not be found in the file graph.
+                // Record the empty pkg to prevent loss. After the parse file is completed, fill in the modules
                 pkgs.insert(pkg_info.pkg_path.clone(), vec![]);
                 // Add file dependencies.
                 let mut paths: Vec<PkgFile> = pkg_info
