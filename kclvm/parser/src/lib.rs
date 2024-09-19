@@ -16,7 +16,7 @@ pub use crate::session::{ParseSession, ParseSessionRef};
 use compiler_base_macros::bug;
 use compiler_base_session::Session;
 use compiler_base_span::span::new_byte_pos;
-use file_graph::{toposort, FileGraph, PkgFile};
+use file_graph::{toposort, PkgFile, PkgFileGraph};
 use indexmap::IndexMap;
 use kclvm_ast::ast::Module;
 use kclvm_ast::{ast, MAIN_PKG};
@@ -343,13 +343,13 @@ impl Loader {
             Some(c) => c.read().unwrap().asts.clone(),
             None => ASTCache::default(),
         };
-        parse_kcl_program(
+        return parse_kcl_program(
             self.sess.clone(),
             self.paths.clone(),
             asts,
             self.file_graph.clone(),
             &self.opts,
-        )
+        );
 
         // let compile_entries = get_compile_entries_from_paths(&self.paths, &self.opts)?;
         // let workdir = compile_entries.get_root_path().to_string();
@@ -413,7 +413,7 @@ impl Loader {
         //         &mut pkgs,
         //     )?;
         // }
-        // // Insert the complete ast to replace the empty list.
+        // Insert the complete ast to replace the empty list.
         // pkgs.insert(kclvm_ast::MAIN_PKG.to_string(), pkg_files);
         // let program = ast::Program {
         //     root: workdir,
@@ -857,7 +857,7 @@ fn find_packages(
                     suggested_replacement: None,
                 }],
             );
-            let mut suggestions = vec![format!("find more package on 'https://artifacthub.io'")];
+            let mut suggestions = vec![format!("browse more packages at 'https://artifacthub.io'")];
 
             if let Ok(pkg_name) = parse_external_pkg_name(pkg_path) {
                 suggestions.insert(
@@ -1030,13 +1030,14 @@ fn is_external_pkg(pkg_path: &str, opts: LoadProgramOptions) -> Result<Option<Pk
 }
 
 pub type ASTCache = Arc<RwLock<IndexMap<PathBuf, Arc<ast::Module>>>>;
-pub type FileGraphCache = Arc<RwLock<FileGraph>>;
+pub type FileGraphCache = Arc<RwLock<PkgFileGraph>>;
 
 pub fn parse_kcl_file(
     sess: ParseSessionRef,
     file: PkgFile,
     src: Option<String>,
     asts: ASTCache,
+    pkgs: &mut HashMap<String, Vec<Module>>,
     file_graph: FileGraphCache,
     opts: &LoadProgramOptions,
 ) -> Result<Vec<PkgFile>> {
@@ -1064,6 +1065,7 @@ pub fn parse_kcl_file(
                 // Add the external package name as prefix of the [`kclvm_ast::ImportStmt`]'s member [`path`].
                 import_spec.path.node = pkg_info.pkg_path.to_string();
                 import_spec.pkg_name = pkg_info.pkg_name.clone();
+                pkgs.insert(pkg_info.pkg_path.clone(), vec![]);
                 // Add file dependencies.
                 let mut paths: Vec<PkgFile> = pkg_info
                     .k_files
@@ -1089,6 +1091,7 @@ pub fn parse_kcl_pkg(
     sess: ParseSessionRef,
     files: Vec<(PkgFile, Option<String>)>,
     asts: ASTCache,
+    pkgs: &mut HashMap<String, Vec<Module>>,
     file_graph: FileGraphCache,
     opts: &LoadProgramOptions,
 ) -> Result<Vec<PkgFile>> {
@@ -1099,6 +1102,7 @@ pub fn parse_kcl_pkg(
             file.clone(),
             src,
             asts.clone(),
+            pkgs,
             file_graph.clone(),
             opts,
         )?;
@@ -1111,10 +1115,12 @@ pub fn parse_kcl_entry(
     sess: ParseSessionRef,
     entry: &entry::Entry,
     asts: ASTCache,
+    pkgs: &mut HashMap<String, Vec<Module>>,
     file_graph: FileGraphCache,
     opts: &LoadProgramOptions,
 ) {
     let k_files = entry.get_k_files();
+    pkgs.insert(entry.path().clone(), vec![]);
     let maybe_k_codes = entry.get_k_codes();
     let mut files = vec![];
     for (i, f) in k_files.iter().enumerate() {
@@ -1128,8 +1134,15 @@ pub fn parse_kcl_entry(
             maybe_k_codes.get(i).unwrap().clone(),
         ));
     }
-    let dependent_paths =
-        parse_kcl_pkg(sess.clone(), files, asts.clone(), file_graph.clone(), opts).unwrap();
+    let dependent_paths = parse_kcl_pkg(
+        sess.clone(),
+        files,
+        asts.clone(),
+        pkgs,
+        file_graph.clone(),
+        opts,
+    )
+    .unwrap();
     let mut unparsed_file = dependent_paths;
 
     while let Some(file) = unparsed_file.pop() {
@@ -1141,6 +1154,7 @@ pub fn parse_kcl_entry(
             file,
             None,
             asts.clone(),
+            pkgs,
             file_graph.clone(),
             &opts,
         )
@@ -1151,7 +1165,6 @@ pub fn parse_kcl_entry(
 
 pub fn parse_kcl_program(
     sess: ParseSessionRef,
-    // files: Vec<(File, Option<String>)>,
     paths: Vec<String>,
     asts: ASTCache,
     file_graph: FileGraphCache,
@@ -1160,8 +1173,17 @@ pub fn parse_kcl_program(
     let compile_entries = get_compile_entries_from_paths(&paths, &opts)?;
     let workdir = compile_entries.get_root_path().to_string();
 
+    let mut pkgs: HashMap<String, Vec<Module>> = HashMap::new();
+
     for entry in compile_entries.iter() {
-        parse_kcl_entry(sess.clone(), entry, asts.clone(), file_graph.clone(), &opts);
+        parse_kcl_entry(
+            sess.clone(),
+            entry,
+            asts.clone(),
+            &mut pkgs,
+            file_graph.clone(),
+            &opts,
+        );
     }
 
     // Return the files in the order they should be compiled
@@ -1192,8 +1214,6 @@ pub fn parse_kcl_program(
             }],
         );
     }
-
-    let mut pkgs: HashMap<String, Vec<Module>> = HashMap::new();
 
     let asts = asts.read().unwrap();
     for file in files.iter() {

@@ -1,6 +1,7 @@
 use std::{collections::HashMap, path::PathBuf};
 
 use indexmap::IndexMap;
+use kclvm_ast::ast::Module;
 use petgraph::{prelude::StableDiGraph, visit::EdgeRef};
 /// File with package info
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
@@ -13,12 +14,12 @@ pub struct PkgFile {
 
 /// A graph of files, where each file depends on zero or more other files.
 #[derive(Default)]
-pub struct FileGraph {
+pub struct PkgFileGraph {
     graph: StableDiGraph<PkgFile, ()>,
     path_to_node_index: IndexMap<PkgFile, petgraph::graph::NodeIndex>,
 }
 
-impl FileGraph {
+impl PkgFileGraph {
     /// Sets a file to depend on the given other files.
     ///
     /// For example, if the current graph has file A depending on B, and
@@ -66,35 +67,8 @@ impl FileGraph {
             .collect::<Vec<_>>()
     }
 
-    /// Returns a list of files in the order they should be compiled
-    /// Or a list of files that are part of a cycle, if one exists
     pub fn toposort(&self) -> Result<Vec<PkgFile>, Vec<PkgFile>> {
-        match petgraph::algo::toposort(&self.graph, None) {
-            Ok(indices) => Ok(indices
-                .into_iter()
-                .rev()
-                .map(|n| self.graph[n].clone())
-                .collect::<Vec<_>>()),
-            Err(err) => {
-                // toposort function in the `petgraph` library doesn't return the cycle itself,
-                // so we need to use Tarjan's algorithm to find one instead
-                let strongly_connected_components = petgraph::algo::tarjan_scc(&self.graph);
-
-                // a strongly connected component is a cycle if it has more than one node
-                // let's just return the first one we find
-                let cycle = match strongly_connected_components
-                    .into_iter()
-                    .find(|component| component.len() > 1)
-                {
-                    Some(vars) => vars,
-                    None => vec![err.node_id()],
-                };
-                Err(cycle
-                    .iter()
-                    .map(|n| self.graph[*n].clone())
-                    .collect::<Vec<_>>())
-            }
-        }
+        toposort(&self.graph)
     }
 
     /// Returns all paths.
@@ -135,9 +109,15 @@ impl FileGraph {
         graph
     }
 
-    pub fn pkg_graph(&self) -> StableDiGraph<String, ()> {
+    pub fn pkg_graph(&self, pkgs: &HashMap<String, Vec<Module>>) -> StableDiGraph<String, ()> {
         let mut graph = StableDiGraph::new();
         let mut node_map = HashMap::new();
+
+        for pkg in pkgs.keys() {
+            let idx = graph.add_node(pkg.clone());
+            node_map.insert(pkg.clone(), idx);
+        }
+
         for node in self.graph.node_indices() {
             let path = self.graph[node].pkg_path.clone();
             let idx = graph.add_node(path.clone());
@@ -158,6 +138,8 @@ impl FileGraph {
     }
 }
 
+/// Returns a list of files in the order they should be compiled
+/// Or a list of files that are part of a cycle, if one exists
 pub fn toposort<T>(graph: &StableDiGraph<T, ()>) -> Result<Vec<T>, Vec<T>>
 where
     T: Clone,

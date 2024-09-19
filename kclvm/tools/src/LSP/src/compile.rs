@@ -152,8 +152,8 @@ pub fn compile_with_params(
     let file = params.file.clone().unwrap();
     // Lookup compile workspace from the cursor file.
     let (mut files, opts, _) = lookup_compile_workspace(&toolchain::default(), &file, true);
-    if !files.contains(&file) {
-        files.push(file);
-    }
+    // if !files.contains(&file) {
+    //     files.push(file);
+    // }
     compile(params, &mut files, opts)
 }
