@@ -343,7 +343,7 @@ impl Loader {
             Some(c) => c.read().unwrap().asts.clone(),
             None => ASTCache::default(),
         };
-        return parse_kcl_program(
+        let res = parse_kcl_program(
             self.sess.clone(),
             self.paths.clone(),
             asts,
@@ -351,109 +351,113 @@ impl Loader {
             &self.opts,
         );
 
-        // let compile_entries = get_compile_entries_from_paths(&self.paths, &self.opts)?;
-        // let workdir = compile_entries.get_root_path().to_string();
-        // let mut pkgs = HashMap::new();
-        // let mut pkg_files = Vec::new();
-        // // update cache
-        // if let Some(module_cache) = self.module_cache.as_ref() {
-        //     for entry in compile_entries.iter() {
-        //         let k_files = entry.get_k_files();
-        //         let maybe_k_codes = entry.get_k_codes();
-        //         // update main pkg ast cache
-        //         for (i, filename) in k_files.iter().enumerate() {
-        //             let m = parse_file_with_session(
-        //                 self.sess.clone(),
-        //                 filename,
-        //                 maybe_k_codes[i].clone(),
-        //             )?;
-        //             let mut module_cache_ref = module_cache.write().unwrap();
-        //             module_cache_ref
-        //                 .ast_cache
-        //                 .insert(filename.clone(), m.clone());
-        //         }
-        //         // update invalidate module ast cache
-        //         let mut module_cache_ref = module_cache.write().unwrap();
-        //         let invalidate_module = module_cache_ref.invalidate_module.clone();
-        //         module_cache_ref.invalidate_module.clear();
-        //         drop(module_cache_ref);
+        return res;
 
-        //         for (filename, code) in invalidate_module.iter() {
-        //             let m = parse_file_with_session(self.sess.clone(), filename, code.clone())?;
-        //             let mut module_cache_ref = module_cache.write().unwrap();
-        //             module_cache_ref
-        //                 .ast_cache
-        //                 .insert(filename.clone(), m.clone());
-        //         }
-        //     }
-        // }
+        let compile_entries = get_compile_entries_from_paths(&self.paths, &self.opts)?;
+        let workdir = compile_entries.get_root_path().to_string();
+        let mut pkgs = HashMap::new();
+        let mut pkg_files = Vec::new();
+        // update cache
+        if let Some(module_cache) = self.module_cache.as_ref() {
+            for entry in compile_entries.iter() {
+                let k_files = entry.get_k_files();
+                let maybe_k_codes = entry.get_k_codes();
+                // update main pkg ast cache
+                for (i, filename) in k_files.iter().enumerate() {
+                    let m = parse_file_with_session(
+                        self.sess.clone(),
+                        filename,
+                        maybe_k_codes[i].clone(),
+                    )?;
+                    let mut module_cache_ref = module_cache.write().unwrap();
+                    module_cache_ref
+                        .ast_cache
+                        .insert(filename.clone(), m.clone());
+                }
+                // update invalidate module ast cache
+                let mut module_cache_ref = module_cache.write().unwrap();
+                let invalidate_module = module_cache_ref.invalidate_module.clone();
+                module_cache_ref.invalidate_module.clear();
+                drop(module_cache_ref);
 
-        // for entry in compile_entries.iter() {
-        //     let k_files = entry.get_k_files();
-        //     let maybe_k_codes = entry.get_k_codes();
-        //     // Load main package.
-        //     for (i, filename) in k_files.iter().enumerate() {
-        //         let mut m = if let Some(module_cache) = self.module_cache.as_ref() {
-        //             let module_cache_ref = module_cache.read().unwrap();
-        //             module_cache_ref.ast_cache.get(filename).unwrap().clone()
-        //         } else {
-        //             parse_file_with_session(self.sess.clone(), filename, maybe_k_codes[i].clone())?
-        //         };
-        //         fix_rel_import_path(entry.path(), &mut m);
-        //         pkg_files.push(m);
-        //     }
+                for (filename, code) in invalidate_module.iter() {
+                    let m = parse_file_with_session(self.sess.clone(), filename, code.clone())?;
+                    let mut module_cache_ref = module_cache.write().unwrap();
+                    module_cache_ref
+                        .ast_cache
+                        .insert(filename.clone(), m.clone());
+                }
+            }
+        }
 
-        //     // Insert an empty vec to determine whether there is a circular import.
-        //     pkgs.insert(kclvm_ast::MAIN_PKG.to_string(), vec![]);
-        //     self.load_import_package(
-        //         entry.path(),
-        //         entry.name().to_string(),
-        //         kclvm_ast::MAIN_PKG.to_string(),
-        //         &mut pkg_files,
-        //         &mut pkgs,
-        //     )?;
-        // }
+        for entry in compile_entries.iter() {
+            let k_files = entry.get_k_files();
+            let maybe_k_codes = entry.get_k_codes();
+            // Load main package.
+            for (i, filename) in k_files.iter().enumerate() {
+                let mut m = if let Some(module_cache) = self.module_cache.as_ref() {
+                    let module_cache_ref = module_cache.read().unwrap();
+                    module_cache_ref.ast_cache.get(filename).unwrap().clone()
+                } else {
+                    parse_file_with_session(self.sess.clone(), filename, maybe_k_codes[i].clone())?
+                };
+                fix_rel_import_path(entry.path(), &mut m);
+                pkg_files.push(m);
+            }
+
+            // Insert an empty vec to determine whether there is a circular import.
+            pkgs.insert(kclvm_ast::MAIN_PKG.to_string(), vec![]);
+            self.load_import_package(
+                entry.path(),
+                entry.name().to_string(),
+                kclvm_ast::MAIN_PKG.to_string(),
+                &mut pkg_files,
+                &mut pkgs,
+            )?;
+        }
         // Insert the complete ast to replace the empty list.
-        // pkgs.insert(kclvm_ast::MAIN_PKG.to_string(), pkg_files);
-        // let program = ast::Program {
-        //     root: workdir,
-        //     pkgs,
-        // };
-        // // Return the files in the order they should be compiled
-        // let file_graph = self.file_graph.read().unwrap();
-        // let paths = match file_graph.toposort() {
-        //     Ok(files) => files,
-        //     Err(cycle) => {
-        //         let formatted_cycle = cycle
-        //             .iter()
-        //             .map(|file| format!("- {}\n", file.path.to_string_lossy()))
-        //             .collect::<String>();
+        pkgs.insert(kclvm_ast::MAIN_PKG.to_string(), pkg_files);
 
-        //         self.sess.1.write().add_error(
-        //             ErrorKind::RecursiveLoad,
-        //             &[Message {
-        //                 range: (Position::dummy_pos(), Position::dummy_pos()),
-        //                 style: Style::Line,
-        //                 message: format!(
-        //                     "Could not compiles due to cyclic import statements\n{}",
-        //                     formatted_cycle.trim_end()
-        //                 ),
-        //                 note: None,
-        //                 suggested_replacement: None,
-        //             }],
-        //         );
+        let program = ast::Program {
+            root: workdir,
+            pkgs,
+        };
 
-        //         // Return a list of all paths.
-        //         file_graph.paths()
-        //     }
-        // };
-        // drop(file_graph);
+        // Return the files in the order they should be compiled
+        let file_graph = self.file_graph.read().unwrap();
+        let paths = match file_graph.toposort() {
+            Ok(files) => files,
+            Err(cycle) => {
+                let formatted_cycle = cycle
+                    .iter()
+                    .map(|file| format!("- {}\n", file.path.to_string_lossy()))
+                    .collect::<String>();
 
-        // Ok(LoadProgramResult {
-        //     program,
-        //     errors: self.sess.1.read().diagnostics.clone(),
-        //     paths: paths.iter().map(|file| file.path.clone()).collect(),
-        // })
+                self.sess.1.write().add_error(
+                    ErrorKind::RecursiveLoad,
+                    &[Message {
+                        range: (Position::dummy_pos(), Position::dummy_pos()),
+                        style: Style::Line,
+                        message: format!(
+                            "Could not compiles due to cyclic import statements\n{}",
+                            formatted_cycle.trim_end()
+                        ),
+                        note: None,
+                        suggested_replacement: None,
+                    }],
+                );
+
+                // Return a list of all paths.
+                file_graph.paths()
+            }
+        };
+        drop(file_graph);
+
+        Ok(LoadProgramResult {
+            program,
+            errors: self.sess.1.read().diagnostics.clone(),
+            paths: paths.iter().map(|file| file.path.clone()).collect(),
+        })
     }
 
     /// [`find_packages`] will find the kcl package.
@@ -944,7 +948,6 @@ fn get_pkg_kfile_list(pkgroot: &str, pkgpath: &str) -> Result<Vec<String>> {
     }
 
     let abspath: String = pathbuf.as_path().to_str().unwrap().to_string();
-
     if std::path::Path::new(abspath.as_str()).exists() {
         return get_dir_files(abspath.as_str());
     }
@@ -964,7 +967,6 @@ fn get_dir_files(dir: &str) -> Result<Vec<String>> {
     }
 
     let mut list = Vec::new();
-
     for path in std::fs::read_dir(dir).unwrap() {
         let path = path.unwrap();
         if !path
@@ -982,7 +984,7 @@ fn get_dir_files(dir: &str) -> Result<Vec<String>> {
             continue;
         }
 
-        let s = format!("{}", path.path().display());
+        let s = format!("{}", path.path().canonicalize()?.display());
         list.push(s);
     }
 
@@ -1122,7 +1124,6 @@ pub fn parse_kcl_entry(
     opts: &LoadProgramOptions,
 ) {
     let k_files = entry.get_k_files();
-    pkgs.insert(entry.path().clone(), vec![]);
     let maybe_k_codes = entry.get_k_codes();
     let mut files = vec![];
     for (i, f) in k_files.iter().enumerate() {
@@ -1221,7 +1222,15 @@ pub fn parse_kcl_program(
     for file in files.iter() {
         let m = asts.get(&file.path).unwrap().as_ref().clone();
         match pkgs.get_mut(&file.pkg_path) {
-            Some(modules) => modules.push(m),
+            Some(modules) => {
+                if modules
+                    .iter()
+                    .find(|module| module.filename == m.filename)
+                    .is_none()
+                {
+                    modules.push(m);
+                }
+            }
             None => {
                 pkgs.insert(file.pkg_path.clone(), vec![m]);
             }
