@@ -21,7 +21,6 @@ mod tests;
 
 use indexmap::IndexMap;
 use kclvm_error::diagnostic::Range;
-use std::io::Write;
 use std::sync::Arc;
 use std::{cell::RefCell, rc::Rc};
 

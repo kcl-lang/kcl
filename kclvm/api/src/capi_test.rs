@@ -101,8 +101,14 @@ fn test_c_api_get_schema_type_mapping() {
         "get-schema-type-mapping.json",
         "get-schema-type-mapping.response.json",
         |r| {
+            let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+            let root = root.to_str().unwrap();
             for (_, s_ty) in &mut r.schema_type_mapping {
-                s_ty.filename = s_ty.filename.replace('/', "").replace('\\', "")
+                let filename = match s_ty.filename.strip_prefix(root) {
+                    Some(f) => f.to_string(),
+                    None => s_ty.filename.clone(),
+                };
+                s_ty.filename = filename.replace('.', "").replace('/', "").replace('\\', "")
             }
         },
     );

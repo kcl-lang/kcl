@@ -5,8 +5,8 @@ use kclvm_ast::ast::Program;
 use kclvm_driver::{lookup_compile_workspace, toolchain};
 use kclvm_error::Diagnostic;
 use kclvm_parser::{
-    entry::get_normalized_k_files_from_paths, load_program, KCLModuleCache, LoadProgramOptions,
-    ParseSessionRef,
+    entry::get_normalized_k_files_from_paths, file_graph, load_program, parse_kcl_program,
+    ASTCache, KCLModuleCache, LoadProgramOptions, ParseSessionRef,
 };
 use kclvm_sema::{
     advanced_resolver::AdvancedResolver,
@@ -46,6 +46,7 @@ pub fn compile(
             )
         }
     };
+
     let normalized_files: Vec<&str> = normalized_files.iter().map(|s| s.as_str()).collect();
     // Update opt.k_code_list
     if let Some(vfs) = &params.vfs {
@@ -87,6 +88,7 @@ pub fn compile(
         Ok(r) => r.program,
         Err(e) => return (diags, Err(anyhow::anyhow!("Parse failed: {:?}", e))),
     };
+
     diags.extend(sess.1.read().diagnostics.clone());
 
     // Resolver

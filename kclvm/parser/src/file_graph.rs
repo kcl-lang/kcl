@@ -12,6 +12,15 @@ pub struct PkgFile {
     pub pkg_root: String,
 }
 
+impl PkgFile {
+    pub fn canonicalize(&self) -> PathBuf {
+        match self.path.canonicalize() {
+            Ok(p) => p.clone(),
+            _ => self.path.clone(),
+        }
+    }
+}
+
 /// A graph of files, where each file depends on zero or more other files.
 #[derive(Default)]
 pub struct PkgFileGraph {
