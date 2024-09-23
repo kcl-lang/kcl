@@ -3,13 +3,14 @@ use std::{collections::HashMap, path::PathBuf};
 use indexmap::IndexMap;
 use kclvm_ast::ast::Module;
 use petgraph::{prelude::StableDiGraph, visit::EdgeRef};
+use std::hash::Hash;
 /// File with package info
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct PkgFile {
     pub path: PathBuf,
-    pub pkg_name: String,
+    // pub pkg_name: String,
     pub pkg_path: String,
-    pub pkg_root: String,
+    // pub pkg_root: String,
 }
 
 impl PkgFile {
@@ -20,6 +21,14 @@ impl PkgFile {
         }
     }
 }
+
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+pub struct Pkg {
+    pub pkg_name: String,
+    pub pkg_root: String,
+}
+
+pub type PkgMap = HashMap<PkgFile, Pkg>;
 
 /// A graph of files, where each file depends on zero or more other files.
 #[derive(Default)]
@@ -59,21 +68,14 @@ impl PkgFileGraph {
 
     /// Returns true if the given file is in the graph
     pub fn contains_file(&self, file: &PkgFile) -> bool {
-        self.path_to_node_index.contains_key(file)
+        contains_file(file, &self.path_to_node_index)
     }
 
     /// Returns a list of the direct dependencies of the given file.
     /// (does not include all transitive dependencies)
     /// The file path must be relative to the root of the file graph.
-    pub fn dependencies_of(&self, file: &PkgFile) -> Vec<&PkgFile> {
-        let node_index = self
-            .path_to_node_index
-            .get(file)
-            .expect("file not in graph");
-        self.graph
-            .edges(*node_index)
-            .map(|edge| &self.graph[edge.target()])
-            .collect::<Vec<_>>()
+    pub fn dependencies_of(&self, file: &PkgFile) -> Vec<PkgFile> {
+        dependencies_of(file, &self.graph, &self.path_to_node_index)
     }
 
     pub fn toposort(&self) -> Result<Vec<PkgFile>, Vec<PkgFile>> {
@@ -96,9 +98,14 @@ impl PkgFileGraph {
         node_index
     }
 
-    pub fn file_path_graph(&self) -> StableDiGraph<PathBuf, ()> {
+    pub fn file_path_graph(
+        &self,
+    ) -> (
+        StableDiGraph<PathBuf, ()>,
+        IndexMap<PathBuf, petgraph::prelude::NodeIndex>,
+    ) {
         let mut graph = StableDiGraph::new();
-        let mut node_map = HashMap::new();
+        let mut node_map = IndexMap::new();
         for node in self.graph.node_indices() {
             let path = self.graph[node].path.clone();
             let idx = graph.add_node(path.clone());
@@ -115,12 +122,18 @@ impl PkgFileGraph {
                 );
             }
         }
-        graph
+        (graph, node_map)
     }
 
-    pub fn pkg_graph(&self, pkgs: &HashMap<String, Vec<Module>>) -> StableDiGraph<String, ()> {
+    pub fn pkg_graph(
+        &self,
+        pkgs: &HashMap<String, Vec<Module>>,
+    ) -> (
+        StableDiGraph<String, ()>,
+        IndexMap<String, petgraph::prelude::NodeIndex>,
+    ) {
         let mut graph = StableDiGraph::new();
-        let mut node_map = HashMap::new();
+        let mut node_map = IndexMap::new();
 
         for pkg in pkgs.keys() {
             let idx = graph.add_node(pkg.clone());
@@ -143,7 +156,7 @@ impl PkgFileGraph {
                 );
             }
         }
-        graph
+        (graph, node_map)
     }
 }
 
@@ -175,4 +188,31 @@ where
             Err(cycle.iter().map(|n| graph[*n].clone()).collect::<Vec<_>>())
         }
     }
+}
+
+/// Returns a list of the direct dependencies of the given file.
+/// (does not include all transitive dependencies)
+/// The file path must be relative to the root of the file graph.
+pub fn dependencies_of<T>(
+    node: &T,
+    graph: &StableDiGraph<T, ()>,
+    id_map: &IndexMap<T, petgraph::prelude::NodeIndex>,
+) -> Vec<T>
+where
+    T: Clone + Hash + Eq + PartialEq,
+{
+    let node_index = id_map.get(node).expect("node not in graph");
+    graph
+        .edges(*node_index)
+        .map(|edge| &graph[edge.target()])
+        .map(|node| node.clone())
+        .collect::<Vec<_>>()
+}
+
+/// Returns true if the given file is in the graph
+pub fn contains_file<T>(node: &T, id_map: &IndexMap<T, petgraph::prelude::NodeIndex>) -> bool
+where
+    T: Clone + Hash + Eq + PartialEq,
+{
+    id_map.contains_key(node)
 }
