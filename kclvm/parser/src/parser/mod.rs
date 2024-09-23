@@ -32,6 +32,7 @@ use kclvm_ast::token::{CommentKind, Token, TokenKind};
 use kclvm_ast::token_stream::{Cursor, TokenStream};
 use kclvm_error::ParseErrorMessage;
 use kclvm_span::symbol::Symbol;
+use kclvm_utils::path::PathPrefix;
 
 /// The parser is built on top of the [`kclvm_parser::lexer`], and ordering KCL tokens
 /// [`kclvm_ast::token`] to KCL ast nodes [`kclvm_ast::ast`].
@@ -86,7 +87,8 @@ impl<'a> Parser<'a> {
         let filename = kclvm_utils::path::convert_windows_drive_letter(&format!(
             "{}",
             lo.file.name.prefer_remapped()
-        ));
+        ))
+        .adjust_canonicalization();
 
         (
             filename,

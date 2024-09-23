@@ -61,9 +61,12 @@ where
     /// ```
     fn adjust_canonicalization(&self) -> String {
         const VERBATIM_PREFIX: &str = r#"\\?\"#;
+        const ESCAPE_VERBATIM_PREFIX: &str = r#"\\\\?\\"#;
         let p = self.as_ref().display().to_string();
         if p.starts_with(VERBATIM_PREFIX) {
             p[VERBATIM_PREFIX.len()..].to_string()
+        } else if p.starts_with(ESCAPE_VERBATIM_PREFIX) {
+            p[ESCAPE_VERBATIM_PREFIX.len()..].to_string()
         } else {
             p
         }

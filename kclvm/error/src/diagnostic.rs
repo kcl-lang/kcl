@@ -1,5 +1,6 @@
 use indexmap::IndexSet;
 use kclvm_span::Loc;
+use kclvm_utils::path::PathPrefix;
 use std::fmt;
 use std::hash::Hash;
 

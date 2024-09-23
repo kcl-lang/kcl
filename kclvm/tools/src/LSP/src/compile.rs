@@ -5,8 +5,8 @@ use kclvm_ast::ast::Program;
 use kclvm_driver::{lookup_compile_workspace, toolchain};
 use kclvm_error::Diagnostic;
 use kclvm_parser::{
-    entry::get_normalized_k_files_from_paths, file_graph, load_program, parse_kcl_program,
-    ASTCache, KCLModuleCache, LoadProgramOptions, ParseSessionRef,
+    entry::get_normalized_k_files_from_paths, load_program, KCLModuleCache, LoadProgramOptions,
+    ParseSessionRef,
 };
 use kclvm_sema::{
     advanced_resolver::AdvancedResolver,

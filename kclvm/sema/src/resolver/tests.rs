@@ -248,9 +248,6 @@ fn test_resolve_program_cycle_reference_fail() {
         "Module 'file1' imported but unused",
         "Module 'file2' imported but unused",
     ];
-    for diag in &scope.handler.diagnostics {
-        println!("{:?}", diag.messages[0].message);
-    }
     assert_eq!(scope.handler.diagnostics.len(), err_messages.len());
     for (diag, msg) in scope.handler.diagnostics.iter().zip(err_messages.iter()) {
         assert_eq!(diag.messages[0].message, msg.to_string(),);
@@ -534,7 +531,7 @@ fn test_pkg_scope() {
     )
     .unwrap()
     .program;
-    println!("{:?}", program.pkgs.get("pkg").unwrap());
+
     let scope = resolve_program(&mut program);
 
     assert_eq!(scope.scope_map.len(), 2);
@@ -870,12 +867,9 @@ fn test_pkg_asname() {
     .program;
     let scope = resolve_program(&mut program);
     let diags = scope.handler.diagnostics;
-    for diag in diags {
-        println!("{:?}", diag);
-    }
-    // assert_eq!(diags.len(), 4);
-    // assert_eq!(diags[0].messages[0].message, "name 'pkg' is not defined");
-    // assert_eq!(diags[1].messages[0].message, "name 'subpkg' is not defined");
+    assert_eq!(diags.len(), 4);
+    assert_eq!(diags[0].messages[0].message, "name 'pkg' is not defined");
+    assert_eq!(diags[1].messages[0].message, "name 'subpkg' is not defined");
 }
 
 #[test]
