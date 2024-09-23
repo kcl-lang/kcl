@@ -1,0 +1,118 @@
+---
+source: tools/src/LSP/src/inlay_hints.rs
+expression: "format!(\"{:#?}\", res)"
+---
+Some(
+    [
+        InlayHint {
+            position: Position {
+                line: 6,
+                character: 3,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: ": App",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: None,
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 7,
+                character: 5,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: ": int",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: None,
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 8,
+                character: 5,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: ": 1 | 2",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: None,
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 9,
+                character: 5,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: ": str",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: None,
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 10,
+                character: 5,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: ": \"A\" | \"B\"",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: None,
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+    ],
+)
