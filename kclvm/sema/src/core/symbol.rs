@@ -1442,7 +1442,7 @@ pub struct AttributeSymbol {
     pub(crate) sema_info: SymbolSemanticInfo,
     pub(crate) is_optional: bool,
     pub(crate) r#ref: HashSet<SymbolRef>,
-    pub(crate) default_value: Option<String>
+    pub(crate) default_value: Option<String>,
 }
 
 impl Symbol for AttributeSymbol {

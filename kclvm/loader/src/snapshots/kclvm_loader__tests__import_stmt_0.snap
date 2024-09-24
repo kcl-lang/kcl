@@ -388,6 +388,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: UNION,
                             },
                             has_default: false,
+                            default_value: None,
                             range: (
                                 Position {
                                     filename: "",
@@ -409,6 +410,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: FLOAT,
                             },
                             has_default: true,
+                            default_value: None,
                             range: (
                                 Position {
                                     filename: "",

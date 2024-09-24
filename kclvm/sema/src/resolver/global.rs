@@ -752,6 +752,9 @@ impl<'ctx> Resolver<'ctx> {
                     name,
                     ty: ty.clone(),
                     has_default: args.node.defaults.get(i).map_or(false, |arg| arg.is_some()),
+                    default_value: args.node.defaults.get(i).map_or(None, |arg| {
+                        arg.as_ref().map(|v| print_ast_node(ASTNode::Expr(&v)))
+                    }),
                     range: args.node.args[i].get_span_pos(),
                 });
             }
@@ -887,6 +890,9 @@ impl<'ctx> Resolver<'ctx> {
                     name,
                     ty: ty.clone(),
                     has_default: args.node.defaults.get(i).is_some(),
+                    default_value: args.node.defaults.get(i).map_or(None, |arg| {
+                        arg.as_ref().map(|v| print_ast_node(ASTNode::Expr(&v)))
+                    }),
                     range: args.node.args[i].get_span_pos(),
                 });
             }

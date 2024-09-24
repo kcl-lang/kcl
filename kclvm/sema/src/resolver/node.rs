@@ -2,6 +2,7 @@ use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
+use kclvm_ast_pretty::{print_ast_node, ASTNode};
 use kclvm_error::*;
 use std::sync::Arc;
 
@@ -990,6 +991,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     name,
                     ty: ty.clone(),
                     has_default: value.is_some(),
+                    default_value: value.as_ref().map(|v| print_ast_node(ASTNode::Expr(v))),
                     range: args.node.args[i].get_span_pos(),
                 });
                 self.expr_or_any_type(value);

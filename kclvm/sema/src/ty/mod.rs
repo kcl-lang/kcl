@@ -550,5 +550,6 @@ pub struct Parameter {
     pub name: String,
     pub ty: TypeRef,
     pub has_default: bool,
+    pub default_value: Option<String>,
     pub range: Range,
 }

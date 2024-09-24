@@ -187,6 +187,7 @@ impl From<ast::Type> for Type {
                                 ty: Arc::new(ty.node.clone().into()),
                                 has_default: false,
                                 range: ty.get_span_pos(),
+                                default_value: None,
                             })
                             .collect::<Vec<Parameter>>()
                     })

@@ -220,7 +220,11 @@ fn build_func_hover_content(
         sig.push(')');
     } else {
         for (i, p) in func_ty.params.iter().enumerate() {
-            sig.push_str(&format!("{}: {}", p.name, p.ty.ty_str()));
+            let default_value = match &p.default_value {
+                Some(s) => format!(" = {}", s),
+                None => "".to_string(),
+            };
+            sig.push_str(&format!("{}: {}{}", p.name, p.ty.ty_str(), default_value));
 
             if i != func_ty.params.len() - 1 {
                 sig.push_str(", ");
@@ -440,7 +444,7 @@ mod tests {
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
                 if let MarkedString::LanguageString(s) = vec[0].clone() {
-                    assert_eq!(s.value, "function f(x: any) -> any");
+                    assert_eq!(s.value, "function f(x: int = 1) -> int");
                 }
                 if let MarkedString::String(s) = vec[0].clone() {
                     assert_eq!(s, "lambda documents");
@@ -711,7 +715,8 @@ mod tests {
             MarkedString::String("__main__".to_string()),
             MarkedString::LanguageString(LanguageString {
                 language: "KCL".to_string(),
-                value: "schema Data1[m: {str:str}](Data):\n    name: str = \"1\"\n    age: int".to_string(),
+                value: "schema Data1[m: {str:str}](Data):\n    name: str = \"1\"\n    age: int"
+                    .to_string(),
             }),
         ];
 

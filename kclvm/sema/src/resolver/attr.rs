@@ -80,6 +80,7 @@ impl<'ctx> Resolver<'ctx> {
                                 ty: Type::bool_ref(),
                                 // Default value is False
                                 has_default: true,
+                                default_value: None,
                                 range: dummy_range(),
                             }],
                             "",
