@@ -1,9 +1,9 @@
+use std::path::Path;
+
+use kclvm_utils::path::PathPrefix;
+
 extern crate pathdiff;
 
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
 
 pub fn is_abs_pkgpath(pkgpath: &str) -> bool {
     if pkgpath.is_empty() {
@@ -43,17 +43,9 @@ pub fn fix_import_path(root: &str, filepath: &str, import_path: &str) -> String 
 
     // Use canonicalize to convert the path to absolute path
     // avoid the symbolic link issue caused the file not found
-    let filepath = fs::canonicalize(filepath)
-        .unwrap_or_else(|_| PathBuf::from(filepath))
-        .to_str()
-        .unwrap()
-        .to_string();
 
-    let root = fs::canonicalize(root)
-        .unwrap_or_else(|_| PathBuf::from(root))
-        .to_str()
-        .unwrap()
-        .to_string();
+    let filepath = Path::new(filepath).adjust_canonicalization();
+    let root = Path::new(root).adjust_canonicalization();
 
     if !import_path.starts_with('.') {
         return import_path.to_string();
