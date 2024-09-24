@@ -4,7 +4,6 @@ use kclvm_utils::path::PathPrefix;
 
 extern crate pathdiff;
 
-
 pub fn is_abs_pkgpath(pkgpath: &str) -> bool {
     if pkgpath.is_empty() {
         return false;
