@@ -2,7 +2,7 @@ use kclvm_error::Position as KCLPos;
 use kclvm_sema::{
     builtin::BUILTIN_DECORATORS,
     core::global_state::GlobalState,
-    ty::{FunctionType, Type, ANY_TYPE_STR, STR_TYPE_STR},
+    ty::{FunctionType, Type, ANY_TYPE_STR},
 };
 use lsp_types::{Hover, HoverContents, MarkedString};
 
@@ -30,7 +30,7 @@ pub fn hover(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Hover> {
                         // ----------------
                         // schema Foo(Base)[param: type]:
                         //     attr1: type
-                        //     attr2? type
+                        //     attr2? type = defalut_value
                         // -----------------
                         // doc
                         // ```
@@ -53,15 +53,20 @@ pub fn hover(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Hover> {
                                 let name = attr.get_name();
                                 let attr_symbol =
                                     gs.get_symbols().get_attr_symbol(schema_attr).unwrap();
+                                let default_value_content = match attr_symbol.get_default_value() {
+                                    Some(s) => format!(" = {}", s),
+                                    None => "".to_string(),
+                                };
                                 let attr_ty_str = match &attr.get_sema_info().ty {
                                     Some(ty) => ty_hover_content(ty),
                                     None => ANY_TYPE_STR.to_string(),
                                 };
                                 attrs.push(format!(
-                                    "    {}{}: {}",
+                                    "    {}{}: {}{}",
                                     name,
                                     if attr_symbol.is_optional() { "?" } else { "" },
                                     attr_ty_str,
+                                    default_value_content
                                 ));
                             }
                         }
@@ -77,10 +82,20 @@ pub fn hover(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Hover> {
                 },
                 kclvm_sema::core::symbol::SymbolKind::Attribute => {
                     let sema_info = obj.get_sema_info();
+                    let attr_symbol = gs.get_symbols().get_attr_symbol(def_ref).unwrap();
+                    let default_value_content = match attr_symbol.get_default_value() {
+                        Some(s) => format!(" = {}", s),
+                        None => "".to_string(),
+                    };
                     match &sema_info.ty {
                         Some(ty) => {
                             docs.push((
-                                format!("{}: {}", &obj.get_name(), ty.ty_str()),
+                                format!(
+                                    "{}: {}{}",
+                                    &obj.get_name(),
+                                    ty.ty_hint(),
+                                    default_value_content
+                                ),
                                 MarkedStringType::LanguageString,
                             ));
                             if let Some(doc) = &sema_info.doc {
@@ -144,10 +159,7 @@ pub fn hover(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Hover> {
 }
 
 fn ty_hover_content(ty: &Type) -> String {
-    match &ty.kind {
-        kclvm_sema::ty::TypeKind::StrLit(s) => format!("{}({:?})", STR_TYPE_STR, s),
-        _ => ty.ty_str(),
-    }
+    ty.ty_hint()
 }
 
 // Convert doc to Marked String. This function will convert docs to Markedstrings
@@ -699,7 +711,7 @@ mod tests {
             MarkedString::String("__main__".to_string()),
             MarkedString::LanguageString(LanguageString {
                 language: "KCL".to_string(),
-                value: "schema Data1[m: {str:str}](Data):\n    name: str\n    age: int".to_string(),
+                value: "schema Data1[m: {str:str}](Data):\n    name: str = \"1\"\n    age: int".to_string(),
             }),
         ];
 

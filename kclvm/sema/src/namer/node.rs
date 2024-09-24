@@ -7,6 +7,7 @@ use super::Namer;
 use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
+use kclvm_ast_pretty::{print_ast_node, ASTNode};
 use kclvm_error::diagnostic::Range;
 
 impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
@@ -61,7 +62,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
             let value_name = unification_stmt.target.node.get_name();
             if self.gs.get_symbols().get_schema_symbol(owner).is_some() {
                 let attribute_ref = self.gs.get_symbols_mut().alloc_attribute_symbol(
-                    AttributeSymbol::new(value_name, start_pos, end_pos, owner, false),
+                    AttributeSymbol::new(value_name, start_pos, end_pos, owner, false, None),
                     self.ctx
                         .get_node_key(&unification_stmt.target.node.names[0].id),
                     self.ctx
@@ -270,6 +271,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
     fn walk_schema_attr(&mut self, schema_attr: &'ctx ast::SchemaAttr) -> Self::Result {
         let (start_pos, end_pos): Range = schema_attr.name.get_span_pos();
         let owner = self.ctx.owner_symbols.last().unwrap().clone();
+        let default_value = schema_attr
+            .value
+            .as_ref()
+            .map(|v| print_ast_node(ASTNode::Expr(v)));
         let attribute_ref = self.gs.get_symbols_mut().alloc_attribute_symbol(
             AttributeSymbol::new(
                 schema_attr.name.node.clone(),
@@ -277,6 +282,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
                 end_pos,
                 owner,
                 schema_attr.is_optional,
+                default_value,
             ),
             self.ctx.get_node_key(&schema_attr.name.id),
             self.ctx
