@@ -17,6 +17,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: STR,
                             },
                             has_default: false,
+                            default_value: None,
                             range: (
                                 Position {
                                     filename: "",
@@ -38,6 +39,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: STR,
                             },
                             has_default: true,
+                            default_value: None,
                             range: (
                                 Position {
                                     filename: "",
@@ -59,6 +61,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: BOOL,
                             },
                             has_default: true,
+                            default_value: None,
                             range: (
                                 Position {
                                     filename: "",
@@ -80,6 +83,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: ANY,
                             },
                             has_default: true,
+                            default_value: None,
                             range: (
                                 Position {
                                     filename: "",
@@ -101,6 +105,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: STR,
                             },
                             has_default: true,
+                            default_value: None,
                             range: (
                                 Position {
                                     filename: "",
@@ -182,6 +187,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: STR,
                             },
                             has_default: false,
+                            default_value: None,
                             range: (
                                 Position {
                                     filename: "",
@@ -203,6 +209,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: STR,
                             },
                             has_default: true,
+                            default_value: None,
                             range: (
                                 Position {
                                     filename: "",
@@ -224,6 +231,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: BOOL,
                             },
                             has_default: true,
+                            default_value: None,
                             range: (
                                 Position {
                                     filename: "",
@@ -245,6 +253,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: ANY,
                             },
                             has_default: true,
+                            default_value: None,
                             range: (
                                 Position {
                                     filename: "",
@@ -266,6 +275,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: STR,
                             },
                             has_default: true,
+                            default_value: None,
                             range: (
                                 Position {
                                     filename: "",
@@ -383,6 +393,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: STR,
                             },
                             has_default: false,
+                            default_value: None,
                             range: (
                                 Position {
                                     filename: "",
@@ -404,6 +415,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: STR,
                             },
                             has_default: true,
+                            default_value: None,
                             range: (
                                 Position {
                                     filename: "",
@@ -425,6 +437,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: BOOL,
                             },
                             has_default: true,
+                            default_value: None,
                             range: (
                                 Position {
                                     filename: "",
@@ -446,6 +459,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: ANY,
                             },
                             has_default: true,
+                            default_value: None,
                             range: (
                                 Position {
                                     filename: "",
@@ -467,6 +481,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
                                 flags: STR,
                             },
                             has_default: true,
+                            default_value: None,
                             range: (
                                 Position {
                                     filename: "",

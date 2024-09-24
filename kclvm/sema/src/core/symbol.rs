@@ -1442,6 +1442,7 @@ pub struct AttributeSymbol {
     pub(crate) sema_info: SymbolSemanticInfo,
     pub(crate) is_optional: bool,
     pub(crate) r#ref: HashSet<SymbolRef>,
+    pub(crate) default_value: Option<String>,
 }
 
 impl Symbol for AttributeSymbol {
@@ -1560,6 +1561,7 @@ impl AttributeSymbol {
         end: Position,
         owner: SymbolRef,
         is_optional: bool,
+        default_value: Option<String>,
     ) -> Self {
         Self {
             id: None,
@@ -1570,11 +1572,16 @@ impl AttributeSymbol {
             owner,
             is_optional,
             r#ref: HashSet::default(),
+            default_value,
         }
     }
 
     pub fn is_optional(&self) -> bool {
         self.is_optional
+    }
+
+    pub fn get_default_value(&self) -> Option<String> {
+        self.default_value.clone()
     }
 }
 #[allow(unused)]

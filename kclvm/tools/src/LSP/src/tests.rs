@@ -1701,7 +1701,7 @@ fn konfig_hover_test_main() {
                 MarkedString::String("base.pkg.kusion_models.kube.frontend".to_string()),
                 MarkedString::LanguageString(lsp_types::LanguageString {
                     language: "KCL".to_string(),
-                    value: "schema Server:\n    name?: str\n    workloadType: str(Deployment) | str(StatefulSet)\n    renderType?: str(Server) | str(KubeVelaApplication)\n    replicas: int\n    image: str\n    schedulingStrategy: SchedulingStrategy\n    mainContainer: Main\n    sidecarContainers?: [Sidecar]\n    initContainers?: [Sidecar]\n    useBuiltInLabels?: bool\n    labels?: {str:str}\n    annotations?: {str:str}\n    useBuiltInSelector?: bool\n    selector?: {str:str}\n    podMetadata?: ObjectMeta\n    volumes?: [Volume]\n    needNamespace?: bool\n    enableMonitoring?: bool\n    configMaps?: [ConfigMap]\n    secrets?: [Secret]\n    services?: [Service]\n    ingresses?: [Ingress]\n    serviceAccount?: ServiceAccount\n    storage?: ObjectStorage\n    database?: DataBase".to_string()
+                    value: "schema Server:\n    name?: str\n    workloadType: \"Deployment\" | \"StatefulSet\" = \"Deployment\"\n    renderType?: \"Server\" | \"KubeVelaApplication\" = \"Server\"\n    replicas: int = option(\"replicas\") or 1\n    image: str = option(\"image\")\n    schedulingStrategy: SchedulingStrategy = strategy.SchedulingStrategy {}\n    mainContainer: Main\n    sidecarContainers?: [Sidecar]\n    initContainers?: [Sidecar]\n    useBuiltInLabels?: bool = True\n    labels?: {str:str}\n    annotations?: {str:str}\n    useBuiltInSelector?: bool = True\n    selector?: {str:str}\n    podMetadata?: ObjectMeta\n    volumes?: [Volume]\n    needNamespace?: bool = True\n    enableMonitoring?: bool = False\n    configMaps?: [ConfigMap]\n    secrets?: [Secret]\n    services?: [Service]\n    ingresses?: [Ingress]\n    serviceAccount?: ServiceAccount\n    storage?: ObjectStorage\n    database?: DataBase".to_string()
                 }),
                 MarkedString::String("Server is abstaction of Deployment and StatefulSet.".to_string()),
             ];
@@ -1722,7 +1722,9 @@ fn konfig_hover_test_main() {
             let expect: Vec<MarkedString> = vec![
                 MarkedString::LanguageString(lsp_types::LanguageString {
                     language: "KCL".to_string(),
-                    value: "schedulingStrategy: SchedulingStrategy".to_string(),
+                    value:
+                        "schedulingStrategy: SchedulingStrategy = strategy.SchedulingStrategy {}"
+                            .to_string(),
                 }),
                 MarkedString::String(
                     "SchedulingStrategy represents scheduling strategy.".to_string(),

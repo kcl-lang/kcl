@@ -530,6 +530,7 @@ impl<'ctx> Resolver<'ctx> {
                                         Some(ast_ty.as_ref()),
                                     ),
                                     has_default: ty.has_default,
+                                    default_value: ty.default_value.clone(),
                                     range: ty_node.get_span_pos(),
                                 });
                             }
