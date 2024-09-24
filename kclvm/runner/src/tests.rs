@@ -688,3 +688,21 @@ fn test_uuid() {
         assert!(Uuid::parse_str(uuid_str).is_ok());
     }
 }
+
+#[test]
+fn test_compile_with_symbolic_link() {
+    let main_test_path = PathBuf::from("./src/test_symbolic_link/test_pkg/bbb/main.k");
+    let mut args = ExecProgramArgs::default();
+    args.k_filename_list
+        .push(main_test_path.display().to_string());
+    let res = exec_program(Arc::new(ParseSession::default()), &args);
+    assert!(res.is_ok());
+    assert_eq!(
+        res.as_ref().unwrap().yaml_result,
+        "The_first_kcl_program: Hello World!\nb: 1"
+    );
+    assert_eq!(
+        res.as_ref().unwrap().json_result,
+        "{\"The_first_kcl_program\": \"Hello World!\", \"b\": 1}"
+    );
+}
