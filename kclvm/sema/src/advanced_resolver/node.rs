@@ -516,7 +516,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
                     .get(&self.ctx.get_node_key(ast_id))
                     .map(|ty| ty.clone());
                 symbol.hint = ty.as_ref().map(|ty| SymbolHint {
-                    kind: SymbolHintKind::TypeHint(ty.ty_str()),
+                    kind: SymbolHintKind::TypeHint(ty.ty_hint()),
                     pos: symbol.get_range().1,
                 });
                 symbol.sema_info = SymbolSemanticInfo { ty, doc: None };
@@ -1146,6 +1146,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
         }
         match first_symbol {
             Some(symbol_ref) => {
+                let mut ret_symbol = symbol_ref.clone();
                 let (start_pos, end_pos): Range = first_name.get_span_pos();
                 let def_symbol = self
                     .gs
@@ -1189,6 +1190,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                                             name,
                                             first_unresolved_ref,
                                         );
+                                        ret_symbol = first_unresolved_ref;
                                     }
                                 }
                             }
@@ -1280,7 +1282,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                         }
                     }
                 }
-                Ok(Some(symbol_ref))
+                Ok(Some(ret_symbol))
             }
             None => {
                 if maybe_def {
@@ -1612,7 +1614,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                     .map(|ty| ty.clone());
                 if with_hint {
                     symbol.hint = ty.as_ref().map(|ty| SymbolHint {
-                        kind: SymbolHintKind::TypeHint(ty.ty_str()),
+                        kind: SymbolHintKind::TypeHint(ty.ty_hint()),
                         pos: symbol.get_range().1,
                     });
                 }
@@ -1681,7 +1683,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                     .map(|ty| ty.clone());
                 if with_hint {
                     symbol.hint = ty.as_ref().map(|ty| SymbolHint {
-                        kind: SymbolHintKind::TypeHint(ty.ty_str()),
+                        kind: SymbolHintKind::TypeHint(ty.ty_hint()),
                         pos: symbol.get_range().1,
                     });
                 }
@@ -1760,7 +1762,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 Some(ty) => {
                     let (_, end) = ty_node.get_span_pos();
                     let mut expr_symbol =
-                        ExpressionSymbol::new(format!("@{}", ty.ty_str()), end.clone(), end, None);
+                        ExpressionSymbol::new(format!("@{}", ty.ty_hint()), end.clone(), end, None);
 
                     expr_symbol.sema_info.ty = Some(ty.clone());
                     self.gs.get_symbols_mut().alloc_expression_symbol(
@@ -1935,7 +1937,36 @@ impl<'ctx> AdvancedResolver<'ctx> {
 
             if let Some(key) = &entry.node.key {
                 self.ctx.maybe_def = true;
-                self.expr(key)?;
+                if let Some(symbol_ref) = self.expr(key)? {
+                    let config_key_symbol =
+                        self.gs.get_symbols().unresolved.get(symbol_ref.get_id());
+                    let hint: Option<SymbolHint> =
+                        if let Some(config_key_symbol) = config_key_symbol {
+                            match config_key_symbol.get_definition() {
+                                Some(def_ref) => match self.gs.get_symbols().get_symbol(def_ref) {
+                                    Some(def_symbol) => {
+                                        let ty = def_symbol.get_sema_info().ty.clone();
+                                        ty.as_ref().map(|ty| SymbolHint {
+                                            kind: SymbolHintKind::TypeHint(ty.ty_hint()),
+                                            pos: config_key_symbol.get_range().1.clone(),
+                                        })
+                                    }
+                                    None => None,
+                                },
+                                None => None,
+                            }
+                        } else {
+                            None
+                        };
+                    if let Some(config_key_symbol_mut_ref) = self
+                        .gs
+                        .get_symbols_mut()
+                        .unresolved
+                        .get_mut(symbol_ref.get_id())
+                    {
+                        config_key_symbol_mut_ref.hint = hint;
+                    }
+                }
                 self.ctx.maybe_def = false;
             }
         }

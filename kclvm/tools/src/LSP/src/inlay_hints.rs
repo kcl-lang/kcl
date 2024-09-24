@@ -123,4 +123,9 @@ mod tests {
         test_schema_arg_hint,
         "src/test_data/inlay_hints/schema_args/schema_args_hint.k"
     );
+
+    inlay_hints_test_snapshot!(
+        test_config_key_ty,
+        "src/test_data/inlay_hints/config_key/config_key.k"
+    );
 }

@@ -89,6 +89,24 @@ impl Type {
         }
     }
 
+    pub fn ty_hint(&self) -> String {
+        match &self.kind {
+            TypeKind::StrLit(s) => format!("\"{}\"", s),
+            TypeKind::IntLit(v) => v.to_string(),
+            TypeKind::FloatLit(v) => v.to_string(),
+            TypeKind::List(item_ty) => format!("[{}]", item_ty.ty_hint()),
+            TypeKind::Dict(DictType { key_ty, val_ty, .. }) => {
+                format!("{{{}:{}}}", key_ty.ty_hint(), val_ty.ty_hint())
+            }
+            TypeKind::Union(types) => types
+                .iter()
+                .map(|ty| ty.ty_hint())
+                .collect::<Vec<String>>()
+                .join(" | "),
+            _ => self.ty_str(),
+        }
+    }
+
     /// Returns the full type string with the package path used for the error handler.
     pub fn full_ty_str(&self) -> String {
         match &self.kind {
