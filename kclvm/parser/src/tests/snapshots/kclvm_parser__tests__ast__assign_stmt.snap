@@ -4,7 +4,6 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\", r####\"a=123\"####
 ---
 {
   "filename": "hello.k",
-  "pkg": "__main__",
   "doc": null,
   "name": "__main__",
   "body": [

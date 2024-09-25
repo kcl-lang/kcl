@@ -4,7 +4,6 @@ expression: "crate::tests::parsing_module_string(r#\"type pkg_path.\"#)"
 ---
 Module {
     filename: "",
-    pkg: "",
     doc: None,
     name: "",
     body: [
@@ -67,4 +66,3 @@ Module {
     ],
     comments: [],
 }
-

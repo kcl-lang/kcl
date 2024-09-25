@@ -1,5 +1,6 @@
 use crate::service::capi::*;
 use crate::{call, gpyrpc::*};
+use kclvm_utils::path::PathPrefix;
 use once_cell::sync::Lazy;
 use prost::Message;
 use serde::de::DeserializeOwned;
@@ -9,7 +10,6 @@ use std::fs;
 use std::os::raw::c_char;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
-
 const TEST_DATA_PATH: &str = "./src/testdata";
 static TEST_MUTEX: Lazy<Mutex<i32>> = Lazy::new(|| Mutex::new(0i32));
 
@@ -101,8 +101,17 @@ fn test_c_api_get_schema_type_mapping() {
         "get-schema-type-mapping.json",
         "get-schema-type-mapping.response.json",
         |r| {
+            let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
             for (_, s_ty) in &mut r.schema_type_mapping {
-                s_ty.filename = s_ty.filename.replace('/', "").replace('\\', "")
+                let filename = {
+                    let filename = s_ty.filename.adjust_canonicalization();
+                    match filename.strip_prefix(root.to_str().unwrap()) {
+                        Some(f) => f.to_string(),
+                        None => s_ty.filename.clone(),
+                    }
+                };
+
+                s_ty.filename = filename.replace('.', "").replace('/', "").replace('\\', "")
             }
         },
     );

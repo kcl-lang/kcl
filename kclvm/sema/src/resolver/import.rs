@@ -121,7 +121,7 @@ impl<'ctx> Resolver<'ctx> {
             Some(modules) => {
                 for module in modules {
                     self.ctx.filename = module.filename.clone();
-                    self.ctx.pkgpath = module.pkg.clone();
+                    // self.ctx.pkgpath = module.pkg.clone();
                     for stmt in &module.body {
                         if let ast::Stmt::Import(import_stmt) = &stmt.node {
                             {

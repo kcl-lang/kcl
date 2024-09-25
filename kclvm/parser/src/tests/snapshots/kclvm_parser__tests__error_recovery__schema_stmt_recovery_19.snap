@@ -1,11 +1,9 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 236
 expression: "crate::tests::parsing_module_string(r#\"@deprecated\nschema A:\n    a: \"#)"
 ---
 Module {
     filename: "",
-    pkg: "",
     doc: None,
     name: "",
     body: [
@@ -110,4 +108,3 @@ Module {
     ],
     comments: [],
 }
-

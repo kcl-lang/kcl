@@ -46,6 +46,7 @@ pub fn compile(
             )
         }
     };
+
     let normalized_files: Vec<&str> = normalized_files.iter().map(|s| s.as_str()).collect();
     // Update opt.k_code_list
     if let Some(vfs) = &params.vfs {
@@ -87,6 +88,7 @@ pub fn compile(
         Ok(r) => r.program,
         Err(e) => return (diags, Err(anyhow::anyhow!("Parse failed: {:?}", e))),
     };
+
     diags.extend(sess.1.read().diagnostics.clone());
 
     // Resolver
@@ -152,8 +154,8 @@ pub fn compile_with_params(
     let file = params.file.clone().unwrap();
     // Lookup compile workspace from the cursor file.
     let (mut files, opts, _) = lookup_compile_workspace(&toolchain::default(), &file, true);
-    if !files.contains(&file) {
-        files.push(file);
-    }
+    // if !files.contains(&file) {
+    //     files.push(file);
+    // }
     compile(params, &mut files, opts)
 }
