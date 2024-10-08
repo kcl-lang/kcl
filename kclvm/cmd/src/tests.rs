@@ -172,6 +172,7 @@ fn test_external_cmd_invalid() {
 }
 
 #[test]
+#[cfg(not(windows))]
 // All the unit test cases in [`test_run_command`] can not be executed concurrently.
 fn test_run_command() {
     test_run_command_with_import();

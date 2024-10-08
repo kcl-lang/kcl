@@ -203,11 +203,12 @@ impl KclvmServiceImpl {
     /// use kclvm_api::service::service_impl::KclvmServiceImpl;
     /// use kclvm_api::gpyrpc::*;
     /// use std::path::Path;
+    /// use kclvm_utils::path::PathPrefix;
     ///
     /// let serv = KclvmServiceImpl::default();
     /// let args = &LoadPackageArgs {
     ///     parse_args: Some(ParseProgramArgs {
-    ///         paths: vec![Path::new(".").join("src").join("testdata").join("parse").join("main.k").canonicalize().unwrap().display().to_string()],
+    ///         paths: vec![Path::new(".").join("src").join("testdata").join("parse").join("main.k").canonicalize().unwrap().display().to_string().adjust_canonicalization()],
     ///         ..Default::default()
     ///     }),
     ///     resolve_ast: true,

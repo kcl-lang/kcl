@@ -23,6 +23,7 @@ use kclvm_config::modfile::{get_vendor_home, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX
 use kclvm_error::diagnostic::{Errors, Range};
 use kclvm_error::{ErrorKind, Message, Position, Style};
 use kclvm_sema::plugin::PLUGIN_MODULE_PREFIX;
+use kclvm_utils::path::PathPrefix;
 use kclvm_utils::pkgpath::parse_external_pkg_name;
 use kclvm_utils::pkgpath::rm_external_pkg_name;
 
@@ -191,7 +192,7 @@ pub fn parse_file_with_session(
     // Parser
     let mut p = parser::Parser::new(&sess, stream);
     let mut m = p.parse_module();
-    m.filename = filename.to_string();
+    m.filename = filename.to_string().adjust_canonicalization();
     m.pkg = kclvm_ast::MAIN_PKG.to_string();
     m.name = kclvm_ast::MAIN_PKG.to_string();
 

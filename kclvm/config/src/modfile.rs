@@ -175,8 +175,10 @@ pub fn load_mod_lock_file<P: AsRef<Path>>(path: P) -> Result<ModLockFile> {
 /// If the user root directory cannot be found, an empty string will be returned.
 pub fn get_vendor_home() -> String {
     match env::var(KCL_PKG_PATH) {
-        Ok(path) => path,
-        Err(_) => create_default_vendor_home().unwrap_or_default(),
+        Ok(path) => path.adjust_canonicalization(),
+        Err(_) => create_default_vendor_home()
+            .unwrap_or_default()
+            .adjust_canonicalization(),
     }
 }
 

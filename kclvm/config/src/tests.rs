@@ -1,3 +1,4 @@
+use kclvm_utils::path::PathPrefix;
 use kclvm_version as version;
 use std::{
     collections::HashMap,
@@ -27,7 +28,10 @@ fn test_vendor_home() {
         .join("kpm")
         .canonicalize()
         .unwrap();
-    assert_eq!(get_vendor_home(), kpm_home.display().to_string())
+    assert_eq!(
+        get_vendor_home(),
+        kpm_home.display().to_string().adjust_canonicalization()
+    )
 }
 
 #[test]
