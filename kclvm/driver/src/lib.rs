@@ -38,31 +38,40 @@ pub fn lookup_compile_workspace(
     file: &str,
     load_pkg: bool,
 ) -> CompileUnitOptions {
-    let mut default_res: CompileUnitOptions = (vec![], None, None);
-    let mut load_opt = kclvm_parser::LoadProgramOptions::default();
-    let metadata = fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt).unwrap_or(None);
-    let path = Path::new(file);
-    if let Some(ext) = path.extension() {
-        if load_pkg {
-            if let Some(parent) = path.parent() {
-                if let Ok(files) = get_kcl_files(parent, false) {
-                    default_res = (files, Some(load_opt), metadata);
+    fn default_res(tool: &dyn Toolchain, file: &str, load_pkg: bool) -> CompileUnitOptions {
+        let mut default_res: CompileUnitOptions = (vec![], None, None);
+        let mut load_opt = kclvm_parser::LoadProgramOptions::default();
+        let metadata = fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt).unwrap_or(None);
+        let path = Path::new(file);
+        if let Some(ext) = path.extension() {
+            if load_pkg {
+                if let Some(parent) = path.parent() {
+                    if let Ok(files) = get_kcl_files(parent, false) {
+                        default_res = (files, Some(load_opt), metadata);
+                    }
+                }
+            } else {
+                if ext == KCL_FILE_EXTENSION && path.is_file() {
+                    default_res = (vec![file.to_string()], Some(load_opt), metadata);
                 }
             }
-        } else {
-            if ext == KCL_FILE_EXTENSION && path.is_file() {
-                default_res = (vec![file.to_string()], Some(load_opt), metadata);
-            }
         }
+        default_res
     }
+
     match lookup_compile_unit_path(file) {
         Ok(CompileUnitPath::SettingFile(dir)) => {
             let settings_files = lookup_setting_files(&dir);
             let files = if settings_files.is_empty() {
-                default_res.0.iter().map(|s| s.as_str()).collect()
+                default_res(tool, file, load_pkg)
+                    .0
+                    .iter()
+                    .map(|s| s.clone())
+                    .collect()
             } else {
                 vec![]
             };
+            let files: Vec<&str> = files.iter().map(|s| s.as_str()).collect();
             let settings_files: Vec<&str> =
                 settings_files.iter().map(|f| f.to_str().unwrap()).collect();
             match build_settings_pathbuf(&files, Some(settings_files), None) {
@@ -83,12 +92,12 @@ pub fn lookup_compile_workspace(
                     let metadata =
                         fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt).unwrap_or(None);
                     if files.is_empty() {
-                        default_res
+                        default_res(tool, file, load_pkg)
                     } else {
                         (files, Some(load_opt), metadata)
                     }
                 }
-                Err(_) => default_res,
+                Err(_) => default_res(tool, file, load_pkg),
             }
         }
         Ok(CompileUnitPath::ModFile(dir)) => match load_mod_file(&dir) {
@@ -101,12 +110,12 @@ pub fn lookup_compile_workspace(
                     load_opt.work_dir = work_dir.clone();
                     (files, Some(load_opt), metadata)
                 } else {
-                    default_res
+                    default_res(tool, file, load_pkg)
                 }
             }
-            Err(_) => default_res,
+            Err(_) => default_res(tool, file, load_pkg),
         },
-        Ok(CompileUnitPath::NotFound) | Err(_) => default_res,
+        Ok(CompileUnitPath::NotFound) | Err(_) => default_res(tool, file, load_pkg),
     }
 }
 

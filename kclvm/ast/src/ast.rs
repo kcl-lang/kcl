@@ -33,6 +33,7 @@
 //! in the compiler and regenerate the walker code.
 //! :copyright: Copyright The KCL Authors. All rights reserved.
 
+use kclvm_utils::path::PathPrefix;
 use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
 use std::collections::HashMap;
 
@@ -178,7 +179,7 @@ impl<T> Node<T> {
         Self {
             id: AstIndex::default(),
             node,
-            filename,
+            filename: filename.adjust_canonicalization(),
             line,
             column,
             end_line,
@@ -202,7 +203,8 @@ impl<T> Node<T> {
         let filename = kclvm_utils::path::convert_windows_drive_letter(&format!(
             "{}",
             lo.file.name.prefer_remapped()
-        ));
+        ))
+        .adjust_canonicalization();
         Self {
             id: AstIndex::default(),
             node,

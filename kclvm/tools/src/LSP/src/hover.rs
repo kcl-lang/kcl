@@ -259,7 +259,6 @@ mod tests {
     use super::hover;
 
     #[test]
-    #[bench_test]
     fn schema_doc_hover_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
@@ -286,12 +285,12 @@ mod tests {
                         "schema Person:\n    name: str\n    age: int".to_string()
                     );
                 } else {
-                    unreachable!("Wrong type");
+                    unreachable!("test error");
                 }
                 if let MarkedString::String(s) = vec[2].clone() {
                     assert_eq!(s, "hover doc test");
                 } else {
-                    unreachable!("Wrong type");
+                    unreachable!("test error");
                 }
             }
             _ => unreachable!("test error"),

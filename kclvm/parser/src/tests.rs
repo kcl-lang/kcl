@@ -202,7 +202,8 @@ pub fn test_vendor_home() {
         .canonicalize()
         .unwrap()
         .display()
-        .to_string();
+        .to_string()
+        .adjust_canonicalization();
     env::set_var(KCL_PKG_PATH, vendor);
     assert_eq!(get_vendor_home(), vendor.to_string());
 }
@@ -215,7 +216,8 @@ fn set_vendor_home() -> String {
         .canonicalize()
         .unwrap()
         .display()
-        .to_string();
+        .to_string()
+        .adjust_canonicalization();
     env::set_var(KCL_PKG_PATH, vendor);
     debug_assert_eq!(get_vendor_home(), vendor.to_string());
     vendor.to_string()
@@ -292,7 +294,11 @@ pub fn test_import_vendor() {
 
     let test_fn =
         |test_case_name: &&str, pkgs: &Vec<&str>, module_cache: Option<KCLModuleCache>| {
-            let test_case_path = dir.join(test_case_name).display().to_string();
+            let test_case_path = dir
+                .join(test_case_name)
+                .display()
+                .to_string()
+                .adjust_canonicalization();
             let m = load_program(sess.clone(), &[&test_case_path], None, module_cache)
                 .unwrap()
                 .program;
@@ -338,7 +344,11 @@ pub fn test_import_vendor_without_kclmod() {
         .unwrap();
 
     test_cases.into_iter().for_each(|(test_case_name, pkgs)| {
-        let test_case_path = dir.join(test_case_name).display().to_string();
+        let test_case_path = dir
+            .join(test_case_name)
+            .display()
+            .to_string()
+            .adjust_canonicalization();
         let m = load_program(sess.clone(), &[&test_case_path], None, None)
             .unwrap()
             .program;
@@ -574,7 +584,11 @@ fn test_import_vendor_by_external_arguments() {
             dep_name.to_string(),
             external_dir.join(dep_name).display().to_string(),
         );
-        let test_case_path = dir.join(test_case_name).display().to_string();
+        let test_case_path = dir
+            .join(test_case_name)
+            .display()
+            .to_string()
+            .adjust_canonicalization();
         let m = load_program(sess.clone(), &[&test_case_path], None, module_cache)
             .unwrap()
             .program;
