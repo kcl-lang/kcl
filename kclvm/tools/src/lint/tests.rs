@@ -7,8 +7,8 @@ fn test_lint() {
     let msgs = [
         "The import stmt should be placed at the top of the module",
         "Module 'a' is reimported multiple times",
-        "Module 'import_test.a' imported but unused",
-        "Module 'import_test.a' imported but unused",
+        "Module 'a' imported but unused",
+        "Module 'a' imported but unused",
         "Module 'abc' imported but unused",
     ];
     assert_eq!(warnings.len(), msgs.len());
