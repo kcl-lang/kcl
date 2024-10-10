@@ -285,7 +285,12 @@ impl<'ctx> Resolver<'ctx> {
                 self.clear_config_expr_context(init_stack_depth as usize, false);
                 value_ty
             }
-            _ => self.expr(expr),
+            _ => {
+                self.ctx.config_expr_context.push(None);
+                let value_ty = self.expr(expr);
+                self.ctx.config_expr_context.pop();
+                value_ty
+            }
         };
         self.must_assignable_to(
             value_ty.clone(),
