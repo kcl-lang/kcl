@@ -1,0 +1,6 @@
+a:
+  name: abc
+  extra: 6
+result_typesafe:
+- name: abc
+  extra: 6
