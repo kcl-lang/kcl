@@ -96,6 +96,24 @@ pub enum EvalContext {
     Rule(RuleEvalContextRef),
 }
 
+impl EvalContext {
+    #[inline]
+    pub fn value(&self) -> ValueRef {
+        match self {
+            EvalContext::Schema(schema) => schema.borrow().value.clone(),
+            EvalContext::Rule(rule) => rule.borrow().value.clone(),
+        }
+    }
+
+    #[inline]
+    pub fn config(&self) -> ValueRef {
+        match self {
+            EvalContext::Schema(schema) => schema.borrow().config.clone(),
+            EvalContext::Rule(rule) => rule.borrow().config.clone(),
+        }
+    }
+}
+
 impl<'ctx> Evaluator<'ctx> {
     /// New aa Evaluator using the AST program
     #[inline]

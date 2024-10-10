@@ -79,6 +79,23 @@ impl SchemaEvalContext {
         }))
     }
 
+    /// New a schema evaluation context with schema value and config.
+    #[inline]
+    pub fn new_with_value(&self, value: &ValueRef, config: &ValueRef) -> SchemaEvalContextRef {
+        Rc::new(RefCell::new(Self {
+            node: self.node.clone(),
+            index: self.index,
+            parent: self.parent,
+            mixins: self.mixins.clone(),
+            scope: None,
+            value: value.clone(),
+            config: config.clone(),
+            config_meta: ValueRef::dict(None),
+            optional_mapping: ValueRef::dict(None),
+            is_sub_schema: true,
+        }))
+    }
+
     /// Pass value references from other schema eval context.
     /// Note that do not change the schema node.
     pub fn set_info_with_schema(&mut self, other: &SchemaEvalContext) {

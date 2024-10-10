@@ -8,7 +8,6 @@ use kclvm_runtime::ValueRef;
 use scopeguard::defer;
 
 use crate::error as kcl_error;
-use crate::lazy::LazyEvalScope;
 
 use crate::proxy::{call_rule_check, call_schema_body_from_rule};
 use crate::Evaluator;
@@ -23,7 +22,6 @@ pub type RuleEvalContextRef = Rc<RefCell<RuleEvalContext>>;
 #[derive(Clone, Debug)]
 pub struct RuleEvalContext {
     pub node: Rc<ast::RuleStmt>,
-    pub scope: LazyEvalScope,
     pub value: ValueRef,
     pub config: ValueRef,
     pub config_meta: ValueRef,
@@ -36,13 +34,25 @@ impl RuleEvalContext {
     pub fn new_with_node(node: ast::RuleStmt) -> Self {
         RuleEvalContext {
             node: Rc::new(node),
-            scope: LazyEvalScope::default(),
             value: ValueRef::dict(None),
             config: ValueRef::dict(None),
             config_meta: ValueRef::dict(None),
             optional_mapping: ValueRef::dict(None),
             is_sub_schema: true,
         }
+    }
+
+    /// New a rule evaluation context with schema value and config.
+    #[inline]
+    pub fn new_with_value(&self, value: &ValueRef, config: &ValueRef) -> RuleEvalContextRef {
+        Rc::new(RefCell::new(Self {
+            node: self.node.clone(),
+            value: value.clone(),
+            config: config.clone(),
+            config_meta: ValueRef::dict(None),
+            optional_mapping: ValueRef::dict(None),
+            is_sub_schema: true,
+        }))
     }
 
     /// Reset rule evaluation context state.
@@ -59,7 +69,6 @@ impl RuleEvalContext {
     pub fn snapshot(&self, config: ValueRef, config_meta: ValueRef) -> RuleEvalContextRef {
         Rc::new(RefCell::new(Self {
             node: self.node.clone(),
-            scope: LazyEvalScope::default(),
             value: ValueRef::dict(None),
             config,
             config_meta,
