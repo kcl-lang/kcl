@@ -1,6 +1,6 @@
-import pkg.core.v1 as v1
+import pkg.core.v1 as corev1
 
 schema CafeDeploy:
-    data: v1.Deploy = v1.Deploy {
+    data: corev1.Deploy = corev1.Deploy {
         name: "deploy"
     }

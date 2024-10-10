@@ -137,7 +137,7 @@ fn test_c_api_lint_path() {
 
 #[test]
 fn test_c_api_call_exec_program_with_compile_only() {
-    test_c_api_paniced::<ExecProgramArgs>(
+    test_c_api_panic::<ExecProgramArgs>(
         "KclvmService.ExecProgram",
         "exec-program-with-compile-only.json",
         "exec-program-with-compile-only.response.panic",
@@ -311,7 +311,7 @@ where
     }
 }
 
-fn test_c_api_paniced<A>(svc_name: &str, input: &str, output: &str)
+fn test_c_api_panic<A>(svc_name: &str, input: &str, output: &str)
 where
     A: Message + DeserializeOwned,
 {
@@ -341,7 +341,11 @@ where
                         except_result_path.display()
                     )
                 });
-            assert!(result.to_string_lossy().contains(&except_result_panic_msg));
+            assert!(
+                result.to_string_lossy().contains(&except_result_panic_msg),
+                "{}",
+                result.to_string_lossy()
+            );
             unsafe {
                 kclvm_service_delete(serv);
                 kclvm_service_free_string(result_ptr as *mut c_char);

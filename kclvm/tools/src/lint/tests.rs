@@ -5,7 +5,7 @@ use std::path::PathBuf;
 fn test_lint() {
     let (errors, warnings) = lint_files(&["./src/lint/test_data/lint.k"], None);
     let msgs = [
-        "Importstmt should be placed at the top of the module",
+        "The import stmt should be placed at the top of the module",
         "Module 'a' is reimported multiple times",
         "Module 'import_test.a' imported but unused",
         "Module 'import_test.a' imported but unused",

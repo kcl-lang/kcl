@@ -113,7 +113,7 @@ impl<'ctx> Resolver<'ctx> {
             // Lookup pkgpath scope object and record it as "used". When enter child scope, e.g., in a schema scope, cant find module object.
             // It should be recursively search whole scope to lookup scope object, not the current scope.element.
             if !pkgpath.is_empty() {
-                if let Some(obj) = self.scope.borrow().lookup(pkgpath) {
+                if let Some(obj) = self.scope.borrow().lookup(&names[0]) {
                     if let ScopeObjectKind::Module(m) = &mut obj.borrow_mut().kind {
                         for (stmt, used) in m.import_stmts.iter_mut() {
                             if stmt.get_pos().filename == range.0.filename {
@@ -124,15 +124,7 @@ impl<'ctx> Resolver<'ctx> {
                 }
             }
             // Load type
-            let mut tys = self.resolve_var(
-                &[if !pkgpath.is_empty() {
-                    pkgpath.to_string()
-                } else {
-                    names[0].clone()
-                }],
-                pkgpath,
-                range.clone(),
-            );
+            let mut tys = self.resolve_var(&[names[0].clone()], pkgpath, range.clone());
             let mut ty = tys[0].clone();
 
             for name in &names[1..] {

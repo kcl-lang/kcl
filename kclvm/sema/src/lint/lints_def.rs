@@ -57,7 +57,7 @@ impl LintPass for ImportPosition {
                             range: stmt.get_span_pos(),
                             style: Style::Line,
                             message: format!(
-                                "Importstmt should be placed at the top of the module"
+                                "The import stmt should be placed at the top of the module"
                             ),
                             note: Some(
                                 "Consider moving tihs statement to the top of the file".to_string(),

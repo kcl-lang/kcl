@@ -233,12 +233,12 @@ pub fn fix_qualified_identifier<'ctx>(
             import_names.insert(import_stmt.name.clone(), import_stmt.path.node.clone());
         }
     }
-    // 1. fix_global_ident
-    let mut global_names_walker = QualifiedIdentifierTransformer {
+    // 1. fix qualified identifier
+    let mut walker = QualifiedIdentifierTransformer {
         import_names: import_names.clone(),
         ..Default::default()
     };
-    global_names_walker.walk_module(module);
+    walker.walk_module(module);
 }
 
 /// Fix AST raw identifier prefix `$`, e.g., $filter -> filter

@@ -119,57 +119,63 @@ impl<'ctx> Resolver<'ctx> {
         let modules = self.program.pkgs.get(&self.ctx.pkgpath);
         match modules {
             Some(modules) => {
+                let mut import_table: IndexMap<String, String> = IndexMap::default();
                 for module in modules {
                     self.ctx.filename = module.filename.clone();
                     self.ctx.pkgpath = module.pkg.clone();
                     for stmt in &module.body {
                         if let ast::Stmt::Import(import_stmt) = &stmt.node {
-                            {
-                                match self.ctx.import_names.get_mut(&self.ctx.filename) {
-                                    Some(mapping) => {
-                                        // 'import sub as s' and 'import sub.sub as s' will raise this error.
-                                        // 'import sub' and 'import sub' will not raise this error.
-                                        // 'import sub as s' and 'import sub as s' will not raise this error.
-                                        if let Some(path) = mapping.get(&import_stmt.name) {
-                                            if path != &import_stmt.path.node {
-                                                self.handler.add_compile_error(
-                                                    &format!(
-                                                        "the name '{}' is defined multiple times, '{}' must be defined only once",
-                                                        import_stmt.name, import_stmt.name
-                                                    ),
-                                                    stmt.get_span_pos(),
-                                                );
-                                            }
-                                        }
-                                        mapping.insert(
-                                            import_stmt.name.to_string(),
-                                            import_stmt.path.node.to_string(),
-                                        );
-                                    }
-                                    None => {
-                                        let mut mapping = IndexMap::default();
-                                        mapping.insert(
-                                            import_stmt.name.to_string(),
-                                            import_stmt.path.node.to_string(),
-                                        );
-                                        self.ctx
-                                            .import_names
-                                            .insert(self.ctx.filename.clone(), mapping);
-                                    }
+                            // 'import sub as s' and 'import sub.sub as s' will raise this error.
+                            // 'import sub' and 'import sub' will not raise this error.
+                            // 'import sub as s' and 'import sub as s' will not raise this error.
+                            if let Some(path) = import_table.get(&import_stmt.name) {
+                                if path != &import_stmt.path.node {
+                                    self.handler.add_compile_error(
+                                        &format!(
+                                            "the name '{}' is defined multiple times, '{}' must be defined only once",
+                                            import_stmt.name, import_stmt.name
+                                        ),
+                                        stmt.get_span_pos(),
+                                    );
                                 }
+                            } else {
+                                import_table.insert(
+                                    import_stmt.name.clone(),
+                                    import_stmt.path.node.clone(),
+                                );
+                            }
+                            match self.ctx.import_names.get_mut(&self.ctx.filename) {
+                                Some(mapping) => {
+                                    mapping.insert(
+                                        import_stmt.name.to_string(),
+                                        import_stmt.path.node.to_string(),
+                                    );
+                                }
+                                None => {
+                                    let mut mapping = IndexMap::default();
+                                    mapping.insert(
+                                        import_stmt.name.to_string(),
+                                        import_stmt.path.node.to_string(),
+                                    );
+                                    self.ctx
+                                        .import_names
+                                        .insert(self.ctx.filename.clone(), mapping);
+                                }
+                            }
+                            {
                                 let mut scope = self.scope.borrow_mut();
-                                let is_user_module = match scope.elems.get(&import_stmt.path.node) {
+                                let is_user_module = match scope.elems.get(&import_stmt.name) {
                                     Some(scope_obj) => {
                                         let mut obj = scope_obj.borrow_mut();
                                         match &mut obj.kind {
-                                                    ScopeObjectKind::Module(m) => {
-                                                        m.import_stmts.push((stmt.clone(), false))
-                                                    },
-                                                    _ => bug!(
-                                                        "invalid module type in the import check function {}",
-                                                        scope_obj.borrow().ty.ty_str()
-                                                    )
-                                                }
+                                                ScopeObjectKind::Module(m) => {
+                                                    m.import_stmts.push((stmt.clone(), false))
+                                                },
+                                                _ => bug!(
+                                                    "invalid module type in the import check function {}",
+                                                    scope_obj.borrow().ty.ty_str()
+                                                )
+                                            }
                                         match &obj.ty.kind {
                                             TypeKind::Module(module_ty) => {
                                                 let mut module_ty = module_ty.clone();
@@ -211,9 +217,9 @@ impl<'ctx> Resolver<'ctx> {
                                         let (start, end) = stmt.get_span_pos();
 
                                         scope.elems.insert(
-                                            import_stmt.path.node.to_string(),
+                                            import_stmt.name.clone(),
                                             Rc::new(RefCell::new(ScopeObject {
-                                                name: import_stmt.path.node.to_string(),
+                                                name: import_stmt.name.clone(),
                                                 start,
                                                 end,
                                                 ty: Arc::new(ty),
