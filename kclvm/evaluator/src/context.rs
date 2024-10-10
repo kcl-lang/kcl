@@ -61,7 +61,7 @@ impl<'ctx> Evaluator<'ctx> {
     ) {
         // Capture function schema this reference.
         if let Some(this) = &lambda_ctx.this {
-            self.push_schema(this.clone());
+            self.push_schema(this.eval_ctx());
         }
         // Inner scope function calling.
         // Note the minimum lambda.ctx.level is 2 for the top level lambda definitions.

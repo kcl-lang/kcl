@@ -1,0 +1,7 @@
+s1:
+  s: hello
+s2:
+  s: world
+output:
+  s1_add: foo hello
+  s2_add: bar world

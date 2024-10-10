@@ -23,12 +23,35 @@ pub type FunctionEvalContextRef = Arc<FunctionEvalContext>;
 pub struct FunctionEvalContext {
     /// AST node.
     pub node: ast::LambdaExpr,
-    /// Captured schema or rule value.
-    pub this: Option<EvalContext>,
+    /// Captured schema or rule eval context.
+    pub this: Option<FunctionEvalThis>,
     /// Captured closure local variables.
     pub closure: ClosureMap,
     /// The scope level of the function definition.
     pub level: usize,
+}
+
+#[derive(Clone)]
+pub struct FunctionEvalThis {
+    pub ctx: EvalContext,
+    pub value: ValueRef,
+    pub config: ValueRef,
+}
+
+impl FunctionEvalThis {
+    #[inline]
+    pub fn eval_ctx(&self) -> EvalContext {
+        match &self.ctx {
+            EvalContext::Schema(schema_ctx) => EvalContext::Schema(
+                schema_ctx
+                    .borrow()
+                    .new_with_value(&self.value, &self.config),
+            ),
+            EvalContext::Rule(rule_ctx) => {
+                EvalContext::Rule(rule_ctx.borrow().new_with_value(&self.value, &self.config))
+            }
+        }
+    }
 }
 
 /// Proxy functions represent the saved functions of the runtime itself,

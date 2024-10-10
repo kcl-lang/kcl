@@ -16,7 +16,7 @@ use kclvm_sema::{builtin, pkgpath_without_prefix, plugin};
 use scopeguard::defer;
 
 use crate::error::INTERNAL_ERROR_MSG;
-use crate::func::{func_body, FunctionCaller, FunctionEvalContext};
+use crate::func::{func_body, FunctionCaller, FunctionEvalContext, FunctionEvalThis};
 use crate::lazy::Setter;
 use crate::proxy::Proxy;
 use crate::rule::{rule_body, rule_check, RuleCaller, RuleEvalContext};
@@ -949,7 +949,15 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         let proxy = FunctionCaller::new(
             FunctionEvalContext {
                 node: lambda_expr.clone(),
-                this: self.schema_stack.borrow().last().cloned(),
+                this: self
+                    .schema_stack
+                    .borrow()
+                    .last()
+                    .map(|ctx| FunctionEvalThis {
+                        ctx: ctx.clone(),
+                        value: ctx.value(),
+                        config: ctx.config(),
+                    }),
                 closure: self.get_current_closure_map(),
                 level: self.scope_level() + 1,
             },
