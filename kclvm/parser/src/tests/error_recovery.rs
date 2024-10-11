@@ -370,6 +370,21 @@ schema A:
 parse_module_snapshot! { schema_stmt_recovery_35, r#"
 schema A:
     "attr":"#}
+parse_module_snapshot! { schema_stmt_recovery_36, r#"
+schema A:
+    mixin: "#}
+parse_module_snapshot! { schema_stmt_recovery_37, r#"
+schema A:
+    mixin: ["#}
+parse_module_snapshot! { schema_stmt_recovery_38, r#"
+schema A:
+    mixin: []"#}
+parse_module_snapshot! { schema_stmt_recovery_39, r#"
+schema A:
+    mixin []"#}
+parse_module_snapshot! { schema_stmt_recovery_40, r#"
+schema A:
+    mixin ["#}
 parse_module_snapshot! { rule_stmt_recovery_0, r#"rule"#}
 parse_module_snapshot! { rule_stmt_recovery_1, r#"rule A"#}
 parse_module_snapshot! { rule_stmt_recovery_2, r#"rule A["#}
