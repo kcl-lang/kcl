@@ -525,7 +525,9 @@ fn completion_import_internal_pkg(
                     } else {
                         // internal module
                         let path = entry.path();
-                        if path.to_str().unwrap_or("").adjust_canonicalization() == line_start_pos.filename.adjust_canonicalization() {
+                        if path.to_str().unwrap_or("").adjust_canonicalization()
+                            == line_start_pos.filename.adjust_canonicalization()
+                        {
                             continue;
                         }
                         if let Some(extension) = path.extension() {

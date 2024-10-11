@@ -58,7 +58,13 @@ pub struct Pos(String, u64, u64, u64, u64);
 
 impl From<PosTuple> for Pos {
     fn from(value: PosTuple) -> Self {
-        Self(value.0.adjust_canonicalization(), value.1, value.2, value.3, value.4)
+        Self(
+            value.0.adjust_canonicalization(),
+            value.1,
+            value.2,
+            value.3,
+            value.4,
+        )
     }
 }
 

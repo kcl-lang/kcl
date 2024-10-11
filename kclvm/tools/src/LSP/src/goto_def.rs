@@ -12,7 +12,6 @@ use indexmap::IndexSet;
 use kclvm_error::Position as KCLPos;
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::core::symbol::SymbolRef;
-use kclvm_utils::path::PathPrefix;
 use lsp_types::GotoDefinitionResponse;
 
 /// Navigates to the definition of an identifier.
@@ -70,39 +69,15 @@ pub(crate) fn find_def(kcl_pos: &KCLPos, gs: &GlobalState, exact: bool) -> Optio
         }
     };
 
-    // #[cfg(target_os = "windows")]
-    // {
-    //     if def.is_none() {
-    //         let windows_driver_prefix = "\\\\?\\";
-    //         if kcl_pos.filename.starts_with(windows_driver_prefix) {
-    //             let mut pos = kcl_pos.clone();
-    //             pos.filename = kcl_pos.filename.adjust_canonicalization();
-    //             return find_def(&pos, gs, exact);
-    //         }
-    //     }
-    // }
     def
 }
 
 pub(crate) fn find_symbol(kcl_pos: &KCLPos, gs: &GlobalState, exact: bool) -> Option<SymbolRef> {
-
     let res = if exact {
         gs.look_up_exact_symbol(kcl_pos)
     } else {
         gs.look_up_closest_symbol(kcl_pos)
     };
-
-    // #[cfg(target_os = "windows")]
-    // {
-    //     if res.is_none() {
-    //         let windows_driver_prefix = "\\\\?\\";
-    //         if kcl_pos.filename.starts_with(windows_driver_prefix) {
-    //             let mut pos = kcl_pos.clone();
-    //             pos.filename = kcl_pos.filename.adjust_canonicalization();
-    //             return find_symbol(&pos, gs, exact)
-    //         }
-    //     }
-    // }
     res
 }
 
@@ -155,7 +130,9 @@ mod tests {
     }
 
     fn fmt_resp(resp: &Option<lsp_types::GotoDefinitionResponse>) -> String {
-        let root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).canonicalize().unwrap();
+        let root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .canonicalize()
+            .unwrap();
         match resp {
             Some(resp) => match resp {
                 lsp_types::GotoDefinitionResponse::Scalar(loc) => {

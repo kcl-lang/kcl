@@ -55,26 +55,18 @@ pub fn rename_symbol_on_code(
 ) -> Result<HashMap<String, String>> {
     // prepare a vfs from given file_paths
     let vfs = KCLVfs::default();
-    let f = if source_codes.keys().all(|path| path.starts_with("/"))
-    {
+    let f = if source_codes.keys().all(|path| path.starts_with("/")) {
         VfsPath::new_virtual_path
     } else {
         VfsPath::new_real_path
     };
 
     for (filepath, code) in &source_codes {
-        vfs.write().set_file_contents(
-            f(filepath.clone()),
-            Some(code.as_bytes().to_vec()),
-        );
+        vfs.write()
+            .set_file_contents(f(filepath.clone()), Some(code.as_bytes().to_vec()));
     }
-    let changes: HashMap<String, Vec<TextEdit>> = rename_symbol(
-        pkg_root,
-        vfs,
-        symbol_path,
-        new_name,
-        f,
-    )?;
+    let changes: HashMap<String, Vec<TextEdit>> =
+        rename_symbol(pkg_root, vfs, symbol_path, new_name, f)?;
     apply_rename_changes(&changes, source_codes)
 }
 
@@ -184,7 +176,7 @@ where
     };
     let files: Vec<&str> = file_paths.iter().map(|s| s.as_str()).collect();
     let sess: ParseSessionRef = ParseSessionRef::default();
-    let mut program = load_program(sess.clone(), &files, Some(opts), None).unwrap().program;
+    let mut program = load_program(sess.clone(), &files, Some(opts), None)?.program;
 
     let prog_scope = resolve_program_with_opts(
         &mut program,
@@ -199,7 +191,7 @@ where
     let mut gs = GlobalState::default();
     Namer::find_symbols(&program, &mut gs);
     let node_ty_map = prog_scope.node_ty_map;
-    AdvancedResolver::resolve_program(&program, &mut gs, node_ty_map).unwrap();
+    AdvancedResolver::resolve_program(&program, &mut gs, node_ty_map)?;
 
     Ok((program, gs))
 }
@@ -524,7 +516,7 @@ e = a["abc"]
                 )
             );
         } else {
-            unreachable!("select symbol failed1")
+            unreachable!("select symbol failed")
         }
 
         if let Some((name, range)) = select_symbol(
@@ -553,7 +545,7 @@ e = a["abc"]
                 )
             );
         } else {
-            unreachable!("select symbol failed2")
+            unreachable!("select symbol failed")
         }
 
         if let Some((name, range)) = select_symbol(
@@ -582,7 +574,7 @@ e = a["abc"]
                 )
             );
         } else {
-            unreachable!("select symbol failed3")
+            unreachable!("select symbol failed")
         }
 
         if let Some((name, range)) = select_symbol(
@@ -611,7 +603,7 @@ e = a["abc"]
                 )
             );
         } else {
-            unreachable!("select symbol failed4")
+            unreachable!("select symbol failed")
         }
 
         if let Some((name, range)) = select_symbol(
@@ -640,7 +632,7 @@ e = a["abc"]
                 )
             );
         } else {
-            unreachable!("select symbol failed5")
+            unreachable!("select symbol failed")
         }
     }
 
@@ -770,11 +762,15 @@ Bob = vars.Person {
 
     #[test]
     fn test_rename_symbol_on_file() {
-        let  root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let root  = root.join("src").join("test_data").join("rename_test").join("rename_on_file");
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let root = root
+            .join("src")
+            .join("test_data")
+            .join("rename_test")
+            .join("rename_on_file");
 
-        let  main_path = root.clone();
-        let  base_path = root.clone();
+        let main_path = root.clone();
+        let base_path = root.clone();
         let main_path = main_path.join("config.k");
         let base_path = base_path.join("base").join("person.k");
         let base_path_string = base_path.to_str().unwrap().to_string();

@@ -425,10 +425,10 @@ fn get_main_files_from_pkg_path(
         }
     }
 
-    match PathBuf::from(s.clone()).canonicalize(){
+    match PathBuf::from(s.clone()).canonicalize() {
         Ok(path) => {
             path_list.push(path.to_str().unwrap().to_string());
-        },
+        }
         // path from virtual file system
         Err(_) => path_list.push(s),
     }

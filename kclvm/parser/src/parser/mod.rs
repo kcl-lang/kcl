@@ -87,7 +87,8 @@ impl<'a> Parser<'a> {
         let filename = kclvm_utils::path::convert_windows_drive_letter(&format!(
             "{}",
             lo.file.name.prefer_remapped()
-        )).adjust_canonicalization();
+        ))
+        .adjust_canonicalization();
 
         (
             filename,
@@ -198,7 +199,8 @@ impl<'a> Parser<'a> {
                             let hi = sess.lookup_char_pos(tok.span.hi());
                             let filename = kclvm_utils::path::convert_windows_drive_letter(
                                 &format!("{}", lo.file.name.prefer_remapped()),
-                            ).adjust_canonicalization();
+                            )
+                            .adjust_canonicalization();
 
                             let node = kclvm_ast::ast::Node {
                                 id: kclvm_ast::ast::AstIndex::default(),

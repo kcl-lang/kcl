@@ -1427,7 +1427,12 @@ fn konfig_path() -> PathBuf {
 #[test]
 fn konfig_goto_def_test_base() {
     let konfig_path = konfig_path();
-    let base_path = konfig_path.clone().join("appops").join("nginx-example").join("base").join("base.k");
+    let base_path = konfig_path
+        .clone()
+        .join("appops")
+        .join("nginx-example")
+        .join("base")
+        .join("base.k");
     let base_path_str = base_path.to_str().unwrap().to_string();
     let (_program, gs) = compile_with_params(Params {
         file: Some(base_path_str.clone()),
@@ -1446,7 +1451,14 @@ fn konfig_goto_def_test_base() {
         column: Some(30),
     };
     let res = goto_def(&pos, &gs);
-    let expected_path = konfig_path.clone().join("base").join("pkg").join("kusion_models").join("kube").join("frontend").join("server.k");
+    let expected_path = konfig_path
+        .clone()
+        .join("base")
+        .join("pkg")
+        .join("kusion_models")
+        .join("kube")
+        .join("frontend")
+        .join("server.k");
 
     compare_goto_res(
         res,
@@ -1460,7 +1472,15 @@ fn konfig_goto_def_test_base() {
         column: Some(32),
     };
     let res = goto_def(&pos, &gs);
-    let expected_path = konfig_path.clone().join("base").join("pkg").join("kusion_models").join("kube").join("frontend").join("container").join("container.k");
+    let expected_path = konfig_path
+        .clone()
+        .join("base")
+        .join("pkg")
+        .join("kusion_models")
+        .join("kube")
+        .join("frontend")
+        .join("container")
+        .join("container.k");
     compare_goto_res(
         res,
         (&expected_path.to_str().unwrap().to_string(), 5, 7, 5, 11),
@@ -1473,7 +1493,14 @@ fn konfig_goto_def_test_base() {
         column: Some(9),
     };
     let res = goto_def(&pos, &gs);
-    let expected_path = konfig_path.clone().join("base").join("pkg").join("kusion_models").join("kube").join("frontend").join("server.k");
+    let expected_path = konfig_path
+        .clone()
+        .join("base")
+        .join("pkg")
+        .join("kusion_models")
+        .join("kube")
+        .join("frontend")
+        .join("server.k");
     compare_goto_res(
         res,
         (
@@ -1492,7 +1519,15 @@ fn konfig_goto_def_test_base() {
         column: Some(10),
     };
     let res = goto_def(&pos, &gs);
-    let expected_path = konfig_path.clone().join("base").join("pkg").join("kusion_models").join("kube").join("frontend").join("container").join("container.k");
+    let expected_path = konfig_path
+        .clone()
+        .join("base")
+        .join("pkg")
+        .join("kusion_models")
+        .join("kube")
+        .join("frontend")
+        .join("container")
+        .join("container.k");
     compare_goto_res(
         res,
         (&expected_path.to_str().unwrap().to_string(), 69, 4, 69, 9),
@@ -1506,7 +1541,15 @@ fn konfig_goto_def_test_base() {
     };
     let res = goto_def(&pos, &gs);
 
-    let expected_path = konfig_path.clone().join("base").join("pkg").join("kusion_models").join("kube").join("frontend").join("service").join("service.k");
+    let expected_path = konfig_path
+        .clone()
+        .join("base")
+        .join("pkg")
+        .join("kusion_models")
+        .join("kube")
+        .join("frontend")
+        .join("service")
+        .join("service.k");
     compare_goto_res(
         res,
         (&expected_path.to_str().unwrap().to_string(), 0, 0, 0, 0),
@@ -1516,7 +1559,12 @@ fn konfig_goto_def_test_base() {
 #[test]
 fn konfig_goto_def_test_main() {
     let konfig_path = konfig_path();
-    let main_path = konfig_path.clone().join("appops").join("nginx-example").join("dev").join("main.k");
+    let main_path = konfig_path
+        .clone()
+        .join("appops")
+        .join("nginx-example")
+        .join("dev")
+        .join("main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
     let (_program, gs) = compile_with_params(Params {
         file: Some(main_path_str.clone()),
@@ -1535,7 +1583,14 @@ fn konfig_goto_def_test_main() {
         column: Some(31),
     };
     let res = goto_def(&pos, &gs);
-    let expected_path = konfig_path.clone().join("base").join("pkg").join("kusion_models").join("kube").join("frontend").join("server.k");
+    let expected_path = konfig_path
+        .clone()
+        .join("base")
+        .join("pkg")
+        .join("kusion_models")
+        .join("kube")
+        .join("frontend")
+        .join("server.k");
     compare_goto_res(
         res,
         (&expected_path.to_str().unwrap().to_string(), 12, 7, 12, 13),
@@ -1548,7 +1603,14 @@ fn konfig_goto_def_test_main() {
         column: Some(14),
     };
     let res = goto_def(&pos, &gs);
-    let expected_path = konfig_path.clone().join("base").join("pkg").join("kusion_models").join("kube").join("frontend").join("server.k");
+    let expected_path = konfig_path
+        .clone()
+        .join("base")
+        .join("pkg")
+        .join("kusion_models")
+        .join("kube")
+        .join("frontend")
+        .join("server.k");
     compare_goto_res(
         res,
         (
@@ -1567,7 +1629,14 @@ fn konfig_goto_def_test_main() {
         column: Some(61),
     };
     let res = goto_def(&pos, &gs);
-    let expected_path = konfig_path.clone().join("base").join("pkg").join("kusion_models").join("kube").join("templates").join("resource.k");
+    let expected_path = konfig_path
+        .clone()
+        .join("base")
+        .join("pkg")
+        .join("kusion_models")
+        .join("kube")
+        .join("templates")
+        .join("resource.k");
     compare_goto_res(
         res,
         (&expected_path.to_str().unwrap().to_string(), 0, 0, 0, 0),
@@ -1577,11 +1646,13 @@ fn konfig_goto_def_test_main() {
 #[test]
 fn konfig_completion_test_main() {
     let konfig_path = konfig_path();
-    let main_path = konfig_path.clone().join("appops").join("nginx-example").join("dev").join("main.k");
-    let main_path_str = main_path
-        .to_str()
-        .unwrap()
-        .to_string();
+    let main_path = konfig_path
+        .clone()
+        .join("appops")
+        .join("nginx-example")
+        .join("dev")
+        .join("main.k");
+    let main_path_str = main_path.to_str().unwrap().to_string();
     let (program, gs) = compile_with_params(Params {
         file: Some(main_path_str.clone()),
         module_cache: None,
@@ -1693,7 +1764,12 @@ fn konfig_completion_test_main() {
 #[test]
 fn konfig_hover_test_main() {
     let konfig_path = konfig_path();
-    let main_path = konfig_path.clone().join("appops").join("nginx-example").join("dev").join("main.k");
+    let main_path = konfig_path
+        .clone()
+        .join("appops")
+        .join("nginx-example")
+        .join("dev")
+        .join("main.k");
 
     let main_path_str = main_path.to_str().unwrap().to_string();
     let (_program, gs) = compile_with_params(Params {

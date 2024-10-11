@@ -26,7 +26,7 @@ pub fn document_symbol(file: &str, gs: &GlobalState) -> Option<lsp_types::Docume
                             Some(def) => {
                                 let symbol_range = symbol.get_range();
                                 // filter current file symbols
-                                if symbol_range.0.filename == file{
+                                if symbol_range.0.filename == file {
                                     match def.get_kind() {
                                         KCLSymbolKind::Schema => {
                                             match &mut symbol_to_document_symbol(symbol) {
@@ -41,8 +41,7 @@ pub fn document_symbol(file: &str, gs: &GlobalState) -> Option<lsp_types::Docume
                                                     let mut children = vec![];
 
                                                     for attr in attrs {
-                                                        match gs.get_symbols().get_symbol(attr)
-                                                        {
+                                                        match gs.get_symbols().get_symbol(attr) {
                                                             Some(attr_symbol) => {
                                                                 match symbol_to_document_symbol(
                                                                     attr_symbol,
@@ -58,19 +57,15 @@ pub fn document_symbol(file: &str, gs: &GlobalState) -> Option<lsp_types::Docume
                                                     }
 
                                                     schema_symbol.children = Some(children);
-                                                    schema_symbol.name = format!(
-                                                        "schema {}",
-                                                        schema_symbol.name
-                                                    );
-                                                    document_symbols
-                                                        .push(schema_symbol.clone());
+                                                    schema_symbol.name =
+                                                        format!("schema {}", schema_symbol.name);
+                                                    document_symbols.push(schema_symbol.clone());
                                                 }
                                                 None => {}
                                             }
                                         }
                                         _ => {
-                                            if let Some(symbol) =
-                                                symbol_to_document_symbol(symbol)
+                                            if let Some(symbol) = symbol_to_document_symbol(symbol)
                                             {
                                                 document_symbols.push(symbol)
                                             }
