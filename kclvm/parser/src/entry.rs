@@ -8,6 +8,7 @@ use kclvm_utils::path::{is_absolute, is_dir, path_exist};
 use std::collections::VecDeque;
 use std::fs;
 use std::path::Path;
+use std::path::PathBuf;
 
 use crate::LoadProgramOptions;
 
@@ -424,7 +425,13 @@ fn get_main_files_from_pkg_path(
         }
     }
 
-    path_list.push(s);
+    match PathBuf::from(s.clone()).canonicalize(){
+        Ok(path) => {
+            path_list.push(path.to_str().unwrap().to_string());
+        },
+        // path from virtual file system
+        Err(_) => path_list.push(s),
+    }
 
     // get k files
     let mut k_files: Vec<String> = Vec::new();

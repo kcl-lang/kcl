@@ -4,6 +4,7 @@ use kclvm_error::DiagnosticId;
 use kclvm_error::Level;
 use kclvm_error::Message;
 use kclvm_error::Position as KCLPos;
+use kclvm_utils::path::PathPrefix;
 use lsp_types::*;
 use serde_json::json;
 
@@ -143,7 +144,7 @@ pub(crate) fn kcl_diag_to_lsp_diags_by_file(
 ) -> Vec<Diagnostic> {
     let mut diags = vec![];
     for (idx, msg) in diag.messages.iter().enumerate() {
-        if msg.range.0.filename == file_name {
+        if msg.range.0.filename.adjust_canonicalization() == file_name.adjust_canonicalization() {
             let mut related_msg = diag.messages.clone();
             related_msg.remove(idx);
             let code = if diag.code.is_some() {

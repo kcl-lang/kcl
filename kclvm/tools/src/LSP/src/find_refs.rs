@@ -76,7 +76,12 @@ mod tests {
                 for loc in resp {
                     let url = file_path_from_url(&loc.uri).unwrap();
                     let got_path = Path::new(&url);
-                    let relative_path = got_path.strip_prefix(root_path.clone()).unwrap();
+                    let relative_path = got_path
+                        .strip_prefix(root_path.clone())
+                        .unwrap()
+                        .display()
+                        .to_string()
+                        .replace("\\", "/");
                     res.push_str(&format!(
                         "path: {:?}, range: {:?}\n",
                         relative_path, loc.range

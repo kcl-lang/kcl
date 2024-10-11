@@ -58,13 +58,13 @@ pub struct Pos(String, u64, u64, u64, u64);
 
 impl From<PosTuple> for Pos {
     fn from(value: PosTuple) -> Self {
-        Self(value.0, value.1, value.2, value.3, value.4)
+        Self(value.0.adjust_canonicalization(), value.1, value.2, value.3, value.4)
     }
 }
 
 impl From<Pos> for PosTuple {
     fn from(val: Pos) -> Self {
-        (val.0, val.1, val.2, val.3, val.4)
+        (val.0.adjust_canonicalization(), val.1, val.2, val.3, val.4)
     }
 }
 
@@ -72,12 +72,12 @@ impl From<Pos> for Range {
     fn from(val: Pos) -> Self {
         (
             Position {
-                filename: val.0.clone(),
+                filename: val.0.clone().adjust_canonicalization(),
                 line: val.1,
                 column: Some(val.2),
             },
             Position {
-                filename: val.0,
+                filename: val.0.adjust_canonicalization(),
                 line: val.3,
                 column: Some(val.4),
             },
@@ -220,7 +220,7 @@ impl<T> Node<T> {
         Self {
             id,
             node,
-            filename: pos.0.clone(),
+            filename: pos.0.clone().adjust_canonicalization(),
             line: pos.1,
             column: pos.2,
             end_line: pos.3,
@@ -232,7 +232,7 @@ impl<T> Node<T> {
         Self {
             id: AstIndex::default(),
             node,
-            filename: pos.0.clone(),
+            filename: pos.0.clone().adjust_canonicalization(),
             line: pos.1,
             column: pos.2,
             end_line: pos.3,
@@ -242,7 +242,7 @@ impl<T> Node<T> {
 
     pub fn pos(&self) -> PosTuple {
         (
-            self.filename.clone(),
+            self.filename.clone().adjust_canonicalization(),
             self.line,
             self.column,
             self.end_line,
@@ -251,7 +251,7 @@ impl<T> Node<T> {
     }
 
     pub fn set_pos(&mut self, pos: PosTuple) {
-        self.filename = pos.0.clone();
+        self.filename = pos.0.clone().adjust_canonicalization();
         self.line = pos.1;
         self.column = pos.2;
         self.end_line = pos.3;

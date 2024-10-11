@@ -55,9 +55,16 @@ pub fn rename_symbol_on_code(
 ) -> Result<HashMap<String, String>> {
     // prepare a vfs from given file_paths
     let vfs = KCLVfs::default();
+    let f = if source_codes.keys().all(|path| path.starts_with("/"))
+    {
+        VfsPath::new_virtual_path
+    } else {
+        VfsPath::new_real_path
+    };
+
     for (filepath, code) in &source_codes {
         vfs.write().set_file_contents(
-            VfsPath::new_virtual_path(filepath.clone()),
+            f(filepath.clone()),
             Some(code.as_bytes().to_vec()),
         );
     }
@@ -66,7 +73,7 @@ pub fn rename_symbol_on_code(
         vfs,
         symbol_path,
         new_name,
-        VfsPath::new_virtual_path,
+        f,
     )?;
     apply_rename_changes(&changes, source_codes)
 }
@@ -177,7 +184,7 @@ where
     };
     let files: Vec<&str> = file_paths.iter().map(|s| s.as_str()).collect();
     let sess: ParseSessionRef = ParseSessionRef::default();
-    let mut program = load_program(sess.clone(), &files, Some(opts), None)?.program;
+    let mut program = load_program(sess.clone(), &files, Some(opts), None).unwrap().program;
 
     let prog_scope = resolve_program_with_opts(
         &mut program,
@@ -192,7 +199,7 @@ where
     let mut gs = GlobalState::default();
     Namer::find_symbols(&program, &mut gs);
     let node_ty_map = prog_scope.node_ty_map;
-    AdvancedResolver::resolve_program(&program, &mut gs, node_ty_map)?;
+    AdvancedResolver::resolve_program(&program, &mut gs, node_ty_map).unwrap();
 
     Ok((program, gs))
 }
@@ -517,7 +524,7 @@ e = a["abc"]
                 )
             );
         } else {
-            unreachable!("select symbol failed")
+            unreachable!("select symbol failed1")
         }
 
         if let Some((name, range)) = select_symbol(
@@ -546,7 +553,7 @@ e = a["abc"]
                 )
             );
         } else {
-            unreachable!("select symbol failed")
+            unreachable!("select symbol failed2")
         }
 
         if let Some((name, range)) = select_symbol(
@@ -575,7 +582,7 @@ e = a["abc"]
                 )
             );
         } else {
-            unreachable!("select symbol failed")
+            unreachable!("select symbol failed3")
         }
 
         if let Some((name, range)) = select_symbol(
@@ -604,7 +611,7 @@ e = a["abc"]
                 )
             );
         } else {
-            unreachable!("select symbol failed")
+            unreachable!("select symbol failed4")
         }
 
         if let Some((name, range)) = select_symbol(
@@ -633,7 +640,7 @@ e = a["abc"]
                 )
             );
         } else {
-            unreachable!("select symbol failed")
+            unreachable!("select symbol failed5")
         }
     }
 
@@ -655,13 +662,13 @@ e = a["abc"]
 
     #[test]
     fn test_rename() {
-        let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        root.push("src/test_data/rename_test/");
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let root = root.join("src").join("test_data").join("rename_test");
 
-        let mut main_path = root.clone();
-        let mut base_path = root.clone();
-        base_path.push("base/person.k");
-        main_path.push("config.k");
+        let main_path = root.clone();
+        let base_path = root.clone();
+        let base_path = base_path.join("base").join("person.k");
+        let main_path = main_path.join("config.k");
 
         let base_path = base_path.to_str().unwrap();
         let main_path = main_path.to_str().unwrap();
@@ -670,7 +677,7 @@ e = a["abc"]
         for path in [base_path, main_path] {
             let content = fs::read_to_string(path).unwrap();
             vfs.write().set_file_contents(
-                VfsPath::new_virtual_path(path.to_string()),
+                VfsPath::new_real_path(path.to_string()),
                 Some(content.into_bytes()),
             );
         }
@@ -680,7 +687,7 @@ e = a["abc"]
             vfs.clone(),
             "base:Person",
             "NewPerson".to_string(),
-            VfsPath::new_virtual_path,
+            VfsPath::new_real_path,
         ) {
             assert_eq!(changes.len(), 2);
             assert!(changes.contains_key(base_path));
@@ -699,7 +706,7 @@ e = a["abc"]
             vfs.clone(),
             "base:Person.name",
             "new_name".to_string(),
-            VfsPath::new_virtual_path,
+            VfsPath::new_real_path,
         ) {
             assert_eq!(changes.len(), 2);
             assert!(changes.contains_key(base_path));
@@ -763,13 +770,13 @@ Bob = vars.Person {
 
     #[test]
     fn test_rename_symbol_on_file() {
-        let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        root.push("src/test_data/rename_test/rename_on_file");
+        let  root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let root  = root.join("src").join("test_data").join("rename_test").join("rename_on_file");
 
-        let mut main_path = root.clone();
-        let mut base_path = root.clone();
-        base_path.push("base/person.k");
-        main_path.push("config.k");
+        let  main_path = root.clone();
+        let  base_path = root.clone();
+        let main_path = main_path.join("config.k");
+        let base_path = base_path.join("base").join("person.k");
         let base_path_string = base_path.to_str().unwrap().to_string();
         let main_path_string = main_path.to_str().unwrap().to_string();
 
@@ -823,15 +830,15 @@ e = a["abc"]"#
 
     #[test]
     fn test_rename_symbol_on_code() {
-        let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        root.push("src/test_data/rename_test/");
+        let root = root.join("src").join("test_data").join("rename_test");
 
-        let mut base_path = root.clone();
-        let mut main_path = root.clone();
+        let base_path = root.clone();
+        let main_path = root.clone();
 
-        base_path.push("base/person.k");
-        main_path.push("config.k");
+        let base_path = base_path.join("base").join("person.k");
+        let main_path = main_path.join("config.k");
 
         let base_path_string = base_path.to_str().unwrap().to_string();
         let main_path_string = main_path.to_str().unwrap().to_string();

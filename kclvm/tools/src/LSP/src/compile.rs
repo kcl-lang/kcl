@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use indexmap::IndexSet;
 use kclvm_ast::ast::Program;
 use kclvm_driver::{lookup_compile_workspace, toolchain};
@@ -14,6 +12,8 @@ use kclvm_sema::{
     namer::Namer,
     resolver::{resolve_program_with_opts, scope::KCLScopeCache},
 };
+use std::collections::HashSet;
+use std::path::PathBuf;
 
 use crate::{
     state::{KCLGlobalStateCache, KCLVfs},
@@ -149,7 +149,12 @@ pub fn compile_with_params(
     IndexSet<kclvm_error::Diagnostic>,
     anyhow::Result<(Program, GlobalState)>,
 ) {
-    let file = params.file.clone().unwrap();
+    let file = PathBuf::from(params.file.clone().unwrap())
+        .canonicalize()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_string();
     // Lookup compile workspace from the cursor file.
     let (mut files, opts, _) = lookup_compile_workspace(&toolchain::default(), &file, true);
     if !files.contains(&file) {

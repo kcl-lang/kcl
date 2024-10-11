@@ -17,6 +17,7 @@ enum MarkedStringType {
 /// Specifically, the doc for schema and schema attr(todo)
 pub fn hover(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Hover> {
     let mut docs: Vec<(String, MarkedStringType)> = vec![];
+
     let def = find_def(kcl_pos, gs, true);
     match def {
         Some(def_ref) => match gs.get_symbols().get_symbol(def_ref) {

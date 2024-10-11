@@ -61,7 +61,7 @@ jobs:
         working-directory: .
 
       # Rust unit test
-      - run: cargo test -r -p kclvm-*
+      - run: cargo test --workspace -r -- --nocapture
         working-directory: ./kclvm
 
       - uses: actions/upload-artifact@v4

@@ -15,9 +15,6 @@
 //! + new line
 //!     + schema init
 
-use std::io;
-use std::{fs, path::Path};
-
 use crate::goto_def::{find_def, find_symbol};
 use indexmap::IndexSet;
 use kclvm_ast::ast::{self, ImportStmt, Program, Stmt};
@@ -26,6 +23,8 @@ use kclvm_config::modfile::KCL_FILE_EXTENSION;
 use kclvm_driver::get_kcl_files;
 use kclvm_driver::toolchain::{get_real_path_from_external, Metadata, Toolchain};
 use kclvm_sema::core::global_state::GlobalState;
+use std::io;
+use std::{fs, path::Path};
 
 use kclvm_error::Position as KCLPos;
 use kclvm_sema::builtin::{BUILTIN_FUNCTIONS, STANDARD_SYSTEM_MODULES};
@@ -34,6 +33,7 @@ use kclvm_sema::core::scope::{LocalSymbolScopeKind, ScopeKind};
 use kclvm_sema::core::symbol::SymbolKind;
 use kclvm_sema::resolver::doc::{parse_schema_doc_string, SchemaDoc};
 use kclvm_sema::ty::{FunctionType, SchemaType, Type, TypeKind};
+use kclvm_utils::path::PathPrefix;
 use lsp_types::{CompletionItem, CompletionItemKind, InsertTextFormat};
 
 use crate::util::{inner_most_expr_in_stmt, is_in_docstring};
@@ -252,7 +252,6 @@ fn completion_dot(
     if symbol.is_none() {
         symbol = find_symbol(pos, gs, false);
     }
-
     let def = match symbol {
         Some(symbol_ref) => {
             if let SymbolKind::Unresolved = symbol_ref.get_kind() {
@@ -472,7 +471,6 @@ fn completion_import_stmt(
         line: pos.line,
         column: Some(0),
     };
-
     if let Some(node) = program.pos_to_stmt(line_start_pos) {
         if let Stmt::Import(_) = node.node {
             completions.extend(completion_import_builtin_pkg());
@@ -527,7 +525,7 @@ fn completion_import_internal_pkg(
                     } else {
                         // internal module
                         let path = entry.path();
-                        if path.to_str().unwrap_or("") == line_start_pos.filename {
+                        if path.to_str().unwrap_or("").adjust_canonicalization() == line_start_pos.filename.adjust_canonicalization() {
                             continue;
                         }
                         if let Some(extension) = path.extension() {
