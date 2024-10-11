@@ -1176,6 +1176,7 @@ impl<'a> Parser<'a> {
         };
 
         loop {
+            let marker = self.mark();
             self.validate_dedent();
             if matches!(
                 self.token.kind,
@@ -1193,6 +1194,7 @@ impl<'a> Parser<'a> {
             if let TokenKind::Newline = self.token.kind {
                 self.skip_newlines()
             }
+            self.drop(marker);
         }
 
         // _DEDENT
