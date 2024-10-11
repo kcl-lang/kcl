@@ -464,7 +464,7 @@ fn goto_import_pkg_with_line_test() {
     let (file, _program, _, gs) =
         compile_test_file("src/test_data/goto_def_with_line_test/main_pkg/main.k");
     let pos = KCLPos {
-        filename: file,
+        filename: file.adjust_canonicalization(),
         line: 1,
         column: Some(27),
     };
@@ -479,7 +479,8 @@ fn goto_import_pkg_with_line_test() {
                 .canonicalize()
                 .unwrap()
                 .display()
-                .to_string();
+                .to_string()
+                .adjust_canonicalization();
             assert_eq!(got_path, expected_path)
         }
         _ => {
@@ -533,7 +534,7 @@ fn complete_import_external_file_test() {
     .unwrap();
 
     let pos = KCLPos {
-        filename: path.to_string(),
+        filename: path.to_string().adjust_canonicalization(),
         line: 1,
         column: Some(11),
     };
@@ -595,7 +596,7 @@ fn goto_import_external_file_test() {
 
     // test goto import file: import .pkg.schema_def
     let pos = KCLPos {
-        filename: path.to_string(),
+        filename: path.to_string().adjust_canonicalization(),
         line: 1,
         column: Some(57),
     };

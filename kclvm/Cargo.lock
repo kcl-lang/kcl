@@ -2047,6 +2047,7 @@ dependencies = [
  "kclvm-error",
  "kclvm-parser",
  "kclvm-sema",
+ "kclvm-utils",
  "maplit",
  "pretty_assertions",
  "serde",
