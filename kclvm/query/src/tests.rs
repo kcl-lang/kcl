@@ -6,6 +6,7 @@ use crate::{
 };
 use kclvm_error::{DiagnosticId, ErrorKind, Level};
 use kclvm_parser::parse_file_force_errors;
+use kclvm_utils::path::PathPrefix;
 use pretty_assertions::assert_eq;
 use selector::ListOptions;
 
@@ -887,8 +888,12 @@ fn test_overridefile_with_invalid_kcl() {
         "expected one of [\"=\"] got eof"
     );
     assert_eq!(
-        result.parse_errors[0].messages[0].range.0.filename,
-        simple_path.display().to_string()
+        result.parse_errors[0].messages[0]
+            .range
+            .0
+            .filename
+            .adjust_canonicalization(),
+        simple_path.display().to_string().adjust_canonicalization()
     );
     assert_eq!(result.parse_errors[0].messages[0].range.0.line, 1);
     assert_eq!(result.parse_errors[0].messages[0].range.0.column, Some(8));

@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use kclvm_ast::MAIN_PKG;
 use kclvm_error::Position;
 use kclvm_sema::core::global_state::GlobalState;
@@ -28,57 +26,48 @@ pub fn document_symbol(file: &str, gs: &GlobalState) -> Option<lsp_types::Docume
                             Some(def) => {
                                 let symbol_range = symbol.get_range();
                                 // filter current file symbols
-                                if let Ok(canonicalized_path) =
-                                    Path::new(&symbol_range.0.filename).canonicalize()
-                                {
-                                    if canonicalized_path.eq(Path::new(file)) {
-                                        match def.get_kind() {
-                                            KCLSymbolKind::Schema => {
-                                                match &mut symbol_to_document_symbol(symbol) {
-                                                    Some(schema_symbol) => {
-                                                        let module_info = gs
-                                                            .get_packages()
-                                                            .get_module_info(&dummy_pos.filename);
-                                                        let attrs = symbol.get_all_attributes(
-                                                            gs.get_symbols(),
-                                                            module_info,
-                                                        );
-                                                        let mut children = vec![];
+                                if symbol_range.0.filename == file {
+                                    match def.get_kind() {
+                                        KCLSymbolKind::Schema => {
+                                            match &mut symbol_to_document_symbol(symbol) {
+                                                Some(schema_symbol) => {
+                                                    let module_info = gs
+                                                        .get_packages()
+                                                        .get_module_info(&dummy_pos.filename);
+                                                    let attrs = symbol.get_all_attributes(
+                                                        gs.get_symbols(),
+                                                        module_info,
+                                                    );
+                                                    let mut children = vec![];
 
-                                                        for attr in attrs {
-                                                            match gs.get_symbols().get_symbol(attr)
-                                                            {
-                                                                Some(attr_symbol) => {
-                                                                    match symbol_to_document_symbol(
-                                                                        attr_symbol,
-                                                                    ) {
-                                                                        Some(symbol) => {
-                                                                            children.push(symbol)
-                                                                        }
-                                                                        None => {}
+                                                    for attr in attrs {
+                                                        match gs.get_symbols().get_symbol(attr) {
+                                                            Some(attr_symbol) => {
+                                                                match symbol_to_document_symbol(
+                                                                    attr_symbol,
+                                                                ) {
+                                                                    Some(symbol) => {
+                                                                        children.push(symbol)
                                                                     }
+                                                                    None => {}
                                                                 }
-                                                                None => {}
                                                             }
+                                                            None => {}
                                                         }
-
-                                                        schema_symbol.children = Some(children);
-                                                        schema_symbol.name = format!(
-                                                            "schema {}",
-                                                            schema_symbol.name
-                                                        );
-                                                        document_symbols
-                                                            .push(schema_symbol.clone());
                                                     }
-                                                    None => {}
+
+                                                    schema_symbol.children = Some(children);
+                                                    schema_symbol.name =
+                                                        format!("schema {}", schema_symbol.name);
+                                                    document_symbols.push(schema_symbol.clone());
                                                 }
+                                                None => {}
                                             }
-                                            _ => {
-                                                if let Some(symbol) =
-                                                    symbol_to_document_symbol(symbol)
-                                                {
-                                                    document_symbols.push(symbol)
-                                                }
+                                        }
+                                        _ => {
+                                            if let Some(symbol) = symbol_to_document_symbol(symbol)
+                                            {
+                                                document_symbols.push(symbol)
                                             }
                                         }
                                     }

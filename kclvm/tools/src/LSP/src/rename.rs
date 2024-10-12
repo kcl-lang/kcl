@@ -55,19 +55,18 @@ pub fn rename_symbol_on_code(
 ) -> Result<HashMap<String, String>> {
     // prepare a vfs from given file_paths
     let vfs = KCLVfs::default();
+    let f = if source_codes.keys().all(|path| path.starts_with("/")) {
+        VfsPath::new_virtual_path
+    } else {
+        VfsPath::new_real_path
+    };
+
     for (filepath, code) in &source_codes {
-        vfs.write().set_file_contents(
-            VfsPath::new_virtual_path(filepath.clone()),
-            Some(code.as_bytes().to_vec()),
-        );
+        vfs.write()
+            .set_file_contents(f(filepath.clone()), Some(code.as_bytes().to_vec()));
     }
-    let changes: HashMap<String, Vec<TextEdit>> = rename_symbol(
-        pkg_root,
-        vfs,
-        symbol_path,
-        new_name,
-        VfsPath::new_virtual_path,
-    )?;
+    let changes: HashMap<String, Vec<TextEdit>> =
+        rename_symbol(pkg_root, vfs, symbol_path, new_name, f)?;
     apply_rename_changes(&changes, source_codes)
 }
 
@@ -655,13 +654,13 @@ e = a["abc"]
 
     #[test]
     fn test_rename() {
-        let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        root.push("src/test_data/rename_test/");
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let root = root.join("src").join("test_data").join("rename_test");
 
-        let mut main_path = root.clone();
-        let mut base_path = root.clone();
-        base_path.push("base/person.k");
-        main_path.push("config.k");
+        let main_path = root.clone();
+        let base_path = root.clone();
+        let base_path = base_path.join("base").join("person.k");
+        let main_path = main_path.join("config.k");
 
         let base_path = base_path.to_str().unwrap();
         let main_path = main_path.to_str().unwrap();
@@ -670,7 +669,7 @@ e = a["abc"]
         for path in [base_path, main_path] {
             let content = fs::read_to_string(path).unwrap();
             vfs.write().set_file_contents(
-                VfsPath::new_virtual_path(path.to_string()),
+                VfsPath::new_real_path(path.to_string()),
                 Some(content.into_bytes()),
             );
         }
@@ -680,7 +679,7 @@ e = a["abc"]
             vfs.clone(),
             "base:Person",
             "NewPerson".to_string(),
-            VfsPath::new_virtual_path,
+            VfsPath::new_real_path,
         ) {
             assert_eq!(changes.len(), 2);
             assert!(changes.contains_key(base_path));
@@ -699,7 +698,7 @@ e = a["abc"]
             vfs.clone(),
             "base:Person.name",
             "new_name".to_string(),
-            VfsPath::new_virtual_path,
+            VfsPath::new_real_path,
         ) {
             assert_eq!(changes.len(), 2);
             assert!(changes.contains_key(base_path));
@@ -763,13 +762,17 @@ Bob = vars.Person {
 
     #[test]
     fn test_rename_symbol_on_file() {
-        let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        root.push("src/test_data/rename_test/rename_on_file");
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let root = root
+            .join("src")
+            .join("test_data")
+            .join("rename_test")
+            .join("rename_on_file");
 
-        let mut main_path = root.clone();
-        let mut base_path = root.clone();
-        base_path.push("base/person.k");
-        main_path.push("config.k");
+        let main_path = root.clone();
+        let base_path = root.clone();
+        let main_path = main_path.join("config.k");
+        let base_path = base_path.join("base").join("person.k");
         let base_path_string = base_path.to_str().unwrap().to_string();
         let main_path_string = main_path.to_str().unwrap().to_string();
 
@@ -823,15 +826,15 @@ e = a["abc"]"#
 
     #[test]
     fn test_rename_symbol_on_code() {
-        let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        root.push("src/test_data/rename_test/");
+        let root = root.join("src").join("test_data").join("rename_test");
 
-        let mut base_path = root.clone();
-        let mut main_path = root.clone();
+        let base_path = root.clone();
+        let main_path = root.clone();
 
-        base_path.push("base/person.k");
-        main_path.push("config.k");
+        let base_path = base_path.join("base").join("person.k");
+        let main_path = main_path.join("config.k");
 
         let base_path_string = base_path.to_str().unwrap().to_string();
         let main_path_string = main_path.to_str().unwrap().to_string();

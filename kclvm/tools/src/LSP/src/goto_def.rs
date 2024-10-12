@@ -18,6 +18,7 @@ use lsp_types::GotoDefinitionResponse;
 pub fn goto_def(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::GotoDefinitionResponse> {
     let mut res = IndexSet::new();
     let def = find_def(kcl_pos, gs, true);
+
     match def {
         Some(def_ref) => match gs.get_symbols().get_symbol(def_ref) {
             Some(def) => match def_ref.get_kind() {
@@ -50,7 +51,7 @@ pub fn goto_def(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::GotoDef
 }
 
 pub(crate) fn find_def(kcl_pos: &KCLPos, gs: &GlobalState, exact: bool) -> Option<SymbolRef> {
-    if exact {
+    let def = if exact {
         match gs.look_up_exact_symbol(kcl_pos) {
             Some(symbol_ref) => match gs.get_symbols().get_symbol(symbol_ref) {
                 Some(symbol) => symbol.get_definition(),
@@ -66,15 +67,18 @@ pub(crate) fn find_def(kcl_pos: &KCLPos, gs: &GlobalState, exact: bool) -> Optio
             },
             None => None,
         }
-    }
+    };
+
+    def
 }
 
 pub(crate) fn find_symbol(kcl_pos: &KCLPos, gs: &GlobalState, exact: bool) -> Option<SymbolRef> {
-    if exact {
+    let res = if exact {
         gs.look_up_exact_symbol(kcl_pos)
     } else {
         gs.look_up_closest_symbol(kcl_pos)
-    }
+    };
+    res
 }
 
 // Convert kcl position to GotoDefinitionResponse. This function will convert to
@@ -126,21 +130,33 @@ mod tests {
     }
 
     fn fmt_resp(resp: &Option<lsp_types::GotoDefinitionResponse>) -> String {
-        let root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .canonicalize()
+            .unwrap();
         match resp {
             Some(resp) => match resp {
                 lsp_types::GotoDefinitionResponse::Scalar(loc) => {
                     let url = file_path_from_url(&loc.uri).unwrap();
-                    let got_path = Path::new(&url);
-                    let relative_path = got_path.strip_prefix(root_path).unwrap();
+                    let got_path = Path::new(&url).canonicalize().unwrap();
+                    let relative_path = got_path
+                        .strip_prefix(root_path)
+                        .unwrap()
+                        .display()
+                        .to_string()
+                        .replace("\\", "/");
                     format!("path: {:?}, range: {:?}", relative_path, loc.range)
                 }
                 lsp_types::GotoDefinitionResponse::Array(vec_location) => {
                     let mut res = String::new();
                     for loc in vec_location {
                         let url = file_path_from_url(&loc.uri).unwrap();
-                        let got_path = Path::new(&url);
-                        let relative_path = got_path.strip_prefix(root_path.clone()).unwrap();
+                        let got_path = Path::new(&url).canonicalize().unwrap();
+                        let relative_path = got_path
+                            .strip_prefix(root_path.clone())
+                            .unwrap()
+                            .display()
+                            .to_string()
+                            .replace("\\", "/");
                         res.push_str(&format!(
                             "path: {:?}, range: {:?}\n",
                             relative_path, loc.range
@@ -152,8 +168,13 @@ mod tests {
                     let mut res = String::new();
                     for loc in vec_location_link {
                         let url = file_path_from_url(&loc.target_uri).unwrap();
-                        let got_path = Path::new(&url);
-                        let relative_path = got_path.strip_prefix(root_path.clone()).unwrap();
+                        let got_path = Path::new(&url).canonicalize().unwrap();
+                        let relative_path = got_path
+                            .strip_prefix(root_path.clone())
+                            .unwrap()
+                            .display()
+                            .to_string()
+                            .replace("\\", "/");
                         res.push_str(&format!(
                             "path: {:?}, range: {:?}\n",
                             relative_path, loc.target_selection_range

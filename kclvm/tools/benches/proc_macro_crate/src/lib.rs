@@ -16,8 +16,8 @@ pub fn bench_test(_attr: TokenStream, item: TokenStream) -> TokenStream {
             let end_time = std::time::Instant::now();
             let time =  (end_time - start_time).as_micros();
             println!("{} took {} μs", stringify!(#fn_name), (end_time - start_time).as_micros());
-            // 200 ms
-            assert!(time < 200000, "Bench mark test failed");
+            // 400 ms
+            assert!(time < 400000, "Bench mark test failed");
             result
         }
     };

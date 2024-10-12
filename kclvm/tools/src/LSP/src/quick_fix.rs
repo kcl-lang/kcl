@@ -176,8 +176,8 @@ mod tests {
     #[bench_test]
     fn quick_fix_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let mut test_file = path.clone();
-        test_file.push("src/test_data/quick_fix.k");
+        let test_file = path.clone();
+        let test_file = test_file.join("src").join("test_data").join("quick_fix.k");
         let file = test_file.to_str().unwrap();
 
         let diags = compile_with_params(Params {

@@ -7,6 +7,7 @@ use kclvm_driver::toolchain;
 use kclvm_driver::toolchain::Metadata;
 use kclvm_driver::WorkSpaceKind;
 use kclvm_sema::core::global_state::GlobalState;
+use kclvm_utils::path::PathPrefix;
 
 use kclvm_sema::resolver::scope::KCLScopeCache;
 use lsp_server::RequestId;
@@ -101,7 +102,10 @@ pub(crate) fn compare_goto_res(
     match res.unwrap() {
         lsp_types::GotoDefinitionResponse::Scalar(loc) => {
             let got_path = file_path_from_url(&loc.uri).unwrap();
-            assert_eq!(got_path, pos.0.to_string());
+            assert_eq!(
+                got_path.adjust_canonicalization(),
+                pos.0.to_string().adjust_canonicalization()
+            );
 
             let (got_start, got_end) = (loc.range.start, loc.range.end);
 
@@ -127,10 +131,13 @@ pub(crate) fn compile_test_file(
     testfile: &str,
 ) -> (String, Program, IndexSet<KCLDiagnostic>, GlobalState) {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let mut test_file = path;
-    test_file.push(testfile);
-
-    let file = test_file.to_str().unwrap().to_string();
+    let file = path
+        .join(testfile)
+        .canonicalize()
+        .unwrap()
+        .display()
+        .to_string()
+        .adjust_canonicalization();
 
     let (diags, compile_res) = compile_with_params(Params {
         file: Some(file.clone()),
@@ -153,10 +160,14 @@ pub(crate) fn compile_test_file_and_metadata(
     Option<Metadata>,
 ) {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let mut test_file = path;
-    test_file.push(testfile);
 
-    let file = test_file.to_str().unwrap().to_string();
+    let file = path
+        .join(testfile)
+        .canonicalize()
+        .unwrap()
+        .display()
+        .to_string()
+        .adjust_canonicalization();
 
     let metadata = lookup_compile_workspace(&toolchain::default(), &file, true).2;
     let (diags, compile_res) = compile_with_params(Params {
@@ -430,7 +441,7 @@ fn file_path_from_url_test() {
         let url =
             Url::parse("file:///c%3A/Users/abc/Desktop/%E4%B8%AD%E6%96%87/ab%20c/abc.k").unwrap();
         let path = file_path_from_url(&url).unwrap();
-        assert_eq!(path, "c:\\Users\\abc\\Desktop\\中文\\ab c\\abc.k");
+        assert_eq!(path, "C:\\Users\\abc\\Desktop\\中文\\ab c\\abc.k");
     } else {
         let url = Url::parse("file:///Users/abc/Desktop/%E4%B8%AD%E6%96%87/ab%20c/abc.k").unwrap();
         let path = file_path_from_url(&url).unwrap();
@@ -453,7 +464,7 @@ fn goto_import_pkg_with_line_test() {
     let (file, _program, _, gs) =
         compile_test_file("src/test_data/goto_def_with_line_test/main_pkg/main.k");
     let pos = KCLPos {
-        filename: file,
+        filename: file.adjust_canonicalization(),
         line: 1,
         column: Some(27),
     };
@@ -468,7 +479,8 @@ fn goto_import_pkg_with_line_test() {
                 .canonicalize()
                 .unwrap()
                 .display()
-                .to_string();
+                .to_string()
+                .adjust_canonicalization();
             assert_eq!(got_path, expected_path)
         }
         _ => {
@@ -522,7 +534,7 @@ fn complete_import_external_file_test() {
     .unwrap();
 
     let pos = KCLPos {
-        filename: path.to_string(),
+        filename: path.to_string().adjust_canonicalization(),
         line: 1,
         column: Some(11),
     };
@@ -584,7 +596,7 @@ fn goto_import_external_file_test() {
 
     // test goto import file: import .pkg.schema_def
     let pos = KCLPos {
-        filename: path.to_string(),
+        filename: path.to_string().adjust_canonicalization(),
         line: 1,
         column: Some(57),
     };
@@ -932,9 +944,12 @@ fn cancel_test() {
 #[test]
 fn goto_def_test() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let mut path = root.clone();
-
-    path.push("src/test_data/goto_def_test/goto_def.k");
+    let path = root.clone();
+    let path = path
+        .join("src")
+        .join("test_data")
+        .join("goto_def_test")
+        .join("goto_def.k");
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path).unwrap();
@@ -989,9 +1004,13 @@ fn goto_def_test() {
 #[test]
 fn complete_test() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let mut path = root.clone();
-
-    path.push("src/test_data/completion_test/dot/completion.k");
+    let path = root.clone();
+    let path = path
+        .join("src")
+        .join("test_data")
+        .join("completion_test")
+        .join("dot")
+        .join("completion.k");
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path).unwrap();
@@ -1057,10 +1076,14 @@ fn complete_test() {
 #[test]
 fn complete_with_version_test() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let mut path = root.clone();
-
-    path.push("src/test_data/completion_test/newline/newline_with_version/newline_with_version.k");
-
+    let path = root.clone();
+    let path = path
+        .join("src")
+        .join("test_data")
+        .join("completion_test")
+        .join("newline")
+        .join("newline_with_version")
+        .join("newline_with_version.k");
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path).unwrap();
     let server = Project {}.server(InitializeParams::default());
@@ -1144,11 +1167,13 @@ fn complete_with_version_test() {
 #[test]
 fn hover_test() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let mut path = root.clone();
-
-    path.push("src/test_data/hover_test/hover.k");
-
+    let path = root
+        .join("src")
+        .join("test_data")
+        .join("hover_test")
+        .join("hover.k");
     let path = path.to_str().unwrap();
+
     let src = std::fs::read_to_string(path).unwrap();
     let server = Project {}.server(InitializeParams::default());
 
@@ -1403,8 +1428,12 @@ fn konfig_path() -> PathBuf {
 #[test]
 fn konfig_goto_def_test_base() {
     let konfig_path = konfig_path();
-    let mut base_path = konfig_path.clone();
-    base_path.push("appops/nginx-example/base/base.k");
+    let base_path = konfig_path
+        .clone()
+        .join("appops")
+        .join("nginx-example")
+        .join("base")
+        .join("base.k");
     let base_path_str = base_path.to_str().unwrap().to_string();
     let (_program, gs) = compile_with_params(Params {
         file: Some(base_path_str.clone()),
@@ -1418,13 +1447,20 @@ fn konfig_goto_def_test_base() {
 
     // schema def
     let pos = KCLPos {
-        filename: base_path_str.clone(),
+        filename: base_path_str.clone().adjust_canonicalization(),
         line: 7,
         column: Some(30),
     };
     let res = goto_def(&pos, &gs);
-    let mut expected_path = konfig_path.clone();
-    expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
+    let expected_path = konfig_path
+        .clone()
+        .join("base")
+        .join("pkg")
+        .join("kusion_models")
+        .join("kube")
+        .join("frontend")
+        .join("server.k");
+
     compare_goto_res(
         res,
         (&expected_path.to_str().unwrap().to_string(), 12, 7, 12, 13),
@@ -1432,13 +1468,20 @@ fn konfig_goto_def_test_base() {
 
     // schema def
     let pos = KCLPos {
-        filename: base_path_str.clone(),
+        filename: base_path_str.clone().adjust_canonicalization(),
         line: 9,
         column: Some(32),
     };
     let res = goto_def(&pos, &gs);
-    let mut expected_path = konfig_path.clone();
-    expected_path.push("base/pkg/kusion_models/kube/frontend/container/container.k");
+    let expected_path = konfig_path
+        .clone()
+        .join("base")
+        .join("pkg")
+        .join("kusion_models")
+        .join("kube")
+        .join("frontend")
+        .join("container")
+        .join("container.k");
     compare_goto_res(
         res,
         (&expected_path.to_str().unwrap().to_string(), 5, 7, 5, 11),
@@ -1446,13 +1489,19 @@ fn konfig_goto_def_test_base() {
 
     // schema attr
     let pos = KCLPos {
-        filename: base_path_str.clone(),
+        filename: base_path_str.clone().adjust_canonicalization(),
         line: 9,
         column: Some(9),
     };
     let res = goto_def(&pos, &gs);
-    let mut expected_path = konfig_path.clone();
-    expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
+    let expected_path = konfig_path
+        .clone()
+        .join("base")
+        .join("pkg")
+        .join("kusion_models")
+        .join("kube")
+        .join("frontend")
+        .join("server.k");
     compare_goto_res(
         res,
         (
@@ -1466,13 +1515,20 @@ fn konfig_goto_def_test_base() {
 
     // schema attr
     let pos = KCLPos {
-        filename: base_path_str.clone(),
+        filename: base_path_str.clone().adjust_canonicalization(),
         line: 10,
         column: Some(10),
     };
     let res = goto_def(&pos, &gs);
-    let mut expected_path = konfig_path.clone();
-    expected_path.push("base/pkg/kusion_models/kube/frontend/container/container.k");
+    let expected_path = konfig_path
+        .clone()
+        .join("base")
+        .join("pkg")
+        .join("kusion_models")
+        .join("kube")
+        .join("frontend")
+        .join("container")
+        .join("container.k");
     compare_goto_res(
         res,
         (&expected_path.to_str().unwrap().to_string(), 69, 4, 69, 9),
@@ -1480,13 +1536,21 @@ fn konfig_goto_def_test_base() {
 
     // import pkg
     let pos = KCLPos {
-        filename: base_path_str.clone(),
+        filename: base_path_str.clone().adjust_canonicalization(),
         line: 2,
         column: Some(49),
     };
     let res = goto_def(&pos, &gs);
-    let mut expected_path = konfig_path.clone();
-    expected_path.push("base/pkg/kusion_models/kube/frontend/service/service.k");
+
+    let expected_path = konfig_path
+        .clone()
+        .join("base")
+        .join("pkg")
+        .join("kusion_models")
+        .join("kube")
+        .join("frontend")
+        .join("service")
+        .join("service.k");
     compare_goto_res(
         res,
         (&expected_path.to_str().unwrap().to_string(), 0, 0, 0, 0),
@@ -1496,8 +1560,12 @@ fn konfig_goto_def_test_base() {
 #[test]
 fn konfig_goto_def_test_main() {
     let konfig_path = konfig_path();
-    let mut main_path = konfig_path.clone();
-    main_path.push("appops/nginx-example/dev/main.k");
+    let main_path = konfig_path
+        .clone()
+        .join("appops")
+        .join("nginx-example")
+        .join("dev")
+        .join("main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
     let (_program, gs) = compile_with_params(Params {
         file: Some(main_path_str.clone()),
@@ -1511,13 +1579,19 @@ fn konfig_goto_def_test_main() {
 
     // schema def
     let pos = KCLPos {
-        filename: main_path_str.clone(),
+        filename: main_path_str.clone().adjust_canonicalization(),
         line: 6,
         column: Some(31),
     };
     let res = goto_def(&pos, &gs);
-    let mut expected_path = konfig_path.clone();
-    expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
+    let expected_path = konfig_path
+        .clone()
+        .join("base")
+        .join("pkg")
+        .join("kusion_models")
+        .join("kube")
+        .join("frontend")
+        .join("server.k");
     compare_goto_res(
         res,
         (&expected_path.to_str().unwrap().to_string(), 12, 7, 12, 13),
@@ -1525,13 +1599,19 @@ fn konfig_goto_def_test_main() {
 
     // schema attr
     let pos = KCLPos {
-        filename: main_path_str.clone(),
+        filename: main_path_str.clone().adjust_canonicalization(),
         line: 7,
         column: Some(14),
     };
     let res = goto_def(&pos, &gs);
-    let mut expected_path = konfig_path.clone();
-    expected_path.push("base/pkg/kusion_models/kube/frontend/server.k");
+    let expected_path = konfig_path
+        .clone()
+        .join("base")
+        .join("pkg")
+        .join("kusion_models")
+        .join("kube")
+        .join("frontend")
+        .join("server.k");
     compare_goto_res(
         res,
         (
@@ -1545,13 +1625,19 @@ fn konfig_goto_def_test_main() {
 
     // import pkg
     let pos = KCLPos {
-        filename: main_path_str.clone(),
+        filename: main_path_str.clone().adjust_canonicalization(),
         line: 2,
         column: Some(61),
     };
     let res = goto_def(&pos, &gs);
-    let mut expected_path = konfig_path.clone();
-    expected_path.push("base/pkg/kusion_models/kube/templates/resource.k");
+    let expected_path = konfig_path
+        .clone()
+        .join("base")
+        .join("pkg")
+        .join("kusion_models")
+        .join("kube")
+        .join("templates")
+        .join("resource.k");
     compare_goto_res(
         res,
         (&expected_path.to_str().unwrap().to_string(), 0, 0, 0, 0),
@@ -1561,8 +1647,12 @@ fn konfig_goto_def_test_main() {
 #[test]
 fn konfig_completion_test_main() {
     let konfig_path = konfig_path();
-    let mut main_path = konfig_path.clone();
-    main_path.push("appops/nginx-example/dev/main.k");
+    let main_path = konfig_path
+        .clone()
+        .join("appops")
+        .join("nginx-example")
+        .join("dev")
+        .join("main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
     let (program, gs) = compile_with_params(Params {
         file: Some(main_path_str.clone()),
@@ -1576,7 +1666,7 @@ fn konfig_completion_test_main() {
 
     // pkg's definition(schema) completion
     let pos = KCLPos {
-        filename: main_path_str.clone(),
+        filename: main_path_str.clone().adjust_canonicalization(),
         line: 6,
         column: Some(27),
     };
@@ -1595,7 +1685,7 @@ fn konfig_completion_test_main() {
 
     // schema attr completion
     let pos = KCLPos {
-        filename: main_path_str.clone(),
+        filename: main_path_str.clone().adjust_canonicalization(),
         line: 7,
         column: Some(4),
     };
@@ -1640,7 +1730,7 @@ fn konfig_completion_test_main() {
 
     // import path completion
     let pos = KCLPos {
-        filename: main_path_str.clone(),
+        filename: main_path_str.clone().adjust_canonicalization(),
         line: 1,
         column: Some(35),
     };
@@ -1675,8 +1765,13 @@ fn konfig_completion_test_main() {
 #[test]
 fn konfig_hover_test_main() {
     let konfig_path = konfig_path();
-    let mut main_path = konfig_path.clone();
-    main_path.push("appops/nginx-example/dev/main.k");
+    let main_path = konfig_path
+        .clone()
+        .join("appops")
+        .join("nginx-example")
+        .join("dev")
+        .join("main.k");
+
     let main_path_str = main_path.to_str().unwrap().to_string();
     let (_program, gs) = compile_with_params(Params {
         file: Some(main_path_str.clone()),
@@ -1690,7 +1785,7 @@ fn konfig_hover_test_main() {
 
     // schema def hover
     let pos = KCLPos {
-        filename: main_path_str.clone(),
+        filename: main_path_str.clone().adjust_canonicalization(),
         line: 6,
         column: Some(32),
     };
@@ -1712,7 +1807,7 @@ fn konfig_hover_test_main() {
 
     // schema attr def hover
     let pos = KCLPos {
-        filename: main_path_str.clone(),
+        filename: main_path_str.clone().adjust_canonicalization(),
         line: 7,
         column: Some(15),
     };
@@ -1737,7 +1832,7 @@ fn konfig_hover_test_main() {
 
     // variable hover
     let pos = KCLPos {
-        filename: main_path_str.clone(),
+        filename: main_path_str.clone().adjust_canonicalization(),
         line: 6,
         column: Some(3),
     };
@@ -2010,10 +2105,10 @@ fn rename_test() {
         .join("src")
         .join("test_data")
         .join("rename_test");
-    let mut path = root.clone();
-    let mut main_path = root.clone();
-    path.push("pkg/vars.k");
-    main_path.push("main.k");
+    let path = root.clone();
+    let main_path = root.clone();
+    let path = path.join("pkg").join("vars.k");
+    let main_path = main_path.join("main.k");
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path).unwrap();
@@ -2111,7 +2206,8 @@ fn compile_unit_test() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut test_file = path.clone();
     test_file.push("src/test_data/compile_unit/b.k");
-    let file = test_file.to_str().unwrap();
+    let p = test_file.canonicalize().unwrap();
+    let file = p.to_str().unwrap().adjust_canonicalization();
 
     let prog = compile_with_params(Params {
         file: Some(file.to_string()),
@@ -2401,5 +2497,8 @@ fn init_workspace_sema_token_test() {
 fn pkg_mod_test() {
     let (_file, _program, diags, _gs) =
         compile_test_file("src/test_data/workspace/pkg_mod_test/test/main.k");
+    for diag in diags.iter().filter(|diag| diag.is_error()) {
+        println!("{:?}", diag);
+    }
     assert_eq!(diags.iter().filter(|diag| diag.is_error()).count(), 0);
 }
