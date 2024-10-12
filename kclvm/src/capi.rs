@@ -201,6 +201,26 @@ pub unsafe extern "C" fn kcl_run(
     }
 }
 
+/// Exposes a normal kcl run function with the log message to the WASM host.
+#[no_mangle]
+pub unsafe extern "C" fn kcl_run_with_log_message(
+    filename_ptr: *const c_char,
+    src_ptr: *const c_char,
+) -> *const c_char {
+    if filename_ptr.is_null() || src_ptr.is_null() {
+        return std::ptr::null();
+    }
+    let filename = unsafe { CStr::from_ptr(filename_ptr).to_str().unwrap() };
+    let src = unsafe { CStr::from_ptr(src_ptr).to_str().unwrap() };
+
+    match intern_run(filename, src) {
+        Ok(result) => CString::new(result.log_message + &result.yaml_result)
+            .unwrap()
+            .into_raw(),
+        Err(err) => CString::new(format!("ERROR:{}", err)).unwrap().into_raw(),
+    }
+}
+
 /// Exposes a normal kcl fmt function to the WASM host.
 #[no_mangle]
 pub unsafe extern "C" fn kcl_fmt(src_ptr: *const c_char) -> *const c_char {
