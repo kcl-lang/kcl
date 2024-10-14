@@ -44,9 +44,6 @@ jobs:
       - name: Delete rust cargo
         run: rm -rf /root/.cargo/bin
         shell: bash
-      - name: Install LLVM 12
-        run: brew install llvm@12
-        shell: bash
       - name: Install rust nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -59,20 +56,20 @@ jobs:
         shell: bash
       - name: Grammar test
         working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make && make test-grammar
+        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin && make && make test-grammar
         shell: bash
       - name: Evaluator Grammar test
         working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make test-grammar-evaluator
+        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin && make test-grammar-evaluator
         shell: bash
       - name: Runtime test
         working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make test-runtime
+        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin && make test-runtime
         shell: bash
 
       - name: Unit test
         working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make codecov-lcov
+        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin && make codecov-lcov
         shell: bash
 
       - name: Coveralls upload
@@ -82,7 +79,7 @@ jobs:
           path-to-lcov: ./kclvm/.kclvm_cov/lcov.info
 
       - name: Release
-        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin:/usr/local/opt/llvm@12/bin && make release
+        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin && make release
         shell: bash
 
       - uses: actions/upload-artifact@v4
