@@ -154,9 +154,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
     }
 
     fn walk_aug_assign_stmt(&mut self, aug_assign_stmt: &'ctx ast::AugAssignStmt) -> Self::Result {
-        self.ctx.maybe_def = true;
         self.walk_target_expr(&aug_assign_stmt.target)?;
-        self.ctx.maybe_def = false;
         self.expr(&aug_assign_stmt.value)?;
         Ok(None)
     }
@@ -953,7 +951,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
     }
 
     fn walk_target(&mut self, target: &'ctx ast::Target) -> Self::Result {
-        let symbol_ref = self.resolve_target(&target)?;
+        let symbol_ref = self.resolve_target(&target, self.ctx.maybe_def)?;
         Ok(symbol_ref)
     }
 
@@ -1355,7 +1353,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
         }
     }
 
-    fn resolve_target(&mut self, target: &'ctx ast::Target) -> ResolvedResult {
+    fn resolve_target(&mut self, target: &'ctx ast::Target, maybe_def: bool) -> ResolvedResult {
         let first_name = &target.name;
         let cur_scope = *self.ctx.scopes.last().unwrap();
 
@@ -1490,84 +1488,86 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 Ok(Some(symbol_ref))
             }
             None => {
-                let (start_pos, end_pos): Range = first_name.get_span_pos();
-                let ast_id = first_name.id.clone();
-                let first_value = self.gs.get_symbols_mut().alloc_value_symbol(
-                    ValueSymbol::new(first_name.node.clone(), start_pos, end_pos, None, false),
-                    self.ctx.get_node_key(&ast_id),
-                    self.ctx.current_pkgpath.clone().unwrap(),
-                );
-                self.gs.get_scopes_mut().add_def_to_scope(
-                    cur_scope,
-                    first_name.node.clone(),
-                    first_value,
-                );
+                if maybe_def {
+                    let (start_pos, end_pos): Range = first_name.get_span_pos();
+                    let ast_id = first_name.id.clone();
+                    let first_value = self.gs.get_symbols_mut().alloc_value_symbol(
+                        ValueSymbol::new(first_name.node.clone(), start_pos, end_pos, None, false),
+                        self.ctx.get_node_key(&ast_id),
+                        self.ctx.current_pkgpath.clone().unwrap(),
+                    );
+                    self.gs.get_scopes_mut().add_def_to_scope(
+                        cur_scope,
+                        first_name.node.clone(),
+                        first_value,
+                    );
 
-                if let Some(symbol) = self
-                    .gs
-                    .get_symbols_mut()
-                    .values
-                    .get_mut(first_value.get_id())
-                {
-                    symbol.sema_info = SymbolSemanticInfo {
-                        ty: self
-                            .ctx
-                            .node_ty_map
-                            .borrow()
-                            .get(&self.ctx.get_node_key(&first_name.id))
-                            .map(|ty| ty.clone()),
-                        doc: None,
-                    };
-                }
+                    if let Some(symbol) = self
+                        .gs
+                        .get_symbols_mut()
+                        .values
+                        .get_mut(first_value.get_id())
+                    {
+                        symbol.sema_info = SymbolSemanticInfo {
+                            ty: self
+                                .ctx
+                                .node_ty_map
+                                .borrow()
+                                .get(&self.ctx.get_node_key(&first_name.id))
+                                .map(|ty| ty.clone()),
+                            doc: None,
+                        };
+                    }
 
-                for (index, path) in target.paths.iter().enumerate() {
-                    match path {
-                        ast::MemberOrIndex::Member(member) => {
-                            let name = member;
-                            let (start_pos, end_pos): Range = name.get_span_pos();
-                            let ast_id = name.id.clone();
-                            let value = self.gs.get_symbols_mut().alloc_value_symbol(
-                                ValueSymbol::new(
+                    for (index, path) in target.paths.iter().enumerate() {
+                        match path {
+                            ast::MemberOrIndex::Member(member) => {
+                                let name = member;
+                                let (start_pos, end_pos): Range = name.get_span_pos();
+                                let ast_id = name.id.clone();
+                                let value = self.gs.get_symbols_mut().alloc_value_symbol(
+                                    ValueSymbol::new(
+                                        name.node.clone(),
+                                        start_pos,
+                                        end_pos,
+                                        None,
+                                        false,
+                                    ),
+                                    self.ctx.get_node_key(&ast_id),
+                                    self.ctx.current_pkgpath.clone().unwrap(),
+                                );
+
+                                self.gs.get_scopes_mut().add_def_to_scope(
+                                    cur_scope,
                                     name.node.clone(),
-                                    start_pos,
-                                    end_pos,
-                                    None,
-                                    false,
-                                ),
-                                self.ctx.get_node_key(&ast_id),
-                                self.ctx.current_pkgpath.clone().unwrap(),
-                            );
+                                    value,
+                                );
 
-                            self.gs.get_scopes_mut().add_def_to_scope(
-                                cur_scope,
-                                name.node.clone(),
-                                value,
-                            );
-
-                            if let Some(symbol) =
-                                self.gs.get_symbols_mut().values.get_mut(value.get_id())
-                            {
-                                symbol.sema_info = SymbolSemanticInfo {
-                                    ty: self
-                                        .ctx
-                                        .node_ty_map
-                                        .borrow()
-                                        .get(&self.ctx.get_node_key(&name.id))
-                                        .map(|ty| ty.clone()),
-                                    doc: None,
-                                };
+                                if let Some(symbol) =
+                                    self.gs.get_symbols_mut().values.get_mut(value.get_id())
+                                {
+                                    symbol.sema_info = SymbolSemanticInfo {
+                                        ty: self
+                                            .ctx
+                                            .node_ty_map
+                                            .borrow()
+                                            .get(&self.ctx.get_node_key(&name.id))
+                                            .map(|ty| ty.clone()),
+                                        doc: None,
+                                    };
+                                }
+                                if index == target.paths.len() {
+                                    return Ok(Some(value));
+                                }
                             }
-                            if index == target.paths.len() {
-                                return Ok(Some(value));
-                            }
-                        }
-                        ast::MemberOrIndex::Index(index_expr) => {
-                            let last_maybe_def = self.ctx.maybe_def;
-                            self.ctx.maybe_def = false;
-                            let symbol = self.expr(index_expr);
-                            self.ctx.maybe_def = last_maybe_def;
-                            if index == target.paths.len() {
-                                return symbol;
+                            ast::MemberOrIndex::Index(index_expr) => {
+                                let last_maybe_def = self.ctx.maybe_def;
+                                self.ctx.maybe_def = false;
+                                let symbol = self.expr(index_expr);
+                                self.ctx.maybe_def = last_maybe_def;
+                                if index == target.paths.len() {
+                                    return symbol;
+                                }
                             }
                         }
                     }
@@ -1634,7 +1634,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
             }
             identifier_symbol
         } else {
-            match self.resolve_target(&target.node)? {
+            match self.resolve_target(&target.node, self.ctx.maybe_def)? {
                 Some(symbol) => symbol,
                 None => return Ok(None),
             }
