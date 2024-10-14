@@ -2403,3 +2403,10 @@ fn pkg_mod_test() {
         compile_test_file("src/test_data/workspace/pkg_mod_test/test/main.k");
     assert_eq!(diags.iter().filter(|diag| diag.is_error()).count(), 0);
 }
+
+#[test]
+fn aug_assign_without_define() {
+    let (_file, _program, diags, _gs) =
+        compile_test_file("src/test_data/error_code/aug_assign/aug_assign.k");
+    assert_eq!(diags.len(), 1);
+}
