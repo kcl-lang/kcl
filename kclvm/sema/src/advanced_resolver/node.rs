@@ -1937,36 +1937,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
 
             if let Some(key) = &entry.node.key {
                 self.ctx.maybe_def = true;
-                if let Some(symbol_ref) = self.expr(key)? {
-                    let config_key_symbol =
-                        self.gs.get_symbols().unresolved.get(symbol_ref.get_id());
-                    let hint: Option<SymbolHint> =
-                        if let Some(config_key_symbol) = config_key_symbol {
-                            match config_key_symbol.get_definition() {
-                                Some(def_ref) => match self.gs.get_symbols().get_symbol(def_ref) {
-                                    Some(def_symbol) => {
-                                        let ty = def_symbol.get_sema_info().ty.clone();
-                                        ty.as_ref().map(|ty| SymbolHint {
-                                            kind: SymbolHintKind::TypeHint(ty.ty_hint()),
-                                            pos: config_key_symbol.get_range().1.clone(),
-                                        })
-                                    }
-                                    None => None,
-                                },
-                                None => None,
-                            }
-                        } else {
-                            None
-                        };
-                    if let Some(config_key_symbol_mut_ref) = self
-                        .gs
-                        .get_symbols_mut()
-                        .unresolved
-                        .get_mut(symbol_ref.get_id())
-                    {
-                        config_key_symbol_mut_ref.hint = hint;
-                    }
-                }
+                self.expr(key)?;
                 self.ctx.maybe_def = false;
             }
         }
