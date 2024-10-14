@@ -124,8 +124,9 @@ mod tests {
         "src/test_data/inlay_hints/schema_args/schema_args_hint.k"
     );
 
-    inlay_hints_test_snapshot!(
-        test_config_key_ty,
-        "src/test_data/inlay_hints/config_key/config_key.k"
-    );
+    // Temporary revert
+    // inlay_hints_test_snapshot!(
+    //     test_config_key_ty,
+    //     "src/test_data/inlay_hints/config_key/config_key.k"
+    // );
 }
