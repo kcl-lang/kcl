@@ -177,8 +177,7 @@ fn parse_program(test_kcl_case_path: &str) -> Program {
 /// Default configuration:
 ///     module.pkg = "__main__"
 ///     Program.root = "__main__"
-fn construct_program(mut module: Module) -> Program {
-    module.pkg = MAIN_PKG_NAME.to_string();
+fn construct_program(module: Module) -> Program {
     let mut pkgs_ast = HashMap::new();
     pkgs_ast.insert(MAIN_PKG_NAME.to_string(), vec![module]);
     Program {

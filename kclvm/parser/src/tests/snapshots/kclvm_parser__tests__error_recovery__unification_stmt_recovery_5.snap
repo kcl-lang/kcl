@@ -4,7 +4,6 @@ expression: "crate::tests::parsing_module_string(r#\"s: Server ( {\"#)"
 ---
 Module {
     filename: "",
-    pkg: "",
     doc: None,
     name: "",
     body: [

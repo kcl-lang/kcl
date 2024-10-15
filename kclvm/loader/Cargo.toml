@@ -15,6 +15,7 @@ kclvm-parser = {path = "../parser"}
 kclvm-sema = {path = "../sema"}
 kclvm-error = {path = "../error"}
 kclvm-query = {path = "../query"}
+kclvm-utils = {path = "../utils"}
 maplit = "1.0.2"
 
 [dev-dependencies]

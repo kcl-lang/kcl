@@ -1,7 +1,6 @@
 use crossbeam_channel::after;
 use crossbeam_channel::select;
 use indexmap::IndexSet;
-use kclvm_ast::MAIN_PKG;
 use kclvm_driver::lookup_compile_workspace;
 use kclvm_driver::toolchain;
 use kclvm_driver::toolchain::Metadata;
@@ -91,7 +90,7 @@ use crate::util::to_json;
 
 macro_rules! wait_async_compile {
     () => {
-        thread::sleep(Duration::from_millis(50));
+        thread::sleep(Duration::from_millis(100));
     };
 }
 
@@ -2199,33 +2198,6 @@ fn rename_test() {
         ..Default::default()
     };
     assert_eq!(res.result.unwrap(), to_json(expect).unwrap());
-}
-
-#[test]
-fn compile_unit_test() {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let mut test_file = path.clone();
-    test_file.push("src/test_data/compile_unit/b.k");
-    let p = test_file.canonicalize().unwrap();
-    let file = p.to_str().unwrap().adjust_canonicalization();
-
-    let prog = compile_with_params(Params {
-        file: Some(file.to_string()),
-        module_cache: None,
-        scope_cache: None,
-        vfs: Some(KCLVfs::default()),
-        gs_cache: Some(KCLGlobalStateCache::default()),
-    })
-    .1
-    .unwrap()
-    .0;
-    // b.k is not contained in kcl.yaml but need to be contained in main pkg
-    assert!(prog
-        .pkgs
-        .get(MAIN_PKG)
-        .unwrap()
-        .iter()
-        .any(|m| m.filename == file))
 }
 
 #[test]

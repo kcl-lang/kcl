@@ -1,11 +1,9 @@
 ---
 source: parser/src/tests/error_recovery.rs
-assertion_line: 273
 expression: "crate::tests::parsing_module_string(r#\"\nschema A:\n    [str]: str\n    [str]: int\"#)"
 ---
 Module {
     filename: "",
-    pkg: "",
     doc: None,
     name: "",
     body: [
@@ -88,4 +86,3 @@ Module {
     ],
     comments: [],
 }
-

@@ -4,7 +4,6 @@ expression: "crate::tests::parsing_file_string(\"testdata/config_expr-04.k\")"
 ---
 {
   "filename": "config_expr-04.k",
-  "pkg": "__main__",
   "doc": null,
   "name": "__main__",
   "body": [

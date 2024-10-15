@@ -16,9 +16,10 @@ pub use crate::session::{ParseSession, ParseSessionRef};
 use compiler_base_macros::bug;
 use compiler_base_session::Session;
 use compiler_base_span::span::new_byte_pos;
-use file_graph::FileGraph;
+use file_graph::{toposort, Pkg, PkgFile, PkgFileGraph, PkgMap};
 use indexmap::IndexMap;
-use kclvm_ast::ast;
+use kclvm_ast::ast::Module;
+use kclvm_ast::{ast, MAIN_PKG};
 use kclvm_config::modfile::{get_vendor_home, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE};
 use kclvm_error::diagnostic::{Errors, Range};
 use kclvm_error::{ErrorKind, Message, Position, Style};
@@ -30,8 +31,8 @@ use kclvm_utils::pkgpath::rm_external_pkg_name;
 use anyhow::Result;
 use lexer::parse_token_streams;
 use parser::Parser;
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::collections::{HashMap, VecDeque};
+use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
 use kclvm_span::create_session_globals_then;
@@ -94,7 +95,7 @@ pub struct ParseFileResult {
     /// Parse errors
     pub errors: Errors,
     /// Dependency paths.
-    pub deps: Vec<PathBuf>,
+    pub deps: Vec<PkgFile>,
 }
 
 /// Parse a KCL file to the AST module with parse errors.
@@ -119,21 +120,20 @@ pub fn parse_file(filename: &str, code: Option<String>) -> Result<ParseFileResul
         Some(module) => module.clone(),
         None => ast::Module::default(),
     };
-    let filename = module.filename.clone();
-    let path = Path::new(&filename);
+    let file_graph = loader.file_graph.read().unwrap();
+    let file = PkgFile {
+        path: PathBuf::from(filename),
+        pkg_path: MAIN_PKG.to_string(),
+    };
+    let deps = if file_graph.contains_file(&file) {
+        file_graph.dependencies_of(&file).into_iter().collect()
+    } else {
+        vec![]
+    };
     Ok(ParseFileResult {
         module,
         errors: result.errors.clone(),
-        deps: if loader.file_graph.contains_file(path) {
-            loader
-                .file_graph
-                .dependencies_of(path)
-                .into_iter()
-                .cloned()
-                .collect()
-        } else {
-            vec![]
-        },
+        deps,
     })
 }
 
@@ -193,7 +193,6 @@ pub fn parse_file_with_session(
     let mut p = parser::Parser::new(&sess, stream);
     let mut m = p.parse_module();
     m.filename = filename.to_string().adjust_canonicalization();
-    m.pkg = kclvm_ast::MAIN_PKG.to_string();
     m.name = kclvm_ast::MAIN_PKG.to_string();
 
     Ok(m)
@@ -310,17 +309,14 @@ pub type KCLModuleCache = Arc<RwLock<ModuleCache>>;
 
 #[derive(Default, Debug)]
 pub struct ModuleCache {
-    pub ast_cache: IndexMap<String, ast::Module>,
-    /// Invalid modules and new code, equivalent to paths and k_code_list. The difference is that paths is in the main package.
-    pub invalidate_module: HashMap<String, Option<String>>,
+    pub ast_cache: IndexMap<PathBuf, Arc<ast::Module>>,
 }
 struct Loader {
     sess: ParseSessionRef,
     paths: Vec<String>,
     opts: LoadProgramOptions,
-    missing_pkgs: Vec<String>,
-    module_cache: Option<KCLModuleCache>,
-    file_graph: FileGraph,
+    module_cache: KCLModuleCache,
+    file_graph: FileGraphCache,
 }
 
 impl Loader {
@@ -337,9 +333,8 @@ impl Loader {
                 .map(|s| kclvm_utils::path::convert_windows_drive_letter(s))
                 .collect(),
             opts: opts.unwrap_or_default(),
-            module_cache,
-            missing_pkgs: Default::default(),
-            file_graph: FileGraph::default(),
+            module_cache: module_cache.unwrap_or_default(),
+            file_graph: FileGraphCache::default(),
         }
     }
 
@@ -349,509 +344,590 @@ impl Loader {
     }
 
     fn _load_main(&mut self) -> Result<LoadProgramResult> {
-        let compile_entries = get_compile_entries_from_paths(&self.paths, &self.opts)?;
-        let workdir = compile_entries.get_root_path().to_string();
-        let mut pkgs = HashMap::new();
-        let mut pkg_files = Vec::new();
-        // update cache
-        if let Some(module_cache) = self.module_cache.as_ref() {
-            for entry in compile_entries.iter() {
-                let k_files = entry.get_k_files();
-                let maybe_k_codes = entry.get_k_codes();
-                // update main pkg ast cache
-                for (i, filename) in k_files.iter().enumerate() {
-                    let m = parse_file_with_session(
-                        self.sess.clone(),
-                        filename,
-                        maybe_k_codes[i].clone(),
-                    )?;
-                    let mut module_cache_ref = module_cache.write().unwrap();
-                    module_cache_ref
-                        .ast_cache
-                        .insert(filename.clone(), m.clone());
-                }
-                // update invalidate module ast cache
-                let mut module_cache_ref = module_cache.write().unwrap();
-                let invalidate_module = module_cache_ref.invalidate_module.clone();
-                module_cache_ref.invalidate_module.clear();
-                drop(module_cache_ref);
-
-                for (filename, code) in invalidate_module.iter() {
-                    let m = parse_file_with_session(self.sess.clone(), filename, code.clone())?;
-                    let mut module_cache_ref = module_cache.write().unwrap();
-                    module_cache_ref
-                        .ast_cache
-                        .insert(filename.clone(), m.clone());
-                }
-            }
-        }
-
-        for entry in compile_entries.iter() {
-            let k_files = entry.get_k_files();
-            let maybe_k_codes = entry.get_k_codes();
-            // Load main package.
-            for (i, filename) in k_files.iter().enumerate() {
-                let mut m = if let Some(module_cache) = self.module_cache.as_ref() {
-                    let module_cache_ref = module_cache.read().unwrap();
-                    module_cache_ref.ast_cache.get(filename).unwrap().clone()
-                } else {
-                    parse_file_with_session(self.sess.clone(), filename, maybe_k_codes[i].clone())?
-                };
-                fix_rel_import_path(entry.path(), &mut m);
-                pkg_files.push(m);
-            }
-
-            // Insert an empty vec to determine whether there is a circular import.
-            pkgs.insert(kclvm_ast::MAIN_PKG.to_string(), vec![]);
-            self.load_import_package(
-                entry.path(),
-                entry.name().to_string(),
-                &mut pkg_files,
-                &mut pkgs,
-            )?;
-        }
-        // Insert the complete ast to replace the empty list.
-        pkgs.insert(kclvm_ast::MAIN_PKG.to_string(), pkg_files);
-        let program = ast::Program {
-            root: workdir,
-            pkgs,
-        };
-        // Return the files in the order they should be compiled
-        let paths = match self.file_graph.toposort() {
-            Ok(files) => files,
-            Err(cycle) => {
-                let formatted_cycle = cycle
-                    .iter()
-                    .map(|path| format!("- {}\n", path.to_string_lossy()))
-                    .collect::<String>();
-
-                self.sess.1.write().add_error(
-                    ErrorKind::RecursiveLoad,
-                    &[Message {
-                        range: (Position::dummy_pos(), Position::dummy_pos()),
-                        style: Style::Line,
-                        message: format!(
-                            "Could not compiles due to cyclic import statements\n{}",
-                            formatted_cycle.trim_end()
-                        ),
-                        note: None,
-                        suggested_replacement: None,
-                    }],
-                );
-
-                // Return a list of all paths.
-                self.file_graph.paths()
-            }
-        };
-
-        Ok(LoadProgramResult {
-            program,
-            errors: self.sess.1.read().diagnostics.clone(),
-            paths,
-        })
-    }
-
-    /// [`find_packages`] will find the kcl package.
-    /// If the package is found, the basic information of the package [`PkgInfo`] will be returned.
-    ///
-    /// # Errors
-    ///
-    ///  This method will return an error in the following two cases:
-    ///
-    /// 1. The package not found.
-    /// 2. The package was found both internal and external the current package.
-    fn find_packages(
-        &self,
-        pos: ast::Pos,
-        pkg_name: &str,
-        pkg_root: &str,
-        pkg_path: &str,
-    ) -> Result<Option<PkgInfo>> {
-        // 1. Look for in the current package's directory.
-        let is_internal = self.is_internal_pkg(pkg_name, pkg_root, pkg_path)?;
-
-        // 2. Look for in the vendor path.
-        let is_external = self.is_external_pkg(pkg_path)?;
-
-        // 3. Internal and external packages cannot be duplicated
-        if is_external.is_some() && is_internal.is_some() {
-            self.sess.1.write().add_error(
-                ErrorKind::CannotFindModule,
-                &[Message {
-                    range: Into::<Range>::into(pos),
-                    style: Style::Line,
-                    message: format!(
-                        "the `{}` is found multiple times in the current package and vendor package",
-                        pkg_path
-                    ),
-                    note: None,
-                    suggested_replacement: None,
-                }],
-            );
-            return Ok(None);
-        }
-
-        // 4. Get package information based on whether the package is internal or external.
-        match is_internal.or(is_external) {
-            Some(pkg_info) => Ok(Some(pkg_info)),
-            None => {
-                self.sess.1.write().add_error(
-                    ErrorKind::CannotFindModule,
-                    &[Message {
-                        range: Into::<Range>::into(pos),
-                        style: Style::Line,
-                        message: format!("pkgpath {} not found in the program", pkg_path),
-                        note: None,
-                        suggested_replacement: None,
-                    }],
-                );
-                let mut suggestions =
-                    vec![format!("browse more packages at 'https://artifacthub.io'")];
-
-                if let Ok(pkg_name) = parse_external_pkg_name(pkg_path) {
-                    suggestions.insert(
-                        0,
-                        format!(
-                            "try 'kcl mod add {}' to download the missing package",
-                            pkg_name
-                        ),
-                    );
-                }
-                self.sess.1.write().add_suggestions(suggestions);
-                Ok(None)
-            }
-        }
-    }
-
-    /// [`load_import_package`] will traverse all the [`kclvm_ast::ImportStmt`] on the input AST nodes [`pkg`],
-    ///  load the source code and parse the code to corresponding AST.
-    ///
-    /// And store the result of parse in [`pkgs`].
-    ///
-    /// # Note
-    /// [`load_import_package`] will add the external package name as prefix of the [`kclvm_ast::ImportStmt`]'s member [`path`].
-    fn load_import_package(
-        &mut self,
-        pkgroot: &str,
-        pkg_name: String,
-        pkg: &mut [ast::Module],
-        pkgs: &mut HashMap<String, Vec<ast::Module>>,
-    ) -> Result<()> {
-        for m in pkg {
-            let mut to_paths: Vec<PathBuf> = vec![];
-            for stmt in &mut m.body {
-                let pos = stmt.pos().clone();
-                if let ast::Stmt::Import(ref mut import_spec) = &mut stmt.node {
-                    import_spec.path.node = kclvm_config::vfs::fix_import_path(
-                        pkgroot,
-                        &m.filename,
-                        import_spec.path.node.as_str(),
-                    );
-                    import_spec.pkg_name = pkg_name.to_string();
-                    // Load the import package source code and compile.
-                    let pkg_info = self.load_package(
-                        pkgroot,
-                        pkg_name.to_string(),
-                        import_spec.path.node.to_string(),
-                        pos.into(),
-                        pkgs,
-                    )?;
-                    if let Some(pkg_info) = &pkg_info {
-                        // Add the external package name as prefix of the [`kclvm_ast::ImportStmt`]'s member [`path`].
-                        import_spec.path.node = pkg_info.pkg_path.to_string();
-                        import_spec.pkg_name = pkg_info.pkg_name.clone();
-                        // Add file dependencies.
-                        let mut paths: Vec<PathBuf> =
-                            pkg_info.k_files.iter().map(PathBuf::from).collect();
-                        to_paths.append(&mut paths);
-                    }
-                }
-            }
-            self.file_graph
-                .update_file(Path::new(&m.filename), &to_paths);
-        }
-        Ok(())
-    }
-
-    /// [`load_package`] will return some basic information about the package
-    /// according to whether the package is internal or external.
-    fn load_package(
-        &mut self,
-        pkgroot: &str,
-        pkgname: String,
-        pkgpath: String,
-        pos: ast::Pos,
-        pkgs: &mut HashMap<String, Vec<ast::Module>>,
-    ) -> Result<Option<PkgInfo>> {
-        if pkgpath.is_empty() {
-            return Ok(None);
-        }
-
-        if pkgs.contains_key(&pkgpath) {
-            return Ok(None);
-        }
-        if self.missing_pkgs.contains(&pkgpath) {
-            return Ok(None);
-        }
-
-        // plugin pkgs
-        if self.is_plugin_pkg(pkgpath.as_str()) {
-            if !self.opts.load_plugins {
-                self.sess.1.write().add_error(
-                    ErrorKind::CannotFindModule,
-                    &[Message {
-                        range: Into::<Range>::into(pos),
-                        style: Style::Line,
-                        message: format!("the plugin package `{}` is not found, please confirm if plugin mode is enabled", pkgpath),
-                        note: None,
-                        suggested_replacement: None,
-                    }],
-                );
-            }
-            return Ok(None);
-        }
-
-        // builtin pkgs
-        if self.is_builtin_pkg(pkgpath.as_str()) {
-            return Ok(None);
-        }
-
-        // find the package.
-        let pkg_info = match self.find_packages(pos.clone(), &pkgname, pkgroot, &pkgpath)? {
-            Some(info) => info,
-            None => return Ok(None),
-        };
-
-        // If there is a circular import, return the information of the found package.
-        if pkgs.contains_key(&pkg_info.pkg_path) {
-            return Ok(Some(pkg_info));
-        }
-
-        if !self.opts.load_packages {
-            return Ok(Some(pkg_info));
-        }
-
-        // Load packages
-        let mut pkg_files = Vec::new();
-        let k_files = pkg_info.k_files.clone();
-        for filename in k_files {
-            let mut m = if let Some(module_cache) = self.module_cache.as_ref() {
-                let module_cache_ref = module_cache.read().unwrap();
-                if let Some(module) = module_cache_ref.ast_cache.get(&filename) {
-                    module.clone()
-                } else {
-                    let m = parse_file_with_session(self.sess.clone(), &filename, None)?;
-                    drop(module_cache_ref);
-                    let mut module_cache_ref = module_cache.write().unwrap();
-                    module_cache_ref
-                        .ast_cache
-                        .insert(filename.clone(), m.clone());
-                    m
-                }
-            } else {
-                parse_file_with_session(self.sess.clone(), &filename, None)?
-            };
-
-            m.pkg = pkg_info.pkg_path.clone();
-            m.name = "".to_string();
-            fix_rel_import_path(&pkg_info.pkg_root, &mut m);
-
-            pkg_files.push(m);
-        }
-
-        // Insert an empty vec to determine whether there is a circular import.
-        pkgs.insert(pkg_info.pkg_path.clone(), vec![]);
-
-        self.load_import_package(
-            &pkg_info.pkg_root.to_string(),
-            pkg_info.pkg_name.to_string(),
-            &mut pkg_files,
-            pkgs,
-        )?;
-
-        // Insert the complete ast to replace the empty list.
-        pkgs.insert(pkg_info.pkg_path.clone(), pkg_files);
-
-        Ok(Some(pkg_info))
-    }
-
-    fn get_pkg_kfile_list(&self, pkgroot: &str, pkgpath: &str) -> Result<Vec<String>> {
-        // plugin pkgs
-        if self.is_plugin_pkg(pkgpath) {
-            return Ok(Vec::new());
-        }
-
-        // builtin pkgs
-        if self.is_builtin_pkg(pkgpath) {
-            return Ok(Vec::new());
-        }
-
-        if pkgroot.is_empty() {
-            return Err(anyhow::anyhow!("pkgroot not found"));
-        }
-
-        let mut pathbuf = std::path::PathBuf::new();
-        pathbuf.push(pkgroot);
-
-        for s in pkgpath.split('.') {
-            pathbuf.push(s);
-        }
-
-        let abspath: String = pathbuf.as_path().to_str().unwrap().to_string();
-
-        if std::path::Path::new(abspath.as_str()).exists() {
-            return self.get_dir_files(abspath.as_str());
-        }
-
-        let as_k_path = abspath + KCL_FILE_SUFFIX;
-        if std::path::Path::new((as_k_path).as_str()).exists() {
-            return Ok(vec![as_k_path]);
-        }
-
-        Ok(Vec::new())
-    }
-
-    /// Get file list in the directory.
-    fn get_dir_files(&self, dir: &str) -> Result<Vec<String>> {
-        if !std::path::Path::new(dir).exists() {
-            return Ok(Vec::new());
-        }
-
-        let mut list = Vec::new();
-
-        for path in std::fs::read_dir(dir).unwrap() {
-            let path = path.unwrap();
-            if !path
-                .file_name()
-                .to_str()
-                .unwrap()
-                .ends_with(KCL_FILE_SUFFIX)
-            {
-                continue;
-            }
-            if path.file_name().to_str().unwrap().ends_with("_test.k") {
-                continue;
-            }
-            if path.file_name().to_str().unwrap().starts_with('_') {
-                continue;
-            }
-
-            let s = format!("{}", path.path().display());
-            list.push(s);
-        }
-
-        list.sort();
-        Ok(list)
-    }
-
-    fn is_builtin_pkg(&self, pkgpath: &str) -> bool {
-        let system_modules = kclvm_sema::builtin::system_module::STANDARD_SYSTEM_MODULES;
-        system_modules.contains(&pkgpath)
-    }
-
-    fn is_plugin_pkg(&self, pkgpath: &str) -> bool {
-        pkgpath.starts_with(PLUGIN_MODULE_PREFIX)
-    }
-
-    /// Look for [`pkgpath`] in the current package's [`pkgroot`].
-    /// If found, return to the [`PkgInfo`]， else return [`None`]
-    ///
-    /// # Error
-    ///
-    /// [`is_internal_pkg`] will return an error if the package's source files cannot be found.
-    fn is_internal_pkg(
-        &self,
-        pkg_name: &str,
-        pkg_root: &str,
-        pkg_path: &str,
-    ) -> Result<Option<PkgInfo>> {
-        match self.pkg_exists(&[pkg_root.to_string()], pkg_path) {
-            Some(internal_pkg_root) => {
-                let full_pkg_path = if pkg_name == kclvm_ast::MAIN_PKG {
-                    pkg_path.to_string()
-                } else {
-                    format!("{}.{}", pkg_name, pkg_path)
-                };
-                let k_files = self.get_pkg_kfile_list(pkg_root, pkg_path)?;
-                Ok(Some(PkgInfo::new(
-                    pkg_name.to_string(),
-                    internal_pkg_root,
-                    full_pkg_path,
-                    k_files,
-                )))
-            }
-            None => Ok(None),
-        }
-    }
-
-    /// Look for [`pkgpath`] in the external package's home.
-    /// If found, return to the [`PkgInfo`]， else return [`None`]
-    ///
-    /// # Error
-    ///
-    /// - [`is_external_pkg`] will return an error if the package's source files cannot be found.
-    /// - The name of the external package could not be resolved from [`pkg_path`].
-    fn is_external_pkg(&self, pkg_path: &str) -> Result<Option<PkgInfo>> {
-        let pkg_name = parse_external_pkg_name(pkg_path)?;
-        let external_pkg_root = if let Some(root) = self.opts.package_maps.get(&pkg_name) {
-            PathBuf::from(root).join(KCL_MOD_FILE)
-        } else {
-            match self.pkg_exists(&self.opts.vendor_dirs, pkg_path) {
-                Some(path) => PathBuf::from(path).join(&pkg_name).join(KCL_MOD_FILE),
-                None => return Ok(None),
-            }
-        };
-
-        if external_pkg_root.exists() {
-            return Ok(Some(match external_pkg_root.parent() {
-                Some(root) => {
-                    let k_files = self.get_pkg_kfile_list(
-                        &root.display().to_string(),
-                        &rm_external_pkg_name(pkg_path)?,
-                    )?;
-                    PkgInfo::new(
-                        pkg_name.to_string(),
-                        root.display().to_string(),
-                        pkg_path.to_string(),
-                        k_files,
-                    )
-                }
-                None => return Ok(None),
-            }));
-        } else {
-            Ok(None)
-        }
-    }
-
-    /// Search [`pkgpath`] among all the paths in [`pkgroots`].
-    ///
-    /// # Notes
-    ///
-    /// It returns the parent directory of kcl.mod if present, or none if not.
-    fn pkg_exists(&self, pkgroots: &[String], pkgpath: &str) -> Option<String> {
-        pkgroots
-            .into_iter()
-            .find(|root| self.pkg_exists_in_path(root, pkgpath))
-            .cloned()
-    }
-
-    /// Search for [`pkgpath`] under [`path`].
-    /// It only returns [`true`] if [`path`]/[`pkgpath`] or [`path`]/[`pkgpath.k`] exists.
-    fn pkg_exists_in_path(&self, path: &str, pkgpath: &str) -> bool {
-        let mut pathbuf = PathBuf::from(path);
-        pkgpath.split('.').for_each(|s| pathbuf.push(s));
-        pathbuf.exists() || pathbuf.with_extension(KCL_FILE_EXTENSION).exists()
+        let res = parse_kcl_program(
+            self.sess.clone(),
+            self.paths.clone(),
+            self.module_cache.clone(),
+            self.file_graph.clone(),
+            &self.opts,
+        );
+        return res;
     }
 }
 
-fn fix_rel_import_path(pkgroot: &str, m: &mut ast::Module) {
+fn fix_rel_import_path_with_file(
+    pkgroot: &str,
+    m: &mut ast::Module,
+    file: &PkgFile,
+    pkgmap: &PkgMap,
+    opts: LoadProgramOptions,
+    sess: ParseSessionRef,
+) {
     for stmt in &mut m.body {
+        let pos = stmt.pos().clone();
         if let ast::Stmt::Import(ref mut import_spec) = &mut stmt.node {
-            import_spec.path.node = kclvm_config::vfs::fix_import_path(
+            let fix_path = kclvm_config::vfs::fix_import_path(
                 pkgroot,
                 &m.filename,
                 import_spec.path.node.as_str(),
             );
+            import_spec.path.node = fix_path.clone();
+
+            let pkg = pkgmap.get(&file).expect("file not in pkgmap").clone();
+            import_spec.pkg_name = pkg.pkg_name.clone();
+            // Load the import package source code and compile.
+            let pkg_info = find_packages(
+                pos.into(),
+                &pkg.pkg_name,
+                &pkg.pkg_root,
+                &fix_path,
+                opts.clone(),
+                sess.clone(),
+            )
+            .unwrap();
+            if let Some(pkg_info) = &pkg_info {
+                // Add the external package name as prefix of the [`kclvm_ast::ImportStmt`]'s member [`path`].
+                import_spec.path.node = pkg_info.pkg_path.to_string();
+                import_spec.pkg_name = pkg_info.pkg_name.clone();
+            }
         }
     }
+}
+
+fn is_plugin_pkg(pkgpath: &str) -> bool {
+    pkgpath.starts_with(PLUGIN_MODULE_PREFIX)
+}
+
+fn is_builtin_pkg(pkgpath: &str) -> bool {
+    let system_modules = kclvm_sema::builtin::system_module::STANDARD_SYSTEM_MODULES;
+    system_modules.contains(&pkgpath)
+}
+
+fn find_packages(
+    pos: ast::Pos,
+    pkg_name: &str,
+    pkg_root: &str,
+    pkg_path: &str,
+    opts: LoadProgramOptions,
+    sess: ParseSessionRef,
+) -> Result<Option<PkgInfo>> {
+    if pkg_path.is_empty() {
+        return Ok(None);
+    }
+
+    // plugin pkgs
+    if is_plugin_pkg(pkg_path) {
+        if !opts.load_plugins {
+            sess.1.write().add_error(
+                ErrorKind::CannotFindModule,
+                &[Message {
+                    range: Into::<Range>::into(pos),
+                    style: Style::Line,
+                    message: format!("the plugin package `{}` is not found, please confirm if plugin mode is enabled", pkg_path),
+                    note: None,
+                    suggested_replacement: None,
+                }],
+            );
+        }
+        return Ok(None);
+    }
+
+    // builtin pkgs
+    if is_builtin_pkg(pkg_path) {
+        return Ok(None);
+    }
+
+    // 1. Look for in the current package's directory.
+    let is_internal = is_internal_pkg(pkg_name, pkg_root, pkg_path)?;
+    // 2. Look for in the vendor path.
+    let is_external = is_external_pkg(pkg_path, opts)?;
+
+    // 3. Internal and external packages cannot be duplicated
+    if is_external.is_some() && is_internal.is_some() {
+        sess.1.write().add_error(
+            ErrorKind::CannotFindModule,
+            &[Message {
+                range: Into::<Range>::into(pos),
+                style: Style::Line,
+                message: format!(
+                    "the `{}` is found multiple times in the current package and vendor package",
+                    pkg_path
+                ),
+                note: None,
+                suggested_replacement: None,
+            }],
+        );
+        return Ok(None);
+    }
+
+    // 4. Get package information based on whether the package is internal or external.
+
+    match is_internal.or(is_external) {
+        Some(pkg_info) => Ok(Some(pkg_info)),
+        None => {
+            sess.1.write().add_error(
+                ErrorKind::CannotFindModule,
+                &[Message {
+                    range: Into::<Range>::into(pos),
+                    style: Style::Line,
+                    message: format!("pkgpath {} not found in the program", pkg_path),
+                    note: None,
+                    suggested_replacement: None,
+                }],
+            );
+            let mut suggestions = vec![format!("browse more packages at 'https://artifacthub.io'")];
+
+            if let Ok(pkg_name) = parse_external_pkg_name(pkg_path) {
+                suggestions.insert(
+                    0,
+                    format!(
+                        "try 'kcl mod add {}' to download the missing package",
+                        pkg_name
+                    ),
+                );
+            }
+            sess.1.write().add_suggestions(suggestions);
+            Ok(None)
+        }
+    }
+}
+
+/// Search [`pkgpath`] among all the paths in [`pkgroots`].
+///
+/// # Notes
+///
+/// All paths in [`pkgpath`] must contain the kcl.mod file.
+/// It returns the parent directory of kcl.mod if present, or none if not.
+fn pkg_exists(pkgroots: &[String], pkgpath: &str) -> Option<String> {
+    pkgroots
+        .into_iter()
+        .find(|root| pkg_exists_in_path(root, pkgpath))
+        .cloned()
+}
+
+/// Search for [`pkgpath`] under [`path`].
+/// It only returns [`true`] if [`path`]/[`pkgpath`] or [`path`]/[`pkgpath.k`] exists.
+fn pkg_exists_in_path(path: &str, pkgpath: &str) -> bool {
+    let mut pathbuf = PathBuf::from(path);
+    pkgpath.split('.').for_each(|s| pathbuf.push(s));
+    pathbuf.exists() || pathbuf.with_extension(KCL_FILE_EXTENSION).exists()
+}
+
+/// Look for [`pkgpath`] in the current package's [`pkgroot`].
+/// If found, return to the [`PkgInfo`]， else return [`None`]
+///
+/// # Error
+///
+/// [`is_internal_pkg`] will return an error if the package's source files cannot be found.
+fn is_internal_pkg(pkg_name: &str, pkg_root: &str, pkg_path: &str) -> Result<Option<PkgInfo>> {
+    match pkg_exists(&[pkg_root.to_string()], pkg_path) {
+        Some(internal_pkg_root) => {
+            let fullpath = if pkg_name == kclvm_ast::MAIN_PKG {
+                pkg_path.to_string()
+            } else {
+                format!("{}.{}", pkg_name, pkg_path)
+            };
+            let k_files = get_pkg_kfile_list(pkg_root, pkg_path)?;
+            Ok(Some(PkgInfo::new(
+                pkg_name.to_string(),
+                internal_pkg_root,
+                fullpath,
+                k_files,
+            )))
+        }
+        None => Ok(None),
+    }
+}
+
+fn get_pkg_kfile_list(pkgroot: &str, pkgpath: &str) -> Result<Vec<String>> {
+    // plugin pkgs
+    if is_plugin_pkg(pkgpath) {
+        return Ok(Vec::new());
+    }
+
+    // builtin pkgs
+    if is_builtin_pkg(pkgpath) {
+        return Ok(Vec::new());
+    }
+
+    if pkgroot.is_empty() {
+        return Err(anyhow::anyhow!("pkgroot not found"));
+    }
+
+    let mut pathbuf = std::path::PathBuf::new();
+    pathbuf.push(pkgroot);
+
+    for s in pkgpath.split('.') {
+        pathbuf.push(s);
+    }
+
+    let abspath = match pathbuf.canonicalize() {
+        Ok(p) => p.to_str().unwrap().to_string(),
+        Err(_) => pathbuf.as_path().to_str().unwrap().to_string(),
+    };
+    if std::path::Path::new(abspath.as_str()).exists() {
+        return get_dir_files(abspath.as_str());
+    }
+
+    let as_k_path = abspath + KCL_FILE_SUFFIX;
+    if std::path::Path::new((as_k_path).as_str()).exists() {
+        return Ok(vec![as_k_path]);
+    }
+
+    Ok(Vec::new())
+}
+
+/// Get file list in the directory.
+fn get_dir_files(dir: &str) -> Result<Vec<String>> {
+    if !std::path::Path::new(dir).exists() {
+        return Ok(Vec::new());
+    }
+
+    let mut list = Vec::new();
+    for path in std::fs::read_dir(dir).unwrap() {
+        let path = path.unwrap();
+        if !path
+            .file_name()
+            .to_str()
+            .unwrap()
+            .ends_with(KCL_FILE_SUFFIX)
+        {
+            continue;
+        }
+        if path.file_name().to_str().unwrap().ends_with("_test.k") {
+            continue;
+        }
+        if path.file_name().to_str().unwrap().starts_with('_') {
+            continue;
+        }
+
+        let s = format!("{}", path.path().display());
+        list.push(s);
+    }
+
+    list.sort();
+    Ok(list)
+}
+
+/// Look for [`pkgpath`] in the external package's home.
+/// If found, return to the [`PkgInfo`]， else return [`None`]
+///
+/// # Error
+///
+/// - [`is_external_pkg`] will return an error if the package's source files cannot be found.
+/// - The name of the external package could not be resolved from [`pkg_path`].
+fn is_external_pkg(pkg_path: &str, opts: LoadProgramOptions) -> Result<Option<PkgInfo>> {
+    let pkg_name = parse_external_pkg_name(pkg_path)?;
+    let external_pkg_root = if let Some(root) = opts.package_maps.get(&pkg_name) {
+        PathBuf::from(root).join(KCL_MOD_FILE)
+    } else {
+        match pkg_exists(&opts.vendor_dirs, pkg_path) {
+            Some(path) => PathBuf::from(path).join(&pkg_name).join(KCL_MOD_FILE),
+            None => return Ok(None),
+        }
+    };
+
+    if external_pkg_root.exists() {
+        return Ok(Some(match external_pkg_root.parent() {
+            Some(root) => {
+                let abs_root: String = match root.canonicalize() {
+                    Ok(p) => p.to_str().unwrap().to_string(),
+                    Err(_) => root.display().to_string(),
+                };
+                let k_files = get_pkg_kfile_list(&abs_root, &rm_external_pkg_name(pkg_path)?)?;
+                PkgInfo::new(
+                    pkg_name.to_string(),
+                    abs_root,
+                    pkg_path.to_string(),
+                    k_files,
+                )
+            }
+            None => return Ok(None),
+        }));
+    } else {
+        Ok(None)
+    }
+}
+
+pub type ASTCache = Arc<RwLock<IndexMap<PathBuf, Arc<ast::Module>>>>;
+pub type FileGraphCache = Arc<RwLock<PkgFileGraph>>;
+
+pub fn parse_kcl_file(
+    sess: ParseSessionRef,
+    file: PkgFile,
+    src: Option<String>,
+    module_cache: KCLModuleCache,
+    pkgs: &mut HashMap<String, Vec<Module>>,
+    pkgmap: &mut PkgMap,
+    file_graph: FileGraphCache,
+    opts: &LoadProgramOptions,
+) -> Result<Vec<PkgFile>> {
+    let m = Arc::new(parse_file_with_session(
+        sess.clone(),
+        file.path.to_str().unwrap(),
+        src,
+    )?);
+    module_cache
+        .write()
+        .unwrap()
+        .ast_cache
+        .insert(file.canonicalize(), m.clone());
+    let deps = get_deps(&file, m.as_ref(), pkgs, pkgmap, opts, sess)?;
+    file_graph.write().unwrap().update_file(&file, &deps);
+    Ok(deps)
+}
+
+pub fn get_deps(
+    file: &PkgFile,
+    m: &Module,
+    modules: &mut HashMap<String, Vec<Module>>,
+    pkgmap: &mut PkgMap,
+    opts: &LoadProgramOptions,
+    sess: ParseSessionRef,
+) -> Result<Vec<PkgFile>> {
+    let mut deps: Vec<PkgFile> = vec![];
+    for stmt in &m.body {
+        let pos = stmt.pos().clone();
+        let pkg = pkgmap.get(file).expect("file not in pkgmap").clone();
+        if let ast::Stmt::Import(import_spec) = &stmt.node {
+            let fix_path = kclvm_config::vfs::fix_import_path(
+                &pkg.pkg_root,
+                &m.filename,
+                import_spec.path.node.as_str(),
+            );
+            let pkg_info = find_packages(
+                pos.into(),
+                &pkg.pkg_name,
+                &pkg.pkg_root,
+                &fix_path,
+                opts.clone(),
+                sess.clone(),
+            )?;
+            if let Some(pkg_info) = &pkg_info {
+                // If k_files is empty, the pkg information will not be found in the file graph.
+                // Record the empty pkg to prevent loss. After the parse file is completed, fill in the modules
+                if pkg_info.k_files.is_empty() {
+                    modules.insert(pkg_info.pkg_path.clone(), vec![]);
+                }
+                // Add file dependencies.
+                let mut paths: Vec<PkgFile> = pkg_info
+                    .k_files
+                    .iter()
+                    .map(|p| {
+                        let file = PkgFile {
+                            path: p.into(),
+                            pkg_path: pkg_info.pkg_path.clone(),
+                        };
+                        pkgmap.insert(
+                            file.clone(),
+                            file_graph::Pkg {
+                                pkg_name: pkg_info.pkg_name.clone(),
+                                pkg_root: pkg_info.pkg_root.clone().into(),
+                            },
+                        );
+                        file
+                    })
+                    .collect();
+                deps.append(&mut paths);
+            }
+        }
+    }
+    Ok(deps)
+}
+
+pub fn parse_kcl_pkg(
+    sess: ParseSessionRef,
+    files: Vec<(PkgFile, Option<String>)>,
+    module_cache: KCLModuleCache,
+    pkgs: &mut HashMap<String, Vec<Module>>,
+    pkgmap: &mut PkgMap,
+    file_graph: FileGraphCache,
+    opts: &LoadProgramOptions,
+) -> Result<Vec<PkgFile>> {
+    let mut dependent = vec![];
+    for (file, src) in files {
+        let deps = parse_kcl_file(
+            sess.clone(),
+            file.clone(),
+            src,
+            module_cache.clone(),
+            pkgs,
+            pkgmap,
+            file_graph.clone(),
+            opts,
+        )?;
+        dependent.extend(deps);
+    }
+    Ok(dependent)
+}
+
+pub fn parse_kcl_entry(
+    sess: ParseSessionRef,
+    entry: &entry::Entry,
+    module_cache: KCLModuleCache,
+    pkgs: &mut HashMap<String, Vec<Module>>,
+    pkgmap: &mut PkgMap,
+    file_graph: FileGraphCache,
+    opts: &LoadProgramOptions,
+) -> Result<()> {
+    let k_files = entry.get_k_files();
+    let maybe_k_codes = entry.get_k_codes();
+    let mut files = vec![];
+    for (i, f) in k_files.iter().enumerate() {
+        let file = PkgFile {
+            path: f.into(),
+            pkg_path: MAIN_PKG.to_string(),
+        };
+        files.push((file.clone(), maybe_k_codes.get(i).unwrap().clone()));
+        pkgmap.insert(
+            file,
+            Pkg {
+                pkg_name: entry.name().clone(),
+                pkg_root: entry.path().into(),
+            },
+        );
+    }
+    let dependent_paths = parse_kcl_pkg(
+        sess.clone(),
+        files,
+        module_cache.clone(),
+        pkgs,
+        pkgmap,
+        file_graph.clone(),
+        opts,
+    )
+    .unwrap();
+    let mut unparsed_file: VecDeque<PkgFile> = dependent_paths.into();
+
+    while let Some(file) = unparsed_file.pop_front() {
+        let deps = {
+            let m_cache = module_cache.read().unwrap();
+            if let Some(m) = m_cache.ast_cache.get(&file.canonicalize()) {
+                let deps = get_deps(&file, m.as_ref(), pkgs, pkgmap, opts, sess.clone())?;
+                let mut file_graph = file_graph.write().unwrap();
+                file_graph.update_file(&file, &deps);
+                if file_graph.toposort().is_ok() {
+                    unparsed_file.extend(deps);
+                }
+                continue;
+            }
+            drop(m_cache);
+
+            let deps = parse_kcl_file(
+                sess.clone(),
+                file,
+                None,
+                module_cache.clone(),
+                pkgs,
+                pkgmap,
+                file_graph.clone(),
+                &opts,
+            )?;
+            deps
+        };
+
+        unparsed_file.extend(deps);
+    }
+    Ok(())
+}
+
+pub fn parse_kcl_program(
+    sess: ParseSessionRef,
+    paths: Vec<String>,
+    module_cache: KCLModuleCache,
+    file_graph: FileGraphCache,
+    opts: &LoadProgramOptions,
+) -> Result<LoadProgramResult> {
+    let compile_entries = get_compile_entries_from_paths(&paths, &opts)?;
+    let workdir = compile_entries.get_root_path().to_string();
+    let mut pkgs: HashMap<String, Vec<Module>> = HashMap::new();
+    let mut pkgmap = PkgMap::new();
+    for entry in compile_entries.iter() {
+        parse_kcl_entry(
+            sess.clone(),
+            entry,
+            module_cache.clone(),
+            &mut pkgs,
+            &mut pkgmap,
+            file_graph.clone(),
+            &opts,
+        )?;
+    }
+
+    // Return the files in the order they should be compiled
+    let file_graph = file_graph.read().unwrap();
+    let files = match file_graph.toposort() {
+        Ok(files) => files,
+        Err(_) => file_graph.paths(),
+    };
+
+    let file_path_graph = file_graph.file_path_graph().0;
+    if let Err(cycle) = toposort(&file_path_graph) {
+        let formatted_cycle = cycle
+            .iter()
+            .map(|file| format!("- {}\n", file.to_string_lossy()))
+            .collect::<String>();
+
+        sess.1.write().add_error(
+            ErrorKind::RecursiveLoad,
+            &[Message {
+                range: (Position::dummy_pos(), Position::dummy_pos()),
+                style: Style::Line,
+                message: format!(
+                    "Could not compiles due to cyclic import statements\n{}",
+                    formatted_cycle.trim_end()
+                ),
+                note: None,
+                suggested_replacement: None,
+            }],
+        );
+    }
+
+    for file in files.iter() {
+        let module_cache = module_cache.read().unwrap();
+        let mut m = module_cache
+            .ast_cache
+            .get(&file.canonicalize())
+            .unwrap()
+            .as_ref()
+            .clone();
+        drop(module_cache);
+
+        let pkg = pkgmap.get(file).expect("file not in pkgmap");
+        match pkgs.get_mut(&file.pkg_path) {
+            Some(modules) => {
+                fix_rel_import_path_with_file(
+                    &pkg.pkg_root,
+                    &mut m,
+                    file,
+                    &pkgmap,
+                    opts.clone(),
+                    sess.clone(),
+                );
+                modules.push(m);
+            }
+            None => {
+                fix_rel_import_path_with_file(
+                    &pkg.pkg_root,
+                    &mut m,
+                    file,
+                    &pkgmap,
+                    opts.clone(),
+                    sess.clone(),
+                );
+                pkgs.insert(file.pkg_path.clone(), vec![m]);
+            }
+        }
+    }
+
+    let program = ast::Program {
+        root: workdir,
+        pkgs,
+    };
+
+    Ok(LoadProgramResult {
+        program,
+        errors: sess.1.read().diagnostics.clone(),
+        paths: files.iter().map(|file| file.path.clone()).collect(),
+    })
 }

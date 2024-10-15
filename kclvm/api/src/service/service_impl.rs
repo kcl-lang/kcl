@@ -188,7 +188,7 @@ impl KclvmServiceImpl {
             deps: result
                 .deps
                 .iter()
-                .map(|p| p.to_str().unwrap().to_string())
+                .map(|p| p.path.to_str().unwrap().to_string())
                 .collect(),
             errors: result.errors.into_iter().map(|e| e.into_error()).collect(),
         })
