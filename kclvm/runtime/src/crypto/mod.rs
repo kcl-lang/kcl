@@ -269,3 +269,77 @@ pub extern "C" fn kclvm_crypto_filesha256(
     }
     panic!("filesha256() missing 1 required positional argument: 'filepath'");
 }
+
+
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_crypto_filesha512(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+    let ctx = mut_ptr_as_ref(ctx);
+
+    if let Some(filepath) = get_call_arg_str(args, kwargs, 0, Some("filepath")) {
+        match File::open(&filepath) {
+            Ok(mut file) => {
+                let mut hasher = Sha512::new();
+                let mut buffer = Vec::new();
+                
+                if let Err(e) = file.read_to_end(&mut buffer) {
+                    return ValueRef::str(&format!("failed to read file '{}': {}", filepath, e)).into_raw(ctx);
+                }
+                
+                hasher.update(&buffer);
+                let hash_result = hasher.finalize();
+
+                let hex = hash_result.iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>();
+
+                return ValueRef::str(&hex).into_raw(ctx);
+            }
+            Err(e) => {
+                return ValueRef::str(&format!("failed to access file '{}': {}", filepath, e)).into_raw(ctx);
+            }
+        }
+    }
+    panic!("filesha512() missing 1 required positional argument: 'filepath'");
+}
+
+// fileblake3
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_crypto_fileblake3(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+    let ctx = mut_ptr_as_ref(ctx);
+
+    if let Some(filepath) = get_call_arg_str(args, kwargs, 0, Some("filepath")) {
+        let mut file = File::open(&filepath)
+            .unwrap_or_else(|e| panic!("failed to access file '{}': {}", filepath, e));
+
+        let mut buffer = Vec::new();
+        file.read_to_end(&mut buffer)
+            .unwrap_or_else(|e| panic!("failed to read file '{}': {}", filepath, e));
+
+        let hasher = blake3::hash(&buffer);
+
+        let mut hex = String::with_capacity(2 * blake3::OUT_LEN);
+        use std::fmt::Write;
+
+        for byte in hasher.as_bytes() {
+            let _ = write!(&mut hex, "{byte:02x}");
+        }
+
+        return ValueRef::str(hex.as_str()).into_raw(ctx);
+    }
+    panic!("fileblake3() missing 1 required positional argument: 'filepath'");
+}
+
