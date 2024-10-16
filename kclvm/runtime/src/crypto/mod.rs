@@ -270,7 +270,6 @@ pub extern "C" fn kclvm_crypto_filesha256(
     panic!("filesha256() missing 1 required positional argument: 'filepath'");
 }
 
-
 #[no_mangle]
 #[runtime_fn]
 pub extern "C" fn kclvm_crypto_filesha512(
@@ -283,15 +282,12 @@ pub extern "C" fn kclvm_crypto_filesha512(
     let ctx = mut_ptr_as_ref(ctx);
 
     if let Some(filepath) = get_call_arg_str(args, kwargs, 0, Some("filepath")) {
-        // Open the file
         let mut file = File::open(&filepath)
             .unwrap_or_else(|e| panic!("failed to access file '{}': {}", filepath, e));
 
-        // Create a SHA512 hasher instance
         let mut hasher = Sha512::new();
 
-        // Read the file content in chunks and update the hasher
-        let mut buffer = [0; 4096]; // Use a fixed-size buffer for chunked reading
+        let mut buffer = [0; 4096];
         while let Ok(bytes_read) = file.read(&mut buffer) {
             if bytes_read == 0 {
                 break; // End of file
@@ -299,10 +295,10 @@ pub extern "C" fn kclvm_crypto_filesha512(
             hasher.update(&buffer[..bytes_read]);
         }
 
-        // Compute the SHA512 hash
         let hash_result = hasher.finalize();
 
-        let hex = hash_result.iter()
+        let hex = hash_result
+            .iter()
             .map(|byte| format!("{byte:02x}"))
             .collect::<String>();
 
@@ -344,4 +340,3 @@ pub extern "C" fn kclvm_crypto_fileblake3(
     }
     panic!("fileblake3() missing 1 required positional argument: 'filepath'");
 }
-
