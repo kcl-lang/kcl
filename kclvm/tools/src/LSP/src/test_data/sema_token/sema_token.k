@@ -18,3 +18,6 @@ b = func(x="123")
 schema Manifest:
     [name: str] = ""
 
+aaa: any = 1
+
+bbb = any item in [] { True }

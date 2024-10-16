@@ -15,7 +15,7 @@ use crate::{
             SymbolHintKind, SymbolRef, SymbolSemanticInfo, UnresolvedSymbol, ValueSymbol,
         },
     },
-    ty::{Parameter, Type, TypeKind, SCHEMA_MEMBER_FUNCTIONS},
+    ty::{Parameter, Type, TypeKind, ANY_TYPE_STR, SCHEMA_MEMBER_FUNCTIONS},
 };
 
 use super::AdvancedResolver;
@@ -1721,7 +1721,18 @@ impl<'ctx> AdvancedResolver<'ctx> {
         self.ctx.is_type_expr = true;
         if let Some(ty_node) = ty_node {
             match &ty_node.node {
-                ast::Type::Any => {}
+                ast::Type::Any => {
+                    let (start, end) = ty_node.get_span_pos();
+                    let mut type_symbol =
+                        UnresolvedSymbol::new(ANY_TYPE_STR.to_owned(), start, end, None, true);
+
+                    type_symbol.sema_info.ty = Some(Arc::new(Type::ANY));
+                    self.gs.get_symbols_mut().alloc_unresolved_symbol(
+                        type_symbol,
+                        self.ctx.get_node_key(&ty_node.id),
+                        self.ctx.current_pkgpath.clone().unwrap(),
+                    );
+                }
                 ast::Type::Named(identifier) => {
                     self.walk_identifier(identifier)?;
                 }

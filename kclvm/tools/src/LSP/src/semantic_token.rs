@@ -3,7 +3,7 @@ use std::vec;
 use kclvm_error::Position;
 use kclvm_sema::core::{
     global_state::GlobalState,
-    symbol::{KCLSymbol, SymbolKind},
+    symbol::{KCLSymbol, SymbolKind, SymbolRef},
 };
 use kclvm_sema::ty::TypeKind;
 use lsp_types::{SemanticToken, SemanticTokenType, SemanticTokens, SemanticTokensResult};
@@ -34,7 +34,7 @@ pub fn semantic_tokens_full(file: &str, gs: &GlobalState) -> Option<SemanticToke
         for symbol_ref in symbols {
             if let Some(symbol) = gs.get_symbols().get_symbol(*symbol_ref) {
                 let (start, end) = symbol.get_range();
-                match get_kind(symbol_ref.get_kind(), symbol, gs) {
+                match get_kind(*symbol_ref, symbol, gs) {
                     Some(kind) => {
                         kcl_tokens.push(KCLSemanticToken {
                             start: start.clone(),
@@ -58,8 +58,8 @@ pub fn semantic_tokens_full(file: &str, gs: &GlobalState) -> Option<SemanticToke
     }))
 }
 
-pub(crate) fn get_kind(ty: SymbolKind, symbol: &KCLSymbol, gs: &GlobalState) -> Option<u32> {
-    match ty {
+pub(crate) fn get_kind(symbol_ref: SymbolRef, symbol: &KCLSymbol, gs: &GlobalState) -> Option<u32> {
+    match symbol_ref.get_kind() {
         SymbolKind::Schema => Some(type_index(SemanticTokenType::STRUCT)),
         SymbolKind::Attribute => Some(type_index(SemanticTokenType::PROPERTY)),
         SymbolKind::Package => Some(type_index(SemanticTokenType::NAMESPACE)),
@@ -78,10 +78,17 @@ pub(crate) fn get_kind(ty: SymbolKind, symbol: &KCLSymbol, gs: &GlobalState) -> 
         SymbolKind::Rule => Some(type_index(SemanticTokenType::MACRO)),
         SymbolKind::Unresolved => match &symbol.get_definition() {
             Some(def_ref) => match gs.get_symbols().get_symbol(*def_ref) {
-                Some(symbol) => get_kind(def_ref.get_kind(), symbol, gs),
+                Some(symbol) => get_kind(*def_ref, symbol, gs),
                 None => Some(type_index(SemanticTokenType::VARIABLE)),
             },
-            None => Some(type_index(SemanticTokenType::VARIABLE)),
+            None => {
+                let unresolved_symbol = gs.get_symbols().get_unresolved_symbol(symbol_ref).unwrap();
+                if unresolved_symbol.is_type() {
+                    Some(type_index(SemanticTokenType::TYPE))
+                } else {
+                    Some(type_index(SemanticTokenType::VARIABLE))
+                }
+            }
         },
         SymbolKind::Expression => None,
         SymbolKind::Comment => None,
@@ -197,7 +204,11 @@ mod tests {
                     // (0, 4, 4, 8),  // func
                     // (0, 5, 1, 0)   // x
                     // (2, 7, 8, 1)   // Manifest
-                    // (1, 5, 4, 0)]  // name
+                    // (1, 5, 4, 0)   // name
+                    // (2, 0, 3, 0)   // aaa
+                    // (0, 5, 3, 4)   // any
+                    // (2, 0, 3, 0)   // bbb
+                    // (0, 10, 4, 0)  // item
                     insta::assert_snapshot!(format!("{:?}", get));
                 }
                 lsp_types::SemanticTokensResult::Partial(_) => {
