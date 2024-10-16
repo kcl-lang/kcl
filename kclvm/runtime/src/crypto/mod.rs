@@ -283,28 +283,30 @@ pub extern "C" fn kclvm_crypto_filesha512(
     let ctx = mut_ptr_as_ref(ctx);
 
     if let Some(filepath) = get_call_arg_str(args, kwargs, 0, Some("filepath")) {
-        match File::open(&filepath) {
-            Ok(mut file) => {
-                let mut hasher = Sha512::new();
-                let mut buffer = Vec::new();
-                
-                if let Err(e) = file.read_to_end(&mut buffer) {
-                    return ValueRef::str(&format!("failed to read file '{}': {}", filepath, e)).into_raw(ctx);
-                }
-                
-                hasher.update(&buffer);
-                let hash_result = hasher.finalize();
+        // Open the file
+        let mut file = File::open(&filepath)
+            .unwrap_or_else(|e| panic!("failed to access file '{}': {}", filepath, e));
 
-                let hex = hash_result.iter()
-                    .map(|byte| format!("{byte:02x}"))
-                    .collect::<String>();
+        // Create a SHA512 hasher instance
+        let mut hasher = Sha512::new();
 
-                return ValueRef::str(&hex).into_raw(ctx);
+        // Read the file content in chunks and update the hasher
+        let mut buffer = [0; 4096]; // Use a fixed-size buffer for chunked reading
+        while let Ok(bytes_read) = file.read(&mut buffer) {
+            if bytes_read == 0 {
+                break; // End of file
             }
-            Err(e) => {
-                return ValueRef::str(&format!("failed to access file '{}': {}", filepath, e)).into_raw(ctx);
-            }
+            hasher.update(&buffer[..bytes_read]);
         }
+
+        // Compute the SHA512 hash
+        let hash_result = hasher.finalize();
+
+        let hex = hash_result.iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
+
+        return ValueRef::str(&hex).into_raw(ctx);
     }
     panic!("filesha512() missing 1 required positional argument: 'filepath'");
 }
