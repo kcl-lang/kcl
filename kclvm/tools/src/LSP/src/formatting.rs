@@ -19,7 +19,7 @@ pub fn format(
         Ok(Some(vec![TextEdit {
             range: range.unwrap_or(Range::new(
                 Position::new(0, 0),
-                Position::new(u32::MAX, u32::MAX),
+                Position::new(i32::MAX as u32, i32::MAX as u32),
             )),
             new_text: source,
         }]))
@@ -92,10 +92,12 @@ mod tests {
             let data_output = data_output.replace("\r\n", "\n");
 
             let expect = vec![TextEdit {
-                range: Range::new(Position::new(0, 0), Position::new(u32::MAX, u32::MAX)),
+                range: Range::new(
+                    Position::new(0, 0),
+                    Position::new(i32::MAX as u32, i32::MAX as u32),
+                ),
                 new_text: data_output,
             }];
-            println!("{:?}", test_file);
             assert_eq!(expect, got);
         }
 
