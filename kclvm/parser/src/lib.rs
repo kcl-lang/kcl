@@ -99,7 +99,7 @@ pub struct ParseFileResult {
 }
 
 /// Parse a KCL file to the AST module with parse errors.
-pub fn parse_file(filename: &str, code: Option<String>) -> Result<ParseFileResult> {
+pub fn parse_single_file(filename: &str, code: Option<String>) -> Result<ParseFileResult> {
     let sess = Arc::new(ParseSession::default());
     let mut loader = Loader::new(
         sess,
@@ -658,7 +658,7 @@ fn is_external_pkg(pkg_path: &str, opts: LoadProgramOptions) -> Result<Option<Pk
 pub type ASTCache = Arc<RwLock<IndexMap<PathBuf, Arc<ast::Module>>>>;
 pub type FileGraphCache = Arc<RwLock<PkgFileGraph>>;
 
-pub fn parse_kcl_file(
+pub fn parse_file(
     sess: ParseSessionRef,
     file: PkgFile,
     src: Option<String>,
@@ -760,7 +760,7 @@ pub fn parse_pkg(
 ) -> Result<Vec<PkgFile>> {
     let mut dependent = vec![];
     for (file, src) in files {
-        let deps = parse_kcl_file(
+        let deps = parse_file(
             sess.clone(),
             file.clone(),
             src,
@@ -834,7 +834,7 @@ pub fn parse_entry(
                 Err(e) => return Err(anyhow::anyhow!("Parse entry failed: {e}")),
             }
 
-            let deps = parse_kcl_file(
+            let deps = parse_file(
                 sess.clone(),
                 file,
                 None,

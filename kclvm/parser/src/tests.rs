@@ -148,7 +148,7 @@ pub(crate) fn parsing_file_ast_json(filename: &str, src: &str) -> String {
 
 pub(crate) fn parsing_file_string(filename: &str) -> String {
     let code = std::fs::read_to_string(filename).unwrap();
-    let m = crate::parse_file(filename.trim_start_matches("testdata/"), Some(code))
+    let m = crate::parse_single_file(filename.trim_start_matches("testdata/"), Some(code))
         .expect(filename)
         .module;
     serde_json::ser::to_string_pretty(&m).unwrap()

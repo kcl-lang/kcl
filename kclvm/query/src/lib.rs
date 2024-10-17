@@ -16,7 +16,7 @@ mod util;
 use anyhow::{anyhow, Result};
 use kclvm_ast_pretty::print_ast_module;
 use kclvm_error::diagnostic::Errors;
-use kclvm_parser::parse_file;
+use kclvm_parser::parse_single_file;
 
 use kclvm_sema::pre_process::fix_config_expr_nest_attr;
 pub use query::{get_schema_type, GetSchemaOption};
@@ -82,7 +82,7 @@ pub fn override_file(
     import_paths: &[String],
 ) -> Result<OverrideFileResult> {
     // Parse file to AST module.
-    let mut parse_result = match parse_file(file, None) {
+    let mut parse_result = match parse_single_file(file, None) {
         Ok(module) => module,
         Err(msg) => return Err(anyhow!("{}", msg)),
     };

@@ -10,7 +10,7 @@ use kclvm_ast_pretty::print_ast_module;
 use kclvm_driver::get_kcl_files;
 use std::path::Path;
 
-use kclvm_parser::{parse_file, parse_file_force_errors};
+use kclvm_parser::{parse_file_force_errors, parse_single_file};
 
 #[cfg(test)]
 mod tests;
@@ -84,7 +84,7 @@ pub fn format_file(file: &str, opts: &FormatOptions) -> Result<bool> {
 /// whether the source is changed.
 pub fn format_source(file: &str, src: &str, opts: &FormatOptions) -> Result<(String, bool)> {
     let module = if opts.omit_errors {
-        parse_file(file, Some(src.to_string()))?.module
+        parse_single_file(file, Some(src.to_string()))?.module
     } else {
         parse_file_force_errors(file, Some(src.to_string()))?
     };

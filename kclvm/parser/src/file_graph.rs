@@ -76,6 +76,8 @@ impl PkgFileGraph {
         dependencies_of(file, &self.graph, &self.path_to_node_index)
     }
 
+    /// Returns a list of files in the order they should be compiled
+    /// Or a list of files that are part of a cycle, if one exists
     pub fn toposort(&self) -> Result<Vec<PkgFile>, Vec<PkgFile>> {
         toposort(&self.graph)
     }
