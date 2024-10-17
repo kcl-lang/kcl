@@ -1985,6 +1985,7 @@ dependencies = [
  "kclvm-parser",
  "kclvm-query",
  "kclvm-sema",
+ "kclvm-utils",
  "maplit",
 ]
 

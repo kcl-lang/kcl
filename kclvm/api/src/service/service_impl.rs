@@ -11,7 +11,7 @@ use kclvm_loader::option::list_options;
 use kclvm_loader::{load_packages_with_cache, LoadPackageOptions};
 use kclvm_parser::entry::get_normalized_k_files_from_paths;
 use kclvm_parser::load_program;
-use kclvm_parser::parse_file;
+use kclvm_parser::parse_single_file;
 use kclvm_parser::KCLModuleCache;
 use kclvm_parser::LoadProgramOptions;
 use kclvm_parser::ParseSessionRef;
@@ -180,7 +180,7 @@ impl KclvmServiceImpl {
     /// assert_eq!(result.deps.len(), 2);
     /// ```
     pub fn parse_file(&self, args: &ParseFileArgs) -> anyhow::Result<ParseFileResult> {
-        let result = parse_file(&args.path, transform_str_para(&args.source))?;
+        let result = parse_single_file(&args.path, transform_str_para(&args.source))?;
         let ast_json = serde_json::to_string(&result.module)?;
 
         Ok(ParseFileResult {
@@ -188,7 +188,7 @@ impl KclvmServiceImpl {
             deps: result
                 .deps
                 .iter()
-                .map(|p| p.to_str().unwrap().to_string())
+                .map(|p| p.path.to_str().unwrap().to_string())
                 .collect(),
             errors: result.errors.into_iter().map(|e| e.into_error()).collect(),
         })

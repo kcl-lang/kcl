@@ -23,6 +23,7 @@ use kclvm_sema::{
     },
     ty::{Type, TypeRef},
 };
+use kclvm_utils::path::PathPrefix;
 use std::path::PathBuf;
 
 type Errors = IndexSet<Diagnostic>;
@@ -195,8 +196,9 @@ pub fn load_packages_with_cache(
     for path in &packages.paths {
         let path_str = path
             .to_str()
-            .ok_or(anyhow::anyhow!("path {} to str failed", path.display()))?;
-        if let Some(files) = gs.get_sema_db().get_file_sema(path_str) {
+            .ok_or(anyhow::anyhow!("path {} to str failed", path.display()))?
+            .adjust_canonicalization();
+        if let Some(files) = gs.get_sema_db().get_file_sema(&path_str) {
             for symbol_ref in files.get_symbols() {
                 if let Some(symbol) = symbols.get_symbol(*symbol_ref) {
                     let def_ty = match symbol.get_definition() {

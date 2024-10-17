@@ -4,7 +4,6 @@ expression: "crate::tests::parsing_module_string(r#\"if True: else: b = 2\"#)"
 ---
 Module {
     filename: "",
-    pkg: "",
     doc: None,
     name: "",
     body: [

@@ -195,6 +195,7 @@ pub fn resolve_program_with_opts(
         }
     }
     let scope = resolver.check_and_lint(kclvm_ast::MAIN_PKG);
+
     if let Some(cached_scope) = cached_scope.as_ref() {
         if let Some(mut cached_scope) = cached_scope.try_write() {
             cached_scope.update(program);

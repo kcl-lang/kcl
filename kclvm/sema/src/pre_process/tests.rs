@@ -171,7 +171,7 @@ fn test_config_merge() {
     .program;
     merge_program(&mut program);
     let modules = program.pkgs.get_mut(kclvm_ast::MAIN_PKG).unwrap();
-    assert_eq!(modules.len(), 4);
+    assert_eq!(modules.len(), 3);
     // Test the module merge result
     let module = modules.last().unwrap();
     if let ast::Stmt::Unification(unification) = &module.body[0].node {

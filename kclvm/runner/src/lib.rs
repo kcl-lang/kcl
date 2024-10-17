@@ -246,9 +246,7 @@ pub fn execute(
 /// For more information, see doc above method `execute`.
 ///
 /// **Note that it is not thread safe.**
-pub fn execute_module(mut m: Module) -> Result<ExecProgramResult> {
-    m.pkg = MAIN_PKG.to_string();
-
+pub fn execute_module(m: Module) -> Result<ExecProgramResult> {
     let mut pkgs = HashMap::new();
     pkgs.insert(MAIN_PKG.to_string(), vec![m]);
 

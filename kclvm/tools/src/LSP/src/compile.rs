@@ -62,23 +62,6 @@ pub fn compile(
     }
     let mut diags = IndexSet::new();
 
-    if let Some(module_cache) = params.module_cache.as_ref() {
-        if let Some(file) = &params.file {
-            let code = if let Some(vfs) = &params.vfs {
-                match load_files_code_from_vfs(&[file.as_str()], vfs) {
-                    Ok(code_list) => code_list.first().cloned(),
-                    Err(_) => None,
-                }
-            } else {
-                None
-            };
-            let mut module_cache_ref = module_cache.write().unwrap();
-            module_cache_ref
-                .invalidate_module
-                .insert(file.clone(), code);
-        }
-    }
-
     let files: Vec<&str> = files.iter().map(|s| s.as_str()).collect();
 
     // Parser
@@ -157,8 +140,5 @@ pub fn compile_with_params(
         .to_string();
     // Lookup compile workspace from the cursor file.
     let (mut files, opts, _) = lookup_compile_workspace(&toolchain::default(), &file, true);
-    if !files.contains(&file) {
-        files.push(file);
-    }
     compile(params, &mut files, opts)
 }

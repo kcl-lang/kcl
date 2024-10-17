@@ -422,7 +422,6 @@ impl Program {
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct Module {
     pub filename: String,
-    pub pkg: String,
     pub doc: Option<NodeRef<String>>,
     pub name: String,
     pub body: Vec<NodeRef<Stmt>>,

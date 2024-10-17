@@ -122,7 +122,6 @@ impl<'ctx> Resolver<'ctx> {
                 let mut import_table: IndexMap<String, String> = IndexMap::default();
                 for module in modules {
                     self.ctx.filename = module.filename.clone();
-                    self.ctx.pkgpath = module.pkg.clone();
                     for stmt in &module.body {
                         if let ast::Stmt::Import(import_stmt) = &stmt.node {
                             // 'import sub as s' and 'import sub.sub as s' will raise this error.
