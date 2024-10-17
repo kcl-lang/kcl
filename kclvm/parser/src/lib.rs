@@ -120,7 +120,14 @@ pub fn parse_file(filename: &str, code: Option<String>) -> Result<ParseFileResul
         Some(module) => module.clone(),
         None => ast::Module::default(),
     };
-    let file_graph = loader.file_graph.read().unwrap();
+    let file_graph = match loader.file_graph.read() {
+        Ok(file_graph) => file_graph,
+        Err(e) => {
+            return Err(anyhow::anyhow!(
+                "Failed to read KCL file graph. Because '{e}'"
+            ))
+        }
+    };
     let file = PkgFile {
         path: PathBuf::from(filename),
         pkg_path: MAIN_PKG.to_string(),
@@ -344,14 +351,13 @@ impl Loader {
     }
 
     fn _load_main(&mut self) -> Result<LoadProgramResult> {
-        let res = parse_kcl_program(
+        parse_program(
             self.sess.clone(),
             self.paths.clone(),
             self.module_cache.clone(),
             self.file_graph.clone(),
             &self.opts,
-        );
-        return res;
+        )
     }
 }
 
@@ -384,7 +390,7 @@ fn fix_rel_import_path_with_file(
                 opts.clone(),
                 sess.clone(),
             )
-            .unwrap();
+            .unwrap_or(None);
             if let Some(pkg_info) = &pkg_info {
                 // Add the external package name as prefix of the [`kclvm_ast::ImportStmt`]'s member [`path`].
                 import_spec.path.node = pkg_info.pkg_path.to_string();
@@ -584,8 +590,8 @@ fn get_dir_files(dir: &str) -> Result<Vec<String>> {
     }
 
     let mut list = Vec::new();
-    for path in std::fs::read_dir(dir).unwrap() {
-        let path = path.unwrap();
+    for path in std::fs::read_dir(dir)? {
+        let path = path?;
         if !path
             .file_name()
             .to_str()
@@ -667,13 +673,21 @@ pub fn parse_kcl_file(
         file.path.to_str().unwrap(),
         src,
     )?);
-    module_cache
-        .write()
-        .unwrap()
-        .ast_cache
-        .insert(file.canonicalize(), m.clone());
+    match &mut module_cache.write() {
+        Ok(module_cache) => {
+            module_cache
+                .ast_cache
+                .insert(file.canonicalize(), m.clone());
+        }
+        Err(e) => return Err(anyhow::anyhow!("Parse file failed: {e}")),
+    }
     let deps = get_deps(&file, m.as_ref(), pkgs, pkgmap, opts, sess)?;
-    file_graph.write().unwrap().update_file(&file, &deps);
+    match &mut file_graph.write() {
+        Ok(file_graph) => {
+            file_graph.update_file(&file, &deps);
+        }
+        Err(e) => return Err(anyhow::anyhow!("Parse file failed: {e}")),
+    }
     Ok(deps)
 }
 
@@ -735,7 +749,7 @@ pub fn get_deps(
     Ok(deps)
 }
 
-pub fn parse_kcl_pkg(
+pub fn parse_pkg(
     sess: ParseSessionRef,
     files: Vec<(PkgFile, Option<String>)>,
     module_cache: KCLModuleCache,
@@ -761,7 +775,7 @@ pub fn parse_kcl_pkg(
     Ok(dependent)
 }
 
-pub fn parse_kcl_entry(
+pub fn parse_entry(
     sess: ParseSessionRef,
     entry: &entry::Entry,
     module_cache: KCLModuleCache,
@@ -778,7 +792,7 @@ pub fn parse_kcl_entry(
             path: f.into(),
             pkg_path: MAIN_PKG.to_string(),
         };
-        files.push((file.clone(), maybe_k_codes.get(i).unwrap().clone()));
+        files.push((file.clone(), maybe_k_codes.get(i).unwrap_or(&None).clone()));
         pkgmap.insert(
             file,
             Pkg {
@@ -787,7 +801,7 @@ pub fn parse_kcl_entry(
             },
         );
     }
-    let dependent_paths = parse_kcl_pkg(
+    let dependent_paths = parse_pkg(
         sess.clone(),
         files,
         module_cache.clone(),
@@ -795,23 +809,30 @@ pub fn parse_kcl_entry(
         pkgmap,
         file_graph.clone(),
         opts,
-    )
-    .unwrap();
+    )?;
     let mut unparsed_file: VecDeque<PkgFile> = dependent_paths.into();
 
     while let Some(file) = unparsed_file.pop_front() {
         let deps = {
-            let m_cache = module_cache.read().unwrap();
-            if let Some(m) = m_cache.ast_cache.get(&file.canonicalize()) {
-                let deps = get_deps(&file, m.as_ref(), pkgs, pkgmap, opts, sess.clone())?;
-                let mut file_graph = file_graph.write().unwrap();
-                file_graph.update_file(&file, &deps);
-                if file_graph.toposort().is_ok() {
-                    unparsed_file.extend(deps);
+            match &mut module_cache.read() {
+                Ok(m_cache) => {
+                    if let Some(m) = m_cache.ast_cache.get(&file.canonicalize()) {
+                        let deps = get_deps(&file, m.as_ref(), pkgs, pkgmap, opts, sess.clone())?;
+
+                        match &mut file_graph.write() {
+                            Ok(file_graph) => {
+                                file_graph.update_file(&file, &deps);
+                                if file_graph.toposort().is_ok() {
+                                    unparsed_file.extend(deps);
+                                }
+                                continue;
+                            }
+                            Err(e) => return Err(anyhow::anyhow!("Parse entry failed: {e}")),
+                        }
+                    }
                 }
-                continue;
+                Err(e) => return Err(anyhow::anyhow!("Parse entry failed: {e}")),
             }
-            drop(m_cache);
 
             let deps = parse_kcl_file(
                 sess.clone(),
@@ -831,7 +852,7 @@ pub fn parse_kcl_entry(
     Ok(())
 }
 
-pub fn parse_kcl_program(
+pub fn parse_program(
     sess: ParseSessionRef,
     paths: Vec<String>,
     module_cache: KCLModuleCache,
@@ -843,7 +864,7 @@ pub fn parse_kcl_program(
     let mut pkgs: HashMap<String, Vec<Module>> = HashMap::new();
     let mut pkgmap = PkgMap::new();
     for entry in compile_entries.iter() {
-        parse_kcl_entry(
+        parse_entry(
             sess.clone(),
             entry,
             module_cache.clone(),
@@ -854,44 +875,52 @@ pub fn parse_kcl_program(
         )?;
     }
 
-    // Return the files in the order they should be compiled
-    let file_graph = file_graph.read().unwrap();
-    let files = match file_graph.toposort() {
-        Ok(files) => files,
-        Err(_) => file_graph.paths(),
+    let files = match file_graph.read() {
+        Ok(file_graph) => {
+            let files = match file_graph.toposort() {
+                Ok(files) => files,
+                Err(_) => file_graph.paths(),
+            };
+
+            let file_path_graph = file_graph.file_path_graph().0;
+            if let Err(cycle) = toposort(&file_path_graph) {
+                let formatted_cycle = cycle
+                    .iter()
+                    .map(|file| format!("- {}\n", file.to_string_lossy()))
+                    .collect::<String>();
+
+                sess.1.write().add_error(
+                    ErrorKind::RecursiveLoad,
+                    &[Message {
+                        range: (Position::dummy_pos(), Position::dummy_pos()),
+                        style: Style::Line,
+                        message: format!(
+                            "Could not compiles due to cyclic import statements\n{}",
+                            formatted_cycle.trim_end()
+                        ),
+                        note: None,
+                        suggested_replacement: None,
+                    }],
+                );
+            }
+            files
+        }
+        Err(e) => return Err(anyhow::anyhow!("Parse program failed: {e}")),
     };
 
-    let file_path_graph = file_graph.file_path_graph().0;
-    if let Err(cycle) = toposort(&file_path_graph) {
-        let formatted_cycle = cycle
-            .iter()
-            .map(|file| format!("- {}\n", file.to_string_lossy()))
-            .collect::<String>();
-
-        sess.1.write().add_error(
-            ErrorKind::RecursiveLoad,
-            &[Message {
-                range: (Position::dummy_pos(), Position::dummy_pos()),
-                style: Style::Line,
-                message: format!(
-                    "Could not compiles due to cyclic import statements\n{}",
-                    formatted_cycle.trim_end()
-                ),
-                note: None,
-                suggested_replacement: None,
-            }],
-        );
-    }
-
     for file in files.iter() {
-        let module_cache = module_cache.read().unwrap();
-        let mut m = module_cache
-            .ast_cache
-            .get(&file.canonicalize())
-            .unwrap()
-            .as_ref()
-            .clone();
-        drop(module_cache);
+        let mut m = match module_cache.read() {
+            Ok(module_cache) => module_cache
+                .ast_cache
+                .get(&file.canonicalize())
+                .expect(&format!(
+                    "Module not found in module: {:?}",
+                    file.canonicalize()
+                ))
+                .as_ref()
+                .clone(),
+            Err(e) => return Err(anyhow::anyhow!("Parse program failed: {e}")),
+        };
 
         let pkg = pkgmap.get(file).expect("file not in pkgmap");
         match pkgs.get_mut(&file.pkg_path) {

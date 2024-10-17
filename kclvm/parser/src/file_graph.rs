@@ -113,11 +113,12 @@ impl PkgFileGraph {
             if let Some((source, target)) = self.graph.edge_endpoints(edge) {
                 let source_path = self.graph[source].path.clone();
                 let target_path = self.graph[target].path.clone();
-                graph.add_edge(
-                    node_map.get(&source_path).unwrap().clone(),
-                    node_map.get(&target_path).unwrap().clone(),
-                    (),
-                );
+                match (node_map.get(&source_path), node_map.get(&target_path)) {
+                    (Some(source), Some(target)) => {
+                        graph.add_edge(source.clone(), target.clone(), ());
+                    }
+                    _ => {}
+                }
             }
         }
         (graph, node_map)
