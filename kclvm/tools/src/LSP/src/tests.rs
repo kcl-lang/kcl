@@ -1327,7 +1327,10 @@ fn formatting_test() {
     assert_eq!(
         res.result.unwrap(),
         to_json(Some(vec![TextEdit {
-            range: Range::new(Position::new(0, 0), Position::new(u32::MAX, u32::MAX),),
+            range: Range::new(
+                Position::new(0, 0),
+                Position::new(i32::MAX as u32, i32::MAX as u32),
+            ),
             new_text: "a = 1\n\nb = 2\n\nc = 3\n\nd = 4\n".to_string()
         }]))
         .unwrap()
@@ -1398,7 +1401,10 @@ fn formatting_unsaved_test() {
     assert_eq!(
         res.result.unwrap(),
         to_json(Some(vec![TextEdit {
-            range: Range::new(Position::new(0, 0), Position::new(u32::MAX, u32::MAX),),
+            range: Range::new(
+                Position::new(0, 0),
+                Position::new(i32::MAX as u32, i32::MAX as u32),
+            ),
             new_text: "unsaved = 0\n\na = 1\n\nb = 2\n\nc = 3\n\nd = 4\n".to_string()
         }]))
         .unwrap()
