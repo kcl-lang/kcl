@@ -64,8 +64,19 @@ jobs:
       - run: cargo test --workspace -r -- --nocapture
         working-directory: ./kclvm
 
+      - name: Read VERSION file
+        id: read_version
+        run: |
+          $version = Get-Content VERSION
+          echo "VERSION=v$version" >> $env:GITHUB_ENV
+
+      - name: Rename kclvm-windows folder
+        run: |
+          $version = "${{ env.VERSION }}"
+          Rename-Item -Path ".\scripts\build-windows\_output\kclvm-windows" -NewName "kclvm-$version-windows"
+
       - uses: actions/upload-artifact@v4
         with:
-          name: kcl-windows
+          name: kcl-${{ env.VERSION }}-windows
           if-no-files-found: error
-          path: scripts/build-windows/_output/kclvm-windows
+          path: scripts/build-windows/_output/kclvm-${{ env.VERSION }}-windows

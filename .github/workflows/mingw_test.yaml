@@ -32,9 +32,15 @@ jobs:
           rustup target add x86_64-pc-windows-gnu
           cargo build -r --target x86_64-pc-windows-gnu
 
+      - name: Read VERSION file
+        id: read_version
+        run: |
+          $version = Get-Content VERSION
+          echo "VERSION=v$version" >> $env:GITHUB_ENV
+
       - uses: actions/upload-artifact@v4
         with:
-          name: kcl-windows-mingw
+          name: kcl-${{ env.VERSION }}-windows-mingw
           if-no-files-found: error
           path: |
             kclvm/target/x86_64-pc-windows-gnu/release/libkclvm_cli_cdylib.a
