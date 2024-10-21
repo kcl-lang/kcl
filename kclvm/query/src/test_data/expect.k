@@ -61,4 +61,8 @@ uni_config = {
 
 config_unification: Config {
     "image": "image/image:v4"
+    env: {
+        "aaa": "aaa"
+        bbb: "bbb"
+    }
 }
