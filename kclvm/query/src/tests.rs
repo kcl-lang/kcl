@@ -43,6 +43,8 @@ fn test_override_file_simple() {
         "insert_config.key=1".to_string(),
         "uni_config.labels.key1=1".to_string(),
         "config_unification=Config {\"image\": \"image/image:v4\"}".to_string(),
+        "config_unification:Config {\"env\": {\"aaa\": \"aaa\"}}".to_string(),
+        "config_unification.env: {\"bbb\": \"bbb\"}}".to_string(),
         "config_unification_delete-".to_string()
     ];
 

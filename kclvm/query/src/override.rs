@@ -408,52 +408,66 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                             }
                         }
                     } else if let ast::Stmt::Unification(unification_stmt) = &mut stmt.node {
-                        let target = match unification_stmt.target.node.names.get(0) {
-                            Some(name) => name,
-                            None => bug!(
-                                "Invalid AST unification target names {:?}",
-                                unification_stmt.target.node.names
-                            ),
-                        };
-                        if target.node == self.target_id {
-                            let item = unification_stmt.value.clone();
-                            let mut value = self.clone_override_value();
-                            // Use position information that needs to override the expression.
-                            value.set_pos(item.pos());
-                            let schema_expr = &mut unification_stmt.value.node;
-                            match &self.operation {
-                                ast::ConfigEntryOperation::Union => {
-                                    if let ast::Expr::Config(merged_config_expr) = &value.node {
-                                        if let ast::Expr::Config(config_expr) =
-                                            &mut schema_expr.config.node
-                                        {
-                                            self.has_override = merge_config_expr(
-                                                config_expr,
-                                                merged_config_expr,
-                                                &self.action,
-                                            );
-                                        }
-                                    } else if let ast::Expr::Schema(merged_schema_expr) =
-                                        &value.node
-                                    {
-                                        if schema_expr.name.node.get_name()
-                                            == merged_schema_expr.name.node.get_name()
-                                        {
-                                            if let (
-                                                ast::Expr::Config(merged_config_expr),
-                                                ast::Expr::Config(config_expr),
-                                            ) = (
-                                                &merged_schema_expr.config.node,
-                                                &mut schema_expr.config.node,
-                                            ) {
+                        if self.field_paths.len() == 0 {
+                            let target = match unification_stmt.target.node.names.get(0) {
+                                Some(name) => name,
+                                None => bug!(
+                                    "Invalid AST unification target names {:?}",
+                                    unification_stmt.target.node.names
+                                ),
+                            };
+                            if target.node == self.target_id {
+                                let item = unification_stmt.value.clone();
+                                let mut value = self.clone_override_value();
+                                // Use position information that needs to override the expression.
+                                value.set_pos(item.pos());
+                                let schema_expr = &mut unification_stmt.value.node;
+                                match &self.operation {
+                                    ast::ConfigEntryOperation::Union => {
+                                        if let ast::Expr::Config(merged_config_expr) = &value.node {
+                                            if let ast::Expr::Config(config_expr) =
+                                                &mut schema_expr.config.node
+                                            {
                                                 self.has_override = merge_config_expr(
                                                     config_expr,
                                                     merged_config_expr,
                                                     &self.action,
                                                 );
                                             }
+                                        } else if let ast::Expr::Schema(merged_schema_expr) =
+                                            &value.node
+                                        {
+                                            if schema_expr.name.node.get_name()
+                                                == merged_schema_expr.name.node.get_name()
+                                            {
+                                                if let (
+                                                    ast::Expr::Config(merged_config_expr),
+                                                    ast::Expr::Config(config_expr),
+                                                ) = (
+                                                    &merged_schema_expr.config.node,
+                                                    &mut schema_expr.config.node,
+                                                ) {
+                                                    self.has_override = merge_config_expr(
+                                                        config_expr,
+                                                        merged_config_expr,
+                                                        &self.action,
+                                                    );
+                                                }
+                                            }
+                                        } else {
+                                            // Unification is only support to override the schema expression.
+                                            if let ast::Expr::Schema(schema_expr) = value.node {
+                                                if self.field_paths.len() == 0 {
+                                                    unification_stmt.value = Box::new(
+                                                        ast::Node::dummy_node(schema_expr),
+                                                    );
+                                                    self.has_override = true;
+                                                }
+                                            }
                                         }
-                                    } else {
+                                    }
+                                    ast::ConfigEntryOperation::Insert
+                                    | ast::ConfigEntryOperation::Override => {
                                         // Unification is only support to override the schema expression.
                                         if let ast::Expr::Schema(schema_expr) = value.node {
                                             if self.field_paths.len() == 0 {
@@ -461,17 +475,6 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                                                     Box::new(ast::Node::dummy_node(schema_expr));
                                                 self.has_override = true;
                                             }
-                                        }
-                                    }
-                                }
-                                ast::ConfigEntryOperation::Insert
-                                | ast::ConfigEntryOperation::Override => {
-                                    // Unification is only support to override the schema expression.
-                                    if let ast::Expr::Schema(schema_expr) = value.node {
-                                        if self.field_paths.len() == 0 {
-                                            unification_stmt.value =
-                                                Box::new(ast::Node::dummy_node(schema_expr));
-                                            self.has_override = true;
                                         }
                                     }
                                 }
