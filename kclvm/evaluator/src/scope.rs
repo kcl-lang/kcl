@@ -544,7 +544,7 @@ impl<'ctx> Evaluator<'ctx> {
             self.is_local_var(name),
         ) {
             // Get variable from the global lazy scope.
-            (false, false, false) => {
+            (false, _, false) => {
                 let variable = self.get_variable(name);
                 match self.resolve_variable_level(name) {
                     // Closure variable or local variables
