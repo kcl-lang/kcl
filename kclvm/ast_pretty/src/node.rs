@@ -222,7 +222,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         }
         if let Some(index_signature) = &schema_stmt.index_signature {
             self.fill("");
-            self.write_ast_comments(index_signature);
+            self.write_comments_before_node(index_signature);
             self.write_token(TokenKind::OpenDelim(DelimToken::Bracket));
             if index_signature.node.any_other {
                 self.write_token(TokenKind::DotDotDot);
@@ -893,7 +893,7 @@ impl<'p> Printer<'p> {
         match &key.node {
             ast::Expr::Identifier(identifier) => {
                 self.hook.pre(self, super::ASTNode::Expr(key));
-                self.write_ast_comments(key);
+                self.write_comments_before_node(key);
                 // Judge contains string or dot identifier, e.g., "x-y-z" and "a.b.c"
                 let names = &identifier.names;
 
@@ -940,7 +940,7 @@ impl<'p> Printer<'p> {
 
     pub fn expr(&mut self, expr: &ast::NodeRef<ast::Expr>) {
         self.hook.pre(self, super::ASTNode::Expr(expr));
-        self.write_ast_comments(expr);
+        self.update_last_ast_line(expr);
         self.walk_expr(&expr.node);
         self.hook.post(self, super::ASTNode::Expr(expr));
     }
@@ -948,7 +948,7 @@ impl<'p> Printer<'p> {
     pub fn stmt(&mut self, stmt: &ast::NodeRef<ast::Stmt>) {
         self.hook.pre(self, super::ASTNode::Stmt(stmt));
         self.fill("");
-        self.write_ast_comments(stmt);
+        self.write_comments_before_node(stmt);
         self.walk_stmt(&stmt.node);
         self.hook.post(self, super::ASTNode::Stmt(stmt));
     }

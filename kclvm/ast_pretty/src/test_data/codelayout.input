@@ -168,3 +168,7 @@ list_if_item = [
     *[5, 6]
   if False: 2
 ]
+
+longString = "Too long expression " + \
+  "Too long expression " + \
+  "Too long expression " # recommended

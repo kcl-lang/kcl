@@ -218,7 +218,14 @@ impl<'p> Printer<'p> {
     }
 
     /// Print ast comments.
-    pub fn write_ast_comments<T>(&mut self, node: &ast::NodeRef<T>) {
+    pub fn update_last_ast_line<T>(&mut self, node: &ast::NodeRef<T>) {
+        if node.line > self.last_ast_line {
+            self.last_ast_line = node.line;
+        }
+    }
+
+    /// Print ast comments.
+    pub fn write_comments_before_node<T>(&mut self, node: &ast::NodeRef<T>) {
         if !self.cfg.write_comments {
             return;
         }
