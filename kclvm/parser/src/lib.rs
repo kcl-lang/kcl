@@ -813,41 +813,39 @@ pub fn parse_entry(
     let mut unparsed_file: VecDeque<PkgFile> = dependent_paths.into();
 
     while let Some(file) = unparsed_file.pop_front() {
-        let deps = {
-            match &mut module_cache.read() {
-                Ok(m_cache) => {
-                    if let Some(m) = m_cache.ast_cache.get(&file.canonicalize()) {
-                        let deps = get_deps(&file, m.as_ref(), pkgs, pkgmap, opts, sess.clone())?;
-
-                        match &mut file_graph.write() {
-                            Ok(file_graph) => {
-                                file_graph.update_file(&file, &deps);
-                                if file_graph.toposort().is_ok() {
-                                    unparsed_file.extend(deps);
-                                }
-                                continue;
+        let module_cache_read = module_cache.read();
+        match &module_cache_read {
+            Ok(m_cache) => match m_cache.ast_cache.get(&file.canonicalize()) {
+                Some(m) => {
+                    let deps = get_deps(&file, m.as_ref(), pkgs, pkgmap, opts, sess.clone())?;
+                    match &mut file_graph.write() {
+                        Ok(file_graph) => {
+                            file_graph.update_file(&file, &deps);
+                            if file_graph.toposort().is_ok() {
+                                unparsed_file.extend(deps);
                             }
-                            Err(e) => return Err(anyhow::anyhow!("Parse entry failed: {e}")),
+                            continue;
                         }
+                        Err(e) => return Err(anyhow::anyhow!("Parse entry failed: {e}")),
                     }
                 }
-                Err(e) => return Err(anyhow::anyhow!("Parse entry failed: {e}")),
-            }
-
-            let deps = parse_file(
-                sess.clone(),
-                file,
-                None,
-                module_cache.clone(),
-                pkgs,
-                pkgmap,
-                file_graph.clone(),
-                &opts,
-            )?;
-            deps
+                None => {
+                    drop(module_cache_read);
+                    let deps = parse_file(
+                        sess.clone(),
+                        file,
+                        None,
+                        module_cache.clone(),
+                        pkgs,
+                        pkgmap,
+                        file_graph.clone(),
+                        &opts,
+                    )?;
+                    unparsed_file.extend(deps);
+                }
+            },
+            Err(e) => return Err(anyhow::anyhow!("Parse entry failed: {e}")),
         };
-
-        unparsed_file.extend(deps);
     }
     Ok(())
 }
