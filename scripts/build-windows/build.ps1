@@ -10,7 +10,6 @@ Set-Location $PSScriptRoot
 New-Item -ErrorAction Ignore -Path ".\_output" -ItemType "directory"
 New-Item -ErrorAction Ignore -Path ".\_output\kclvm-windows" -ItemType "directory"
 New-Item -ErrorAction Ignore -Path ".\_output\kclvm-windows\bin" -ItemType "directory"
-New-Item -ErrorAction Ignore -Path ".\_output\kclvm-windows\include" -ItemType "directory"
 
 Copy-Item -Path "..\..\kclvm\target\release\kclvm_cli_cdylib.dll" -Destination ".\_output\kclvm-windows\bin\kclvm_cli_cdylib.dll" -Force
 Copy-Item -Path "..\..\kclvm\target\release\kclvm_cli_cdylib.dll.lib" -Destination ".\_output\kclvm-windows\bin\kclvm_cli_cdylib.lib" -Force
@@ -29,10 +28,6 @@ Set-Location "..\..\kclvm\tools\src\LSP"
 cargo build --release
 Set-Location $PSScriptRoot
 Copy-Item -Path "..\..\kclvm\target\release\kcl-language-server.exe" -Destination ".\_output\kclvm-windows\bin\"
-
-Set-Location $PSScriptRoot
-# 4. Copy KCLVM C API header
-Copy-Item -Path "..\..\kclvm\runtime\src\_kclvm.h" -Destination ".\_output\kclvm-windows\include\kclvm.h" -Force
 
 Set-Location $PSScriptRoot
 # Install hello.k

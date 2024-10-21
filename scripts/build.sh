@@ -5,17 +5,22 @@ set -e
 
 # Environment
 
-if [ -f "/etc/os-release" ]; then
-    source /etc/os-release
-    os=$ID
-else
-    os=$(uname)
-fi
+getSystemInfo() {
+    arch=$(uname -m)
+    case $arch in
+        armv7*) arch="arm";;
+        aarch64) arch="arm64";;
+        x86_64) arch="amd64";;
+    esac
+
+    os=$(echo `uname`|tr '[:upper:]' '[:lower:]')
+}
+
+getSystemInfo
 
 prepare_dirs () {
     install_dir="$topdir/_build/dist/$os/kclvm"
     mkdir -p "$install_dir/bin"
-    mkdir -p "$install_dir/include"
 }
 
 prepare_dirs
@@ -32,7 +37,7 @@ cargo build --release
 ## Switch dll file extension according to os.
 dll_extension="so"
 case $os in
-    "Default" | "default" | "centos" | "ubuntu" | "debian" | "Ubuntu" |"Debian" | "Static-Debian" | "Cood1-Debian" | "Cood1Shared-Debian")
+    "Linux" | "linux" | "Default" | "default" | "centos" | "ubuntu" | "debian" | "Ubuntu" | "Debian" | "Static-Debian" | "Cood1-Debian" | "Cood1Shared-Debian")
         dll_extension="so"
         ;;
     "Darwin" | "darwin" | "ios" | "macos")
@@ -41,11 +46,6 @@ case $os in
     *) dll_extension="dll"
         ;;
 esac
-
-## Copy C API header
-
-cd $topdir/kclvm/runtime
-cp src/_kclvm.h  $install_dir/include/kclvm.h
 
 ## Copy libkclvm_cli lib to the build folder
 
@@ -77,4 +77,4 @@ cd $topdir
 
 # Print the summary.
 echo "================ Summary ================"
-echo "  KCLVM is updated into $install_dir"
+echo "  KCL is updated into $install_dir"

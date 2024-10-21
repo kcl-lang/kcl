@@ -76,7 +76,7 @@ lark_parser.pickle
 /scripts/docker/kclvm-builder-ubuntu/crates.io-index
 *.tar.gz
 
-# KCLVM cache and temp output
+# KCL cache and temp output
 .kclvm
 .kclvm_cov
 *.dylib

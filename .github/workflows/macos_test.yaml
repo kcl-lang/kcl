@@ -56,20 +56,20 @@ jobs:
         shell: bash
       - name: Grammar test
         working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin && make && make test-grammar
+        run: export PATH=$PATH:$PWD/../_build/dist/darwin/kclvm/bin && make && make test-grammar
         shell: bash
       - name: Evaluator Grammar test
         working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin && make test-grammar-evaluator
+        run: export PATH=$PATH:$PWD/../_build/dist/darwin/kclvm/bin && make test-grammar-evaluator
         shell: bash
       - name: Runtime test
         working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin && make test-runtime
+        run: export PATH=$PATH:$PWD/../_build/dist/darwin/kclvm/bin && make test-runtime
         shell: bash
 
       - name: Unit test
         working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin && make codecov-lcov
+        run: export PATH=$PATH:$PWD/../_build/dist/darwin/kclvm/bin && make codecov-lcov
         shell: bash
 
       - name: Coveralls upload
@@ -79,12 +79,18 @@ jobs:
           path-to-lcov: ./kclvm/.kclvm_cov/lcov.info
 
       - name: Release
-        run: export PATH=$PATH:$PWD/../_build/dist/Darwin/kclvm/bin && make release
+        run: export PATH=$PATH:$PWD/../_build/dist/darwin/kclvm/bin && make release
         shell: bash
+
+      - name: Read VERSION file
+        id: read_version
+        run: |
+          VERSION=$(cat VERSION)
+          echo "VERSION=v${VERSION}" >> $GITHUB_ENV
 
       - uses: actions/upload-artifact@v4
         if: "contains(matrix.os, 'macos-12')"
         with:
-          name: kcl-darwin-amd64
+          name: kcl-${{ env.VERSION }}-darwin-amd64
           if-no-files-found: error
-          path: _build/kclvm-Darwin-latest.tar.gz
+          path: _build/kclvm-${{ env.VERSION }}-darwin-amd64.tar.gz

@@ -1,16 +1,29 @@
 #!/usr/bin/env bash
 
-if [ -z "$os" ]; then
-  os=$1
+getSystemInfo() {
+    arch=$(uname -m)
+    case $arch in
+        armv7*) arch="arm";;
+        aarch64) arch="arm64";;
+        x86_64) arch="amd64";;
+    esac
+
+    os=$(echo `uname`|tr '[:upper:]' '[:lower:]')
+}
+
+if [ -z "$version" ]; then
+    version=$1
+fi
+if [ -z "$version" ]; then
+    version='latest'
 fi
 
-if [ -z "$os" ]; then
-  echo "Error: The variable 'os' is not set. Please set the 'os' variable before running the script."
-  exit 1
-fi
+getSystemInfo
 
 echo "[info] os: $os"
-release_file="kclvm-$os-latest.tar.gz"
+echo "[info] arch: $arch"
+echo "[info] version: $version"
+release_file="kclvm-$version-$os-$arch.tar.gz"
 release_path="$topdir/_build"
 package_dir="$topdir/_build/dist/$os"
 install_dir="kclvm"

@@ -1,13 +1,20 @@
 #!/usr/bin/env bash
 
 # Environment
-if [ -f "/etc/os-release" ]; then
-    source /etc/os-release
-    os=$ID
-else
-    os=$(uname)
-fi
+getSystemInfo() {
+    arch=$(uname -m)
+    case $arch in
+        armv7*) arch="arm";;
+        aarch64) arch="arm64";;
+        x86_64) arch="amd64";;
+    esac
+
+    os=$(echo `uname`|tr '[:upper:]' '[:lower:]')
+}
+
+getSystemInfo
 topdir=$PWD
+version=v$(cat VERSION)
 
 # Options
 help_message=$(cat <<-END
@@ -63,4 +70,4 @@ if [ "$action" == "" ]; then
     done
 fi
 
-os=$os topdir=$topdir sslpath=$sslpath $topdir/scripts/$action.sh
+topdir=$topdir version=$version sslpath=$sslpath $topdir/scripts/$action.sh
