@@ -44,3 +44,13 @@ schema Foo:
     # Comment for `x` field
     x: int
 
+# Comment One
+config = {
+    # Comment Two
+    # Comment Three
+    key1 = "value1"
+    # Comment Four
+    key2 = "value2"
+    # Comment Five
+    key3 = "value3"
+}

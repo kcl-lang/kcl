@@ -43,3 +43,12 @@ schema Foo:
     [k: str]: int
     # Comment for `x` field
     x: int
+
+config = { # Comment One
+    # Comment Two
+    key1 = "value1" # Comment Three
+    # Comment Four
+    key2 = \
+        "value2" # Comment Five
+    key3 = "value3"
+}
