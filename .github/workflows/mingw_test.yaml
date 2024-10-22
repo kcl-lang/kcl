@@ -40,7 +40,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: kcl-${{ env.VERSION }}-windows-mingw
+          name: kclvm-${{ env.VERSION }}-windows-mingw
           if-no-files-found: error
           path: |
             kclvm/target/x86_64-pc-windows-gnu/release/libkclvm_cli_cdylib.a
