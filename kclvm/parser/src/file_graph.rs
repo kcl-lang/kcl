@@ -29,7 +29,7 @@ pub struct Pkg {
 pub type PkgMap = HashMap<PkgFile, Pkg>;
 
 /// A graph of files, where each file depends on zero or more other files.
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct PkgFileGraph {
     graph: StableDiGraph<PkgFile, ()>,
     path_to_node_index: IndexMap<PkgFile, petgraph::graph::NodeIndex>,

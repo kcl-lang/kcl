@@ -527,7 +527,7 @@ fn is_ignored_file(filename: &str) -> bool {
 }
 
 /// Normalize the input file with the working directory and replace ${KCL_MOD} with the module root path.
-fn canonicalize_input_file(file: &str, work_dir: &str) -> String {
+pub fn canonicalize_input_file(file: &str, work_dir: &str) -> String {
     let path = std::path::Path::new(file);
     let is_absolute = path.is_absolute();
     // If the input file or path is a relative path and it is not a absolute path in the KCL module VFS,
