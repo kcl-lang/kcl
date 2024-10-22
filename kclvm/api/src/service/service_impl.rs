@@ -9,7 +9,7 @@ use kcl_language_server::rename;
 use kclvm_config::settings::build_settings_pathbuf;
 use kclvm_loader::option::list_options;
 use kclvm_loader::{load_packages_with_cache, LoadPackageOptions};
-use kclvm_parser::entry::get_normalized_k_files_from_paths;
+use kclvm_parser::entry::{canonicalize_input_file, get_normalized_k_files_from_paths};
 use kclvm_parser::load_program;
 use kclvm_parser::parse_single_file;
 use kclvm_parser::KCLModuleCache;
@@ -180,7 +180,8 @@ impl KclvmServiceImpl {
     /// assert_eq!(result.deps.len(), 2);
     /// ```
     pub fn parse_file(&self, args: &ParseFileArgs) -> anyhow::Result<ParseFileResult> {
-        let result = parse_single_file(&args.path, transform_str_para(&args.source))?;
+        let file = canonicalize_input_file(&args.path, "");
+        let result = parse_single_file(&file, transform_str_para(&args.source))?;
         let ast_json = serde_json::to_string(&result.module)?;
 
         Ok(ParseFileResult {
