@@ -31,7 +31,7 @@ use kclvm_utils::pkgpath::rm_external_pkg_name;
 use anyhow::Result;
 use lexer::parse_token_streams;
 use parser::Parser;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
@@ -317,6 +317,7 @@ pub type KCLModuleCache = Arc<RwLock<ModuleCache>>;
 #[derive(Default, Debug)]
 pub struct ModuleCache {
     pub ast_cache: IndexMap<PathBuf, Arc<ast::Module>>,
+    pub dep_cache: IndexMap<PkgFile, (Vec<PkgFile>, PkgMap)>,
 }
 struct Loader {
     sess: ParseSessionRef,
@@ -673,15 +674,21 @@ pub fn parse_file(
         file.path.to_str().unwrap(),
         src,
     )?);
+
+    let (deps, new_pkgmap) = get_deps(&file, m.as_ref(), pkgs, pkgmap, opts, sess)?;
+    pkgmap.extend(new_pkgmap.clone());
     match &mut module_cache.write() {
         Ok(module_cache) => {
             module_cache
                 .ast_cache
                 .insert(file.canonicalize(), m.clone());
+            module_cache
+                .dep_cache
+                .insert(file.clone(), (deps.clone(), new_pkgmap));
         }
         Err(e) => return Err(anyhow::anyhow!("Parse file failed: {e}")),
     }
-    let deps = get_deps(&file, m.as_ref(), pkgs, pkgmap, opts, sess)?;
+
     match &mut file_graph.write() {
         Ok(file_graph) => {
             file_graph.update_file(&file, &deps);
@@ -698,8 +705,9 @@ pub fn get_deps(
     pkgmap: &mut PkgMap,
     opts: &LoadProgramOptions,
     sess: ParseSessionRef,
-) -> Result<Vec<PkgFile>> {
+) -> Result<(Vec<PkgFile>, PkgMap)> {
     let mut deps: Vec<PkgFile> = vec![];
+    let mut new_pkgmap = PkgMap::default();
     for stmt in &m.body {
         let pos = stmt.pos().clone();
         let pkg = pkgmap.get(file).expect("file not in pkgmap").clone();
@@ -732,7 +740,7 @@ pub fn get_deps(
                             path: p.into(),
                             pkg_path: pkg_info.pkg_path.clone(),
                         };
-                        pkgmap.insert(
+                        new_pkgmap.insert(
                             file.clone(),
                             file_graph::Pkg {
                                 pkg_name: pkg_info.pkg_name.clone(),
@@ -746,7 +754,7 @@ pub fn get_deps(
             }
         }
     }
-    Ok(deps)
+    Ok((deps, new_pkgmap))
 }
 
 pub fn parse_pkg(
@@ -811,45 +819,57 @@ pub fn parse_entry(
         opts,
     )?;
     let mut unparsed_file: VecDeque<PkgFile> = dependent_paths.into();
-
+    let mut parsed_file: HashSet<PkgFile> = HashSet::new();
     while let Some(file) = unparsed_file.pop_front() {
-        let module_cache_read = module_cache.read();
-        match &module_cache_read {
-            Ok(m_cache) => match m_cache.ast_cache.get(&file.canonicalize()) {
-                Some(m) => {
-                    let deps = get_deps(&file, m.as_ref(), pkgs, pkgmap, opts, sess.clone())?;
-                    match &mut file_graph.write() {
-                        Ok(file_graph) => {
-                            file_graph.update_file(&file, &deps);
-                            if file_graph.toposort().is_ok() {
+        if parsed_file.insert(file.clone()) {
+            let module_cache_read = module_cache.read();
+            match &module_cache_read {
+                Ok(m_cache) => match m_cache.ast_cache.get(&file.canonicalize()) {
+                    Some(m) => {
+                        let (deps, new_pkgmap) =
+                            m_cache.dep_cache.get(&file).cloned().unwrap_or_else(|| {
+                                get_deps(&file, m.as_ref(), pkgs, pkgmap, opts, sess.clone())
+                                    .unwrap()
+                            });
+                        pkgmap.extend(new_pkgmap.clone());
+
+                        match &mut file_graph.write() {
+                            Ok(file_graph) => {
+                                file_graph.update_file(&file, &deps);
+
                                 for dep in deps {
-                                    if !unparsed_file.contains(&dep) {
-                                        unparsed_file.push_back(dep);
+                                    if !parsed_file.contains(&dep) {
+                                        unparsed_file.push_back(dep.clone());
                                     }
                                 }
+
+                                continue;
                             }
-                            continue;
+                            Err(e) => return Err(anyhow::anyhow!("Parse entry failed: {e}")),
                         }
-                        Err(e) => return Err(anyhow::anyhow!("Parse entry failed: {e}")),
                     }
-                }
-                None => {
-                    drop(module_cache_read);
-                    let deps = parse_file(
-                        sess.clone(),
-                        file,
-                        None,
-                        module_cache.clone(),
-                        pkgs,
-                        pkgmap,
-                        file_graph.clone(),
-                        &opts,
-                    )?;
-                    unparsed_file.extend(deps);
-                }
-            },
-            Err(e) => return Err(anyhow::anyhow!("Parse entry failed: {e}")),
-        };
+                    None => {
+                        drop(module_cache_read);
+                        let deps = parse_file(
+                            sess.clone(),
+                            file,
+                            None,
+                            module_cache.clone(),
+                            pkgs,
+                            pkgmap,
+                            file_graph.clone(),
+                            &opts,
+                        )?;
+                        for dep in deps {
+                            if !parsed_file.contains(&dep) {
+                                unparsed_file.push_back(dep.clone());
+                            }
+                        }
+                    }
+                },
+                Err(e) => return Err(anyhow::anyhow!("Parse entry failed: {e}")),
+            };
+        }
     }
     Ok(())
 }
@@ -923,7 +943,6 @@ pub fn parse_program(
                 .clone(),
             Err(e) => return Err(anyhow::anyhow!("Parse program failed: {e}")),
         };
-
         let pkg = pkgmap.get(file).expect("file not in pkgmap");
         fix_rel_import_path_with_file(
             &pkg.pkg_root,
@@ -943,12 +962,10 @@ pub fn parse_program(
             }
         }
     }
-
     let program = ast::Program {
         root: workdir,
         pkgs,
     };
-
     Ok(LoadProgramResult {
         program,
         errors: sess.1.read().diagnostics.clone(),
