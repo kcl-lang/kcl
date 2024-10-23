@@ -789,7 +789,7 @@ pub fn parse_entry(
     let mut files = vec![];
     for (i, f) in k_files.iter().enumerate() {
         let file = PkgFile {
-            path: f.into(),
+            path: f.adjust_canonicalization().into(),
             pkg_path: MAIN_PKG.to_string(),
         };
         files.push((file.clone(), maybe_k_codes.get(i).unwrap_or(&None).clone()));
