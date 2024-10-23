@@ -100,10 +100,11 @@ pub struct ParseFileResult {
 
 /// Parse a KCL file to the AST module with parse errors.
 pub fn parse_single_file(filename: &str, code: Option<String>) -> Result<ParseFileResult> {
+    let filename = filename.adjust_canonicalization();
     let sess = Arc::new(ParseSession::default());
     let mut loader = Loader::new(
         sess,
-        &[filename],
+        &[&filename],
         Some(LoadProgramOptions {
             load_packages: false,
             k_code_list: if let Some(code) = code {

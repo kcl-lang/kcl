@@ -859,7 +859,10 @@ fn test_list_variable_with_invalid_kcl() {
         result.parse_errors[0].messages[0].message,
         "expected one of [\"=\"] got eof",
     );
-    assert_eq!(result.parse_errors[0].messages[0].range.0.filename, file);
+    assert_eq!(
+        result.parse_errors[0].messages[0].range.0.filename,
+        file.adjust_canonicalization()
+    );
     assert_eq!(result.parse_errors[0].messages[0].range.0.line, 1);
     assert_eq!(result.parse_errors[0].messages[0].range.0.column, Some(8));
 }
