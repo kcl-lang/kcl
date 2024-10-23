@@ -822,7 +822,11 @@ pub fn parse_entry(
                         Ok(file_graph) => {
                             file_graph.update_file(&file, &deps);
                             if file_graph.toposort().is_ok() {
-                                unparsed_file.extend(deps);
+                                for dep in deps {
+                                    if !unparsed_file.contains(&dep) {
+                                        unparsed_file.push_back(dep);
+                                    }
+                                }
                             }
                             continue;
                         }
@@ -921,27 +925,20 @@ pub fn parse_program(
         };
 
         let pkg = pkgmap.get(file).expect("file not in pkgmap");
+        fix_rel_import_path_with_file(
+            &pkg.pkg_root,
+            &mut m,
+            file,
+            &pkgmap,
+            opts.clone(),
+            sess.clone(),
+        );
+
         match pkgs.get_mut(&file.pkg_path) {
             Some(modules) => {
-                fix_rel_import_path_with_file(
-                    &pkg.pkg_root,
-                    &mut m,
-                    file,
-                    &pkgmap,
-                    opts.clone(),
-                    sess.clone(),
-                );
                 modules.push(m);
             }
             None => {
-                fix_rel_import_path_with_file(
-                    &pkg.pkg_root,
-                    &mut m,
-                    file,
-                    &pkgmap,
-                    opts.clone(),
-                    sess.clone(),
-                );
                 pkgs.insert(file.pkg_path.clone(), vec![m]);
             }
         }
