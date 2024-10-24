@@ -317,6 +317,7 @@ pub type KCLModuleCache = Arc<RwLock<ModuleCache>>;
 #[derive(Default, Debug)]
 pub struct ModuleCache {
     pub ast_cache: IndexMap<PathBuf, Arc<ast::Module>>,
+    pub file_pkg: IndexMap<PathBuf, HashSet<PkgFile>>,
     pub dep_cache: IndexMap<PkgFile, (Vec<PkgFile>, PkgMap)>,
 }
 struct Loader {
@@ -367,7 +368,7 @@ fn fix_rel_import_path_with_file(
     m: &mut ast::Module,
     file: &PkgFile,
     pkgmap: &PkgMap,
-    opts: LoadProgramOptions,
+    opts: &LoadProgramOptions,
     sess: ParseSessionRef,
 ) {
     for stmt in &mut m.body {
@@ -380,7 +381,7 @@ fn fix_rel_import_path_with_file(
             );
             import_spec.path.node = fix_path.clone();
 
-            let pkg = pkgmap.get(&file).expect("file not in pkgmap").clone();
+            let pkg = pkgmap.get(&file).expect("file not in pkgmap");
             import_spec.pkg_name = pkg.pkg_name.clone();
             // Load the import package source code and compile.
             let pkg_info = find_packages(
@@ -388,7 +389,7 @@ fn fix_rel_import_path_with_file(
                 &pkg.pkg_name,
                 &pkg.pkg_root,
                 &fix_path,
-                opts.clone(),
+                opts,
                 sess.clone(),
             )
             .unwrap_or(None);
@@ -415,7 +416,7 @@ fn find_packages(
     pkg_name: &str,
     pkg_root: &str,
     pkg_path: &str,
-    opts: LoadProgramOptions,
+    opts: &LoadProgramOptions,
     sess: ParseSessionRef,
 ) -> Result<Option<PkgInfo>> {
     if pkg_path.is_empty() {
@@ -558,7 +559,7 @@ fn get_pkg_kfile_list(pkgroot: &str, pkgpath: &str) -> Result<Vec<String>> {
     }
 
     if pkgroot.is_empty() {
-        return Err(anyhow::anyhow!("pkgroot not found"));
+        return Err(anyhow::anyhow!(format!("pkgroot not found: {:?}", pkgpath)));
     }
 
     let mut pathbuf = std::path::PathBuf::new();
@@ -623,7 +624,7 @@ fn get_dir_files(dir: &str) -> Result<Vec<String>> {
 ///
 /// - [`is_external_pkg`] will return an error if the package's source files cannot be found.
 /// - The name of the external package could not be resolved from [`pkg_path`].
-fn is_external_pkg(pkg_path: &str, opts: LoadProgramOptions) -> Result<Option<PkgInfo>> {
+fn is_external_pkg(pkg_path: &str, opts: &LoadProgramOptions) -> Result<Option<PkgInfo>> {
     let pkg_name = parse_external_pkg_name(pkg_path)?;
     let external_pkg_root = if let Some(root) = opts.package_maps.get(&pkg_name) {
         PathBuf::from(root).join(KCL_MOD_FILE)
@@ -682,6 +683,16 @@ pub fn parse_file(
             module_cache
                 .ast_cache
                 .insert(file.canonicalize(), m.clone());
+            match module_cache.file_pkg.get_mut(&file.canonicalize()) {
+                Some(s) => {
+                    s.insert(file.clone());
+                }
+                None => {
+                    let mut s = HashSet::new();
+                    s.insert(file.clone());
+                    module_cache.file_pkg.insert(file.canonicalize(), s);
+                }
+            }
             module_cache
                 .dep_cache
                 .insert(file.clone(), (deps.clone(), new_pkgmap));
@@ -722,7 +733,7 @@ pub fn get_deps(
                 &pkg.pkg_name,
                 &pkg.pkg_root,
                 &fix_path,
-                opts.clone(),
+                opts,
                 sess.clone(),
             )?;
             if let Some(pkg_info) = &pkg_info {
@@ -791,16 +802,18 @@ pub fn parse_entry(
     pkgmap: &mut PkgMap,
     file_graph: FileGraphCache,
     opts: &LoadProgramOptions,
-) -> Result<()> {
+) -> Result<HashSet<PkgFile>> {
     let k_files = entry.get_k_files();
     let maybe_k_codes = entry.get_k_codes();
     let mut files = vec![];
+    let mut new_files = HashSet::new();
     for (i, f) in k_files.iter().enumerate() {
         let file = PkgFile {
             path: f.adjust_canonicalization().into(),
             pkg_path: MAIN_PKG.to_string(),
         };
         files.push((file.clone(), maybe_k_codes.get(i).unwrap_or(&None).clone()));
+        new_files.insert(file.clone());
         pkgmap.insert(
             file,
             Pkg {
@@ -822,6 +835,24 @@ pub fn parse_entry(
     let mut parsed_file: HashSet<PkgFile> = HashSet::new();
     while let Some(file) = unparsed_file.pop_front() {
         if parsed_file.insert(file.clone()) {
+            match &mut module_cache.write() {
+                Ok(m_cache) => match m_cache.file_pkg.get_mut(&file.canonicalize()) {
+                    Some(s) => {
+                        // The module ast has been parsed, but does not belong to the same package
+                        if s.insert(file.clone()) {
+                            new_files.insert(file.clone());
+                        }
+                    }
+                    None => {
+                        let mut s = HashSet::new();
+                        s.insert(file.clone());
+                        m_cache.file_pkg.insert(file.canonicalize(), s);
+                        new_files.insert(file.clone());
+                    }
+                },
+                Err(e) => return Err(anyhow::anyhow!("Parse file failed: {e}")),
+            }
+
             let module_cache_read = module_cache.read();
             match &module_cache_read {
                 Ok(m_cache) => match m_cache.ast_cache.get(&file.canonicalize()) {
@@ -849,6 +880,7 @@ pub fn parse_entry(
                         }
                     }
                     None => {
+                        new_files.insert(file.clone());
                         drop(module_cache_read);
                         let deps = parse_file(
                             sess.clone(),
@@ -871,7 +903,7 @@ pub fn parse_entry(
             };
         }
     }
-    Ok(())
+    Ok(new_files)
 }
 
 pub fn parse_program(
@@ -885,8 +917,9 @@ pub fn parse_program(
     let workdir = compile_entries.get_root_path().to_string();
     let mut pkgs: HashMap<String, Vec<Module>> = HashMap::new();
     let mut pkgmap = PkgMap::new();
+    let mut new_files = HashSet::new();
     for entry in compile_entries.iter() {
-        parse_entry(
+        new_files.extend(parse_entry(
             sess.clone(),
             entry,
             module_cache.clone(),
@@ -894,7 +927,7 @@ pub fn parse_program(
             &mut pkgmap,
             file_graph.clone(),
             &opts,
-        )?;
+        )?);
     }
 
     let files = match file_graph.read() {
@@ -943,15 +976,15 @@ pub fn parse_program(
                 .clone(),
             Err(e) => return Err(anyhow::anyhow!("Parse program failed: {e}")),
         };
-        let pkg = pkgmap.get(file).expect("file not in pkgmap");
-        fix_rel_import_path_with_file(
-            &pkg.pkg_root,
-            &mut m,
-            file,
-            &pkgmap,
-            opts.clone(),
-            sess.clone(),
-        );
+        if new_files.contains(file) {
+            let pkg = pkgmap.get(file).expect("file not in pkgmap");
+            fix_rel_import_path_with_file(&pkg.pkg_root, &mut m, file, &pkgmap, opts, sess.clone());
+            let m = Arc::new(m.clone());
+            match &mut module_cache.write() {
+                Ok(module_cache) => module_cache.ast_cache.insert(file.canonicalize(), m),
+                Err(e) => return Err(anyhow::anyhow!("Parse program failed: {e}")),
+            };
+        }
 
         match pkgs.get_mut(&file.pkg_path) {
             Some(modules) => {
