@@ -318,6 +318,7 @@ pub type KCLModuleCache = Arc<RwLock<ModuleCache>>;
 #[derive(Default, Debug)]
 pub struct ModuleCache {
     pub ast_cache: IndexMap<PathBuf, Arc<ast::Module>>,
+    pub file_pkg: IndexMap<PathBuf, HashSet<PkgFile>>,
     pub dep_cache: IndexMap<PkgFile, (Vec<PkgFile>, PkgMap)>,
 }
 struct Loader {
@@ -683,6 +684,16 @@ pub fn parse_file(
             module_cache
                 .ast_cache
                 .insert(file.canonicalize(), m.clone());
+            match module_cache.file_pkg.get_mut(&file.canonicalize()) {
+                Some(s) => {
+                    s.insert(file.clone());
+                }
+                None => {
+                    let mut s = HashSet::new();
+                    s.insert(file.clone());
+                    module_cache.file_pkg.insert(file.canonicalize(), s);
+                }
+            }
             module_cache
                 .dep_cache
                 .insert(file.clone(), (deps.clone(), new_pkgmap));
@@ -825,6 +836,24 @@ pub fn parse_entry(
     let mut parsed_file: HashSet<PkgFile> = HashSet::new();
     while let Some(file) = unparsed_file.pop_front() {
         if parsed_file.insert(file.clone()) {
+            match &mut module_cache.write() {
+                Ok(m_cache) => match m_cache.file_pkg.get_mut(&file.canonicalize()) {
+                    Some(s) => {
+                        // The module ast has been parsed, but does not belong to the same package
+                        if s.insert(file.clone()) {
+                            new_files.insert(file.clone());
+                        }
+                    }
+                    None => {
+                        let mut s = HashSet::new();
+                        s.insert(file.clone());
+                        m_cache.file_pkg.insert(file.canonicalize(), s);
+                        new_files.insert(file.clone());
+                    }
+                },
+                Err(e) => return Err(anyhow::anyhow!("Parse file failed: {e}")),
+            }
+
             let module_cache_read = module_cache.read();
             match &module_cache_read {
                 Ok(m_cache) => match m_cache.ast_cache.get(&file.canonicalize()) {
@@ -951,6 +980,11 @@ pub fn parse_program(
         if new_files.contains(file) {
             let pkg = pkgmap.get(file).expect("file not in pkgmap");
             fix_rel_import_path_with_file(&pkg.pkg_root, &mut m, file, &pkgmap, opts, sess.clone());
+            let m = Arc::new(m.clone());
+            match &mut module_cache.write() {
+                Ok(module_cache) => module_cache.ast_cache.insert(file.canonicalize(), m),
+                Err(e) => return Err(anyhow::anyhow!("Parse program failed: {e}")),
+            };
         }
 
         match pkgs.get_mut(&file.pkg_path) {
