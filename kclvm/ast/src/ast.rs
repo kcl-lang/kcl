@@ -39,6 +39,7 @@ use std::collections::HashMap;
 
 use compiler_base_span::{Loc, Span};
 use std::fmt::Debug;
+use std::sync::Arc;
 use uuid;
 
 use super::token;
@@ -374,9 +375,33 @@ pub struct SymbolSelectorSpec {
 
 /// Program is the AST collection of all files of the running KCL program.
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
-pub struct Program {
+pub struct SerializeProgram {
     pub root: String,
     pub pkgs: HashMap<String, Vec<Module>>,
+}
+
+impl Into<SerializeProgram> for Program {
+    fn into(self) -> SerializeProgram {
+        SerializeProgram {
+            root: self.root,
+            pkgs: self
+                .pkgs
+                .iter()
+                .map(|(name, modules)| {
+                    (
+                        name.clone(),
+                        modules.iter().map(|m| m.as_ref().clone()).collect(),
+                    )
+                })
+                .collect(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Program {
+    pub root: String,
+    pub pkgs: HashMap<String, Vec<Arc<Module>>>,
 }
 
 impl Program {
@@ -388,9 +413,9 @@ impl Program {
         }
     }
     /// Get the first module in the main package.
-    pub fn get_main_package_first_module(&self) -> Option<&Module> {
+    pub fn get_main_package_first_module(&self) -> Option<Arc<Module>> {
         match self.pkgs.get(crate::MAIN_PKG) {
-            Some(modules) => modules.first(),
+            Some(modules) => modules.first().cloned(),
             None => None,
         }
     }

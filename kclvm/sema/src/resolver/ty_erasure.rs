@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use kclvm_ast::walker::MutSelfMutWalker;
 use kclvm_ast::{ast, walk_if_mut, walk_list_mut};
 
@@ -68,7 +70,8 @@ impl<'ctx> MutSelfMutWalker<'ctx> for TypeErasureTransformer {
 pub fn type_func_erasure_pass<'ctx>(program: &'ctx mut ast::Program) {
     for (_, modules) in program.pkgs.iter_mut() {
         for module in modules.iter_mut() {
-            TypeErasureTransformer::default().walk_module(module);
+            let mut m = Arc::make_mut(module);
+            TypeErasureTransformer::default().walk_module(&mut m);
         }
     }
 }

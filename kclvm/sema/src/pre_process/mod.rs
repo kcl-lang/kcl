@@ -3,6 +3,8 @@ mod identifier;
 mod lit_ty_default_value;
 mod multi_assign;
 
+use std::sync::Arc;
+
 use indexmap::IndexMap;
 use kclvm_ast::ast;
 
@@ -34,6 +36,7 @@ pub fn pre_process_program(program: &mut ast::Program, opts: &Options) {
             if pkgpath != kclvm_ast::MAIN_PKG {
                 import_names.clear();
             }
+            let module = Arc::make_mut(module);
             // First we should transform the raw identifier to avoid raw identifier that happens to be a package path.
             fix_raw_identifier_prefix(module);
             fix_qualified_identifier(module, &mut import_names);

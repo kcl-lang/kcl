@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use anyhow::Ok;
 use generational_arena::Index;
-use kclvm_ast::ast::{self, CallExpr, ConfigEntry, NodeRef};
+use kclvm_ast::ast::{self, CallExpr, ConfigEntry, Module, NodeRef};
 use kclvm_ast::walker::TypedResultWalker;
 use kclvm_runtime::{
     schema_assert, schema_runtime_type, ConfigEntryOperationKind, DecoratorValue, RuntimeErrorType,
@@ -233,7 +233,11 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             if let Some(modules) = self.program.pkgs.get(&import_stmt.path.node) {
                 self.push_pkgpath(&pkgpath);
                 self.init_scope(&pkgpath);
-                self.compile_ast_modules(modules);
+                let modules: Vec<Module> = modules
+                    .iter()
+                    .map(|arc| arc.clone().as_ref().clone())
+                    .collect();
+                self.compile_ast_modules(&modules);
                 self.pop_pkgpath();
             }
         }

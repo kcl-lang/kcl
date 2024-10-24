@@ -34,7 +34,7 @@ pub fn parse_program(filename: &str) -> Result<ast::Program> {
     module.filename = filename.to_string();
 
     prog.pkgs
-        .insert(kclvm_ast::MAIN_PKG.to_string(), vec![module]);
+        .insert(kclvm_ast::MAIN_PKG.to_string(), vec![Arc::new(module)]);
 
     Ok(prog)
 }

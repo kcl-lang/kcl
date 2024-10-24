@@ -64,6 +64,8 @@
 //!         name == "Alice"
 //!         age > 10
 //! ```
+use std::sync::Arc;
+
 use super::expr_builder::ExprBuilder;
 pub use crate::util::loader::LoaderKind;
 use anyhow::Result;
@@ -209,7 +211,7 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool> {
     match compile_res.program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
         Some(pkg) => {
             if let Some(module) = pkg.first_mut() {
-                module.body.insert(0, assign_stmt);
+                Arc::make_mut(module).body.insert(0, assign_stmt);
             } else {
                 return Err(anyhow::anyhow!("No main module found"));
             }

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ffi::OsStr, path::Path};
+use std::{collections::HashMap, ffi::OsStr, path::Path, sync::Arc};
 
 use anyhow::{anyhow, bail, Result};
 use assembler::KclvmLibAssembler;
@@ -248,7 +248,7 @@ pub fn execute(
 /// **Note that it is not thread safe.**
 pub fn execute_module(m: Module) -> Result<ExecProgramResult> {
     let mut pkgs = HashMap::new();
-    pkgs.insert(MAIN_PKG.to_string(), vec![m]);
+    pkgs.insert(MAIN_PKG.to_string(), vec![Arc::new(m)]);
 
     let prog = Program {
         root: MAIN_PKG.to_string(),

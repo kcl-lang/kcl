@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::info::is_private_field;
 use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::walker::MutSelfMutWalker;
@@ -127,7 +129,8 @@ impl ConfigMergeTransformer {
         // 1. Collect merged config
         if let Some(modules) = program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
             for (module_id, module) in modules.iter_mut().enumerate() {
-                for (i, stmt) in module.body.iter_mut().enumerate() {
+                let filename = module.filename.to_string();
+                for (i, stmt) in Arc::make_mut(module).body.iter_mut().enumerate() {
                     match &mut stmt.node {
                         ast::Stmt::Unification(unification_stmt)
                             if !unification_stmt.target.node.names.is_empty() =>
@@ -135,7 +138,7 @@ impl ConfigMergeTransformer {
                             let name = &unification_stmt.target.node.names[0].node;
                             match name_declaration_mapping.get_mut(name) {
                                 Some(declarations) => declarations.push((
-                                    module.filename.to_string(),
+                                    filename.clone(),
                                     module_id,
                                     i,
                                     ConfigMergeKind::Union,
@@ -144,7 +147,7 @@ impl ConfigMergeTransformer {
                                     name_declaration_mapping.insert(
                                         name.to_string(),
                                         vec![(
-                                            module.filename.to_string(),
+                                            filename.clone(),
                                             module_id,
                                             i,
                                             ConfigMergeKind::Union,
@@ -164,7 +167,7 @@ impl ConfigMergeTransformer {
                                                 if is_private_field(name) {
                                                     declarations.clear();
                                                     declarations.push((
-                                                        module.filename.to_string(),
+                                                        filename.clone(),
                                                         module_id,
                                                         i,
                                                         ConfigMergeKind::Override,
@@ -175,7 +178,7 @@ impl ConfigMergeTransformer {
                                                 name_declaration_mapping.insert(
                                                     name.to_string(),
                                                     vec![(
-                                                        module.filename.to_string(),
+                                                        filename.clone(),
                                                         module_id,
                                                         i,
                                                         ConfigMergeKind::Override,
@@ -202,7 +205,7 @@ impl ConfigMergeTransformer {
                     if let Some(modules) = program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
                         for (module_id, module) in modules.iter_mut().enumerate() {
                             if &module.filename == merged_filename && module_id == *merged_id {
-                                let stmt = module.body.get_mut(*index).unwrap();
+                                let stmt = Arc::make_mut(module).body.get_mut(*index).unwrap();
                                 match &mut stmt.node {
                                     ast::Stmt::Unification(unification_stmt)
                                         if matches!(kind, ConfigMergeKind::Union) =>
@@ -239,7 +242,7 @@ impl ConfigMergeTransformer {
                 if let Some(modules) = program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
                     for (module_id, module) in modules.iter_mut().enumerate() {
                         if &module.filename == filename && module_id == *merged_id {
-                            if let Some(stmt) = module.body.get_mut(*merged_index) {
+                            if let Some(stmt) = Arc::make_mut(module).body.get_mut(*merged_index) {
                                 match &mut stmt.node {
                                     ast::Stmt::Unification(unification_stmt)
                                         if matches!(merged_kind, ConfigMergeKind::Union) =>
@@ -294,7 +297,7 @@ impl ConfigMergeTransformer {
                 let mut body: Vec<(usize, &ast::NodeRef<ast::Stmt>)> =
                     module.body.iter().enumerate().collect();
                 body.retain(|(idx, _)| !delete_index_set.contains(idx));
-                module.body = body
+                Arc::make_mut(module).body = body
                     .iter()
                     .map(|(_, stmt)| (*stmt).clone())
                     .collect::<Vec<ast::NodeRef<ast::Stmt>>>();

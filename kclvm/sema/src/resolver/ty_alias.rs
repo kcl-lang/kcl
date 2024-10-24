@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use indexmap::IndexMap;
 use kclvm_ast::ast::Node;
 use kclvm_ast::walker::MutSelfMutWalker;
@@ -149,7 +151,11 @@ pub fn type_alias_pass(
     for (pkgpath, modules) in program.pkgs.iter_mut() {
         for module in modules.iter_mut() {
             if let Some(type_alias_mapping) = type_alias_mapping.get(pkgpath) {
-                fix_type_alias_identifier(pkgpath, module, type_alias_mapping.clone());
+                fix_type_alias_identifier(
+                    pkgpath,
+                    Arc::make_mut(module),
+                    type_alias_mapping.clone(),
+                );
             }
         }
     }

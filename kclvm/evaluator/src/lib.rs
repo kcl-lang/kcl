@@ -38,7 +38,7 @@ use std::{cell::RefCell, panic::UnwindSafe};
 
 use crate::error as kcl_error;
 use anyhow::Result;
-use kclvm_ast::ast::{self, AstIndex};
+use kclvm_ast::ast::{self, AstIndex, Module};
 use kclvm_runtime::{Context, ValueRef};
 
 /// SCALAR_KEY denotes the temp scalar key for the global variable json plan process.
@@ -153,7 +153,11 @@ impl<'ctx> Evaluator<'ctx> {
     pub fn run(self: &Evaluator<'ctx>) -> Result<(String, String)> {
         if let Some(modules) = self.program.pkgs.get(kclvm_ast::MAIN_PKG) {
             self.init_scope(kclvm_ast::MAIN_PKG);
-            self.compile_ast_modules(modules);
+            let modules: Vec<Module> = modules
+                .iter()
+                .map(|arc| arc.clone().as_ref().clone())
+                .collect();
+            self.compile_ast_modules(&modules);
         }
         Ok(self.plan_globals_to_string())
     }
@@ -165,7 +169,11 @@ impl<'ctx> Evaluator<'ctx> {
     pub fn run_as_function(self: &Evaluator<'ctx>) -> ValueRef {
         if let Some(modules) = self.program.pkgs.get(kclvm_ast::MAIN_PKG) {
             self.init_scope(kclvm_ast::MAIN_PKG);
-            self.compile_ast_modules(modules)
+            let modules: Vec<Module> = modules
+                .iter()
+                .map(|arc| arc.clone().as_ref().clone())
+                .collect();
+            self.compile_ast_modules(&modules)
         } else {
             ValueRef::undefined()
         }

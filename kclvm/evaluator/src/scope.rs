@@ -4,7 +4,7 @@ use crate::{
     error as kcl_error, lazy::LazyEvalScope, rule::RuleEvalContextRef, schema::SchemaEvalContextRef,
 };
 use indexmap::{IndexMap, IndexSet};
-use kclvm_ast::ast;
+use kclvm_ast::ast::{self, Module};
 use kclvm_ast::walker::TypedResultWalker;
 use kclvm_runtime::{ValueRef, _kclvm_get_fn_ptr_by_name, MAIN_PKG_PATH};
 use kclvm_sema::{builtin, plugin};
@@ -39,20 +39,31 @@ impl<'ctx> Evaluator<'ctx> {
         }
         let msg = format!("pkgpath {} is not found", pkgpath);
         // Get the AST module list in the package path.
-        let module_list: &Vec<ast::Module> = if self.program.pkgs.contains_key(pkgpath) {
-            self.program.pkgs.get(pkgpath).expect(&msg)
+        let module_list: Vec<ast::Module> = if self.program.pkgs.contains_key(pkgpath) {
+            let modules = self.program.pkgs.get(pkgpath).expect(&msg);
+            let modules: Vec<Module> = modules
+                .iter()
+                .map(|arc| arc.clone().as_ref().clone())
+                .collect();
+            modules
         } else if pkgpath.starts_with(kclvm_runtime::PKG_PATH_PREFIX)
             && self.program.pkgs.contains_key(&pkgpath[1..])
         {
-            self.program
+            let modules = self
+                .program
                 .pkgs
                 .get(&pkgpath[1..])
-                .expect(kcl_error::INTERNAL_ERROR_MSG)
+                .expect(kcl_error::INTERNAL_ERROR_MSG);
+            let modules: Vec<Module> = modules
+                .iter()
+                .map(|arc| arc.clone().as_ref().clone())
+                .collect();
+            modules
         } else {
             panic!("pkgpath {} not found", pkgpath);
         };
         // Init all global types including schema and rule.
-        for module in module_list {
+        for module in &module_list {
             for stmt in &module.body {
                 let name = match &stmt.node {
                     ast::Stmt::Schema(schema_stmt) => schema_stmt.name.node.clone(),
