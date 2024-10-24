@@ -32,7 +32,6 @@ pub fn parse_program(filename: &str) -> Result<ast::Program> {
 
     let mut module = parse_file_force_errors(abspath.to_str().unwrap(), None)?;
     module.filename = filename.to_string();
-    module.name = kclvm_ast::MAIN_PKG.to_string();
 
     prog.pkgs
         .insert(kclvm_ast::MAIN_PKG.to_string(), vec![module]);

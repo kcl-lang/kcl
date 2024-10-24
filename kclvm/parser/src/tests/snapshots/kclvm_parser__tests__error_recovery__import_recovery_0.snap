@@ -5,7 +5,6 @@ expression: "crate::tests::parsing_module_string(r#\"import json as j.a\"#)"
 Module {
     filename: "",
     doc: None,
-    name: "",
     body: [
         Node {
             node: Import(

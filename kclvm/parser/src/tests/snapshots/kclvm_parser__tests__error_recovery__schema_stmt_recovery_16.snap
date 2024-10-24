@@ -5,7 +5,6 @@ expression: "crate::tests::parsing_module_string(r#\"schema A:\na!!: int \"#)"
 Module {
     filename: "",
     doc: None,
-    name: "",
     body: [
         Node {
             node: Schema(

@@ -201,7 +201,6 @@ pub fn parse_file_with_session(
     let mut p = parser::Parser::new(&sess, stream);
     let mut m = p.parse_module();
     m.filename = filename.to_string().adjust_canonicalization();
-    m.name = kclvm_ast::MAIN_PKG.to_string();
 
     Ok(m)
 }
