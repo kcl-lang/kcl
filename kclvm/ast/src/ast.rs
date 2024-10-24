@@ -423,7 +423,6 @@ impl Program {
 pub struct Module {
     pub filename: String,
     pub doc: Option<NodeRef<String>>,
-    pub name: String,
     pub body: Vec<NodeRef<Stmt>>,
     pub comments: Vec<NodeRef<Comment>>,
 }

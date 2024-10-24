@@ -5,7 +5,6 @@ expression: "crate::tests::parsing_module_string(r#\"if True: a = 1\nelse if Fal
 Module {
     filename: "",
     doc: None,
-    name: "",
     body: [
         Node {
             node: If(

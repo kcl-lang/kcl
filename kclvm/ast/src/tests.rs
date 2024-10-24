@@ -180,7 +180,6 @@ fn test_filter_schema_with_no_schema() {
     let ast_mod = Module {
         filename: "".to_string(),
         doc: Some(node_ref!("".to_string())),
-        name: "".to_string(),
         body: vec![],
         comments: vec![],
     };
@@ -193,7 +192,6 @@ fn test_filter_schema_with_one_schema() {
     let mut ast_mod = Module {
         filename: "".to_string(),
         doc: Some(node_ref!("".to_string())),
-        name: "".to_string(),
         body: vec![],
         comments: vec![],
     };
@@ -209,7 +207,6 @@ fn test_filter_schema_with_mult_schema() {
     let mut ast_mod = Module {
         filename: "".to_string(),
         doc: Some(node_ref!("".to_string())),
-        name: "".to_string(),
         body: vec![],
         comments: vec![],
     };

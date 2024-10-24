@@ -5,7 +5,6 @@ expression: "crate::tests::parsing_file_ast_json(\"hello.k\",\n    r####\"\n# co
 {
   "filename": "hello.k",
   "doc": null,
-  "name": "__main__",
   "body": [
     {
       "node": {

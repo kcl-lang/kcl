@@ -5,7 +5,6 @@ expression: "crate::tests::parsing_module_string(r#\"@deprecated\nschema A:\n   
 Module {
     filename: "",
     doc: None,
-    name: "",
     body: [
         Node {
             node: Schema(

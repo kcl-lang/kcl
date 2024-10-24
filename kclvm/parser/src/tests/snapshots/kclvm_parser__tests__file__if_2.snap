@@ -5,7 +5,6 @@ expression: "crate::tests::parsing_file_string(\"testdata/if-02.k\")"
 {
   "filename": "if-02.k",
   "doc": null,
-  "name": "__main__",
   "body": [
     {
       "node": {

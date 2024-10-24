@@ -5,7 +5,6 @@ expression: "crate::tests::parsing_file_string(\"testdata/config_expr-03.k\")"
 {
   "filename": "config_expr-03.k",
   "doc": null,
-  "name": "__main__",
   "body": [
     {
       "node": {
