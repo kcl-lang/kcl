@@ -38,11 +38,25 @@ appConfiguration = AppConfiguration {
     overQuota: True
 }
 # Comment Nine
+# Deprecated
+@Deprecated()
 schema Foo:
+    mixin [
+        # AMixin
+        AMixin,
+        # BMixin
+        BMixin
+    ]
     # Comment for index signature
     [k: str]: int
     # Comment for `x` field
     x: int
+
+    check:
+        # x > 0
+        x > 0
+        # x < 0
+        x < 0
 
 # Comment One
 config = {
@@ -53,4 +67,27 @@ config = {
     key2 = "value2"
     # Comment Five
     key3 = "value3"
+    # Comment Six
+    "key4" = "value4"
+    # Comment Seven
+    key5.v = "value5"
+    # Comment Eight
+    **key6
+    # Comment Nine
+    if True:
+        # Comment Ten
+        key7 = "value7"
 }
+# Comment One
+data = [
+    # Comment Two
+    # Comment Three
+    1
+    # Comment Four
+    if True:
+        # Comment Five
+        2
+    # Comment Six
+    # Comment Seven
+    *[3, 4]
+]
