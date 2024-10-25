@@ -1,6 +1,3 @@
-[submodule "plugins"]
-	path = plugins
-	url = https://github.com/kcl-lang/kcl-plugin
 [submodule "test/integration/konfig"]
 	path = test/integration/konfig
 	url = https://github.com/KusionStack/konfig.git
