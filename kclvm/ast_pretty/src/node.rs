@@ -163,6 +163,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         interleave!(
             || self.write_newline(),
             |expr: &ast::NodeRef<CallExpr>| {
+                self.write_comments_before_node(&expr);
                 self.write("@");
                 self.walk_call_expr(&expr.node);
             },
@@ -212,7 +213,10 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
                     self.write(",");
                     self.write_newline();
                 },
-                |mixin_name: &ast::NodeRef<ast::Identifier>| self.walk_identifier(&mixin_name.node),
+                |mixin_name: &ast::NodeRef<ast::Identifier>| {
+                    self.write_comments_before_node(&mixin_name);
+                    self.walk_identifier(&mixin_name.node);
+                },
                 schema_stmt.mixins
             );
             self.write_indentation(Indentation::Dedent);
@@ -249,7 +253,10 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             self.write_indentation(Indentation::IndentWithNewline);
             interleave!(
                 || self.write_newline(),
-                |check_expr: &ast::NodeRef<ast::CheckExpr>| self.walk_check_expr(&check_expr.node),
+                |check_expr: &ast::NodeRef<ast::CheckExpr>| {
+                    self.write_comments_before_node(&check_expr);
+                    self.walk_check_expr(&check_expr.node);
+                },
                 schema_stmt.checks
             );
             self.write_newline_without_fill();
@@ -303,7 +310,10 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         if !rule_stmt.checks.is_empty() {
             interleave!(
                 || self.write_newline(),
-                |check_expr: &ast::NodeRef<ast::CheckExpr>| self.walk_check_expr(&check_expr.node),
+                |check_expr: &ast::NodeRef<ast::CheckExpr>| {
+                    self.write_comments_before_node(&check_expr);
+                    self.walk_check_expr(&check_expr.node);
+                },
                 rule_stmt.checks
             );
             self.write_newline_without_fill();
@@ -343,6 +353,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         interleave!(
             || self.write_newline(),
             |expr: &ast::NodeRef<CallExpr>| {
+                self.write_comments_before_node(&expr);
                 self.write("@");
                 self.walk_call_expr(&expr.node)
             },
@@ -482,7 +493,10 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             } else {
                 self.write_newline();
             },
-            |elt| self.expr(elt),
+            |elt| {
+                self.write_comments_before_node(elt);
+                self.expr(elt);
+            },
             list_expr.elts
         );
         if !in_one_line {
@@ -510,7 +524,10 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         self.write_indentation(Indentation::IndentWithNewline);
         interleave!(
             || self.write_newline(),
-            |expr| self.expr(expr),
+            |expr| {
+                self.write_comments_before_node(expr);
+                self.expr(expr);
+            },
             list_if_item_expr.exprs
         );
         self.write_indentation(Indentation::Dedent);
@@ -522,7 +539,10 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
                     self.write_indentation(Indentation::IndentWithNewline);
                     interleave!(
                         || self.write_newline(),
-                        |expr| self.expr(expr),
+                        |expr| {
+                            self.write_comments_before_node(expr);
+                            self.expr(expr);
+                        },
                         list_expr.elts
                     );
                     self.write_indentation(Indentation::Dedent);
@@ -881,6 +901,7 @@ impl<'p> Printer<'p> {
                 self.write(&"}".repeat(print_right_brace_count));
             }
             None => {
+                self.write_comments_before_node(&item);
                 if !matches!(&item.node.value.node, ast::Expr::ConfigIfEntry(_)) {
                     self.write("**");
                 }
@@ -916,6 +937,7 @@ impl<'p> Printer<'p> {
                 count
             }
             _ => {
+                self.write_comments_before_node(key);
                 self.expr(key);
                 0
             }
