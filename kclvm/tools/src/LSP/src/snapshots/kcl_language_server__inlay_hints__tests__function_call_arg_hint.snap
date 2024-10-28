@@ -19,8 +19,26 @@ Some(
                     },
                 ],
             ),
-            kind: None,
-            text_edits: None,
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 0,
+                                character: 1,
+                            },
+                            end: Position {
+                                line: 0,
+                                character: 1,
+                            },
+                        },
+                        new_text: ": int",
+                    },
+                ],
+            ),
             tooltip: None,
             padding_left: None,
             padding_right: None,
@@ -41,8 +59,26 @@ Some(
                     },
                 ],
             ),
-            kind: None,
-            text_edits: None,
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 2,
+                                character: 4,
+                            },
+                            end: Position {
+                                line: 2,
+                                character: 4,
+                            },
+                        },
+                        new_text: ": (any, any, any) -> any",
+                    },
+                ],
+            ),
             tooltip: None,
             padding_left: None,
             padding_right: None,
@@ -63,8 +99,26 @@ Some(
                     },
                 ],
             ),
-            kind: None,
-            text_edits: None,
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 6,
+                                character: 1,
+                            },
+                            end: Position {
+                                line: 6,
+                                character: 1,
+                            },
+                        },
+                        new_text: ": any",
+                    },
+                ],
+            ),
             tooltip: None,
             padding_left: None,
             padding_right: None,
@@ -85,7 +139,9 @@ Some(
                     },
                 ],
             ),
-            kind: None,
+            kind: Some(
+                Parameter,
+            ),
             text_edits: None,
             tooltip: None,
             padding_left: None,
@@ -107,7 +163,9 @@ Some(
                     },
                 ],
             ),
-            kind: None,
+            kind: Some(
+                Parameter,
+            ),
             text_edits: None,
             tooltip: None,
             padding_left: None,
@@ -129,8 +187,26 @@ Some(
                     },
                 ],
             ),
-            kind: None,
-            text_edits: None,
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 8,
+                                character: 1,
+                            },
+                            end: Position {
+                                line: 8,
+                                character: 1,
+                            },
+                        },
+                        new_text: ": int",
+                    },
+                ],
+            ),
             tooltip: None,
             padding_left: None,
             padding_right: None,
@@ -151,8 +227,26 @@ Some(
                     },
                 ],
             ),
-            kind: None,
-            text_edits: None,
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 9,
+                                character: 2,
+                            },
+                            end: Position {
+                                line: 9,
+                                character: 2,
+                            },
+                        },
+                        new_text: ": any",
+                    },
+                ],
+            ),
             tooltip: None,
             padding_left: None,
             padding_right: None,
@@ -173,7 +267,345 @@ Some(
                     },
                 ],
             ),
-            kind: None,
+            kind: Some(
+                Parameter,
+            ),
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 11,
+                character: 1,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: ": int",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 11,
+                                character: 1,
+                            },
+                            end: Position {
+                                line: 11,
+                                character: 1,
+                            },
+                        },
+                        new_text: ": int",
+                    },
+                ],
+            ),
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 11,
+                character: 12,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: "sub: ",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: Some(
+                Parameter,
+            ),
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 11,
+                character: 19,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: "start: ",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: Some(
+                Parameter,
+            ),
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 11,
+                character: 22,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: "end: ",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: Some(
+                Parameter,
+            ),
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 12,
+                character: 1,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: ": int",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 12,
+                                character: 1,
+                            },
+                            end: Position {
+                                line: 12,
+                                character: 1,
+                            },
+                        },
+                        new_text: ": int",
+                    },
+                ],
+            ),
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 12,
+                character: 12,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: "sub: ",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: Some(
+                Parameter,
+            ),
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 12,
+                character: 19,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: "start: ",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: Some(
+                Parameter,
+            ),
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 12,
+                character: 22,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: "end: ",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: Some(
+                Parameter,
+            ),
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 13,
+                character: 1,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: ": int",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 13,
+                                character: 1,
+                            },
+                            end: Position {
+                                line: 13,
+                                character: 1,
+                            },
+                        },
+                        new_text: ": int",
+                    },
+                ],
+            ),
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 13,
+                character: 12,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: "sub: ",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: Some(
+                Parameter,
+            ),
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 13,
+                character: 19,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: "start: ",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: Some(
+                Parameter,
+            ),
+            text_edits: None,
+            tooltip: None,
+            padding_left: None,
+            padding_right: None,
+            data: None,
+        },
+        InlayHint {
+            position: Position {
+                line: 13,
+                character: 22,
+            },
+            label: LabelParts(
+                [
+                    InlayHintLabelPart {
+                        value: "end: ",
+                        tooltip: None,
+                        location: None,
+                        command: None,
+                    },
+                ],
+            ),
+            kind: Some(
+                Parameter,
+            ),
             text_edits: None,
             tooltip: None,
             padding_left: None,

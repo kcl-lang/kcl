@@ -19,8 +19,26 @@ Some(
                     },
                 ],
             ),
-            kind: None,
-            text_edits: None,
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 0,
+                                character: 1,
+                            },
+                            end: Position {
+                                line: 0,
+                                character: 1,
+                            },
+                        },
+                        new_text: ": int",
+                    },
+                ],
+            ),
             tooltip: None,
             padding_left: None,
             padding_right: None,
@@ -41,8 +59,26 @@ Some(
                     },
                 ],
             ),
-            kind: None,
-            text_edits: None,
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 1,
+                                character: 1,
+                            },
+                            end: Position {
+                                line: 1,
+                                character: 1,
+                            },
+                        },
+                        new_text: ": str",
+                    },
+                ],
+            ),
             tooltip: None,
             padding_left: None,
             padding_right: None,
@@ -63,8 +99,26 @@ Some(
                     },
                 ],
             ),
-            kind: None,
-            text_edits: None,
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 2,
+                                character: 1,
+                            },
+                            end: Position {
+                                line: 2,
+                                character: 1,
+                            },
+                        },
+                        new_text: ": str",
+                    },
+                ],
+            ),
             tooltip: None,
             padding_left: None,
             padding_right: None,
@@ -85,8 +139,26 @@ Some(
                     },
                 ],
             ),
-            kind: None,
-            text_edits: None,
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 3,
+                                character: 1,
+                            },
+                            end: Position {
+                                line: 3,
+                                character: 1,
+                            },
+                        },
+                        new_text: ": (int) -> int",
+                    },
+                ],
+            ),
             tooltip: None,
             padding_left: None,
             padding_right: None,
@@ -107,8 +179,26 @@ Some(
                     },
                 ],
             ),
-            kind: None,
-            text_edits: None,
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 10,
+                                character: 1,
+                            },
+                            end: Position {
+                                line: 10,
+                                character: 1,
+                            },
+                        },
+                        new_text: ": Name",
+                    },
+                ],
+            ),
             tooltip: None,
             padding_left: None,
             padding_right: None,
@@ -129,8 +219,26 @@ Some(
                     },
                 ],
             ),
-            kind: None,
-            text_edits: None,
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 13,
+                                character: 2,
+                            },
+                            end: Position {
+                                line: 13,
+                                character: 2,
+                            },
+                        },
+                        new_text: ": Name",
+                    },
+                ],
+            ),
             tooltip: None,
             padding_left: None,
             padding_right: None,
@@ -151,8 +259,26 @@ Some(
                     },
                 ],
             ),
-            kind: None,
-            text_edits: None,
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 14,
+                                character: 4,
+                            },
+                            end: Position {
+                                line: 14,
+                                character: 4,
+                            },
+                        },
+                        new_text: ": any",
+                    },
+                ],
+            ),
             tooltip: None,
             padding_left: None,
             padding_right: None,
@@ -173,8 +299,26 @@ Some(
                     },
                 ],
             ),
-            kind: None,
-            text_edits: None,
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 16,
+                                character: 1,
+                            },
+                            end: Position {
+                                line: 16,
+                                character: 1,
+                            },
+                        },
+                        new_text: ": str",
+                    },
+                ],
+            ),
             tooltip: None,
             padding_left: None,
             padding_right: None,
@@ -195,8 +339,26 @@ Some(
                     },
                 ],
             ),
-            kind: None,
-            text_edits: None,
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 17,
+                                character: 2,
+                            },
+                            end: Position {
+                                line: 17,
+                                character: 2,
+                            },
+                        },
+                        new_text: ": [int | str]",
+                    },
+                ],
+            ),
             tooltip: None,
             padding_left: None,
             padding_right: None,
@@ -217,8 +379,26 @@ Some(
                     },
                 ],
             ),
-            kind: None,
-            text_edits: None,
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 18,
+                                character: 2,
+                            },
+                            end: Position {
+                                line: 18,
+                                character: 2,
+                            },
+                        },
+                        new_text: ": {str:str}",
+                    },
+                ],
+            ),
             tooltip: None,
             padding_left: None,
             padding_right: None,
@@ -239,8 +419,26 @@ Some(
                     },
                 ],
             ),
-            kind: None,
-            text_edits: None,
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 21,
+                                character: 3,
+                            },
+                            end: Position {
+                                line: 21,
+                                character: 3,
+                            },
+                        },
+                        new_text: ": number_multiplier(1Ki)",
+                    },
+                ],
+            ),
             tooltip: None,
             padding_left: None,
             padding_right: None,
@@ -261,8 +459,26 @@ Some(
                     },
                 ],
             ),
-            kind: None,
-            text_edits: None,
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 23,
+                                character: 4,
+                            },
+                            end: Position {
+                                line: 23,
+                                character: 4,
+                            },
+                        },
+                        new_text: ": (any, any, any) -> any",
+                    },
+                ],
+            ),
             tooltip: None,
             padding_left: None,
             padding_right: None,
