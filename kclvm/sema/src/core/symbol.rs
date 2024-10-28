@@ -1,4 +1,7 @@
-use std::{collections::HashSet, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use generational_arena::Arena;
 use indexmap::{IndexMap, IndexSet};
@@ -44,8 +47,6 @@ pub trait Symbol {
         module_info: Option<&ModuleInfo>,
     ) -> Vec<SymbolRef>;
 
-    fn get_hint(&self) -> Option<&Self::SymbolHint>;
-
     fn simple_dump(&self) -> String;
 
     fn full_dump(&self, data: &Self::SymbolData) -> Option<String>;
@@ -75,6 +76,7 @@ pub struct SymbolData {
     pub(crate) comments: Arena<CommentOrDocSymbol>,
     pub(crate) decorators: Arena<DecoratorSymbol>,
     pub(crate) functions: Arena<FunctionSymbol>,
+    pub(crate) hints: HashMap<String, Vec<SymbolHint>>,
 
     pub(crate) symbols_info: SymbolDB,
 }
@@ -866,6 +868,15 @@ impl SymbolData {
         symbol_ref
     }
 
+    pub fn alloc_hint(&mut self, hint: SymbolHint, pkg_name: String) {
+        match self.hints.get_mut(&pkg_name) {
+            Some(hints) => hints.push(hint),
+            None => {
+                self.hints.insert(pkg_name, vec![hint]);
+            }
+        }
+    }
+
     #[inline]
     pub fn get_node_symbol_map(&self) -> &IndexMap<NodeKey, SymbolRef> {
         &self.symbols_info.node_symbol_map
@@ -893,6 +904,7 @@ impl SymbolData {
             if let Some(symbols) = self.symbols_info.pkg_symbol_map.get(invalidate_pkg) {
                 to_remove.extend(symbols.iter().cloned());
             }
+            self.hints.remove(invalidate_pkg);
         }
         for symbol in to_remove {
             self.remove_symbol(&symbol);
@@ -1150,10 +1162,6 @@ impl Symbol for SchemaSymbol {
         self.get_attribute(name, data, module_info).is_some()
     }
 
-    fn get_hint(&self) -> Option<&Self::SymbolHint> {
-        None
-    }
-
     fn simple_dump(&self) -> String {
         let mut output = "{\n".to_string();
         output.push_str("\"kind\": \"SchemaSymbol\",\n");
@@ -1297,7 +1305,6 @@ pub struct ValueSymbol {
     pub(crate) owner: Option<SymbolRef>,
     pub(crate) sema_info: SymbolSemanticInfo,
     pub(crate) r#ref: HashSet<SymbolRef>,
-    pub(crate) hint: Option<SymbolHint>,
     pub(crate) is_global: bool,
 }
 
@@ -1365,10 +1372,6 @@ impl Symbol for ValueSymbol {
         self.get_attribute(name, data, module_info).is_some()
     }
 
-    fn get_hint(&self) -> Option<&Self::SymbolHint> {
-        self.hint.as_ref()
-    }
-
     fn simple_dump(&self) -> String {
         let mut output = "{\n".to_string();
         output.push_str("\"kind\": \"ValueSymbol\",\n");
@@ -1425,7 +1428,6 @@ impl ValueSymbol {
             owner,
             sema_info: SymbolSemanticInfo::default(),
             is_global,
-            hint: None,
             r#ref: HashSet::default(),
         }
     }
@@ -1510,10 +1512,6 @@ impl Symbol for AttributeSymbol {
         module_info: Option<&ModuleInfo>,
     ) -> bool {
         self.get_attribute(name, data, module_info).is_some()
-    }
-
-    fn get_hint(&self) -> Option<&Self::SymbolHint> {
-        None
     }
 
     fn simple_dump(&self) -> String {
@@ -1654,10 +1652,6 @@ impl Symbol for PackageSymbol {
         self.members.contains_key(name)
     }
 
-    fn get_hint(&self) -> Option<&Self::SymbolHint> {
-        None
-    }
-
     fn simple_dump(&self) -> String {
         let mut output = "{\n".to_string();
         output.push_str("\"kind\": \"PackageSymbol\",\n");
@@ -1790,10 +1784,6 @@ impl Symbol for TypeAliasSymbol {
         self.get_attribute(name, data, module_info).is_some()
     }
 
-    fn get_hint(&self) -> Option<&Self::SymbolHint> {
-        None
-    }
-
     fn simple_dump(&self) -> String {
         let mut output = "{\n".to_string();
         output.push_str("\"kind\": \"TypeAliasSymbol\",\n");
@@ -1916,10 +1906,6 @@ impl Symbol for RuleSymbol {
         false
     }
 
-    fn get_hint(&self) -> Option<&Self::SymbolHint> {
-        None
-    }
-
     fn simple_dump(&self) -> String {
         let mut output = "{\n".to_string();
         output.push_str("\"kind\": \"RuleSymbol\",\n");
@@ -1997,7 +1983,6 @@ pub struct UnresolvedSymbol {
     pub(crate) end: Position,
     pub(crate) owner: Option<SymbolRef>,
     pub(crate) sema_info: SymbolSemanticInfo,
-    pub(crate) hint: Option<SymbolHint>,
     pub(crate) is_type: bool,
     pub(crate) r#ref: HashSet<SymbolRef>,
 }
@@ -2073,10 +2058,6 @@ impl Symbol for UnresolvedSymbol {
         &self.sema_info
     }
 
-    fn get_hint(&self) -> Option<&Self::SymbolHint> {
-        self.hint.as_ref()
-    }
-
     fn simple_dump(&self) -> String {
         let mut output = "{\n".to_string();
         output.push_str("\"kind\": \"UnresolvedSymbol\",\n");
@@ -2129,7 +2110,6 @@ impl UnresolvedSymbol {
             end,
             sema_info: SymbolSemanticInfo::default(),
             owner,
-            hint: None,
             is_type,
             r#ref: HashSet::default(),
         }
@@ -2165,7 +2145,6 @@ pub struct ExpressionSymbol {
     pub(crate) name: String,
 
     pub(crate) sema_info: SymbolSemanticInfo,
-    pub(crate) hint: Option<SymbolHint>,
     pub(crate) r#ref: HashSet<SymbolRef>,
 }
 
@@ -2236,10 +2215,6 @@ impl Symbol for ExpressionSymbol {
         &self.sema_info
     }
 
-    fn get_hint(&self) -> Option<&Self::SymbolHint> {
-        self.hint.as_ref()
-    }
-
     fn simple_dump(&self) -> String {
         let mut output = "{\n".to_string();
         output.push_str("\"kind\": \"ExpressionSymbol\",\n");
@@ -2284,7 +2259,6 @@ impl ExpressionSymbol {
             end,
             sema_info: SymbolSemanticInfo::default(),
             owner,
-            hint: None,
             r#ref: HashSet::default(),
         }
     }
@@ -2357,10 +2331,6 @@ impl Symbol for CommentOrDocSymbol {
         _module_info: Option<&ModuleInfo>,
     ) -> Vec<SymbolRef> {
         vec![]
-    }
-
-    fn get_hint(&self) -> Option<&Self::SymbolHint> {
-        None
     }
 
     fn simple_dump(&self) -> String {
@@ -2476,10 +2446,6 @@ impl Symbol for DecoratorSymbol {
         _module_info: Option<&ModuleInfo>,
     ) -> Vec<SymbolRef> {
         vec![]
-    }
-
-    fn get_hint(&self) -> Option<&Self::SymbolHint> {
-        None
     }
 
     fn simple_dump(&self) -> String {
@@ -2606,10 +2572,6 @@ impl Symbol for FunctionSymbol {
 
     fn get_sema_info(&self) -> &Self::SemanticInfo {
         &self.sema_info
-    }
-
-    fn get_hint(&self) -> Option<&Self::SymbolHint> {
-        None
     }
 
     fn simple_dump(&self) -> String {

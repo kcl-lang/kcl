@@ -2,7 +2,10 @@ use indexmap::IndexMap;
 use kclvm_ast::ast::AstIndex;
 use std::sync::Arc;
 
-use super::{scope::ScopeRef, symbol::SymbolRef};
+use super::{
+    scope::ScopeRef,
+    symbol::{SymbolHint, SymbolRef},
+};
 use crate::ty::Type;
 #[allow(unused)]
 #[derive(Debug, Default, Clone)]
@@ -25,6 +28,7 @@ pub struct FileSemanticInfo {
     pub(crate) scopes: Vec<ScopeRef>,
     pub(crate) symbol_locs: IndexMap<SymbolRef, CachedLocation>,
     pub(crate) local_scope_locs: IndexMap<ScopeRef, CachedRange>,
+    pub(crate) hints: Vec<SymbolHint>,
 }
 
 impl FileSemanticInfo {
@@ -35,6 +39,7 @@ impl FileSemanticInfo {
             scopes: vec![],
             symbol_locs: IndexMap::default(),
             local_scope_locs: IndexMap::default(),
+            hints: vec![],
         }
     }
 
@@ -56,6 +61,10 @@ impl FileSemanticInfo {
 
     pub fn get_symbols(&self) -> &Vec<SymbolRef> {
         &self.symbols
+    }
+
+    pub fn get_hints(&self) -> &Vec<SymbolHint> {
+        &self.hints
     }
 }
 

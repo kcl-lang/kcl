@@ -1,6 +1,5 @@
 ---
 source: tools/src/LSP/src/inlay_hints.rs
-assertion_line: 122
 expression: "format!(\"{:#?}\", res)"
 ---
 Some(
@@ -20,8 +19,26 @@ Some(
                     },
                 ],
             ),
-            kind: None,
-            text_edits: None,
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 1,
+                                character: 5,
+                            },
+                            end: Position {
+                                line: 1,
+                                character: 5,
+                            },
+                        },
+                        new_text: ": int",
+                    },
+                ],
+            ),
             tooltip: None,
             padding_left: None,
             padding_right: None,
@@ -42,8 +59,26 @@ Some(
                     },
                 ],
             ),
-            kind: None,
-            text_edits: None,
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 2,
+                                character: 5,
+                            },
+                            end: Position {
+                                line: 2,
+                                character: 5,
+                            },
+                        },
+                        new_text: ": str",
+                    },
+                ],
+            ),
             tooltip: None,
             padding_left: None,
             padding_right: None,
@@ -64,8 +99,26 @@ Some(
                     },
                 ],
             ),
-            kind: None,
-            text_edits: None,
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 4,
+                                character: 1,
+                            },
+                            end: Position {
+                                line: 4,
+                                character: 1,
+                            },
+                        },
+                        new_text: ": Person",
+                    },
+                ],
+            ),
             tooltip: None,
             padding_left: None,
             padding_right: None,
@@ -86,7 +139,9 @@ Some(
                     },
                 ],
             ),
-            kind: None,
+            kind: Some(
+                Parameter,
+            ),
             text_edits: None,
             tooltip: None,
             padding_left: None,
@@ -108,7 +163,9 @@ Some(
                     },
                 ],
             ),
-            kind: None,
+            kind: Some(
+                Parameter,
+            ),
             text_edits: None,
             tooltip: None,
             padding_left: None,

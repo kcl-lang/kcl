@@ -620,6 +620,20 @@ impl GlobalState {
             );
         }
 
+        for (_, hints) in &self.symbols.hints {
+            for hint in hints {
+                if file_sema_map_cache.contains_key(&hint.pos.filename) {
+                    continue;
+                }
+                let filename = &hint.pos.filename;
+                if !file_sema_map.contains_key(filename) {
+                    file_sema_map.insert(filename.clone(), FileSemanticInfo::new(filename.clone()));
+                }
+                let file_sema_info = file_sema_map.get_mut(filename).unwrap();
+                file_sema_info.hints.push(hint.clone());
+            }
+        }
+
         // remove dummy file
         file_sema_map.remove("");
 
