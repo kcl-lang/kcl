@@ -103,16 +103,16 @@ impl ValueRef {
         }
     }
 
-    pub fn to_yaml_string_with_options(&self, opt: &YamlEncodeOptions) -> String {
+    pub fn to_yaml_string_with_options(&self, opts: &YamlEncodeOptions) -> String {
         // convert Value to json in order to reuse
         // "crate::val_json::JsonValue" to customize the serialized results
-        let json_opt = JsonEncodeOptions {
-            sort_keys: opt.sort_keys,
+        let json_opts = JsonEncodeOptions {
+            sort_keys: opts.sort_keys,
             indent: 0,
-            ignore_private: opt.ignore_private,
-            ignore_none: opt.ignore_none,
+            ignore_private: opts.ignore_private,
+            ignore_none: opts.ignore_none,
         };
-        let json = self.to_json_string_with_options(&json_opt);
+        let json = self.to_json_string_with_options(&json_opts);
         let yaml_value: serde_yaml::Value = serde_json::from_str(json.as_ref()).unwrap();
         match serde_yaml::to_string(&yaml_value) {
             Ok(s) => {

@@ -22,6 +22,8 @@ pub struct PlanOptions {
     pub disable_empty_list: bool,
     /// Filter planned value with the path selector.
     pub query_paths: Vec<String>,
+    /// YAML plan separator string, default is `---`.
+    pub sep: Option<String>,
 }
 
 /// Filter list or config results with context options.
@@ -220,6 +222,11 @@ impl ValueRef {
         };
         if value.is_list_or_config() {
             let results = filter_results(ctx, &value);
+            let sep = ctx
+                .plan_opts
+                .sep
+                .clone()
+                .unwrap_or_else(|| "---".to_string());
             // Plan YAML result
             let yaml_result = results
                 .iter()
@@ -230,7 +237,7 @@ impl ValueRef {
                         .to_string()
                 })
                 .collect::<Vec<String>>()
-                .join(YAML_STREAM_SEP);
+                .join(&format!("\n{}\n", sep));
             // Plan JSON result
             let json_result = results
                 .iter()

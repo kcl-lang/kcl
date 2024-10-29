@@ -7,6 +7,7 @@ pub(crate) fn encode_yaml_stream_to_manifests(
     values: &ValueRef,
     opts: YamlEncodeOptions,
 ) {
+    // Update custom plan manifests output.
     ctx.buffer.custom_manifests_output = Some(
         values
             .as_list_ref()
@@ -16,6 +17,11 @@ pub(crate) fn encode_yaml_stream_to_manifests(
             .collect::<Vec<String>>()
             .join(&format!("\n{}\n", opts.sep)),
     );
+    // Update plan options.
+    ctx.plan_opts.disable_none = opts.ignore_none;
+    ctx.plan_opts.sort_keys = opts.sort_keys;
+    ctx.plan_opts.show_hidden = !opts.ignore_private;
+    ctx.plan_opts.sep = Some(opts.sep.clone())
 }
 
 #[cfg(test)]
