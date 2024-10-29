@@ -72,7 +72,7 @@ pub extern "C" fn kclvm_manifests_yaml_stream(
                         .as_bool(),
                     ignore_private: opts
                         .get_by_key("ignore_private")
-                        .unwrap_or_else(|| ValueRef::bool(false))
+                        .unwrap_or_else(|| ValueRef::bool(true))
                         .as_bool(),
                     ignore_none: opts
                         .get_by_key("ignore_none")

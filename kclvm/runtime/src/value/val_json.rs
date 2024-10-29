@@ -425,9 +425,9 @@ impl ValueRef {
         writer.to_str().unwrap().to_string()
     }
 
-    pub fn to_json_string_with_options(&self, opt: &JsonEncodeOptions) -> String {
-        let json = self.build_json(opt);
-        let formatter = JsonFormatter::with_indent(opt.indent);
+    pub fn to_json_string_with_options(&self, opts: &JsonEncodeOptions) -> String {
+        let json = self.build_json(opts);
+        let formatter = JsonFormatter::with_indent(opts.indent);
         let mut writer = Vec::with_capacity(128);
         let mut serializer = serde_json::Serializer::with_formatter(&mut writer, formatter);
         json.serialize(&mut serializer).unwrap();
@@ -444,7 +444,7 @@ impl ValueRef {
         writer.to_str().unwrap().to_string()
     }
 
-    pub(crate) fn build_json(&self, opt: &JsonEncodeOptions) -> JsonValue {
+    pub(crate) fn build_json(&self, opts: &JsonEncodeOptions) -> JsonValue {
         match &*self.rc.borrow() {
             crate::Value::undefined => JsonValue::Null,
             crate::Value::none => JsonValue::Null,
@@ -471,15 +471,15 @@ impl ValueRef {
                             continue;
                         }
                         crate::Value::none => {
-                            if !opt.ignore_none {
-                                val_array.push(x.build_json(opt));
+                            if !opts.ignore_none {
+                                val_array.push(x.build_json(opts));
                             }
                         }
                         crate::Value::func_value(_) => {
                             // ignore func
                         }
                         _ => {
-                            val_array.push(x.build_json(opt));
+                            val_array.push(x.build_json(opts));
                         }
                     }
                 }
@@ -488,11 +488,11 @@ impl ValueRef {
             crate::Value::dict_value(ref v) => {
                 let mut val_map = IndexMap::new();
                 let mut vals = v.values.clone();
-                if opt.sort_keys {
+                if opts.sort_keys {
                     vals.sort_keys();
                 }
                 for (key, val) in vals.iter() {
-                    if opt.ignore_private && (*key).starts_with(KCL_PRIVATE_VAR_PREFIX) {
+                    if opts.ignore_private && (*key).starts_with(KCL_PRIVATE_VAR_PREFIX) {
                         continue;
                     }
                     match *val.rc.borrow() {
@@ -500,15 +500,15 @@ impl ValueRef {
                             continue;
                         }
                         crate::Value::none => {
-                            if !opt.ignore_none {
-                                val_map.insert(key.clone(), val.build_json(opt));
+                            if !opts.ignore_none {
+                                val_map.insert(key.clone(), val.build_json(opts));
                             }
                         }
                         crate::Value::func_value(_) => {
                             // ignore func
                         }
                         _ => {
-                            val_map.insert(key.clone(), val.build_json(opt));
+                            val_map.insert(key.clone(), val.build_json(opts));
                         }
                     }
                 }
@@ -518,11 +518,11 @@ impl ValueRef {
             crate::Value::schema_value(ref v) => {
                 let mut val_map = IndexMap::new();
                 let mut vals = v.config.values.clone();
-                if opt.sort_keys {
+                if opts.sort_keys {
                     vals.sort_keys();
                 }
                 for (key, val) in vals.iter() {
-                    if opt.ignore_private && (*key).starts_with(KCL_PRIVATE_VAR_PREFIX) {
+                    if opts.ignore_private && (*key).starts_with(KCL_PRIVATE_VAR_PREFIX) {
                         continue;
                     }
                     match *val.rc.borrow() {
@@ -530,15 +530,15 @@ impl ValueRef {
                             continue;
                         }
                         crate::Value::none => {
-                            if !opt.ignore_none {
-                                val_map.insert(key.clone(), val.build_json(opt));
+                            if !opts.ignore_none {
+                                val_map.insert(key.clone(), val.build_json(opts));
                             }
                         }
                         crate::Value::func_value(_) => {
                             // ignore func
                         }
                         _ => {
-                            val_map.insert(key.clone(), val.build_json(opt));
+                            val_map.insert(key.clone(), val.build_json(opts));
                         }
                     }
                 }
