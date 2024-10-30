@@ -398,7 +398,7 @@ fn fix_rel_import_path_with_file(
             );
             import_spec.path.node = fix_path.clone();
 
-            let pkg = pkgmap.get(&file).expect("file not in pkgmap");
+            let pkg = pkgmap.get(file).expect("file not in pkgmap");
             import_spec.pkg_name = pkg.pkg_name.clone();
             // Load the import package source code and compile.
             let pkg_info = find_packages(

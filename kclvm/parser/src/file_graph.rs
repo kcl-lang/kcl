@@ -26,7 +26,7 @@ pub struct Pkg {
     pub pkg_root: String,
 }
 
-pub type PkgMap = HashMap<PkgFile, Pkg>;
+pub type PkgMap = IndexMap<PkgFile, Pkg>;
 
 /// A graph of files, where each file depends on zero or more other files.
 #[derive(Default, Debug)]
