@@ -38,7 +38,7 @@ use std::{cell::RefCell, panic::UnwindSafe};
 
 use crate::error as kcl_error;
 use anyhow::Result;
-use kclvm_ast::ast::{self, AstIndex, Module};
+use kclvm_ast::ast::{self, AstIndex};
 use kclvm_runtime::{Context, ValueRef};
 
 /// SCALAR_KEY denotes the temp scalar key for the global variable json plan process.
@@ -151,20 +151,9 @@ impl<'ctx> Evaluator<'ctx> {
 
     /// Evaluate the program and return the JSON and YAML result.
     pub fn run(self: &Evaluator<'ctx>) -> Result<(String, String)> {
-        if let Some(modules) = self.program.pkgs.get(kclvm_ast::MAIN_PKG) {
-            self.init_scope(kclvm_ast::MAIN_PKG);
-            let modules: Vec<Module> = modules
-                .iter()
-                .map(|m| {
-                    self.program
-                        .get_module(m)
-                        .expect("Failed to acquire module lock")
-                        .expect(&format!("module {:?} not found in program", m))
-                        .clone()
-                })
-                .collect();
-            self.compile_ast_modules(&modules);
-        }
+        let modules = self.program.get_modules_for_pkg(kclvm_ast::MAIN_PKG);
+        self.init_scope(kclvm_ast::MAIN_PKG);
+        self.compile_ast_modules(&modules);
         Ok(self.plan_globals_to_string())
     }
 
@@ -173,21 +162,12 @@ impl<'ctx> Evaluator<'ctx> {
     /// return the result of the function run, rather than a dictionary composed of each
     /// configuration attribute.
     pub fn run_as_function(self: &Evaluator<'ctx>) -> ValueRef {
-        if let Some(modules) = self.program.pkgs.get(kclvm_ast::MAIN_PKG) {
-            self.init_scope(kclvm_ast::MAIN_PKG);
-            let modules: Vec<Module> = modules
-                .iter()
-                .map(|m| {
-                    self.program
-                        .get_module(m)
-                        .expect("Failed to acquire module lock")
-                        .expect(&format!("module {:?} not found in program", m))
-                        .clone()
-                })
-                .collect();
-            self.compile_ast_modules(&modules)
-        } else {
+        let modules = self.program.get_modules_for_pkg(kclvm_ast::MAIN_PKG);
+        if modules.is_empty() {
             ValueRef::undefined()
+        } else {
+            self.init_scope(kclvm_ast::MAIN_PKG);
+            self.compile_ast_modules(&modules)
         }
     }
 

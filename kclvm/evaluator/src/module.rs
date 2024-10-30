@@ -1,5 +1,7 @@
 // Copyright The KCL Authors. All rights reserved.
 
+use std::sync::{Arc, RwLock};
+
 use kclvm_ast::ast;
 use kclvm_ast::walker::TypedResultWalker;
 use kclvm_runtime::ValueRef;
@@ -7,7 +9,7 @@ use kclvm_runtime::ValueRef;
 use super::Evaluator;
 use crate::error as kcl_error;
 
-impl<'ctx> Evaluator<'ctx> {
+impl<'ctx> Evaluator<'_> {
     pub fn compile_module_import_and_types(&self, module: &'ctx ast::Module) {
         for stmt in &module.body {
             match &stmt.node {
@@ -81,21 +83,24 @@ impl<'ctx> Evaluator<'ctx> {
     /// 1. scan all possible global variables and allocate undefined values to global pointers.
     /// 2. build all user-defined schema/rule types.
     /// 3. evaluate all codes for the third time.
-    pub(crate) fn compile_ast_modules(&self, modules: &'ctx [ast::Module]) -> ValueRef {
+    pub(crate) fn compile_ast_modules(&self, modules: &Vec<Arc<RwLock<ast::Module>>>) -> ValueRef {
         // Scan global variables
         for ast_module in modules {
+            let ast_module = ast_module.read().expect("Failed to acquire module lock");
             // Pre define global variables with undefined values
-            self.predefine_global_vars(ast_module);
+            self.predefine_global_vars(&ast_module);
         }
         // Scan global types
         for ast_module in modules {
-            self.compile_module_import_and_types(ast_module);
+            let ast_module = ast_module.read().expect("Failed to acquire module lock");
+            self.compile_module_import_and_types(&ast_module);
         }
         let mut result = ValueRef::undefined();
         // Compile the ast module in the pkgpath.
         for ast_module in modules {
+            let ast_module = ast_module.read().expect("Failed to acquire module lock");
             result = self
-                .walk_module(ast_module)
+                .walk_module(&ast_module)
                 .expect(kcl_error::RUNTIME_ERROR_MSG);
         }
         result

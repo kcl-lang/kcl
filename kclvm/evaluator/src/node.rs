@@ -2,7 +2,7 @@
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use anyhow::Ok;
 use generational_arena::Index;
@@ -233,14 +233,14 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             if let Some(modules) = self.program.pkgs.get(&import_stmt.path.node) {
                 self.push_pkgpath(&pkgpath);
                 self.init_scope(&pkgpath);
-                let modules: Vec<Module> = modules
+                let modules: Vec<Arc<RwLock<Module>>> = modules
                     .iter()
                     .map(|m| {
-                        self.program
-                            .get_module(&m)
-                            .expect("Failed to acquire module lock")
-                            .expect(&format!("module {:?} not found in program", m))
-                            .clone()
+                        let m = self
+                            .program
+                            .get_module_ref(&m)
+                            .expect(&format!("module {:?} not found in program", m));
+                        m
                     })
                     .collect();
                 self.compile_ast_modules(&modules);

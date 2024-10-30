@@ -478,6 +478,18 @@ impl Program {
     pub fn get_module_ref(&self, module_path: &str) -> Option<Arc<RwLock<Module>>> {
         self.modules.get(module_path).cloned()
     }
+
+    pub fn get_modules_for_pkg(&self, pkg_name: &str) -> Vec<Arc<RwLock<Module>>> {
+        let mut result = Vec::new();
+        if let Some(module_names) = self.pkgs.get(pkg_name) {
+            for module_name in module_names {
+                if let Some(module) = self.get_module_ref(module_name) {
+                    result.push(module);
+                }
+            }
+        }
+        result
+    }
 }
 
 /// Module is an abstract syntax tree for a single KCL file.
