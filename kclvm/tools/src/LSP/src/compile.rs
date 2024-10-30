@@ -66,6 +66,32 @@ pub fn compile(
 
     // Parser
     let sess = ParseSessionRef::default();
+
+    // update cache
+    if params.file.is_some() && params.module_cache.is_some() {
+        match &mut params.module_cache.clone().unwrap().write() {
+            Ok(module_cache) => {
+                let path = PathBuf::from(params.file.clone().unwrap());
+                module_cache.clear(&path);
+                if let Some(vfs) = &params.vfs {
+                    if let Ok(code_list) =
+                        load_files_code_from_vfs(&[&params.file.clone().unwrap()], vfs)
+                    {
+                        module_cache.source_code.insert(path, code_list[0].clone());
+                    };
+                }
+            }
+            Err(e) => {
+                return (
+                    diags,
+                    Err(anyhow::anyhow!(
+                        "Failed to get module cache RwLock: {:?}",
+                        e
+                    )),
+                )
+            }
+        }
+    }
     let mut program = match load_program(sess.clone(), &files, Some(opts), params.module_cache) {
         Ok(r) => r.program,
         Err(e) => return (diags, Err(anyhow::anyhow!("Parse failed: {:?}", e))),
