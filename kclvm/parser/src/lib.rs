@@ -316,9 +316,26 @@ pub type KCLModuleCache = Arc<RwLock<ModuleCache>>;
 
 #[derive(Default, Debug)]
 pub struct ModuleCache {
+    /// File ast cache
     pub ast_cache: IndexMap<PathBuf, Arc<ast::Module>>,
+    /// Which pkgs the file belongs to. Sometimes a file is not only contained in the pkg in the file system directory, but may also be in the main package.
     pub file_pkg: IndexMap<PathBuf, HashSet<PkgFile>>,
-    pub dep_cache: IndexMap<PkgFile, (Vec<PkgFile>, PkgMap)>,
+    /// File dependency cache
+    pub dep_cache: IndexMap<PkgFile, PkgMap>,
+    /// File source code
+    pub source_code: IndexMap<PathBuf, String>,
+}
+
+impl ModuleCache {
+    pub fn clear(&mut self, path: &PathBuf) {
+        self.ast_cache.remove(path);
+        self.source_code.remove(path);
+        if let Some(pkgs) = self.file_pkg.remove(path) {
+            for pkg in &pkgs {
+                self.dep_cache.remove(pkg);
+            }
+        }
+    }
 }
 struct Loader {
     sess: ParseSessionRef,
@@ -670,14 +687,23 @@ pub fn parse_file(
     file_graph: FileGraphCache,
     opts: &LoadProgramOptions,
 ) -> Result<Vec<PkgFile>> {
+    let src = match src {
+        Some(src) => Some(src),
+        None => match &module_cache.read() {
+            Ok(cache) => cache.source_code.get(&file.canonicalize()),
+            Err(_) => None,
+        }
+        .cloned(),
+    };
     let m = Arc::new(parse_file_with_session(
         sess.clone(),
         file.path.to_str().unwrap(),
         src,
     )?);
 
-    let (deps, new_pkgmap) = get_deps(&file, m.as_ref(), pkgs, pkgmap, opts, sess)?;
-    pkgmap.extend(new_pkgmap.clone());
+    let deps = get_deps(&file, m.as_ref(), pkgs, pkgmap, opts, sess)?;
+    let dep_files = deps.keys().map(|f| f.clone()).collect();
+    pkgmap.extend(deps.clone());
     match &mut module_cache.write() {
         Ok(module_cache) => {
             module_cache
@@ -693,20 +719,19 @@ pub fn parse_file(
                     module_cache.file_pkg.insert(file.canonicalize(), s);
                 }
             }
-            module_cache
-                .dep_cache
-                .insert(file.clone(), (deps.clone(), new_pkgmap));
+            module_cache.dep_cache.insert(file.clone(), deps);
         }
         Err(e) => return Err(anyhow::anyhow!("Parse file failed: {e}")),
     }
 
     match &mut file_graph.write() {
         Ok(file_graph) => {
-            file_graph.update_file(&file, &deps);
+            file_graph.update_file(&file, &dep_files);
         }
         Err(e) => return Err(anyhow::anyhow!("Parse file failed: {e}")),
     }
-    Ok(deps)
+
+    Ok(dep_files)
 }
 
 pub fn get_deps(
@@ -716,9 +741,8 @@ pub fn get_deps(
     pkgmap: &mut PkgMap,
     opts: &LoadProgramOptions,
     sess: ParseSessionRef,
-) -> Result<(Vec<PkgFile>, PkgMap)> {
-    let mut deps: Vec<PkgFile> = vec![];
-    let mut new_pkgmap = PkgMap::default();
+) -> Result<PkgMap> {
+    let mut deps = PkgMap::default();
     for stmt in &m.body {
         let pos = stmt.pos().clone();
         let pkg = pkgmap.get(file).expect("file not in pkgmap").clone();
@@ -742,30 +766,24 @@ pub fn get_deps(
                 if pkg_info.k_files.is_empty() {
                     modules.insert(pkg_info.pkg_path.clone(), vec![]);
                 }
-                // Add file dependencies.
-                let mut paths: Vec<PkgFile> = pkg_info
-                    .k_files
-                    .iter()
-                    .map(|p| {
-                        let file = PkgFile {
-                            path: p.into(),
-                            pkg_path: pkg_info.pkg_path.clone(),
-                        };
-                        new_pkgmap.insert(
-                            file.clone(),
-                            file_graph::Pkg {
-                                pkg_name: pkg_info.pkg_name.clone(),
-                                pkg_root: pkg_info.pkg_root.clone().into(),
-                            },
-                        );
-                        file
-                    })
-                    .collect();
-                deps.append(&mut paths);
+
+                pkg_info.k_files.iter().for_each(|p| {
+                    let file = PkgFile {
+                        path: p.into(),
+                        pkg_path: pkg_info.pkg_path.clone(),
+                    };
+                    deps.insert(
+                        file.clone(),
+                        file_graph::Pkg {
+                            pkg_name: pkg_info.pkg_name.clone(),
+                            pkg_root: pkg_info.pkg_root.clone().into(),
+                        },
+                    );
+                });
             }
         }
     }
-    Ok((deps, new_pkgmap))
+    Ok(deps)
 }
 
 pub fn parse_pkg(
@@ -857,18 +875,17 @@ pub fn parse_entry(
             match &module_cache_read {
                 Ok(m_cache) => match m_cache.ast_cache.get(&file.canonicalize()) {
                     Some(m) => {
-                        let (deps, new_pkgmap) =
-                            m_cache.dep_cache.get(&file).cloned().unwrap_or_else(|| {
-                                get_deps(&file, m.as_ref(), pkgs, pkgmap, opts, sess.clone())
-                                    .unwrap()
-                            });
-                        pkgmap.extend(new_pkgmap.clone());
+                        let deps = m_cache.dep_cache.get(&file).cloned().unwrap_or_else(|| {
+                            get_deps(&file, m.as_ref(), pkgs, pkgmap, opts, sess.clone()).unwrap()
+                        });
+                        let dep_files: Vec<PkgFile> = deps.keys().map(|f| f.clone()).collect();
+                        pkgmap.extend(deps.clone());
 
                         match &mut file_graph.write() {
                             Ok(file_graph) => {
-                                file_graph.update_file(&file, &deps);
+                                file_graph.update_file(&file, &dep_files);
 
-                                for dep in deps {
+                                for dep in dep_files {
                                     if !parsed_file.contains(&dep) {
                                         unparsed_file.push_back(dep.clone());
                                     }
