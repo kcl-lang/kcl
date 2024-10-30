@@ -154,6 +154,11 @@ impl<'ctx> Namer<'ctx> {
             }
 
             for module in modules.iter() {
+                let module = program
+                    .get_module(module)
+                    .expect("Failed to acquire module lock")
+                    .expect(&format!("module {:?} not found in program", module));
+
                 namer
                     .ctx
                     .current_package_info
@@ -163,7 +168,7 @@ impl<'ctx> Namer<'ctx> {
                     .insert(module.filename.clone());
                 namer.ctx.current_module_info =
                     Some(ModuleInfo::new(module.filename.clone(), name.to_string()));
-                namer.walk_module(module);
+                namer.walk_module(&module);
                 namer
                     .gs
                     .get_packages_mut()

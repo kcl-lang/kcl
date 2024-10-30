@@ -244,7 +244,7 @@ impl LanguageServerState {
                         for (workspace, state) in state_workspaces.iter() {
                             match state {
                                 DBState::Ready(db) => {
-                                    if db.prog.get_module(&filename).is_some() {
+                                    if db.prog.get_module(&filename).unwrap_or(None).is_some() {
                                         let mut openfiles = self.opened_files.write();
                                         let file_info = openfiles.get_mut(&file.file_id).unwrap();
                                         file_info.workspaces.insert(workspace.clone());

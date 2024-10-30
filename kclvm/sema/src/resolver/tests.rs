@@ -21,6 +21,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::path::Path;
 use std::sync::Arc;
+use std::sync::RwLock as Lock;
 
 pub fn parse_program(filename: &str) -> Result<ast::Program> {
     let abspath = std::fs::canonicalize(std::path::PathBuf::from(filename)).expect(filename);
@@ -28,13 +29,17 @@ pub fn parse_program(filename: &str) -> Result<ast::Program> {
     let mut prog = ast::Program {
         root: abspath.parent().unwrap().adjust_canonicalization(),
         pkgs: HashMap::new(),
+        modules: HashMap::new(),
     };
 
     let mut module = parse_file_force_errors(abspath.to_str().unwrap(), None)?;
     module.filename = filename.to_string();
 
     prog.pkgs
-        .insert(kclvm_ast::MAIN_PKG.to_string(), vec![Arc::new(module)]);
+        .insert(kclvm_ast::MAIN_PKG.to_string(), vec![filename.to_string()]);
+
+    prog.modules
+        .insert(filename.to_string(), Arc::new(Lock::new(module)));
 
     Ok(prog)
 }
@@ -117,6 +122,10 @@ fn test_pkg_init_in_schema_resolve() {
         vec!["__main__".to_string(), "pkg".to_string()]
     );
     let module = &program.pkgs["pkg"][0];
+    let module = program
+        .get_module(&module)
+        .expect("Failed to acquire module lock")
+        .expect(&format!("module {:?} not found in program", module));
     if let ast::Stmt::Schema(schema) = &module.body[1].node {
         if let ast::Stmt::SchemaAttr(attr) = &schema.body[0].node {
             let value = attr.value.as_ref().unwrap();

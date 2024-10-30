@@ -235,7 +235,13 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                 self.init_scope(&pkgpath);
                 let modules: Vec<Module> = modules
                     .iter()
-                    .map(|arc| arc.clone().as_ref().clone())
+                    .map(|m| {
+                        self.program
+                            .get_module(&m)
+                            .expect("Failed to acquire module lock")
+                            .expect(&format!("module {:?} not found in program", m))
+                            .clone()
+                    })
                     .collect();
                 self.compile_ast_modules(&modules);
                 self.pop_pkgpath();
@@ -1158,6 +1164,11 @@ impl<'ctx> Evaluator<'ctx> {
                     .get(&pkgpath_without_prefix!(frame.pkgpath))
                 {
                     if let Some(module) = module_list.get(*index) {
+                        let module = self
+                            .program
+                            .get_module(module)
+                            .expect("Failed to acquire module lock")
+                            .expect(&format!("module {:?} not found in program", module));
                         if let Some(stmt) = module.body.get(setter.stmt) {
                             self.push_backtrack_meta(setter);
                             self.walk_stmt(stmt).expect(INTERNAL_ERROR_MSG);

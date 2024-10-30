@@ -35,7 +35,10 @@
 
 use kclvm_utils::path::PathPrefix;
 use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    sync::{RwLock, RwLockReadGuard, RwLockWriteGuard},
+};
 
 use compiler_base_span::{Loc, Span};
 use std::fmt::Debug;
@@ -383,14 +386,22 @@ pub struct SerializeProgram {
 impl Into<SerializeProgram> for Program {
     fn into(self) -> SerializeProgram {
         SerializeProgram {
-            root: self.root,
+            root: self.root.clone(),
             pkgs: self
                 .pkgs
                 .iter()
                 .map(|(name, modules)| {
                     (
                         name.clone(),
-                        modules.iter().map(|m| m.as_ref().clone()).collect(),
+                        modules
+                            .iter()
+                            .map(|m| {
+                                self.get_module(m)
+                                    .expect("Failed to acquire module lock")
+                                    .expect(&format!("module {:?} not found in program", m))
+                                    .clone()
+                            })
+                            .collect(),
                     )
                 })
                 .collect(),
@@ -398,24 +409,28 @@ impl Into<SerializeProgram> for Program {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default)]
 pub struct Program {
     pub root: String,
-    pub pkgs: HashMap<String, Vec<Arc<Module>>>,
+    pub pkgs: HashMap<String, Vec<String>>,
+    pub modules: HashMap<String, Arc<RwLock<Module>>>,
 }
 
 impl Program {
     /// Get main entry files.
     pub fn get_main_files(&self) -> Vec<String> {
         match self.pkgs.get(crate::MAIN_PKG) {
-            Some(modules) => modules.iter().map(|m| m.filename.clone()).collect(),
+            Some(modules) => modules.clone(),
             None => vec![],
         }
     }
     /// Get the first module in the main package.
-    pub fn get_main_package_first_module(&self) -> Option<Arc<Module>> {
+    pub fn get_main_package_first_module(&self) -> Option<RwLockReadGuard<'_, Module>> {
         match self.pkgs.get(crate::MAIN_PKG) {
-            Some(modules) => modules.first().cloned(),
+            Some(modules) => match modules.first() {
+                Some(first_module_path) => self.get_module(&first_module_path).unwrap_or(None),
+                None => None,
+            },
             None => None,
         }
     }
@@ -423,23 +438,45 @@ impl Program {
     pub fn pos_to_stmt(&self, pos: &Position) -> Option<Node<Stmt>> {
         for (_, v) in &self.pkgs {
             for m in v {
-                if m.filename == pos.filename {
-                    return m.pos_to_stmt(pos);
+                if let Ok(m) = self.get_module(m) {
+                    let m = m?;
+                    if m.filename == pos.filename {
+                        return m.pos_to_stmt(pos);
+                    }
                 }
             }
         }
         None
     }
 
-    pub fn get_module(&self, module_name: &str) -> Option<&Module> {
-        for (_, modules) in &self.pkgs {
-            for module in modules {
-                if module.filename == module_name {
-                    return Some(module);
-                }
-            }
+    pub fn get_module(
+        &self,
+        module_path: &str,
+    ) -> Result<Option<RwLockReadGuard<'_, Module>>, &str> {
+        match self.modules.get(module_path) {
+            Some(module_ref) => match module_ref.read() {
+                Ok(m) => Ok(Some(m)),
+                Err(_) => Err("Failed to acquire module lock"),
+            },
+            None => Ok(None),
         }
-        None
+    }
+
+    pub fn get_mut_module(
+        &self,
+        module_path: &str,
+    ) -> Result<Option<RwLockWriteGuard<'_, Module>>, &str> {
+        match self.modules.get(module_path) {
+            Some(module_ref) => match module_ref.write() {
+                Ok(m) => Ok(Some(m)),
+                Err(_) => Err("Failed to acquire module lock"),
+            },
+            None => Ok(None),
+        }
+    }
+
+    pub fn get_module_ref(&self, module_path: &str) -> Option<Arc<RwLock<Module>>> {
+        self.modules.get(module_path).cloned()
     }
 }
 

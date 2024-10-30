@@ -28,7 +28,7 @@ pub enum SwitchConfigContextState {
     SwitchConfigOnce = 1,
 }
 
-impl<'ctx> Resolver<'ctx> {
+impl<'ctx> Resolver<'_> {
     #[inline]
     pub(crate) fn new_config_expr_context_item(
         &mut self,

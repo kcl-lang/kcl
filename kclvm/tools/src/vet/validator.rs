@@ -64,7 +64,6 @@
 //!         name == "Alice"
 //!         age > 10
 //! ```
-use std::sync::Arc;
 
 use super::expr_builder::ExprBuilder;
 pub use crate::util::loader::LoaderKind;
@@ -179,7 +178,7 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool> {
     let k_code = val_opt.kcl_code.map_or_else(Vec::new, |code| vec![code]);
 
     let sess = ParseSessionRef::default();
-    let mut compile_res = kclvm_parser::load_program(
+    let compile_res = kclvm_parser::load_program(
         sess,
         [k_path]
             .iter()
@@ -208,10 +207,15 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool> {
 
     let assign_stmt = build_assign(&val_opt.attribute_name, validated_expr);
 
-    match compile_res.program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
+    match compile_res.program.pkgs.get(kclvm_ast::MAIN_PKG) {
         Some(pkg) => {
-            if let Some(module) = pkg.first_mut() {
-                Arc::make_mut(module).body.insert(0, assign_stmt);
+            if let Some(module) = pkg.first() {
+                let mut m = compile_res
+                    .program
+                    .get_mut_module(module)
+                    .expect("Failed to acquire module lock")
+                    .expect(&format!("module {:?} not found in program", module));
+                m.body.insert(0, assign_stmt);
             } else {
                 return Err(anyhow::anyhow!("No main module found"));
             }
@@ -242,16 +246,17 @@ fn build_assign(attr_name: &str, node: NodeRef<Expr>) -> NodeRef<Stmt> {
     }))
 }
 
-fn filter_schema_stmt_from_prog(prog: &Program) -> Vec<&SchemaStmt> {
+fn filter_schema_stmt_from_prog(prog: &Program) -> Vec<SchemaStmt> {
     let mut result = vec![];
     for (pkg_name, modules) in &prog.pkgs {
         if pkg_name != kclvm_ast::MAIN_PKG {
             continue;
         }
         for module in modules {
+            let module = prog.get_module(&module).unwrap().unwrap();
             for stmt in &module.body {
                 if let Stmt::Schema(s) = &stmt.node {
-                    result.push(s);
+                    result.push(s.clone());
                 }
             }
         }

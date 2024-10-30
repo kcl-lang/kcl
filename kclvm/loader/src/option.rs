@@ -55,7 +55,12 @@ pub fn list_options(opts: &LoadPackageOptions) -> Result<Vec<OptionHelp>> {
     for (pkgpath, modules) in &packages.program.pkgs {
         extractor.pkgpath = pkgpath.clone();
         for module in modules {
-            extractor.walk_module(module)
+            let module = packages
+                .program
+                .get_module(module)
+                .expect("Failed to acquire module lock")
+                .expect(&format!("module {:?} not found in program", module));
+            extractor.walk_module(&module)
         }
     }
     Ok(extractor.options)

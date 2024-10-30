@@ -15,7 +15,7 @@ use kclvm_error::{ErrorKind, Message, Position, Style};
 use super::node::ResolvedResult;
 use super::scope::{ScopeKind, ScopeObject, ScopeObjectKind};
 
-impl<'ctx> Resolver<'ctx> {
+impl<'ctx> Resolver<'_> {
     pub(crate) fn resolve_schema_stmt(
         &mut self,
         schema_stmt: &'ctx ast::SchemaStmt,

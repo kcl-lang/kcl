@@ -155,7 +155,13 @@ impl<'ctx> Evaluator<'ctx> {
             self.init_scope(kclvm_ast::MAIN_PKG);
             let modules: Vec<Module> = modules
                 .iter()
-                .map(|arc| arc.clone().as_ref().clone())
+                .map(|m| {
+                    self.program
+                        .get_module(m)
+                        .expect("Failed to acquire module lock")
+                        .expect(&format!("module {:?} not found in program", m))
+                        .clone()
+                })
                 .collect();
             self.compile_ast_modules(&modules);
         }
@@ -171,7 +177,13 @@ impl<'ctx> Evaluator<'ctx> {
             self.init_scope(kclvm_ast::MAIN_PKG);
             let modules: Vec<Module> = modules
                 .iter()
-                .map(|arc| arc.clone().as_ref().clone())
+                .map(|m| {
+                    self.program
+                        .get_module(m)
+                        .expect("Failed to acquire module lock")
+                        .expect(&format!("module {:?} not found in program", m))
+                        .clone()
+                })
                 .collect();
             self.compile_ast_modules(&modules)
         } else {

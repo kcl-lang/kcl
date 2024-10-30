@@ -3,7 +3,7 @@ use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
 use kclvm_error::*;
 
-impl<'ctx> Resolver<'ctx> {
+impl<'ctx> Resolver<'_> {
     /// Do parameter type check.
     pub fn do_parameters_check(&mut self, args: &'ctx Option<ast::NodeRef<ast::Arguments>>) {
         if let Some(args) = args {

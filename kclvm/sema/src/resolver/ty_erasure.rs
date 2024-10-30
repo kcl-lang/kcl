@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use kclvm_ast::walker::MutSelfMutWalker;
 use kclvm_ast::{ast, walk_if_mut, walk_list_mut};
 
@@ -68,10 +66,13 @@ impl<'ctx> MutSelfMutWalker<'ctx> for TypeErasureTransformer {
 
 /// Run a pass on AST and change the function type to the `Named("function")` type
 pub fn type_func_erasure_pass<'ctx>(program: &'ctx mut ast::Program) {
-    for (_, modules) in program.pkgs.iter_mut() {
-        for module in modules.iter_mut() {
-            let mut m = Arc::make_mut(module);
-            TypeErasureTransformer::default().walk_module(&mut m);
+    for (_, modules) in program.pkgs.iter() {
+        for module in modules.iter() {
+            let mut module = program
+                .get_mut_module(module)
+                .expect("Failed to acquire module lock")
+                .expect(&format!("module {:?} not found in program", module));
+            TypeErasureTransformer::default().walk_module(&mut module);
         }
     }
 }

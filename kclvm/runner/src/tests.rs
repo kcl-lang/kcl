@@ -26,6 +26,7 @@ use serde_json::Value;
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::sync::RwLock;
 use std::{
     collections::HashMap,
     fs::{self, File},
@@ -179,10 +180,13 @@ fn parse_program(test_kcl_case_path: &str) -> Program {
 ///     Program.root = "__main__"
 fn construct_program(module: Module) -> Program {
     let mut pkgs_ast = HashMap::new();
-    pkgs_ast.insert(MAIN_PKG_NAME.to_string(), vec![Arc::new(module)]);
+    pkgs_ast.insert(MAIN_PKG_NAME.to_string(), vec![module.filename.clone()]);
+    let mut modules = HashMap::new();
+    modules.insert(module.filename.clone(), Arc::new(RwLock::new(module)));
     Program {
         root: MAIN_PKG_NAME.to_string(),
         pkgs: pkgs_ast,
+        modules,
     }
 }
 

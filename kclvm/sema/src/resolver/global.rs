@@ -20,7 +20,7 @@ const MAX_SCOPE_SCAN_COUNT: usize = 3;
 pub const MIXIN_SUFFIX: &str = "Mixin";
 pub const PROTOCOL_SUFFIX: &str = "Protocol";
 
-impl<'ctx> Resolver<'ctx> {
+impl<'ctx> Resolver<'_> {
     /// Init global types including top-level global variable types and
     /// schema types. Because the schema allows backward references,
     /// we scan multiple times.
@@ -31,6 +31,11 @@ impl<'ctx> Resolver<'ctx> {
             Some(modules) => {
                 // 1. Scan all schema and rule type symbol
                 for module in modules {
+                    let module = self
+                        .program
+                        .get_module(module)
+                        .expect("Failed to acquire module lock")
+                        .expect(&format!("module {:?} not found in program", module));
                     let pkgpath = &self.ctx.pkgpath.clone();
                     let filename = &module.filename;
                     self.change_package_context(pkgpath, filename);
@@ -122,6 +127,11 @@ impl<'ctx> Resolver<'ctx> {
                 // 3. Build all schema types
                 for i in 0..MAX_SCOPE_SCAN_COUNT {
                     for module in modules {
+                        let module = self
+                            .program
+                            .get_module(module)
+                            .expect("Failed to acquire module lock")
+                            .expect(&format!("module {:?} not found in program", module));
                         let pkgpath = &self.ctx.pkgpath.clone();
                         let filename = &module.filename;
                         self.change_package_context(pkgpath, filename);
@@ -176,6 +186,11 @@ impl<'ctx> Resolver<'ctx> {
             Some(modules) => {
                 // 1. Scan all schema and rule type symbol
                 for module in modules {
+                    let module = self
+                        .program
+                        .get_module(module)
+                        .expect("Failed to acquire module lock")
+                        .expect(&format!("module {:?} not found in program", module));
                     self.ctx.filename = module.filename.to_string();
                     for stmt in &module.body {
                         if matches!(stmt.node, ast::Stmt::TypeAlias(_)) {

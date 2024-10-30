@@ -22,8 +22,13 @@ impl<'ctx> Resolver<'ctx> {
     pub fn resolve_import(&mut self) {
         let main_files = self.program.get_main_files();
         for modules in self.program.pkgs.values() {
-            for m in modules {
-                for stmt in &m.body {
+            for module in modules {
+                let module = self
+                    .program
+                    .get_module(module)
+                    .expect("Failed to acquire module lock")
+                    .expect(&format!("module {:?} not found in program", module));
+                for stmt in &module.body {
                     if let ast::Stmt::Import(import_stmt) = &stmt.node {
                         let pkgpath = &import_stmt.path.node;
                         // System module.
@@ -121,6 +126,11 @@ impl<'ctx> Resolver<'ctx> {
             Some(modules) => {
                 let mut import_table: IndexMap<String, String> = IndexMap::default();
                 for module in modules {
+                    let module = self
+                        .program
+                        .get_module(module)
+                        .expect("Failed to acquire module lock")
+                        .expect(&format!("module {:?} not found in program", module));
                     self.ctx.filename = module.filename.clone();
                     for stmt in &module.body {
                         if let ast::Stmt::Import(import_stmt) = &stmt.node {

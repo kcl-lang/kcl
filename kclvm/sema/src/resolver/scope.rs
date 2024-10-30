@@ -578,13 +578,17 @@ impl DependencyGraph {
                 );
             }
             for module in modules {
-                if !self.module_map.contains_key(&module.filename) {
-                    new_modules.insert(module.filename.to_string(), module);
-                    self.module_map
-                        .insert(module.filename.to_string(), HashSet::new());
+                let module = program
+                    .get_module(module)
+                    .expect("Failed to acquire module lock")
+                    .expect(&format!("module {:?} not found in program", module));
+                let filename = module.filename.clone();
+                if !self.module_map.contains_key(&filename) {
+                    new_modules.insert(filename.clone(), module);
+                    self.module_map.insert(filename.clone(), HashSet::new());
                 }
                 self.module_map
-                    .get_mut(&module.filename)
+                    .get_mut(&filename)
                     .unwrap()
                     .insert(pkgpath.to_string());
             }
@@ -604,20 +608,26 @@ impl DependencyGraph {
                         invalidated_set.insert(pkg);
                     }
                     self.remove_dependency_from_pkg(&module_name);
-                    if let Some(module) = program.get_module(module_name) {
-                        self.add_new_module(module);
+                    if let Ok(m) = program.get_module(module_name) {
+                        if let Some(module) = m {
+                            self.add_new_module(&module);
+                        }
                     }
                 }
             }
             None => {
                 if let Some(main_modules) = program.pkgs.get(kclvm_ast::MAIN_PKG) {
                     for module in main_modules {
+                        let module = program
+                            .get_module(module)
+                            .expect("Failed to acquire module lock")
+                            .expect(&format!("module {:?} not found in program", module));
                         let result = self.invalidate_module(&module.filename)?;
                         for pkg in result {
                             invalidated_set.insert(pkg);
                         }
                         self.remove_dependency_from_pkg(&module.filename);
-                        self.add_new_module(module);
+                        self.add_new_module(&module);
                     }
                 }
             }

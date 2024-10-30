@@ -27,7 +27,7 @@ pub fn ty_str_replace_pkgpath(ty_str: &str, pkgpath: &str) -> String {
     }
 }
 
-impl<'ctx> Resolver<'ctx> {
+impl<'ctx> Resolver<'_> {
     #[inline]
     pub fn any_ty(&self) -> TypeRef {
         self.ctx.ty_ctx.builtin_types.any.clone()

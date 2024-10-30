@@ -21,7 +21,7 @@ use super::Resolver;
 /// put the message string into the diagnostic vector.
 pub type ResolvedResult = TypeRef;
 
-impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
+impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
     type Result = ResolvedResult;
 
     fn walk_module(&mut self, module: &'ctx ast::Module) -> Self::Result {
@@ -1231,7 +1231,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
     }
 }
 
-impl<'ctx> Resolver<'ctx> {
+impl<'ctx> Resolver<'_> {
     pub fn stmts(&mut self, stmts: &'ctx [ast::NodeRef<ast::Stmt>]) -> ResolvedResult {
         let stmt_types: Vec<TypeRef> = stmts.iter().map(|stmt| self.stmt(&stmt)).collect();
         match stmt_types.last() {

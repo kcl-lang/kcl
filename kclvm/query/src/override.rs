@@ -1,5 +1,4 @@
 use std::collections::HashSet;
-use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
 
@@ -46,11 +45,14 @@ pub fn apply_overrides(
     print_ast: bool,
 ) -> Result<()> {
     for o in overrides {
-        if let Some(modules) = prog.pkgs.get_mut(MAIN_PKG) {
-            for m in modules.iter_mut() {
-                let m = Arc::make_mut(m);
-                if apply_override_on_module(m, o, import_paths)? && print_ast {
-                    let code_str = print_ast_module(m);
+        if let Some(modules) = prog.pkgs.get(MAIN_PKG) {
+            for m in modules.iter() {
+                let mut m = prog
+                    .get_mut_module(m)
+                    .expect("Failed to acquire module lock")
+                    .expect(&format!("module {:?} not found in program", m));
+                if apply_override_on_module(&mut m, o, import_paths)? && print_ast {
+                    let code_str = print_ast_module(&m);
                     std::fs::write(&m.filename, &code_str)?
                 }
             }

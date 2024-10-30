@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::info::is_private_field;
 use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::walker::MutSelfMutWalker;
@@ -127,10 +125,14 @@ impl ConfigMergeTransformer {
             Vec<(String, usize, usize, ConfigMergeKind)>,
         > = IndexMap::default();
         // 1. Collect merged config
-        if let Some(modules) = program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
-            for (module_id, module) in modules.iter_mut().enumerate() {
+        if let Some(modules) = program.pkgs.get(kclvm_ast::MAIN_PKG) {
+            for (module_id, module) in modules.iter().enumerate() {
+                let mut module = program
+                    .get_mut_module(module)
+                    .expect("Failed to acquire module lock")
+                    .expect(&format!("module {:?} not found in program", module));
                 let filename = module.filename.to_string();
-                for (i, stmt) in Arc::make_mut(module).body.iter_mut().enumerate() {
+                for (i, stmt) in module.body.iter_mut().enumerate() {
                     match &mut stmt.node {
                         ast::Stmt::Unification(unification_stmt)
                             if !unification_stmt.target.node.names.is_empty() =>
@@ -202,10 +204,14 @@ impl ConfigMergeTransformer {
                 let (filename, merged_id, merged_index, merged_kind) = index_list.last().unwrap();
                 let mut items: Vec<ast::NodeRef<ast::ConfigEntry>> = vec![];
                 for (merged_filename, merged_id, index, kind) in index_list {
-                    if let Some(modules) = program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
-                        for (module_id, module) in modules.iter_mut().enumerate() {
+                    if let Some(modules) = program.pkgs.get(kclvm_ast::MAIN_PKG) {
+                        for (module_id, module) in modules.iter().enumerate() {
+                            let mut module = program
+                                .get_mut_module(module)
+                                .expect("Failed to acquire module lock")
+                                .expect(&format!("module {:?} not found in program", module));
                             if &module.filename == merged_filename && module_id == *merged_id {
-                                let stmt = Arc::make_mut(module).body.get_mut(*index).unwrap();
+                                let stmt = module.body.get_mut(*index).unwrap();
                                 match &mut stmt.node {
                                     ast::Stmt::Unification(unification_stmt)
                                         if matches!(kind, ConfigMergeKind::Union) =>
@@ -239,10 +245,14 @@ impl ConfigMergeTransformer {
                         }
                     }
                 }
-                if let Some(modules) = program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
-                    for (module_id, module) in modules.iter_mut().enumerate() {
+                if let Some(modules) = program.pkgs.get(kclvm_ast::MAIN_PKG) {
+                    for (module_id, module) in modules.iter().enumerate() {
+                        let mut module = program
+                            .get_mut_module(module)
+                            .expect("Failed to acquire module lock")
+                            .expect(&format!("module {:?} not found in program", module));
                         if &module.filename == filename && module_id == *merged_id {
-                            if let Some(stmt) = Arc::make_mut(module).body.get_mut(*merged_index) {
+                            if let Some(stmt) = module.body.get_mut(*merged_index) {
                                 match &mut stmt.node {
                                     ast::Stmt::Unification(unification_stmt)
                                         if matches!(merged_kind, ConfigMergeKind::Union) =>
@@ -279,8 +289,12 @@ impl ConfigMergeTransformer {
             }
         }
         // 3. Delete redundant config.
-        if let Some(modules) = program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
-            for (i, module) in modules.iter_mut().enumerate() {
+        if let Some(modules) = program.pkgs.get(kclvm_ast::MAIN_PKG) {
+            for (i, module) in modules.iter().enumerate() {
+                let mut module = program
+                    .get_mut_module(module)
+                    .expect("Failed to acquire module lock")
+                    .expect(&format!("module {:?} not found in program", module));
                 let mut delete_index_set: IndexSet<usize> = IndexSet::default();
                 for (_, index_list) in &name_declaration_mapping {
                     let index_len = index_list.len();
@@ -297,7 +311,7 @@ impl ConfigMergeTransformer {
                 let mut body: Vec<(usize, &ast::NodeRef<ast::Stmt>)> =
                     module.body.iter().enumerate().collect();
                 body.retain(|(idx, _)| !delete_index_set.contains(idx));
-                Arc::make_mut(module).body = body
+                module.body = body
                     .iter()
                     .map(|(_, stmt)| (*stmt).clone())
                     .collect::<Vec<ast::NodeRef<ast::Stmt>>>();

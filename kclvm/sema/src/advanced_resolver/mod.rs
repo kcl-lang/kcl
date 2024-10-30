@@ -49,8 +49,8 @@ use crate::{
     resolver::scope::{NodeKey, NodeTyMap},
 };
 
+use kclvm_ast::ast::AstIndex;
 use kclvm_ast::ast::Program;
-use kclvm_ast::ast::{AstIndex, Stmt};
 use kclvm_ast::walker::MutSelfTypedResultWalker;
 mod node;
 
@@ -132,18 +132,20 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 if !advanced_resolver.ctx.scopes.is_empty() {
                     advanced_resolver.ctx.scopes.clear();
                 }
+
                 advanced_resolver.enter_root_scope(
                     name.clone(),
                     pkg_info.pkg_filepath.clone(),
                     pkg_info.kfile_paths.clone(),
                 );
+
                 for module in modules.iter() {
+                    let module = program
+                        .get_module(module)
+                        .expect("Failed to acquire module lock")
+                        .expect(&format!("module {:?} not found in program", module));
                     advanced_resolver.ctx.current_filename = Some(module.filename.clone());
-                    for stmt in &module.body {
-                        if matches!(stmt.node, Stmt::Schema(_)) {
-                            advanced_resolver.stmt(stmt)?;
-                        }
-                    }
+                    advanced_resolver.walk_module_schemas(&module)?;
                 }
                 advanced_resolver.leave_scope()
             }
@@ -170,8 +172,12 @@ impl<'ctx> AdvancedResolver<'ctx> {
 
                 advanced_resolver.ctx.scopes.push(scope_ref);
                 for module in modules.iter() {
+                    let module = program
+                        .get_module(module)
+                        .expect("Failed to acquire module lock")
+                        .expect(&format!("module {:?} not found in program", module));
                     advanced_resolver.ctx.current_filename = Some(module.filename.clone());
-                    advanced_resolver.walk_module(module)?;
+                    advanced_resolver.walk_module(&module)?;
                 }
                 advanced_resolver.leave_scope()
             }

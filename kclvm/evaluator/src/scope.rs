@@ -43,7 +43,13 @@ impl<'ctx> Evaluator<'ctx> {
             let modules = self.program.pkgs.get(pkgpath).expect(&msg);
             let modules: Vec<Module> = modules
                 .iter()
-                .map(|arc| arc.clone().as_ref().clone())
+                .map(|m| {
+                    self.program
+                        .get_module(m)
+                        .expect("Failed to acquire module lock")
+                        .expect(&format!("module {:?} not found in program", m))
+                        .clone()
+                })
                 .collect();
             modules
         } else if pkgpath.starts_with(kclvm_runtime::PKG_PATH_PREFIX)
@@ -56,7 +62,13 @@ impl<'ctx> Evaluator<'ctx> {
                 .expect(kcl_error::INTERNAL_ERROR_MSG);
             let modules: Vec<Module> = modules
                 .iter()
-                .map(|arc| arc.clone().as_ref().clone())
+                .map(|m| {
+                    self.program
+                        .get_module(m)
+                        .expect("Failed to acquire module lock")
+                        .expect(&format!("module {:?} not found in program", m))
+                        .clone()
+                })
                 .collect();
             modules
         } else {
