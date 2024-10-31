@@ -128,7 +128,7 @@ impl ConfigMergeTransformer {
         if let Some(modules) = program.pkgs.get(kclvm_ast::MAIN_PKG) {
             for (module_id, module) in modules.iter().enumerate() {
                 let mut module = program
-                    .get_mut_module(module)
+                    .get_module_mut(module)
                     .expect("Failed to acquire module lock")
                     .expect(&format!("module {:?} not found in program", module));
                 let filename = module.filename.to_string();
@@ -207,7 +207,7 @@ impl ConfigMergeTransformer {
                     if let Some(modules) = program.pkgs.get(kclvm_ast::MAIN_PKG) {
                         for (module_id, module) in modules.iter().enumerate() {
                             let mut module = program
-                                .get_mut_module(module)
+                                .get_module_mut(module)
                                 .expect("Failed to acquire module lock")
                                 .expect(&format!("module {:?} not found in program", module));
                             if &module.filename == merged_filename && module_id == *merged_id {
@@ -248,7 +248,7 @@ impl ConfigMergeTransformer {
                 if let Some(modules) = program.pkgs.get(kclvm_ast::MAIN_PKG) {
                     for (module_id, module) in modules.iter().enumerate() {
                         let mut module = program
-                            .get_mut_module(module)
+                            .get_module_mut(module)
                             .expect("Failed to acquire module lock")
                             .expect(&format!("module {:?} not found in program", module));
                         if &module.filename == filename && module_id == *merged_id {
@@ -292,7 +292,7 @@ impl ConfigMergeTransformer {
         if let Some(modules) = program.pkgs.get(kclvm_ast::MAIN_PKG) {
             for (i, module) in modules.iter().enumerate() {
                 let mut module = program
-                    .get_mut_module(module)
+                    .get_module_mut(module)
                     .expect("Failed to acquire module lock")
                     .expect(&format!("module {:?} not found in program", module));
                 let mut delete_index_set: IndexSet<usize> = IndexSet::default();

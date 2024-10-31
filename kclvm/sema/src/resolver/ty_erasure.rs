@@ -69,7 +69,7 @@ pub fn type_func_erasure_pass<'ctx>(program: &'ctx mut ast::Program) {
     for (_, modules) in program.pkgs.iter() {
         for module in modules.iter() {
             let mut module = program
-                .get_mut_module(module)
+                .get_module_mut(module)
                 .expect("Failed to acquire module lock")
                 .expect(&format!("module {:?} not found in program", module));
             TypeErasureTransformer::default().walk_module(&mut module);

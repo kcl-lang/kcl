@@ -462,7 +462,7 @@ impl Program {
         }
     }
 
-    pub fn get_mut_module(
+    pub fn get_module_mut(
         &self,
         module_path: &str,
     ) -> Result<Option<RwLockWriteGuard<'_, Module>>, &str> {

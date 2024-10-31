@@ -149,7 +149,7 @@ pub fn type_alias_pass(
     for (pkgpath, modules) in program.pkgs.iter() {
         for module in modules.iter() {
             let mut module = program
-                .get_mut_module(module)
+                .get_module_mut(module)
                 .expect("Failed to acquire module lock")
                 .expect(&format!("module {:?} not found in program", module));
             if let Some(type_alias_mapping) = type_alias_mapping.get(pkgpath) {

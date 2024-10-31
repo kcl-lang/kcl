@@ -212,7 +212,7 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool> {
             if let Some(module) = pkg.first() {
                 let mut m = compile_res
                     .program
-                    .get_mut_module(module)
+                    .get_module_mut(module)
                     .expect("Failed to acquire module lock")
                     .expect(&format!("module {:?} not found in program", module));
                 m.body.insert(0, assign_stmt);

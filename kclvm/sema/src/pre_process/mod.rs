@@ -36,7 +36,7 @@ pub fn pre_process_program(program: &mut ast::Program, opts: &Options) {
         }
         for module in modules.iter() {
             let mut module = program
-                .get_mut_module(module)
+                .get_module_mut(module)
                 .expect("Failed to acquire module lock")
                 .expect(&format!("module {:?} not found in program", module));
             if pkgpath != kclvm_ast::MAIN_PKG {

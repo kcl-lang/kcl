@@ -979,7 +979,7 @@ pub fn parse_program(
 
     let mut modules: HashMap<String, Arc<RwLock<Module>>> = HashMap::new();
     for file in files.iter() {
-        let filename = file.canonicalize().to_str().unwrap().to_string();
+        let filename = file.path.adjust_canonicalization();
         let m_ref = match module_cache.read() {
             Ok(module_cache) => module_cache
                 .ast_cache

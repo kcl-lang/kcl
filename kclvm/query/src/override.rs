@@ -48,7 +48,7 @@ pub fn apply_overrides(
         if let Some(modules) = prog.pkgs.get(MAIN_PKG) {
             for m in modules.iter() {
                 let mut m = prog
-                    .get_mut_module(m)
+                    .get_module_mut(m)
                     .expect("Failed to acquire module lock")
                     .expect(&format!("module {:?} not found in program", m));
                 if apply_override_on_module(&mut m, o, import_paths)? && print_ast {
