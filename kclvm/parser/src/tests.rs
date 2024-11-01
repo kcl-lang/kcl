@@ -304,16 +304,18 @@ pub fn test_import_vendor() {
                 .unwrap()
                 .program;
             assert_eq!(m.pkgs.len(), pkgs.len());
-            m.pkgs.into_iter().for_each(|(name, modules)| {
+            m.pkgs.clone().into_iter().for_each(|(name, modules)| {
                 println!("{:?} - {:?}", test_case_name, name);
                 assert!(pkgs.contains(&name.as_str()));
                 for pkg in pkgs.clone() {
                     if name == pkg {
                         if name == "__main__" {
                             assert_eq!(modules.len(), 1);
-                            assert_eq!(modules.get(0).unwrap().filename, test_case_path);
+                            let module = m.get_module(modules.get(0).unwrap()).unwrap().unwrap();
+                            assert_eq!(module.filename, test_case_path);
                         } else {
                             modules.into_iter().for_each(|module| {
+                                let module = m.get_module(&module).unwrap().unwrap();
                                 assert!(module.filename.contains(&vendor));
                             });
                         }
@@ -354,15 +356,17 @@ pub fn test_import_vendor_without_kclmod() {
             .unwrap()
             .program;
         assert_eq!(m.pkgs.len(), pkgs.len());
-        m.pkgs.into_iter().for_each(|(name, modules)| {
+        m.pkgs.clone().into_iter().for_each(|(name, modules)| {
             assert!(pkgs.contains(&name.as_str()));
             for pkg in pkgs.clone() {
                 if name == pkg {
                     if name == "__main__" {
                         assert_eq!(modules.len(), 1);
-                        assert_eq!(modules.get(0).unwrap().filename, test_case_path);
+                        let module = m.get_module(modules.get(0).unwrap()).unwrap().unwrap();
+                        assert_eq!(module.filename, test_case_path);
                     } else {
                         modules.into_iter().for_each(|module| {
+                            let module = m.get_module(&module).unwrap().unwrap();
                             assert!(module.filename.contains(&vendor));
                         });
                     }
@@ -594,15 +598,17 @@ fn test_import_vendor_by_external_arguments() {
             .unwrap()
             .program;
         assert_eq!(m.pkgs.len(), pkgs.len());
-        m.pkgs.into_iter().for_each(|(name, modules)| {
+        m.pkgs.clone().into_iter().for_each(|(name, modules)| {
             assert!(pkgs.contains(&name.as_str()));
             for pkg in pkgs.clone() {
                 if name == pkg {
                     if name == "__main__" {
                         assert_eq!(modules.len(), 1);
-                        assert_eq!(modules.get(0).unwrap().filename, test_case_path);
+                        let module = m.get_module(modules.get(0).unwrap()).unwrap().unwrap();
+                        assert_eq!(module.filename, test_case_path);
                     } else {
                         modules.into_iter().for_each(|module| {
+                            let module = m.get_module(&module).unwrap().unwrap();
                             assert!(module.filename.contains(&vendor));
                         });
                     }

@@ -317,7 +317,7 @@ pub type KCLModuleCache = Arc<RwLock<ModuleCache>>;
 #[derive(Default, Debug)]
 pub struct ModuleCache {
     /// File ast cache
-    pub ast_cache: IndexMap<PathBuf, Arc<ast::Module>>,
+    pub ast_cache: IndexMap<PathBuf, Arc<RwLock<ast::Module>>>,
     /// Which pkgs the file belongs to. Sometimes a file is not only contained in the pkg in the file system directory, but may also be in the main package.
     pub file_pkg: IndexMap<PathBuf, HashSet<PkgFile>>,
     /// File dependency cache
@@ -682,7 +682,7 @@ pub fn parse_file(
     file: PkgFile,
     src: Option<String>,
     module_cache: KCLModuleCache,
-    pkgs: &mut HashMap<String, Vec<Module>>,
+    pkgs: &mut HashMap<String, Vec<String>>,
     pkgmap: &mut PkgMap,
     file_graph: FileGraphCache,
     opts: &LoadProgramOptions,
@@ -695,20 +695,15 @@ pub fn parse_file(
         }
         .cloned(),
     };
-    let m = Arc::new(parse_file_with_session(
-        sess.clone(),
-        file.path.to_str().unwrap(),
-        src,
-    )?);
-
-    let deps = get_deps(&file, m.as_ref(), pkgs, pkgmap, opts, sess)?;
+    let m = parse_file_with_session(sess.clone(), file.path.to_str().unwrap(), src)?;
+    let deps = get_deps(&file, &m, pkgs, pkgmap, opts, sess)?;
     let dep_files = deps.keys().map(|f| f.clone()).collect();
     pkgmap.extend(deps.clone());
     match &mut module_cache.write() {
         Ok(module_cache) => {
             module_cache
                 .ast_cache
-                .insert(file.canonicalize(), m.clone());
+                .insert(file.canonicalize(), Arc::new(RwLock::new(m)));
             match module_cache.file_pkg.get_mut(&file.canonicalize()) {
                 Some(s) => {
                     s.insert(file.clone());
@@ -737,7 +732,7 @@ pub fn parse_file(
 pub fn get_deps(
     file: &PkgFile,
     m: &Module,
-    modules: &mut HashMap<String, Vec<Module>>,
+    modules: &mut HashMap<String, Vec<String>>,
     pkgmap: &mut PkgMap,
     opts: &LoadProgramOptions,
     sess: ParseSessionRef,
@@ -790,7 +785,7 @@ pub fn parse_pkg(
     sess: ParseSessionRef,
     files: Vec<(PkgFile, Option<String>)>,
     module_cache: KCLModuleCache,
-    pkgs: &mut HashMap<String, Vec<Module>>,
+    pkgs: &mut HashMap<String, Vec<String>>,
     pkgmap: &mut PkgMap,
     file_graph: FileGraphCache,
     opts: &LoadProgramOptions,
@@ -816,7 +811,7 @@ pub fn parse_entry(
     sess: ParseSessionRef,
     entry: &entry::Entry,
     module_cache: KCLModuleCache,
-    pkgs: &mut HashMap<String, Vec<Module>>,
+    pkgs: &mut HashMap<String, Vec<String>>,
     pkgmap: &mut PkgMap,
     file_graph: FileGraphCache,
     opts: &LoadProgramOptions,
@@ -876,7 +871,8 @@ pub fn parse_entry(
                 Ok(m_cache) => match m_cache.ast_cache.get(&file.canonicalize()) {
                     Some(m) => {
                         let deps = m_cache.dep_cache.get(&file).cloned().unwrap_or_else(|| {
-                            get_deps(&file, m.as_ref(), pkgs, pkgmap, opts, sess.clone()).unwrap()
+                            get_deps(&file, &m.read().unwrap(), pkgs, pkgmap, opts, sess.clone())
+                                .unwrap()
                         });
                         let dep_files: Vec<PkgFile> = deps.keys().map(|f| f.clone()).collect();
                         pkgmap.extend(deps.clone());
@@ -932,9 +928,10 @@ pub fn parse_program(
 ) -> Result<LoadProgramResult> {
     let compile_entries = get_compile_entries_from_paths(&paths, &opts)?;
     let workdir = compile_entries.get_root_path().to_string();
-    let mut pkgs: HashMap<String, Vec<Module>> = HashMap::new();
+    let mut pkgs: HashMap<String, Vec<String>> = HashMap::new();
     let mut pkgmap = PkgMap::new();
     let mut new_files = HashSet::new();
+
     for entry in compile_entries.iter() {
         new_files.extend(parse_entry(
             sess.clone(),
@@ -980,8 +977,10 @@ pub fn parse_program(
         Err(e) => return Err(anyhow::anyhow!("Parse program failed: {e}")),
     };
 
+    let mut modules: HashMap<String, Arc<RwLock<Module>>> = HashMap::new();
     for file in files.iter() {
-        let mut m = match module_cache.read() {
+        let filename = file.path.adjust_canonicalization();
+        let m_ref = match module_cache.read() {
             Ok(module_cache) => module_cache
                 .ast_cache
                 .get(&file.canonicalize())
@@ -989,33 +988,31 @@ pub fn parse_program(
                     "Module not found in module: {:?}",
                     file.canonicalize()
                 ))
-                .as_ref()
                 .clone(),
             Err(e) => return Err(anyhow::anyhow!("Parse program failed: {e}")),
         };
         if new_files.contains(file) {
             let pkg = pkgmap.get(file).expect("file not in pkgmap");
+            let mut m = m_ref.write().unwrap();
             fix_rel_import_path_with_file(&pkg.pkg_root, &mut m, file, &pkgmap, opts, sess.clone());
-            let m = Arc::new(m.clone());
-            match &mut module_cache.write() {
-                Ok(module_cache) => module_cache.ast_cache.insert(file.canonicalize(), m),
-                Err(e) => return Err(anyhow::anyhow!("Parse program failed: {e}")),
-            };
         }
-
+        modules.insert(filename.clone(), m_ref);
         match pkgs.get_mut(&file.pkg_path) {
-            Some(modules) => {
-                modules.push(m);
+            Some(pkg_modules) => {
+                pkg_modules.push(filename);
             }
             None => {
-                pkgs.insert(file.pkg_path.clone(), vec![m]);
+                pkgs.insert(file.pkg_path.clone(), vec![filename]);
             }
         }
     }
+
     let program = ast::Program {
         root: workdir,
         pkgs,
+        modules,
     };
+
     Ok(LoadProgramResult {
         program,
         errors: sess.1.read().diagnostics.clone(),

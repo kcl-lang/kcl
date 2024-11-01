@@ -2,7 +2,7 @@ use anyhow::anyhow;
 use std::sync::Arc;
 
 use indexmap::IndexMap;
-use kclvm_ast::ast;
+use kclvm_ast::ast::{self, Stmt};
 use kclvm_ast::pos::GetPos;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
 use kclvm_error::{diagnostic::Range, Position};
@@ -22,7 +22,7 @@ use super::AdvancedResolver;
 
 type ResolvedResult = anyhow::Result<Option<SymbolRef>>;
 
-impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
+impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'_> {
     type Result = anyhow::Result<Option<SymbolRef>>;
 
     fn walk_module(&mut self, module: &'ctx ast::Module) -> Self::Result {
@@ -1011,7 +1011,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'ctx> {
     }
 }
 
-impl<'ctx> AdvancedResolver<'ctx> {
+impl<'ctx> AdvancedResolver<'_> {
     #[inline]
     pub fn expr(&mut self, expr: &'ctx ast::NodeRef<ast::Expr>) -> ResolvedResult {
         if matches!(
@@ -2004,5 +2004,14 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 );
             }
         }
+    }
+
+    pub(crate) fn walk_module_schemas(&mut self, module: &'ctx ast::Module) -> anyhow::Result<()> {
+        for stmt in module.body.iter() {
+            if matches!(stmt.node, Stmt::Schema(_)) {
+                self.stmt(stmt)?;
+            }
+        }
+        Ok(())
     }
 }

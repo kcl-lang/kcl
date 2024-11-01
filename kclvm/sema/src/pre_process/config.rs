@@ -125,70 +125,66 @@ impl ConfigMergeTransformer {
             Vec<(String, usize, usize, ConfigMergeKind)>,
         > = IndexMap::default();
         // 1. Collect merged config
-        if let Some(modules) = program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
-            for (module_id, module) in modules.iter_mut().enumerate() {
-                for (i, stmt) in module.body.iter_mut().enumerate() {
-                    match &mut stmt.node {
-                        ast::Stmt::Unification(unification_stmt)
-                            if !unification_stmt.target.node.names.is_empty() =>
-                        {
-                            let name = &unification_stmt.target.node.names[0].node;
-                            match name_declaration_mapping.get_mut(name) {
-                                Some(declarations) => declarations.push((
-                                    module.filename.to_string(),
-                                    module_id,
-                                    i,
-                                    ConfigMergeKind::Union,
-                                )),
-                                None => {
-                                    name_declaration_mapping.insert(
-                                        name.to_string(),
-                                        vec![(
-                                            module.filename.to_string(),
-                                            module_id,
-                                            i,
-                                            ConfigMergeKind::Union,
-                                        )],
-                                    );
-                                }
+        let modules = program.get_modules_for_pkg(kclvm_ast::MAIN_PKG);
+        for (module_id, module) in modules.iter().enumerate() {
+            let mut module = module.write().expect("Failed to acquire module lock");
+            let filename = module.filename.to_string();
+            for (i, stmt) in module.body.iter_mut().enumerate() {
+                match &mut stmt.node {
+                    ast::Stmt::Unification(unification_stmt)
+                        if !unification_stmt.target.node.names.is_empty() =>
+                    {
+                        let name = &unification_stmt.target.node.names[0].node;
+                        match name_declaration_mapping.get_mut(name) {
+                            Some(declarations) => declarations.push((
+                                filename.clone(),
+                                module_id,
+                                i,
+                                ConfigMergeKind::Union,
+                            )),
+                            None => {
+                                name_declaration_mapping.insert(
+                                    name.to_string(),
+                                    vec![(filename.clone(), module_id, i, ConfigMergeKind::Union)],
+                                );
                             }
                         }
-                        ast::Stmt::Assign(assign_stmt) => {
-                            if let ast::Expr::Schema(_) = assign_stmt.value.node {
-                                for target in &assign_stmt.targets {
-                                    if target.node.paths.is_empty() {
-                                        let name = &target.node.name.node;
-                                        match name_declaration_mapping.get_mut(name) {
-                                            Some(declarations) => {
-                                                // A hidden var is mutable.
-                                                if is_private_field(name) {
-                                                    declarations.clear();
-                                                    declarations.push((
-                                                        module.filename.to_string(),
-                                                        module_id,
-                                                        i,
-                                                        ConfigMergeKind::Override,
-                                                    ))
-                                                }
+                    }
+                    ast::Stmt::Assign(assign_stmt) => {
+                        if let ast::Expr::Schema(_) = assign_stmt.value.node {
+                            for target in &assign_stmt.targets {
+                                if target.node.paths.is_empty() {
+                                    let name = &target.node.name.node;
+                                    match name_declaration_mapping.get_mut(name) {
+                                        Some(declarations) => {
+                                            // A hidden var is mutable.
+                                            if is_private_field(name) {
+                                                declarations.clear();
+                                                declarations.push((
+                                                    filename.clone(),
+                                                    module_id,
+                                                    i,
+                                                    ConfigMergeKind::Override,
+                                                ))
                                             }
-                                            None => {
-                                                name_declaration_mapping.insert(
-                                                    name.to_string(),
-                                                    vec![(
-                                                        module.filename.to_string(),
-                                                        module_id,
-                                                        i,
-                                                        ConfigMergeKind::Override,
-                                                    )],
-                                                );
-                                            }
+                                        }
+                                        None => {
+                                            name_declaration_mapping.insert(
+                                                name.to_string(),
+                                                vec![(
+                                                    filename.clone(),
+                                                    module_id,
+                                                    i,
+                                                    ConfigMergeKind::Override,
+                                                )],
+                                            );
                                         }
                                     }
                                 }
                             }
                         }
-                        _ => {}
                     }
+                    _ => {}
                 }
             }
         }
@@ -199,106 +195,104 @@ impl ConfigMergeTransformer {
                 let (filename, merged_id, merged_index, merged_kind) = index_list.last().unwrap();
                 let mut items: Vec<ast::NodeRef<ast::ConfigEntry>> = vec![];
                 for (merged_filename, merged_id, index, kind) in index_list {
-                    if let Some(modules) = program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
-                        for (module_id, module) in modules.iter_mut().enumerate() {
-                            if &module.filename == merged_filename && module_id == *merged_id {
-                                let stmt = module.body.get_mut(*index).unwrap();
-                                match &mut stmt.node {
-                                    ast::Stmt::Unification(unification_stmt)
-                                        if matches!(kind, ConfigMergeKind::Union) =>
+                    let modules = program.get_modules_for_pkg(kclvm_ast::MAIN_PKG);
+                    for (module_id, module) in modules.iter().enumerate() {
+                        let mut module = module.write().expect("Failed to acquire module lock");
+                        if &module.filename == merged_filename && module_id == *merged_id {
+                            let stmt = module.body.get_mut(*index).unwrap();
+                            match &mut stmt.node {
+                                ast::Stmt::Unification(unification_stmt)
+                                    if matches!(kind, ConfigMergeKind::Union) =>
+                                {
+                                    if let ast::Expr::Config(config_expr) =
+                                        &mut unification_stmt.value.node.config.node
+                                    {
+                                        let mut config_items = config_expr.items.clone();
+                                        items.append(&mut config_items);
+                                    }
+                                }
+                                ast::Stmt::Assign(assign_stmt)
+                                    if matches!(kind, ConfigMergeKind::Override) =>
+                                {
+                                    if let ast::Expr::Schema(schema_expr) =
+                                        &mut assign_stmt.value.node
                                     {
                                         if let ast::Expr::Config(config_expr) =
-                                            &mut unification_stmt.value.node.config.node
+                                            &mut schema_expr.config.node
                                         {
                                             let mut config_items = config_expr.items.clone();
                                             items.append(&mut config_items);
                                         }
                                     }
-                                    ast::Stmt::Assign(assign_stmt)
-                                        if matches!(kind, ConfigMergeKind::Override) =>
-                                    {
-                                        if let ast::Expr::Schema(schema_expr) =
-                                            &mut assign_stmt.value.node
-                                        {
-                                            if let ast::Expr::Config(config_expr) =
-                                                &mut schema_expr.config.node
-                                            {
-                                                let mut config_items = config_expr.items.clone();
-                                                items.append(&mut config_items);
-                                            }
-                                        }
-                                    }
-                                    _ => {
-                                        bug!("mismatch ast node and config merge kind: {:?}", kind)
-                                    }
+                                }
+                                _ => {
+                                    bug!("mismatch ast node and config merge kind: {:?}", kind)
                                 }
                             }
                         }
                     }
                 }
-                if let Some(modules) = program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
-                    for (module_id, module) in modules.iter_mut().enumerate() {
-                        if &module.filename == filename && module_id == *merged_id {
-                            if let Some(stmt) = module.body.get_mut(*merged_index) {
-                                match &mut stmt.node {
-                                    ast::Stmt::Unification(unification_stmt)
-                                        if matches!(merged_kind, ConfigMergeKind::Union) =>
+                for (module_id, module) in modules.iter().enumerate() {
+                    let mut module = module.write().expect("Failed to acquire module lock");
+                    if &module.filename == filename && module_id == *merged_id {
+                        if let Some(stmt) = module.body.get_mut(*merged_index) {
+                            match &mut stmt.node {
+                                ast::Stmt::Unification(unification_stmt)
+                                    if matches!(merged_kind, ConfigMergeKind::Union) =>
+                                {
+                                    if let ast::Expr::Config(config_expr) =
+                                        &mut unification_stmt.value.node.config.node
+                                    {
+                                        config_expr.items = unify_config_entries(&items);
+                                    }
+                                }
+                                ast::Stmt::Assign(assign_stmt)
+                                    if matches!(merged_kind, ConfigMergeKind::Override) =>
+                                {
+                                    if let ast::Expr::Schema(schema_expr) =
+                                        &mut assign_stmt.value.node
                                     {
                                         if let ast::Expr::Config(config_expr) =
-                                            &mut unification_stmt.value.node.config.node
+                                            &mut schema_expr.config.node
                                         {
                                             config_expr.items = unify_config_entries(&items);
                                         }
                                     }
-                                    ast::Stmt::Assign(assign_stmt)
-                                        if matches!(merged_kind, ConfigMergeKind::Override) =>
-                                    {
-                                        if let ast::Expr::Schema(schema_expr) =
-                                            &mut assign_stmt.value.node
-                                        {
-                                            if let ast::Expr::Config(config_expr) =
-                                                &mut schema_expr.config.node
-                                            {
-                                                config_expr.items = unify_config_entries(&items);
-                                            }
-                                        }
-                                    }
-                                    _ => bug!(
-                                        "mismatch ast node and config merge kind: {:?}",
-                                        merged_kind
-                                    ),
                                 }
+                                _ => bug!(
+                                    "mismatch ast node and config merge kind: {:?}",
+                                    merged_kind
+                                ),
                             }
-                            break;
                         }
+                        break;
                     }
                 }
             }
         }
         // 3. Delete redundant config.
-        if let Some(modules) = program.pkgs.get_mut(kclvm_ast::MAIN_PKG) {
-            for (i, module) in modules.iter_mut().enumerate() {
-                let mut delete_index_set: IndexSet<usize> = IndexSet::default();
-                for (_, index_list) in &name_declaration_mapping {
-                    let index_len = index_list.len();
-                    if index_len > 1 {
-                        for (filename, module_id, index, _) in &index_list[..index_len - 1] {
-                            // Use module filename and index to prevent the same compile filenames
-                            // in the main package.
-                            if &module.filename == filename && i == *module_id {
-                                delete_index_set.insert(*index);
-                            }
+        for (i, module) in modules.iter().enumerate() {
+            let mut module = module.write().expect("Failed to acquire module lock");
+            let mut delete_index_set: IndexSet<usize> = IndexSet::default();
+            for (_, index_list) in &name_declaration_mapping {
+                let index_len = index_list.len();
+                if index_len > 1 {
+                    for (filename, module_id, index, _) in &index_list[..index_len - 1] {
+                        // Use module filename and index to prevent the same compile filenames
+                        // in the main package.
+                        if &module.filename == filename && i == *module_id {
+                            delete_index_set.insert(*index);
                         }
                     }
                 }
-                let mut body: Vec<(usize, &ast::NodeRef<ast::Stmt>)> =
-                    module.body.iter().enumerate().collect();
-                body.retain(|(idx, _)| !delete_index_set.contains(idx));
-                module.body = body
-                    .iter()
-                    .map(|(_, stmt)| (*stmt).clone())
-                    .collect::<Vec<ast::NodeRef<ast::Stmt>>>();
             }
+            let mut body: Vec<(usize, &ast::NodeRef<ast::Stmt>)> =
+                module.body.iter().enumerate().collect();
+            body.retain(|(idx, _)| !delete_index_set.contains(idx));
+            module.body = body
+                .iter()
+                .map(|(_, stmt)| (*stmt).clone())
+                .collect::<Vec<ast::NodeRef<ast::Stmt>>>();
         }
     }
 }

@@ -9,7 +9,7 @@ use kclvm_error::diagnostic::Range;
 
 use crate::ty::TypeRef;
 
-impl<'ctx> Resolver<'ctx> {
+impl<'ctx> Resolver<'_> {
     fn get_func_name(&mut self, func: &ast::Expr) -> String {
         let mut callee = func;
         loop {

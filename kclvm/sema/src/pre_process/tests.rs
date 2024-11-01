@@ -170,10 +170,14 @@ fn test_config_merge() {
     .unwrap()
     .program;
     merge_program(&mut program);
-    let modules = program.pkgs.get_mut(kclvm_ast::MAIN_PKG).unwrap();
+    let modules = program.pkgs.get(kclvm_ast::MAIN_PKG).unwrap();
     assert_eq!(modules.len(), 3);
     // Test the module merge result
     let module = modules.last().unwrap();
+    let module = program
+        .get_module(module)
+        .expect("Failed to acquire module lock")
+        .expect(&format!("module {:?} not found in program", module));
     if let ast::Stmt::Unification(unification) = &module.body[0].node {
         let schema = &unification.value.node;
         if let ast::Expr::Config(config) = &schema.config.node {
@@ -213,10 +217,14 @@ fn test_config_override() {
     .unwrap()
     .program;
     merge_program(&mut program);
-    let modules = program.pkgs.get_mut(kclvm_ast::MAIN_PKG).unwrap();
+    let modules = program.pkgs.get(kclvm_ast::MAIN_PKG).unwrap();
     assert_eq!(modules.len(), 1);
     // Test the module merge result
     let module = modules.first().unwrap();
+    let module = program
+        .get_module(module)
+        .expect("Failed to acquire module lock")
+        .expect(&format!("module {:?} not found in program", module));
     if let ast::Stmt::Unification(unification) = &module.body[2].node {
         let schema = &unification.value.node;
         if let ast::Expr::Config(config) = &schema.config.node {
@@ -245,7 +253,7 @@ fn test_config_override() {
 #[test]
 fn test_skip_merge_program() {
     let sess = Arc::new(ParseSession::default());
-    let mut program = load_program(
+    let program = load_program(
         sess,
         &[
             "./src/pre_process/test_data/config_merge/def.k",
@@ -259,10 +267,18 @@ fn test_skip_merge_program() {
     .program;
     // skip merge program and save raw config ast node
     // merge_program(&mut program);
-    let modules = program.pkgs.get_mut(kclvm_ast::MAIN_PKG).unwrap();
+    let modules = program.pkgs.get(kclvm_ast::MAIN_PKG).unwrap();
     assert_eq!(modules.len(), 3);
     let config1 = &modules[1];
     let config2 = &modules[1];
+    let config1 = program
+        .get_module(config1)
+        .expect("Failed to acquire module lock")
+        .expect(&format!("module {:?} not found in program", config1));
+    let config2 = program
+        .get_module(config2)
+        .expect("Failed to acquire module lock")
+        .expect(&format!("module {:?} not found in program", config2));
     if let ast::Stmt::Unification(unification) = &config1.body[0].node {
         let schema = &unification.value.node;
         if let ast::Expr::Config(config) = &schema.config.node {

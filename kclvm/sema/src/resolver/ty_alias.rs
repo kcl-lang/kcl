@@ -146,10 +146,14 @@ pub fn type_alias_pass(
     program: &mut ast::Program,
     type_alias_mapping: IndexMap<String, IndexMap<String, String>>,
 ) {
-    for (pkgpath, modules) in program.pkgs.iter_mut() {
-        for module in modules.iter_mut() {
+    for (pkgpath, modules) in program.pkgs.iter() {
+        for module in modules.iter() {
+            let mut module = program
+                .get_module_mut(module)
+                .expect("Failed to acquire module lock")
+                .expect(&format!("module {:?} not found in program", module));
             if let Some(type_alias_mapping) = type_alias_mapping.get(pkgpath) {
-                fix_type_alias_identifier(pkgpath, module, type_alias_mapping.clone());
+                fix_type_alias_identifier(pkgpath, &mut module, type_alias_mapping.clone());
             }
         }
     }

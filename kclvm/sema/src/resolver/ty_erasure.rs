@@ -66,9 +66,13 @@ impl<'ctx> MutSelfMutWalker<'ctx> for TypeErasureTransformer {
 
 /// Run a pass on AST and change the function type to the `Named("function")` type
 pub fn type_func_erasure_pass<'ctx>(program: &'ctx mut ast::Program) {
-    for (_, modules) in program.pkgs.iter_mut() {
-        for module in modules.iter_mut() {
-            TypeErasureTransformer::default().walk_module(module);
+    for (_, modules) in program.pkgs.iter() {
+        for module in modules.iter() {
+            let mut module = program
+                .get_module_mut(module)
+                .expect("Failed to acquire module lock")
+                .expect(&format!("module {:?} not found in program", module));
+            TypeErasureTransformer::default().walk_module(&mut module);
         }
     }
 }

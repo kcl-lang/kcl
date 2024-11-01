@@ -6,6 +6,7 @@ use std::string::String;
 use crate::gpyrpc::*;
 
 use kcl_language_server::rename;
+use kclvm_ast::ast::SerializeProgram;
 use kclvm_config::settings::build_settings_pathbuf;
 use kclvm_loader::option::list_options;
 use kclvm_loader::{load_packages_with_cache, LoadPackageOptions};
@@ -147,7 +148,8 @@ impl KclvmServiceImpl {
             }),
             Some(KCLModuleCache::default()),
         )?;
-        let ast_json = serde_json::to_string(&result.program)?;
+        let serialize_program: SerializeProgram = result.program.into();
+        let ast_json = serde_json::to_string(&serialize_program)?;
 
         Ok(ParseProgramResult {
             ast_json,
@@ -264,7 +266,8 @@ impl KclvmServiceImpl {
             // Thread local options
             kclvm_ast::ast::set_should_serialize_id(true);
         }
-        let program_json = serde_json::to_string(&packages.program)?;
+        let serialize_program: SerializeProgram = packages.program.into();
+        let program_json = serde_json::to_string(&serialize_program)?;
         let mut node_symbol_map = HashMap::new();
         let mut symbol_node_map = HashMap::new();
         let mut fully_qualified_name_map = HashMap::new();

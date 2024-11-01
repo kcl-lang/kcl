@@ -10,7 +10,7 @@ use kclvm_ast::walker::MutSelfTypedResultWalker;
 use kclvm_ast_pretty::{print_ast_node, ASTNode};
 use kclvm_error::diagnostic::Range;
 
-impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'ctx> {
+impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'_> {
     type Result = Option<Vec<SymbolRef>>;
     fn walk_module(&mut self, module: &'ctx ast::Module) -> Self::Result {
         let owner = *self.ctx.owner_symbols.last().unwrap();

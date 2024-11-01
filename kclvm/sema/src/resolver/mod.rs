@@ -76,6 +76,11 @@ impl<'ctx> Resolver<'ctx> {
         match self.program.pkgs.get(pkgpath) {
             Some(modules) => {
                 for module in modules {
+                    let module = self
+                        .program
+                        .get_module(module)
+                        .expect("Failed to acquire module lock")
+                        .expect(&format!("module {:?} not found in program", module));
                     self.ctx.filename = module.filename.to_string();
                     if let scope::ScopeKind::Package(files) = &mut self.scope.borrow_mut().kind {
                         files.insert(module.filename.to_string());
@@ -84,7 +89,7 @@ impl<'ctx> Resolver<'ctx> {
                         self.stmt(&stmt);
                     }
                     if self.options.lint_check {
-                        self.lint_check_module(module);
+                        self.lint_check_module(&module);
                     }
                 }
             }

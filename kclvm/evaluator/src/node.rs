@@ -2,11 +2,11 @@
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use anyhow::Ok;
 use generational_arena::Index;
-use kclvm_ast::ast::{self, CallExpr, ConfigEntry, NodeRef};
+use kclvm_ast::ast::{self, CallExpr, ConfigEntry, Module, NodeRef};
 use kclvm_ast::walker::TypedResultWalker;
 use kclvm_runtime::{
     schema_assert, schema_runtime_type, ConfigEntryOperationKind, DecoratorValue, RuntimeErrorType,
@@ -233,7 +233,17 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             if let Some(modules) = self.program.pkgs.get(&import_stmt.path.node) {
                 self.push_pkgpath(&pkgpath);
                 self.init_scope(&pkgpath);
-                self.compile_ast_modules(modules);
+                let modules: Vec<Arc<RwLock<Module>>> = modules
+                    .iter()
+                    .map(|m| {
+                        let m = self
+                            .program
+                            .get_module_ref(&m)
+                            .expect(&format!("module {:?} not found in program", m));
+                        m
+                    })
+                    .collect();
+                self.compile_ast_modules(&modules);
                 self.pop_pkgpath();
             }
         }
@@ -1154,6 +1164,11 @@ impl<'ctx> Evaluator<'ctx> {
                     .get(&pkgpath_without_prefix!(frame.pkgpath))
                 {
                     if let Some(module) = module_list.get(*index) {
+                        let module = self
+                            .program
+                            .get_module(module)
+                            .expect("Failed to acquire module lock")
+                            .expect(&format!("module {:?} not found in program", module));
                         if let Some(stmt) = module.body.get(setter.stmt) {
                             self.push_backtrack_meta(setter);
                             self.walk_stmt(stmt).expect(INTERNAL_ERROR_MSG);

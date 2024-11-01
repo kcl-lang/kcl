@@ -8,7 +8,7 @@ use kclvm_error::*;
 use super::node::ResolvedResult;
 use super::scope::{ScopeObject, ScopeObjectKind};
 
-impl<'ctx> Resolver<'ctx> {
+impl<'ctx> Resolver<'_> {
     /// Resolve variables.
     pub fn resolve_var(
         &mut self,

@@ -697,6 +697,11 @@ pub fn list_variables(
 
     for (_, modules) in load_result.program.pkgs.iter() {
         for module in modules.iter() {
+            let module = load_result
+                .program
+                .get_module(module)
+                .expect("Failed to acquire module lock")
+                .expect(&format!("module {:?} not found in program", module));
             selector.walk_module(&module);
         }
     }

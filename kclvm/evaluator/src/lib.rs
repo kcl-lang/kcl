@@ -151,10 +151,9 @@ impl<'ctx> Evaluator<'ctx> {
 
     /// Evaluate the program and return the JSON and YAML result.
     pub fn run(self: &Evaluator<'ctx>) -> Result<(String, String)> {
-        if let Some(modules) = self.program.pkgs.get(kclvm_ast::MAIN_PKG) {
-            self.init_scope(kclvm_ast::MAIN_PKG);
-            self.compile_ast_modules(modules);
-        }
+        let modules = self.program.get_modules_for_pkg(kclvm_ast::MAIN_PKG);
+        self.init_scope(kclvm_ast::MAIN_PKG);
+        self.compile_ast_modules(&modules);
         Ok(self.plan_globals_to_string())
     }
 
@@ -163,11 +162,12 @@ impl<'ctx> Evaluator<'ctx> {
     /// return the result of the function run, rather than a dictionary composed of each
     /// configuration attribute.
     pub fn run_as_function(self: &Evaluator<'ctx>) -> ValueRef {
-        if let Some(modules) = self.program.pkgs.get(kclvm_ast::MAIN_PKG) {
-            self.init_scope(kclvm_ast::MAIN_PKG);
-            self.compile_ast_modules(modules)
-        } else {
+        let modules = self.program.get_modules_for_pkg(kclvm_ast::MAIN_PKG);
+        if modules.is_empty() {
             ValueRef::undefined()
+        } else {
+            self.init_scope(kclvm_ast::MAIN_PKG);
+            self.compile_ast_modules(&modules)
         }
     }
 

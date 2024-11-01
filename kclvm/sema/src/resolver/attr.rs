@@ -13,7 +13,7 @@ use kclvm_error::*;
 
 use super::node::ResolvedResult;
 
-impl<'ctx> Resolver<'ctx> {
+impl<'ctx> Resolver<'_> {
     pub fn check_attr_ty(&mut self, attr_ty: &Type, range: Range) {
         if !attr_ty.is_any() && !attr_ty.is_key() {
             self.handler.add_error(
