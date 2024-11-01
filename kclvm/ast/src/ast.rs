@@ -452,11 +452,11 @@ impl Program {
     pub fn get_module(
         &self,
         module_path: &str,
-    ) -> Result<Option<RwLockReadGuard<'_, Module>>, &str> {
+    ) -> anyhow::Result<Option<RwLockReadGuard<'_, Module>>> {
         match self.modules.get(module_path) {
             Some(module_ref) => match module_ref.read() {
                 Ok(m) => Ok(Some(m)),
-                Err(_) => Err("Failed to acquire module lock"),
+                Err(_) => Err(anyhow::anyhow!("Failed to acquire module lock")),
             },
             None => Ok(None),
         }
@@ -465,11 +465,11 @@ impl Program {
     pub fn get_module_mut(
         &self,
         module_path: &str,
-    ) -> Result<Option<RwLockWriteGuard<'_, Module>>, &str> {
+    ) -> anyhow::Result<Option<RwLockWriteGuard<'_, Module>>> {
         match self.modules.get(module_path) {
             Some(module_ref) => match module_ref.write() {
                 Ok(m) => Ok(Some(m)),
-                Err(_) => Err("Failed to acquire module lock"),
+                Err(_) => Err(anyhow::anyhow!("Failed to acquire module lock")),
             },
             None => Ok(None),
         }
