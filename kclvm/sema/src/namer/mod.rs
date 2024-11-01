@@ -153,12 +153,9 @@ impl<'ctx> Namer<'ctx> {
                     Some(PackageInfo::new(name.to_string(), real_path, false));
             }
 
+            let modules = namer.ctx.program.get_modules_for_pkg(name);
             for module in modules.iter() {
-                let module = program
-                    .get_module(module)
-                    .expect("Failed to acquire module lock")
-                    .expect(&format!("module {:?} not found in program", module));
-
+                let module = module.read().expect("Failed to acquire module lock");
                 namer
                     .ctx
                     .current_package_info

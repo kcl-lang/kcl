@@ -139,11 +139,9 @@ impl<'ctx> AdvancedResolver<'ctx> {
                     pkg_info.kfile_paths.clone(),
                 );
 
+                let modules = advanced_resolver.ctx.program.get_modules_for_pkg(name);
                 for module in modules.iter() {
-                    let module = program
-                        .get_module(module)
-                        .expect("Failed to acquire module lock")
-                        .expect(&format!("module {:?} not found in program", module));
+                    let module = module.read().expect("Failed to acquire module lock");
                     advanced_resolver.ctx.current_filename = Some(module.filename.clone());
                     advanced_resolver.walk_module_schemas(&module)?;
                 }
@@ -171,11 +169,9 @@ impl<'ctx> AdvancedResolver<'ctx> {
                     .unwrap();
 
                 advanced_resolver.ctx.scopes.push(scope_ref);
+                let modules = advanced_resolver.ctx.program.get_modules_for_pkg(name);
                 for module in modules.iter() {
-                    let module = program
-                        .get_module(module)
-                        .expect("Failed to acquire module lock")
-                        .expect(&format!("module {:?} not found in program", module));
+                    let module = module.read().expect("Failed to acquire module lock");
                     advanced_resolver.ctx.current_filename = Some(module.filename.clone());
                     advanced_resolver.walk_module(&module)?;
                 }

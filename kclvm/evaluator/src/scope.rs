@@ -1,10 +1,12 @@
+use std::sync::{Arc, RwLock};
+
 use crate::func::ClosureMap;
 use crate::lazy::merge_setters;
 use crate::{
     error as kcl_error, lazy::LazyEvalScope, rule::RuleEvalContextRef, schema::SchemaEvalContextRef,
 };
 use indexmap::{IndexMap, IndexSet};
-use kclvm_ast::ast::{self, Module};
+use kclvm_ast::ast;
 use kclvm_ast::walker::TypedResultWalker;
 use kclvm_runtime::{ValueRef, _kclvm_get_fn_ptr_by_name, MAIN_PKG_PATH};
 use kclvm_sema::{builtin, plugin};
@@ -37,45 +39,20 @@ impl<'ctx> Evaluator<'ctx> {
             let scopes = vec![Scope::default()];
             pkg_scopes.insert(String::from(pkgpath), scopes);
         }
-        let msg = format!("pkgpath {} is not found", pkgpath);
         // Get the AST module list in the package path.
-        let module_list: Vec<ast::Module> = if self.program.pkgs.contains_key(pkgpath) {
-            let modules = self.program.pkgs.get(pkgpath).expect(&msg);
-            let modules: Vec<Module> = modules
-                .iter()
-                .map(|m| {
-                    self.program
-                        .get_module(m)
-                        .expect("Failed to acquire module lock")
-                        .expect(&format!("module {:?} not found in program", m))
-                        .clone()
-                })
-                .collect();
-            modules
+        let module_list: Vec<Arc<RwLock<ast::Module>>> = if self.program.pkgs.contains_key(pkgpath)
+        {
+            self.program.get_modules_for_pkg(pkgpath)
         } else if pkgpath.starts_with(kclvm_runtime::PKG_PATH_PREFIX)
             && self.program.pkgs.contains_key(&pkgpath[1..])
         {
-            let modules = self
-                .program
-                .pkgs
-                .get(&pkgpath[1..])
-                .expect(kcl_error::INTERNAL_ERROR_MSG);
-            let modules: Vec<Module> = modules
-                .iter()
-                .map(|m| {
-                    self.program
-                        .get_module(m)
-                        .expect("Failed to acquire module lock")
-                        .expect(&format!("module {:?} not found in program", m))
-                        .clone()
-                })
-                .collect();
-            modules
+            self.program.get_modules_for_pkg(&pkgpath[1..])
         } else {
             panic!("pkgpath {} not found", pkgpath);
         };
         // Init all global types including schema and rule.
         for module in &module_list {
+            let module = module.read().expect("Failed to acquire module lock");
             for stmt in &module.body {
                 let name = match &stmt.node {
                     ast::Stmt::Schema(schema_stmt) => schema_stmt.name.node.clone(),
@@ -100,6 +77,7 @@ impl<'ctx> Evaluator<'ctx> {
             let mut setters = IndexMap::new();
             for (index, module) in module_list.iter().enumerate() {
                 let index = self.add_global_body(index);
+                let module = module.read().expect("Failed to acquire module lock");
                 merge_setters(&mut setters, &self.emit_setters(&module.body, Some(index)))
             }
             if !lazy_scopes.contains_key(pkgpath) {

@@ -83,7 +83,7 @@ impl<'ctx> Evaluator<'_> {
     /// 1. scan all possible global variables and allocate undefined values to global pointers.
     /// 2. build all user-defined schema/rule types.
     /// 3. evaluate all codes for the third time.
-    pub(crate) fn compile_ast_modules(&self, modules: &Vec<Arc<RwLock<ast::Module>>>) -> ValueRef {
+    pub(crate) fn compile_ast_modules(&self, modules: &[Arc<RwLock<ast::Module>>]) -> ValueRef {
         // Scan global variables
         for ast_module in modules {
             let ast_module = ast_module.read().expect("Failed to acquire module lock");
