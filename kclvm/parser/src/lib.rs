@@ -129,10 +129,7 @@ pub fn parse_single_file(filename: &str, code: Option<String>) -> Result<ParseFi
             ))
         }
     };
-    let file = PkgFile {
-        path: PathBuf::from(filename),
-        pkg_path: MAIN_PKG.to_string(),
-    };
+    let file = PkgFile::new(PathBuf::from(filename), MAIN_PKG.to_string());
     let deps = if file_graph.contains_file(&file) {
         file_graph.dependencies_of(&file).into_iter().collect()
     } else {
@@ -690,12 +687,12 @@ pub fn parse_file(
     let src = match src {
         Some(src) => Some(src),
         None => match &module_cache.read() {
-            Ok(cache) => cache.source_code.get(&file.canonicalize()),
+            Ok(cache) => cache.source_code.get(file.get_path()),
             Err(_) => None,
         }
         .cloned(),
     };
-    let m = parse_file_with_session(sess.clone(), file.path.to_str().unwrap(), src)?;
+    let m = parse_file_with_session(sess.clone(), file.get_path().to_str().unwrap(), src)?;
     let deps = get_deps(&file, &m, pkgs, pkgmap, opts, sess)?;
     let dep_files = deps.keys().map(|f| f.clone()).collect();
     pkgmap.extend(deps.clone());
@@ -703,15 +700,15 @@ pub fn parse_file(
         Ok(module_cache) => {
             module_cache
                 .ast_cache
-                .insert(file.canonicalize(), Arc::new(RwLock::new(m)));
-            match module_cache.file_pkg.get_mut(&file.canonicalize()) {
+                .insert(file.get_path().clone(), Arc::new(RwLock::new(m)));
+            match module_cache.file_pkg.get_mut(&file.get_path().clone()) {
                 Some(s) => {
                     s.insert(file.clone());
                 }
                 None => {
                     let mut s = HashSet::new();
                     s.insert(file.clone());
-                    module_cache.file_pkg.insert(file.canonicalize(), s);
+                    module_cache.file_pkg.insert(file.get_path().clone(), s);
                 }
             }
             module_cache.dep_cache.insert(file.clone(), deps);
@@ -763,10 +760,7 @@ pub fn get_deps(
                 }
 
                 pkg_info.k_files.iter().for_each(|p| {
-                    let file = PkgFile {
-                        path: p.into(),
-                        pkg_path: pkg_info.pkg_path.clone(),
-                    };
+                    let file = PkgFile::new(p.into(), pkg_info.pkg_path.clone());
                     deps.insert(
                         file.clone(),
                         file_graph::Pkg {
@@ -815,16 +809,14 @@ pub fn parse_entry(
     pkgmap: &mut PkgMap,
     file_graph: FileGraphCache,
     opts: &LoadProgramOptions,
+    parsed_file: &mut HashSet<PkgFile>,
 ) -> Result<HashSet<PkgFile>> {
     let k_files = entry.get_k_files();
     let maybe_k_codes = entry.get_k_codes();
     let mut files = vec![];
     let mut new_files = HashSet::new();
     for (i, f) in k_files.iter().enumerate() {
-        let file = PkgFile {
-            path: f.adjust_canonicalization().into(),
-            pkg_path: MAIN_PKG.to_string(),
-        };
+        let file = PkgFile::new(f.adjust_canonicalization().into(), MAIN_PKG.to_string());
         files.push((file.clone(), maybe_k_codes.get(i).unwrap_or(&None).clone()));
         new_files.insert(file.clone());
         pkgmap.insert(
@@ -845,76 +837,73 @@ pub fn parse_entry(
         opts,
     )?;
     let mut unparsed_file: VecDeque<PkgFile> = dependent_paths.into();
-    let mut parsed_file: HashSet<PkgFile> = HashSet::new();
     while let Some(file) = unparsed_file.pop_front() {
-        if parsed_file.insert(file.clone()) {
-            match &mut module_cache.write() {
-                Ok(m_cache) => match m_cache.file_pkg.get_mut(&file.canonicalize()) {
-                    Some(s) => {
-                        // The module ast has been parsed, but does not belong to the same package
-                        if s.insert(file.clone()) {
-                            new_files.insert(file.clone());
-                        }
-                    }
-                    None => {
-                        let mut s = HashSet::new();
-                        s.insert(file.clone());
-                        m_cache.file_pkg.insert(file.canonicalize(), s);
+        match &mut module_cache.write() {
+            Ok(m_cache) => match m_cache.file_pkg.get_mut(file.get_path()) {
+                Some(s) => {
+                    // The module ast has been parsed, but does not belong to the same package
+                    if s.insert(file.clone()) {
                         new_files.insert(file.clone());
                     }
-                },
-                Err(e) => return Err(anyhow::anyhow!("Parse file failed: {e}")),
-            }
-
-            let module_cache_read = module_cache.read();
-            match &module_cache_read {
-                Ok(m_cache) => match m_cache.ast_cache.get(&file.canonicalize()) {
-                    Some(m) => {
-                        let deps = m_cache.dep_cache.get(&file).cloned().unwrap_or_else(|| {
-                            get_deps(&file, &m.read().unwrap(), pkgs, pkgmap, opts, sess.clone())
-                                .unwrap()
-                        });
-                        let dep_files: Vec<PkgFile> = deps.keys().map(|f| f.clone()).collect();
-                        pkgmap.extend(deps.clone());
-
-                        match &mut file_graph.write() {
-                            Ok(file_graph) => {
-                                file_graph.update_file(&file, &dep_files);
-
-                                for dep in dep_files {
-                                    if !parsed_file.contains(&dep) {
-                                        unparsed_file.push_back(dep.clone());
-                                    }
-                                }
-
-                                continue;
-                            }
-                            Err(e) => return Err(anyhow::anyhow!("Parse entry failed: {e}")),
-                        }
-                    }
-                    None => {
-                        new_files.insert(file.clone());
-                        drop(module_cache_read);
-                        let deps = parse_file(
-                            sess.clone(),
-                            file,
-                            None,
-                            module_cache.clone(),
-                            pkgs,
-                            pkgmap,
-                            file_graph.clone(),
-                            &opts,
-                        )?;
-                        for dep in deps {
-                            if !parsed_file.contains(&dep) {
-                                unparsed_file.push_back(dep.clone());
-                            }
-                        }
-                    }
-                },
-                Err(e) => return Err(anyhow::anyhow!("Parse entry failed: {e}")),
-            };
+                }
+                None => {
+                    let mut s = HashSet::new();
+                    s.insert(file.clone());
+                    m_cache.file_pkg.insert(file.get_path().clone(), s);
+                    new_files.insert(file.clone());
+                }
+            },
+            Err(e) => return Err(anyhow::anyhow!("Parse file failed: {e}")),
         }
+
+        let module_cache_read = module_cache.read();
+        match &module_cache_read {
+            Ok(m_cache) => match m_cache.ast_cache.get(file.get_path()) {
+                Some(m) => {
+                    let deps = m_cache.dep_cache.get(&file).cloned().unwrap_or_else(|| {
+                        get_deps(&file, &m.read().unwrap(), pkgs, pkgmap, opts, sess.clone())
+                            .unwrap()
+                    });
+                    let dep_files: Vec<PkgFile> = deps.keys().map(|f| f.clone()).collect();
+                    pkgmap.extend(deps.clone());
+
+                    match &mut file_graph.write() {
+                        Ok(file_graph) => {
+                            file_graph.update_file(&file, &dep_files);
+
+                            for dep in dep_files {
+                                if parsed_file.insert(dep.clone()) {
+                                    unparsed_file.push_back(dep.clone());
+                                }
+                            }
+
+                            continue;
+                        }
+                        Err(e) => return Err(anyhow::anyhow!("Parse entry failed: {e}")),
+                    }
+                }
+                None => {
+                    new_files.insert(file.clone());
+                    drop(module_cache_read);
+                    let deps = parse_file(
+                        sess.clone(),
+                        file,
+                        None,
+                        module_cache.clone(),
+                        pkgs,
+                        pkgmap,
+                        file_graph.clone(),
+                        &opts,
+                    )?;
+                    for dep in deps {
+                        if parsed_file.insert(dep.clone()) {
+                            unparsed_file.push_back(dep.clone());
+                        }
+                    }
+                }
+            },
+            Err(e) => return Err(anyhow::anyhow!("Parse entry failed: {e}")),
+        };
     }
     Ok(new_files)
 }
@@ -931,7 +920,7 @@ pub fn parse_program(
     let mut pkgs: HashMap<String, Vec<String>> = HashMap::new();
     let mut pkgmap = PkgMap::new();
     let mut new_files = HashSet::new();
-
+    let mut parsed_file: HashSet<PkgFile> = HashSet::new();
     for entry in compile_entries.iter() {
         new_files.extend(parse_entry(
             sess.clone(),
@@ -941,6 +930,7 @@ pub fn parse_program(
             &mut pkgmap,
             file_graph.clone(),
             &opts,
+            &mut parsed_file,
         )?);
     }
 
@@ -979,14 +969,14 @@ pub fn parse_program(
 
     let mut modules: HashMap<String, Arc<RwLock<Module>>> = HashMap::new();
     for file in files.iter() {
-        let filename = file.path.adjust_canonicalization();
+        let filename = file.get_path().to_str().unwrap().to_string();
         let m_ref = match module_cache.read() {
             Ok(module_cache) => module_cache
                 .ast_cache
-                .get(&file.canonicalize())
+                .get(file.get_path())
                 .expect(&format!(
                     "Module not found in module: {:?}",
-                    file.canonicalize()
+                    file.get_path()
                 ))
                 .clone(),
             Err(e) => return Err(anyhow::anyhow!("Parse program failed: {e}")),
@@ -999,7 +989,7 @@ pub fn parse_program(
         modules.insert(filename.clone(), m_ref);
         match pkgs.get_mut(&file.pkg_path) {
             Some(pkg_modules) => {
-                pkg_modules.push(filename);
+                pkg_modules.push(filename.clone());
             }
             None => {
                 pkgs.insert(file.pkg_path.clone(), vec![filename]);
@@ -1016,6 +1006,6 @@ pub fn parse_program(
     Ok(LoadProgramResult {
         program,
         errors: sess.1.read().diagnostics.clone(),
-        paths: files.iter().map(|file| file.path.clone()).collect(),
+        paths: files.iter().map(|file| file.get_path().clone()).collect(),
     })
 }
