@@ -16,13 +16,15 @@ use lsp_types::{
     notification::{Notification, PublishDiagnostics},
     InitializeParams, PublishDiagnosticsParams, WorkspaceFolder,
 };
+use notify::{fsevent::FsEventWatcher, RecursiveMode, Watcher};
 use parking_lot::RwLock;
 use ra_ap_vfs::{ChangeKind, ChangedFile, FileId, Vfs};
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::Mutex;
 use std::thread;
 use std::time::{Duration, SystemTime};
-use std::{sync::Arc, time::Instant};
+use std::{sync::mpsc, sync::Arc, time::Instant};
 
 pub(crate) type RequestHandler = fn(&mut LanguageServerState, lsp_server::Response);
 
@@ -41,6 +43,13 @@ pub(crate) enum Task {
 pub(crate) enum Event {
     Task(Task),
     Lsp(lsp_server::Message),
+    FileWatcher(FileWatcherEvent),
+}
+
+#[allow(unused)]
+#[derive(Debug, Clone)]
+pub(crate) enum FileWatcherEvent {
+    ChangedModFile(Vec<PathBuf>),
 }
 
 pub(crate) struct Handle<H, C> {
@@ -96,6 +105,12 @@ pub(crate) struct LanguageServerState {
     /// Process files that are not in any defined workspace and delete the workspace when closing the file
     pub temporary_workspace: Arc<RwLock<HashMap<FileId, Option<WorkSpaceKind>>>>,
     pub workspace_folders: Option<Vec<WorkspaceFolder>>,
+    /// Actively monitor file system changes. These changes will not be notified through lsp,
+    /// e.g., execute `kcl mod add xxx``, `kcl fmt xxx``
+    pub fs_event_watcher: Handle<
+        Box<FsEventWatcher>,
+        mpsc::Receiver<std::result::Result<notify::Event, notify::Error>>,
+    >,
 }
 
 /// A snapshot of the state of the language server
@@ -134,6 +149,16 @@ impl LanguageServerState {
             Handle { handle, _receiver }
         };
 
+        let fs_event_watcher = {
+            let (tx, rx) = mpsc::channel::<notify::Result<notify::Event>>();
+            let mut watcher = notify::recommended_watcher(tx).unwrap();
+            let handle = Box::new(watcher);
+            Handle {
+                handle,
+                _receiver: rx,
+            }
+        };
+
         let mut state = LanguageServerState {
             sender,
             request_queue: ReqQueue::default(),
@@ -154,6 +179,7 @@ impl LanguageServerState {
             workspace_config_cache: KCLWorkSpaceConfigCache::default(),
             temporary_workspace: Arc::new(RwLock::new(HashMap::new())),
             workspace_folders: initialize_params.workspace_folders.clone(),
+            fs_event_watcher,
         };
 
         state.init_workspaces();
@@ -164,9 +190,40 @@ impl LanguageServerState {
     /// Blocks until a new event is received from one of the many channels the language server
     /// listens to. Returns the first event that is received.
     fn next_event(&self, receiver: &Receiver<lsp_server::Message>) -> Option<Event> {
+        // if let Some(event) = self.fs_event_watcher._receiver.try_iter().next() {
+        for event in self.fs_event_watcher._receiver.try_iter() {
+            if let Ok(e) = event {
+                match e.kind {
+                    notify::EventKind::Modify(modify_kind) => match modify_kind {
+                        notify::event::ModifyKind::Data(data_change) => match data_change {
+                            notify::event::DataChange::Content => {
+                                let paths = e.paths;
+                                let kcl_mod_file: Vec<PathBuf> = paths
+                                    .iter()
+                                    .filter(|p| {
+                                        p.file_name().map(|n| n.to_str().unwrap())
+                                            == Some(kclvm_config::modfile::KCL_MOD_FILE)
+                                    })
+                                    .map(|p| p.clone())
+                                    .collect();
+                                if !kcl_mod_file.is_empty() {
+                                    return Some(Event::FileWatcher(
+                                        FileWatcherEvent::ChangedModFile(kcl_mod_file),
+                                    ));
+                                }
+                            }
+                            _ => {}
+                        },
+                        _ => {}
+                    },
+                    _ => {}
+                }
+            }
+        }
+
         select! {
             recv(receiver) -> msg => msg.ok().map(Event::Lsp),
-            recv(self.task_receiver) -> task => Some(Event::Task(task.unwrap()))
+            recv(self.task_receiver) -> task => Some(Event::Task(task.unwrap())),
         }
     }
 
@@ -196,6 +253,9 @@ impl LanguageServerState {
                     // lsp_server::Message::Response(resp) => self.complete_request(resp),
                     _ => {}
                 }
+            }
+            Event::FileWatcher(file_watcher_event) => {
+                self.handle_file_watcher_event(file_watcher_event)?
             }
         };
 
@@ -397,6 +457,18 @@ impl LanguageServerState {
         Ok(())
     }
 
+    /// Handles a task sent by another async task
+    #[allow(clippy::unnecessary_wraps)]
+    fn handle_file_watcher_event(&mut self, event: FileWatcherEvent) -> anyhow::Result<()> {
+        match event {
+            FileWatcherEvent::ChangedModFile(path) => {
+                //todo
+                eprintln!("handle_file_watcher_event {:?}", path);
+            }
+        }
+        Ok(())
+    }
+
     /// Sends a response to the client. This method logs the time it took us to reply
     /// to a request from the client.
     pub(super) fn respond(&mut self, response: lsp_server::Response) -> anyhow::Result<()> {
@@ -464,6 +536,11 @@ impl LanguageServerState {
         if let Some(workspace_folders) = &self.workspace_folders {
             for folder in workspace_folders {
                 let path = file_path_from_url(&folder.uri).unwrap();
+                let mut watcher = &mut self.fs_event_watcher.handle;
+                watcher
+                    .watch(std::path::Path::new(&path), RecursiveMode::Recursive)
+                    .unwrap();
+                self.log_message(format!("Start watch {:?}", path));
                 let tool = Arc::clone(&self.tool);
                 let (workspaces, failed) = lookup_compile_workspaces(&*tool.read(), &path, true);
 
