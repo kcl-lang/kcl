@@ -2,21 +2,29 @@ use std::{collections::HashMap, path::PathBuf};
 
 use indexmap::IndexMap;
 use kclvm_ast::ast::Module;
+use kclvm_utils::path::PathPrefix;
 use petgraph::{prelude::StableDiGraph, visit::EdgeRef};
 use std::hash::Hash;
 /// File with package info
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct PkgFile {
-    pub path: PathBuf,
+    path: PathBuf,
     pub pkg_path: String,
 }
 
 impl PkgFile {
-    pub fn canonicalize(&self) -> PathBuf {
-        match self.path.canonicalize() {
-            Ok(p) => p.clone(),
-            _ => self.path.clone(),
+    pub fn new(path: PathBuf, pkg_path: String) -> PkgFile {
+        match path.canonicalize() {
+            Ok(p) => PkgFile {
+                path: PathBuf::from(p.adjust_canonicalization()),
+                pkg_path,
+            },
+            Err(_) => PkgFile { path, pkg_path },
         }
+    }
+
+    pub fn get_path(&self) -> &PathBuf {
+        &self.path
     }
 }
 
