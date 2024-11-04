@@ -105,14 +105,22 @@ impl SchemaEvalContext {
         self.optional_mapping = other.optional_mapping.clone();
         self.is_sub_schema = false;
         // Set lazy eval scope.
-        if let Some(scope) = &self.scope {
-            if let Some(other) = &other.scope {
+        if let Some(other) = &other.scope {
+            if let Some(scope) = &self.scope {
                 let mut scope = scope.borrow_mut();
                 let other = other.borrow();
                 scope.cache = other.cache.clone();
                 scope.levels = other.levels.clone();
                 scope.cal_times = other.cal_times.clone();
                 scope.setters = other.setters.clone();
+            } else {
+                let other = other.borrow();
+                self.scope = Some(Rc::new(RefCell::new(LazyEvalScope {
+                    cache: other.cache.clone(),
+                    levels: other.levels.clone(),
+                    cal_times: other.cal_times.clone(),
+                    setters: other.setters.clone(),
+                })))
             }
         }
     }
