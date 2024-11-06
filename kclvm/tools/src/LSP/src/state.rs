@@ -18,7 +18,7 @@ use lsp_types::{
     notification::{Notification, PublishDiagnostics},
     InitializeParams, PublishDiagnosticsParams, WorkspaceFolder,
 };
-use notify::{FsEventWatcher, RecursiveMode, Watcher};
+use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use parking_lot::RwLock;
 use ra_ap_vfs::{ChangeKind, ChangedFile, FileId, Vfs};
 use std::collections::HashMap;
@@ -108,7 +108,7 @@ pub(crate) struct LanguageServerState {
     /// Actively monitor file system changes. These changes will not be notified through lsp,
     /// e.g., execute `kcl mod add xxx`, `kcl fmt xxx`
     pub fs_event_watcher: Handle<
-        Box<FsEventWatcher>,
+        Box<RecommendedWatcher>,
         mpsc::Receiver<std::result::Result<notify::Event, notify::Error>>,
     >,
 }
