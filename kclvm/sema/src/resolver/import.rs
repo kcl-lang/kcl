@@ -42,6 +42,7 @@ impl<'ctx> Resolver<'ctx> {
                         let real_path =
                             Path::new(&self.program.root).join(pkgpath.replace('.', "/"));
                         if !self.program.pkgs.contains_key(pkgpath) {
+                            self.ctx.invalid_pkg_scope.insert(pkgpath.to_string());
                             if real_path.exists() {
                                 self.handler.add_error(
                                     ErrorKind::CannotFindModule,

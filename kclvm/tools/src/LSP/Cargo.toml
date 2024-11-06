@@ -37,13 +37,14 @@ anyhow = { version = "1.0", default-features = false, features = ["std"] }
 crossbeam-channel = { version = "0.5.7", default-features = false }
 ra_ap_vfs = "0.0.149"
 ra_ap_vfs-notify = "0.0.149"
-lsp-types = { version = "0.93.0", features = ["proposed"]}
+lsp-types = { version = "0.93.0", features = ["proposed"] }
 threadpool = { version = "1.8.1", default-features = false }
 salsa = { version = "0.16.1", default-features = false }
 serde_json = { version = "1.0", default-features = false }
 parking_lot = { version = "0.12.0", default-features = false }
 rustc-hash = { version = "1.1.0", default-features = false }
 proc_macro_crate = { path = "../../benches/proc_macro_crate" }
+notify = "7.0.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { version = "1.37.0", features = ["full"] }

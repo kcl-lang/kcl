@@ -1411,6 +1411,94 @@ fn formatting_unsaved_test() {
     )
 }
 
+#[test]
+fn complete_import_external_file_e2e_test() {
+    let path = PathBuf::from(".")
+        .join("src")
+        .join("test_data")
+        .join("completion_test")
+        .join("import")
+        .join("external")
+        .join("external_1")
+        .join("main.k")
+        .canonicalize()
+        .unwrap()
+        .display()
+        .to_string();
+
+    let _ = Command::new("kcl")
+        .arg("mod")
+        .arg("metadata")
+        .arg("--update")
+        .current_dir(
+            PathBuf::from(".")
+                .join("src")
+                .join("test_data")
+                .join("completion_test")
+                .join("import")
+                .join("external")
+                .join("external_1")
+                .canonicalize()
+                .unwrap()
+                .display()
+                .to_string(),
+        )
+        .output()
+        .unwrap();
+    let src = std::fs::read_to_string(path.clone()).unwrap();
+    let server = Project {}.server(InitializeParams::default());
+
+    // Mock open file
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: Url::from_file_path(path.clone()).unwrap(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: src,
+            },
+        },
+    );
+
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+
+    let r: Request = Request::new(
+        id.into(),
+        "textDocument/completion".to_string(),
+        CompletionParams {
+            text_document_position: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier {
+                    uri: Url::from_file_path(path).unwrap(),
+                },
+                position: Position::new(0, 7),
+            },
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+            context: None,
+        },
+    );
+
+    // Send request and wait for it's response
+    let res = server.send_and_receive(r);
+    match res.result.unwrap() {
+        serde_json::Value::Array(vec) => {
+            assert!(
+                (vec.iter()
+                    .find(|v| match v {
+                        serde_json::Value::Object(map) => {
+                            map.get("label").unwrap() == "k8s"
+                        }
+                        _ => false,
+                    })
+                    .is_some()),
+                ""
+            );
+        }
+        _ => panic!("test failed"),
+    }
+}
+
 // Integration testing of lsp and konfig
 fn konfig_path() -> PathBuf {
     let konfig_path = Path::new(".")

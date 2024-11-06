@@ -2,11 +2,13 @@ use crate::analysis::{Analysis, AnalysisDatabase, DBState, OpenFileInfo};
 use crate::compile::{compile, Params};
 use crate::from_lsp::file_path_from_url;
 use crate::to_lsp::{kcl_diag_to_lsp_diags, url_from_path};
-use crate::util::{get_file_name, to_json};
+use crate::util::{filter_kcl_config_file, get_file_name, to_json};
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
 use indexmap::IndexSet;
 use kclvm_driver::toolchain::{self, Toolchain};
-use kclvm_driver::{lookup_compile_workspaces, CompileUnitOptions, WorkSpaceKind};
+use kclvm_driver::{
+    lookup_compile_workspace, lookup_compile_workspaces, CompileUnitOptions, WorkSpaceKind,
+};
 use kclvm_parser::KCLModuleCache;
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::resolver::scope::KCLScopeCache;
@@ -16,13 +18,15 @@ use lsp_types::{
     notification::{Notification, PublishDiagnostics},
     InitializeParams, PublishDiagnosticsParams, WorkspaceFolder,
 };
+use notify::{FsEventWatcher, RecursiveMode, Watcher};
 use parking_lot::RwLock;
 use ra_ap_vfs::{ChangeKind, ChangedFile, FileId, Vfs};
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::thread;
-use std::time::{Duration, SystemTime};
-use std::{sync::Arc, time::Instant};
+use std::time::Duration;
+use std::{sync::mpsc, sync::Arc, time::Instant};
 
 pub(crate) type RequestHandler = fn(&mut LanguageServerState, lsp_server::Response);
 
@@ -41,6 +45,15 @@ pub(crate) enum Task {
 pub(crate) enum Event {
     Task(Task),
     Lsp(lsp_server::Message),
+    FileWatcher(FileWatcherEvent),
+}
+
+#[allow(unused)]
+#[derive(Debug, Clone)]
+pub(crate) enum FileWatcherEvent {
+    ChangedConfigFile(Vec<PathBuf>),
+    RemoveConfigFile(Vec<PathBuf>),
+    CreateConfigFile(Vec<PathBuf>),
 }
 
 pub(crate) struct Handle<H, C> {
@@ -49,8 +62,6 @@ pub(crate) struct Handle<H, C> {
 }
 
 pub(crate) type KCLVfs = Arc<RwLock<Vfs>>;
-pub(crate) type KCLEntryCache =
-    Arc<RwLock<HashMap<String, (CompileUnitOptions, Option<SystemTime>)>>>;
 
 pub(crate) type KCLWorkSpaceConfigCache = Arc<RwLock<HashMap<WorkSpaceKind, CompileUnitOptions>>>;
 
@@ -85,17 +96,21 @@ pub(crate) struct LanguageServerState {
     pub module_cache: KCLModuleCache,
     /// KCL resolver cache
     pub scope_cache: KCLScopeCache,
-    /// KCL compile unit cache cache
-    pub entry_cache: KCLEntryCache,
     /// Toolchain is used to provider KCL tool features for the language server.
     pub tool: KCLToolChain,
     /// KCL globalstate cache
     pub gs_cache: KCLGlobalStateCache,
-
+    /// Compile config cache
     pub workspace_config_cache: KCLWorkSpaceConfigCache,
     /// Process files that are not in any defined workspace and delete the workspace when closing the file
     pub temporary_workspace: Arc<RwLock<HashMap<FileId, Option<WorkSpaceKind>>>>,
     pub workspace_folders: Option<Vec<WorkspaceFolder>>,
+    /// Actively monitor file system changes. These changes will not be notified through lsp,
+    /// e.g., execute `kcl mod add xxx`, `kcl fmt xxx`
+    pub fs_event_watcher: Handle<
+        Box<FsEventWatcher>,
+        mpsc::Receiver<std::result::Result<notify::Event, notify::Error>>,
+    >,
 }
 
 /// A snapshot of the state of the language server
@@ -113,12 +128,12 @@ pub(crate) struct LanguageServerSnapshot {
     pub module_cache: KCLModuleCache,
     /// KCL resolver cache
     pub scope_cache: KCLScopeCache,
-    /// KCL compile unit cache cache
-    pub entry_cache: KCLEntryCache,
     /// Toolchain is used to provider KCL tool features for the language server.
     pub tool: KCLToolChain,
     /// Process files that are not in any defined workspace and delete the work
     pub temporary_workspace: Arc<RwLock<HashMap<FileId, Option<WorkSpaceKind>>>>,
+    /// Compile config cache
+    pub workspace_config_cache: KCLWorkSpaceConfigCache,
 }
 
 #[allow(unused)]
@@ -134,6 +149,16 @@ impl LanguageServerState {
             Handle { handle, _receiver }
         };
 
+        let fs_event_watcher = {
+            let (tx, rx) = mpsc::channel::<notify::Result<notify::Event>>();
+            let mut watcher = notify::recommended_watcher(tx).unwrap();
+            let handle = Box::new(watcher);
+            Handle {
+                handle,
+                _receiver: rx,
+            }
+        };
+
         let mut state = LanguageServerState {
             sender,
             request_queue: ReqQueue::default(),
@@ -147,13 +172,13 @@ impl LanguageServerState {
             loader,
             module_cache: KCLModuleCache::default(),
             scope_cache: KCLScopeCache::default(),
-            entry_cache: KCLEntryCache::default(),
             tool: Arc::new(RwLock::new(toolchain::default())),
             gs_cache: KCLGlobalStateCache::default(),
             request_retry: Arc::new(RwLock::new(HashMap::new())),
             workspace_config_cache: KCLWorkSpaceConfigCache::default(),
             temporary_workspace: Arc::new(RwLock::new(HashMap::new())),
             workspace_folders: initialize_params.workspace_folders.clone(),
+            fs_event_watcher,
         };
 
         state.init_workspaces();
@@ -164,9 +189,53 @@ impl LanguageServerState {
     /// Blocks until a new event is received from one of the many channels the language server
     /// listens to. Returns the first event that is received.
     fn next_event(&self, receiver: &Receiver<lsp_server::Message>) -> Option<Event> {
+        for event in self.fs_event_watcher._receiver.try_iter() {
+            if let Ok(e) = event {
+                match e.kind {
+                    notify::EventKind::Modify(modify_kind) => {
+                        if let notify::event::ModifyKind::Data(data_change) = modify_kind {
+                            if let notify::event::DataChange::Content = data_change {
+                                let paths = e.paths;
+                                let kcl_config_file: Vec<PathBuf> = filter_kcl_config_file(&paths);
+                                if !kcl_config_file.is_empty() {
+                                    return Some(Event::FileWatcher(
+                                        FileWatcherEvent::ChangedConfigFile(kcl_config_file),
+                                    ));
+                                }
+                            }
+                        }
+                    }
+                    notify::EventKind::Remove(remove_kind) => {
+                        if let notify::event::RemoveKind::File = remove_kind {
+                            let paths = e.paths;
+                            let kcl_config_file: Vec<PathBuf> = filter_kcl_config_file(&paths);
+                            if !kcl_config_file.is_empty() {
+                                return Some(Event::FileWatcher(
+                                    FileWatcherEvent::RemoveConfigFile(kcl_config_file),
+                                ));
+                            }
+                        }
+                    }
+
+                    notify::EventKind::Create(create_kind) => {
+                        if let notify::event::CreateKind::File = create_kind {
+                            let paths = e.paths;
+                            let kcl_config_file: Vec<PathBuf> = filter_kcl_config_file(&paths);
+                            if !kcl_config_file.is_empty() {
+                                return Some(Event::FileWatcher(
+                                    FileWatcherEvent::CreateConfigFile(kcl_config_file),
+                                ));
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+
         select! {
             recv(receiver) -> msg => msg.ok().map(Event::Lsp),
-            recv(self.task_receiver) -> task => Some(Event::Task(task.unwrap()))
+            recv(self.task_receiver) -> task => Some(Event::Task(task.unwrap())),
         }
     }
 
@@ -196,6 +265,9 @@ impl LanguageServerState {
                     // lsp_server::Message::Response(resp) => self.complete_request(resp),
                     _ => {}
                 }
+            }
+            Event::FileWatcher(file_watcher_event) => {
+                self.handle_file_watcher_event(file_watcher_event)?
             }
         };
 
@@ -268,9 +340,23 @@ impl LanguageServerState {
                                 "Not contains in any workspace, compile: {:?}",
                                 filename
                             ));
+
                             let tool = Arc::clone(&self.tool);
-                            let (workspaces, failed) =
-                                lookup_compile_workspaces(&*tool.read(), &filename, true);
+                            let (workspaces, failed) = match Path::new(&filename).parent() {
+                                Some(parent_dir) => {
+                                    let (workspaces, failed) = lookup_compile_workspaces(
+                                        &*tool.read(),
+                                        &parent_dir.to_str().unwrap().to_string(),
+                                        true,
+                                    );
+                                    if workspaces.is_empty() {
+                                        lookup_compile_workspaces(&*tool.read(), &filename, true)
+                                    } else {
+                                        (workspaces, failed)
+                                    }
+                                }
+                                None => lookup_compile_workspaces(&*tool.read(), &filename, true),
+                            };
 
                             if workspaces.is_empty() {
                                 self.temporary_workspace.write().remove(&file.file_id);
@@ -397,6 +483,17 @@ impl LanguageServerState {
         Ok(())
     }
 
+    /// Handles a task sent by another async task
+    #[allow(clippy::unnecessary_wraps)]
+    fn handle_file_watcher_event(&mut self, event: FileWatcherEvent) -> anyhow::Result<()> {
+        match event {
+            FileWatcherEvent::ChangedConfigFile(paths) => self.handle_changed_confg_file(&paths),
+            FileWatcherEvent::CreateConfigFile(paths) => self.handle_create_confg_file(&paths),
+            FileWatcherEvent::RemoveConfigFile(paths) => self.handle_remove_confg_file(&paths),
+        }
+        Ok(())
+    }
+
     /// Sends a response to the client. This method logs the time it took us to reply
     /// to a request from the client.
     pub(super) fn respond(&mut self, response: lsp_server::Response) -> anyhow::Result<()> {
@@ -438,11 +535,11 @@ impl LanguageServerState {
             opened_files: self.opened_files.clone(),
             module_cache: self.module_cache.clone(),
             scope_cache: self.scope_cache.clone(),
-            entry_cache: self.entry_cache.clone(),
             tool: self.tool.clone(),
             request_retry: self.request_retry.clone(),
             workspaces: self.analysis.workspaces.clone(),
             temporary_workspace: self.temporary_workspace.clone(),
+            workspace_config_cache: self.workspace_config_cache.clone(),
         }
     }
 
@@ -464,6 +561,11 @@ impl LanguageServerState {
         if let Some(workspace_folders) = &self.workspace_folders {
             for folder in workspace_folders {
                 let path = file_path_from_url(&folder.uri).unwrap();
+                let mut watcher = &mut self.fs_event_watcher.handle;
+                watcher
+                    .watch(std::path::Path::new(&path), RecursiveMode::Recursive)
+                    .unwrap();
+                self.log_message(format!("Start watch {:?}", path));
                 let tool = Arc::clone(&self.tool);
                 let (workspaces, failed) = lookup_compile_workspaces(&*tool.read(), &path, true);
 
@@ -501,7 +603,6 @@ impl LanguageServerState {
             let sender = self.task_sender.clone();
             let module_cache = Arc::clone(&self.module_cache);
             let scope_cache = Arc::clone(&self.scope_cache);
-            let entry = Arc::clone(&self.entry_cache);
             let tool = Arc::clone(&self.tool);
             let gs_cache = Arc::clone(&self.gs_cache);
 
@@ -541,15 +642,17 @@ impl LanguageServerState {
                         gs_cache: Some(gs_cache),
                     },
                     &mut files,
-                    opts.1,
+                    opts.1.clone(),
                 );
 
                 log_message(
                     format!(
-                        "Compile workspace: {:?}, main_pkg files: {:?}, changed file: {:?}, use {:?} micros",
+                        "Compile workspace: {:?}, main_pkg files: {:?}, changed file: {:?}, options: {:?}, metadate: {:?}, use {:?} micros",
                         workspace,
                         files,
                         filename,
+                        opts.1,
+                        opts.2,
                         start.elapsed().as_micros()
                     ),
                     &sender,
@@ -655,6 +758,65 @@ impl LanguageServerState {
                 }
             }
         })
+    }
+
+    // Configuration file modifications that do not occur on the IDE client side, e.g., `kcl mod add xxx``
+    pub(crate) fn handle_changed_confg_file(&self, paths: &[PathBuf]) {
+        for path in paths {
+            self.log_message(format!("Changed config file {:?}", path));
+            // In workspaces
+            let mut workspaces = self.analysis.workspaces.write();
+            for workspace in workspaces.keys() {
+                if let Some(p) = match workspace {
+                    WorkSpaceKind::ModFile(path_buf) => Some(path_buf.clone()),
+                    WorkSpaceKind::SettingFile(path_buf) => Some(path_buf.clone()),
+                    _ => None,
+                } {
+                    let opts =
+                        lookup_compile_workspace(&*self.tool.read(), &p.to_str().unwrap(), true);
+                    self.async_compile(workspace.clone(), opts, None, false);
+                }
+            }
+            drop(workspaces);
+
+            // In temp workspaces
+            let mut temp_workspace = self.temporary_workspace.write();
+
+            for (file_id, workspace) in temp_workspace.iter_mut() {
+                if let Some(p) = if let Some(w) = workspace {
+                    match w {
+                        WorkSpaceKind::ModFile(path_buf) => Some(path_buf.clone()),
+                        WorkSpaceKind::SettingFile(path_buf) => Some(path_buf.clone()),
+                        _ => None,
+                    }
+                } else {
+                    None
+                } {
+                    let opts =
+                        lookup_compile_workspace(&*self.tool.read(), &p.to_str().unwrap(), true);
+                    self.async_compile(
+                        workspace.clone().unwrap(),
+                        opts,
+                        Some(file_id.clone()),
+                        false,
+                    );
+                }
+            }
+        }
+    }
+
+    fn handle_create_confg_file(&self, paths: &[PathBuf]) {
+        for path in paths {
+            // Just log, nothing to do
+            self.log_message(format!("Create config file: {:?}", path));
+        }
+    }
+
+    fn handle_remove_confg_file(&self, paths: &[PathBuf]) {
+        for path in paths {
+            self.log_message(format!("Remove config file: {:?}", path));
+            // todo: clear cache
+        }
     }
 }
 
