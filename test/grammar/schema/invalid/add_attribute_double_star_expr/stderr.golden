@@ -1,0 +1,22 @@
+error[E2L23]: CompileError
+  --> ${CWD}/main.k:20:7
+   |
+20 |     **config
+   |       ^ Cannot add member 'nam' to schema 'Config', did you mean '["name"]'?
+   |
+ --> ${CWD}/main.k:2:5
+  |
+2 |     nam = ""
+  |     ^ config attribute is defined here
+  |
+error[E2L23]: CompileError
+  --> ${CWD}/main.k:20:7
+   |
+20 |     **config
+   |       ^ Cannot add member 'nam' to schema 'ConfigInner', did you mean '["name"]'?
+   |
+ --> ${CWD}/main.k:4:9
+  |
+4 |         nam = ""
+  |         ^ config attribute is defined here
+  |

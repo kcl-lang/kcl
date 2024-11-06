@@ -4,11 +4,32 @@ error[E2G22]: TypeError
 3 |         A = "2"
   |         ^ expected int, got str(2)
   |
+
  --> ${CWD}/main.k:1:1
   |
 1 | config: {"A"|"B": int} = {
   | ^ variable is defined here, its type is int, but got str(2)
   |
+
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:2:5
+  |
+2 |     if True:
+  |     ^ expected int, got str
+  |
+
+ --> ${CWD}/main.k:1:1
+  |
+1 | config: {"A"|"B": int} = {
+  | ^ variable is defined here, its type is int, but got str
+  |
+
+ --> ${CWD}/main.k:3:9
+  |
+3 |         A = "2"
+  |         ^ config attribute is defined here
+  |
+
 error[E2G22]: TypeError
  --> ${CWD}/main.k:1:1
   |
