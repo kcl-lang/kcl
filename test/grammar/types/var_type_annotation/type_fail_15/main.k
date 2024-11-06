@@ -1,0 +1,21 @@
+innerConfig = {
+    name = 1
+    config = {
+        name = 1
+    }
+}
+
+config = {
+    **innerConfig
+}
+
+schema Config:
+    name: str
+    config: ConfigInner
+
+schema ConfigInner:
+    name: str
+
+c = Config {
+    **config
+}

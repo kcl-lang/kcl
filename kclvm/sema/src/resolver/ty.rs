@@ -106,6 +106,18 @@ impl<'ctx> Resolver<'_> {
         range: Range,
         def_range: Option<Range>,
     ) {
+        self.attr_must_assignable_to(ty, expected_ty, range, def_range, None);
+    }
+
+    /// Attribute must assignable to the expected type.
+    pub fn attr_must_assignable_to(
+        &mut self,
+        ty: TypeRef,
+        expected_ty: TypeRef,
+        range: Range,
+        def_range: Option<Range>,
+        attr_range: Option<Range>,
+    ) {
         if !self.check_type(ty.clone(), expected_ty.clone(), &range) {
             let mut msgs = vec![Message {
                 range,
@@ -131,6 +143,15 @@ impl<'ctx> Resolver<'_> {
                         suggested_replacement: None,
                     });
                 }
+            }
+            if let Some(attr_range) = attr_range {
+                msgs.push(Message {
+                    range: attr_range.clone(),
+                    style: Style::LineAndColumn,
+                    message: "config attribute is defined here".to_string(),
+                    note: None,
+                    suggested_replacement: None,
+                });
             }
             self.handler.add_error(ErrorKind::TypeError, &msgs);
         }

@@ -130,7 +130,7 @@ impl<'ctx> Resolver<'_> {
             for name in &names[1..] {
                 // Store and config attr check
                 if self.ctx.l_value {
-                    self.must_check_config_attr(name, &range, &ty);
+                    self.must_check_config_attr(name, &ty, &range, None);
                 }
                 ty = self.load_attr(ty, name, range.clone());
                 tys.push(ty.clone());
@@ -164,13 +164,13 @@ impl<'ctx> Resolver<'_> {
                 match path {
                     ast::MemberOrIndex::Member(member) => {
                         let attr = &member.node;
-                        self.must_check_config_attr(attr, &range, &ty);
+                        self.must_check_config_attr(attr, &ty, &range, None);
                         ty = self.load_attr(ty, attr, range.clone());
                         tys.push(ty.clone());
                     }
                     ast::MemberOrIndex::Index(index) => {
                         if let ast::Expr::StringLit(string_lit) = &index.node {
-                            self.must_check_config_attr(&string_lit.value, &range, &ty);
+                            self.must_check_config_attr(&string_lit.value, &ty, &range, None);
                         }
                         ty = self.subscript_index(ty, index, range.clone());
                         tys.push(ty.clone());

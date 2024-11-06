@@ -208,6 +208,7 @@ impl<'ctx> Resolver<'_> {
                 };
                 self.switch_config_expr_context_by_names(&names)
             }
+            // Double star expression
             None => SwitchConfigContextState::KeepConfigUnchanged as usize,
         }
     }
@@ -310,9 +311,57 @@ impl<'ctx> Resolver<'_> {
     ) {
         if !name.is_empty() {
             if let Some(Some(obj)) = self.ctx.config_expr_context.last() {
-                let obj = obj.clone();
-                self.must_check_config_attr(name, &key.get_span_pos(), &obj.ty);
+                let ty = obj.ty.clone();
+                self.must_check_config_attr(name, &ty, &key.get_span_pos(), None);
             }
+        }
+    }
+
+    fn check_config_value_recursively(&mut self, value_ty: &TypeRef, value_span: &Range) {
+        match &value_ty.kind {
+            TypeKind::Dict(DictType {
+                key_ty: _,
+                val_ty: _,
+                attrs,
+            }) => {
+                for (key, attr) in attrs {
+                    self.check_attr_recursively(&key, &attr.ty, &attr.range, value_span);
+                }
+            }
+            TypeKind::Schema(schema_ty) => {
+                for (key, attr) in &schema_ty.attrs {
+                    self.check_attr_recursively(&key, &attr.ty, &attr.range, value_span);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn check_attr_recursively(
+        &mut self,
+        key: &str,
+        attr_ty: &TypeRef,
+        attr_span: &Range,
+        value_span: &Range,
+    ) {
+        if !key.is_empty() {
+            if let Some(Some(obj)) = self.ctx.config_expr_context.last() {
+                let ty = obj.ty.clone();
+                self.must_check_config_attr(key, &ty, value_span, Some(attr_span));
+            }
+            let stack_depth = self.switch_config_expr_context_by_name(key);
+            if let Some(Some(obj)) = self.ctx.config_expr_context.last() {
+                let ty = obj.ty.clone();
+                self.attr_must_assignable_to(
+                    attr_ty.clone(),
+                    ty,
+                    value_span.clone(),
+                    Some(obj.get_span_pos()),
+                    Some(attr_span.clone()),
+                );
+            }
+            self.check_config_value_recursively(attr_ty, value_span);
+            self.clear_config_expr_context(stack_depth, false);
         }
     }
 
@@ -383,6 +432,11 @@ impl<'ctx> Resolver<'_> {
                 self.clear_config_expr_context(stack_depth, false);
                 return return_ty;
             }
+        } else {
+            // For double star expression, we can recursively check nested configuration properties at compile time.
+            let value_ty = self.expr(value);
+            self.check_config_value_recursively(&value_ty, &value.get_span_pos());
+            return Some(value_ty);
         }
         None
     }
@@ -402,9 +456,15 @@ impl<'ctx> Resolver<'_> {
     }
 
     /// Check config attr has been defined.
-    pub(crate) fn must_check_config_attr(&mut self, attr: &str, range: &Range, ty: &TypeRef) {
+    pub(crate) fn must_check_config_attr(
+        &mut self,
+        attr: &str,
+        ty: &TypeRef,
+        range: &Range,
+        attr_range: Option<&Range>,
+    ) {
         if let TypeKind::Schema(schema_ty) = &ty.kind {
-            self.check_config_attr(attr, range, schema_ty)
+            self.check_config_attr(attr, schema_ty, range, attr_range);
         } else if let TypeKind::Union(types) = &ty.kind {
             let mut schema_names = vec![];
             let mut total_suggs = vec![];
@@ -429,8 +489,10 @@ impl<'ctx> Resolver<'_> {
                 }
             }
             if !schema_names.is_empty() {
-                self.handler.add_compile_error_with_suggestions(
-                    &format!(
+                let mut msgs = vec![Message {
+                    range: range.clone(),
+                    style: Style::LineAndColumn,
+                    message: format!(
                         "Cannot add member '{}' to '{}'{}",
                         attr,
                         if schema_names.len() > 1 {
@@ -444,15 +506,31 @@ impl<'ctx> Resolver<'_> {
                             format!(", did you mean '{:?}'?", total_suggs)
                         },
                     ),
-                    range.clone(),
-                    Some(total_suggs),
-                );
+                    note: None,
+                    suggested_replacement: Some(total_suggs),
+                }];
+                if let Some(attr_range) = attr_range {
+                    msgs.push(Message {
+                        range: attr_range.clone(),
+                        style: Style::LineAndColumn,
+                        message: "config attribute is defined here".to_string(),
+                        note: None,
+                        suggested_replacement: None,
+                    });
+                }
+                self.handler.add_error(ErrorKind::CompileError, &msgs);
             }
         }
     }
 
     /// Check config attr has been defined.
-    pub(crate) fn check_config_attr(&mut self, attr: &str, range: &Range, schema_ty: &SchemaType) {
+    pub(crate) fn check_config_attr(
+        &mut self,
+        attr: &str,
+        schema_ty: &SchemaType,
+        range: &Range,
+        attr_range: Option<&Range>,
+    ) {
         let runtime_type = kclvm_runtime::schema_runtime_type(&schema_ty.name, &schema_ty.pkgpath);
         match self.ctx.schema_mapping.get(&runtime_type) {
             Some(schema_mapping_ty) => {
@@ -462,14 +540,26 @@ impl<'ctx> Resolver<'_> {
                     && schema_ty_ref.index_signature.is_none()
                 {
                     let (suggs, msg) = self.get_config_attr_err_suggestion(attr, schema_ty);
-                    self.handler.add_compile_error_with_suggestions(
-                        &format!(
+                    let mut msgs = vec![Message {
+                        range: range.clone(),
+                        style: Style::LineAndColumn,
+                        message: format!(
                             "Cannot add member '{}' to schema '{}'{}",
                             attr, schema_ty_ref.name, msg,
                         ),
-                        range.clone(),
-                        Some(suggs),
-                    );
+                        note: None,
+                        suggested_replacement: Some(suggs),
+                    }];
+                    if let Some(attr_range) = attr_range {
+                        msgs.push(Message {
+                            range: attr_range.clone(),
+                            style: Style::LineAndColumn,
+                            message: "config attribute is defined here".to_string(),
+                            note: None,
+                            suggested_replacement: None,
+                        });
+                    }
+                    self.handler.add_error(ErrorKind::CompileError, &msgs);
                 }
             }
             None => {
@@ -478,14 +568,26 @@ impl<'ctx> Resolver<'_> {
                     && schema_ty.index_signature.is_none()
                 {
                     let (suggs, msg) = self.get_config_attr_err_suggestion(attr, schema_ty);
-                    self.handler.add_compile_error_with_suggestions(
-                        &format!(
+                    let mut msgs = vec![Message {
+                        range: range.clone(),
+                        style: Style::LineAndColumn,
+                        message: format!(
                             "Cannot add member '{}' to schema '{}'{}",
                             attr, schema_ty.name, msg,
                         ),
-                        range.clone(),
-                        Some(suggs),
-                    );
+                        note: None,
+                        suggested_replacement: Some(suggs),
+                    }];
+                    if let Some(attr_range) = attr_range {
+                        msgs.push(Message {
+                            range: attr_range.clone(),
+                            style: Style::LineAndColumn,
+                            message: "config attribute is defined here".to_string(),
+                            note: None,
+                            suggested_replacement: None,
+                        });
+                    }
+                    self.handler.add_error(ErrorKind::CompileError, &msgs);
                 }
             }
         };
@@ -652,13 +754,29 @@ impl<'ctx> Resolver<'_> {
                         TypeKind::None | TypeKind::Any => {
                             val_types.push(val_ty.clone());
                         }
-                        TypeKind::Dict(DictType { key_ty, val_ty, .. }) => {
+                        TypeKind::Dict(DictType {
+                            key_ty,
+                            val_ty,
+                            attrs: merged_attrs,
+                        }) => {
                             key_types.push(key_ty.clone());
                             val_types.push(val_ty.clone());
+                            for (key, value) in merged_attrs {
+                                attrs.insert(key.to_string(), value.clone());
+                            }
                         }
                         TypeKind::Schema(schema_ty) => {
                             key_types.push(schema_ty.key_ty());
                             val_types.push(schema_ty.val_ty());
+                            for (key, attr) in &schema_ty.attrs {
+                                attrs.insert(
+                                    key.to_string(),
+                                    Attr {
+                                        ty: attr.ty.clone(),
+                                        range: attr.range.clone(),
+                                    },
+                                );
+                            }
                         }
                         TypeKind::Union(types)
                             if self
