@@ -192,17 +192,13 @@ impl LanguageServerState {
         for event in self.fs_event_watcher._receiver.try_iter() {
             if let Ok(e) = event {
                 match e.kind {
-                    notify::EventKind::Modify(modify_kind) => {
-                        if let notify::event::ModifyKind::Data(data_change) = modify_kind {
-                            if let notify::event::DataChange::Content = data_change {
-                                let paths = e.paths;
-                                let kcl_config_file: Vec<PathBuf> = filter_kcl_config_file(&paths);
-                                if !kcl_config_file.is_empty() {
-                                    return Some(Event::FileWatcher(
-                                        FileWatcherEvent::ChangedConfigFile(kcl_config_file),
-                                    ));
-                                }
-                            }
+                    notify::EventKind::Modify(_) => {
+                        let paths = e.paths;
+                        let kcl_config_file: Vec<PathBuf> = filter_kcl_config_file(&paths);
+                        if !kcl_config_file.is_empty() {
+                            return Some(Event::FileWatcher(FileWatcherEvent::ChangedConfigFile(
+                                kcl_config_file,
+                            )));
                         }
                     }
                     notify::EventKind::Remove(remove_kind) => {
@@ -644,6 +640,7 @@ impl LanguageServerState {
                     &mut files,
                     opts.1.clone(),
                 );
+
                 log_message(
                     format!(
                         "Compile workspace: {:?}, main_pkg files: {:?}, changed file: {:?}, options: {:?}, metadate: {:?}, use {:?} micros",

@@ -1548,21 +1548,7 @@ fn mod_file_watcher_test() {
         .unwrap();
 
     // wait for download dependence
-    wait_async!(500);
-
-    server.notification::<lsp_types::notification::DidChangeTextDocument>(
-        lsp_types::DidChangeTextDocumentParams {
-            text_document: lsp_types::VersionedTextDocumentIdentifier {
-                uri: Url::from_file_path(main_path.clone()).unwrap(),
-                version: 1,
-            },
-            content_changes: vec![TextDocumentContentChangeEvent {
-                range: None,
-                range_length: None,
-                text: "import helloworld".to_string(),
-            }],
-        },
-    );
+    wait_async!(2000);
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
