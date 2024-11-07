@@ -644,7 +644,6 @@ impl LanguageServerState {
                     &mut files,
                     opts.1.clone(),
                 );
-
                 log_message(
                     format!(
                         "Compile workspace: {:?}, main_pkg files: {:?}, changed file: {:?}, options: {:?}, metadate: {:?}, use {:?} micros",

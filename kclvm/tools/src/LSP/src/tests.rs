@@ -88,9 +88,12 @@ use crate::to_lsp::kcl_diag_to_lsp_diags_by_file;
 use crate::util::apply_document_changes;
 use crate::util::to_json;
 
-macro_rules! wait_async_compile {
+macro_rules! wait_async {
     () => {
         thread::sleep(Duration::from_millis(100));
+    };
+    ($time_ms:expr) => {
+        thread::sleep(Duration::from_millis($time_ms));
     };
 }
 
@@ -662,7 +665,7 @@ impl Server {
     /// Sends a server notification to the main loop
     fn send_notification(&self, not: Notification) {
         self.client.sender.send(Message::Notification(not)).unwrap();
-        wait_async_compile!();
+        wait_async!();
     }
 
     /// A function to wait for a specific message to arrive
@@ -1499,6 +1502,104 @@ fn complete_import_external_file_e2e_test() {
     }
 }
 
+#[test]
+fn mod_file_watcher_test() {
+    let path = PathBuf::from(".")
+        .join("src")
+        .join("test_data")
+        .join("watcher")
+        .join("modify")
+        .canonicalize()
+        .unwrap();
+
+    let mod_file_path = path.join("kcl.mod");
+    let main_path = path.join("main.k");
+
+    let mod_src_bac = std::fs::read_to_string(mod_file_path.clone()).unwrap();
+    let main_src = std::fs::read_to_string(main_path.clone()).unwrap();
+
+    let initialize_params = InitializeParams {
+        workspace_folders: Some(vec![WorkspaceFolder {
+            uri: Url::from_file_path(path.clone()).unwrap(),
+            name: "test".to_string(),
+        }]),
+        ..Default::default()
+    };
+    let server = Project {}.server(initialize_params);
+
+    // Mock open file
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: Url::from_file_path(main_path.clone()).unwrap(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: main_src,
+            },
+        },
+    );
+
+    let _ = Command::new("kcl")
+        .arg("mod")
+        .arg("add")
+        .arg("helloworld")
+        .current_dir(path)
+        .output()
+        .unwrap();
+
+    // wait for download dependice
+    wait_async!(500);
+
+    server.notification::<lsp_types::notification::DidChangeTextDocument>(
+        lsp_types::DidChangeTextDocumentParams {
+            text_document: lsp_types::VersionedTextDocumentIdentifier {
+                uri: Url::from_file_path(main_path.clone()).unwrap(),
+                version: 1,
+            },
+            content_changes: vec![TextDocumentContentChangeEvent {
+                range: None,
+                range_length: None,
+                text: "import helloworld".to_string(),
+            }],
+        },
+    );
+
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+
+    let r: Request = Request::new(
+        id.into(),
+        "textDocument/hover".to_string(),
+        HoverParams {
+            text_document_position_params: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier {
+                    uri: Url::from_file_path(main_path).unwrap(),
+                },
+                position: Position::new(0, 8),
+            },
+            work_done_progress_params: Default::default(),
+        },
+    );
+
+    // Send request and wait for it's response
+    let res = server.send_and_receive(r);
+
+    std::fs::write(mod_file_path, mod_src_bac).unwrap();
+    assert_eq!(
+        res.result.unwrap(),
+        to_json(Hover {
+            contents: HoverContents::Scalar(MarkedString::LanguageString(
+                lsp_types::LanguageString {
+                    language: "KCL".to_owned(),
+                    value: "helloworld: ".to_string(),
+                }
+            )),
+            range: None
+        })
+        .unwrap()
+    )
+}
+
 // Integration testing of lsp and konfig
 fn konfig_path() -> PathBuf {
     let konfig_path = Path::new(".")
@@ -2010,7 +2111,7 @@ fn find_refs_test() {
     let server = Project {}.server(initialize_params);
 
     // Wait for async build word_index_map
-    wait_async_compile!();
+    wait_async!();
 
     let url = Url::from_file_path(path).unwrap();
 
@@ -2105,7 +2206,7 @@ fn find_refs_with_file_change_test() {
     let server = Project {}.server(initialize_params);
 
     // Wait for async build word_index_map
-    wait_async_compile!();
+    wait_async!();
 
     let url = Url::from_file_path(path).unwrap();
 
@@ -2214,7 +2315,7 @@ fn rename_test() {
     };
     let server = Project {}.server(initialize_params);
 
-    wait_async_compile!();
+    wait_async!();
 
     let url = Url::from_file_path(path).unwrap();
     let main_url = Url::from_file_path(main_path).unwrap();
