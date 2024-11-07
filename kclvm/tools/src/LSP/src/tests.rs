@@ -1547,7 +1547,7 @@ fn mod_file_watcher_test() {
         .output()
         .unwrap();
 
-    // wait for download dependice
+    // wait for download dependence
     wait_async!(500);
 
     server.notification::<lsp_types::notification::DidChangeTextDocument>(
