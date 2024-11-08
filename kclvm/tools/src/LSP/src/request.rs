@@ -1,6 +1,7 @@
 use anyhow::anyhow;
 use crossbeam_channel::Sender;
 
+use kclvm_driver::WorkSpaceKind;
 use kclvm_sema::info::is_valid_kcl_name;
 use lsp_types::{Location, SemanticTokensResult, TextEdit};
 use ra_ap_vfs::VfsPath;
@@ -97,7 +98,7 @@ impl LanguageServerSnapshot {
     ) -> anyhow::Result<Option<Arc<AnalysisDatabase>>> {
         match self.try_get_db_state(path) {
             Ok(db) => match db {
-                Some(db) => match db {
+                Some((_, db)) => match db {
                     DBState::Ready(db) => Ok(Some(db.clone())),
                     DBState::Compiling(_) | DBState::Init => {
                         log_message(
@@ -124,7 +125,10 @@ impl LanguageServerSnapshot {
     /// return Ok(Some(db)) -> Compile completed
     /// return Ok(None) -> RWlock, retry to unlock
     /// return Err(_) ->  Compile failed
-    pub(crate) fn try_get_db_state(&self, path: &VfsPath) -> anyhow::Result<Option<DBState>> {
+    pub(crate) fn try_get_db_state(
+        &self,
+        path: &VfsPath,
+    ) -> anyhow::Result<Option<(WorkSpaceKind, DBState)>> {
         match self.vfs.try_read() {
             Some(vfs) => match vfs.file_id(path) {
                 Some(file_id) => {
@@ -134,7 +138,7 @@ impl LanguageServerSnapshot {
                         Some(option_workspace) => match option_workspace {
                             Some(work_space) => match self.workspaces.try_read() {
                                 Some(workspaces) => match workspaces.get(work_space) {
-                                    Some(db) => Ok(Some(db.clone())),
+                                    Some(db) => Ok(Some((work_space.clone(), db.clone()))),
                                     None => Err(anyhow::anyhow!(
                                         LSPError::AnalysisDatabaseNotFound(path.clone())
                                     )),
@@ -154,7 +158,7 @@ impl LanguageServerSnapshot {
                             let work_space = file_info.workspaces.iter().next().unwrap();
                             match self.workspaces.try_read() {
                                 Some(workspaces) => match workspaces.get(work_space) {
-                                    Some(db) => Ok(Some(db.clone())),
+                                    Some(db) => Ok(Some((work_space.clone(), db.clone()))),
                                     None => Err(anyhow::anyhow!(
                                         LSPError::AnalysisDatabaseNotFound(path.clone())
                                     )),
@@ -310,7 +314,7 @@ pub(crate) fn handle_completion(
         return Ok(None);
     }
 
-    let db_state = match snapshot.try_get_db_state(&path) {
+    let (workspace, db_state) = match snapshot.try_get_db_state(&path) {
         Ok(option_state) => match option_state {
             Some(db) => db,
             None => return Err(anyhow!(LSPError::Retry)),
@@ -341,10 +345,10 @@ pub(crate) fn handle_completion(
     let kcl_pos = kcl_pos(&file, params.text_document_position.position);
 
     let metadata = snapshot
-        .entry_cache
+        .workspace_config_cache
         .read()
-        .get(&file)
-        .and_then(|metadata| metadata.0 .2.clone());
+        .get(&workspace)
+        .and_then(|opt| opt.2.clone());
 
     let res = completion(
         completion_trigger_character,

@@ -19,7 +19,7 @@ mod var;
 #[cfg(test)]
 mod tests;
 
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use kclvm_error::diagnostic::Range;
 use std::sync::Arc;
 use std::{cell::RefCell, rc::Rc};
@@ -99,8 +99,12 @@ impl<'ctx> Resolver<'ctx> {
 
     pub(crate) fn check_and_lint(&mut self, pkgpath: &str) -> ProgramScope {
         self.check(pkgpath);
+        let mut scope_map = self.scope_map.clone();
+        for invalid_pkg_scope in &self.ctx.invalid_pkg_scope {
+            scope_map.remove(invalid_pkg_scope);
+        }
         let mut scope = ProgramScope {
-            scope_map: self.scope_map.clone(),
+            scope_map,
             import_names: self.ctx.import_names.clone(),
             node_ty_map: self.node_ty_map.clone(),
             handler: self.handler.clone(),
@@ -145,6 +149,8 @@ pub struct Context {
     pub ty_ctx: TypeContext,
     /// Type alias mapping
     pub type_alias_mapping: IndexMap<String, IndexMap<String, String>>,
+    /// invalid pkg scope, remove when after resolve
+    pub invalid_pkg_scope: IndexSet<String>,
 }
 
 /// Resolve options.

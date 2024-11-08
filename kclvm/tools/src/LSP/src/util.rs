@@ -16,7 +16,7 @@ use ra_ap_vfs::{FileId, Vfs};
 use serde::{de::DeserializeOwned, Serialize};
 
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// Deserializes a `T` from a json value.
 pub(crate) fn from_json<T: DeserializeOwned>(
@@ -105,6 +105,18 @@ pub(crate) fn load_files_code_from_vfs(
         }
     }
     Ok(res)
+}
+
+pub(crate) fn filter_kcl_config_file(paths: &[PathBuf]) -> Vec<PathBuf> {
+    paths
+        .iter()
+        .filter(|p| {
+            p.file_name().map(|n| n.to_str().unwrap()) == Some(kclvm_config::modfile::KCL_MOD_FILE)
+                || p.file_name().map(|n| n.to_str().unwrap())
+                    == Some(kclvm_config::settings::DEFAULT_SETTING_FILE)
+        })
+        .map(|p| p.clone())
+        .collect()
 }
 
 macro_rules! walk_if_contains {

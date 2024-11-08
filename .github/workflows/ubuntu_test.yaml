@@ -60,8 +60,8 @@ jobs:
           go install kcl-lang.io/cli/cmd/kcl@main
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
           echo "${{ github.workspace }}/go/bin" >> $GITHUB_PATH
-
       - name: Unit test
         working-directory: ./kclvm
         run: export PATH=$PATH:$PWD/../_build/dist/linux/kclvm/bin && make test
         shell: bash
+
