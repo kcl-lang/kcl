@@ -1,6 +1,6 @@
 [package]
 name = "kclvm_cli"
-version = "0.10.8"
+version = "0.10.9"
 edition = "2021"
 
 [[bin]]
