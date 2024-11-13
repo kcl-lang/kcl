@@ -1,6 +1,6 @@
 ---
 source: tools/src/LSP/src/inlay_hints.rs
-expression: "format!(\"{:#?}\", res)"
+expression: "format! (\"{:#?}\", res)"
 ---
 Some(
     [
@@ -19,8 +19,26 @@ Some(
                     },
                 ],
             ),
-            kind: None,
-            text_edits: None,
+            kind: Some(
+                Type,
+            ),
+            text_edits: Some(
+                [
+                    TextEdit {
+                        range: Range {
+                            start: Position {
+                                line: 6,
+                                character: 3,
+                            },
+                            end: Position {
+                                line: 6,
+                                character: 3,
+                            },
+                        },
+                        new_text: ": App",
+                    },
+                ],
+            ),
             tooltip: None,
             padding_left: None,
             padding_right: None,
@@ -41,7 +59,9 @@ Some(
                     },
                 ],
             ),
-            kind: None,
+            kind: Some(
+                Type,
+            ),
             text_edits: None,
             tooltip: None,
             padding_left: None,
@@ -63,7 +83,9 @@ Some(
                     },
                 ],
             ),
-            kind: None,
+            kind: Some(
+                Type,
+            ),
             text_edits: None,
             tooltip: None,
             padding_left: None,
@@ -85,7 +107,9 @@ Some(
                     },
                 ],
             ),
-            kind: None,
+            kind: Some(
+                Type,
+            ),
             text_edits: None,
             tooltip: None,
             padding_left: None,
@@ -107,7 +131,9 @@ Some(
                     },
                 ],
             ),
-            kind: None,
+            kind: Some(
+                Type,
+            ),
             text_edits: None,
             tooltip: None,
             padding_left: None,
