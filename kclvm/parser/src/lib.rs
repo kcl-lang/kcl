@@ -32,7 +32,7 @@ use anyhow::Result;
 use lexer::parse_token_streams;
 use parser::Parser;
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
 use kclvm_span::create_session_globals_then;
@@ -340,6 +340,8 @@ struct Loader {
     opts: LoadProgramOptions,
     module_cache: KCLModuleCache,
     file_graph: FileGraphCache,
+    pkgmap: PkgMap,
+    parsed_file: HashSet<PkgFile>,
 }
 
 impl Loader {
@@ -358,6 +360,8 @@ impl Loader {
             opts: opts.unwrap_or_default(),
             module_cache: module_cache.unwrap_or_default(),
             file_graph: FileGraphCache::default(),
+            pkgmap: PkgMap::new(),
+            parsed_file: HashSet::new(),
         }
     }
 
@@ -372,6 +376,8 @@ impl Loader {
             self.paths.clone(),
             self.module_cache.clone(),
             self.file_graph.clone(),
+            &mut self.pkgmap,
+            &mut self.parsed_file,
             &self.opts,
         )
     }
@@ -729,8 +735,8 @@ pub fn parse_file(
 pub fn get_deps(
     file: &PkgFile,
     m: &Module,
-    modules: &mut HashMap<String, Vec<String>>,
-    pkgmap: &mut PkgMap,
+    pkgs: &mut HashMap<String, Vec<String>>,
+    pkgmap: &PkgMap,
     opts: &LoadProgramOptions,
     sess: ParseSessionRef,
 ) -> Result<PkgMap> {
@@ -756,7 +762,7 @@ pub fn get_deps(
                 // If k_files is empty, the pkg information will not be found in the file graph.
                 // Record the empty pkg to prevent loss. After the parse file is completed, fill in the modules
                 if pkg_info.k_files.is_empty() {
-                    modules.insert(pkg_info.pkg_path.clone(), vec![]);
+                    pkgs.insert(pkg_info.pkg_path.clone(), vec![]);
                 }
 
                 pkg_info.k_files.iter().for_each(|p| {
@@ -837,6 +843,8 @@ pub fn parse_entry(
         opts,
     )?;
     let mut unparsed_file: VecDeque<PkgFile> = dependent_paths.into();
+
+    // Bfs unparsed and import files
     while let Some(file) = unparsed_file.pop_front() {
         match &mut module_cache.write() {
             Ok(m_cache) => match m_cache.file_pkg.get_mut(file.get_path()) {
@@ -913,24 +921,24 @@ pub fn parse_program(
     paths: Vec<String>,
     module_cache: KCLModuleCache,
     file_graph: FileGraphCache,
+    pkgmap: &mut PkgMap,
+    parsed_file: &mut HashSet<PkgFile>,
     opts: &LoadProgramOptions,
 ) -> Result<LoadProgramResult> {
     let compile_entries = get_compile_entries_from_paths(&paths, &opts)?;
     let workdir = compile_entries.get_root_path().to_string();
     let mut pkgs: HashMap<String, Vec<String>> = HashMap::new();
-    let mut pkgmap = PkgMap::new();
     let mut new_files = HashSet::new();
-    let mut parsed_file: HashSet<PkgFile> = HashSet::new();
     for entry in compile_entries.iter() {
         new_files.extend(parse_entry(
             sess.clone(),
             entry,
             module_cache.clone(),
             &mut pkgs,
-            &mut pkgmap,
+            pkgmap,
             file_graph.clone(),
             &opts,
-            &mut parsed_file,
+            parsed_file,
         )?);
     }
 
@@ -1008,4 +1016,245 @@ pub fn parse_program(
         errors: sess.1.read().diagnostics.clone(),
         paths: files.iter().map(|file| file.get_path().clone()).collect(),
     })
+}
+
+/// Parse all kcl files under path and dependencies from opts.
+/// Different from `load_program`, this function will compile files that are not imported.
+pub fn load_all_files_under_paths(
+    sess: ParseSessionRef,
+    paths: &[&str],
+    opts: Option<LoadProgramOptions>,
+    module_cache: Option<KCLModuleCache>,
+) -> Result<LoadProgramResult> {
+    let mut loader = Loader::new(sess.clone(), paths, opts.clone(), module_cache.clone());
+    create_session_globals_then(move || {
+        match parse_program(
+            loader.sess.clone(),
+            loader.paths.clone(),
+            loader.module_cache.clone(),
+            loader.file_graph.clone(),
+            &mut loader.pkgmap,
+            &mut loader.parsed_file,
+            &loader.opts,
+        ) {
+            Ok(res) => {
+                let mut res = res.clone();
+                let k_files_from_import = res.paths.clone();
+                let (k_files_under_path, pkgmap) = get_files_from_path(paths, opts)?;
+                loader.pkgmap.extend(pkgmap);
+
+                // Filter unparsed file
+                let mut unparsed_file: VecDeque<PkgFile> = VecDeque::new();
+                for (pkg, paths) in &k_files_under_path {
+                    for p in paths {
+                        if !k_files_from_import.contains(p) {
+                            let pkgfile = PkgFile::new(p.clone(), pkg.clone());
+                            unparsed_file.push_back(pkgfile);
+                        }
+                    }
+                }
+
+                let module_cache = module_cache.unwrap_or_default();
+                let pkgs = &mut res.program.pkgs;
+
+                let mut new_files = HashSet::new();
+
+                // Bfs unparsed and import files
+                while let Some(file) = unparsed_file.pop_front() {
+                    new_files.insert(file.clone());
+                    let deps = parse_file(
+                        sess.clone(),
+                        file,
+                        None,
+                        module_cache.clone(),
+                        pkgs,
+                        &mut loader.pkgmap,
+                        loader.file_graph.clone(),
+                        &loader.opts,
+                    )?;
+                    for dep in deps {
+                        if loader.parsed_file.insert(dep.clone()) {
+                            unparsed_file.push_back(dep.clone());
+                        }
+                    }
+                }
+
+                // Merge unparsed module into res
+                let modules = &mut res.program.modules;
+                for file in &new_files {
+                    let filename = file.get_path().to_str().unwrap().to_string();
+                    let m_ref = match module_cache.read() {
+                        Ok(module_cache) => module_cache
+                            .ast_cache
+                            .get(file.get_path())
+                            .expect(&format!(
+                                "Module not found in module: {:?}",
+                                file.get_path()
+                            ))
+                            .clone(),
+                        Err(e) => return Err(anyhow::anyhow!("Parse program failed: {e}")),
+                    };
+                    modules.insert(filename.clone(), m_ref);
+                    match pkgs.get_mut(&file.pkg_path) {
+                        Some(pkg_modules) => {
+                            pkg_modules.push(filename.clone());
+                        }
+                        None => {
+                            pkgs.insert(file.pkg_path.clone(), vec![filename]);
+                        }
+                    }
+                }
+
+                // Generate new paths
+                let files = match loader.file_graph.read() {
+                    Ok(file_graph) => {
+                        let files = match file_graph.toposort() {
+                            Ok(files) => files,
+                            Err(_) => file_graph.paths(),
+                        };
+
+                        let file_path_graph = file_graph.file_path_graph().0;
+                        if let Err(cycle) = toposort(&file_path_graph) {
+                            let formatted_cycle = cycle
+                                .iter()
+                                .map(|file| format!("- {}\n", file.to_string_lossy()))
+                                .collect::<String>();
+
+                            sess.1.write().add_error(
+                                ErrorKind::RecursiveLoad,
+                                &[Message {
+                                    range: (Position::dummy_pos(), Position::dummy_pos()),
+                                    style: Style::Line,
+                                    message: format!(
+                                        "Could not compiles due to cyclic import statements\n{}",
+                                        formatted_cycle.trim_end()
+                                    ),
+                                    note: None,
+                                    suggested_replacement: None,
+                                }],
+                            );
+                        }
+                        files
+                    }
+                    Err(e) => return Err(anyhow::anyhow!("Parse program failed: {e}")),
+                };
+
+                res.paths = files.iter().map(|file| file.get_path().clone()).collect();
+                return Ok(res);
+            }
+            e => return e,
+        }
+    })
+}
+
+/// Get all kcl files under path and dependencies from opts, regardless of whether they are imported or not
+pub fn get_files_from_path(
+    paths: &[&str],
+    opts: Option<LoadProgramOptions>,
+) -> Result<(HashMap<String, Vec<PathBuf>>, HashMap<PkgFile, Pkg>)> {
+    let mut k_files_under_path = HashMap::new();
+    let mut pkgmap = HashMap::new();
+
+    // get files from config
+    if let Some(opt) = &opts {
+        for (name, path) in &opt.package_maps {
+            let path_buf = PathBuf::from(path.clone());
+            if path_buf.is_dir() {
+                let all_k_files_under_path = get_kcl_files(path.clone(), true)?;
+                for f in &all_k_files_under_path {
+                    let p = PathBuf::from(f);
+                    let fix_path = {
+                        match p.parent().unwrap().strip_prefix(Path::new(&path)) {
+                            Ok(p) => Path::new(&name).join(p),
+                            Err(_) => match p.parent().unwrap().strip_prefix(Path::new(&path)) {
+                                Ok(p) => Path::new(&name).join(p),
+                                Err(_) => Path::new(&name).to_path_buf(),
+                            },
+                        }
+                    }
+                    .to_str()
+                    .unwrap()
+                    .to_string();
+                    let fix_path = fix_path
+                        .replace(['/', '\\'], ".")
+                        .trim_end_matches('.')
+                        .to_string();
+
+                    let pkgfile = PkgFile::new(p.clone(), fix_path.clone());
+                    pkgmap.insert(
+                        pkgfile,
+                        Pkg {
+                            pkg_name: name.clone(),
+                            pkg_root: path.clone(),
+                        },
+                    );
+                    k_files_under_path
+                        .entry(fix_path)
+                        .or_insert(Vec::new())
+                        .push(p);
+                }
+            }
+        }
+    }
+
+    // get files from input paths
+    for path in paths {
+        let path_buf = PathBuf::from(path);
+        if path_buf.is_dir() {
+            let all_k_files_under_path = get_kcl_files(path, true)?;
+            for f in &all_k_files_under_path {
+                let p = PathBuf::from(f);
+
+                let fix_path = p
+                    .parent()
+                    .unwrap()
+                    .strip_prefix(path_buf.clone())
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_string();
+
+                let fix_path = fix_path
+                    .replace(['/', '\\'], ".")
+                    .trim_end_matches('.')
+                    .to_string();
+
+                let pkgfile = PkgFile::new(p.clone(), fix_path.clone());
+                pkgmap.insert(
+                    pkgfile,
+                    Pkg {
+                        pkg_name: MAIN_PKG.to_owned(),
+                        pkg_root: path.to_string(),
+                    },
+                );
+                k_files_under_path
+                    .entry(fix_path)
+                    .or_insert(Vec::new())
+                    .push(p);
+            }
+        }
+    }
+
+    Ok((k_files_under_path, pkgmap))
+}
+
+/// Get kcl files from path.
+pub fn get_kcl_files<P: AsRef<std::path::Path>>(path: P, recursively: bool) -> Result<Vec<String>> {
+    let mut files = vec![];
+    let walkdir = if recursively {
+        walkdir::WalkDir::new(path)
+    } else {
+        walkdir::WalkDir::new(path).max_depth(1)
+    };
+    for entry in walkdir.into_iter().filter_map(|e| e.ok()) {
+        let path = entry.path();
+        if path.is_file() {
+            let file = path.to_str().unwrap();
+            if file.ends_with(KCL_FILE_SUFFIX) {
+                files.push(file.to_string())
+            }
+        }
+    }
+    files.sort();
+    Ok(files)
 }

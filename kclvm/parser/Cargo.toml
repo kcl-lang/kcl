@@ -33,6 +33,7 @@ kclvm-error = {path = "../error"}
 kclvm-config = {path = "../config"}
 kclvm-sema = {path = "../sema"}
 kclvm-utils = {path = "../utils"}
+walkdir = "2"
 
 [dev-dependencies]
 expect-test = "1.0"
