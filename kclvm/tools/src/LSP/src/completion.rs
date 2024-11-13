@@ -351,13 +351,13 @@ fn completion_assign(pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Comple
                         match &sema_info.ty {
                             Some(ty) => {
                                 items.extend(
-                                    ty_complete_label(
+                                    ty_complete_label_and_inser_text(
                                         ty,
                                         gs.get_packages().get_module_info(&pos.filename),
                                     )
                                     .iter()
-                                    .map(|label| {
-                                        KCLCompletionItem {
+                                    .map(
+                                        |(label, insert_text)| KCLCompletionItem {
                                             label: format!(" {}", label),
                                             detail: Some(format!(
                                                 "{}: {}",
@@ -366,9 +366,9 @@ fn completion_assign(pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Comple
                                             )),
                                             kind: Some(KCLCompletionItemKind::Variable),
                                             documentation: sema_info.doc.clone(),
-                                            insert_text: None,
-                                        }
-                                    }),
+                                            insert_text: Some(format!(" {}", insert_text)),
+                                        },
+                                    ),
                                 );
                                 return Some(into_completion_items(&items).into());
                             }
@@ -471,6 +471,7 @@ fn completion_import_stmt(
         line: pos.line,
         column: Some(0),
     };
+
     if let Some(node) = program.pos_to_stmt(line_start_pos) {
         if let Stmt::Import(_) = node.node {
             completions.extend(completion_import_builtin_pkg());
@@ -734,38 +735,47 @@ fn dot_completion_in_import_stmt(
     Some(into_completion_items(&items).into())
 }
 
-fn ty_complete_label(ty: &Type, module: Option<&ModuleInfo>) -> Vec<String> {
+fn ty_complete_label_and_inser_text(
+    ty: &Type,
+    module: Option<&ModuleInfo>,
+) -> Vec<(String, String)> {
     match &ty.kind {
-        TypeKind::Bool => vec!["True".to_string(), "False".to_string()],
+        TypeKind::Bool => vec![
+            ("True".to_string(), "True".to_string()),
+            ("False".to_string(), "False".to_string()),
+        ],
         TypeKind::BoolLit(b) => {
             vec![if *b {
-                "True".to_string()
+                ("True".to_string(), "True".to_string())
             } else {
-                "False".to_string()
+                ("False".to_string(), "False".to_string())
             }]
         }
-        TypeKind::IntLit(i) => vec![i.to_string()],
-        TypeKind::FloatLit(f) => vec![f.to_string()],
-        TypeKind::Str => vec![r#""""#.to_string()],
-        TypeKind::StrLit(s) => vec![format!("{:?}", s)],
-        TypeKind::List(_) => vec!["[]".to_string()],
-        TypeKind::Dict(_) => vec!["{}".to_string()],
+        TypeKind::IntLit(i) => vec![(i.to_string(), i.to_string())],
+        TypeKind::FloatLit(f) => vec![(f.to_string(), f.to_string())],
+        TypeKind::Str => vec![(r#""""#.to_string(), r#""""#.to_string())],
+        TypeKind::StrLit(s) => vec![(format!("{:?}", s), format!("{:?}", s))],
+        TypeKind::List(_) => vec![("[]".to_string(), "[$1]".to_string())],
+        TypeKind::Dict(_) => vec![("{}".to_string(), "{$1}".to_string())],
         TypeKind::Union(types) => types
             .iter()
-            .flat_map(|ty| ty_complete_label(ty, module))
+            .flat_map(|ty| ty_complete_label_and_inser_text(ty, module))
             .collect(),
         TypeKind::Schema(schema) => {
-            vec![format!(
-                "{}{}{}",
-                if schema.pkgpath.is_empty() || schema.pkgpath == MAIN_PKG {
-                    "".to_string()
-                } else if let Some(m) = module {
-                    format!("{}.", pkg_real_name(&schema.pkgpath, m))
-                } else {
-                    format!("{}.", schema.pkgpath.split('.').last().unwrap())
-                },
-                schema.name,
-                "{}"
+            vec![(
+                format!(
+                    "{}{}{}",
+                    if schema.pkgpath.is_empty() || schema.pkgpath == MAIN_PKG {
+                        "".to_string()
+                    } else if let Some(m) = module {
+                        format!("{}.", pkg_real_name(&schema.pkgpath, m))
+                    } else {
+                        format!("{}.", schema.pkgpath.split('.').last().unwrap())
+                    },
+                    schema.name,
+                    "{}"
+                ),
+                "{$1}".to_string(), // `$1`` is used to determine the cursor position after completion
             )]
         }
         _ => vec![],
@@ -1404,12 +1414,22 @@ mod tests {
             column: Some(6),
         };
         let got = completion(Some(':'), &program, &pos, &gs, &tool, None).unwrap();
-        let got_labels: Vec<String> = match got {
+        let got_labels: Vec<String> = match &got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
         };
         let expected_labels: Vec<&str> = vec![" sub.Person1{}"];
         assert_eq!(got_labels, expected_labels);
+
+        let got_insert_test: Vec<String> = match &got {
+            CompletionResponse::Array(arr) => arr
+                .iter()
+                .map(|item| item.clone().insert_text.unwrap().clone())
+                .collect(),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+        let expected_insert_test: Vec<&str> = vec![" {$1}"];
+        assert_eq!(got_insert_test, expected_insert_test);
     }
 
     #[test]
