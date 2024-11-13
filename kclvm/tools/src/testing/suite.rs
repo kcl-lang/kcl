@@ -4,7 +4,8 @@ use crate::testing::{TestCaseInfo, TestOptions, TestResult, TestRun};
 use anyhow::{anyhow, Result};
 use indexmap::IndexMap;
 use kclvm_ast::ast;
-use kclvm_driver::{get_kcl_files, get_pkg_list};
+use kclvm_driver::get_pkg_list;
+use kclvm_parser::get_kcl_files;
 use kclvm_parser::{parse_file_force_errors, ParseSessionRef};
 #[cfg(feature = "llvm")]
 use kclvm_runner::build_program;

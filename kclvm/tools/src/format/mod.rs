@@ -7,7 +7,7 @@
 //! to print it as source code string.
 use anyhow::Result;
 use kclvm_ast_pretty::print_ast_module;
-use kclvm_driver::get_kcl_files;
+use kclvm_parser::get_kcl_files;
 use std::path::Path;
 
 use kclvm_parser::{parse_file_force_errors, parse_single_file};

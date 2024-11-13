@@ -8,14 +8,11 @@ mod tests;
 
 use anyhow::Result;
 use kclvm_config::{
-    modfile::{
-        get_pkg_root, load_mod_file, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE,
-        KCL_WORK_FILE,
-    },
+    modfile::{get_pkg_root, load_mod_file, KCL_FILE_EXTENSION, KCL_MOD_FILE, KCL_WORK_FILE},
     settings::{build_settings_pathbuf, DEFAULT_SETTING_FILE},
     workfile::load_work_file,
 };
-use kclvm_parser::LoadProgramOptions;
+use kclvm_parser::{get_kcl_files, LoadProgramOptions};
 use kclvm_utils::path::PathPrefix;
 use std::iter;
 use std::{collections::HashMap, env};
@@ -323,27 +320,6 @@ pub fn lookup_workspace(path: &str) -> io::Result<WorkSpaceKind> {
         }
     }
     Ok(WorkSpaceKind::NotFound)
-}
-
-/// Get kcl files from path.
-pub fn get_kcl_files<P: AsRef<Path>>(path: P, recursively: bool) -> Result<Vec<String>> {
-    let mut files = vec![];
-    let walkdir = if recursively {
-        WalkDir::new(path)
-    } else {
-        WalkDir::new(path).max_depth(1)
-    };
-    for entry in walkdir.into_iter().filter_map(|e| e.ok()) {
-        let path = entry.path();
-        if path.is_file() {
-            let file = path.to_str().unwrap();
-            if file.ends_with(KCL_FILE_SUFFIX) {
-                files.push(file.to_string())
-            }
-        }
-    }
-    files.sort();
-    Ok(files)
 }
 
 /// Get the package string list form the package path.
