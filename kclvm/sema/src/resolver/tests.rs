@@ -397,7 +397,7 @@ fn test_lint() {
     pre_process_program(&mut program, &opts);
     let mut resolver = Resolver::new(&program, opts);
     resolver.resolve_import();
-    resolver.check_and_lint(kclvm_ast::MAIN_PKG);
+    resolver.check_and_lint_all_pkgs();
 
     let root = &program.root.clone();
     let filename = Path::new(&root.clone())

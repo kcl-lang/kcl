@@ -97,8 +97,13 @@ impl<'ctx> Resolver<'ctx> {
         }
     }
 
-    pub(crate) fn check_and_lint(&mut self, pkgpath: &str) -> ProgramScope {
-        self.check(pkgpath);
+    pub(crate) fn check_and_lint_all_pkgs(&mut self) -> ProgramScope {
+        self.check(kclvm_ast::MAIN_PKG);
+        for pkg in self.program.pkgs.keys() {
+            if !self.scope_map.contains_key(pkg) {
+                self.check(pkg);
+            }
+        }
         let mut scope_map = self.scope_map.clone();
         for invalid_pkg_scope in &self.ctx.invalid_pkg_scope {
             scope_map.remove(invalid_pkg_scope);
@@ -205,7 +210,7 @@ pub fn resolve_program_with_opts(
             }
         }
     }
-    let scope = resolver.check_and_lint(kclvm_ast::MAIN_PKG);
+    let scope = resolver.check_and_lint_all_pkgs();
 
     if let Some(cached_scope) = cached_scope.as_ref() {
         if let Some(mut cached_scope) = cached_scope.try_write() {

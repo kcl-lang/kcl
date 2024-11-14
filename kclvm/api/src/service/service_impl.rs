@@ -649,7 +649,7 @@ impl KclvmServiceImpl {
         for (k, schema_ty) in get_full_schema_type(
             Some(&args.schema_name),
             CompilationOptions {
-                k_files: exec_args.clone().k_filename_list,
+                paths: exec_args.clone().k_filename_list,
                 loader_opts: Some(exec_args.get_load_program_options()),
                 resolve_opts: Options {
                     resolve_val: true,

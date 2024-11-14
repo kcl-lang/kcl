@@ -848,7 +848,7 @@ fn parse_all_file_under_path() {
         .join("testdata")
         .join("parse_all_modules");
 
-    let main = testpath.join("a").join("main.k");
+    let main = testpath.join("a");
     let main = main.to_str().unwrap();
     let helloworld = testpath.join("helloworld_0.0.1");
     let b = testpath.join("b");
@@ -865,6 +865,6 @@ fn parse_all_file_under_path() {
 
     let res = load_all_files_under_paths(sess.clone(), &[main], Some(opt), None).unwrap();
 
-    assert_eq!(res.program.pkgs.keys().len(), 3);
-    assert_eq!(res.paths.len(), 3);
+    assert_eq!(res.program.pkgs.keys().len(), 4);
+    assert_eq!(res.paths.len(), 4);
 }
