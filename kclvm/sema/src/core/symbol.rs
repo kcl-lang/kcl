@@ -92,16 +92,17 @@ pub struct SymbolDB {
     pub(crate) pkg_symbol_map: IndexMap<String, IndexSet<SymbolRef>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SymbolHint {
     pub kind: SymbolHintKind,
     pub pos: Position,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SymbolHintKind {
     TypeHint(String),
     VarHint(String),
+    KeyTypeHint(String),
 }
 
 impl SymbolData {

@@ -7,6 +7,7 @@ use kclvm_ast::pos::GetPos;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
 use kclvm_error::{diagnostic::Range, Position};
 
+use crate::core::symbol::Symbol;
 use crate::{
     core::{
         scope::{ConfigScopeContext, LocalSymbolScopeKind},
@@ -1977,7 +1978,27 @@ impl<'ctx> AdvancedResolver<'_> {
 
             if let Some(key) = &entry.node.key {
                 self.ctx.maybe_def = true;
-                self.expr(key)?;
+                if let Some(symbol_ref) = self.expr(key)? {
+                    if let Some(config_key_symbol) =
+                        self.gs.get_symbols().unresolved.get(symbol_ref.get_id())
+                    {
+                        if let Some(def_ref) = config_key_symbol.get_definition() {
+                            if let Some(def_symbol) = self.gs.get_symbols().get_symbol(def_ref) {
+                                let ty = def_symbol.get_sema_info().ty.clone();
+                                let symbols = self.gs.get_symbols_mut();
+                                if let Some(ty) = ty {
+                                    symbols.alloc_hint(
+                                        SymbolHint {
+                                            kind: SymbolHintKind::KeyTypeHint(ty.ty_hint()),
+                                            pos: key.get_end_pos(),
+                                        },
+                                        self.ctx.current_pkgpath.clone().unwrap(),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
                 self.ctx.maybe_def = false;
             }
         }

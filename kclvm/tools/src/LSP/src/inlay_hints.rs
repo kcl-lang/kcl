@@ -1,4 +1,4 @@
-use indexmap::IndexSet;
+use indexmap::{IndexMap, IndexSet};
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::core::symbol::{SymbolHint, SymbolHintKind};
 use lsp_types::{
@@ -43,10 +43,27 @@ pub fn inlay_hints(file: &str, gs: &GlobalState) -> Option<Vec<InlayHint>> {
     let mut inlay_hints: IndexSet<KCLInlayHint> = Default::default();
     let sema_db = gs.get_sema_db();
     if let Some(file_sema) = sema_db.get_file_sema(file) {
+        let mut line_hint: IndexMap<u64, SymbolHint> = IndexMap::new();
         for hint in file_sema.get_hints() {
-            inlay_hints.insert(generate_inlay_hint(hint));
+            match &hint.kind {
+                SymbolHintKind::KeyTypeHint(_) => match line_hint.get(&hint.pos.line) {
+                    Some(h) => {
+                        if hint.pos.column.unwrap_or_default() > h.pos.column.unwrap_or_default() {
+                            line_hint.insert(hint.pos.line, hint.clone());
+                        }
+                    }
+                    None => {
+                        line_hint.insert(hint.pos.line, hint.clone());
+                    }
+                },
+                _ => {
+                    inlay_hints.insert(generate_inlay_hint(hint));
+                }
+            }
         }
+        inlay_hints.extend(line_hint.values().map(|h| generate_inlay_hint(h)));
     }
+
     Some(
         inlay_hints
             .into_iter()
@@ -54,7 +71,6 @@ pub fn inlay_hints(file: &str, gs: &GlobalState) -> Option<Vec<InlayHint>> {
             .collect(),
     )
 }
-
 #[inline]
 fn generate_inlay_hint(hint: &SymbolHint) -> KCLInlayHint {
     let (part, position, kind) = get_hint_label(hint);
@@ -67,6 +83,7 @@ fn generate_inlay_hint(hint: &SymbolHint) -> KCLInlayHint {
             new_text: part.value.clone(),
         }]),
         SymbolHintKind::VarHint(_) => None,
+        SymbolHintKind::KeyTypeHint(_) => None,
     };
     KCLInlayHint {
         position,
@@ -108,6 +125,14 @@ fn get_hint_label(hint: &SymbolHint) -> (InlayHintLabelPart, LspPosition, InlayH
             lsp_pos(&hint.pos),
             InlayHintKind::PARAMETER,
         ),
+        SymbolHintKind::KeyTypeHint(ty) => (
+            InlayHintLabelPart {
+                value: format!(": {ty}"),
+                ..Default::default()
+            },
+            lsp_pos(&hint.pos),
+            InlayHintKind::TYPE,
+        ),
     }
 }
 
@@ -143,9 +168,13 @@ mod tests {
         "src/test_data/inlay_hints/schema_args/schema_args_hint.k"
     );
 
-    // Temporary revert
-    // inlay_hints_test_snapshot!(
-    //     test_config_key_ty,
-    //     "src/test_data/inlay_hints/config_key/config_key.k"
-    // );
+    inlay_hints_test_snapshot!(
+        test_config_key_ty,
+        "src/test_data/inlay_hints/config_key/config_key.k"
+    );
+
+    inlay_hints_test_snapshot!(
+        test_config_key_ty_1,
+        "src/test_data/inlay_hints/config_key1/config_key.k"
+    );
 }
