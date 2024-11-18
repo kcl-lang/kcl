@@ -3,8 +3,8 @@ use kclvm_ast::ast::Program;
 use kclvm_driver::{lookup_compile_workspace, toolchain};
 use kclvm_error::Diagnostic;
 use kclvm_parser::{
-    entry::get_normalized_k_files_from_paths, load_program, KCLModuleCache, LoadProgramOptions,
-    ParseSessionRef,
+    entry::get_normalized_k_files_from_paths, load_all_files_under_paths, KCLModuleCache,
+    LoadProgramOptions, ParseSessionRef,
 };
 use kclvm_sema::{
     advanced_resolver::AdvancedResolver,
@@ -92,10 +92,12 @@ pub fn compile(
             }
         }
     }
-    let mut program = match load_program(sess.clone(), &files, Some(opts), params.module_cache) {
-        Ok(r) => r.program,
-        Err(e) => return (diags, Err(anyhow::anyhow!("Parse failed: {:?}", e))),
-    };
+
+    let mut program =
+        match load_all_files_under_paths(sess.clone(), &files, Some(opts), params.module_cache) {
+            Ok(r) => r.program,
+            Err(e) => return (diags, Err(anyhow::anyhow!("Parse failed: {:?}", e))),
+        };
     diags.extend(sess.1.read().diagnostics.clone());
 
     // Resolver
@@ -141,6 +143,10 @@ pub fn compile(
         },
         None => HashSet::new(),
     };
+
+    gs.new_or_invalidate_pkgs
+        .extend(program.pkgs_not_imported.keys().map(|n| n.clone()));
+
     gs.clear_cache();
 
     Namer::find_symbols(&program, gs);

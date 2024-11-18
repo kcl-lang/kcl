@@ -73,7 +73,12 @@ impl<'ctx> Resolver<'ctx> {
     pub(crate) fn check(&mut self, pkgpath: &str) {
         self.check_import(pkgpath);
         self.init_global_types();
-        match self.program.pkgs.get(pkgpath) {
+        match self
+            .program
+            .pkgs
+            .get(pkgpath)
+            .or(self.program.pkgs_not_imported.get(pkgpath))
+        {
             Some(modules) => {
                 for module in modules {
                     let module = self
@@ -99,26 +104,27 @@ impl<'ctx> Resolver<'ctx> {
 
     pub(crate) fn check_and_lint_all_pkgs(&mut self) -> ProgramScope {
         self.check(kclvm_ast::MAIN_PKG);
-        for pkg in self.program.pkgs.keys() {
-            if !self.scope_map.contains_key(pkg) {
-                self.check(pkg);
-            }
+        self.lint_check_scope_map();
+        let mut handler = self.handler.clone();
+        for diag in &self.linter.handler.diagnostics {
+            handler.diagnostics.insert(diag.clone());
         }
+
+        for pkg in self.program.pkgs_not_imported.keys() {
+            self.check(pkg);
+        }
+
         let mut scope_map = self.scope_map.clone();
         for invalid_pkg_scope in &self.ctx.invalid_pkg_scope {
             scope_map.remove(invalid_pkg_scope);
         }
-        let mut scope = ProgramScope {
+        let scope = ProgramScope {
             scope_map,
             import_names: self.ctx.import_names.clone(),
             node_ty_map: self.node_ty_map.clone(),
-            handler: self.handler.clone(),
+            handler,
             schema_mapping: self.ctx.schema_mapping.clone(),
         };
-        self.lint_check_scope_map();
-        for diag in &self.linter.handler.diagnostics {
-            scope.handler.diagnostics.insert(diag.clone());
-        }
         scope
     }
 }

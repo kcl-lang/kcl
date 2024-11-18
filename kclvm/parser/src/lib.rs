@@ -1004,11 +1004,12 @@ pub fn parse_program(
             }
         }
     }
-
     let program = ast::Program {
         root: workdir,
         pkgs,
+        pkgs_not_imported: HashMap::new(),
         modules,
+        modules_not_imported: HashMap::new(),
     };
 
     Ok(LoadProgramResult {
@@ -1038,9 +1039,13 @@ pub fn load_all_files_under_paths(
             &loader.opts,
         ) {
             Ok(res) => {
+                let diag = sess.1.read().diagnostics.clone();
                 let mut res = res.clone();
                 let k_files_from_import = res.paths.clone();
-                let (k_files_under_path, pkgmap) = get_files_from_path(paths, opts)?;
+                let mut paths = paths.to_vec();
+                paths.push(&res.program.root);
+                let (k_files_under_path, pkgmap) =
+                    get_files_from_path(&res.program.root, &paths, opts)?;
                 loader.pkgmap.extend(pkgmap);
 
                 // Filter unparsed file
@@ -1055,7 +1060,7 @@ pub fn load_all_files_under_paths(
                 }
 
                 let module_cache = module_cache.unwrap_or_default();
-                let pkgs = &mut res.program.pkgs;
+                let pkgs_not_imported = &mut res.program.pkgs_not_imported;
 
                 let mut new_files = HashSet::new();
 
@@ -1064,14 +1069,38 @@ pub fn load_all_files_under_paths(
                     new_files.insert(file.clone());
                     let deps = parse_file(
                         sess.clone(),
-                        file,
+                        file.clone(),
                         None,
                         module_cache.clone(),
-                        pkgs,
+                        pkgs_not_imported,
                         &mut loader.pkgmap,
                         loader.file_graph.clone(),
                         &loader.opts,
                     )?;
+
+                    let m_ref = match module_cache.read() {
+                        Ok(module_cache) => module_cache
+                            .ast_cache
+                            .get(file.get_path())
+                            .expect(&format!(
+                                "Module not found in module: {:?}",
+                                file.get_path()
+                            ))
+                            .clone(),
+                        Err(e) => return Err(anyhow::anyhow!("Parse program failed: {e}")),
+                    };
+
+                    let pkg = loader.pkgmap.get(&file).expect("file not in pkgmap");
+                    let mut m = m_ref.write().unwrap();
+                    fix_rel_import_path_with_file(
+                        &pkg.pkg_root,
+                        &mut m,
+                        &file,
+                        &loader.pkgmap,
+                        &loader.opts,
+                        sess.clone(),
+                    );
+
                     for dep in deps {
                         if loader.parsed_file.insert(dep.clone()) {
                             unparsed_file.push_back(dep.clone());
@@ -1080,7 +1109,7 @@ pub fn load_all_files_under_paths(
                 }
 
                 // Merge unparsed module into res
-                let modules = &mut res.program.modules;
+                let modules_not_imported = &mut res.program.modules_not_imported;
                 for file in &new_files {
                     let filename = file.get_path().to_str().unwrap().to_string();
                     let m_ref = match module_cache.read() {
@@ -1094,52 +1123,17 @@ pub fn load_all_files_under_paths(
                             .clone(),
                         Err(e) => return Err(anyhow::anyhow!("Parse program failed: {e}")),
                     };
-                    modules.insert(filename.clone(), m_ref);
-                    match pkgs.get_mut(&file.pkg_path) {
+                    modules_not_imported.insert(filename.clone(), m_ref);
+                    match pkgs_not_imported.get_mut(&file.pkg_path) {
                         Some(pkg_modules) => {
                             pkg_modules.push(filename.clone());
                         }
                         None => {
-                            pkgs.insert(file.pkg_path.clone(), vec![filename]);
+                            pkgs_not_imported.insert(file.pkg_path.clone(), vec![filename]);
                         }
                     }
                 }
-
-                // Generate new paths
-                let files = match loader.file_graph.read() {
-                    Ok(file_graph) => {
-                        let files = match file_graph.toposort() {
-                            Ok(files) => files,
-                            Err(_) => file_graph.paths(),
-                        };
-
-                        let file_path_graph = file_graph.file_path_graph().0;
-                        if let Err(cycle) = toposort(&file_path_graph) {
-                            let formatted_cycle = cycle
-                                .iter()
-                                .map(|file| format!("- {}\n", file.to_string_lossy()))
-                                .collect::<String>();
-
-                            sess.1.write().add_error(
-                                ErrorKind::RecursiveLoad,
-                                &[Message {
-                                    range: (Position::dummy_pos(), Position::dummy_pos()),
-                                    style: Style::Line,
-                                    message: format!(
-                                        "Could not compiles due to cyclic import statements\n{}",
-                                        formatted_cycle.trim_end()
-                                    ),
-                                    note: None,
-                                    suggested_replacement: None,
-                                }],
-                            );
-                        }
-                        files
-                    }
-                    Err(e) => return Err(anyhow::anyhow!("Parse program failed: {e}")),
-                };
-
-                res.paths = files.iter().map(|file| file.get_path().clone()).collect();
+                sess.1.write().diagnostics = diag;
                 return Ok(res);
             }
             e => return e,
@@ -1149,6 +1143,7 @@ pub fn load_all_files_under_paths(
 
 /// Get all kcl files under path and dependencies from opts, regardless of whether they are imported or not
 pub fn get_files_from_path(
+    root: &str,
     paths: &[&str],
     opts: Option<LoadProgramOptions>,
 ) -> Result<(HashMap<String, Vec<PathBuf>>, HashMap<PkgFile, Pkg>)> {
@@ -1175,10 +1170,14 @@ pub fn get_files_from_path(
                     .to_str()
                     .unwrap()
                     .to_string();
-                    let fix_path = fix_path
+                    let mut fix_path = fix_path
                         .replace(['/', '\\'], ".")
                         .trim_end_matches('.')
                         .to_string();
+
+                    if fix_path.is_empty() {
+                        fix_path = MAIN_PKG.to_string();
+                    }
 
                     let pkgfile = PkgFile::new(p.clone(), fix_path.clone());
                     pkgmap.insert(
@@ -1208,7 +1207,7 @@ pub fn get_files_from_path(
                 let fix_path = p
                     .parent()
                     .unwrap()
-                    .strip_prefix(path_buf.clone())
+                    .strip_prefix(root)
                     .unwrap()
                     .to_str()
                     .unwrap()

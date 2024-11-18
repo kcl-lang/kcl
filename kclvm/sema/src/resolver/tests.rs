@@ -30,6 +30,8 @@ pub fn parse_program(filename: &str) -> Result<ast::Program> {
         root: abspath.parent().unwrap().adjust_canonicalization(),
         pkgs: HashMap::new(),
         modules: HashMap::new(),
+        pkgs_not_imported: HashMap::new(),
+        modules_not_imported: HashMap::new(),
     };
 
     let mut module = parse_file_force_errors(abspath.to_str().unwrap(), None)?;

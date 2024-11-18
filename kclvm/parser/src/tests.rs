@@ -865,6 +865,8 @@ fn parse_all_file_under_path() {
 
     let res = load_all_files_under_paths(sess.clone(), &[main], Some(opt), None).unwrap();
 
-    assert_eq!(res.program.pkgs.keys().len(), 4);
-    assert_eq!(res.paths.len(), 4);
+    assert_eq!(res.program.pkgs.keys().len(), 1);
+    assert_eq!(res.program.pkgs_not_imported.keys().len(), 3);
+
+    assert_eq!(res.paths.len(), 1);
 }

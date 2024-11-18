@@ -121,66 +121,84 @@ impl<'ctx> AdvancedResolver<'ctx> {
         };
         // Scan all scehma symbol
         for (name, modules) in advanced_resolver.ctx.program.pkgs.iter() {
-            if !advanced_resolver.gs.new_or_invalidate_pkgs.contains(name) {
-                continue;
-            }
-            advanced_resolver.ctx.current_pkgpath = Some(name.clone());
-            if let Some(pkg_info) = advanced_resolver.gs.get_packages().get_package_info(name) {
-                if modules.is_empty() {
-                    continue;
-                }
-                if !advanced_resolver.ctx.scopes.is_empty() {
-                    advanced_resolver.ctx.scopes.clear();
-                }
+            advanced_resolver.scan_schemas(name, modules)?;
+        }
 
-                advanced_resolver.enter_root_scope(
-                    name.clone(),
-                    pkg_info.pkg_filepath.clone(),
-                    pkg_info.kfile_paths.clone(),
-                );
-
-                let modules = advanced_resolver.ctx.program.get_modules_for_pkg(name);
-                for module in modules.iter() {
-                    let module = module.read().expect("Failed to acquire module lock");
-                    advanced_resolver.ctx.current_filename = Some(module.filename.clone());
-                    advanced_resolver.walk_module_schemas(&module)?;
-                }
-                advanced_resolver.leave_scope()
-            }
+        for (name, modules) in advanced_resolver.ctx.program.pkgs_not_imported.iter() {
+            advanced_resolver.scan_schemas(name, modules)?;
         }
 
         for (name, modules) in advanced_resolver.ctx.program.pkgs.iter() {
-            if !advanced_resolver.gs.new_or_invalidate_pkgs.contains(name) {
-                continue;
-            }
-            advanced_resolver.ctx.current_pkgpath = Some(name.clone());
-            if let Some(_) = advanced_resolver.gs.get_packages().get_package_info(name) {
-                if modules.is_empty() {
-                    continue;
-                }
-                if !advanced_resolver.ctx.scopes.is_empty() {
-                    advanced_resolver.ctx.scopes.clear();
-                }
+            advanced_resolver.walk_pkg(name, modules)?;
+        }
 
-                let scope_ref = advanced_resolver
-                    .gs
-                    .get_scopes_mut()
-                    .get_root_scope(name.to_string())
-                    .unwrap();
-
-                advanced_resolver.ctx.scopes.push(scope_ref);
-                let modules = advanced_resolver.ctx.program.get_modules_for_pkg(name);
-                for module in modules.iter() {
-                    let module = module.read().expect("Failed to acquire module lock");
-                    advanced_resolver.ctx.current_filename = Some(module.filename.clone());
-                    advanced_resolver.walk_module(&module)?;
-                }
-                advanced_resolver.leave_scope()
-            }
+        for (name, modules) in advanced_resolver.ctx.program.pkgs_not_imported.iter() {
+            advanced_resolver.walk_pkg(name, modules)?;
         }
 
         advanced_resolver.gs.build_sema_db();
         advanced_resolver.gs.new_or_invalidate_pkgs.clear();
+        Ok(())
+    }
+
+    fn scan_schemas(&mut self, name: &String, modules: &Vec<String>) -> anyhow::Result<()> {
+        if !self.gs.new_or_invalidate_pkgs.contains(name) {
+            return Ok(());
+        }
+        self.ctx.current_pkgpath = Some(name.clone());
+        if let Some(pkg_info) = self.gs.get_packages().get_package_info(name) {
+            if modules.is_empty() {
+                return Ok(());
+            }
+            if !self.ctx.scopes.is_empty() {
+                self.ctx.scopes.clear();
+            }
+
+            self.enter_root_scope(
+                name.clone(),
+                pkg_info.pkg_filepath.clone(),
+                pkg_info.kfile_paths.clone(),
+            );
+
+            let modules = self.ctx.program.get_modules_for_pkg(name);
+            for module in modules.iter() {
+                let module = module.read().expect("Failed to acquire module lock");
+                self.ctx.current_filename = Some(module.filename.clone());
+                self.walk_module_schemas(&module)?;
+            }
+            self.leave_scope()
+        }
+        Ok(())
+    }
+
+    fn walk_pkg(&mut self, name: &String, modules: &Vec<String>) -> anyhow::Result<()> {
+        if !self.gs.new_or_invalidate_pkgs.contains(name) {
+            return Ok(());
+        }
+        self.ctx.current_pkgpath = Some(name.clone());
+        if let Some(_) = self.gs.get_packages().get_package_info(name) {
+            if modules.is_empty() {
+                return Ok(());
+            }
+            if !self.ctx.scopes.is_empty() {
+                self.ctx.scopes.clear();
+            }
+
+            let scope_ref = self
+                .gs
+                .get_scopes_mut()
+                .get_root_scope(name.to_string())
+                .unwrap();
+
+            self.ctx.scopes.push(scope_ref);
+            let modules = self.ctx.program.get_modules_for_pkg(name);
+            for module in modules.iter() {
+                let module = module.read().expect("Failed to acquire module lock");
+                self.ctx.current_filename = Some(module.filename.clone());
+                self.walk_module(&module)?;
+            }
+            self.leave_scope()
+        }
         Ok(())
     }
 

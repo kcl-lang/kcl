@@ -413,7 +413,9 @@ impl Into<SerializeProgram> for Program {
 pub struct Program {
     pub root: String,
     pub pkgs: HashMap<String, Vec<String>>,
+    pub pkgs_not_imported: HashMap<String, Vec<String>>,
     pub modules: HashMap<String, Arc<RwLock<Module>>>,
+    pub modules_not_imported: HashMap<String, Arc<RwLock<Module>>>,
 }
 
 impl Program {
@@ -453,7 +455,11 @@ impl Program {
         &self,
         module_path: &str,
     ) -> anyhow::Result<Option<RwLockReadGuard<'_, Module>>> {
-        match self.modules.get(module_path) {
+        match self
+            .modules
+            .get(module_path)
+            .or(self.modules_not_imported.get(module_path))
+        {
             Some(module_ref) => match module_ref.read() {
                 Ok(m) => Ok(Some(m)),
                 Err(_) => Err(anyhow::anyhow!("Failed to acquire module lock")),
@@ -466,7 +472,11 @@ impl Program {
         &self,
         module_path: &str,
     ) -> anyhow::Result<Option<RwLockWriteGuard<'_, Module>>> {
-        match self.modules.get(module_path) {
+        match self
+            .modules
+            .get(module_path)
+            .or(self.modules_not_imported.get(module_path))
+        {
             Some(module_ref) => match module_ref.write() {
                 Ok(m) => Ok(Some(m)),
                 Err(_) => Err(anyhow::anyhow!("Failed to acquire module lock")),
@@ -476,12 +486,19 @@ impl Program {
     }
 
     pub fn get_module_ref(&self, module_path: &str) -> Option<Arc<RwLock<Module>>> {
-        self.modules.get(module_path).cloned()
+        self.modules
+            .get(module_path)
+            .cloned()
+            .or(self.modules_not_imported.get(module_path).cloned())
     }
 
     pub fn get_modules_for_pkg(&self, pkg_name: &str) -> Vec<Arc<RwLock<Module>>> {
         let mut result = Vec::new();
-        if let Some(module_names) = self.pkgs.get(pkg_name) {
+        if let Some(module_names) = self
+            .pkgs
+            .get(pkg_name)
+            .or(self.pkgs_not_imported.get(pkg_name))
+        {
             for module_name in module_names {
                 if let Some(module) = self.get_module_ref(module_name) {
                     result.push(module);

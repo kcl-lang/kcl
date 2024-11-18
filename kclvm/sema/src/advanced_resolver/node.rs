@@ -62,7 +62,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'_> {
                         .gs
                         .get_symbols()
                         .get_symbol(schema_symbol)
-                        .ok_or(anyhow!("schema_symbol not found"))?;
+                        .ok_or(anyhow!("schema_symbol not found1"))?;
                     if let Some(schema_ty) = schema_symbol.get_sema_info().ty.clone() {
                         if !unification_stmt.target.node.names.is_empty() {
                             let schema_ty = schema_ty.into_schema_type();

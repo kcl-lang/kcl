@@ -27,7 +27,12 @@ impl<'ctx> Resolver<'_> {
     pub(crate) fn init_global_types(&mut self) {
         // 1. Scan all schema and rule type symbols
         let pkgpath = &self.ctx.pkgpath;
-        match self.program.pkgs.get(pkgpath) {
+        match self
+            .program
+            .pkgs
+            .get(pkgpath)
+            .or(self.program.pkgs_not_imported.get(pkgpath))
+        {
             Some(modules) => {
                 // 1. Scan all schema and rule type symbol
                 for module in modules {

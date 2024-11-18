@@ -16,11 +16,13 @@
 //!     + schema init
 
 use crate::goto_def::{find_def, find_symbol};
+use crate::to_lsp::lsp_pos;
 use indexmap::IndexSet;
 use kclvm_ast::ast::{self, ImportStmt, Program, Stmt};
 use kclvm_ast::MAIN_PKG;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 use kclvm_driver::toolchain::{get_real_path_from_external, Metadata, Toolchain};
+use kclvm_error::diagnostic::Range;
 use kclvm_parser::get_kcl_files;
 use kclvm_sema::core::global_state::GlobalState;
 use std::io;
@@ -30,7 +32,7 @@ use kclvm_error::Position as KCLPos;
 use kclvm_sema::builtin::{BUILTIN_FUNCTIONS, STANDARD_SYSTEM_MODULES};
 use kclvm_sema::core::package::ModuleInfo;
 use kclvm_sema::core::scope::{LocalSymbolScopeKind, ScopeKind};
-use kclvm_sema::core::symbol::SymbolKind;
+use kclvm_sema::core::symbol::{Symbol, SymbolKind};
 use kclvm_sema::resolver::doc::{parse_schema_doc_string, SchemaDoc};
 use kclvm_sema::ty::{FunctionType, SchemaType, Type, TypeKind};
 use kclvm_utils::path::PathPrefix;
@@ -65,6 +67,12 @@ impl From<KCLCompletionItemKind> for CompletionItemKind {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Hash, Eq, Default)]
+pub struct TextEdit {
+    pub range: Range,
+    pub new_text: String,
+}
+
 /// Abstraction of CompletionItem in KCL
 #[derive(Debug, Clone, PartialEq, Hash, Eq, Default)]
 pub(crate) struct KCLCompletionItem {
@@ -73,6 +81,7 @@ pub(crate) struct KCLCompletionItem {
     pub documentation: Option<String>,
     pub kind: Option<KCLCompletionItemKind>,
     pub insert_text: Option<String>,
+    pub additional_text_edits: Option<Vec<TextEdit>>,
 }
 
 /// Computes completions at the given position.
@@ -107,6 +116,7 @@ pub fn completion(
                     documentation: None,
                     kind: Some(KCLCompletionItemKind::Module),
                     insert_text: None,
+                    additional_text_edits: None,
                 }));
             }
 
@@ -132,6 +142,7 @@ pub fn completion(
                                                 name,
                                                 &ty.into_func_type(),
                                             )),
+                                            additional_text_edits: None,
                                         },
                                     ));
                                 }
@@ -150,9 +161,15 @@ pub fn completion(
                                     name,
                                     &ty.into_func_type(),
                                 )),
+                                additional_text_edits: None,
                             }
                         }));
                     }
+                }
+
+                // Complete all schema def in gs if in main pkg
+                if program.get_main_files().contains(&pos.filename) {
+                    completions.extend(un_import_schemas(&pos.filename, gs));
                 }
 
                 // Complete all usable symbol obj in inner most scope
@@ -182,6 +199,7 @@ pub fn completion(
                                                 documentation: sema_info.doc.clone(),
                                                 kind: Some(KCLCompletionItemKind::Module),
                                                 insert_text: None,
+                                                additional_text_edits: None,
                                             });
                                         }
                                         _ => {
@@ -197,6 +215,7 @@ pub fn completion(
                                                 documentation: sema_info.doc.clone(),
                                                 kind: type_to_item_kind(ty),
                                                 insert_text: None,
+                                                additional_text_edits: None,
                                             });
                                         }
                                     },
@@ -317,6 +336,7 @@ fn completion_dot(
                                     documentation,
                                     kind,
                                     insert_text,
+                                    additional_text_edits: None,
                                 });
                             }
                             None => {
@@ -326,6 +346,7 @@ fn completion_dot(
                                     documentation: None,
                                     kind: None,
                                     insert_text: None,
+                                    additional_text_edits: None,
                                 });
                             }
                         }
@@ -367,6 +388,7 @@ fn completion_assign(pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Comple
                                             kind: Some(KCLCompletionItemKind::Variable),
                                             documentation: sema_info.doc.clone(),
                                             insert_text: Some(format!(" {}", insert_text)),
+                                            additional_text_edits: None,
                                         },
                                     ),
                                 );
@@ -403,6 +425,7 @@ fn completion_newline(
                 documentation: Some(format!("docstring for {}", schema.name.node.clone())),
                 kind: Some(KCLCompletionItemKind::Doc),
                 insert_text: None,
+                additional_text_edits: None,
             });
         }
         return Some(into_completion_items(&completions).into());
@@ -439,6 +462,7 @@ fn completion_newline(
                                                 },
                                                 kind: Some(KCLCompletionItemKind::SchemaAttr),
                                                 insert_text: None,
+                                                additional_text_edits: None,
                                             });
                                         }
                                         _ => {}
@@ -491,6 +515,7 @@ fn completion_import_builtin_pkg() -> IndexSet<KCLCompletionItem> {
             documentation: None,
             kind: Some(KCLCompletionItemKind::Module),
             insert_text: None,
+            additional_text_edits: None,
         })
         .collect()
 }
@@ -521,6 +546,7 @@ fn completion_import_internal_pkg(
                                 documentation: None,
                                 kind: Some(KCLCompletionItemKind::Dir),
                                 insert_text: None,
+                                additional_text_edits: None,
                             });
                         }
                     } else {
@@ -541,6 +567,7 @@ fn completion_import_internal_pkg(
                                             documentation: None,
                                             kind: Some(KCLCompletionItemKind::Module),
                                             insert_text: None,
+                                            additional_text_edits: None,
                                         });
                                     }
                                 }
@@ -565,6 +592,7 @@ fn completion_import_external_pkg(metadata: Option<Metadata>) -> IndexSet<KCLCom
                 documentation: None,
                 kind: Some(KCLCompletionItemKind::Dir),
                 insert_text: None,
+                additional_text_edits: None,
             })
             .collect(),
         None => IndexSet::new(),
@@ -640,6 +668,7 @@ fn schema_ty_to_value_complete_item(schema_ty: &SchemaType) -> KCLCompletionItem
         documentation: Some(schema_ty.doc.clone()),
         kind: Some(KCLCompletionItemKind::Schema),
         insert_text: Some(insert_text),
+        additional_text_edits: None,
     }
 }
 
@@ -676,6 +705,7 @@ fn schema_ty_to_type_complete_item(schema_ty: &SchemaType) -> KCLCompletionItem 
         documentation: Some(schema_ty.doc.clone()),
         kind: Some(KCLCompletionItemKind::Schema),
         insert_text: None,
+        additional_text_edits: None,
     }
 }
 
@@ -709,6 +739,7 @@ fn dot_completion_in_import_stmt(
                         documentation: None,
                         kind: Some(KCLCompletionItemKind::Dir),
                         insert_text: None,
+                        additional_text_edits: None,
                     });
                 } else if path.is_file() {
                     if let Some(extension) = path.extension() {
@@ -725,6 +756,7 @@ fn dot_completion_in_import_stmt(
                                 documentation: None,
                                 kind: Some(KCLCompletionItemKind::File),
                                 insert_text: None,
+                                additional_text_edits: None,
                             });
                         }
                     }
@@ -835,23 +867,107 @@ fn type_to_item_kind(ty: &Type) -> Option<KCLCompletionItemKind> {
 pub(crate) fn into_completion_items(items: &IndexSet<KCLCompletionItem>) -> Vec<CompletionItem> {
     items
         .iter()
-        .map(|item| CompletionItem {
-            label: item.label.clone(),
-            detail: item.detail.clone(),
-            documentation: item
-                .documentation
-                .clone()
-                .map(lsp_types::Documentation::String),
-            kind: item.kind.clone().map(|kind| kind.into()),
-            insert_text: item.insert_text.clone(),
-            insert_text_format: if item.insert_text.is_some() {
-                Some(InsertTextFormat::SNIPPET)
-            } else {
-                None
-            },
-            ..Default::default()
+        .map(|item| {
+            let additional_text_edits = match &item.additional_text_edits {
+                Some(edits) => {
+                    let mut res = vec![];
+                    for edit in edits {
+                        res.push(lsp_types::TextEdit {
+                            range: lsp_types::Range {
+                                start: lsp_pos(&edit.range.0),
+                                end: lsp_pos(&edit.range.1),
+                            },
+                            new_text: edit.new_text.clone(),
+                        })
+                    }
+
+                    Some(res)
+                }
+                None => None,
+            };
+
+            CompletionItem {
+                label: item.label.clone(),
+                detail: item.detail.clone(),
+                documentation: item
+                    .documentation
+                    .clone()
+                    .map(lsp_types::Documentation::String),
+                kind: item.kind.clone().map(|kind| kind.into()),
+                insert_text: item.insert_text.clone(),
+                insert_text_format: if item.insert_text.is_some() {
+                    Some(InsertTextFormat::SNIPPET)
+                } else {
+                    None
+                },
+                additional_text_edits,
+
+                ..Default::default()
+            }
         })
         .collect()
+}
+
+fn un_import_schemas(filename: &str, gs: &GlobalState) -> IndexSet<KCLCompletionItem> {
+    let module = gs.get_packages().get_module_info(filename);
+    let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
+
+    for (_, schema_symbol) in gs.get_symbols().get_all_schemas() {
+        if let Some(ty) = &schema_symbol.get_sema_info().ty {
+            let schema = ty.clone().into_schema_type();
+            let pkg_path_last_name = if schema.pkgpath.is_empty() || schema.pkgpath == MAIN_PKG {
+                "".to_string()
+            } else {
+                format!("{}", schema.pkgpath.split('.').last().unwrap())
+            };
+
+            let has_import = match module {
+                Some(m) => m
+                    .get_imports()
+                    .iter()
+                    .any(|(_, info)| info.get_fully_qualified_name() == schema.pkgpath),
+                None => false,
+            };
+            let label = if pkg_path_last_name.is_empty() || has_import {
+                schema_symbol.get_name()
+            } else {
+                format!("{}(import {})", schema_symbol.get_name(), schema.pkgpath)
+            };
+
+            // `pkg_path.schema_name{<cursor>}` or `schema_name{<cursor>}`
+            let insert_text = format!(
+                "{}{}{}{}",
+                pkg_path_last_name,
+                if pkg_path_last_name.is_empty() {
+                    ""
+                } else {
+                    "."
+                },
+                schema.name,
+                "{$1}"
+            );
+
+            // insert `import pkgpath`
+            let additional_text_edits = if !has_import && !pkg_path_last_name.is_empty() {
+                Some(vec![TextEdit {
+                    range: (KCLPos::dummy_pos(), KCLPos::dummy_pos()),
+                    new_text: format!("import {}\n", schema.pkgpath),
+                }])
+            } else {
+                None
+            };
+
+            completions.insert(KCLCompletionItem {
+                label,
+                detail: None,
+                documentation: None,
+                kind: Some(KCLCompletionItemKind::Schema),
+                insert_text: Some(insert_text),
+                additional_text_edits,
+            });
+        }
+    }
+    completions
 }
 
 #[cfg(test)]
@@ -1315,6 +1431,7 @@ mod tests {
                 detail: None,
                 documentation: None,
                 insert_text: None,
+                additional_text_edits: None,
             })
             .collect::<IndexSet<KCLCompletionItem>>(),
         );
