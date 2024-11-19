@@ -1012,6 +1012,7 @@ fn complete_test() {
         .join("test_data")
         .join("completion_test")
         .join("dot")
+        .join("completion")
         .join("completion.k");
 
     let path = path.to_str().unwrap();

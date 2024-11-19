@@ -164,12 +164,11 @@ pub fn completion(
                                 additional_text_edits: None,
                             }
                         }));
+                        // Complete all schema def in gs if in main pkg
+                        if program.get_main_files().contains(&pos.filename) {
+                            completions.extend(unimport_schemas(&pos.filename, gs));
+                        }
                     }
-                }
-
-                // Complete all schema def in gs if in main pkg
-                if program.get_main_files().contains(&pos.filename) {
-                    completions.extend(unimport_schemas(&pos.filename, gs));
                 }
 
                 // Complete all usable symbol obj in inner most scope
