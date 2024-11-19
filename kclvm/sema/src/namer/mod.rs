@@ -121,8 +121,6 @@ impl<'ctx> Namer<'ctx> {
         }
 
         namer.define_symbols();
-
-        // namer.gs
     }
 
     fn walk_pkg(&mut self, name: &String, modules: &Vec<String>) {

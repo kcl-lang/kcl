@@ -39,6 +39,7 @@ pub(crate) enum Task {
     Notify(lsp_server::Notification),
     Retry(Request),
     ChangedFile(FileId, ChangeKind),
+    ReOpenFile(FileId, ChangeKind),
 }
 
 #[derive(Debug, Clone)]
@@ -421,10 +422,16 @@ impl LanguageServerState {
 
                                     self.async_compile(workspace, opts, Some(file.file_id), true);
                                 }
-                                None => self.log_message(format!(
-                                    "Internal Bug: not found any workspace for file {:?}",
-                                    filename
-                                )),
+                                None => {
+                                    self.log_message(format!(
+                                        "Internal Bug: not found any workspace for file {:?}. Try to reload",
+                                        filename
+                                    ));
+
+                                    self.task_sender
+                                        .send(Task::ReOpenFile(file.file_id, ChangeKind::Create))
+                                        .unwrap();
+                                }
                             }
                         }
                     }
@@ -475,6 +482,10 @@ impl LanguageServerState {
                     change_kind,
                 })
             }
+            Task::ReOpenFile(file_id, change_kind) => self.process_changed_file(ChangedFile {
+                file_id,
+                change_kind,
+            }),
         }
         Ok(())
     }

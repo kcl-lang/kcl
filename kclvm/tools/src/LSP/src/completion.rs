@@ -169,7 +169,7 @@ pub fn completion(
 
                 // Complete all schema def in gs if in main pkg
                 if program.get_main_files().contains(&pos.filename) {
-                    completions.extend(un_import_schemas(&pos.filename, gs));
+                    completions.extend(unimport_schemas(&pos.filename, gs));
                 }
 
                 // Complete all usable symbol obj in inner most scope
@@ -189,7 +189,7 @@ pub fn completion(
                                             ));
                                             // complete schema value
                                             completions.insert(schema_ty_to_value_complete_item(
-                                                &schema_ty,
+                                                &schema_ty, true,
                                             ));
                                         }
                                         SymbolKind::Package => {
@@ -608,13 +608,22 @@ fn completion_import_external_pkg(metadata: Option<Metadata>) -> IndexSet<KCLCom
 /// complete to
 /// ```no_check
 /// #[cfg(not(test))]
-/// p = Person(param1, param2){}<cursor>
+/// import pkg
+/// p = pkg.Person(param1, param2){<cursor>}
 /// ```
-fn schema_ty_to_value_complete_item(schema_ty: &SchemaType) -> KCLCompletionItem {
+fn schema_ty_to_value_complete_item(schema_ty: &SchemaType, has_import: bool) -> KCLCompletionItem {
+    let schema = schema_ty.clone();
     let param = schema_ty.func.params.clone();
+    let pkg_path_last_name = if schema.pkgpath.is_empty() || schema.pkgpath == MAIN_PKG {
+        "".to_string()
+    } else {
+        format!("{}", schema.pkgpath.split('.').last().unwrap())
+    };
+    let need_import = !pkg_path_last_name.is_empty() && !has_import;
+
     let label = format!(
-        "{}{}{}",
-        schema_ty.name.clone(),
+        "{}{}{}{}",
+        schema.name,
         if param.is_empty() {
             "".to_string()
         } else {
@@ -627,8 +636,50 @@ fn schema_ty_to_value_complete_item(schema_ty: &SchemaType) -> KCLCompletionItem
                     .join(", ")
             )
         },
-        "{}"
+        "{}",
+        if need_import {
+            format!("(import {})", schema.pkgpath)
+        } else {
+            "".to_string()
+        },
     );
+
+    // `pkg_path.schema_name{<cursor>}` or `schema_name{<cursor>}`
+    let insert_text = format!(
+        "{}{}{}{}{}",
+        pkg_path_last_name,
+        if pkg_path_last_name.is_empty() {
+            ""
+        } else {
+            "."
+        },
+        schema.name,
+        if param.is_empty() {
+            "".to_string()
+        } else {
+            format!(
+                "({})",
+                param
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, p)| format!("${{{}:{}}}", idx + 1, p.name.clone()))
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            )
+        },
+        "{$0}"
+    );
+
+    // insert `import pkg`
+    let additional_text_edits = if need_import {
+        Some(vec![TextEdit {
+            range: (KCLPos::dummy_pos(), KCLPos::dummy_pos()),
+            new_text: format!("import {}\n", schema.pkgpath),
+        }])
+    } else {
+        None
+    };
+
     let detail = {
         let mut details = vec![];
         let (pkgpath, rest_sign) = schema_ty.schema_ty_signature_str();
@@ -644,31 +695,14 @@ fn schema_ty_to_value_complete_item(schema_ty: &SchemaType) -> KCLCompletionItem
         }
         details.join("\n")
     };
-    let insert_text = format!(
-        "{}{}{}",
-        schema_ty.name.clone(),
-        if param.is_empty() {
-            "".to_string()
-        } else {
-            format!(
-                "({})",
-                param
-                    .iter()
-                    .enumerate()
-                    .map(|(idx, p)| format!("${{{}:{}}}", idx + 1, p.name.clone()))
-                    .collect::<Vec<String>>()
-                    .join(", ")
-            )
-        },
-        "{}"
-    );
+
     KCLCompletionItem {
         label,
         detail: Some(detail),
         documentation: Some(schema_ty.doc.clone()),
         kind: Some(KCLCompletionItemKind::Schema),
         insert_text: Some(insert_text),
-        additional_text_edits: None,
+        additional_text_edits,
     }
 }
 
@@ -908,19 +942,13 @@ pub(crate) fn into_completion_items(items: &IndexSet<KCLCompletionItem>) -> Vec<
         .collect()
 }
 
-fn un_import_schemas(filename: &str, gs: &GlobalState) -> IndexSet<KCLCompletionItem> {
+fn unimport_schemas(filename: &str, gs: &GlobalState) -> IndexSet<KCLCompletionItem> {
     let module = gs.get_packages().get_module_info(filename);
     let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
 
     for (_, schema_symbol) in gs.get_symbols().get_all_schemas() {
         if let Some(ty) = &schema_symbol.get_sema_info().ty {
             let schema = ty.clone().into_schema_type();
-            let pkg_path_last_name = if schema.pkgpath.is_empty() || schema.pkgpath == MAIN_PKG {
-                "".to_string()
-            } else {
-                format!("{}", schema.pkgpath.split('.').last().unwrap())
-            };
-
             let has_import = match module {
                 Some(m) => m
                     .get_imports()
@@ -928,43 +956,9 @@ fn un_import_schemas(filename: &str, gs: &GlobalState) -> IndexSet<KCLCompletion
                     .any(|(_, info)| info.get_fully_qualified_name() == schema.pkgpath),
                 None => false,
             };
-            let label = if pkg_path_last_name.is_empty() || has_import {
-                schema_symbol.get_name()
-            } else {
-                format!("{}(import {})", schema_symbol.get_name(), schema.pkgpath)
-            };
-
-            // `pkg_path.schema_name{<cursor>}` or `schema_name{<cursor>}`
-            let insert_text = format!(
-                "{}{}{}{}",
-                pkg_path_last_name,
-                if pkg_path_last_name.is_empty() {
-                    ""
-                } else {
-                    "."
-                },
-                schema.name,
-                "{$1}"
-            );
-
-            // insert `import pkgpath`
-            let additional_text_edits = if !has_import && !pkg_path_last_name.is_empty() {
-                Some(vec![TextEdit {
-                    range: (KCLPos::dummy_pos(), KCLPos::dummy_pos()),
-                    new_text: format!("import {}\n", schema.pkgpath),
-                }])
-            } else {
-                None
-            };
-
-            completions.insert(KCLCompletionItem {
-                label,
-                detail: None,
-                documentation: None,
-                kind: Some(KCLCompletionItemKind::Schema),
-                insert_text: Some(insert_text),
-                additional_text_edits,
-            });
+            if !has_import && schema.pkgpath != MAIN_PKG {
+                completions.insert(schema_ty_to_value_complete_item(&schema, has_import));
+            }
         }
     }
     completions
@@ -992,7 +986,7 @@ mod tests {
     #[bench_test]
     fn var_completion_test() {
         let (file, program, _, gs) =
-            compile_test_file("src/test_data/completion_test/dot/completion.k");
+            compile_test_file("src/test_data/completion_test/dot/completion/completion.k");
 
         // test completion for var
         let pos = KCLPos {
@@ -1053,7 +1047,7 @@ mod tests {
     #[bench_test]
     fn dot_completion_test() {
         let (file, program, _, gs) =
-            compile_test_file("src/test_data/completion_test/dot/completion.k");
+            compile_test_file("src/test_data/completion_test/dot/completion/completion.k");
 
         // test completion for schema attr
         let pos = KCLPos {
@@ -1553,7 +1547,7 @@ mod tests {
     #[bench_test]
     fn schema_sig_completion() {
         let (file, program, _, gs) =
-            compile_test_file("src/test_data/completion_test/schema/schema.k");
+            compile_test_file("src/test_data/completion_test/schema/schema/schema.k");
 
         let pos = KCLPos {
             filename: file.to_owned(),
@@ -1575,7 +1569,7 @@ mod tests {
                                 .to_string()
                         ),
                         documentation: Some(lsp_types::Documentation::String("".to_string())),
-                        insert_text: Some("Person(${1:b}){}".to_string()),
+                        insert_text: Some("Person(${1:b}){$0}".to_string()),
                         insert_text_format: Some(InsertTextFormat::SNIPPET),
                         ..Default::default()
                     }
@@ -1892,7 +1886,7 @@ mod tests {
     #[bench_test]
     fn schema_type_attr_completion() {
         let (file, program, _, gs) =
-            compile_test_file("src/test_data/completion_test/schema/schema.k");
+            compile_test_file("src/test_data/completion_test/schema/schema/schema.k");
 
         let pos = KCLPos {
             filename: file.to_owned(),
@@ -2211,7 +2205,7 @@ mod tests {
 
     completion_label_test_snapshot!(
         schema_attr_in_right,
-        "src/test_data/completion_test/schema/schema.k",
+        "src/test_data/completion_test/schema/schema/schema.k",
         23,
         11,
         None
