@@ -117,7 +117,6 @@ impl<'ctx> Namer<'ctx> {
         }
 
         for (name, modules) in namer.ctx.program.pkgs_not_imported.iter() {
-            eprintln!("namer walk not import {:?}", name);
             namer.walk_pkg(name, modules);
         }
 
