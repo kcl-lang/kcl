@@ -171,7 +171,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn document_symbol_test() {
-        let (file, _, _, gs) = compile_test_file("src/test_data/document_symbol.k");
+        let (file, _, _, gs) = compile_test_file("src/test_data/document_symbol/document_symbol.k");
 
         let mut res = document_symbol(file.as_str(), &gs).unwrap();
         let mut expect = vec![];

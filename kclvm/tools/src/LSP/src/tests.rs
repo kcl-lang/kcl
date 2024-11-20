@@ -244,7 +244,7 @@ fn build_lsp_diag(
 fn build_expect_diags() -> Vec<Diagnostic> {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut test_file = path.clone();
-    test_file.push("src/test_data/diagnostics.k");
+    test_file.push("src/test_data/diagnostics/diagnostics.k");
     let file = test_file.to_str().unwrap();
     let expected_diags: Vec<Diagnostic> = vec![
         build_lsp_diag(
@@ -267,7 +267,7 @@ fn build_expect_diags() -> Vec<Diagnostic> {
         build_lsp_diag(
             (0, 0, 0, 10),
             format!(
-                "Cannot find the module abc from {}/src/test_data/abc",
+                "Cannot find the module abc from {}/src/test_data/diagnostics/abc",
                 path.to_str().unwrap()
             ),
             Some(DiagnosticSeverity::ERROR),
@@ -332,7 +332,7 @@ fn build_expect_diags() -> Vec<Diagnostic> {
 fn diagnostics_test() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut test_file = path.clone();
-    test_file.push("src/test_data/diagnostics.k");
+    test_file.push("src/test_data/diagnostics/diagnostics.k");
     let file = test_file.to_str().unwrap();
 
     let diags = compile_with_params(Params {
@@ -350,6 +350,7 @@ fn diagnostics_test() {
         .collect::<Vec<Diagnostic>>();
 
     let expected_diags: Vec<Diagnostic> = build_expect_diags();
+
     for (get, expected) in diagnostics.iter().zip(expected_diags.iter()) {
         assert_eq!(get, expected)
     }
@@ -764,7 +765,7 @@ fn notification_test() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut path = root.clone();
 
-    path.push("src/test_data/diagnostics.k");
+    path.push("src/test_data/diagnostics/diagnostics.k");
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path).unwrap();
@@ -783,7 +784,7 @@ fn notification_test() {
     );
 
     // Wait for first "textDocument/publishDiagnostics" notification
-    server.wait_for_message_cond(2, &|msg: &Message| match msg {
+    server.wait_for_message_cond(1, &|msg: &Message| match msg {
         Message::Notification(not) => not.method == "textDocument/publishDiagnostics",
         _ => false,
     });
@@ -817,7 +818,7 @@ fn close_file_test() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let mut path = root.clone();
 
-    path.push("src/test_data/diagnostics.k");
+    path.push("src/test_data/diagnostics/diagnostics.k");
 
     let path = path.to_str().unwrap();
     let src = std::fs::read_to_string(path).unwrap();
