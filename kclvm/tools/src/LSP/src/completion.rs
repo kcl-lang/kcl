@@ -1006,8 +1006,22 @@ mod tests {
 
         let mut expected_labels: Vec<String> = vec![
             "", // generate from error recovery of "pkg."
-            "subpkg", "math", "Person", "Person{}", "P", "P{}", "p", "p1", "p2", "p3", "p4",
-            "aaaa", "Config", "Config{}", "n",
+            "subpkg",
+            "math",
+            "Person",
+            "Person1{}",
+            "Person{}",
+            "P",
+            "P{}",
+            "p",
+            "p1",
+            "p2",
+            "p3",
+            "p4",
+            "aaaa",
+            "Config",
+            "Config{}",
+            "n",
         ]
         .iter()
         .map(|s| s.to_string())
@@ -2297,5 +2311,13 @@ mod tests {
         2,
         23,
         Some('.')
+    );
+
+    completion_label_without_builtin_func_test_snapshot!(
+        complete_unimport_schemas,
+        "src/test_data/completion_test/unimport/unimport/main.k",
+        1,
+        1,
+        None
     );
 }
