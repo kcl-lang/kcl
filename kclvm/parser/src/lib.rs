@@ -1067,44 +1067,57 @@ pub fn load_all_files_under_paths(
                 // Bfs unparsed and import files
                 while let Some(file) = unparsed_file.pop_front() {
                     new_files.insert(file.clone());
-                    let deps = parse_file(
-                        sess.clone(),
-                        file.clone(),
-                        None,
-                        module_cache.clone(),
-                        pkgs_not_imported,
-                        &mut loader.pkgmap,
-                        loader.file_graph.clone(),
-                        &loader.opts,
-                    )?;
 
-                    let m_ref = match module_cache.read() {
-                        Ok(module_cache) => module_cache
-                            .ast_cache
-                            .get(file.get_path())
-                            .expect(&format!(
-                                "Module not found in module: {:?}",
-                                file.get_path()
-                            ))
-                            .clone(),
-                        Err(e) => return Err(anyhow::anyhow!("Parse program failed: {e}")),
-                    };
+                    let module_cache_read = module_cache.read();
+                    match &module_cache_read {
+                        Ok(m_cache) => match m_cache.ast_cache.get(file.get_path()) {
+                            Some(_) => continue,
+                            None => {
+                                drop(module_cache_read);
+                                let deps = parse_file(
+                                    sess.clone(),
+                                    file.clone(),
+                                    None,
+                                    module_cache.clone(),
+                                    pkgs_not_imported,
+                                    &mut loader.pkgmap,
+                                    loader.file_graph.clone(),
+                                    &loader.opts,
+                                )?;
 
-                    let pkg = loader.pkgmap.get(&file).expect("file not in pkgmap");
-                    let mut m = m_ref.write().unwrap();
-                    fix_rel_import_path_with_file(
-                        &pkg.pkg_root,
-                        &mut m,
-                        &file,
-                        &loader.pkgmap,
-                        &loader.opts,
-                        sess.clone(),
-                    );
+                                let m_ref = match module_cache.read() {
+                                    Ok(module_cache) => module_cache
+                                        .ast_cache
+                                        .get(file.get_path())
+                                        .expect(&format!(
+                                            "Module not found in module: {:?}",
+                                            file.get_path()
+                                        ))
+                                        .clone(),
+                                    Err(e) => {
+                                        return Err(anyhow::anyhow!("Parse program failed: {e}"))
+                                    }
+                                };
 
-                    for dep in deps {
-                        if loader.parsed_file.insert(dep.clone()) {
-                            unparsed_file.push_back(dep.clone());
-                        }
+                                let pkg = loader.pkgmap.get(&file).expect("file not in pkgmap");
+                                let mut m = m_ref.write().unwrap();
+                                fix_rel_import_path_with_file(
+                                    &pkg.pkg_root,
+                                    &mut m,
+                                    &file,
+                                    &loader.pkgmap,
+                                    &loader.opts,
+                                    sess.clone(),
+                                );
+
+                                for dep in deps {
+                                    if loader.parsed_file.insert(dep.clone()) {
+                                        unparsed_file.push_back(dep.clone());
+                                    }
+                                }
+                            }
+                        },
+                        Err(e) => return Err(anyhow::anyhow!("Parse entry failed: {e}")),
                     }
                 }
 

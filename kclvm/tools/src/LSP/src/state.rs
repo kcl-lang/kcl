@@ -714,7 +714,7 @@ impl LanguageServerState {
                 }
 
                 match compile_res {
-                    Ok((prog, gs)) => {
+                    Ok((prog, schema_map, gs)) => {
                         let mut workspaces = snapshot.workspaces.write();
                         log_message(
                             format!(
@@ -724,7 +724,7 @@ impl LanguageServerState {
                         );
                         workspaces.insert(
                             workspace.clone(),
-                            DBState::Ready(Arc::new(AnalysisDatabase { prog, gs, diags })),
+                            DBState::Ready(Arc::new(AnalysisDatabase { prog, gs, diags,schema_map })),
                         );
                         drop(workspaces);
                         if temp && changed_file_id.is_some() {

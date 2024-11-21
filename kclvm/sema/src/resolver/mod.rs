@@ -111,7 +111,9 @@ impl<'ctx> Resolver<'ctx> {
         }
 
         for pkg in self.program.pkgs_not_imported.keys() {
-            self.check(pkg);
+            if !self.scope_map.contains_key(pkg) {
+                self.check(pkg);
+            }
         }
 
         let mut scope_map = self.scope_map.clone();

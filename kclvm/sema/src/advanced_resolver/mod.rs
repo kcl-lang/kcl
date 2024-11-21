@@ -124,15 +124,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
             advanced_resolver.scan_schemas(name, modules)?;
         }
 
-        for (name, modules) in advanced_resolver.ctx.program.pkgs_not_imported.iter() {
-            advanced_resolver.scan_schemas(name, modules)?;
-        }
-
         for (name, modules) in advanced_resolver.ctx.program.pkgs.iter() {
-            advanced_resolver.walk_pkg(name, modules)?;
-        }
-
-        for (name, modules) in advanced_resolver.ctx.program.pkgs_not_imported.iter() {
             advanced_resolver.walk_pkg(name, modules)?;
         }
 

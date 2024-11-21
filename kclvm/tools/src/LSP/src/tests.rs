@@ -1,11 +1,13 @@
 use crossbeam_channel::after;
 use crossbeam_channel::select;
+use indexmap::IndexMap;
 use indexmap::IndexSet;
 use kclvm_driver::lookup_compile_workspace;
 use kclvm_driver::toolchain;
 use kclvm_driver::toolchain::Metadata;
 use kclvm_driver::WorkSpaceKind;
 use kclvm_sema::core::global_state::GlobalState;
+use kclvm_sema::ty::SchemaType;
 use kclvm_utils::path::PathPrefix;
 
 use kclvm_sema::resolver::scope::KCLScopeCache;
@@ -131,7 +133,13 @@ pub(crate) fn compare_goto_res(
 
 pub(crate) fn compile_test_file(
     testfile: &str,
-) -> (String, Program, IndexSet<KCLDiagnostic>, GlobalState) {
+) -> (
+    String,
+    Program,
+    IndexSet<KCLDiagnostic>,
+    GlobalState,
+    IndexMap<String, Vec<SchemaType>>,
+) {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let file = path
         .join(testfile)
@@ -148,8 +156,8 @@ pub(crate) fn compile_test_file(
         vfs: Some(KCLVfs::default()),
         gs_cache: Some(KCLGlobalStateCache::default()),
     });
-    let (program, gs) = compile_res.unwrap();
-    (file, program, diags, gs)
+    let (program, schema_map, gs) = compile_res.unwrap();
+    (file, program, diags, gs, schema_map)
 }
 
 pub(crate) fn compile_test_file_and_metadata(
@@ -160,6 +168,7 @@ pub(crate) fn compile_test_file_and_metadata(
     IndexSet<KCLDiagnostic>,
     GlobalState,
     Option<Metadata>,
+    IndexMap<String, Vec<SchemaType>>,
 ) {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
@@ -179,9 +188,9 @@ pub(crate) fn compile_test_file_and_metadata(
         vfs: Some(KCLVfs::default()),
         gs_cache: Some(KCLGlobalStateCache::default()),
     });
-    let (program, gs) = compile_res.unwrap();
+    let (program, schema_map, gs) = compile_res.unwrap();
 
-    (file, program, diags, gs, metadata)
+    (file, program, diags, gs, metadata, schema_map)
 }
 
 type Info = (String, (u32, u32, u32, u32), String);
@@ -464,7 +473,7 @@ fn test_lsp_with_kcl_mod_in_order() {
 
 fn goto_import_pkg_with_line_test() {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let (file, _program, _, gs) =
+    let (file, _program, _, gs, _) =
         compile_test_file("src/test_data/goto_def_with_line_test/main_pkg/main.k");
     let pos = KCLPos {
         filename: file.adjust_canonicalization(),
@@ -526,7 +535,7 @@ fn complete_import_external_file_test() {
         .output()
         .unwrap();
 
-    let (program, gs) = compile_with_params(Params {
+    let (program, schema_map, gs) = compile_with_params(Params {
         file: Some(path.to_string()),
         module_cache: None,
         scope_cache: None,
@@ -542,7 +551,7 @@ fn complete_import_external_file_test() {
         column: Some(11),
     };
     let tool = toolchain::default();
-    let res = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+    let res = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
 
     let got_labels: Vec<String> = match &res {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
@@ -593,7 +602,7 @@ fn goto_import_external_file_test() {
         vfs: Some(KCLVfs::default()),
         gs_cache: Some(KCLGlobalStateCache::default()),
     });
-    let gs = compile_res.unwrap().1;
+    let gs = compile_res.unwrap().2;
 
     assert_eq!(diags.len(), 0);
 
@@ -1617,7 +1626,7 @@ fn konfig_goto_def_test_base() {
         .join("base")
         .join("base.k");
     let base_path_str = base_path.to_str().unwrap().to_string();
-    let (_program, gs) = compile_with_params(Params {
+    let (_program, _, gs) = compile_with_params(Params {
         file: Some(base_path_str.clone()),
         module_cache: None,
         scope_cache: None,
@@ -1749,7 +1758,7 @@ fn konfig_goto_def_test_main() {
         .join("dev")
         .join("main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (_program, gs) = compile_with_params(Params {
+    let (_program, _, gs) = compile_with_params(Params {
         file: Some(main_path_str.clone()),
         module_cache: None,
         scope_cache: None,
@@ -1836,7 +1845,7 @@ fn konfig_completion_test_main() {
         .join("dev")
         .join("main.k");
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (program, gs) = compile_with_params(Params {
+    let (program, schema_map, gs) = compile_with_params(Params {
         file: Some(main_path_str.clone()),
         module_cache: None,
         scope_cache: None,
@@ -1853,7 +1862,7 @@ fn konfig_completion_test_main() {
         column: Some(27),
     };
     let tool = toolchain::default();
-    let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+    let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
     let got_labels: Vec<String> = match got {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
         CompletionResponse::List(_) => panic!("test failed"),
@@ -1872,7 +1881,7 @@ fn konfig_completion_test_main() {
         column: Some(4),
     };
     let tool = toolchain::default();
-    let got = completion(None, &program, &pos, &gs, &tool, None).unwrap();
+    let got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
     let mut got_labels: Vec<String> = match got {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
         CompletionResponse::List(_) => panic!("test failed"),
@@ -1917,7 +1926,7 @@ fn konfig_completion_test_main() {
         column: Some(35),
     };
     let tool = toolchain::default();
-    let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+    let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
     let mut got_labels: Vec<String> = match got {
         CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
         CompletionResponse::List(_) => panic!("test failed"),
@@ -1955,7 +1964,7 @@ fn konfig_hover_test_main() {
         .join("main.k");
 
     let main_path_str = main_path.to_str().unwrap().to_string();
-    let (_program, gs) = compile_with_params(Params {
+    let (_program, _, gs) = compile_with_params(Params {
         file: Some(main_path_str.clone()),
         module_cache: None,
         scope_cache: None,
@@ -2650,17 +2659,14 @@ fn init_workspace_sema_token_test() {
 
 #[test]
 fn pkg_mod_test() {
-    let (_file, _program, diags, _gs) =
+    let (_file, _program, diags, _gs, _) =
         compile_test_file("src/test_data/workspace/pkg_mod_test/test/main.k");
-    for diag in diags.iter().filter(|diag| diag.is_error()) {
-        println!("{:?}", diag);
-    }
     assert_eq!(diags.iter().filter(|diag| diag.is_error()).count(), 0);
 }
 
 #[test]
 fn aug_assign_without_define() {
-    let (_file, _program, diags, _gs) =
+    let (_file, _program, diags, _gs, _) =
         compile_test_file("src/test_data/error_code/aug_assign/aug_assign.k");
     assert_eq!(diags.len(), 1);
 }

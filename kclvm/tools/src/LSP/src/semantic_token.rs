@@ -167,7 +167,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn semantic_tokens_full_test() {
-        let (file, _, _, gs) = compile_test_file("src/test_data/sema_token/sema_token.k");
+        let (file, _, _, gs, _) = compile_test_file("src/test_data/sema_token/sema_token.k");
         let res = semantic_tokens_full(&file, &gs);
         if let Some(tokens) = res {
             match &tokens {

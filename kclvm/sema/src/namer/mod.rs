@@ -116,10 +116,6 @@ impl<'ctx> Namer<'ctx> {
             namer.walk_pkg(name, modules);
         }
 
-        for (name, modules) in namer.ctx.program.pkgs_not_imported.iter() {
-            namer.walk_pkg(name, modules);
-        }
-
         namer.define_symbols();
     }
 

@@ -263,7 +263,8 @@ mod tests {
     fn schema_doc_hover_test() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let (file, _program, _, gs) = compile_test_file("src/test_data/goto_def_test/goto_def.k");
+        let (file, _program, _, gs, _) =
+            compile_test_file("src/test_data/goto_def_test/goto_def.k");
 
         let mut expected_path = path;
         expected_path.push("src/test_data/goto_def_test/pkg/schema_def.k");
@@ -360,7 +361,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn schema_doc_hover_test1() {
-        let (file, _program, _, gs) = compile_test_file("src/test_data/hover_test/hover.k");
+        let (file, _program, _, gs, _) = compile_test_file("src/test_data/hover_test/hover.k");
 
         let pos = KCLPos {
             filename: file.clone(),
@@ -388,7 +389,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn schema_attr_hover_test() {
-        let (file, _program, _, gs) = compile_test_file("src/test_data/hover_test/hover.k");
+        let (file, _program, _, gs, _) = compile_test_file("src/test_data/hover_test/hover.k");
 
         let pos = KCLPos {
             filename: file.clone(),
@@ -432,7 +433,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn lambda_doc_hover_test() {
-        let (file, _program, _, gs) = compile_test_file("src/test_data/hover_test/lambda.k");
+        let (file, _program, _, gs, _) = compile_test_file("src/test_data/hover_test/lambda.k");
 
         let pos = KCLPos {
             filename: file.clone(),
@@ -457,7 +458,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn func_def_hover() {
-        let (file, _program, _, gs) = compile_test_file("src/test_data/hover_test/hover.k");
+        let (file, _program, _, gs, _) = compile_test_file("src/test_data/hover_test/hover.k");
 
         let pos = KCLPos {
             filename: file.clone(),
@@ -532,7 +533,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn complex_select_hover() {
-        let (file, _program, _, gs) = compile_test_file("src/test_data/hover_test/fib.k");
+        let (file, _program, _, gs, _) = compile_test_file("src/test_data/hover_test/fib.k");
         let pos = KCLPos {
             filename: file.clone(),
             line: 14,
@@ -552,7 +553,8 @@ mod tests {
     #[test]
     #[bench_test]
     fn assignment_ty_in_lambda_hover() {
-        let (file, _program, _, gs) = compile_test_file("src/test_data/hover_test/ty_in_lambda.k");
+        let (file, _program, _, gs, _) =
+            compile_test_file("src/test_data/hover_test/ty_in_lambda.k");
         let pos = KCLPos {
             filename: file.clone(),
             line: 3,
@@ -572,7 +574,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn str_var_func_hover() {
-        let (file, _program, _, gs) = compile_test_file("src/test_data/hover_test/hover.k");
+        let (file, _program, _, gs, _) = compile_test_file("src/test_data/hover_test/hover.k");
         let pos = KCLPos {
             filename: file.clone(),
             line: 28,
@@ -599,7 +601,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn import_pkg_hover() {
-        let (file, _program, _, gs) = compile_test_file("src/test_data/hover_test/import_pkg.k");
+        let (file, _program, _, gs, _) = compile_test_file("src/test_data/hover_test/import_pkg.k");
         let pos = KCLPos {
             filename: file.clone(),
             line: 3,
@@ -623,7 +625,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn expr_after_config_if_hover() {
-        let (file, _program, _, gs) = compile_test_file("src/test_data/hover_test/hover.k");
+        let (file, _program, _, gs, _) = compile_test_file("src/test_data/hover_test/hover.k");
         let pos = KCLPos {
             filename: file.clone(),
             line: 41,
@@ -643,7 +645,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn schema_scope_variable_hover() {
-        let (file, _program, _, gs) = compile_test_file("src/test_data/hover_test/fib.k");
+        let (file, _program, _, gs, _) = compile_test_file("src/test_data/hover_test/fib.k");
         let pos = KCLPos {
             filename: file.clone(),
             line: 3,
@@ -663,7 +665,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn decorator_hover() {
-        let (file, _program, _, gs) = compile_test_file("src/test_data/hover_test/decorator.k");
+        let (file, _program, _, gs, _) = compile_test_file("src/test_data/hover_test/decorator.k");
         let pos = KCLPos {
             filename: file.clone(),
             line: 1,
@@ -703,7 +705,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn inherit_schema_attr_hover() {
-        let (file, _program, _, gs) = compile_test_file("src/test_data/hover_test/inherit.k");
+        let (file, _program, _, gs, _) = compile_test_file("src/test_data/hover_test/inherit.k");
         let pos = KCLPos {
             filename: file.clone(),
             line: 5,
@@ -731,7 +733,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn dict_key_in_schema() {
-        let (file, _program, _, gs) =
+        let (file, _program, _, gs, _) =
             compile_test_file("src/test_data/hover_test/dict_key_in_schema/dict_key_in_schema.k");
         let pos = KCLPos {
             filename: file.clone(),

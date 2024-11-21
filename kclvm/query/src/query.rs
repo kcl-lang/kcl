@@ -236,33 +236,8 @@ pub fn get_full_schema_type_under_path(
     schema_name: Option<&str>,
     opts: CompilationOptions,
 ) -> Result<IndexMap<String, Vec<SchemaType>>> {
-    let mut result = IndexMap::new();
     let program_scope = resolve_paths(&opts)?;
-    for (pkg, scope) in &program_scope.scope_map {
-        for (name, o) in &scope.borrow().elems {
-            if o.borrow().ty.is_schema() {
-                let schema_ty = o.borrow().ty.into_schema_type();
-                if opts.get_schema_opts == GetSchemaOption::All
-                    || (opts.get_schema_opts == GetSchemaOption::Definitions
-                        && !schema_ty.is_instance)
-                    || (opts.get_schema_opts == GetSchemaOption::Instances && schema_ty.is_instance)
-                {
-                    // Schema name filter
-                    match schema_name {
-                        Some(schema_name) => {
-                            if schema_name.is_empty() || schema_name == name {
-                                result.entry(pkg.clone()).or_insert(vec![]).push(schema_ty);
-                            }
-                        }
-                        None => {
-                            result.entry(pkg.clone()).or_insert(vec![]).push(schema_ty);
-                        }
-                    }
-                }
-            }
-        }
-    }
-    Ok(result)
+    Ok(filter_pkg_schemas(&program_scope, schema_name, Some(opts)))
 }
 
 fn get_full_schema_type_recursive(schema_ty: SchemaType) -> Result<SchemaType> {
@@ -307,4 +282,51 @@ fn resolve_paths(opts: &CompilationOptions) -> Result<ProgramScope> {
         opts.resolve_opts.clone(),
         None,
     ))
+}
+
+pub fn filter_pkg_schemas(
+    program_scope: &ProgramScope,
+    schema_name: Option<&str>,
+    opts: Option<CompilationOptions>,
+) -> IndexMap<String, Vec<SchemaType>> {
+    let mut result = IndexMap::new();
+    for (pkg, scope) in &program_scope.scope_map {
+        for (name, o) in &scope.borrow().elems {
+            if o.borrow().ty.is_schema() {
+                let schema_ty = o.borrow().ty.into_schema_type();
+                if let Some(opts) = &opts {
+                    if opts.get_schema_opts == GetSchemaOption::All
+                        || (opts.get_schema_opts == GetSchemaOption::Definitions
+                            && !schema_ty.is_instance)
+                        || (opts.get_schema_opts == GetSchemaOption::Instances
+                            && schema_ty.is_instance)
+                    {
+                        // Schema name filter
+                        match schema_name {
+                            Some(schema_name) => {
+                                if schema_name.is_empty() || schema_name == name {
+                                    result.entry(pkg.clone()).or_insert(vec![]).push(schema_ty);
+                                }
+                            }
+                            None => {
+                                result.entry(pkg.clone()).or_insert(vec![]).push(schema_ty);
+                            }
+                        }
+                    }
+                } else {
+                    match schema_name {
+                        Some(schema_name) => {
+                            if schema_name.is_empty() || schema_name == name {
+                                result.entry(pkg.clone()).or_insert(vec![]).push(schema_ty);
+                            }
+                        }
+                        None => {
+                            result.entry(pkg.clone()).or_insert(vec![]).push(schema_ty);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    result
 }
