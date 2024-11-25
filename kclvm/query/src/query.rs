@@ -207,7 +207,7 @@ pub fn get_full_schema_type(
 /// use maplit::hashmap;
 /// use kclvm_ast::MAIN_PKG;
 ///
-/// let work_dir_parent = Path::new(".").join("src").join("test_data").join("get_schema_ty_under_path");
+/// let work_dir_parent = Path::new(env!("CARGO_MANIFEST_DIR")).join("src").join("test_data").join("get_schema_ty_under_path");
 ///
 /// let result = get_full_schema_type_under_path(
 ///     None,

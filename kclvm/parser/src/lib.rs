@@ -926,7 +926,10 @@ pub fn parse_program(
     opts: &LoadProgramOptions,
 ) -> Result<LoadProgramResult> {
     let compile_entries = get_compile_entries_from_paths(&paths, &opts)?;
-    let workdir = compile_entries.get_root_path().to_string();
+    let workdir = compile_entries
+        .get_root_path()
+        .to_string()
+        .adjust_canonicalization();
     let mut pkgs: HashMap<String, Vec<String>> = HashMap::new();
     let mut new_files = HashSet::new();
     for entry in compile_entries.iter() {
@@ -1059,15 +1062,14 @@ pub fn load_all_files_under_paths(
                     }
                 }
 
-                let module_cache = module_cache.unwrap_or_default();
+                let module_cache = loader.module_cache.clone();
                 let pkgs_not_imported = &mut res.program.pkgs_not_imported;
 
                 let mut new_files = HashSet::new();
-
                 // Bfs unparsed and import files
+                loader.parsed_file.extend(unparsed_file.clone());
                 while let Some(file) = unparsed_file.pop_front() {
                     new_files.insert(file.clone());
-
                     let module_cache_read = module_cache.read();
                     match &module_cache_read {
                         Ok(m_cache) => match m_cache.ast_cache.get(file.get_path()) {
@@ -1215,8 +1217,7 @@ pub fn get_files_from_path(
         if path_buf.is_dir() {
             let all_k_files_under_path = get_kcl_files(path, true)?;
             for f in &all_k_files_under_path {
-                let p = PathBuf::from(f);
-
+                let p = PathBuf::from(f.adjust_canonicalization());
                 let fix_path = p
                     .parent()
                     .unwrap()

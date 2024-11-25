@@ -1427,19 +1427,19 @@ fn formatting_unsaved_test() {
 
 #[test]
 fn complete_import_external_file_e2e_test() {
-    let path = PathBuf::from(".")
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("src")
         .join("test_data")
         .join("completion_test")
         .join("import")
         .join("external")
-        .join("external_1")
+        .join("external_1");
+    let path = root
         .join("main.k")
         .canonicalize()
         .unwrap()
         .display()
         .to_string();
-
     let _ = Command::new("kcl")
         .arg("mod")
         .arg("metadata")
@@ -1459,8 +1459,21 @@ fn complete_import_external_file_e2e_test() {
         )
         .output()
         .unwrap();
+
     let src = std::fs::read_to_string(path.clone()).unwrap();
-    let server = Project {}.server(InitializeParams::default());
+
+    let initialize_params = InitializeParams {
+        workspace_folders: Some(vec![WorkspaceFolder {
+            uri: Url::from_file_path(root.clone()).unwrap(),
+            name: "test".to_string(),
+        }]),
+        ..Default::default()
+    };
+    let server = Project {}.server(initialize_params);
+
+    // FIXME: It takes longer to parse the k8s package on Windows
+    #[cfg(target_os = "windows")]
+    wait_async!(20000);
 
     // Mock open file
     server.notification::<lsp_types::notification::DidOpenTextDocument>(
@@ -1473,6 +1486,7 @@ fn complete_import_external_file_e2e_test() {
             },
         },
     );
+    wait_async!(2000);
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
