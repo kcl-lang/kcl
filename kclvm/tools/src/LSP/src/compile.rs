@@ -1,16 +1,18 @@
-use indexmap::IndexSet;
+use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast::Program;
 use kclvm_driver::{lookup_compile_workspace, toolchain};
 use kclvm_error::Diagnostic;
 use kclvm_parser::{
-    entry::get_normalized_k_files_from_paths, load_program, KCLModuleCache, LoadProgramOptions,
-    ParseSessionRef,
+    entry::get_normalized_k_files_from_paths, load_all_files_under_paths, KCLModuleCache,
+    LoadProgramOptions, ParseSessionRef,
 };
+use kclvm_query::query::filter_pkg_schemas;
 use kclvm_sema::{
     advanced_resolver::AdvancedResolver,
     core::global_state::GlobalState,
     namer::Namer,
     resolver::{resolve_program_with_opts, scope::KCLScopeCache},
+    ty::SchemaType,
 };
 use std::collections::HashSet;
 use std::path::PathBuf;
@@ -32,7 +34,10 @@ pub fn compile(
     params: Params,
     files: &mut [String],
     opts: Option<LoadProgramOptions>,
-) -> (IndexSet<Diagnostic>, anyhow::Result<(Program, GlobalState)>) {
+) -> (
+    IndexSet<Diagnostic>,
+    anyhow::Result<(Program, IndexMap<String, Vec<SchemaType>>, GlobalState)>,
+) {
     // Ignore the kcl plugin sematic check.
     let mut opts = opts.unwrap_or_default();
     opts.load_plugins = true;
@@ -92,10 +97,12 @@ pub fn compile(
             }
         }
     }
-    let mut program = match load_program(sess.clone(), &files, Some(opts), params.module_cache) {
-        Ok(r) => r.program,
-        Err(e) => return (diags, Err(anyhow::anyhow!("Parse failed: {:?}", e))),
-    };
+
+    let mut program =
+        match load_all_files_under_paths(sess.clone(), &files, Some(opts), params.module_cache) {
+            Ok(r) => r.program,
+            Err(e) => return (diags, Err(anyhow::anyhow!("Parse failed: {:?}", e))),
+        };
     diags.extend(sess.1.read().diagnostics.clone());
 
     // Resolver
@@ -118,6 +125,7 @@ pub fn compile(
         },
         params.scope_cache.clone(),
     );
+    let schema_map: IndexMap<String, Vec<SchemaType>> = filter_pkg_schemas(&prog_scope, None, None);
     diags.extend(prog_scope.handler.diagnostics);
 
     let mut default = GlobalState::default();
@@ -141,12 +149,16 @@ pub fn compile(
         },
         None => HashSet::new(),
     };
+
+    gs.new_or_invalidate_pkgs
+        .extend(program.pkgs_not_imported.keys().map(|n| n.clone()));
+
     gs.clear_cache();
 
     Namer::find_symbols(&program, gs);
 
     match AdvancedResolver::resolve_program(&program, gs, prog_scope.node_ty_map) {
-        Ok(_) => (diags, Ok((program, gs.clone()))),
+        Ok(_) => (diags, Ok((program, schema_map, gs.clone()))),
         Err(e) => (diags, Err(anyhow::anyhow!("Resolve failed: {:?}", e))),
     }
 }
@@ -156,7 +168,7 @@ pub fn compile_with_params(
     params: Params,
 ) -> (
     IndexSet<kclvm_error::Diagnostic>,
-    anyhow::Result<(Program, GlobalState)>,
+    anyhow::Result<(Program, IndexMap<String, Vec<SchemaType>>, GlobalState)>,
 ) {
     let file = PathBuf::from(params.file.clone().unwrap())
         .canonicalize()

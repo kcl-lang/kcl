@@ -62,7 +62,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'_> {
                         .gs
                         .get_symbols()
                         .get_symbol(schema_symbol)
-                        .ok_or(anyhow!("schema_symbol not found"))?;
+                        .ok_or(anyhow!("schema_symbol not found1"))?;
                     if let Some(schema_ty) = schema_symbol.get_sema_info().ty.clone() {
                         if !unification_stmt.target.node.names.is_empty() {
                             let schema_ty = schema_ty.into_schema_type();
@@ -232,7 +232,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'_> {
             .node_ty_map
             .borrow()
             .get(&self.ctx.get_node_key(&schema_stmt.name.id))
-            .ok_or(anyhow!("schema_ty not found"))?
+            .ok_or(anyhow!(
+                "schema_ty not found when walk schema stmt {:?}",
+                schema_stmt
+            ))?
             .clone();
         let schema_symbol = self
             .gs
@@ -875,7 +878,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'_> {
             .node_ty_map
             .borrow()
             .get(&self.ctx.get_node_key(&schema_expr.name.id))
-            .ok_or(anyhow!("schema_ty not found"))?
+            .ok_or(anyhow!(
+                "schema_ty not found when walk schema expr {:?}",
+                schema_expr
+            ))?
             .clone();
         match schema_ty.kind {
             TypeKind::Schema(_) => {

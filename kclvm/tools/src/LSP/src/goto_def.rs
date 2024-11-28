@@ -116,7 +116,7 @@ mod tests {
         ($name:ident, $file:expr, $line:expr, $column: expr) => {
             #[test]
             fn $name() {
-                let (file, _program, _, gs) = compile_test_file($file);
+                let (file, _program, _, gs, _) = compile_test_file($file);
 
                 let pos = KCLPos {
                     filename: file.clone(),

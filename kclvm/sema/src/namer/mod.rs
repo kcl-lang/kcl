@@ -113,75 +113,74 @@ impl<'ctx> Namer<'ctx> {
             .add_package(namer.ctx.current_package_info.take().unwrap());
 
         for (name, modules) in namer.ctx.program.pkgs.iter() {
-            // new pkgs or invalidate pkg
-            if namer.gs.get_packages().get_package_info(name).is_some()
-                && !namer.gs.new_or_invalidate_pkgs.contains(name)
-            {
-                continue;
-            }
-
-            // add new pkgs to invalidate pkgs
-            namer.gs.new_or_invalidate_pkgs.insert(name.clone());
-
-            {
-                if modules.is_empty() {
-                    continue;
-                }
-                namer.ctx.value_fully_qualified_name_set.clear();
-                let mut real_path = Path::new(&program.root)
-                    .join(name.replace('.', &std::path::MAIN_SEPARATOR.to_string()))
-                    .to_str()
-                    .unwrap()
-                    .to_string();
-                if name == kclvm_ast::MAIN_PKG {
-                    real_path = program.root.clone()
-                }
-                let pkg_pos = Position {
-                    filename: real_path.clone(),
-                    line: 0,
-                    column: None,
-                };
-
-                let pkg_symbol = PackageSymbol::new(name.clone(), pkg_pos.clone(), pkg_pos);
-                let symbol_ref = namer
-                    .gs
-                    .get_symbols_mut()
-                    .alloc_package_symbol(pkg_symbol, name.to_string());
-                namer.ctx.owner_symbols.push(symbol_ref);
-
-                namer.ctx.current_package_info =
-                    Some(PackageInfo::new(name.to_string(), real_path, false));
-            }
-
-            let modules = namer.ctx.program.get_modules_for_pkg(name);
-            for module in modules.iter() {
-                let module = module.read().expect("Failed to acquire module lock");
-                namer
-                    .ctx
-                    .current_package_info
-                    .as_mut()
-                    .unwrap()
-                    .kfile_paths
-                    .insert(module.filename.clone());
-                namer.ctx.current_module_info =
-                    Some(ModuleInfo::new(module.filename.clone(), name.to_string()));
-                namer.walk_module(&module);
-                namer
-                    .gs
-                    .get_packages_mut()
-                    .add_module_info(namer.ctx.current_module_info.take().unwrap());
-            }
-
-            namer.ctx.owner_symbols.pop();
-            namer
-                .gs
-                .get_packages_mut()
-                .add_package(namer.ctx.current_package_info.take().unwrap())
+            namer.walk_pkg(name, modules);
         }
 
         namer.define_symbols();
+    }
 
-        // namer.gs
+    fn walk_pkg(&mut self, name: &String, modules: &Vec<String>) {
+        // new pkgs or invalidate pkg
+        if self.gs.get_packages().get_package_info(name).is_some()
+            && !self.gs.new_or_invalidate_pkgs.contains(name)
+        {
+            return;
+        }
+
+        // add new pkgs to invalidate pkgs
+        self.gs.new_or_invalidate_pkgs.insert(name.clone());
+
+        {
+            if modules.is_empty() {
+                return;
+            }
+            self.ctx.value_fully_qualified_name_set.clear();
+            let mut real_path = Path::new(&self.ctx.program.root)
+                .join(name.replace('.', &std::path::MAIN_SEPARATOR.to_string()))
+                .to_str()
+                .unwrap()
+                .to_string();
+            if name == kclvm_ast::MAIN_PKG {
+                real_path = self.ctx.program.root.clone()
+            }
+            let pkg_pos = Position {
+                filename: real_path.clone(),
+                line: 0,
+                column: None,
+            };
+
+            let pkg_symbol = PackageSymbol::new(name.clone(), pkg_pos.clone(), pkg_pos);
+            let symbol_ref = self
+                .gs
+                .get_symbols_mut()
+                .alloc_package_symbol(pkg_symbol, name.to_string());
+            self.ctx.owner_symbols.push(symbol_ref);
+
+            self.ctx.current_package_info =
+                Some(PackageInfo::new(name.to_string(), real_path, false));
+        }
+
+        let modules = self.ctx.program.get_modules_for_pkg(name);
+        for module in modules.iter() {
+            let module = module.read().expect("Failed to acquire module lock");
+            self.ctx
+                .current_package_info
+                .as_mut()
+                .unwrap()
+                .kfile_paths
+                .insert(module.filename.clone());
+            self.ctx.current_module_info =
+                Some(ModuleInfo::new(module.filename.clone(), name.to_string()));
+            self.walk_module(&module);
+            self.gs
+                .get_packages_mut()
+                .add_module_info(self.ctx.current_module_info.take().unwrap());
+        }
+
+        self.ctx.owner_symbols.pop();
+        self.gs
+            .get_packages_mut()
+            .add_package(self.ctx.current_package_info.take().unwrap())
     }
 
     fn init_builtin_symbols(&mut self) {

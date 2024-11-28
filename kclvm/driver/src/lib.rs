@@ -146,14 +146,12 @@ pub fn lookup_compile_workspaces(
                 }
             }
             WorkSpaceKind::Folder(folder) => {
-                let mut load_opt = kclvm_parser::LoadProgramOptions::default();
-                let metadata =
-                    fill_pkg_maps_for_k_file(tool, path.into(), &mut load_opt).unwrap_or(None);
+                let load_opt = kclvm_parser::LoadProgramOptions::default();
+                let metadata = None;
 
                 if load_pkg {
                     if folder.is_dir() {
                         if let Ok(files) = get_kcl_files(folder.clone(), false) {
-                            // return (files, Some(load_opt), metadata);
                             workspaces.insert(workspace, (files, Some(load_opt), metadata));
                             return (workspaces, None);
                         }

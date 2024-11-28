@@ -299,6 +299,8 @@ impl KclvmAssembler {
                 root: self.program.root.clone(),
                 pkgs,
                 modules: self.program.modules.clone(),
+                pkgs_not_imported: HashMap::new(),
+                modules_not_imported: HashMap::new(),
             };
             compile_progs.insert(
                 pkgpath,
