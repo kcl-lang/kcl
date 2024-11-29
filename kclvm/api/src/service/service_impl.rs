@@ -3,7 +3,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::string::String;
 
-use crate::gpyrpc::*;
+use crate::gpyrpc::{self, *};
 
 use kcl_language_server::rename;
 use kclvm_ast::ast::SerializeProgram;
@@ -17,8 +17,8 @@ use kclvm_parser::KCLModuleCache;
 use kclvm_parser::LoadProgramOptions;
 use kclvm_parser::ParseSessionRef;
 use kclvm_query::override_file;
-use kclvm_query::query::get_full_schema_type;
 use kclvm_query::query::CompilationOptions;
+use kclvm_query::query::{get_full_schema_type, get_full_schema_type_under_path};
 use kclvm_query::selector::{list_variables, ListOptions};
 use kclvm_query::GetSchemaOption;
 use kclvm_runner::exec_program;
@@ -662,6 +662,74 @@ impl KclvmServiceImpl {
         }
 
         Ok(GetSchemaTypeMappingResult {
+            schema_type_mapping: type_mapping,
+        })
+    }
+
+    /// Service for getting the schema mapping under path.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
+    /// use kclvm_api::gpyrpc::*;
+    /// use std::path::Path;
+    /// use kclvm_ast::MAIN_PKG;
+    ///
+    /// let serv = KclvmServiceImpl::default();
+    /// let work_dir_parent = Path::new(".").join("src").join("testdata").join("get_schema_ty_under_path");
+    /// let args = ExecProgramArgs {
+    ///     k_filename_list: vec![
+    ///         work_dir_parent.join("aaa").canonicalize().unwrap().display().to_string()
+    ///     ],
+    ///     external_pkgs: vec![
+    ///         ExternalPkg {
+    ///             pkg_name:"bbb".to_string(),
+    ///             pkg_path: work_dir_parent.join("bbb").canonicalize().unwrap().display().to_string()
+    ///         },
+    ///         ExternalPkg {
+    ///             pkg_name:"helloworld".to_string(),
+    ///             pkg_path: work_dir_parent.join("helloworld_0.0.1").canonicalize().unwrap().display().to_string()
+    ///         },
+    ///     ],
+    ///     ..Default::default()
+    /// };
+    ///
+    /// let result = serv.get_schema_type_mapping_under_path(&GetSchemaTypeMappingArgs {
+    ///     exec_args: Some(args),
+    ///     ..Default::default()
+    /// }).unwrap();
+    ///  assert_eq!(result.schema_type_mapping.get(MAIN_PKG).unwrap().schema_type.len(), 1);
+    ///  assert_eq!(result.schema_type_mapping.get("bbb").unwrap().schema_type.len(), 2);
+    ///  assert_eq!(result.schema_type_mapping.get("helloworld").unwrap().schema_type.len(), 1);
+    ///  assert_eq!(result.schema_type_mapping.get("sub").unwrap().schema_type.len(), 1);
+    /// ```
+    pub fn get_schema_type_mapping_under_path(
+        &self,
+        args: &GetSchemaTypeMappingArgs,
+    ) -> anyhow::Result<GetSchemaTypeMappingUnderPathResult> {
+        let mut type_mapping = HashMap::new();
+        let exec_args = transform_exec_para(&args.exec_args, self.plugin_agent)?;
+        for (k, schema_tys) in get_full_schema_type_under_path(
+            Some(&args.schema_name),
+            CompilationOptions {
+                paths: exec_args.clone().k_filename_list,
+                loader_opts: Some(exec_args.get_load_program_options()),
+                resolve_opts: Options {
+                    resolve_val: true,
+                    ..Default::default()
+                },
+                get_schema_opts: GetSchemaOption::Definitions,
+            },
+        )? {
+            let mut tys = vec![];
+            for schema_ty in schema_tys {
+                tys.push(kcl_schema_ty_to_pb_ty(&schema_ty));
+            }
+            type_mapping.insert(k, gpyrpc::SchemaTypes { schema_type: tys });
+        }
+
+        Ok(GetSchemaTypeMappingUnderPathResult {
             schema_type_mapping: type_mapping,
         })
     }
