@@ -1191,7 +1191,7 @@ message GetSchemaTypeMappingUnderPath_Result {
 }
 
 message SchemaTypes {
-	// Map of schema type mappings.
+	// List of schema type mappings.
 	repeated KclType schema_type = 1;
 }
 
