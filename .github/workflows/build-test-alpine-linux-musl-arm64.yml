@@ -50,12 +50,9 @@ jobs:
         run: |
           VERSION=$(cat VERSION)
           echo "VERSION=v${VERSION}" >> $GITHUB_ENV
-      - name: Rename artifact for musl
-        run: |
-          mv _build/kclvm-${{ env.VERSION }}-linux-amd64.tar.gz _build/kclvm-${{ env.VERSION }}-linux-musl.tar.gz
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: kcl-${{ env.VERSION }}-linux-musl
           if-no-files-found: error
-          path: _build/kclvm-${{ env.VERSION }}-linux-musl.tar.gz
+          path: _build/kclvm-${{ env.VERSION }}-linux-amd64.tar.gz
