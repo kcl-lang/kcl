@@ -1,0 +1,58 @@
+name: Build and Test Musl
+on:
+  pull_request:
+    branches:
+     - main
+  push:
+    branches:
+     - main
+jobs:
+  build-and-test-musl:
+    name: Build and Test on Alpine Linux (musl)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          submodules: "true"
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Pull Alpine Linux Docker image
+        run: |
+          docker pull alpine:latest
+      - name: Build in Docker
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace -w /workspace \
+            alpine:latest \
+            /bin/sh -c "
+              apk add --no-cache \
+                bash \
+                git \
+                make \
+                gcc \
+                musl-dev \
+                python3 \
+                python3-dev \
+                py3-pip \
+                rust \
+                cargo \
+                && \
+              export KCL_BUILD_GIT_SHA=$(git rev-parse HEAD) && \
+              git config --global --add safe.directory /workspace && \
+              git config --global user.name 'GitHub Action' && \
+              git config --global user.email 'action@github.com' && \
+              make && \
+              make release && \
+              _build/dist/linux/kclvm/bin/kclvm_cli version"
+      - name: Read VERSION file
+        id: read_version
+        run: |
+          VERSION=$(cat VERSION)
+          echo "VERSION=v${VERSION}" >> $GITHUB_ENV
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kcl-${{ env.VERSION }}-linux-musl
+          if-no-files-found: error
+          path: _build/kclvm-${{ env.VERSION }}-linux-amd64.tar.gz
