@@ -1,0 +1,3 @@
+schema Sub:
+    name: str
+    
