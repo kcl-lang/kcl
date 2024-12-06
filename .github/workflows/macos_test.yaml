@@ -13,7 +13,7 @@ jobs:
     # Ref: https://github.com/actions/runner-images/tree/main/images/macos
     strategy:
       matrix:
-        os: [macos-12, macos-13]
+        os: [macos-13]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Git checkout
@@ -89,7 +89,6 @@ jobs:
           echo "VERSION=v${VERSION}" >> $GITHUB_ENV
 
       - uses: actions/upload-artifact@v4
-        if: "contains(matrix.os, 'macos-12')"
         with:
           name: kcl-${{ env.VERSION }}-darwin-amd64
           if-no-files-found: error
