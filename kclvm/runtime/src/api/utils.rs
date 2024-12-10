@@ -60,7 +60,7 @@ pub fn c2str<'a>(p: *const c_char) -> &'a str {
 }
 
 /// Convert a C str pointer pointer to a Rust Vec<String>.
-pub fn c2str_vec(ptr_array: *const *const c_char) -> Vec<String> {
+pub(crate) fn c2str_vec(ptr_array: *const *const c_char) -> Vec<String> {
     let mut result = Vec::new();
     let mut index = 0;
 
