@@ -970,297 +970,16 @@ fn unimport_schemas(
 mod tests {
     use crate::{
         completion::{
-            completion, func_ty_complete_insert_text, func_ty_complete_label,
-            into_completion_items, KCLCompletionItem, KCLCompletionItemKind,
+            completion, func_ty_complete_label,
         },
         tests::{compile_test_file, compile_test_file_and_metadata},
     };
-    use indexmap::IndexSet;
     use kclvm_driver::toolchain;
     use kclvm_error::Position as KCLPos;
     use kclvm_sema::builtin::{
-        BUILTIN_FUNCTIONS, MATH_FUNCTION_TYPES, STANDARD_SYSTEM_MODULES, STRING_MEMBER_FUNCTIONS,
+        BUILTIN_FUNCTIONS, STANDARD_SYSTEM_MODULES,
     };
-    use lsp_types::{CompletionItem, CompletionItemKind, CompletionResponse, InsertTextFormat};
-    use proc_macro_crate::bench_test;
-
-    #[test]
-    fn schema_end_pos() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/schema/schema_pos/schema_pos.k");
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 6,
-            column: Some(16),
-        };
-
-        let tool = toolchain::default();
-        let got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        match got {
-            CompletionResponse::Array(arr) => {
-                assert_eq!(arr.len(), 4);
-                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
-                assert!(labels.contains(&"min".to_string()));
-                assert!(labels.contains(&"max".to_string()));
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
-        }
-    }
-
-    #[test]
-    fn comment_completion() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/dot/lit_str/lit_str.k");
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 4,
-            column: Some(4),
-        };
-
-        let tool = toolchain::default();
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-
-        match &got {
-            CompletionResponse::Array(arr) => {
-                assert_eq!(arr.len(), 0)
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-    }
-
-    #[test]
-    #[bench_test]
-    fn missing_expr_completion() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/dot/missing_expr/missing_expr.k");
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 10,
-            column: Some(16),
-        };
-
-        let tool = toolchain::default();
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        match got {
-            CompletionResponse::Array(arr) => {
-                assert_eq!(arr.len(), 2);
-                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
-                assert!(labels.contains(&"cpu".to_string()));
-                assert!(labels.contains(&"memory".to_string()));
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
-        }
-    }
-
-    #[test]
-    #[bench_test]
-    fn check_scope_completion() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/check/check.k");
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 4,
-            column: Some(10),
-        };
-
-        let tool = toolchain::default();
-        let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map);
-        assert!(got.is_none());
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 5,
-            column: Some(9),
-        };
-
-        let got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        match got {
-            CompletionResponse::Array(arr) => {
-                assert_eq!(arr.len(), 3);
-                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
-                assert!(labels.contains(&"name".to_string()));
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
-        }
-    }
-
-    #[test]
-    #[bench_test]
-    fn join_str_inner_completion() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/dot/lit_str/lit_str.k");
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 6,
-            column: Some(28),
-        };
-
-        let tool = toolchain::default();
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        match &got {
-            CompletionResponse::Array(arr) => {
-                assert!(arr.is_empty())
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
-        }
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 7,
-            column: Some(27),
-        };
-
-        let tool = toolchain::default();
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        match &got {
-            CompletionResponse::Array(arr) => {
-                assert!(arr.is_empty())
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
-        }
-    }
-
-    #[test]
-    #[bench_test]
-    fn schema_type_attr_completion() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/schema/schema/schema.k");
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 18,
-            column: Some(15),
-        };
-
-        let tool = toolchain::default();
-        let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        match &mut got {
-            CompletionResponse::Array(arr) => {
-                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
-                assert!(labels.contains(&"name".to_string()));
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
-        }
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 19,
-            column: Some(21),
-        };
-
-        let tool = toolchain::default();
-        let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        match &mut got {
-            CompletionResponse::Array(arr) => {
-                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
-                assert!(labels.contains(&"name".to_string()));
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
-        }
-    }
-
-    #[test]
-    #[bench_test]
-    fn nested_1_test() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/dot/nested/nested_1/nested_1.k");
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 9,
-            column: Some(9),
-        };
-        let tool = toolchain::default();
-
-        let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-
-        match &mut got {
-            CompletionResponse::Array(arr) => {
-                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
-                insta::assert_snapshot!(format!("{:?}", labels));
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
-        }
-    }
-
-    #[test]
-    #[bench_test]
-    fn nested_2_test() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/dot/nested/nested_2/nested_2.k");
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 9,
-            column: Some(9),
-        };
-
-        let tool = toolchain::default();
-
-        let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-
-        match &mut got {
-            CompletionResponse::Array(arr) => {
-                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
-                insta::assert_snapshot!(format!("{:?}", labels));
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
-        }
-    }
-    #[test]
-    #[bench_test]
-    fn nested_3_test() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/dot/nested/nested_3/nested_3.k");
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 10,
-            column: Some(13),
-        };
-
-        let tool = toolchain::default();
-        let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-
-        match &mut got {
-            CompletionResponse::Array(arr) => {
-                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
-                insta::assert_snapshot!(format!("{:?}", labels));
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
-        }
-    }
-
-    #[test]
-    #[bench_test]
-    fn nested_4_test() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/dot/nested/nested_4/nested_4.k");
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 9,
-            column: Some(9),
-        };
-
-        let tool = toolchain::default();
-
-        let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-
-        match &mut got {
-            CompletionResponse::Array(arr) => {
-                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
-                insta::assert_snapshot!(format!("{:?}", labels));
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
-        }
-    }
-
+    use lsp_types::CompletionResponse;
     #[macro_export]
     macro_rules! completion_label_test_snapshot {
         ($name:ident, $file:expr, $line:expr, $column: expr, $trigger: expr) => {
@@ -1602,12 +1321,111 @@ mod tests {
         2,
         Some('.')
     );
-    
-    
 
+    completion_label_test_snapshot!(
+        schema_end_pos_test,
+        "src/test_data/completion_test/schema/schema_pos/schema_pos.k",
+        6,
+        16,
+        None
+    );
     
+    completion_label_test_snapshot!(
+        comment_completion_test,
+        "src/test_data/completion_test/dot/lit_str/lit_str.k",
+        4,
+        4,
+        Some('.')
+    );
     
+    completion_label_test_snapshot!(
+        missing_expr_completion_test,
+        "src/test_data/completion_test/dot/missing_expr/missing_expr.k",
+        10,
+        16,
+        Some('.')
+    );
     
+    completion_label_test_snapshot!(
+        check_scope_completion_test_part1,
+        "src/test_data/completion_test/check/check.k",
+        4,
+        10,
+        Some(':')
+    );
+    
+    completion_label_test_snapshot!(
+        check_scope_completion_test_part2,
+        "src/test_data/completion_test/check/check.k",
+        5,
+        9,
+        None
+    );
+
+    completion_label_test_snapshot!(
+        join_str_inner_completion_test_part1,
+        "src/test_data/completion_test/dot/lit_str/lit_str.k",
+        6,
+        28,
+        Some('.')
+    );
+    
+    completion_label_test_snapshot!(
+        join_str_inner_completion_test_part2,
+        "src/test_data/completion_test/dot/lit_str/lit_str.k",
+        7,
+        27,
+        Some('.')
+    );
+    
+    completion_label_test_snapshot!(
+        schema_type_attr_completion_test_part1,
+        "src/test_data/completion_test/schema/schema/schema.k",
+        18,
+        15,
+        None
+    );
+    
+    completion_label_test_snapshot!(
+        schema_type_attr_completion_test_part2,
+        "src/test_data/completion_test/schema/schema/schema.k",
+        19,
+        21,
+        None
+    );
+
+    completion_label_test_snapshot!(
+        nested_1_test,
+        "src/test_data/completion_test/dot/nested/nested_1/nested_1.k",
+        9,
+        9,
+        None
+    );
+    
+    completion_label_test_snapshot!(
+        nested_2_test,
+        "src/test_data/completion_test/dot/nested/nested_2/nested_2.k",
+        9,
+        9,
+        None
+    );
+    
+    completion_label_test_snapshot!(
+        nested_3_test,
+        "src/test_data/completion_test/dot/nested/nested_3/nested_3.k",
+        10,
+        13,
+        None
+    );
+    
+    completion_label_test_snapshot!(
+        nested_4_test,
+        "src/test_data/completion_test/dot/nested/nested_4/nested_4.k",
+        9,
+        9,
+        None
+    );
+        
     completion_label_without_builtin_func_test_snapshot!(
         lambda_1,
         "src/test_data/completion_test/lambda/lambda_1/lambda_1.k",
