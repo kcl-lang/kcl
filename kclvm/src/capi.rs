@@ -4,7 +4,7 @@ use kclvm_runner::runner::KCL_RUNTIME_PANIC_RECORD;
 use std::alloc::{alloc, dealloc, Layout};
 use std::ffi::c_char;
 use std::ffi::{CStr, CString};
-use std::mem;
+use std::{mem, ptr};
 
 use crate::{intern_fmt, intern_run};
 
@@ -18,6 +18,7 @@ pub unsafe extern "C" fn kcl_malloc(size: usize) -> *mut u8 {
     if layout.size() > 0 {
         let ptr = alloc(layout);
         if !ptr.is_null() {
+            ptr::write_bytes(ptr, 0, size);
             ptr
         } else {
             std::alloc::handle_alloc_error(layout);
