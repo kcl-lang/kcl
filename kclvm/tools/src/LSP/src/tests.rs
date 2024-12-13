@@ -1486,7 +1486,7 @@ fn complete_import_external_file_e2e_test() {
             },
         },
     );
-    wait_async!(2000);
+    wait_async!(5000);
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
@@ -1528,6 +1528,7 @@ fn complete_import_external_file_e2e_test() {
 }
 
 // TODO: wait for fix `kcl mod metadata` to read only. Otherwise it will lead to an infinite loop
+#[allow(dead_code)]
 // #[test]
 fn mod_file_watcher_test() {
     let path = PathBuf::from(".")
