@@ -59,6 +59,7 @@ impl<S: AsRef<OsStr> + Send + Sync> Toolchain for CommandToolchain<S> {
         match Command::new(&self.path)
             .arg("mod")
             .arg("metadata")
+            .arg("--update")
             .current_dir(manifest_path)
             .output()
         {

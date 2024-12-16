@@ -24,3 +24,4 @@ kclvm-ast = {path = "../ast"}
 dirs = "5.0.0"
 md-5 = "0.8.0"
 regex = "1.10.4"
+url = "2.5.4"

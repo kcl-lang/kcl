@@ -193,13 +193,18 @@ impl LanguageServerState {
         for event in self.fs_event_watcher._receiver.try_iter() {
             if let Ok(e) = event {
                 match e.kind {
-                    notify::EventKind::Modify(_) => {
-                        let paths = e.paths;
-                        let kcl_config_file: Vec<PathBuf> = filter_kcl_config_file(&paths);
-                        if !kcl_config_file.is_empty() {
-                            return Some(Event::FileWatcher(FileWatcherEvent::ChangedConfigFile(
-                                kcl_config_file,
-                            )));
+                    notify::EventKind::Modify(kind) => {
+                        if let notify::event::ModifyKind::Data(data_change) = kind {
+                            if let notify::event::DataChange::Content = data_change {
+                                let paths = e.paths;
+                                let kcl_config_file: Vec<PathBuf> = filter_kcl_config_file(&paths);
+                                if !kcl_config_file.is_empty() {
+                                    // TODO: wait for fix `kcl mod metadata` to read only. Otherwise it will lead to an infinite loop
+                                    // return Some(Event::FileWatcher(
+                                    //     FileWatcherEvent::ChangedConfigFile(kcl_config_file),
+                                    // ));
+                                }
+                            }
                         }
                     }
                     notify::EventKind::Remove(remove_kind) => {

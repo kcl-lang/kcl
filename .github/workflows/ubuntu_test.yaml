@@ -57,7 +57,7 @@ jobs:
         shell: bash
       - name: Install KCL CLI
         run: |
-          go install kcl-lang.io/cli/cmd/kcl@c5ecdd12a97ca836a34744cd2f4d561eaae381ff
+          go install kcl-lang.io/cli/cmd/kcl@main
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
           echo "${{ github.workspace }}/go/bin" >> $GITHUB_PATH
       - name: Unit test
