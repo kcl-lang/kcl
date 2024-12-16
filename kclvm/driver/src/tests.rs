@@ -276,14 +276,14 @@ fn test_tool_fetch_metadata(tool: impl Toolchain) {
     assert!(pkgs.get("flask_manifests").is_some());
     assert_eq!(pkgs.get("flask_manifests").unwrap().name, "flask_manifests");
 
-    let manifest_path = pkgs.get("flask_manifests")
-        .unwrap()
-        .manifest_path
-        .clone();
+    let manifest_path = pkgs.get("flask_manifests").unwrap().manifest_path.clone();
     println!("Manifest path: {:?}", manifest_path);
 
     let canonicalized_manifest_path = manifest_path.canonicalize();
-    println!("Canonicalized manifest path: {:?}", canonicalized_manifest_path);
+    println!(
+        "Canonicalized manifest path: {:?}",
+        canonicalized_manifest_path
+    );
 
     assert_eq!(
         canonicalized_manifest_path.unwrap().display().to_string(),

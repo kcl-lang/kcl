@@ -119,7 +119,10 @@ impl LockDependency {
     pub fn gen_filename(&self) -> String {
         if let Some(git_url) = &self.url {
             if let Ok(parsed_url) = Url::parse(git_url) {
-                if let Some(last_segment) = parsed_url.path_segments().and_then(|segments| segments.last()) {
+                if let Some(last_segment) = parsed_url
+                    .path_segments()
+                    .and_then(|segments| segments.last())
+                {
                     let trimmed_segment = last_segment.trim_end_matches(".git");
                     return trimmed_segment.to_string();
                 }
@@ -128,7 +131,10 @@ impl LockDependency {
 
         if let Some(oci_repo) = &self.repo {
             if let Ok(parsed_url) = Url::parse(oci_repo) {
-                if let Some(last_segment) = parsed_url.path_segments().and_then(|segments| segments.last()) {
+                if let Some(last_segment) = parsed_url
+                    .path_segments()
+                    .and_then(|segments| segments.last())
+                {
                     return last_segment.to_string();
                 }
             }
