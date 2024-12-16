@@ -188,15 +188,15 @@ fn test_fill_pkg_maps_for_k_file() {
 
     let pkg_maps = opts.package_maps.clone();
     assert_eq!(pkg_maps.len(), 1);
-    assert!(pkg_maps.get("kcl4").is_some());
+    assert!(pkg_maps.get("flask_manifests").is_some());
     assert_eq!(
-        PathBuf::from(pkg_maps.get("kcl4").unwrap().clone())
+        PathBuf::from(pkg_maps.get("flask_manifests").unwrap().clone())
             .canonicalize()
             .unwrap()
             .display()
             .to_string(),
         PathBuf::from(vendor_home)
-            .join("kcl4_v0.0.1")
+            .join("flask-demo-kcl-manifests_ade147b")
             .canonicalize()
             .unwrap()
             .display()
@@ -273,19 +273,22 @@ fn test_tool_fetch_metadata(tool: impl Toolchain) {
     let metadata = tool.fetch_metadata(path.clone());
     let pkgs = metadata.unwrap().packages.clone();
     assert_eq!(pkgs.len(), 1);
-    assert!(pkgs.get("kcl4").is_some());
-    assert_eq!(pkgs.get("kcl4").unwrap().name, "kcl4");
+    assert!(pkgs.get("flask_manifests").is_some());
+    assert_eq!(pkgs.get("flask_manifests").unwrap().name, "flask_manifests");
+
+    let manifest_path = pkgs.get("flask_manifests")
+        .unwrap()
+        .manifest_path
+        .clone();
+    println!("Manifest path: {:?}", manifest_path);
+
+    let canonicalized_manifest_path = manifest_path.canonicalize();
+    println!("Canonicalized manifest path: {:?}", canonicalized_manifest_path);
+
     assert_eq!(
-        pkgs.get("kcl4")
-            .unwrap()
-            .manifest_path
-            .clone()
-            .canonicalize()
-            .unwrap()
-            .display()
-            .to_string(),
+        canonicalized_manifest_path.unwrap().display().to_string(),
         PathBuf::from(vendor_home)
-            .join("kcl4_v0.0.1")
+            .join("flask-demo-kcl-manifests_ade147b")
             .canonicalize()
             .unwrap()
             .display()
