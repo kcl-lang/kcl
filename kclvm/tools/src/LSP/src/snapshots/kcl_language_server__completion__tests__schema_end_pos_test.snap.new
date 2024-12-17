@@ -1,0 +1,6 @@
+---
+source: tools/src/LSP/src/completion.rs
+assertion_line: 1325
+expression: "format! (\"{:?}\", got_labels)"
+---
+["Params", "Params{}", "max", "min"]

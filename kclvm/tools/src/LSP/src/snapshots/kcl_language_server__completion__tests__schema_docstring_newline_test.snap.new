@@ -1,0 +1,6 @@
+---
+source: tools/src/LSP/src/completion.rs
+assertion_line: 1269
+expression: "format! (\"{:?}\", got_labels)"
+---
+["\n\nAttributes\n----------\nname: \nworkloadType: \nreplica: \n\nExamples\n--------\n"]
