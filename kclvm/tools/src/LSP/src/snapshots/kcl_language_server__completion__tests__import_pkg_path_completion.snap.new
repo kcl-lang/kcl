@@ -1,0 +1,6 @@
+---
+source: tools/src/LSP/src/completion.rs
+assertion_line: 1125
+expression: "format! (\"{:?}\", got_labels)"
+---
+["file1", "file2", "subpkg"]
