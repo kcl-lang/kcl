@@ -321,6 +321,8 @@ pub struct ModuleCache {
     pub dep_cache: IndexMap<PkgFile, PkgMap>,
     /// File source code
     pub source_code: IndexMap<PathBuf, String>,
+
+    pub last_compile_input: (Vec<String>, Option<LoadProgramOptions>),
 }
 
 impl ModuleCache {
@@ -1022,6 +1024,9 @@ pub fn parse_program(
     })
 }
 
+/// If there are too many files in the directory, it will affect the performance of lsp. Set a maximum number of files
+const MAX_SCAN_FILES: usize = 1000;
+
 /// Parse all kcl files under path and dependencies from opts.
 /// Different from `load_program`, this function will compile files that are not imported.
 pub fn load_all_files_under_paths(
@@ -1047,8 +1052,34 @@ pub fn load_all_files_under_paths(
                 let k_files_from_import = res.paths.clone();
                 let mut paths = paths.to_vec();
                 paths.push(&res.program.root);
+                let module_cache = loader.module_cache.clone();
+                let mut module_cache_write = module_cache.write();
+                match &mut module_cache_write {
+                    Ok(m_cache) => {
+                        let paths: Vec<String> = paths.iter().map(|p| p.to_string()).collect();
+                        let paths_is_cached = paths == m_cache.last_compile_input.0;
+                        let opt_is_cached = match (&m_cache.last_compile_input.1, &opts) {
+                            (None, None) => true,
+                            (Some(old), Some(new)) => old.package_maps == new.package_maps,
+                            _ => false,
+                        };
+                        if paths_is_cached && opt_is_cached {
+                            return Ok(res);
+                        } else {
+                            m_cache.last_compile_input = (paths, opts.clone())
+                        }
+                    }
+                    Err(e) => return Err(anyhow::anyhow!("Parse entry failed: {e}")),
+                }
+                drop(module_cache_write);
+
                 let (k_files_under_path, pkgmap) =
                     get_files_from_path(&res.program.root, &paths, opts)?;
+
+                if k_files_under_path.len() > MAX_SCAN_FILES {
+                    return Ok(res);
+                }
+
                 loader.pkgmap.extend(pkgmap);
 
                 // Filter unparsed file
@@ -1057,12 +1088,20 @@ pub fn load_all_files_under_paths(
                     for p in paths {
                         if !k_files_from_import.contains(p) {
                             let pkgfile = PkgFile::new(p.clone(), pkg.clone());
-                            unparsed_file.push_back(pkgfile);
+                            let module_cache_read = module_cache.read();
+                            match &module_cache_read {
+                                Ok(m_cache) => match m_cache.ast_cache.get(pkgfile.get_path()) {
+                                    Some(_) => continue,
+                                    None => {
+                                        unparsed_file.push_back(pkgfile);
+                                    }
+                                },
+                                _ => {}
+                            }
                         }
                     }
                 }
 
-                let module_cache = loader.module_cache.clone();
                 let pkgs_not_imported = &mut res.program.pkgs_not_imported;
 
                 let mut new_files = HashSet::new();
