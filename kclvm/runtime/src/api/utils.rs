@@ -42,6 +42,8 @@ pub fn mut_ptr_as_ref<'a, T>(p: *mut T) -> &'a mut T {
 
 /// Copy str to mutable pointer with length
 pub(crate) fn copy_str_to(v: &str, p: *mut c_char, size: *mut kclvm_size_t) {
+    assert!(!p.is_null() || !size.is_null());
+
     unsafe {
         let c_str_ptr = v.as_ptr() as *const c_char;
         let c_str_len = v.len() as i32;
@@ -55,12 +57,16 @@ pub(crate) fn copy_str_to(v: &str, p: *mut c_char, size: *mut kclvm_size_t) {
 /// Convert a C str pointer to a Rust &str.
 /// Safety: The caller must ensure that `s` is a valid null-terminated C string.
 pub fn c2str<'a>(p: *const c_char) -> &'a str {
+    assert!(!p.is_null());
+
     let s = unsafe { std::ffi::CStr::from_ptr(p) }.to_str().unwrap();
     s
 }
 
 /// Convert a C str pointer pointer to a Rust Vec<String>.
 pub fn c2str_vec(ptr_array: *const *const c_char) -> Vec<String> {
+    assert!(!ptr_array.is_null());
+
     let mut result = Vec::new();
     let mut index = 0;
 
