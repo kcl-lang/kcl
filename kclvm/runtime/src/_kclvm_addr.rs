@@ -36,6 +36,7 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_builtin_sorted" => crate::kclvm_builtin_sorted as *const () as u64,
         "kclvm_builtin_str" => crate::kclvm_builtin_str as *const () as u64,
         "kclvm_builtin_str_capitalize" => crate::kclvm_builtin_str_capitalize as *const () as u64,
+        "kclvm_builtin_str_chars" => crate::kclvm_builtin_str_chars as *const () as u64,
         "kclvm_builtin_str_count" => crate::kclvm_builtin_str_count as *const () as u64,
         "kclvm_builtin_str_endswith" => crate::kclvm_builtin_str_endswith as *const () as u64,
         "kclvm_builtin_str_find" => crate::kclvm_builtin_str_find as *const () as u64,
@@ -107,7 +108,9 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
             crate::kclvm_convert_collection_value as *const () as u64
         }
         "kclvm_crypto_blake3" => crate::kclvm_crypto_blake3 as *const () as u64,
+        "kclvm_crypto_fileblake3" => crate::kclvm_crypto_fileblake3 as *const () as u64,
         "kclvm_crypto_filesha256" => crate::kclvm_crypto_filesha256 as *const () as u64,
+        "kclvm_crypto_filesha512" => crate::kclvm_crypto_filesha512 as *const () as u64,
         "kclvm_crypto_md5" => crate::kclvm_crypto_md5 as *const () as u64,
         "kclvm_crypto_sha1" => crate::kclvm_crypto_sha1 as *const () as u64,
         "kclvm_crypto_sha224" => crate::kclvm_crypto_sha224 as *const () as u64,

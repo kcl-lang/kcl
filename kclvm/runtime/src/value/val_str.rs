@@ -111,6 +111,16 @@ impl ValueRef {
         }
     }
 
+    pub fn str_chars(&self) -> ValueRef {
+        match &*self.rc.borrow() {
+            Value::str_value(ref v) => {
+                let chars: Vec<String> = v.chars().map(|c| c.to_string()).collect();
+                ValueRef::list_str(&chars)
+            }
+            _ => panic!("Invalid str object in str_chars"),
+        }
+    }
+
     pub fn str_count(
         &self,
         sub: &ValueRef,

@@ -17,6 +17,11 @@ class BaseTest(unittest.TestCase):
         realresult = dylib.Invoke(f"str.{methodname}", obj, *args, **kwargs)
         self.assertEqual(result, realresult)
 
+    def test_chars(self):
+        self.checkequal([], "", "chars")
+        self.checkequal(["a"], "a", "chars")
+        self.checkequal(["a", "b", "c"], "abc", "chars")
+
     def test_count(self):
         self.checkequal(3, "aaa", "count", "a")
         self.checkequal(0, "aaa", "count", "b")
