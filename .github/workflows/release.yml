@@ -1,0 +1,537 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build-and-test-musl-amd64:
+    name: Build and Test on Alpine Linux (musl)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          submodules: "true"
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Pull Alpine Linux Docker image
+        run: |
+          docker pull alpine:latest
+      - name: Build in Docker
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace -w /workspace \
+            alpine:latest \
+            /bin/sh -c "
+              apk add --no-cache \
+                bash \
+                git \
+                make \
+                gcc \
+                musl-dev \
+                python3 \
+                python3-dev \
+                py3-pip \
+                rust \
+                cargo \
+                && \
+              export KCL_BUILD_GIT_SHA=$(git rev-parse HEAD) && \
+              git config --global --add safe.directory /workspace && \
+              git config --global user.name 'GitHub Action' && \
+              git config --global user.email 'action@github.com' && \
+              make && \
+              make release && \
+              _build/dist/linux/kclvm/bin/kclvm_cli version"
+      - name: Read VERSION file
+        id: read_version
+        run: |
+          VERSION=$(cat VERSION)
+          echo "VERSION=v${VERSION}" >> $GITHUB_ENV
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kcl-${{ env.VERSION }}-linux-musl
+          if-no-files-found: error
+          path: _build/kclvm-${{ env.VERSION }}-linux-musl-amd64.tar.gz
+
+  build-and-test-linux-amd64:
+    name: Build and Test on centos7 amd64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          submodules: "true"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: linux/amd64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Pull custom centos7 Docker image
+        run: |
+          docker pull kcllang/kcl-builder:centos7
+
+      # Use llvm7 to build kcl in centos7
+      - name: Release
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace -w /workspace \
+            kcllang/kcl-builder:centos7 \
+            /bin/bash -c "export KCL_BUILD_GIT_SHA=$(git rev-parse HEAD) && source ~/.bash_profile && export PATH=$PATH:/opt/build/bin/ && sed -i 's/llvm12/llvm7/g' kclvm/compiler/Cargo.toml && git config --global --add safe.directory /workspace && git config --global user.name 'GitHub Action' && git config --global user.email 'action@github.com' && git add . && git commit -m 'chore: bump llvm version to 7.0' && make && make release"
+
+      - name: Show Artifact Version
+        run: _build/dist/linux/kclvm/bin/kclvm_cli version
+
+      - name: Read VERSION file
+        id: read_version
+        run: |
+          VERSION=$(cat VERSION)
+          echo "VERSION=v${VERSION}" >> $GITHUB_ENV
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kcl-${{ env.VERSION }}-linux-amd64
+          if-no-files-found: error
+          path: _build/kclvm-${{ env.VERSION }}-linux-amd64.tar.gz
+
+  build-and-test-macos-arm64:
+    # Ref: https://github.com/actions/runner-images/tree/main/images/macos
+    # Note: The arch of macos-13-xlarge and macos-14 is arm64
+    strategy:
+      matrix:
+        os: [macos-13-xlarge, macos-14]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: "true"
+
+      - run: clang --version
+      - run: cargo --version
+      - run: rustc --print sysroot
+
+      - name: Delete rust cargo
+        run: rm -rf /root/.cargo/bin
+        shell: bash
+      - name: Install rust nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.81
+          override: true
+          components: clippy, rustfmt
+      - name: Set up python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Release
+        run: export PATH=$PATH:$PWD/../_build/dist/darwin/kclvm/bin && make release
+        shell: bash
+
+      - name: Read VERSION file
+        id: read_version
+        run: |
+          VERSION=$(cat VERSION)
+          echo "VERSION=v${VERSION}" >> $GITHUB_ENV
+
+      - uses: actions/upload-artifact@v4
+        if: "contains(matrix.os, 'macos-13-xlarge')"
+        with:
+          name: kcl-${{ env.VERSION }}-darwin-arm64
+          if-no-files-found: error
+          path: _build/kclvm-${{ env.VERSION }}-darwin-arm64.tar.gz
+
+  build-and-test-linux-arm64:
+    name: Build and Test on Linux ARM64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          submodules: "true"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Pull custom ARM64 Docker image
+        run: |
+          docker pull --platform linux/arm64 kcllang/kcl-builder-arm64
+
+      - name: Build in Docker
+        run: |
+          docker run --rm --platform linux/arm64 \
+            -v ${{ github.workspace }}:/workspace -w /workspace \
+            kcllang/kcl-builder-arm64 \
+            /bin/bash -c "export KCL_BUILD_GIT_SHA=$(git rev-parse HEAD) && git config --global --add safe.directory /workspace && git config --global user.name 'GitHub Action' && git config --global user.email 'action@github.com' && make && make release && _build/dist/linux/kclvm/bin/kclvm_cli version"
+
+      - name: Read VERSION file
+        id: read_version
+        run: |
+          VERSION=$(cat VERSION)
+          echo "VERSION=v${VERSION}" >> $GITHUB_ENV
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kcl-${{ env.VERSION }}-linux-arm64
+          if-no-files-found: error
+          path: _build/kclvm-${{ env.VERSION }}-linux-arm64.tar.gz
+
+  build-and-test-macos-amd64:
+    # Ref: https://github.com/actions/runner-images/tree/main/images/macos
+    strategy:
+      matrix:
+        os: [macos-13]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: "true"
+
+      - name: Set up python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.23
+
+      - name: Install KCL CLI
+        run: |
+          go install kcl-lang.io/cli/cmd/kcl@main
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+          echo "${{ github.workspace }}/go/bin" >> $GITHUB_PATH
+
+      - run: clang --version
+      - run: cargo --version
+      - run: rustc --print sysroot
+
+      - name: Delete rust cargo
+        run: rm -rf /root/.cargo/bin
+        shell: bash
+      - name: Install rust nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.81
+          override: true
+          components: clippy, rustfmt
+
+      - name: Release
+        run: export PATH=$PATH:$PWD/../_build/dist/darwin/kclvm/bin && make release
+        shell: bash
+
+      - name: Read VERSION file
+        id: read_version
+        run: |
+          VERSION=$(cat VERSION)
+          echo "VERSION=v${VERSION}" >> $GITHUB_ENV
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kcl-${{ env.VERSION }}-darwin-amd64
+          if-no-files-found: error
+          path: _build/kclvm-${{ env.VERSION }}-darwin-amd64.tar.gz
+
+  build-and-test-wasm:
+    # Ref: https://github.com/actions/runner-images/tree/main/images/linux
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          submodules: "true"
+
+      - name: Install rust nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.81
+          override: true
+          components: clippy, rustfmt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kcl-wasm
+          if-no-files-found: error
+          path: kclvm/target/wasm32-wasi/release/kcl.wasm
+
+  build-and-test-windows:
+    name: build and test on windows
+    runs-on: windows-latest
+    env:
+      LLVM_SYS_120_PREFIX: "C:/LLVM"
+      KCLVM_CLANG: "C:/LLVM/bin/clang.exe"
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: "true"
+      
+      - name: Install rust nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.81
+          override: true
+          components: clippy, rustfmt
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.23
+
+      - name: Install KCL
+        shell: powershell
+        run: |
+          go install kcl-lang.io/cli/cmd/kcl@main
+          $GoPath = go env GOPATH
+          $GoInstallBin = Join-Path $GoPath "bin"
+          $Env:PATH += ";$GoInstallBin"
+          $Env:PATH += ";${{ github.workspace }}\go\bin"
+
+      - uses: ilammy/msvc-dev-cmd@v1
+
+      - run: clang --version
+      - run: cargo --version
+
+      # Install LLVM-12
+      - run: Invoke-WebRequest -Uri https://github.com/kcl-lang/llvm-package-windows/releases/download/v12.0.1/LLVM-12.0.1-win64.7z -OutFile C:/LLVM-12.0.1-win64.7z
+      - run: Get-FileHash -Algorithm MD5 C:/LLVM-12.0.1-win64.7z # md5: 3fcf77f82c6c3ee650711439b20aebe5
+      - run: 7z x -y C:/LLVM-12.0.1-win64.7z -o"C:/LLVM"
+      - run: Remove-Item C:/LLVM-12.0.1-win64.7z
+
+      - run: echo "C:/LLVM/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      # Build kclvm CLI
+      - run: .\scripts\build-windows\build.ps1
+
+      # Set kclvm CLI into PATH
+      - run: echo ";$(pwd)\scripts\build-windows\_output\kclvm-windows\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        working-directory: .
+
+      - name: Read VERSION file
+        id: read_version
+        run: |
+          $version = Get-Content VERSION
+          echo "VERSION=v$version" >> $env:GITHUB_ENV
+
+      - name: Rename kclvm-windows folder
+        run: |
+          $version = "${{ env.VERSION }}"
+          Rename-Item -Path ".\scripts\build-windows\_output\kclvm-windows" -NewName "kclvm-$version-windows"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kclvm-${{ env.VERSION }}-windows
+          if-no-files-found: error
+          path: scripts/build-windows/_output/kclvm-${{ env.VERSION }}-windows
+
+  build-and-test-windows-mingw:
+    name: build and test on windows mingw
+    runs-on: windows-latest
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: "true"
+
+      - name: Install rust nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.81
+          override: true
+          components: clippy, rustfmt
+
+      - run: C:\msys64\usr\bin\pacman.exe -S --needed mingw-w64-x86_64-gcc --noconfirm
+      - shell: pwsh
+        run: echo "C:\msys64\mingw64\bin" >> $Env:GITHUB_PATH
+
+      - working-directory: ./kclvm
+        run: |
+          rustup target add x86_64-pc-windows-gnu
+          cargo build -r --target x86_64-pc-windows-gnu
+
+      - name: Read VERSION file
+        id: read_version
+        run: |
+          $version = Get-Content VERSION
+          echo "VERSION=v$version" >> $env:GITHUB_ENV
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kclvm-${{ env.VERSION }}-windows-mingw
+          if-no-files-found: error
+          path: |
+            kclvm/target/x86_64-pc-windows-gnu/release/libkclvm_cli_cdylib.a
+            kclvm/target/x86_64-pc-windows-gnu/release/libkclvm_cli_cdylib.dll.a
+            kclvm/target/x86_64-pc-windows-gnu/release/kclvm_cli_cdylib.dll
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: [
+      build-and-test-musl-amd64,
+      build-and-test-linux-amd64,
+      build-and-test-macos-arm64,
+      build-and-test-linux-arm64,
+      build-and-test-macos-amd64,
+      build-and-test-wasm,
+      build-and-test-windows,
+      build-and-test-windows-mingw
+    ]
+    steps:
+      - name: Download ARM64 Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: kcl-${{ env.VERSION }}-linux-arm64
+          path: ./release
+
+      - name: Download AMD64 Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: kcl-${{ env.VERSION }}-linux-amd64
+          path: ./release
+
+      - name: Download MUSL Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: kcl-${{ env.VERSION }}-linux-musl
+          path: ./release
+
+      - name: Download macOS ARM64 Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: kcl-${{ env.VERSION }}-darwin-arm64
+          path: ./release
+
+      - name: Download macOS AMD64 Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: kcl-${{ env.VERSION }}-darwin-amd64
+          path: ./release
+
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: kclvm-${{ env.VERSION }}-windows
+          path: ./release
+
+      - name: Download Windows MinGW Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: kclvm-${{ env.VERSION }}-windows-mingw
+          path: ./release
+
+      - name: Download WASM Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: kcl-wasm
+          path: ./release
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          body: |
+            Release version ${{ github.ref_name }}
+
+      - name: Upload ARM64 Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/_build/kclvm-${{ env.VERSION }}-linux-arm64.tar.gz
+          asset_name: kcl-${{ env.VERSION }}-linux-arm64.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload AMD64 Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/_build/kclvm-${{ env.VERSION }}-linux-amd64.tar.gz
+          asset_name: kcl-${{ env.VERSION }}-linux-amd64.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload MUSL Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/_build/kclvm-${{ env.VERSION }}-linux-musl-amd64.tar.gz
+          asset_name: kcl-${{ env.VERSION }}-linux-musl-amd64.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload macOS ARM64 Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/_build/kclvm-${{ env.VERSION }}-darwin-arm64.tar.gz
+          asset_name: kcl-${{ env.VERSION }}-darwin-arm64.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload macOS AMD64 Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/_build/kclvm-${{ env.VERSION }}-darwin-amd64.tar.gz
+          asset_name: kcl-${{ env.VERSION }}-darwin-amd64.tar.gz
+          asset_content_type: application/gzip
+
+      - name: Upload Windows Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/scripts/build-windows/_output/kclvm-${{ env.VERSION }}-windows
+          asset_name: kclvm-${{ env.VERSION }}-windows
+          asset_content_type: application/gzip
+
+      - name: Upload Windows MinGW Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/kclvm/target/x86_64-pc-windows-gnu/release/kclvm_cli_cdylib.dll
+          asset_name: kclvm-${{ env.VERSION }}-windows-mingw
+          asset_content_type: application/gzip
+
+      - name: Upload WASM Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release/kclvm/target/wasm32-wasi/release/kcl.wasm
+          asset_name: kcl-wasm
+          asset_content_type: application/wasm
