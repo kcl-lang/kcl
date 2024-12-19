@@ -26,6 +26,14 @@ register_string_member! {
         false,
         None,
     )
+    chars => Type::function(
+        Some(Arc::new(Type::STR)),
+        Type::list_ref(Arc::new(Type::STR)),
+        &[],
+        r#"Return a list of the characters in the string."#,
+        false,
+        None,
+    )
     count => Type::function(
         Some(Arc::new(Type::STR)),
         Arc::new(Type::INT),
