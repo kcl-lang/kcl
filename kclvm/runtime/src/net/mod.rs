@@ -414,18 +414,17 @@ pub extern "C" fn kclvm_net_parse_CIDR(
             let mask = parts[1];
             if let Ok(ip) = Ipv4Addr::from_str(ip) {
                 if let Ok(mask) = mask.parse::<u8>() {
-                    return ValueRef::dict(
-                        vec![
-                            ("ip", ValueRef::str(ip.to_string().as_str())),
-                            ("mask", ValueRef::i_int(mask as i64)),
-                        ],
-                        None,
-                    )
+                    let ip_value = ValueRef::str(ip.to_string().as_str());
+                    let mask_value = ValueRef::int(mask as i64);
+                    return ValueRef::dict(Some(&[
+                        ("ip", &ip_value),
+                        ("mask", &mask_value),
+                    ]))
                     .into_raw(ctx);
                 }
             }
         }
-        return ValueRef::dict(vec![], None).into_raw(ctx);
+        return ValueRef::dict(None).into_raw(ctx);
     }
 
     panic!("parse_CIDR() missing 1 required positional argument: 'cidr'");
@@ -455,7 +454,8 @@ pub extern "C" fn kclvm_net_hosts_in_CIDR (
                         let ip = u32::from_be_bytes(ip.octets()) + i;
                         hosts.push(ValueRef::str(Ipv4Addr::from(ip).to_string().as_str()));
                     }
-                    return ValueRef::list(Some(hosts)).into_raw(ctx);
+                    let hosts_refs: Vec<&ValueRef> = hosts.iter().collect();
+                    return ValueRef::list(Some(&hosts_refs[..])).into_raw(ctx);
                 }
             }
         }
@@ -489,7 +489,8 @@ pub extern "C" fn kclvm_net_subnets_from_CIDR (
                         let ip = u32::from_be_bytes(ip.octets()) + i;
                         subnets.push(ValueRef::str(format!("{}/{}", Ipv4Addr::from(ip), mask).as_str()));
                     }
-                    return ValueRef::list(Some(subnets)).into_raw(ctx);
+                    let subnets_refs: Vec<&ValueRef> = subnets.iter().collect();
+                    return ValueRef::list(Some(&subnets_refs)).into_raw(ctx);
                 }
             }
         }
