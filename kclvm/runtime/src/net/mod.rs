@@ -396,6 +396,141 @@ pub extern "C" fn kclvm_net_is_global_unicast_IP(
     panic!("is_global_unicast_IP() missing 1 required positional argument: 'ip'");
 }
 
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_net_parse_CIDR(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+    let ctx = mut_ptr_as_ref(ctx);
+
+    if let Some(cidr) = get_call_arg_str(args, kwargs, 0, Some("cidr")) {
+        let parts: Vec<&str> = cidr.split('/').collect();
+        if parts.len() == 2 {
+            let ip = parts[0];
+            let mask = parts[1];
+            if let Ok(ip) = Ipv4Addr::from_str(ip) {
+                if let Ok(mask) = mask.parse::<u8>() {
+                    return ValueRef::dict(
+                        vec![
+                            ("ip", ValueRef::str(ip.to_string().as_str())),
+                            ("mask", ValueRef::i_int(mask as i64)),
+                        ],
+                        None,
+                    )
+                    .into_raw(ctx);
+                }
+            }
+        }
+        return ValueRef::dict(vec![], None).into_raw(ctx);
+    }
+
+    panic!("parse_CIDR() missing 1 required positional argument: 'cidr'");
+}
+
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_net_hosts_in_CIDR (
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+    let ctx = mut_ptr_as_ref(ctx);
+
+    if let Some(cidr) = get_call_arg_str(args, kwargs, 0, Some("cidr")) {
+        let parts: Vec<&str> = cidr.split('/').collect();
+        if parts.len() == 2 {
+            let ip = parts[0];
+            let mask = parts[1];
+            if let Ok(ip) = Ipv4Addr::from_str(ip) {
+                if let Ok(mask) = mask.parse::<u8>() {
+                    let mask = u32::from_be_bytes(ip.octets()) & !((1 << (32 - mask)) - 1);
+                    let mut hosts = vec![];
+                    for i in 1..(1 << (32 - mask)) - 1 {
+                        let ip = u32::from_be_bytes(ip.octets()) + i;
+                        hosts.push(ValueRef::str(Ipv4Addr::from(ip).to_string().as_str()));
+                    }
+                    return ValueRef::list(Some(hosts)).into_raw(ctx);
+                }
+            }
+        }
+        return ValueRef::list(None).into_raw(ctx);
+    }
+
+    panic!("hosts_in_CIDR() missing 1 required positional argument: 'cidr'");
+}
+
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_net_subnets_from_CIDR (
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+    let ctx = mut_ptr_as_ref(ctx);
+
+    if let Some(cidr) = get_call_arg_str(args, kwargs, 0, Some("cidr")) {
+        let parts: Vec<&str> = cidr.split('/').collect();
+        if parts.len() == 2 {
+            let ip = parts[0];
+            let mask = parts[1];
+            if let Ok(ip) = Ipv4Addr::from_str(ip) {
+                if let Ok(mask) = mask.parse::<u8>() {
+                    let mask = u32::from_be_bytes(ip.octets()) & !((1 << (32 - mask)) - 1);
+                    let mut subnets = vec![];
+                    for i in 1..(1 << (32 - mask)) - 1 {
+                        let ip = u32::from_be_bytes(ip.octets()) + i;
+                        subnets.push(ValueRef::str(format!("{}/{}", Ipv4Addr::from(ip), mask).as_str()));
+                    }
+                    return ValueRef::list(Some(subnets)).into_raw(ctx);
+                }
+            }
+        }
+        return ValueRef::list(None).into_raw(ctx);
+    }
+
+    panic!("subnets_from_CIDR() missing 1 required positional argument: 'cidr'");
+}
+
+#[no_mangle]
+#[runtime_fn]
+pub extern "C" fn kclvm_net_is_IP_in_CIDR (
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+
+    if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
+        if let Some(cidr) = get_call_arg_str(args, kwargs, 1, Some("cidr")) {
+            let parts: Vec<&str> = cidr.split('/').collect();
+            if parts.len() == 2 {
+                let ip = parts[0];
+                let mask = parts[1];
+                if let Ok(ip) = Ipv4Addr::from_str(ip) {
+                    if let Ok(mask) = mask.parse::<u8>() {
+                        let mask = u32::from_be_bytes(ip.octets()) & !((1 << (32 - mask)) - 1);
+                        let ip = u32::from_be_bytes(ip.octets());
+                        let x = (ip & mask) == mask;
+                        return kclvm_value_Bool(ctx, x as i8);
+                    }
+                }
+            }
+        }
+        return kclvm_value_False(ctx);
+    }
+
+    panic!("is_IP_in_CIDR() missing 2 required positional arguments: 'ip' and 'cidr'");
+}
+
 #[allow(non_camel_case_types, non_snake_case)]
 fn Ipv4Addr_is_global(_self: &std::net::Ipv4Addr) -> bool {
     // check if this address is 192.0.0.9 or 192.0.0.10. These addresses are the only two

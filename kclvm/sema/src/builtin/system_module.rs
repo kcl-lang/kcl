@@ -345,6 +345,84 @@ register_net_member! {
         false,
         None,
     )
+    parse_CIDR => Type::function(
+        None,
+        Type::dict_ref(Type::str_ref(), Type::str_ref()),
+        &[
+            Parameter {
+                name: "cidr".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Parse a CIDR block into network, prefix, minHost, and maxHost."#,
+        false,
+        None,
+    )
+    hosts_in_CIDR => Type::function(
+        None,
+        Type::list_ref(Type::str_ref()),
+        &[
+            Parameter {
+                name: "cidr".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Generate a list of all IP addresses in a CIDR block."#,
+        false,
+        None,
+    )
+    subnets_from_CIDR => Type::function(
+        None,
+        Type::list_ref(Type::str_ref()),
+        &[
+            Parameter {
+                name: "cidr".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+            Parameter {
+                name: "new_prefix".to_string(),
+                ty: Type::int_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Split a CIDR block into smaller subnets with a given prefix."#,
+        false,
+        None,
+    )
+    is_IP_in_CIDR => Type::function(
+        None,
+        Type::bool_ref(),
+        &[
+            Parameter {
+                name: "ip".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+            Parameter {
+                name: "cidr".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Check if an IP address is within a given CIDR block."#,
+        false,
+        None,
+    )
 }
 
 // ------------------------------
