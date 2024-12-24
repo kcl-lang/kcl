@@ -146,7 +146,7 @@ mod tests {
         ($name:ident, $file:expr) => {
             #[test]
             fn $name() {
-                let (file, _, _, gs) = compile_test_file($file);
+                let (file, _, _, gs, _) = compile_test_file($file);
                 let res = inlay_hints(&file, &gs);
                 insta::assert_snapshot!(format!("{:#?}", res));
             }

@@ -187,6 +187,8 @@ fn construct_program(module: Module) -> Program {
         root: MAIN_PKG_NAME.to_string(),
         pkgs: pkgs_ast,
         modules,
+        pkgs_not_imported: HashMap::new(),
+        modules_not_imported: HashMap::new(),
     }
 }
 

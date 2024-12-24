@@ -30,6 +30,8 @@ pub fn parse_program(filename: &str) -> Result<ast::Program> {
         root: abspath.parent().unwrap().adjust_canonicalization(),
         pkgs: HashMap::new(),
         modules: HashMap::new(),
+        pkgs_not_imported: HashMap::new(),
+        modules_not_imported: HashMap::new(),
     };
 
     let mut module = parse_file_force_errors(abspath.to_str().unwrap(), None)?;
@@ -397,7 +399,7 @@ fn test_lint() {
     pre_process_program(&mut program, &opts);
     let mut resolver = Resolver::new(&program, opts);
     resolver.resolve_import();
-    resolver.check_and_lint(kclvm_ast::MAIN_PKG);
+    resolver.check_and_lint_all_pkgs();
 
     let root = &program.root.clone();
     let filename = Path::new(&root.clone())

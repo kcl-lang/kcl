@@ -106,6 +106,10 @@ pub enum SymbolHintKind {
 }
 
 impl SymbolData {
+    pub fn get_all_schemas(&self) -> &Arena<SchemaSymbol> {
+        &self.schemas
+    }
+
     pub fn get_package_symbol(&self, id: SymbolRef) -> Option<&PackageSymbol> {
         if matches!(id.get_kind(), SymbolKind::Package) {
             self.packages.get(id.get_id())

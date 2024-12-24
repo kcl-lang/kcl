@@ -357,6 +357,7 @@ pub(crate) fn handle_completion(
         &db.gs,
         &*snapshot.tool.read(),
         metadata,
+        &db.schema_map,
     );
 
     if res.is_none() {

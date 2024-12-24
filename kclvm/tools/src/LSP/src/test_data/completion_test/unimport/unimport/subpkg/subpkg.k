@@ -1,0 +1,2 @@
+schema SubPKg:
+    name: str

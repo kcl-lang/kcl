@@ -2,9 +2,13 @@ use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use anyhow::Result;
 use indexmap::IndexMap;
-use kclvm_parser::{load_program, LoadProgramOptions, ParseSession};
+use kclvm_parser::{load_all_files_under_paths, load_program, LoadProgramOptions, ParseSession};
 use kclvm_sema::{
-    resolver::{resolve_program_with_opts, scope::Scope, Options},
+    resolver::{
+        resolve_program_with_opts,
+        scope::{ProgramScope, Scope},
+        Options,
+    },
     ty::SchemaType,
 };
 
@@ -82,7 +86,7 @@ pub fn get_schema_type(
 ) -> Result<IndexMap<String, SchemaType>> {
     let mut result = IndexMap::new();
     let scope = resolve_file(&CompilationOptions {
-        k_files: vec![file.to_string()],
+        paths: vec![file.to_string()],
         loader_opts: code.map(|c| LoadProgramOptions {
             k_code_list: vec![c.to_string()],
             ..Default::default()
@@ -119,7 +123,7 @@ pub fn get_schema_type(
 
 #[derive(Debug, Clone, Default)]
 pub struct CompilationOptions {
-    pub k_files: Vec<String>,
+    pub paths: Vec<String>,
     pub loader_opts: Option<LoadProgramOptions>,
     pub resolve_opts: Options,
     pub get_schema_opts: GetSchemaOption,
@@ -141,7 +145,7 @@ pub struct CompilationOptions {
 /// let result = get_full_schema_type(
 ///     Some("a"),
 ///     CompilationOptions {
-///         k_files: vec![
+///         paths: vec![
 ///             work_dir_parent.join("aaa").join("main.k").canonicalize().unwrap().display().to_string()
 ///         ],
 ///         loader_opts: Some(LoadProgramOptions {
@@ -189,6 +193,53 @@ pub fn get_full_schema_type(
     Ok(result)
 }
 
+/// Service for getting the full schema type list under paths.
+/// Different from `get_full_schema_type`, this function will compile files that are not imported
+/// And key of result is pka name, not schema name.
+///
+/// # Examples
+///
+/// ```
+/// use kclvm_parser::LoadProgramOptions;
+/// use kclvm_query::query::CompilationOptions;
+/// use kclvm_query::query::get_full_schema_type_under_path;
+/// use std::path::Path;
+/// use maplit::hashmap;
+/// use kclvm_ast::MAIN_PKG;
+///
+/// let work_dir_parent = Path::new(env!("CARGO_MANIFEST_DIR")).join("src").join("test_data").join("get_schema_ty_under_path");
+///
+/// let result = get_full_schema_type_under_path(
+///     None,
+///     CompilationOptions {
+///         paths: vec![
+///             work_dir_parent.join("aaa").canonicalize().unwrap().display().to_string()
+///         ],
+///         loader_opts: Some(LoadProgramOptions {
+///             work_dir: work_dir_parent.join("aaa").canonicalize().unwrap().display().to_string(),
+///             package_maps: hashmap!{
+///                 "bbb".to_string() => work_dir_parent.join("bbb").canonicalize().unwrap().display().to_string(),
+///                 "helloworld".to_string() => work_dir_parent.join("helloworld_0.0.1").canonicalize().unwrap().display().to_string(),
+///             },
+///            ..Default::default()
+///          }),
+///          ..Default::default()
+///     }
+/// ).unwrap();
+/// assert_eq!(result.len(), 4);
+/// assert_eq!(result.get(MAIN_PKG).unwrap().len(), 1);
+/// assert_eq!(result.get("bbb").unwrap().len(), 2);
+/// assert_eq!(result.get("helloworld").unwrap().len(), 1);
+/// assert_eq!(result.get("sub").unwrap().len(), 1);
+/// ```
+pub fn get_full_schema_type_under_path(
+    schema_name: Option<&str>,
+    opts: CompilationOptions,
+) -> Result<IndexMap<String, Vec<SchemaType>>> {
+    let program_scope = resolve_paths(&opts)?;
+    Ok(filter_pkg_schemas(&program_scope, schema_name, Some(opts)))
+}
+
 fn get_full_schema_type_recursive(schema_ty: SchemaType) -> Result<SchemaType> {
     let mut result = schema_ty;
     if let Some(base) = result.base {
@@ -201,7 +252,7 @@ fn resolve_file(opts: &CompilationOptions) -> Result<Rc<RefCell<Scope>>> {
     let sess = Arc::new(ParseSession::default());
     let mut program = match load_program(
         sess,
-        &opts.k_files.iter().map(AsRef::as_ref).collect::<Vec<_>>(),
+        &opts.paths.iter().map(AsRef::as_ref).collect::<Vec<_>>(),
         opts.loader_opts.clone(),
         None,
     ) {
@@ -215,4 +266,67 @@ fn resolve_file(opts: &CompilationOptions) -> Result<Rc<RefCell<Scope>>> {
         Some(scope) => Ok(scope.clone()),
         None => Err(anyhow::anyhow!("main scope is not found")),
     }
+}
+
+fn resolve_paths(opts: &CompilationOptions) -> Result<ProgramScope> {
+    let sess = Arc::new(ParseSession::default());
+    let mut program = load_all_files_under_paths(
+        sess,
+        &opts.paths.iter().map(AsRef::as_ref).collect::<Vec<_>>(),
+        opts.loader_opts.clone(),
+        None,
+    )?
+    .program;
+    Ok(resolve_program_with_opts(
+        &mut program,
+        opts.resolve_opts.clone(),
+        None,
+    ))
+}
+
+pub fn filter_pkg_schemas(
+    program_scope: &ProgramScope,
+    schema_name: Option<&str>,
+    opts: Option<CompilationOptions>,
+) -> IndexMap<String, Vec<SchemaType>> {
+    let mut result = IndexMap::new();
+    for (pkg, scope) in &program_scope.scope_map {
+        for (name, o) in &scope.borrow().elems {
+            if o.borrow().ty.is_schema() {
+                let schema_ty = o.borrow().ty.into_schema_type();
+                if let Some(opts) = &opts {
+                    if opts.get_schema_opts == GetSchemaOption::All
+                        || (opts.get_schema_opts == GetSchemaOption::Definitions
+                            && !schema_ty.is_instance)
+                        || (opts.get_schema_opts == GetSchemaOption::Instances
+                            && schema_ty.is_instance)
+                    {
+                        // Schema name filter
+                        match schema_name {
+                            Some(schema_name) => {
+                                if schema_name.is_empty() || schema_name == name {
+                                    result.entry(pkg.clone()).or_insert(vec![]).push(schema_ty);
+                                }
+                            }
+                            None => {
+                                result.entry(pkg.clone()).or_insert(vec![]).push(schema_ty);
+                            }
+                        }
+                    }
+                } else {
+                    match schema_name {
+                        Some(schema_name) => {
+                            if schema_name.is_empty() || schema_name == name {
+                                result.entry(pkg.clone()).or_insert(vec![]).push(schema_ty);
+                            }
+                        }
+                        None => {
+                            result.entry(pkg.clone()).or_insert(vec![]).push(schema_ty);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    result
 }

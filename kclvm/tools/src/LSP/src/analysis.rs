@@ -1,8 +1,8 @@
-use indexmap::IndexSet;
+use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast::Program;
 use kclvm_driver::WorkSpaceKind;
 use kclvm_error::Diagnostic;
-use kclvm_sema::core::global_state::GlobalState;
+use kclvm_sema::{core::global_state::GlobalState, ty::SchemaType};
 use parking_lot::RwLock;
 use std::{
     collections::{HashMap, HashSet},
@@ -38,4 +38,5 @@ pub struct AnalysisDatabase {
     pub prog: Program,
     pub gs: GlobalState,
     pub diags: IndexSet<Diagnostic>,
+    pub schema_map: IndexMap<String, Vec<SchemaType>>,
 }

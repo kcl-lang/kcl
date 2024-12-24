@@ -16,11 +16,13 @@
 //!     + schema init
 
 use crate::goto_def::{find_def, find_symbol};
-use indexmap::IndexSet;
+use crate::to_lsp::lsp_pos;
+use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast::{self, ImportStmt, Program, Stmt};
 use kclvm_ast::MAIN_PKG;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 use kclvm_driver::toolchain::{get_real_path_from_external, Metadata, Toolchain};
+use kclvm_error::diagnostic::Range;
 use kclvm_parser::get_kcl_files;
 use kclvm_sema::core::global_state::GlobalState;
 use std::io;
@@ -65,6 +67,12 @@ impl From<KCLCompletionItemKind> for CompletionItemKind {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Hash, Eq, Default)]
+pub struct TextEdit {
+    pub range: Range,
+    pub new_text: String,
+}
+
 /// Abstraction of CompletionItem in KCL
 #[derive(Debug, Clone, PartialEq, Hash, Eq, Default)]
 pub(crate) struct KCLCompletionItem {
@@ -73,6 +81,7 @@ pub(crate) struct KCLCompletionItem {
     pub documentation: Option<String>,
     pub kind: Option<KCLCompletionItemKind>,
     pub insert_text: Option<String>,
+    pub additional_text_edits: Option<Vec<TextEdit>>,
 }
 
 /// Computes completions at the given position.
@@ -83,6 +92,7 @@ pub fn completion(
     gs: &GlobalState,
     tool: &dyn Toolchain,
     metadata: Option<Metadata>,
+    schema_map: &IndexMap<String, Vec<SchemaType>>,
 ) -> Option<lsp_types::CompletionResponse> {
     match trigger_character {
         Some(c) => match c {
@@ -107,6 +117,7 @@ pub fn completion(
                     documentation: None,
                     kind: Some(KCLCompletionItemKind::Module),
                     insert_text: None,
+                    additional_text_edits: None,
                 }));
             }
 
@@ -132,6 +143,7 @@ pub fn completion(
                                                 name,
                                                 &ty.into_func_type(),
                                             )),
+                                            additional_text_edits: None,
                                         },
                                     ));
                                 }
@@ -150,8 +162,13 @@ pub fn completion(
                                     name,
                                     &ty.into_func_type(),
                                 )),
+                                additional_text_edits: None,
                             }
                         }));
+                        // Complete all schema def in gs if in main pkg
+                        if program.get_main_files().contains(&pos.filename) {
+                            completions.extend(unimport_schemas(&pos.filename, gs, schema_map));
+                        }
                     }
                 }
 
@@ -172,7 +189,7 @@ pub fn completion(
                                             ));
                                             // complete schema value
                                             completions.insert(schema_ty_to_value_complete_item(
-                                                &schema_ty,
+                                                &schema_ty, true,
                                             ));
                                         }
                                         SymbolKind::Package => {
@@ -182,6 +199,7 @@ pub fn completion(
                                                 documentation: sema_info.doc.clone(),
                                                 kind: Some(KCLCompletionItemKind::Module),
                                                 insert_text: None,
+                                                additional_text_edits: None,
                                             });
                                         }
                                         _ => {
@@ -197,6 +215,7 @@ pub fn completion(
                                                 documentation: sema_info.doc.clone(),
                                                 kind: type_to_item_kind(ty),
                                                 insert_text: None,
+                                                additional_text_edits: None,
                                             });
                                         }
                                     },
@@ -317,6 +336,7 @@ fn completion_dot(
                                     documentation,
                                     kind,
                                     insert_text,
+                                    additional_text_edits: None,
                                 });
                             }
                             None => {
@@ -326,6 +346,7 @@ fn completion_dot(
                                     documentation: None,
                                     kind: None,
                                     insert_text: None,
+                                    additional_text_edits: None,
                                 });
                             }
                         }
@@ -367,6 +388,7 @@ fn completion_assign(pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Comple
                                             kind: Some(KCLCompletionItemKind::Variable),
                                             documentation: sema_info.doc.clone(),
                                             insert_text: Some(format!(" {}", insert_text)),
+                                            additional_text_edits: None,
                                         },
                                     ),
                                 );
@@ -403,6 +425,7 @@ fn completion_newline(
                 documentation: Some(format!("docstring for {}", schema.name.node.clone())),
                 kind: Some(KCLCompletionItemKind::Doc),
                 insert_text: None,
+                additional_text_edits: None,
             });
         }
         return Some(into_completion_items(&completions).into());
@@ -439,6 +462,7 @@ fn completion_newline(
                                                 },
                                                 kind: Some(KCLCompletionItemKind::SchemaAttr),
                                                 insert_text: None,
+                                                additional_text_edits: None,
                                             });
                                         }
                                         _ => {}
@@ -491,6 +515,7 @@ fn completion_import_builtin_pkg() -> IndexSet<KCLCompletionItem> {
             documentation: None,
             kind: Some(KCLCompletionItemKind::Module),
             insert_text: None,
+            additional_text_edits: None,
         })
         .collect()
 }
@@ -521,6 +546,7 @@ fn completion_import_internal_pkg(
                                 documentation: None,
                                 kind: Some(KCLCompletionItemKind::Dir),
                                 insert_text: None,
+                                additional_text_edits: None,
                             });
                         }
                     } else {
@@ -541,6 +567,7 @@ fn completion_import_internal_pkg(
                                             documentation: None,
                                             kind: Some(KCLCompletionItemKind::Module),
                                             insert_text: None,
+                                            additional_text_edits: None,
                                         });
                                     }
                                 }
@@ -565,6 +592,7 @@ fn completion_import_external_pkg(metadata: Option<Metadata>) -> IndexSet<KCLCom
                 documentation: None,
                 kind: Some(KCLCompletionItemKind::Dir),
                 insert_text: None,
+                additional_text_edits: None,
             })
             .collect(),
         None => IndexSet::new(),
@@ -580,13 +608,22 @@ fn completion_import_external_pkg(metadata: Option<Metadata>) -> IndexSet<KCLCom
 /// complete to
 /// ```no_check
 /// #[cfg(not(test))]
-/// p = Person(param1, param2){}<cursor>
+/// import pkg
+/// p = pkg.Person(param1, param2){<cursor>}
 /// ```
-fn schema_ty_to_value_complete_item(schema_ty: &SchemaType) -> KCLCompletionItem {
+fn schema_ty_to_value_complete_item(schema_ty: &SchemaType, has_import: bool) -> KCLCompletionItem {
+    let schema = schema_ty.clone();
     let param = schema_ty.func.params.clone();
+    let pkg_path_last_name = if schema.pkgpath.is_empty() || schema.pkgpath == MAIN_PKG {
+        "".to_string()
+    } else {
+        format!("{}", schema.pkgpath.split('.').last().unwrap())
+    };
+    let need_import = !pkg_path_last_name.is_empty() && !has_import;
+
     let label = format!(
-        "{}{}{}",
-        schema_ty.name.clone(),
+        "{}{}{}{}",
+        schema.name,
         if param.is_empty() {
             "".to_string()
         } else {
@@ -599,8 +636,50 @@ fn schema_ty_to_value_complete_item(schema_ty: &SchemaType) -> KCLCompletionItem
                     .join(", ")
             )
         },
-        "{}"
+        "{}",
+        if need_import {
+            format!("(import {})", schema.pkgpath)
+        } else {
+            "".to_string()
+        },
     );
+
+    // `pkg_path.schema_name{<cursor>}` or `schema_name{<cursor>}`
+    let insert_text = format!(
+        "{}{}{}{}{}",
+        pkg_path_last_name,
+        if pkg_path_last_name.is_empty() {
+            ""
+        } else {
+            "."
+        },
+        schema.name,
+        if param.is_empty() {
+            "".to_string()
+        } else {
+            format!(
+                "({})",
+                param
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, p)| format!("${{{}:{}}}", idx + 1, p.name.clone()))
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            )
+        },
+        "{$0}"
+    );
+
+    // insert `import pkg`
+    let additional_text_edits = if need_import {
+        Some(vec![TextEdit {
+            range: (KCLPos::dummy_pos(), KCLPos::dummy_pos()),
+            new_text: format!("import {}\n", schema.pkgpath),
+        }])
+    } else {
+        None
+    };
+
     let detail = {
         let mut details = vec![];
         let (pkgpath, rest_sign) = schema_ty.schema_ty_signature_str();
@@ -616,30 +695,14 @@ fn schema_ty_to_value_complete_item(schema_ty: &SchemaType) -> KCLCompletionItem
         }
         details.join("\n")
     };
-    let insert_text = format!(
-        "{}{}{}",
-        schema_ty.name.clone(),
-        if param.is_empty() {
-            "".to_string()
-        } else {
-            format!(
-                "({})",
-                param
-                    .iter()
-                    .enumerate()
-                    .map(|(idx, p)| format!("${{{}:{}}}", idx + 1, p.name.clone()))
-                    .collect::<Vec<String>>()
-                    .join(", ")
-            )
-        },
-        "{}"
-    );
+
     KCLCompletionItem {
         label,
         detail: Some(detail),
         documentation: Some(schema_ty.doc.clone()),
         kind: Some(KCLCompletionItemKind::Schema),
         insert_text: Some(insert_text),
+        additional_text_edits,
     }
 }
 
@@ -676,6 +739,7 @@ fn schema_ty_to_type_complete_item(schema_ty: &SchemaType) -> KCLCompletionItem 
         documentation: Some(schema_ty.doc.clone()),
         kind: Some(KCLCompletionItemKind::Schema),
         insert_text: None,
+        additional_text_edits: None,
     }
 }
 
@@ -709,6 +773,7 @@ fn dot_completion_in_import_stmt(
                         documentation: None,
                         kind: Some(KCLCompletionItemKind::Dir),
                         insert_text: None,
+                        additional_text_edits: None,
                     });
                 } else if path.is_file() {
                     if let Some(extension) = path.extension() {
@@ -725,6 +790,7 @@ fn dot_completion_in_import_stmt(
                                 documentation: None,
                                 kind: Some(KCLCompletionItemKind::File),
                                 insert_text: None,
+                                additional_text_edits: None,
                             });
                         }
                     }
@@ -835,21 +901,43 @@ fn type_to_item_kind(ty: &Type) -> Option<KCLCompletionItemKind> {
 pub(crate) fn into_completion_items(items: &IndexSet<KCLCompletionItem>) -> Vec<CompletionItem> {
     items
         .iter()
-        .map(|item| CompletionItem {
-            label: item.label.clone(),
-            detail: item.detail.clone(),
-            documentation: item
-                .documentation
-                .clone()
-                .map(lsp_types::Documentation::String),
-            kind: item.kind.clone().map(|kind| kind.into()),
-            insert_text: item.insert_text.clone(),
-            insert_text_format: if item.insert_text.is_some() {
-                Some(InsertTextFormat::SNIPPET)
-            } else {
-                None
-            },
-            ..Default::default()
+        .map(|item| {
+            let additional_text_edits = match &item.additional_text_edits {
+                Some(edits) => {
+                    let mut res = vec![];
+                    for edit in edits {
+                        res.push(lsp_types::TextEdit {
+                            range: lsp_types::Range {
+                                start: lsp_pos(&edit.range.0),
+                                end: lsp_pos(&edit.range.1),
+                            },
+                            new_text: edit.new_text.clone(),
+                        })
+                    }
+
+                    Some(res)
+                }
+                None => None,
+            };
+
+            CompletionItem {
+                label: item.label.clone(),
+                detail: item.detail.clone(),
+                documentation: item
+                    .documentation
+                    .clone()
+                    .map(lsp_types::Documentation::String),
+                kind: item.kind.clone().map(|kind| kind.into()),
+                insert_text: item.insert_text.clone(),
+                insert_text_format: if item.insert_text.is_some() {
+                    Some(InsertTextFormat::SNIPPET)
+                } else {
+                    None
+                },
+                additional_text_edits,
+
+                ..Default::default()
+            }
         })
         .collect()
 }
@@ -1168,7 +1256,6 @@ mod tests {
             CompletionResponse::List(_) => panic!("test failed"),
         }
     }
-
 #[cfg(test)]
 mod tests {
     use crate::{
@@ -1190,8 +1277,8 @@ mod tests {
     #[test]
     #[bench_test]
     fn var_completion_test() {
-        let (file, program, _, gs) =
-            compile_test_file("src/test_data/completion_test/dot/completion.k");
+        let (file, program, _, gs, schema_map) =
+            compile_test_file("src/test_data/completion_test/dot/completion/completion.k");
 
         // test completion for var
         let pos = KCLPos {
@@ -1201,7 +1288,7 @@ mod tests {
         };
 
         let tool = toolchain::default();
-        let got = completion(None, &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let mut got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1209,8 +1296,22 @@ mod tests {
 
         let mut expected_labels: Vec<String> = vec![
             "", // generate from error recovery of "pkg."
-            "subpkg", "math", "Person", "Person{}", "P", "P{}", "p", "p1", "p2", "p3", "p4",
-            "aaaa", "Config", "Config{}", "n",
+            "subpkg",
+            "math",
+            "Person",
+            "Person1{}",
+            "Person{}",
+            "P",
+            "P{}",
+            "p",
+            "p1",
+            "p2",
+            "p3",
+            "p4",
+            "aaaa",
+            "Config",
+            "Config{}",
+            "n",
         ]
         .iter()
         .map(|s| s.to_string())
@@ -1233,7 +1334,7 @@ mod tests {
             column: Some(4),
         };
 
-        let got = completion(None, &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let mut got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1251,8 +1352,8 @@ mod tests {
     #[test]
     #[bench_test]
     fn dot_completion_test() {
-        let (file, program, _, gs) =
-            compile_test_file("src/test_data/completion_test/dot/completion.k");
+        let (file, program, _, gs, schema_map) =
+            compile_test_file("src/test_data/completion_test/dot/completion/completion.k");
 
         // test completion for schema attr
         let pos = KCLPos {
@@ -1262,7 +1363,7 @@ mod tests {
         };
 
         let tool = toolchain::default();
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1278,7 +1379,7 @@ mod tests {
         };
 
         // test completion for str builtin function
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match &got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1309,7 +1410,7 @@ mod tests {
             column: Some(12),
         };
 
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1325,7 +1426,7 @@ mod tests {
             column: Some(12),
         };
 
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1339,7 +1440,7 @@ mod tests {
             line: 19,
             column: Some(5),
         };
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1357,7 +1458,7 @@ mod tests {
             column: Some(4),
         };
 
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1375,7 +1476,7 @@ mod tests {
             column: Some(11),
         };
 
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1391,7 +1492,7 @@ mod tests {
             column: Some(30),
         };
 
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1407,7 +1508,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn dot_completion_test_without_dot() {
-        let (file, program, _, gs) =
+        let (file, program, _, gs, schema_map) =
             compile_test_file("src/test_data/completion_test/without_dot/completion.k");
 
         // test completion for schema attr
@@ -1418,7 +1519,7 @@ mod tests {
         };
 
         let tool = toolchain::default();
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1434,7 +1535,7 @@ mod tests {
         };
 
         // test completion for str builtin function
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1452,7 +1553,7 @@ mod tests {
             column: Some(12),
         };
 
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1468,7 +1569,7 @@ mod tests {
             column: Some(12),
         };
 
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1482,7 +1583,7 @@ mod tests {
             line: 19,
             column: Some(5),
         };
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match &got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1513,7 +1614,7 @@ mod tests {
             column: Some(4),
         };
 
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match &got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1544,7 +1645,7 @@ mod tests {
             column: Some(11),
         };
 
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1560,7 +1661,7 @@ mod tests {
             column: Some(30),
         };
 
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match &got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1589,7 +1690,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn import_builtin_package() {
-        let (file, program, _, gs) =
+        let (file, program, _, gs, schema_map) =
             compile_test_file("src/test_data/completion_test/import/builtin/builtin_pkg.k");
         let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
 
@@ -1601,7 +1702,7 @@ mod tests {
         };
 
         let tool = toolchain::default();
-        let got = completion(None, &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let _got_labels: Vec<String> = match &got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1630,6 +1731,7 @@ mod tests {
                 detail: None,
                 documentation: None,
                 insert_text: None,
+                additional_text_edits: None,
             })
             .collect::<IndexSet<KCLCompletionItem>>(),
         );
@@ -1640,7 +1742,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn attr_value_completion() {
-        let (file, program, _, gs) =
+        let (file, program, _, gs, schema_map) =
             compile_test_file("src/test_data/completion_test/assign/completion.k");
 
         let pos = KCLPos {
@@ -1650,7 +1752,7 @@ mod tests {
         };
 
         let tool = toolchain::default();
-        let got = completion(Some(':'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1663,7 +1765,7 @@ mod tests {
             line: 16,
             column: Some(6),
         };
-        let got = completion(Some(':'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1676,7 +1778,7 @@ mod tests {
             line: 18,
             column: Some(6),
         };
-        let got = completion(Some(':'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1689,7 +1791,7 @@ mod tests {
             line: 20,
             column: Some(6),
         };
-        let got = completion(Some(':'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1702,7 +1804,7 @@ mod tests {
             line: 22,
             column: Some(6),
         };
-        let got = completion(Some(':'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1715,7 +1817,7 @@ mod tests {
             line: 24,
             column: Some(6),
         };
-        let got = completion(Some(':'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1728,7 +1830,7 @@ mod tests {
             line: 26,
             column: Some(6),
         };
-        let got = completion(Some(':'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match &got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1750,8 +1852,8 @@ mod tests {
     #[test]
     #[bench_test]
     fn schema_sig_completion() {
-        let (file, program, _, gs) =
-            compile_test_file("src/test_data/completion_test/schema/schema.k");
+        let (file, program, _, gs, schema_map) =
+            compile_test_file("src/test_data/completion_test/schema/schema/schema.k");
 
         let pos = KCLPos {
             filename: file.to_owned(),
@@ -1760,7 +1862,7 @@ mod tests {
         };
 
         let tool = toolchain::default();
-        let mut got = completion(None, &program, &pos, &gs, &tool, None).unwrap();
+        let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         match &mut got {
             CompletionResponse::Array(arr) => {
                 assert_eq!(
@@ -1773,7 +1875,7 @@ mod tests {
                                 .to_string()
                         ),
                         documentation: Some(lsp_types::Documentation::String("".to_string())),
-                        insert_text: Some("Person(${1:b}){}".to_string()),
+                        insert_text: Some("Person(${1:b}){$0}".to_string()),
                         insert_text_format: Some(InsertTextFormat::SNIPPET),
                         ..Default::default()
                     }
@@ -1785,7 +1887,7 @@ mod tests {
 
     #[test]
     fn schema_docstring_newline_completion() {
-        let (file, program, _, gs) =
+        let (file, program, _, gs, schema_map) =
             compile_test_file("src/test_data/completion_test/newline/docstring_newline.k");
 
         let pos = KCLPos {
@@ -1794,7 +1896,8 @@ mod tests {
             column: Some(4),
         };
         let tool = toolchain::default();
-        let mut got = completion(Some('\n'), &program, &pos, &gs, &tool, None).unwrap();
+        let mut got =
+            completion(Some('\n'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         match &mut got {
             CompletionResponse::Array(arr) => {
                 arr.sort_by(|a, b| a.label.cmp(&b.label));
@@ -1815,7 +1918,7 @@ mod tests {
 
     #[test]
     fn str_dot_completion() {
-        let (file, program, _, gs) =
+        let (file, program, _, gs, schema_map) =
             compile_test_file("src/test_data/completion_test/dot/lit_str/lit_str.k");
 
         // test complete str functions when at the end of literal str
@@ -1826,7 +1929,7 @@ mod tests {
         };
 
         let tool = toolchain::default();
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
 
         match &got {
             CompletionResponse::Array(arr) => {
@@ -1867,7 +1970,7 @@ mod tests {
             column: Some(6),
         };
 
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         let got_labels: Vec<String> = match got {
             CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1881,7 +1984,7 @@ mod tests {
             column: Some(5),
         };
 
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         match got {
             CompletionResponse::Array(arr) => assert!(arr.is_empty()),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1894,7 +1997,7 @@ mod tests {
             column: Some(8),
         };
 
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         match got {
             CompletionResponse::Array(arr) => assert!(arr.is_empty()),
             CompletionResponse::List(_) => panic!("test failed"),
@@ -1905,7 +2008,7 @@ mod tests {
             line: 3,
             column: Some(2),
         };
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         match got {
             CompletionResponse::Array(arr) => {
                 assert!(arr
@@ -1918,7 +2021,7 @@ mod tests {
 
     #[test]
     fn schema_ty_attr_complete() {
-        let (file, program, _, gs) =
+        let (file, program, _, gs, schema_map) =
             compile_test_file("src/test_data/completion_test/dot/schema_ty_attr/schema_ty_attr.k");
 
         let pos = KCLPos {
@@ -1928,7 +2031,7 @@ mod tests {
         };
 
         let tool = toolchain::default();
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         match got {
             CompletionResponse::Array(arr) => {
                 assert_eq!(
@@ -1947,7 +2050,7 @@ mod tests {
 
     #[test]
     fn schema_end_pos() {
-        let (file, program, _, gs) =
+        let (file, program, _, gs, schema_map) =
             compile_test_file("src/test_data/completion_test/schema/schema_pos/schema_pos.k");
 
         let pos = KCLPos {
@@ -1957,7 +2060,7 @@ mod tests {
         };
 
         let tool = toolchain::default();
-        let got = completion(None, &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         match got {
             CompletionResponse::Array(arr) => {
                 assert_eq!(arr.len(), 4);
@@ -1971,7 +2074,7 @@ mod tests {
 
     #[test]
     fn comment_completion() {
-        let (file, program, _, gs) =
+        let (file, program, _, gs, schema_map) =
             compile_test_file("src/test_data/completion_test/dot/lit_str/lit_str.k");
 
         let pos = KCLPos {
@@ -1981,7 +2084,7 @@ mod tests {
         };
 
         let tool = toolchain::default();
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
 
         match &got {
             CompletionResponse::Array(arr) => {
@@ -1994,7 +2097,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn missing_expr_completion() {
-        let (file, program, _, gs) =
+        let (file, program, _, gs, schema_map) =
             compile_test_file("src/test_data/completion_test/dot/missing_expr/missing_expr.k");
 
         let pos = KCLPos {
@@ -2004,7 +2107,7 @@ mod tests {
         };
 
         let tool = toolchain::default();
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         match got {
             CompletionResponse::Array(arr) => {
                 assert_eq!(arr.len(), 2);
@@ -2019,7 +2122,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn check_scope_completion() {
-        let (file, program, _, gs) =
+        let (file, program, _, gs, schema_map) =
             compile_test_file("src/test_data/completion_test/check/check.k");
 
         let pos = KCLPos {
@@ -2029,7 +2132,7 @@ mod tests {
         };
 
         let tool = toolchain::default();
-        let got = completion(Some(':'), &program, &pos, &gs, &tool, None);
+        let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map);
         assert!(got.is_none());
 
         let pos = KCLPos {
@@ -2038,7 +2141,7 @@ mod tests {
             column: Some(9),
         };
 
-        let got = completion(None, &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         match got {
             CompletionResponse::Array(arr) => {
                 assert_eq!(arr.len(), 3);
@@ -2052,7 +2155,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn join_str_inner_completion() {
-        let (file, program, _, gs) =
+        let (file, program, _, gs, schema_map) =
             compile_test_file("src/test_data/completion_test/dot/lit_str/lit_str.k");
 
         let pos = KCLPos {
@@ -2062,7 +2165,7 @@ mod tests {
         };
 
         let tool = toolchain::default();
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         match &got {
             CompletionResponse::Array(arr) => {
                 assert!(arr.is_empty())
@@ -2077,7 +2180,7 @@ mod tests {
         };
 
         let tool = toolchain::default();
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None).unwrap();
+        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         match &got {
             CompletionResponse::Array(arr) => {
                 assert!(arr.is_empty())
@@ -2089,8 +2192,8 @@ mod tests {
     #[test]
     #[bench_test]
     fn schema_type_attr_completion() {
-        let (file, program, _, gs) =
-            compile_test_file("src/test_data/completion_test/schema/schema.k");
+        let (file, program, _, gs, schema_map) =
+            compile_test_file("src/test_data/completion_test/schema/schema/schema.k");
 
         let pos = KCLPos {
             filename: file.to_owned(),
@@ -2099,7 +2202,7 @@ mod tests {
         };
 
         let tool = toolchain::default();
-        let mut got = completion(None, &program, &pos, &gs, &tool, None).unwrap();
+        let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         match &mut got {
             CompletionResponse::Array(arr) => {
                 let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
@@ -2115,7 +2218,7 @@ mod tests {
         };
 
         let tool = toolchain::default();
-        let mut got = completion(None, &program, &pos, &gs, &tool, None).unwrap();
+        let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         match &mut got {
             CompletionResponse::Array(arr) => {
                 let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
@@ -2128,7 +2231,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn nested_1_test() {
-        let (file, program, _, gs) =
+        let (file, program, _, gs, schema_map) =
             compile_test_file("src/test_data/completion_test/dot/nested/nested_1/nested_1.k");
 
         let pos = KCLPos {
@@ -2138,7 +2241,7 @@ mod tests {
         };
         let tool = toolchain::default();
 
-        let mut got = completion(None, &program, &pos, &gs, &tool, None).unwrap();
+        let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
 
         match &mut got {
             CompletionResponse::Array(arr) => {
@@ -2152,7 +2255,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn nested_2_test() {
-        let (file, program, _, gs) =
+        let (file, program, _, gs, schema_map) =
             compile_test_file("src/test_data/completion_test/dot/nested/nested_2/nested_2.k");
 
         let pos = KCLPos {
@@ -2163,7 +2266,7 @@ mod tests {
 
         let tool = toolchain::default();
 
-        let mut got = completion(None, &program, &pos, &gs, &tool, None).unwrap();
+        let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
 
         match &mut got {
             CompletionResponse::Array(arr) => {
@@ -2176,7 +2279,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn nested_3_test() {
-        let (file, program, _, gs) =
+        let (file, program, _, gs, schema_map) =
             compile_test_file("src/test_data/completion_test/dot/nested/nested_3/nested_3.k");
 
         let pos = KCLPos {
@@ -2186,7 +2289,7 @@ mod tests {
         };
 
         let tool = toolchain::default();
-        let mut got = completion(None, &program, &pos, &gs, &tool, None).unwrap();
+        let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
 
         match &mut got {
             CompletionResponse::Array(arr) => {
@@ -2200,7 +2303,7 @@ mod tests {
     #[test]
     #[bench_test]
     fn nested_4_test() {
-        let (file, program, _, gs) =
+        let (file, program, _, gs, schema_map) =
             compile_test_file("src/test_data/completion_test/dot/nested/nested_4/nested_4.k");
 
         let pos = KCLPos {
@@ -2211,7 +2314,7 @@ mod tests {
 
         let tool = toolchain::default();
 
-        let mut got = completion(None, &program, &pos, &gs, &tool, None).unwrap();
+        let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
 
         match &mut got {
             CompletionResponse::Array(arr) => {
@@ -2227,7 +2330,7 @@ mod tests {
         ($name:ident, $file:expr, $line:expr, $column: expr, $trigger: expr) => {
             #[test]
             fn $name() {
-                let (file, program, _, gs) = compile_test_file($file);
+                let (file, program, _, gs, schema_map) = compile_test_file($file);
 
                 let pos = KCLPos {
                     filename: file.clone(),
@@ -2236,7 +2339,8 @@ mod tests {
                 };
                 let tool = toolchain::default();
 
-                let mut got = completion($trigger, &program, &pos, &gs, &tool, None).unwrap();
+                let mut got =
+                    completion($trigger, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
 
                 let got_labels = match &mut got {
                     CompletionResponse::Array(arr) => {
@@ -2257,7 +2361,7 @@ mod tests {
         ($name:ident, $file:expr, $line:expr, $column: expr, $trigger: expr) => {
             #[test]
             fn $name() {
-                let (file, program, _, gs) = compile_test_file($file);
+                let (file, program, _, gs, schema_map) = compile_test_file($file);
 
                 let pos = KCLPos {
                     filename: file.clone(),
@@ -2266,7 +2370,8 @@ mod tests {
                 };
                 let tool = toolchain::default();
 
-                let mut got = completion($trigger, &program, &pos, &gs, &tool, None).unwrap();
+                let mut got =
+                    completion($trigger, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
 
                 let got_labels = match &mut got {
                     CompletionResponse::Array(arr) => {
@@ -2299,14 +2404,17 @@ mod tests {
         ($name:ident, $file:expr, $line:expr, $column: expr, $trigger: expr) => {
             #[test]
             fn $name() {
-                let (file, program, _, gs, metadata) = compile_test_file_and_metadata($file);
+                let (file, program, _, gs, metadata, schema_map) =
+                    compile_test_file_and_metadata($file);
                 let pos = KCLPos {
                     filename: file.clone(),
                     line: $line,
                     column: Some($column),
                 };
                 let tool = toolchain::default();
-                let mut got = completion($trigger, &program, &pos, &gs, &tool, metadata).unwrap();
+                let mut got =
+                    completion($trigger, &program, &pos, &gs, &tool, metadata, &schema_map)
+                        .unwrap();
                 let got_labels = match &mut got {
                     CompletionResponse::Array(arr) => {
                         let mut labels: Vec<String> =
@@ -2646,7 +2754,7 @@ mod tests {
 
     completion_label_test_snapshot!(
         schema_attr_in_right,
-        "src/test_data/completion_test/schema/schema.k",
+        "src/test_data/completion_test/schema/schema/schema.k",
         23,
         11,
         None
@@ -2730,5 +2838,13 @@ mod tests {
         2,
         23,
         Some('.')
+    );
+
+    completion_label_without_builtin_func_test_snapshot!(
+        complete_unimport_schemas,
+        "src/test_data/completion_test/unimport/unimport/main.k",
+        1,
+        1,
+        None
     );
 }

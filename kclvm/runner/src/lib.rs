@@ -261,6 +261,8 @@ pub fn execute_module(m: Module) -> Result<ExecProgramResult> {
         root: MAIN_PKG.to_string(),
         pkgs,
         modules,
+        pkgs_not_imported: HashMap::new(),
+        modules_not_imported: HashMap::new(),
     };
 
     execute(

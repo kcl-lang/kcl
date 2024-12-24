@@ -39,6 +39,7 @@ pub(crate) enum Task {
     Notify(lsp_server::Notification),
     Retry(Request),
     ChangedFile(FileId, ChangeKind),
+    ReOpenFile(FileId, ChangeKind),
 }
 
 #[derive(Debug, Clone)]
@@ -192,13 +193,18 @@ impl LanguageServerState {
         for event in self.fs_event_watcher._receiver.try_iter() {
             if let Ok(e) = event {
                 match e.kind {
-                    notify::EventKind::Modify(_) => {
-                        let paths = e.paths;
-                        let kcl_config_file: Vec<PathBuf> = filter_kcl_config_file(&paths);
-                        if !kcl_config_file.is_empty() {
-                            return Some(Event::FileWatcher(FileWatcherEvent::ChangedConfigFile(
-                                kcl_config_file,
-                            )));
+                    notify::EventKind::Modify(kind) => {
+                        if let notify::event::ModifyKind::Data(data_change) = kind {
+                            if let notify::event::DataChange::Content = data_change {
+                                let paths = e.paths;
+                                let kcl_config_file: Vec<PathBuf> = filter_kcl_config_file(&paths);
+                                if !kcl_config_file.is_empty() {
+                                    // TODO: wait for fix `kcl mod metadata` to read only. Otherwise it will lead to an infinite loop
+                                    // return Some(Event::FileWatcher(
+                                    //     FileWatcherEvent::ChangedConfigFile(kcl_config_file),
+                                    // ));
+                                }
+                            }
                         }
                     }
                     notify::EventKind::Remove(remove_kind) => {
@@ -312,7 +318,7 @@ impl LanguageServerState {
                         for (workspace, state) in state_workspaces.iter() {
                             match state {
                                 DBState::Ready(db) => {
-                                    if db.prog.get_module(&filename).unwrap_or(None).is_some() {
+                                    if db.prog.modules.get(&filename).is_some() {
                                         let mut openfiles = self.opened_files.write();
                                         let file_info = openfiles.get_mut(&file.file_id).unwrap();
                                         file_info.workspaces.insert(workspace.clone());
@@ -421,10 +427,16 @@ impl LanguageServerState {
 
                                     self.async_compile(workspace, opts, Some(file.file_id), true);
                                 }
-                                None => self.log_message(format!(
-                                    "Internal Bug: not found any workspace for file {:?}",
-                                    filename
-                                )),
+                                None => {
+                                    self.log_message(format!(
+                                        "Internal Bug: not found any workspace for file {:?}. Try to reload",
+                                        filename
+                                    ));
+
+                                    self.task_sender
+                                        .send(Task::ReOpenFile(file.file_id, ChangeKind::Create))
+                                        .unwrap();
+                                }
                             }
                         }
                     }
@@ -475,6 +487,10 @@ impl LanguageServerState {
                     change_kind,
                 })
             }
+            Task::ReOpenFile(file_id, change_kind) => self.process_changed_file(ChangedFile {
+                file_id,
+                change_kind,
+            }),
         }
         Ok(())
     }
@@ -703,7 +719,7 @@ impl LanguageServerState {
                 }
 
                 match compile_res {
-                    Ok((prog, gs)) => {
+                    Ok((prog, schema_map, gs)) => {
                         let mut workspaces = snapshot.workspaces.write();
                         log_message(
                             format!(
@@ -713,7 +729,7 @@ impl LanguageServerState {
                         );
                         workspaces.insert(
                             workspace.clone(),
-                            DBState::Ready(Arc::new(AnalysisDatabase { prog, gs, diags })),
+                            DBState::Ready(Arc::new(AnalysisDatabase { prog, gs, diags,schema_map })),
                         );
                         drop(workspaces);
                         if temp && changed_file_id.is_some() {

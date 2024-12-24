@@ -265,7 +265,7 @@ impl ModClient {
             lock_dep.full_name.clone()
         } else if let Some(git_url) = &lock_dep.url {
             Some(self.get_local_path_from_dep(
-                &lock_dep.name,
+                &lock_dep.gen_filename(),
                 &Dependency::Git(GitSource {
                     git: git_url.to_string(),
                     branch: lock_dep.branch.clone(),

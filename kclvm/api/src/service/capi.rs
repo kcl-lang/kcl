@@ -171,6 +171,9 @@ pub(crate) fn kclvm_get_service_fn_ptr_by_name(name: &str) -> u64 {
         "KclvmService.ExecArtifact" => exec_artifact as *const () as u64,
         "KclvmService.OverrideFile" => override_file as *const () as u64,
         "KclvmService.GetSchemaTypeMapping" => get_schema_type_mapping as *const () as u64,
+        "KclvmService.GetSchemaTypeMappingUnderPath" => {
+            get_schema_type_mapping_under_path as *const () as u64
+        }
         "KclvmService.FormatCode" => format_code as *const () as u64,
         "KclvmService.FormatPath" => format_path as *const () as u64,
         "KclvmService.LintPath" => lint_path as *const () as u64,
@@ -520,6 +523,30 @@ pub(crate) fn get_schema_type_mapping(
         result_len,
         GetSchemaTypeMappingArgs,
         get_schema_type_mapping
+    )
+}
+
+/// Get schema types under path
+///
+/// # Parameters
+/// file: [&str]. The kcl filename.
+///
+/// code: [Option<&str>]. The kcl code string
+///
+/// schema_name: [Option<&str>]. The schema name, when the schema name is empty, all schemas are returned.
+pub(crate) fn get_schema_type_mapping_under_path(
+    serv: *mut kclvm_service,
+    args: *const c_char,
+    args_len: usize,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(
+        serv,
+        args,
+        args_len,
+        result_len,
+        GetSchemaTypeMappingArgs,
+        get_schema_type_mapping_under_path
     )
 }
 
