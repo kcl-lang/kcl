@@ -1256,652 +1256,705 @@ mod tests {
             CompletionResponse::List(_) => panic!("test failed"),
         }
     }
-#[cfg(test)]
-mod tests {
-    use crate::{
-        completion::{
-            completion, func_ty_complete_insert_text, func_ty_complete_label,
-            into_completion_items, KCLCompletionItem, KCLCompletionItemKind,
-        },
-        tests::{compile_test_file, compile_test_file_and_metadata},
-    };
-    use indexmap::IndexSet;
-    use kclvm_driver::toolchain;
-    use kclvm_error::Position as KCLPos;
-    use kclvm_sema::builtin::{
-        BUILTIN_FUNCTIONS, MATH_FUNCTION_TYPES, STANDARD_SYSTEM_MODULES, STRING_MEMBER_FUNCTIONS,
-    };
-    use lsp_types::{CompletionItem, CompletionItemKind, CompletionResponse, InsertTextFormat};
-    use proc_macro_crate::bench_test;
-
-    #[test]
-    #[bench_test]
-    fn var_completion_test() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/dot/completion/completion.k");
-
-        // test completion for var
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 26,
-            column: Some(1),
+    #[cfg(test)]
+    mod tests {
+        use crate::{
+            completion::{
+                completion, func_ty_complete_insert_text, func_ty_complete_label,
+                into_completion_items, KCLCompletionItem, KCLCompletionItemKind,
+            },
+            tests::{compile_test_file, compile_test_file_and_metadata},
         };
-
-        let tool = toolchain::default();
-        let got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let mut got_labels: Vec<String> = match got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
+        use indexmap::IndexSet;
+        use kclvm_driver::toolchain;
+        use kclvm_error::Position as KCLPos;
+        use kclvm_sema::builtin::{
+            BUILTIN_FUNCTIONS, MATH_FUNCTION_TYPES, STANDARD_SYSTEM_MODULES,
+            STRING_MEMBER_FUNCTIONS,
         };
+        use lsp_types::{CompletionItem, CompletionItemKind, CompletionResponse, InsertTextFormat};
+        use proc_macro_crate::bench_test;
 
-        let mut expected_labels: Vec<String> = vec![
-            "", // generate from error recovery of "pkg."
-            "subpkg",
-            "math",
-            "Person",
-            "Person1{}",
-            "Person{}",
-            "P",
-            "P{}",
-            "p",
-            "p1",
-            "p2",
-            "p3",
-            "p4",
-            "aaaa",
-            "Config",
-            "Config{}",
-            "n",
-        ]
-        .iter()
-        .map(|s| s.to_string())
-        .collect();
+        #[test]
+        #[bench_test]
+        fn var_completion_test() {
+            let (file, program, _, gs, schema_map) =
+                compile_test_file("src/test_data/completion_test/dot/completion/completion.k");
 
-        expected_labels.extend(
-            BUILTIN_FUNCTIONS
-                .iter()
-                .map(|(name, func)| func_ty_complete_label(name, &func.into_func_type())),
-        );
-        got_labels.sort();
-        expected_labels.sort();
+            // test completion for var
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 26,
+                column: Some(1),
+            };
 
-        assert_eq!(got_labels, expected_labels);
+            let tool = toolchain::default();
+            let got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let mut got_labels: Vec<String> = match got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
 
-        // test completion for schema attr
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 24,
-            column: Some(4),
-        };
-
-        let got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let mut got_labels: Vec<String> = match got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-
-        expected_labels = ["", "age", "math", "name", "subpkg"]
+            let mut expected_labels: Vec<String> = vec![
+                "", // generate from error recovery of "pkg."
+                "subpkg",
+                "math",
+                "Person",
+                "Person1{}",
+                "Person{}",
+                "P",
+                "P{}",
+                "p",
+                "p1",
+                "p2",
+                "p3",
+                "p4",
+                "aaaa",
+                "Config",
+                "Config{}",
+                "n",
+            ]
             .iter()
             .map(|s| s.to_string())
             .collect();
-        got_labels.sort();
-        expected_labels.sort();
-        assert_eq!(got_labels, expected_labels);
-    }
 
-    #[test]
-    #[bench_test]
-    fn dot_completion_test() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/dot/completion/completion.k");
+            expected_labels.extend(
+                BUILTIN_FUNCTIONS
+                    .iter()
+                    .map(|(name, func)| func_ty_complete_label(name, &func.into_func_type())),
+            );
+            got_labels.sort();
+            expected_labels.sort();
 
-        // test completion for schema attr
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 12,
-            column: Some(7),
-        };
+            assert_eq!(got_labels, expected_labels);
 
-        let tool = toolchain::default();
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
+            // test completion for schema attr
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 24,
+                column: Some(4),
+            };
 
-        let expected_labels: Vec<&str> = vec!["name", "age"];
-        assert_eq!(got_labels, expected_labels);
+            let got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let mut got_labels: Vec<String> = match got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
 
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 14,
-            column: Some(12),
-        };
-
-        // test completion for str builtin function
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match &got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-        let expected_labels: Vec<String> = STRING_MEMBER_FUNCTIONS
-            .iter()
-            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
-            .collect();
-        assert_eq!(got_labels, expected_labels);
-
-        let got_insert_text: Vec<String> = match &got {
-            CompletionResponse::Array(arr) => arr
+            expected_labels = ["", "age", "math", "name", "subpkg"]
                 .iter()
-                .map(|item| item.insert_text.clone().unwrap())
-                .collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-        let expected_insert_text: Vec<String> = STRING_MEMBER_FUNCTIONS
-            .iter()
-            .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_func_type()))
-            .collect();
-        assert_eq!(got_insert_text, expected_insert_text);
-
-        // test completion for import pkg path
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 1,
-            column: Some(12),
-        };
-
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-
-        let expected_labels: Vec<&str> = vec!["file1", "file2", "subpkg"];
-        assert_eq!(got_labels, expected_labels);
-
-        // test completion for import pkg' schema
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 16,
-            column: Some(12),
-        };
-
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-
-        let expected_labels: Vec<&str> = vec!["Person1"];
-        assert_eq!(got_labels, expected_labels);
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 19,
-            column: Some(5),
-        };
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-        let expected_labels: Vec<String> = MATH_FUNCTION_TYPES
-            .iter()
-            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
-            .collect();
-        assert_eq!(got_labels, expected_labels);
-
-        // test completion for literal str builtin function
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 21,
-            column: Some(4),
-        };
-
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-
-        let expected_labels: Vec<String> = STRING_MEMBER_FUNCTIONS
-            .iter()
-            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
-            .collect();
-        assert_eq!(got_labels, expected_labels);
-
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 30,
-            column: Some(11),
-        };
-
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-
-        let expected_labels: Vec<&str> = vec!["a"];
-        assert_eq!(got_labels, expected_labels);
-
-        // test completion for string union type
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 36,
-            column: Some(30),
-        };
-
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-
-        let expected_labels: Vec<String> = STRING_MEMBER_FUNCTIONS
-            .iter()
-            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
-            .collect();
-        assert_eq!(got_labels, expected_labels);
-    }
-
-    #[test]
-    #[bench_test]
-    fn dot_completion_test_without_dot() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/without_dot/completion.k");
-
-        // test completion for schema attr
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 12,
-            column: Some(7),
-        };
-
-        let tool = toolchain::default();
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-
-        let expected_labels: Vec<&str> = vec!["name", "age"];
-        assert_eq!(got_labels, expected_labels);
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 14,
-            column: Some(12),
-        };
-
-        // test completion for str builtin function
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-        let expected_labels: Vec<String> = STRING_MEMBER_FUNCTIONS
-            .iter()
-            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
-            .collect();
-        assert_eq!(got_labels, expected_labels);
-
-        // test completion for import pkg path
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 1,
-            column: Some(12),
-        };
-
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-
-        let expected_labels: Vec<&str> = vec!["file1", "file2", "subpkg"];
-        assert_eq!(got_labels, expected_labels);
-
-        // test completion for import pkg' schema
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 16,
-            column: Some(12),
-        };
-
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-
-        let expected_labels: Vec<&str> = vec!["Person1"];
-        assert_eq!(got_labels, expected_labels);
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 19,
-            column: Some(5),
-        };
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match &got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-        let expected_labels: Vec<String> = MATH_FUNCTION_TYPES
-            .iter()
-            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
-            .collect();
-        assert_eq!(got_labels, expected_labels);
-
-        let got_insert_text: Vec<String> = match &got {
-            CompletionResponse::Array(arr) => arr
-                .iter()
-                .map(|item| item.insert_text.clone().unwrap())
-                .collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-        let expected_insert_text: Vec<String> = MATH_FUNCTION_TYPES
-            .iter()
-            .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_func_type()))
-            .collect();
-        assert_eq!(got_insert_text, expected_insert_text);
-
-        // test completion for literal str builtin function
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 21,
-            column: Some(4),
-        };
-
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match &got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-
-        let expected_labels: Vec<String> = STRING_MEMBER_FUNCTIONS
-            .iter()
-            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
-            .collect();
-        assert_eq!(got_labels, expected_labels);
-
-        let got_insert_text: Vec<String> = match &got {
-            CompletionResponse::Array(arr) => arr
-                .iter()
-                .map(|item| item.insert_text.clone().unwrap())
-                .collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-        let expected_insert_text: Vec<String> = STRING_MEMBER_FUNCTIONS
-            .iter()
-            .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_func_type()))
-            .collect();
-        assert_eq!(got_insert_text, expected_insert_text);
-
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 30,
-            column: Some(11),
-        };
-
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-
-        let expected_labels: Vec<&str> = vec!["a"];
-        assert_eq!(got_labels, expected_labels);
-
-        // test completion for str union types
-        let pos = KCLPos {
-            filename: file.clone(),
-            line: 36,
-            column: Some(30),
-        };
-
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match &got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-
-        let expected_labels: Vec<String> = STRING_MEMBER_FUNCTIONS
-            .iter()
-            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
-            .collect();
-        assert_eq!(got_labels, expected_labels);
-
-        let got_insert_text: Vec<String> = match &got {
-            CompletionResponse::Array(arr) => arr
-                .iter()
-                .map(|item| item.insert_text.clone().unwrap())
-                .collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-        let expected_insert_text: Vec<String> = STRING_MEMBER_FUNCTIONS
-            .iter()
-            .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_func_type()))
-            .collect();
-        assert_eq!(got_insert_text, expected_insert_text);
-    }
-
-    #[test]
-    #[bench_test]
-    fn import_builtin_package() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/import/builtin/builtin_pkg.k");
-        let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
-
-        // test completion for builtin packages
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 1,
-            column: Some(8),
-        };
-
-        let tool = toolchain::default();
-        let got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let _got_labels: Vec<String> = match &got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-        items.extend(
-            [
-                "collection",
-                "net",
-                "manifests",
-                "math",
-                "datetime",
-                "regex",
-                "yaml",
-                "json",
-                "crypto",
-                "base64",
-                "units",
-                "file",
-                "template",
-                "runtime",
-            ]
-            .iter()
-            .map(|name| KCLCompletionItem {
-                label: name.to_string(),
-                kind: Some(KCLCompletionItemKind::Module),
-                detail: None,
-                documentation: None,
-                insert_text: None,
-                additional_text_edits: None,
-            })
-            .collect::<IndexSet<KCLCompletionItem>>(),
-        );
-        let expect: CompletionResponse = into_completion_items(&items).into();
-        assert_eq!(got, expect);
-    }
-
-    #[test]
-    #[bench_test]
-    fn attr_value_completion() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/assign/completion.k");
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 14,
-            column: Some(6),
-        };
-
-        let tool = toolchain::default();
-        let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-        let expected_labels: Vec<&str> = vec![" True", " False"];
-        assert_eq!(got_labels, expected_labels);
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 16,
-            column: Some(6),
-        };
-        let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-        let expected_labels: Vec<&str> = vec![" \"abc\"", " \"def\""];
-        assert_eq!(got_labels, expected_labels);
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 18,
-            column: Some(6),
-        };
-        let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-        let expected_labels: Vec<&str> = vec![" []"];
-        assert_eq!(got_labels, expected_labels);
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 20,
-            column: Some(6),
-        };
-        let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-        let expected_labels: Vec<&str> = vec![" 1"];
-        assert_eq!(got_labels, expected_labels);
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 22,
-            column: Some(6),
-        };
-        let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-        let expected_labels: Vec<&str> = vec![" True"];
-        assert_eq!(got_labels, expected_labels);
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 24,
-            column: Some(6),
-        };
-        let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-        let expected_labels: Vec<&str> = vec![" {}"];
-        assert_eq!(got_labels, expected_labels);
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 26,
-            column: Some(6),
-        };
-        let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match &got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-        let expected_labels: Vec<&str> = vec![" sub.Person1{}"];
-        assert_eq!(got_labels, expected_labels);
-
-        let got_insert_test: Vec<String> = match &got {
-            CompletionResponse::Array(arr) => arr
-                .iter()
-                .map(|item| item.clone().insert_text.unwrap().clone())
-                .collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-        let expected_insert_test: Vec<&str> = vec![" {$1}"];
-        assert_eq!(got_insert_test, expected_insert_test);
-    }
-
-    #[test]
-    #[bench_test]
-    fn schema_sig_completion() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/schema/schema/schema.k");
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 7,
-            column: Some(5),
-        };
-
-        let tool = toolchain::default();
-        let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        match &mut got {
-            CompletionResponse::Array(arr) => {
-                assert_eq!(
-                    arr.iter().find(|item| item.label == "Person(b){}").unwrap(),
-                    &CompletionItem {
-                        label: "Person(b){}".to_string(),
-                        kind: Some(CompletionItemKind::CLASS),
-                        detail: Some(
-                            "__main__\n\nschema Person[b: int](Base):\nAttributes:\nc: int"
-                                .to_string()
-                        ),
-                        documentation: Some(lsp_types::Documentation::String("".to_string())),
-                        insert_text: Some("Person(${1:b}){$0}".to_string()),
-                        insert_text_format: Some(InsertTextFormat::SNIPPET),
-                        ..Default::default()
-                    }
-                )
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
+                .map(|s| s.to_string())
+                .collect();
+            got_labels.sort();
+            expected_labels.sort();
+            assert_eq!(got_labels, expected_labels);
         }
-    }
 
-    #[test]
-    fn schema_docstring_newline_completion() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/newline/docstring_newline.k");
+        #[test]
+        #[bench_test]
+        fn dot_completion_test() {
+            let (file, program, _, gs, schema_map) =
+                compile_test_file("src/test_data/completion_test/dot/completion/completion.k");
 
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 3,
-            column: Some(4),
-        };
-        let tool = toolchain::default();
-        let mut got =
-            completion(Some('\n'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        match &mut got {
-            CompletionResponse::Array(arr) => {
-                arr.sort_by(|a, b| a.label.cmp(&b.label));
-                assert_eq!(
+            // test completion for schema attr
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 12,
+                column: Some(7),
+            };
+
+            let tool = toolchain::default();
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+
+            let expected_labels: Vec<&str> = vec!["name", "age"];
+            assert_eq!(got_labels, expected_labels);
+
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 14,
+                column: Some(12),
+            };
+
+            // test completion for str builtin function
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match &got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+            let expected_labels: Vec<String> = STRING_MEMBER_FUNCTIONS
+                .iter()
+                .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
+                .collect();
+            assert_eq!(got_labels, expected_labels);
+
+            let got_insert_text: Vec<String> = match &got {
+                CompletionResponse::Array(arr) => arr
+                    .iter()
+                    .map(|item| item.insert_text.clone().unwrap())
+                    .collect(),
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+            let expected_insert_text: Vec<String> = STRING_MEMBER_FUNCTIONS
+                .iter()
+                .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_func_type()))
+                .collect();
+            assert_eq!(got_insert_text, expected_insert_text);
+
+            // test completion for import pkg path
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 1,
+                column: Some(12),
+            };
+
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+
+            let expected_labels: Vec<&str> = vec!["file1", "file2", "subpkg"];
+            assert_eq!(got_labels, expected_labels);
+
+            // test completion for import pkg' schema
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 16,
+                column: Some(12),
+            };
+
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+
+            let expected_labels: Vec<&str> = vec!["Person1"];
+            assert_eq!(got_labels, expected_labels);
+
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 19,
+                column: Some(5),
+            };
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+            let expected_labels: Vec<String> = MATH_FUNCTION_TYPES
+                .iter()
+                .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
+                .collect();
+            assert_eq!(got_labels, expected_labels);
+
+            // test completion for literal str builtin function
+            let pos = KCLPos {
+                filename: file.clone(),
+                line: 21,
+                column: Some(4),
+            };
+
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+
+            let expected_labels: Vec<String> = STRING_MEMBER_FUNCTIONS
+                .iter()
+                .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
+                .collect();
+            assert_eq!(got_labels, expected_labels);
+
+            let pos = KCLPos {
+                filename: file.clone(),
+                line: 30,
+                column: Some(11),
+            };
+
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+
+            let expected_labels: Vec<&str> = vec!["a"];
+            assert_eq!(got_labels, expected_labels);
+
+            // test completion for string union type
+            let pos = KCLPos {
+                filename: file.clone(),
+                line: 36,
+                column: Some(30),
+            };
+
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+
+            let expected_labels: Vec<String> = STRING_MEMBER_FUNCTIONS
+                .iter()
+                .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
+                .collect();
+            assert_eq!(got_labels, expected_labels);
+        }
+
+        #[test]
+        #[bench_test]
+        fn dot_completion_test_without_dot() {
+            let (file, program, _, gs, schema_map) =
+                compile_test_file("src/test_data/completion_test/without_dot/completion.k");
+
+            // test completion for schema attr
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 12,
+                column: Some(7),
+            };
+
+            let tool = toolchain::default();
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+
+            let expected_labels: Vec<&str> = vec!["name", "age"];
+            assert_eq!(got_labels, expected_labels);
+
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 14,
+                column: Some(12),
+            };
+
+            // test completion for str builtin function
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+            let expected_labels: Vec<String> = STRING_MEMBER_FUNCTIONS
+                .iter()
+                .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
+                .collect();
+            assert_eq!(got_labels, expected_labels);
+
+            // test completion for import pkg path
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 1,
+                column: Some(12),
+            };
+
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+
+            let expected_labels: Vec<&str> = vec!["file1", "file2", "subpkg"];
+            assert_eq!(got_labels, expected_labels);
+
+            // test completion for import pkg' schema
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 16,
+                column: Some(12),
+            };
+
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+
+            let expected_labels: Vec<&str> = vec!["Person1"];
+            assert_eq!(got_labels, expected_labels);
+
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 19,
+                column: Some(5),
+            };
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match &got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+            let expected_labels: Vec<String> = MATH_FUNCTION_TYPES
+                .iter()
+                .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
+                .collect();
+            assert_eq!(got_labels, expected_labels);
+
+            let got_insert_text: Vec<String> = match &got {
+                CompletionResponse::Array(arr) => arr
+                    .iter()
+                    .map(|item| item.insert_text.clone().unwrap())
+                    .collect(),
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+            let expected_insert_text: Vec<String> = MATH_FUNCTION_TYPES
+                .iter()
+                .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_func_type()))
+                .collect();
+            assert_eq!(got_insert_text, expected_insert_text);
+
+            // test completion for literal str builtin function
+            let pos = KCLPos {
+                filename: file.clone(),
+                line: 21,
+                column: Some(4),
+            };
+
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match &got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+
+            let expected_labels: Vec<String> = STRING_MEMBER_FUNCTIONS
+                .iter()
+                .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
+                .collect();
+            assert_eq!(got_labels, expected_labels);
+
+            let got_insert_text: Vec<String> = match &got {
+                CompletionResponse::Array(arr) => arr
+                    .iter()
+                    .map(|item| item.insert_text.clone().unwrap())
+                    .collect(),
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+            let expected_insert_text: Vec<String> = STRING_MEMBER_FUNCTIONS
+                .iter()
+                .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_func_type()))
+                .collect();
+            assert_eq!(got_insert_text, expected_insert_text);
+
+            let pos = KCLPos {
+                filename: file.clone(),
+                line: 30,
+                column: Some(11),
+            };
+
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+
+            let expected_labels: Vec<&str> = vec!["a"];
+            assert_eq!(got_labels, expected_labels);
+
+            // test completion for str union types
+            let pos = KCLPos {
+                filename: file.clone(),
+                line: 36,
+                column: Some(30),
+            };
+
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match &got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+
+            let expected_labels: Vec<String> = STRING_MEMBER_FUNCTIONS
+                .iter()
+                .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
+                .collect();
+            assert_eq!(got_labels, expected_labels);
+
+            let got_insert_text: Vec<String> = match &got {
+                CompletionResponse::Array(arr) => arr
+                    .iter()
+                    .map(|item| item.insert_text.clone().unwrap())
+                    .collect(),
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+            let expected_insert_text: Vec<String> = STRING_MEMBER_FUNCTIONS
+                .iter()
+                .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_func_type()))
+                .collect();
+            assert_eq!(got_insert_text, expected_insert_text);
+        }
+
+        #[test]
+        #[bench_test]
+        fn import_builtin_package() {
+            let (file, program, _, gs, schema_map) =
+                compile_test_file("src/test_data/completion_test/import/builtin/builtin_pkg.k");
+            let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
+
+            // test completion for builtin packages
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 1,
+                column: Some(8),
+            };
+
+            let tool = toolchain::default();
+            let got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let _got_labels: Vec<String> = match &got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+            items.extend(
+                [
+                    "collection",
+                    "net",
+                    "manifests",
+                    "math",
+                    "datetime",
+                    "regex",
+                    "yaml",
+                    "json",
+                    "crypto",
+                    "base64",
+                    "units",
+                    "file",
+                    "template",
+                    "runtime",
+                ]
+                .iter()
+                .map(|name| KCLCompletionItem {
+                    label: name.to_string(),
+                    kind: Some(KCLCompletionItemKind::Module),
+                    detail: None,
+                    documentation: None,
+                    insert_text: None,
+                    additional_text_edits: None,
+                })
+                .collect::<IndexSet<KCLCompletionItem>>(),
+            );
+            let expect: CompletionResponse = into_completion_items(&items).into();
+            assert_eq!(got, expect);
+        }
+
+        #[test]
+        #[bench_test]
+        fn attr_value_completion() {
+            let (file, program, _, gs, schema_map) =
+                compile_test_file("src/test_data/completion_test/assign/completion.k");
+
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 14,
+                column: Some(6),
+            };
+
+            let tool = toolchain::default();
+            let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+            let expected_labels: Vec<&str> = vec![" True", " False"];
+            assert_eq!(got_labels, expected_labels);
+
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 16,
+                column: Some(6),
+            };
+            let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+            let expected_labels: Vec<&str> = vec![" \"abc\"", " \"def\""];
+            assert_eq!(got_labels, expected_labels);
+
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 18,
+                column: Some(6),
+            };
+            let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+            let expected_labels: Vec<&str> = vec![" []"];
+            assert_eq!(got_labels, expected_labels);
+
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 20,
+                column: Some(6),
+            };
+            let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+            let expected_labels: Vec<&str> = vec![" 1"];
+            assert_eq!(got_labels, expected_labels);
+
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 22,
+                column: Some(6),
+            };
+            let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+            let expected_labels: Vec<&str> = vec![" True"];
+            assert_eq!(got_labels, expected_labels);
+
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 24,
+                column: Some(6),
+            };
+            let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+            let expected_labels: Vec<&str> = vec![" {}"];
+            assert_eq!(got_labels, expected_labels);
+
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 26,
+                column: Some(6),
+            };
+            let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match &got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+            let expected_labels: Vec<&str> = vec![" sub.Person1{}"];
+            assert_eq!(got_labels, expected_labels);
+
+            let got_insert_test: Vec<String> = match &got {
+                CompletionResponse::Array(arr) => arr
+                    .iter()
+                    .map(|item| item.clone().insert_text.unwrap().clone())
+                    .collect(),
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+            let expected_insert_test: Vec<&str> = vec![" {$1}"];
+            assert_eq!(got_insert_test, expected_insert_test);
+        }
+
+        #[test]
+        #[bench_test]
+        fn schema_sig_completion() {
+            let (file, program, _, gs, schema_map) =
+                compile_test_file("src/test_data/completion_test/schema/schema/schema.k");
+
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 7,
+                column: Some(5),
+            };
+
+            let tool = toolchain::default();
+            let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            match &mut got {
+                CompletionResponse::Array(arr) => {
+                    assert_eq!(
+                        arr.iter().find(|item| item.label == "Person(b){}").unwrap(),
+                        &CompletionItem {
+                            label: "Person(b){}".to_string(),
+                            kind: Some(CompletionItemKind::CLASS),
+                            detail: Some(
+                                "__main__\n\nschema Person[b: int](Base):\nAttributes:\nc: int"
+                                    .to_string()
+                            ),
+                            documentation: Some(lsp_types::Documentation::String("".to_string())),
+                            insert_text: Some("Person(${1:b}){$0}".to_string()),
+                            insert_text_format: Some(InsertTextFormat::SNIPPET),
+                            ..Default::default()
+                        }
+                    )
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            }
+        }
+
+        #[test]
+        fn schema_docstring_newline_completion() {
+            let (file, program, _, gs, schema_map) =
+                compile_test_file("src/test_data/completion_test/newline/docstring_newline.k");
+
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 3,
+                column: Some(4),
+            };
+            let tool = toolchain::default();
+            let mut got =
+                completion(Some('\n'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            match &mut got {
+                CompletionResponse::Array(arr) => {
+                    arr.sort_by(|a, b| a.label.cmp(&b.label));
+                    assert_eq!(
                     arr[0],
                     CompletionItem {
                         label: "\n\nAttributes\n----------\nname: \nworkloadType: \nreplica: \n\nExamples\n--------\n".to_string(),
@@ -1911,940 +1964,943 @@ mod tests {
                         ..Default::default()
                     }
                 )
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
             }
-            CompletionResponse::List(_) => panic!("test failed"),
         }
-    }
 
-    #[test]
-    fn str_dot_completion() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/dot/lit_str/lit_str.k");
+        #[test]
+        fn str_dot_completion() {
+            let (file, program, _, gs, schema_map) =
+                compile_test_file("src/test_data/completion_test/dot/lit_str/lit_str.k");
 
-        // test complete str functions when at the end of literal str
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 1,
-            column: Some(10),
-        };
+            // test complete str functions when at the end of literal str
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 1,
+                column: Some(10),
+            };
 
-        let tool = toolchain::default();
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let tool = toolchain::default();
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
 
-        match &got {
-            CompletionResponse::Array(arr) => {
-                assert!(arr
-                    .iter()
-                    .all(|item| item.kind == Some(CompletionItemKind::FUNCTION)))
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
+            match &got {
+                CompletionResponse::Array(arr) => {
+                    assert!(arr
+                        .iter()
+                        .all(|item| item.kind == Some(CompletionItemKind::FUNCTION)))
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
 
-        let got_labels: Vec<String> = match &got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
+            let got_labels: Vec<String> = match &got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
 
-        let expected_labels: Vec<String> = STRING_MEMBER_FUNCTIONS
-            .iter()
-            .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
-            .collect();
-        assert_eq!(got_labels, expected_labels);
-
-        let got_insert_text: Vec<String> = match &got {
-            CompletionResponse::Array(arr) => arr
+            let expected_labels: Vec<String> = STRING_MEMBER_FUNCTIONS
                 .iter()
-                .map(|item| item.insert_text.clone().unwrap())
-                .collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-        let expected_insert_text: Vec<String> = STRING_MEMBER_FUNCTIONS
-            .iter()
-            .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_func_type()))
-            .collect();
-        assert_eq!(got_insert_text, expected_insert_text);
+                .map(|(name, ty)| func_ty_complete_label(name, &ty.into_func_type()))
+                .collect();
+            assert_eq!(got_labels, expected_labels);
 
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 2,
-            column: Some(6),
-        };
-
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        let got_labels: Vec<String> = match got {
-            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-        assert_eq!(got_labels, expected_labels);
-
-        // not complete inside literal str
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 2,
-            column: Some(5),
-        };
-
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        match got {
-            CompletionResponse::Array(arr) => assert!(arr.is_empty()),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-
-        // not complete inside literal str
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 1,
-            column: Some(8),
-        };
-
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        match got {
-            CompletionResponse::Array(arr) => assert!(arr.is_empty()),
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 3,
-            column: Some(2),
-        };
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        match got {
-            CompletionResponse::Array(arr) => {
-                assert!(arr
+            let got_insert_text: Vec<String> = match &got {
+                CompletionResponse::Array(arr) => arr
                     .iter()
-                    .all(|item| item.kind == Some(CompletionItemKind::FUNCTION)))
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-    }
+                    .map(|item| item.insert_text.clone().unwrap())
+                    .collect(),
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+            let expected_insert_text: Vec<String> = STRING_MEMBER_FUNCTIONS
+                .iter()
+                .map(|(name, ty)| func_ty_complete_insert_text(name, &ty.into_func_type()))
+                .collect();
+            assert_eq!(got_insert_text, expected_insert_text);
 
-    #[test]
-    fn schema_ty_attr_complete() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/dot/schema_ty_attr/schema_ty_attr.k");
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 2,
+                column: Some(6),
+            };
 
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 13,
-            column: Some(2),
-        };
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let got_labels: Vec<String> = match got {
+                CompletionResponse::Array(arr) => {
+                    arr.iter().map(|item| item.label.clone()).collect()
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
+            assert_eq!(got_labels, expected_labels);
 
-        let tool = toolchain::default();
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        match got {
-            CompletionResponse::Array(arr) => {
-                assert_eq!(
-                    arr[0],
-                    CompletionItem {
-                        label: "name".to_string(),
-                        detail: Some("name: Name".to_string()),
-                        kind: Some(CompletionItemKind::FIELD),
-                        ..Default::default()
-                    }
-                )
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
-        }
-    }
+            // not complete inside literal str
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 2,
+                column: Some(5),
+            };
 
-    #[test]
-    fn schema_end_pos() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/schema/schema_pos/schema_pos.k");
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            match got {
+                CompletionResponse::Array(arr) => assert!(arr.is_empty()),
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
 
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 6,
-            column: Some(16),
-        };
+            // not complete inside literal str
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 1,
+                column: Some(8),
+            };
 
-        let tool = toolchain::default();
-        let got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        match got {
-            CompletionResponse::Array(arr) => {
-                assert_eq!(arr.len(), 4);
-                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
-                assert!(labels.contains(&"min".to_string()));
-                assert!(labels.contains(&"max".to_string()));
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
-        }
-    }
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            match got {
+                CompletionResponse::Array(arr) => assert!(arr.is_empty()),
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
 
-    #[test]
-    fn comment_completion() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/dot/lit_str/lit_str.k");
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 4,
-            column: Some(4),
-        };
-
-        let tool = toolchain::default();
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-
-        match &got {
-            CompletionResponse::Array(arr) => {
-                assert_eq!(arr.len(), 0)
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
-        };
-    }
-
-    #[test]
-    #[bench_test]
-    fn missing_expr_completion() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/dot/missing_expr/missing_expr.k");
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 10,
-            column: Some(16),
-        };
-
-        let tool = toolchain::default();
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        match got {
-            CompletionResponse::Array(arr) => {
-                assert_eq!(arr.len(), 2);
-                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
-                assert!(labels.contains(&"cpu".to_string()));
-                assert!(labels.contains(&"memory".to_string()));
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
-        }
-    }
-
-    #[test]
-    #[bench_test]
-    fn check_scope_completion() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/check/check.k");
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 4,
-            column: Some(10),
-        };
-
-        let tool = toolchain::default();
-        let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map);
-        assert!(got.is_none());
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 5,
-            column: Some(9),
-        };
-
-        let got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        match got {
-            CompletionResponse::Array(arr) => {
-                assert_eq!(arr.len(), 3);
-                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
-                assert!(labels.contains(&"name".to_string()));
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
-        }
-    }
-
-    #[test]
-    #[bench_test]
-    fn join_str_inner_completion() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/dot/lit_str/lit_str.k");
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 6,
-            column: Some(28),
-        };
-
-        let tool = toolchain::default();
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        match &got {
-            CompletionResponse::Array(arr) => {
-                assert!(arr.is_empty())
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 3,
+                column: Some(2),
+            };
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            match got {
+                CompletionResponse::Array(arr) => {
+                    assert!(arr
+                        .iter()
+                        .all(|item| item.kind == Some(CompletionItemKind::FUNCTION)))
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
         }
 
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 7,
-            column: Some(27),
-        };
+        #[test]
+        fn schema_ty_attr_complete() {
+            let (file, program, _, gs, schema_map) = compile_test_file(
+                "src/test_data/completion_test/dot/schema_ty_attr/schema_ty_attr.k",
+            );
 
-        let tool = toolchain::default();
-        let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        match &got {
-            CompletionResponse::Array(arr) => {
-                assert!(arr.is_empty())
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 13,
+                column: Some(2),
+            };
+
+            let tool = toolchain::default();
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            match got {
+                CompletionResponse::Array(arr) => {
+                    assert_eq!(
+                        arr[0],
+                        CompletionItem {
+                            label: "name".to_string(),
+                            detail: Some("name: Name".to_string()),
+                            kind: Some(CompletionItemKind::FIELD),
+                            ..Default::default()
+                        }
+                    )
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
             }
-            CompletionResponse::List(_) => panic!("test failed"),
-        }
-    }
-
-    #[test]
-    #[bench_test]
-    fn schema_type_attr_completion() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/schema/schema/schema.k");
-
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 18,
-            column: Some(15),
-        };
-
-        let tool = toolchain::default();
-        let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        match &mut got {
-            CompletionResponse::Array(arr) => {
-                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
-                assert!(labels.contains(&"name".to_string()));
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
         }
 
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 19,
-            column: Some(21),
-        };
+        #[test]
+        fn schema_end_pos() {
+            let (file, program, _, gs, schema_map) =
+                compile_test_file("src/test_data/completion_test/schema/schema_pos/schema_pos.k");
 
-        let tool = toolchain::default();
-        let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-        match &mut got {
-            CompletionResponse::Array(arr) => {
-                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
-                assert!(labels.contains(&"name".to_string()));
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 6,
+                column: Some(16),
+            };
+
+            let tool = toolchain::default();
+            let got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            match got {
+                CompletionResponse::Array(arr) => {
+                    assert_eq!(arr.len(), 4);
+                    let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                    assert!(labels.contains(&"min".to_string()));
+                    assert!(labels.contains(&"max".to_string()));
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
             }
-            CompletionResponse::List(_) => panic!("test failed"),
         }
-    }
 
-    #[test]
-    #[bench_test]
-    fn nested_1_test() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/dot/nested/nested_1/nested_1.k");
+        #[test]
+        fn comment_completion() {
+            let (file, program, _, gs, schema_map) =
+                compile_test_file("src/test_data/completion_test/dot/lit_str/lit_str.k");
 
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 9,
-            column: Some(9),
-        };
-        let tool = toolchain::default();
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 4,
+                column: Some(4),
+            };
 
-        let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let tool = toolchain::default();
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
 
-        match &mut got {
-            CompletionResponse::Array(arr) => {
-                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
-                insta::assert_snapshot!(format!("{:?}", labels));
-            }
-            CompletionResponse::List(_) => panic!("test failed"),
+            match &got {
+                CompletionResponse::Array(arr) => {
+                    assert_eq!(arr.len(), 0)
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            };
         }
-    }
 
-    #[test]
-    #[bench_test]
-    fn nested_2_test() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/dot/nested/nested_2/nested_2.k");
+        #[test]
+        #[bench_test]
+        fn missing_expr_completion() {
+            let (file, program, _, gs, schema_map) =
+                compile_test_file("src/test_data/completion_test/dot/missing_expr/missing_expr.k");
 
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 9,
-            column: Some(9),
-        };
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 10,
+                column: Some(16),
+            };
 
-        let tool = toolchain::default();
-
-        let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-
-        match &mut got {
-            CompletionResponse::Array(arr) => {
-                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
-                insta::assert_snapshot!(format!("{:?}", labels));
+            let tool = toolchain::default();
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            match got {
+                CompletionResponse::Array(arr) => {
+                    assert_eq!(arr.len(), 2);
+                    let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                    assert!(labels.contains(&"cpu".to_string()));
+                    assert!(labels.contains(&"memory".to_string()));
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
             }
-            CompletionResponse::List(_) => panic!("test failed"),
         }
-    }
-    #[test]
-    #[bench_test]
-    fn nested_3_test() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/dot/nested/nested_3/nested_3.k");
 
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 10,
-            column: Some(13),
-        };
+        #[test]
+        #[bench_test]
+        fn check_scope_completion() {
+            let (file, program, _, gs, schema_map) =
+                compile_test_file("src/test_data/completion_test/check/check.k");
 
-        let tool = toolchain::default();
-        let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 4,
+                column: Some(10),
+            };
 
-        match &mut got {
-            CompletionResponse::Array(arr) => {
-                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
-                insta::assert_snapshot!(format!("{:?}", labels));
+            let tool = toolchain::default();
+            let got = completion(Some(':'), &program, &pos, &gs, &tool, None, &schema_map);
+            assert!(got.is_none());
+
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 5,
+                column: Some(9),
+            };
+
+            let got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            match got {
+                CompletionResponse::Array(arr) => {
+                    assert_eq!(arr.len(), 3);
+                    let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                    assert!(labels.contains(&"name".to_string()));
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
             }
-            CompletionResponse::List(_) => panic!("test failed"),
         }
-    }
 
-    #[test]
-    #[bench_test]
-    fn nested_4_test() {
-        let (file, program, _, gs, schema_map) =
-            compile_test_file("src/test_data/completion_test/dot/nested/nested_4/nested_4.k");
+        #[test]
+        #[bench_test]
+        fn join_str_inner_completion() {
+            let (file, program, _, gs, schema_map) =
+                compile_test_file("src/test_data/completion_test/dot/lit_str/lit_str.k");
 
-        let pos = KCLPos {
-            filename: file.to_owned(),
-            line: 9,
-            column: Some(9),
-        };
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 6,
+                column: Some(28),
+            };
 
-        let tool = toolchain::default();
-
-        let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-
-        match &mut got {
-            CompletionResponse::Array(arr) => {
-                let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
-                insta::assert_snapshot!(format!("{:?}", labels));
+            let tool = toolchain::default();
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            match &got {
+                CompletionResponse::Array(arr) => {
+                    assert!(arr.is_empty())
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
             }
-            CompletionResponse::List(_) => panic!("test failed"),
+
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 7,
+                column: Some(27),
+            };
+
+            let tool = toolchain::default();
+            let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            match &got {
+                CompletionResponse::Array(arr) => {
+                    assert!(arr.is_empty())
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            }
         }
-    }
 
-    #[macro_export]
-    macro_rules! completion_label_test_snapshot {
-        ($name:ident, $file:expr, $line:expr, $column: expr, $trigger: expr) => {
-            #[test]
-            fn $name() {
-                let (file, program, _, gs, schema_map) = compile_test_file($file);
+        #[test]
+        #[bench_test]
+        fn schema_type_attr_completion() {
+            let (file, program, _, gs, schema_map) =
+                compile_test_file("src/test_data/completion_test/schema/schema/schema.k");
 
-                let pos = KCLPos {
-                    filename: file.clone(),
-                    line: $line,
-                    column: Some($column),
-                };
-                let tool = toolchain::default();
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 18,
+                column: Some(15),
+            };
 
-                let mut got =
-                    completion($trigger, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-
-                let got_labels = match &mut got {
-                    CompletionResponse::Array(arr) => {
-                        let mut labels: Vec<String> =
-                            arr.iter().map(|item| item.label.clone()).collect();
-                        labels.sort();
-                        labels
-                    }
-                    CompletionResponse::List(_) => panic!("test failed"),
-                };
-                insta::assert_snapshot!(format!("{:?}", got_labels));
+            let tool = toolchain::default();
+            let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            match &mut got {
+                CompletionResponse::Array(arr) => {
+                    let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                    assert!(labels.contains(&"name".to_string()));
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
             }
-        };
-    }
 
-    #[macro_export]
-    macro_rules! completion_label_without_builtin_func_test_snapshot {
-        ($name:ident, $file:expr, $line:expr, $column: expr, $trigger: expr) => {
-            #[test]
-            fn $name() {
-                let (file, program, _, gs, schema_map) = compile_test_file($file);
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 19,
+                column: Some(21),
+            };
 
-                let pos = KCLPos {
-                    filename: file.clone(),
-                    line: $line,
-                    column: Some($column),
-                };
-                let tool = toolchain::default();
-
-                let mut got =
-                    completion($trigger, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
-
-                let got_labels = match &mut got {
-                    CompletionResponse::Array(arr) => {
-                        let mut labels: Vec<String> =
-                            arr.iter().map(|item| item.label.clone()).collect();
-                        labels.sort();
-                        let builtin_func_lables: Vec<String> = BUILTIN_FUNCTIONS
-                            .iter()
-                            .map(|(name, func)| {
-                                func_ty_complete_label(name, &func.into_func_type())
-                            })
-                            .collect();
-                        let labels: Vec<String> = labels
-                            .iter()
-                            .filter(|label| !builtin_func_lables.contains(label))
-                            .map(|label| label.clone())
-                            .collect();
-
-                        labels
-                    }
-                    CompletionResponse::List(_) => panic!("test failed"),
-                };
-                insta::assert_snapshot!(format!("{:?}", got_labels));
+            let tool = toolchain::default();
+            let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+            match &mut got {
+                CompletionResponse::Array(arr) => {
+                    let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                    assert!(labels.contains(&"name".to_string()));
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
             }
-        };
-    }
+        }
 
-    #[macro_export]
-    macro_rules! completion_label_without_system_pkg_test_snapshot {
-        ($name:ident, $file:expr, $line:expr, $column: expr, $trigger: expr) => {
-            #[test]
-            fn $name() {
-                let (file, program, _, gs, metadata, schema_map) =
-                    compile_test_file_and_metadata($file);
-                let pos = KCLPos {
-                    filename: file.clone(),
-                    line: $line,
-                    column: Some($column),
-                };
-                let tool = toolchain::default();
-                let mut got =
-                    completion($trigger, &program, &pos, &gs, &tool, metadata, &schema_map)
-                        .unwrap();
-                let got_labels = match &mut got {
-                    CompletionResponse::Array(arr) => {
-                        let mut labels: Vec<String> =
-                            arr.iter().map(|item| item.label.clone()).collect();
-                        labels.sort();
-                        let labels: Vec<String> = labels
-                            .iter()
-                            .filter(|label| !STANDARD_SYSTEM_MODULES.contains(&label.as_str()))
-                            .cloned()
-                            .collect();
+        #[test]
+        #[bench_test]
+        fn nested_1_test() {
+            let (file, program, _, gs, schema_map) =
+                compile_test_file("src/test_data/completion_test/dot/nested/nested_1/nested_1.k");
 
-                        labels
-                    }
-                    CompletionResponse::List(_) => panic!("test failed"),
-                };
-                insta::assert_snapshot!(format!("{:?}", got_labels));
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 9,
+                column: Some(9),
+            };
+            let tool = toolchain::default();
+
+            let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+
+            match &mut got {
+                CompletionResponse::Array(arr) => {
+                    let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                    insta::assert_snapshot!(format!("{:?}", labels));
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
             }
-        };
-    }
+        }
 
-    completion_label_without_builtin_func_test_snapshot!(
-        var_completion_labels,
-        "src/test_data/completion_test/dot/completion/completion.k",
-        26,
-        1,
-        None
-    );
-    
-    completion_label_test_snapshot!(
-        schema_attr_completion_labels,
-        "src/test_data/completion_test/dot/completion/completion.k",
-        24,
-        4,
-        None
-    );
-    
-    completion_label_test_snapshot!(
-        dot_schema_attr_completion,
-        "src/test_data/completion_test/dot/completion/completion.k",
-        12,
-        7,
-        Some('.')
-    );
-    
-    completion_label_test_snapshot!(
-        dot_str_builtin_func_completion,
-        "src/test_data/completion_test/dot/completion/completion.k",
-        14,
-        12,
-        Some('.')
-    );
-    
-    completion_label_test_snapshot!(
-        import_pkg_path_completion,
-        "src/test_data/completion_test/dot/completion/completion.k",
-        1,
-        12,
-        Some('.')
-    );
-    
-    completion_label_test_snapshot!(
-        import_pkg_schema_completion,
-        "src/test_data/completion_test/dot/completion/completion.k",
-        16,
-        12,
-        Some('.')
-    );
-    
-    completion_label_test_snapshot!(
-        math_func_completion,
-        "src/test_data/completion_test/dot/completion/completion.k",
-        19,
-        5,
-        Some('.')
-    );
-    
-    completion_label_test_snapshot!(
-        literal_str_builtin_func_completion,
-        "src/test_data/completion_test/dot/completion/completion.k",
-        21,
-        4,
-        Some('.')
-    );
-    
-    completion_label_test_snapshot!(
-        single_schema_attr_completion,
-        "src/test_data/completion_test/dot/completion/completion.k",
-        30,
-        11,
-        Some('.')
-    );
-    
-    completion_label_test_snapshot!(
-        string_union_type_completion,
-        "src/test_data/completion_test/dot/completion/completion.k",
-        36,
-        30,
-        Some('.')
-    );
+        #[test]
+        #[bench_test]
+        fn nested_2_test() {
+            let (file, program, _, gs, schema_map) =
+                compile_test_file("src/test_data/completion_test/dot/nested/nested_2/nested_2.k");
 
-    completion_label_without_builtin_func_test_snapshot!(
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 9,
+                column: Some(9),
+            };
+
+            let tool = toolchain::default();
+
+            let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+
+            match &mut got {
+                CompletionResponse::Array(arr) => {
+                    let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                    insta::assert_snapshot!(format!("{:?}", labels));
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            }
+        }
+        #[test]
+        #[bench_test]
+        fn nested_3_test() {
+            let (file, program, _, gs, schema_map) =
+                compile_test_file("src/test_data/completion_test/dot/nested/nested_3/nested_3.k");
+
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 10,
+                column: Some(13),
+            };
+
+            let tool = toolchain::default();
+            let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+
+            match &mut got {
+                CompletionResponse::Array(arr) => {
+                    let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                    insta::assert_snapshot!(format!("{:?}", labels));
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            }
+        }
+
+        #[test]
+        #[bench_test]
+        fn nested_4_test() {
+            let (file, program, _, gs, schema_map) =
+                compile_test_file("src/test_data/completion_test/dot/nested/nested_4/nested_4.k");
+
+            let pos = KCLPos {
+                filename: file.to_owned(),
+                line: 9,
+                column: Some(9),
+            };
+
+            let tool = toolchain::default();
+
+            let mut got = completion(None, &program, &pos, &gs, &tool, None, &schema_map).unwrap();
+
+            match &mut got {
+                CompletionResponse::Array(arr) => {
+                    let labels: Vec<String> = arr.iter().map(|item| item.label.clone()).collect();
+                    insta::assert_snapshot!(format!("{:?}", labels));
+                }
+                CompletionResponse::List(_) => panic!("test failed"),
+            }
+        }
+
+        #[macro_export]
+        macro_rules! completion_label_test_snapshot {
+            ($name:ident, $file:expr, $line:expr, $column: expr, $trigger: expr) => {
+                #[test]
+                fn $name() {
+                    let (file, program, _, gs, schema_map) = compile_test_file($file);
+
+                    let pos = KCLPos {
+                        filename: file.clone(),
+                        line: $line,
+                        column: Some($column),
+                    };
+                    let tool = toolchain::default();
+
+                    let mut got =
+                        completion($trigger, &program, &pos, &gs, &tool, None, &schema_map)
+                            .unwrap();
+
+                    let got_labels = match &mut got {
+                        CompletionResponse::Array(arr) => {
+                            let mut labels: Vec<String> =
+                                arr.iter().map(|item| item.label.clone()).collect();
+                            labels.sort();
+                            labels
+                        }
+                        CompletionResponse::List(_) => panic!("test failed"),
+                    };
+                    insta::assert_snapshot!(format!("{:?}", got_labels));
+                }
+            };
+        }
+
+        #[macro_export]
+        macro_rules! completion_label_without_builtin_func_test_snapshot {
+            ($name:ident, $file:expr, $line:expr, $column: expr, $trigger: expr) => {
+                #[test]
+                fn $name() {
+                    let (file, program, _, gs, schema_map) = compile_test_file($file);
+
+                    let pos = KCLPos {
+                        filename: file.clone(),
+                        line: $line,
+                        column: Some($column),
+                    };
+                    let tool = toolchain::default();
+
+                    let mut got =
+                        completion($trigger, &program, &pos, &gs, &tool, None, &schema_map)
+                            .unwrap();
+
+                    let got_labels = match &mut got {
+                        CompletionResponse::Array(arr) => {
+                            let mut labels: Vec<String> =
+                                arr.iter().map(|item| item.label.clone()).collect();
+                            labels.sort();
+                            let builtin_func_lables: Vec<String> = BUILTIN_FUNCTIONS
+                                .iter()
+                                .map(|(name, func)| {
+                                    func_ty_complete_label(name, &func.into_func_type())
+                                })
+                                .collect();
+                            let labels: Vec<String> = labels
+                                .iter()
+                                .filter(|label| !builtin_func_lables.contains(label))
+                                .map(|label| label.clone())
+                                .collect();
+
+                            labels
+                        }
+                        CompletionResponse::List(_) => panic!("test failed"),
+                    };
+                    insta::assert_snapshot!(format!("{:?}", got_labels));
+                }
+            };
+        }
+
+        #[macro_export]
+        macro_rules! completion_label_without_system_pkg_test_snapshot {
+            ($name:ident, $file:expr, $line:expr, $column: expr, $trigger: expr) => {
+                #[test]
+                fn $name() {
+                    let (file, program, _, gs, metadata, schema_map) =
+                        compile_test_file_and_metadata($file);
+                    let pos = KCLPos {
+                        filename: file.clone(),
+                        line: $line,
+                        column: Some($column),
+                    };
+                    let tool = toolchain::default();
+                    let mut got =
+                        completion($trigger, &program, &pos, &gs, &tool, metadata, &schema_map)
+                            .unwrap();
+                    let got_labels = match &mut got {
+                        CompletionResponse::Array(arr) => {
+                            let mut labels: Vec<String> =
+                                arr.iter().map(|item| item.label.clone()).collect();
+                            labels.sort();
+                            let labels: Vec<String> = labels
+                                .iter()
+                                .filter(|label| !STANDARD_SYSTEM_MODULES.contains(&label.as_str()))
+                                .cloned()
+                                .collect();
+
+                            labels
+                        }
+                        CompletionResponse::List(_) => panic!("test failed"),
+                    };
+                    insta::assert_snapshot!(format!("{:?}", got_labels));
+                }
+            };
+        }
+
+        completion_label_without_builtin_func_test_snapshot!(
+            var_completion_labels,
+            "src/test_data/completion_test/dot/completion/completion.k",
+            26,
+            1,
+            None
+        );
+
+        completion_label_test_snapshot!(
+            schema_attr_completion_labels,
+            "src/test_data/completion_test/dot/completion/completion.k",
+            24,
+            4,
+            None
+        );
+
+        completion_label_test_snapshot!(
+            dot_schema_attr_completion,
+            "src/test_data/completion_test/dot/completion/completion.k",
+            12,
+            7,
+            Some('.')
+        );
+
+        completion_label_test_snapshot!(
+            dot_str_builtin_func_completion,
+            "src/test_data/completion_test/dot/completion/completion.k",
+            14,
+            12,
+            Some('.')
+        );
+
+        completion_label_test_snapshot!(
+            import_pkg_path_completion,
+            "src/test_data/completion_test/dot/completion/completion.k",
+            1,
+            12,
+            Some('.')
+        );
+
+        completion_label_test_snapshot!(
+            import_pkg_schema_completion,
+            "src/test_data/completion_test/dot/completion/completion.k",
+            16,
+            12,
+            Some('.')
+        );
+
+        completion_label_test_snapshot!(
+            math_func_completion,
+            "src/test_data/completion_test/dot/completion/completion.k",
+            19,
+            5,
+            Some('.')
+        );
+
+        completion_label_test_snapshot!(
+            literal_str_builtin_func_completion,
+            "src/test_data/completion_test/dot/completion/completion.k",
+            21,
+            4,
+            Some('.')
+        );
+
+        completion_label_test_snapshot!(
+            single_schema_attr_completion,
+            "src/test_data/completion_test/dot/completion/completion.k",
+            30,
+            11,
+            Some('.')
+        );
+
+        completion_label_test_snapshot!(
+            string_union_type_completion,
+            "src/test_data/completion_test/dot/completion/completion.k",
+            36,
+            30,
+            Some('.')
+        );
+
+        completion_label_without_builtin_func_test_snapshot!(
             var_completion_labels_without_dot,
             "src/test_data/completion_test/without_dot/completion.k",
             26,
             1,
             None
         );
-    
-    completion_label_without_system_pkg_test_snapshot!(
-        system_pkg_labels,
-        "src/test_data/completion_test/without_dot/completion.k",
-        36,
-        5,
-        Some('.')
-    );
-    
-    completion_label_test_snapshot!(
-        basic_completion_labels,
-        "src/test_data/completion_test/without_dot/completion.k",
-        12,
-        7,
-        Some('.')
-    );
 
-    completion_label_test_snapshot!(
-        import_builtin_package_test,
-        "src/test_data/completion_test/import/builtin/builtin_pkg.k",
-        1,
-        8,
-        None
-    );
+        completion_label_without_system_pkg_test_snapshot!(
+            system_pkg_labels,
+            "src/test_data/completion_test/without_dot/completion.k",
+            36,
+            5,
+            Some('.')
+        );
 
-    completion_label_test_snapshot!(
-        attr_value_completion_true_false,
-        "src/test_data/completion_test/assign/completion.k",
-        14,
-        6,
-        Some(':')
-    );
-    
-    completion_label_test_snapshot!(
-        attr_value_completion_strings,
-        "src/test_data/completion_test/assign/completion.k",
-        16,
-        6,
-        Some(':')
-    );
-    
-    completion_label_test_snapshot!(
-        attr_value_completion_list,
-        "src/test_data/completion_test/assign/completion.k",
-        18,
-        6,
-        Some(':')
-    );
-    
-    completion_label_test_snapshot!(
-        attr_value_completion_integer,
-        "src/test_data/completion_test/assign/completion.k",
-        20,
-        6,
-        Some(':')
-    );
-    
-    completion_label_test_snapshot!(
-        attr_value_completion_boolean,
-        "src/test_data/completion_test/assign/completion.k",
-        22,
-        6,
-        Some(':')
-    );
-    
-    completion_label_test_snapshot!(
-        attr_value_completion_dict,
-        "src/test_data/completion_test/assign/completion.k",
-        24,
-        6,
-        Some(':')
-    );
-    
-    completion_label_test_snapshot!(
-        attr_value_completion_schema,
-        "src/test_data/completion_test/assign/completion.k",
-        26,
-        6,
-        Some(':')
-    );
+        completion_label_test_snapshot!(
+            basic_completion_labels,
+            "src/test_data/completion_test/without_dot/completion.k",
+            12,
+            7,
+            Some('.')
+        );
 
-    completion_label_test_snapshot!(
-        schema_sig_completion_test,
-        "src/test_data/completion_test/schema/schema/schema.k",
-        7,
-        5,
-        None
-    );
-    
-    completion_label_test_snapshot!(
-        schema_docstring_newline_test,
-        "src/test_data/completion_test/newline/docstring_newline.k",
-        3,
-        4,
-        Some('\n')
-    );
+        completion_label_test_snapshot!(
+            import_builtin_package_test,
+            "src/test_data/completion_test/import/builtin/builtin_pkg.k",
+            1,
+            8,
+            None
+        );
 
-    completion_label_test_snapshot!(
-        str_dot_completion_test_end_of_literal,
-        "src/test_data/completion_test/dot/lit_str/lit_str.k",
-        1,
-        10,
-        Some('.')
-    );
-    
-    completion_label_test_snapshot!(
-        str_dot_completion_test_second_line_end,
-        "src/test_data/completion_test/dot/lit_str/lit_str.k",
-        2,
-        6,
-        Some('.')
-    );
-    
-    completion_label_test_snapshot!(
-        str_dot_completion_test_inside_literal_1,
-        "src/test_data/completion_test/dot/lit_str/lit_str.k",
-        2,
-        5,
-        Some('.')
-    );
-    
-    completion_label_test_snapshot!(
-        str_dot_completion_test_inside_literal_2,
-        "src/test_data/completion_test/dot/lit_str/lit_str.k",
-        1,
-        8,
-        Some('.')
-    );
-    
-    completion_label_test_snapshot!(
-        str_dot_completion_test_third_line,
-        "src/test_data/completion_test/dot/lit_str/lit_str.k",
-        3,
-        2,
-        Some('.')
-    );
-    
-    completion_label_test_snapshot!(
-        schema_ty_attr_complete_test,
-        "src/test_data/completion_test/dot/schema_ty_attr/schema_ty_attr.k",
-        13,
-        2,
-        Some('.')
-    );
-    
-    
+        completion_label_test_snapshot!(
+            attr_value_completion_true_false,
+            "src/test_data/completion_test/assign/completion.k",
+            14,
+            6,
+            Some(':')
+        );
 
-    
-    
-    
-    completion_label_without_builtin_func_test_snapshot!(
-        lambda_1,
-        "src/test_data/completion_test/lambda/lambda_1/lambda_1.k",
-        8,
-        5,
-        None
-    );
+        completion_label_test_snapshot!(
+            attr_value_completion_strings,
+            "src/test_data/completion_test/assign/completion.k",
+            16,
+            6,
+            Some(':')
+        );
 
-    completion_label_without_builtin_func_test_snapshot!(
-        schema_attr_newline_completion_0,
-        "src/test_data/completion_test/newline/schema/schema_0/schema_0.k",
-        8,
-        4,
-        Some('\n')
-    );
+        completion_label_test_snapshot!(
+            attr_value_completion_list,
+            "src/test_data/completion_test/assign/completion.k",
+            18,
+            6,
+            Some(':')
+        );
 
-    completion_label_without_builtin_func_test_snapshot!(
-        schema_attr_newline_completion_0_1,
-        "src/test_data/completion_test/newline/schema/schema_0/schema_0.k",
-        5,
-        4,
-        Some('\n')
-    );
+        completion_label_test_snapshot!(
+            attr_value_completion_integer,
+            "src/test_data/completion_test/assign/completion.k",
+            20,
+            6,
+            Some(':')
+        );
 
-    completion_label_without_builtin_func_test_snapshot!(
-        schema_attr_newline_completion_1,
-        "src/test_data/completion_test/newline/schema/schema_1/schema_1.k",
-        10,
-        4,
-        Some('\n')
-    );
+        completion_label_test_snapshot!(
+            attr_value_completion_boolean,
+            "src/test_data/completion_test/assign/completion.k",
+            22,
+            6,
+            Some(':')
+        );
 
-    completion_label_without_system_pkg_test_snapshot!(
-        import_internal_pkg_test,
-        "src/test_data/completion_test/import/internal/main.k",
-        1,
-        8,
-        None
-    );
+        completion_label_test_snapshot!(
+            attr_value_completion_dict,
+            "src/test_data/completion_test/assign/completion.k",
+            24,
+            6,
+            Some(':')
+        );
 
-    completion_label_without_system_pkg_test_snapshot!(
-        import_external_pkg_test,
-        "src/test_data/completion_test/import/external/external_1/main.k",
-        1,
-        8,
-        None
-    );
+        completion_label_test_snapshot!(
+            attr_value_completion_schema,
+            "src/test_data/completion_test/assign/completion.k",
+            26,
+            6,
+            Some(':')
+        );
 
-    completion_label_without_builtin_func_test_snapshot!(
-        func_return_ty_1,
-        "src/test_data/completion_test/dot/func_return/func_return_1/func_return_1.k",
-        4,
-        8,
-        Some('.')
-    );
+        completion_label_test_snapshot!(
+            schema_sig_completion_test,
+            "src/test_data/completion_test/schema/schema/schema.k",
+            7,
+            5,
+            None
+        );
 
-    completion_label_without_builtin_func_test_snapshot!(
-        func_return_ty_2,
-        "src/test_data/completion_test/dot/func_return/func_return_2/func_return_2.k",
-        8,
-        12,
-        Some('.')
-    );
+        completion_label_test_snapshot!(
+            schema_docstring_newline_test,
+            "src/test_data/completion_test/newline/docstring_newline.k",
+            3,
+            4,
+            Some('\n')
+        );
 
-    completion_label_without_builtin_func_test_snapshot!(
-        func_return_ty_3,
-        "src/test_data/completion_test/dot/func_return/func_return_3/func_return_3.k",
-        3,
-        2,
-        Some('.')
-    );
+        completion_label_test_snapshot!(
+            str_dot_completion_test_end_of_literal,
+            "src/test_data/completion_test/dot/lit_str/lit_str.k",
+            1,
+            10,
+            Some('.')
+        );
 
-    completion_label_test_snapshot!(
-        func_doc_completion,
-        "src/test_data/completion_test/schema_doc/schema_doc.k",
-        7,
-        14,
-        Some('.')
-    );
+        completion_label_test_snapshot!(
+            str_dot_completion_test_second_line_end,
+            "src/test_data/completion_test/dot/lit_str/lit_str.k",
+            2,
+            6,
+            Some('.')
+        );
 
-    completion_label_test_snapshot!(
-        schema_attr_in_right,
-        "src/test_data/completion_test/schema/schema/schema.k",
-        23,
-        11,
-        None
-    );
+        completion_label_test_snapshot!(
+            str_dot_completion_test_inside_literal_1,
+            "src/test_data/completion_test/dot/lit_str/lit_str.k",
+            2,
+            5,
+            Some('.')
+        );
 
-    completion_label_test_snapshot!(
-        schema_def_1,
-        "src/test_data/completion_test/schema_def/schema_def.k",
-        10,
-        22,
-        None
-    );
+        completion_label_test_snapshot!(
+            str_dot_completion_test_inside_literal_2,
+            "src/test_data/completion_test/dot/lit_str/lit_str.k",
+            1,
+            8,
+            Some('.')
+        );
 
-    completion_label_test_snapshot!(
-        schema_def_2,
-        "src/test_data/completion_test/schema_def/schema_def.k",
-        12,
-        5,
-        None
-    );
+        completion_label_test_snapshot!(
+            str_dot_completion_test_third_line,
+            "src/test_data/completion_test/dot/lit_str/lit_str.k",
+            3,
+            2,
+            Some('.')
+        );
 
-    completion_label_test_snapshot!(
-        schema_def_3,
-        "src/test_data/completion_test/schema_def/schema_def.k",
-        13,
-        8,
-        None
-    );
+        completion_label_test_snapshot!(
+            schema_ty_attr_complete_test,
+            "src/test_data/completion_test/dot/schema_ty_attr/schema_ty_attr.k",
+            13,
+            2,
+            Some('.')
+        );
 
-    completion_label_test_snapshot!(
-        schema_def_4,
-        "src/test_data/completion_test/schema_def/schema_def.k",
-        3,
-        12,
-        None
-    );
+        completion_label_without_builtin_func_test_snapshot!(
+            lambda_1,
+            "src/test_data/completion_test/lambda/lambda_1/lambda_1.k",
+            8,
+            5,
+            None
+        );
 
-    completion_label_test_snapshot!(
-        schema_attr_ty_0,
-        "src/test_data/completion_test/dot/schema_attr_ty/schema_attr_ty.k",
-        5,
-        13,
-        Some('.')
-    );
+        completion_label_without_builtin_func_test_snapshot!(
+            schema_attr_newline_completion_0,
+            "src/test_data/completion_test/newline/schema/schema_0/schema_0.k",
+            8,
+            4,
+            Some('\n')
+        );
 
-    completion_label_test_snapshot!(
-        schema_attr_ty_1,
-        "src/test_data/completion_test/dot/schema_attr_ty/schema_attr_ty.k",
-        6,
-        14,
-        Some('.')
-    );
+        completion_label_without_builtin_func_test_snapshot!(
+            schema_attr_newline_completion_0_1,
+            "src/test_data/completion_test/newline/schema/schema_0/schema_0.k",
+            5,
+            4,
+            Some('\n')
+        );
 
-    completion_label_test_snapshot!(
-        schema_attr_ty_2,
-        "src/test_data/completion_test/dot/schema_attr_ty/schema_attr_ty.k",
-        7,
-        18,
-        Some('.')
-    );
+        completion_label_without_builtin_func_test_snapshot!(
+            schema_attr_newline_completion_1,
+            "src/test_data/completion_test/newline/schema/schema_1/schema_1.k",
+            10,
+            4,
+            Some('\n')
+        );
 
-    completion_label_test_snapshot!(
-        schema_attr_ty_3,
-        "src/test_data/completion_test/dot/schema_attr_ty/schema_attr_ty.k",
-        8,
-        17,
-        Some('.')
-    );
+        completion_label_without_system_pkg_test_snapshot!(
+            import_internal_pkg_test,
+            "src/test_data/completion_test/import/internal/main.k",
+            1,
+            8,
+            None
+        );
 
-    completion_label_test_snapshot!(
-        schema_attr_ty_4,
-        "src/test_data/completion_test/dot/schema_attr_ty/schema_attr_ty.k",
-        10,
-        15,
-        Some('.')
-    );
+        completion_label_without_system_pkg_test_snapshot!(
+            import_external_pkg_test,
+            "src/test_data/completion_test/import/external/external_1/main.k",
+            1,
+            8,
+            None
+        );
 
-    completion_label_test_snapshot!(
-        complete_after_compare_expr_1,
-        "src/test_data/completion_test/dot/special_expr/compare.k",
-        2,
-        23,
-        Some('.')
-    );
+        completion_label_without_builtin_func_test_snapshot!(
+            func_return_ty_1,
+            "src/test_data/completion_test/dot/func_return/func_return_1/func_return_1.k",
+            4,
+            8,
+            Some('.')
+        );
 
-    completion_label_without_builtin_func_test_snapshot!(
-        complete_unimport_schemas,
-        "src/test_data/completion_test/unimport/unimport/main.k",
-        1,
-        1,
-        None
-    );
+        completion_label_without_builtin_func_test_snapshot!(
+            func_return_ty_2,
+            "src/test_data/completion_test/dot/func_return/func_return_2/func_return_2.k",
+            8,
+            12,
+            Some('.')
+        );
+
+        completion_label_without_builtin_func_test_snapshot!(
+            func_return_ty_3,
+            "src/test_data/completion_test/dot/func_return/func_return_3/func_return_3.k",
+            3,
+            2,
+            Some('.')
+        );
+
+        completion_label_test_snapshot!(
+            func_doc_completion,
+            "src/test_data/completion_test/schema_doc/schema_doc.k",
+            7,
+            14,
+            Some('.')
+        );
+
+        completion_label_test_snapshot!(
+            schema_attr_in_right,
+            "src/test_data/completion_test/schema/schema/schema.k",
+            23,
+            11,
+            None
+        );
+
+        completion_label_test_snapshot!(
+            schema_def_1,
+            "src/test_data/completion_test/schema_def/schema_def.k",
+            10,
+            22,
+            None
+        );
+
+        completion_label_test_snapshot!(
+            schema_def_2,
+            "src/test_data/completion_test/schema_def/schema_def.k",
+            12,
+            5,
+            None
+        );
+
+        completion_label_test_snapshot!(
+            schema_def_3,
+            "src/test_data/completion_test/schema_def/schema_def.k",
+            13,
+            8,
+            None
+        );
+
+        completion_label_test_snapshot!(
+            schema_def_4,
+            "src/test_data/completion_test/schema_def/schema_def.k",
+            3,
+            12,
+            None
+        );
+
+        completion_label_test_snapshot!(
+            schema_attr_ty_0,
+            "src/test_data/completion_test/dot/schema_attr_ty/schema_attr_ty.k",
+            5,
+            13,
+            Some('.')
+        );
+
+        completion_label_test_snapshot!(
+            schema_attr_ty_1,
+            "src/test_data/completion_test/dot/schema_attr_ty/schema_attr_ty.k",
+            6,
+            14,
+            Some('.')
+        );
+
+        completion_label_test_snapshot!(
+            schema_attr_ty_2,
+            "src/test_data/completion_test/dot/schema_attr_ty/schema_attr_ty.k",
+            7,
+            18,
+            Some('.')
+        );
+
+        completion_label_test_snapshot!(
+            schema_attr_ty_3,
+            "src/test_data/completion_test/dot/schema_attr_ty/schema_attr_ty.k",
+            8,
+            17,
+            Some('.')
+        );
+
+        completion_label_test_snapshot!(
+            schema_attr_ty_4,
+            "src/test_data/completion_test/dot/schema_attr_ty/schema_attr_ty.k",
+            10,
+            15,
+            Some('.')
+        );
+
+        completion_label_test_snapshot!(
+            complete_after_compare_expr_1,
+            "src/test_data/completion_test/dot/special_expr/compare.k",
+            2,
+            23,
+            Some('.')
+        );
+
+        completion_label_without_builtin_func_test_snapshot!(
+            complete_unimport_schemas,
+            "src/test_data/completion_test/unimport/unimport/main.k",
+            1,
+            1,
+            None
+        );
+    }
 }
