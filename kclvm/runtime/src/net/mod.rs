@@ -416,11 +416,8 @@ pub extern "C" fn kclvm_net_parse_CIDR(
                 if let Ok(mask) = mask.parse::<u8>() {
                     let ip_value = ValueRef::str(ip.to_string().as_str());
                     let mask_value = ValueRef::int(mask as i64);
-                    return ValueRef::dict(Some(&[
-                        ("ip", &ip_value),
-                        ("mask", &mask_value),
-                    ]))
-                    .into_raw(ctx);
+                    return ValueRef::dict(Some(&[("ip", &ip_value), ("mask", &mask_value)]))
+                        .into_raw(ctx);
                 }
             }
         }
@@ -432,7 +429,7 @@ pub extern "C" fn kclvm_net_parse_CIDR(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_hosts_in_CIDR (
+pub extern "C" fn kclvm_net_hosts_in_CIDR(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -467,7 +464,7 @@ pub extern "C" fn kclvm_net_hosts_in_CIDR (
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_subnets_from_CIDR (
+pub extern "C" fn kclvm_net_subnets_from_CIDR(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -487,7 +484,9 @@ pub extern "C" fn kclvm_net_subnets_from_CIDR (
                     let mut subnets = vec![];
                     for i in 1..(1 << (32 - mask)) - 1 {
                         let ip = u32::from_be_bytes(ip.octets()) + i;
-                        subnets.push(ValueRef::str(format!("{}/{}", Ipv4Addr::from(ip), mask).as_str()));
+                        subnets.push(ValueRef::str(
+                            format!("{}/{}", Ipv4Addr::from(ip), mask).as_str(),
+                        ));
                     }
                     let subnets_refs: Vec<&ValueRef> = subnets.iter().collect();
                     return ValueRef::list(Some(&subnets_refs)).into_raw(ctx);
@@ -502,7 +501,7 @@ pub extern "C" fn kclvm_net_subnets_from_CIDR (
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_is_IP_in_CIDR (
+pub extern "C" fn kclvm_net_is_IP_in_CIDR(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
