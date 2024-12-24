@@ -24,6 +24,7 @@ impl ValueRef {
                 "lower" => kclvm_builtin_str_lower,
                 "upper" => kclvm_builtin_str_upper,
                 "capitalize" => kclvm_builtin_str_capitalize,
+                "chars" => kclvm_builtin_str_chars,
                 "count" => kclvm_builtin_str_count,
                 "endswith" => kclvm_builtin_str_endswith,
                 "find" => kclvm_builtin_str_find,

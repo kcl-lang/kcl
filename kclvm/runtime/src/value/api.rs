@@ -2609,6 +2609,21 @@ pub unsafe extern "C" fn kclvm_builtin_str_capitalize(
 
 #[no_mangle]
 #[runtime_fn]
+pub unsafe extern "C" fn kclvm_builtin_str_chars(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    _kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    if let Some(val) = args.pop_arg_first() {
+        val.str_chars().into_raw(mut_ptr_as_ref(ctx))
+    } else {
+        panic!("invalid self value in str_chars");
+    }
+}
+
+#[no_mangle]
+#[runtime_fn]
 pub unsafe extern "C" fn kclvm_builtin_str_count(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
