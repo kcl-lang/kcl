@@ -969,16 +969,12 @@ fn unimport_schemas(
 #[cfg(test)]
 mod tests {
     use crate::{
-        completion::{
-            completion, func_ty_complete_label,
-        },
+        completion::{completion, func_ty_complete_label},
         tests::{compile_test_file, compile_test_file_and_metadata},
     };
     use kclvm_driver::toolchain;
     use kclvm_error::Position as KCLPos;
-    use kclvm_sema::builtin::{
-        BUILTIN_FUNCTIONS, STANDARD_SYSTEM_MODULES,
-    };
+    use kclvm_sema::builtin::{BUILTIN_FUNCTIONS, STANDARD_SYSTEM_MODULES};
     use lsp_types::CompletionResponse;
     #[macro_export]
     macro_rules! completion_label_test_snapshot {
@@ -1097,7 +1093,7 @@ mod tests {
         1,
         None
     );
-    
+
     completion_label_test_snapshot!(
         schema_attr_completion_labels,
         "src/test_data/completion_test/dot/completion/completion.k",
@@ -1105,7 +1101,7 @@ mod tests {
         4,
         None
     );
-    
+
     completion_label_test_snapshot!(
         dot_schema_attr_completion,
         "src/test_data/completion_test/dot/completion/completion.k",
@@ -1113,7 +1109,7 @@ mod tests {
         7,
         Some('.')
     );
-    
+
     completion_label_test_snapshot!(
         dot_str_builtin_func_completion,
         "src/test_data/completion_test/dot/completion/completion.k",
@@ -1121,7 +1117,7 @@ mod tests {
         12,
         Some('.')
     );
-    
+
     completion_label_test_snapshot!(
         import_pkg_path_completion,
         "src/test_data/completion_test/dot/completion/completion.k",
@@ -1129,7 +1125,7 @@ mod tests {
         12,
         Some('.')
     );
-    
+
     completion_label_test_snapshot!(
         import_pkg_schema_completion,
         "src/test_data/completion_test/dot/completion/completion.k",
@@ -1137,7 +1133,7 @@ mod tests {
         12,
         Some('.')
     );
-    
+
     completion_label_test_snapshot!(
         math_func_completion,
         "src/test_data/completion_test/dot/completion/completion.k",
@@ -1145,7 +1141,7 @@ mod tests {
         5,
         Some('.')
     );
-    
+
     completion_label_test_snapshot!(
         literal_str_builtin_func_completion,
         "src/test_data/completion_test/dot/completion/completion.k",
@@ -1153,7 +1149,7 @@ mod tests {
         4,
         Some('.')
     );
-    
+
     completion_label_test_snapshot!(
         single_schema_attr_completion,
         "src/test_data/completion_test/dot/completion/completion.k",
@@ -1161,7 +1157,7 @@ mod tests {
         11,
         Some('.')
     );
-    
+
     completion_label_test_snapshot!(
         string_union_type_completion,
         "src/test_data/completion_test/dot/completion/completion.k",
@@ -1171,13 +1167,13 @@ mod tests {
     );
 
     completion_label_without_builtin_func_test_snapshot!(
-            var_completion_labels_without_dot,
-            "src/test_data/completion_test/without_dot/completion.k",
-            26,
-            1,
-            None
-        );
-    
+        var_completion_labels_without_dot,
+        "src/test_data/completion_test/without_dot/completion.k",
+        26,
+        1,
+        None
+    );
+
     completion_label_without_system_pkg_test_snapshot!(
         system_pkg_labels,
         "src/test_data/completion_test/without_dot/completion.k",
@@ -1185,7 +1181,7 @@ mod tests {
         5,
         Some('.')
     );
-    
+
     completion_label_test_snapshot!(
         basic_completion_labels,
         "src/test_data/completion_test/without_dot/completion.k",
@@ -1209,7 +1205,7 @@ mod tests {
         6,
         Some(':')
     );
-    
+
     completion_label_test_snapshot!(
         attr_value_completion_strings,
         "src/test_data/completion_test/assign/completion.k",
@@ -1217,7 +1213,7 @@ mod tests {
         6,
         Some(':')
     );
-    
+
     completion_label_test_snapshot!(
         attr_value_completion_list,
         "src/test_data/completion_test/assign/completion.k",
@@ -1225,7 +1221,7 @@ mod tests {
         6,
         Some(':')
     );
-    
+
     completion_label_test_snapshot!(
         attr_value_completion_integer,
         "src/test_data/completion_test/assign/completion.k",
@@ -1233,7 +1229,7 @@ mod tests {
         6,
         Some(':')
     );
-    
+
     completion_label_test_snapshot!(
         attr_value_completion_boolean,
         "src/test_data/completion_test/assign/completion.k",
@@ -1241,7 +1237,7 @@ mod tests {
         6,
         Some(':')
     );
-    
+
     completion_label_test_snapshot!(
         attr_value_completion_dict,
         "src/test_data/completion_test/assign/completion.k",
@@ -1249,7 +1245,7 @@ mod tests {
         6,
         Some(':')
     );
-    
+
     completion_label_test_snapshot!(
         attr_value_completion_schema,
         "src/test_data/completion_test/assign/completion.k",
@@ -1265,7 +1261,7 @@ mod tests {
         5,
         None
     );
-    
+
     completion_label_test_snapshot!(
         schema_docstring_newline_test,
         "src/test_data/completion_test/newline/docstring_newline.k",
@@ -1281,7 +1277,7 @@ mod tests {
         10,
         Some('.')
     );
-    
+
     completion_label_test_snapshot!(
         str_dot_completion_test_second_line_end,
         "src/test_data/completion_test/dot/lit_str/lit_str.k",
@@ -1289,7 +1285,7 @@ mod tests {
         6,
         Some('.')
     );
-    
+
     completion_label_test_snapshot!(
         str_dot_completion_test_inside_literal_1,
         "src/test_data/completion_test/dot/lit_str/lit_str.k",
@@ -1297,7 +1293,7 @@ mod tests {
         5,
         Some('.')
     );
-    
+
     completion_label_test_snapshot!(
         str_dot_completion_test_inside_literal_2,
         "src/test_data/completion_test/dot/lit_str/lit_str.k",
@@ -1305,7 +1301,7 @@ mod tests {
         8,
         Some('.')
     );
-    
+
     completion_label_test_snapshot!(
         str_dot_completion_test_third_line,
         "src/test_data/completion_test/dot/lit_str/lit_str.k",
@@ -1313,7 +1309,7 @@ mod tests {
         2,
         Some('.')
     );
-    
+
     completion_label_test_snapshot!(
         schema_ty_attr_complete_test,
         "src/test_data/completion_test/dot/schema_ty_attr/schema_ty_attr.k",
@@ -1329,7 +1325,7 @@ mod tests {
         16,
         None
     );
-    
+
     completion_label_test_snapshot!(
         comment_completion_test,
         "src/test_data/completion_test/dot/lit_str/lit_str.k",
@@ -1337,7 +1333,7 @@ mod tests {
         4,
         Some('.')
     );
-    
+
     completion_label_test_snapshot!(
         missing_expr_completion_test,
         "src/test_data/completion_test/dot/missing_expr/missing_expr.k",
@@ -1345,7 +1341,7 @@ mod tests {
         16,
         Some('.')
     );
-    
+
     completion_label_test_snapshot!(
         check_scope_completion_test_part1,
         "src/test_data/completion_test/check/check.k",
@@ -1353,7 +1349,7 @@ mod tests {
         10,
         Some(':')
     );
-    
+
     completion_label_test_snapshot!(
         check_scope_completion_test_part2,
         "src/test_data/completion_test/check/check.k",
@@ -1369,7 +1365,7 @@ mod tests {
         28,
         Some('.')
     );
-    
+
     completion_label_test_snapshot!(
         join_str_inner_completion_test_part2,
         "src/test_data/completion_test/dot/lit_str/lit_str.k",
@@ -1377,7 +1373,7 @@ mod tests {
         27,
         Some('.')
     );
-    
+
     completion_label_test_snapshot!(
         schema_type_attr_completion_test_part1,
         "src/test_data/completion_test/schema/schema/schema.k",
@@ -1385,7 +1381,7 @@ mod tests {
         15,
         None
     );
-    
+
     completion_label_test_snapshot!(
         schema_type_attr_completion_test_part2,
         "src/test_data/completion_test/schema/schema/schema.k",
@@ -1401,7 +1397,7 @@ mod tests {
         9,
         None
     );
-    
+
     completion_label_test_snapshot!(
         nested_2_test,
         "src/test_data/completion_test/dot/nested/nested_2/nested_2.k",
@@ -1409,7 +1405,7 @@ mod tests {
         9,
         None
     );
-    
+
     completion_label_test_snapshot!(
         nested_3_test,
         "src/test_data/completion_test/dot/nested/nested_3/nested_3.k",
@@ -1417,7 +1413,7 @@ mod tests {
         13,
         None
     );
-    
+
     completion_label_test_snapshot!(
         nested_4_test,
         "src/test_data/completion_test/dot/nested/nested_4/nested_4.k",
@@ -1425,7 +1421,7 @@ mod tests {
         9,
         None
     );
-        
+
     completion_label_without_builtin_func_test_snapshot!(
         lambda_1,
         "src/test_data/completion_test/lambda/lambda_1/lambda_1.k",
