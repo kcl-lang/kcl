@@ -1,0 +1,6 @@
+---
+source: tools/src/LSP/src/completion.rs
+assertion_line: 1261
+expression: "format! (\"{:?}\", got_labels)"
+---
+["Base", "Base{}", "Config", "Config{}", "Name", "Name{}", "Person", "Person(b){}", "abs(…)", "all_true(…)", "any_true(…)", "bin(…)", "bool(…)", "dict(…)", "float(…)", "hex(…)", "int(…)", "isnullish(…)", "isunique(…)", "len(…)", "list(…)", "max(…)", "min(…)", "multiplyof(…)", "n", "oct(…)", "option(…)", "ord(…)", "p", "pow(…)", "print(…)", "range(…)", "round(…)", "sorted(…)", "str(…)", "sum(…)", "typeof(…)", "zip(…)"]
