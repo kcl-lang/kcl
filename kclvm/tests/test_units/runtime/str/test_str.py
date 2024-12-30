@@ -21,6 +21,7 @@ class BaseTest(unittest.TestCase):
         self.checkequal([], "", "chars")
         self.checkequal(["a"], "a", "chars")
         self.checkequal(["a", "b", "c"], "abc", "chars")
+        self.checkequal(["一", "二", "三"], "一二三", "chars")
 
     def test_count(self):
         self.checkequal(3, "aaa", "count", "a")
