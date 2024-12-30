@@ -113,6 +113,9 @@ impl ValueIterator {
         }
         match *host.rc.borrow() {
             Value::str_value(ref s) => {
+                if self.pos >= s.chars().count() as i32 {
+                    return None;
+                }
                 let ch = s.chars().nth(self.pos as usize).unwrap();
                 self.cur_key = ValueRef::int(self.pos as i64);
                 self.cur_val = ValueRef::str(&ch.to_string());
