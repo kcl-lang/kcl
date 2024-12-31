@@ -1,6 +1,6 @@
 ---
 source: tools/src/LSP/src/completion.rs
-assertion_line: 1317
+assertion_line: 1313
 expression: "format! (\"{:?}\", got_labels)"
 ---
 ["name"]

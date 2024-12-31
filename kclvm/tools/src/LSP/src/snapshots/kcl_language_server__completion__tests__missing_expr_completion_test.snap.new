@@ -1,6 +1,6 @@
 ---
 source: tools/src/LSP/src/completion.rs
-assertion_line: 1341
+assertion_line: 1337
 expression: "format! (\"{:?}\", got_labels)"
 ---
 ["cpu", "memory"]

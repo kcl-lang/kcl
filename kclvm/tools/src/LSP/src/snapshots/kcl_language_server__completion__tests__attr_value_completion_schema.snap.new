@@ -1,6 +1,6 @@
 ---
 source: tools/src/LSP/src/completion.rs
-assertion_line: 1253
+assertion_line: 1249
 expression: "format! (\"{:?}\", got_labels)"
 ---
 [" sub.Person1{}"]

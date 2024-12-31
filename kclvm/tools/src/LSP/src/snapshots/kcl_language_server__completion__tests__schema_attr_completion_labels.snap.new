@@ -1,6 +1,6 @@
 ---
 source: tools/src/LSP/src/completion.rs
-assertion_line: 1101
+assertion_line: 1097
 expression: "format! (\"{:?}\", got_labels)"
 ---
 ["", "age", "math", "name", "subpkg"]

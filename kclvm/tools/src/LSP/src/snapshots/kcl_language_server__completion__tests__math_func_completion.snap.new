@@ -1,6 +1,6 @@
 ---
 source: tools/src/LSP/src/completion.rs
-assertion_line: 1141
+assertion_line: 1137
 expression: "format! (\"{:?}\", got_labels)"
 ---
 ["ceil(…)", "exp(…)", "expm1(…)", "factorial(…)", "floor(…)", "gcd(…)", "isfinite(…)", "isinf(…)", "isnan(…)", "log(…)", "log10(…)", "log1p(…)", "log2(…)", "modf(…)", "pow(…)", "sqrt(…)"]

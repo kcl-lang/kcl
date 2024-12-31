@@ -1,6 +1,6 @@
 ---
 source: tools/src/LSP/src/completion.rs
-assertion_line: 1213
+assertion_line: 1209
 expression: "format! (\"{:?}\", got_labels)"
 ---
 [" \"abc\"", " \"def\""]

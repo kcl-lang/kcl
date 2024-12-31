@@ -1,6 +1,6 @@
 ---
 source: tools/src/LSP/src/completion.rs
-assertion_line: 1197
+assertion_line: 1193
 expression: "format! (\"{:?}\", got_labels)"
 ---
 ["base64", "collection", "crypto", "datetime", "file", "json", "manifests", "math", "net", "regex", "runtime", "template", "units", "yaml"]
