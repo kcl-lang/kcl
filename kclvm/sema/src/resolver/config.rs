@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 
 use super::{
     scope::{ScopeKind, ScopeObject, ScopeObjectKind},
@@ -441,14 +441,27 @@ impl<'ctx> Resolver<'_> {
         None
     }
 
-    pub(crate) fn get_config_attr_err_suggestion(
+    #[inline]
+    pub(crate) fn get_config_attr_err_suggestion_from_schema(
         &self,
         attr: &str,
         schema_ty: &SchemaType,
     ) -> (Vec<String>, String) {
+        self.get_config_attr_err_suggestion(attr, schema_ty.attrs.keys())
+    }
+
+    pub(crate) fn get_config_attr_err_suggestion<I, T>(
+        &self,
+        attr: &str,
+        keys: I,
+    ) -> (Vec<String>, String)
+    where
+        T: AsRef<str>,
+        I: IntoIterator<Item = T>,
+    {
         let mut suggestion = String::new();
         // Calculate the closest miss attributes.
-        let suggs = suggestions::provide_suggestions(attr, schema_ty.attrs.keys());
+        let suggs = suggestions::provide_suggestions(attr, keys);
         if suggs.len() > 0 {
             suggestion = format!(", did you mean '{:?}'?", suggs);
         }
@@ -534,63 +547,96 @@ impl<'ctx> Resolver<'_> {
         let runtime_type = kclvm_runtime::schema_runtime_type(&schema_ty.name, &schema_ty.pkgpath);
         match self.ctx.schema_mapping.get(&runtime_type) {
             Some(schema_mapping_ty) => {
-                let schema_ty_ref = schema_mapping_ty.borrow();
-                if schema_ty_ref.get_obj_of_attr(attr).is_none()
-                    && !schema_ty_ref.is_mixin
-                    && schema_ty_ref.index_signature.is_none()
-                {
-                    let (suggs, msg) = self.get_config_attr_err_suggestion(attr, schema_ty);
-                    let mut msgs = vec![Message {
-                        range: range.clone(),
-                        style: Style::LineAndColumn,
-                        message: format!(
-                            "Cannot add member '{}' to schema '{}'{}",
-                            attr, schema_ty_ref.name, msg,
-                        ),
-                        note: None,
-                        suggested_replacement: Some(suggs),
-                    }];
-                    if let Some(attr_range) = attr_range {
-                        msgs.push(Message {
-                            range: attr_range.clone(),
-                            style: Style::LineAndColumn,
-                            message: "config attribute is defined here".to_string(),
-                            note: None,
-                            suggested_replacement: None,
-                        });
-                    }
-                    self.handler.add_error(ErrorKind::CompileError, &msgs);
-                }
+                let schema_ty = schema_mapping_ty.clone();
+                let schema_ty_ref = schema_ty.borrow();
+                self.check_config_attr_without_schema_mapping(
+                    attr,
+                    &schema_ty_ref,
+                    range,
+                    attr_range,
+                );
             }
             None => {
-                if schema_ty.get_obj_of_attr(attr).is_none()
-                    && !schema_ty.is_mixin
-                    && schema_ty.index_signature.is_none()
-                {
-                    let (suggs, msg) = self.get_config_attr_err_suggestion(attr, schema_ty);
-                    let mut msgs = vec![Message {
-                        range: range.clone(),
-                        style: Style::LineAndColumn,
-                        message: format!(
-                            "Cannot add member '{}' to schema '{}'{}",
-                            attr, schema_ty.name, msg,
-                        ),
-                        note: None,
-                        suggested_replacement: Some(suggs),
-                    }];
-                    if let Some(attr_range) = attr_range {
-                        msgs.push(Message {
-                            range: attr_range.clone(),
-                            style: Style::LineAndColumn,
-                            message: "config attribute is defined here".to_string(),
-                            note: None,
-                            suggested_replacement: None,
-                        });
-                    }
-                    self.handler.add_error(ErrorKind::CompileError, &msgs);
-                }
+                self.check_config_attr_without_schema_mapping(attr, schema_ty, range, attr_range);
             }
         };
+    }
+
+    fn check_config_attr_without_schema_mapping(
+        &mut self,
+        attr: &str,
+        schema_ty: &SchemaType,
+        range: &Range,
+        attr_range: Option<&Range>,
+    ) {
+        if schema_ty.get_obj_of_attr(attr).is_none()
+            && !schema_ty.is_mixin
+            && schema_ty.index_signature.is_none()
+        {
+            let (suggs, msg) = self.get_config_attr_err_suggestion_from_schema(attr, schema_ty);
+            self.add_config_attr_error(attr, schema_ty, range, attr_range, suggs, msg);
+        }
+        if let Some(index_signature) = &schema_ty.index_signature {
+            // Here we need to check whether the key of the index signature is a string literal type or a string literal union types
+            if !index_signature.any_other {
+                match &index_signature.key_ty.kind {
+                    TypeKind::StrLit(name) => {
+                        if name != attr {
+                            let (suggs, msg) = self.get_config_attr_err_suggestion(attr, &[name]);
+                            self.add_config_attr_error(
+                                attr, schema_ty, range, attr_range, suggs, msg,
+                            );
+                        }
+                    }
+                    TypeKind::Union(types) => {
+                        let mut keys: HashSet<String> = HashSet::default();
+                        for ty in types {
+                            if let TypeKind::StrLit(name) = &ty.kind {
+                                keys.insert(name.clone());
+                            }
+                        }
+                        if !keys.contains(attr) {
+                            let (suggs, msg) = self.get_config_attr_err_suggestion(attr, &keys);
+                            self.add_config_attr_error(
+                                attr, schema_ty, range, attr_range, suggs, msg,
+                            );
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    fn add_config_attr_error(
+        &mut self,
+        attr: &str,
+        schema_ty: &SchemaType,
+        range: &Range,
+        attr_range: Option<&Range>,
+        suggs: Vec<String>,
+        msg: String,
+    ) {
+        let mut msgs = vec![Message {
+            range: range.clone(),
+            style: Style::LineAndColumn,
+            message: format!(
+                "Cannot add member '{}' to schema '{}'{}",
+                attr, schema_ty.name, msg,
+            ),
+            note: None,
+            suggested_replacement: Some(suggs),
+        }];
+        if let Some(attr_range) = attr_range {
+            msgs.push(Message {
+                range: attr_range.clone(),
+                style: Style::LineAndColumn,
+                message: "config attribute is defined here".to_string(),
+                note: None,
+                suggested_replacement: None,
+            });
+        }
+        self.handler.add_error(ErrorKind::CompileError, &msgs);
     }
 
     /// Schema load atr
