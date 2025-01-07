@@ -1,6 +1,6 @@
 ---
 source: loader/src/tests.rs
-expression: "format!(\"{:#?}\", p.symbols.values())"
+expression: "format! (\"{:#?}\", p.symbols.values())"
 ---
 [
     SymbolInfo {
@@ -287,6 +287,13 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
             SymbolRef {
                 id: Index {
                     index: 169,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 170,
                     generation: 0,
                 },
                 kind: Function,
