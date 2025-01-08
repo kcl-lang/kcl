@@ -25,6 +25,7 @@ extern crate kclvm_error;
 use func::FunctionEvalContextRef;
 use generational_arena::{Arena, Index};
 use indexmap::IndexMap;
+use kclvm_runtime::val_plan::KCL_PRIVATE_VAR_PREFIX;
 use lazy::{BacktrackMeta, LazyEvalScope};
 use proxy::{Frame, Proxy};
 use rule::RuleEvalContextRef;
@@ -194,6 +195,11 @@ impl<'ctx> Evaluator<'ctx> {
         }
         // Deal global variables
         for (name, value) in globals.iter() {
+            if name.starts_with(KCL_PRIVATE_VAR_PREFIX)
+                && !self.runtime_ctx.borrow().plan_opts.show_hidden
+            {
+                continue;
+            }
             let mut value_dict = self.dict_value();
             self.dict_insert_merge_value(&mut value_dict, name.as_str(), value);
             self.dict_insert_merge_value(&mut global_dict, SCALAR_KEY, &value_dict);
