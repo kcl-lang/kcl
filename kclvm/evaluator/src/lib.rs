@@ -195,7 +195,9 @@ impl<'ctx> Evaluator<'ctx> {
         }
         // Deal global variables
         for (name, value) in globals.iter() {
-            if name.starts_with(KCL_PRIVATE_VAR_PREFIX) && !self.runtime_ctx.borrow().plan_opts.show_hidden{
+            if name.starts_with(KCL_PRIVATE_VAR_PREFIX)
+                && !self.runtime_ctx.borrow().plan_opts.show_hidden
+            {
                 continue;
             }
             let mut value_dict = self.dict_value();
