@@ -478,6 +478,10 @@ data2 = Data {
 version = "v0.1.0"
 "#}
 
+evaluator_snapshot! {list_comp1, r#"
+a = [ x for x in "你好"]
+"#}
+
 #[test]
 fn test_if_stmt_setters() {
     let p = load_packages(&LoadPackageOptions {
