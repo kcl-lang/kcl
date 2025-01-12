@@ -429,6 +429,14 @@ kclvm_value_ref_t* kclvm_net_is_IPv4(kclvm_context_t* ctx, kclvm_value_ref_t* ar
 
 kclvm_value_ref_t* kclvm_net_is_global_unicast_IP(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
+kclvm_value_ref_t* kclvm_net_parse_CIDR (kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+
+kclvm_value_ref_t* kclvm_net_hosts_in_CIDR (kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+
+kclvm_value_ref_t* kclvm_net_subnets_from_CIDR (kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+
+kclvm_value_ref_t* kclvm_net_is_IP_in_CIDR (kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
+
 kclvm_value_ref_t* kclvm_net_is_interface_local_multicast_IP(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_net_is_link_local_multicast_IP(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
