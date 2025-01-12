@@ -513,16 +513,25 @@ pub extern "C" fn kclvm_net_is_IP_in_CIDR(
         if let Some(cidr) = get_call_arg_str(args, kwargs, 1, Some("cidr")) {
             let parts: Vec<&str> = cidr.split('/').collect();
             if parts.len() == 2 {
-                let ip = parts[0];
-                let mask = parts[1];
-                if let Ok(ip) = Ipv4Addr::from_str(ip) {
-                    if let Ok(mask) = mask.parse::<u8>() {
-                        let mask = u32::from_be_bytes(ip.octets()) & !((1 << (32 - mask)) - 1);
-                        let ip = u32::from_be_bytes(ip.octets());
-                        let x = (ip & mask) == mask;
-                        return kclvm_value_Bool(ctx, x as i8);
-                    }
-                }
+                let cidr_ip = parts[0];
+                let mask_bits = parts[1];
+                let ip_addr = match Ipv4Addr::from_str(&ip) {
+                    Ok(ip_addr) => ip_addr,
+                    Err(_) => return kclvm_value_False(ctx),
+                };
+                let cidr_ip_addr = match Ipv4Addr::from_str(cidr_ip) {
+                    Ok(cidr_ip_addr) => cidr_ip_addr,
+                    Err(_) => return kclvm_value_False(ctx),
+                };
+                let mask_bits = match mask_bits.parse::<u8>() {
+                    Ok(mask_bits) if mask_bits <= 32 => mask_bits,
+                    _ => return kclvm_value_False(ctx),
+                };
+                let mask = !((1 << (32 - mask_bits)) - 1);
+                let ip_u32 = u32::from_be_bytes(ip_addr.octets());
+                let cidr_ip_u32 = u32::from_be_bytes(cidr_ip_addr.octets());
+                let is_in_cidr = (ip_u32 & mask) == (cidr_ip_u32 & mask);
+                return kclvm_value_Bool(ctx, is_in_cidr as i8);
             }
         }
         return kclvm_value_False(ctx);

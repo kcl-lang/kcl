@@ -1,6 +1,7 @@
 ---
 source: loader/src/tests.rs
 expression: "format! (\"{:#?}\", p.symbols.values())"
+snapshot_kind: text
 ---
 [
     SymbolInfo {
@@ -88,34 +89,6 @@ expression: "format! (\"{:#?}\", p.symbols.values())"
             },
         ),
         attrs: [
-            SymbolRef {
-                id: Index {
-                    index: 141,
-                    generation: 0,
-                },
-                kind: Function,
-            },
-            SymbolRef {
-                id: Index {
-                    index: 142,
-                    generation: 0,
-                },
-                kind: Function,
-            },
-            SymbolRef {
-                id: Index {
-                    index: 143,
-                    generation: 0,
-                },
-                kind: Function,
-            },
-            SymbolRef {
-                id: Index {
-                    index: 144,
-                    generation: 0,
-                },
-                kind: Function,
-            },
             SymbolRef {
                 id: Index {
                     index: 145,
@@ -294,6 +267,34 @@ expression: "format! (\"{:#?}\", p.symbols.values())"
             SymbolRef {
                 id: Index {
                     index: 170,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 171,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 172,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 173,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 174,
                     generation: 0,
                 },
                 kind: Function,

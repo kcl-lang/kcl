@@ -217,7 +217,7 @@ register_net_member! {
         false,
         None,
     )
-    is_IP =>Type::function(
+    is_IP => Type::function(
         None,
         Type::bool_ref(),
         &[
@@ -233,7 +233,7 @@ register_net_member! {
         false,
         None,
     )
-    is_loopback_IP =>Type::function(
+    is_loopback_IP => Type::function(
         None,
         Type::bool_ref(),
         &[
@@ -249,7 +249,7 @@ register_net_member! {
         false,
         None,
     )
-    is_multicast_IP =>Type::function(
+    is_multicast_IP => Type::function(
         None,
         Type::bool_ref(),
         &[
@@ -281,7 +281,7 @@ register_net_member! {
         false,
         None,
     )
-    is_link_local_multicast_IP =>Type::function(
+    is_link_local_multicast_IP => Type::function(
         None,
         Type::bool_ref(),
         &[
@@ -297,7 +297,7 @@ register_net_member! {
         false,
         None,
     )
-    is_link_local_unicast_IP =>Type::function(
+    is_link_local_unicast_IP => Type::function(
         None,
         Type::bool_ref(),
         &[
@@ -313,7 +313,7 @@ register_net_member! {
         false,
         None,
     )
-    is_global_unicast_IP =>Type::function(
+    is_global_unicast_IP => Type::function(
         None,
         Type::bool_ref(),
         &[
@@ -347,7 +347,7 @@ register_net_member! {
     )
     parse_CIDR => Type::function(
         None,
-        Type::dict_ref(Type::str_ref(), Type::str_ref()),
+        Type::dict_ref(Type::str_ref(), Type::any_ref()),
         &[
             Parameter {
                 name: "cidr".to_string(),
@@ -387,14 +387,7 @@ register_net_member! {
                 has_default: false,
                 default_value: None,
                 range: dummy_range(),
-            },
-            Parameter {
-                name: "new_prefix".to_string(),
-                ty: Type::int_ref(),
-                has_default: false,
-                default_value: None,
-                range: dummy_range(),
-            },
+            }
         ],
         r#"Split a CIDR block into smaller subnets with a given prefix."#,
         false,
