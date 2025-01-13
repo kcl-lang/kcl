@@ -1098,3 +1098,15 @@ fn test_clear_cache_by_module() {
         assert_eq!(cached_scope.invalidate_pkgs, expect);
     };
 }
+
+#[test]
+fn test_resolve_prog1ram() {
+    let mut program = parse_program("./src/resolver/test_data/lambda_attr.k").unwrap();
+    let scope = resolve_program(&mut program);
+    assert_eq!(scope.handler.diagnostics.len(), 1);
+    assert_eq!(scope.handler.diagnostics[0].messages.len(), 1);
+    assert_eq!(
+        scope.handler.diagnostics[0].messages[0].message,
+        "can not define the type '() -> {str:str}' as schema attr"
+    );
+}

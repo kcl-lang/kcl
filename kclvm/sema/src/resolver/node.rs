@@ -396,6 +396,28 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
             .get_type_of_attr(name)
             .map_or(self.any_ty(), |ty| ty);
 
+        match &expected_ty.kind {
+            TypeKind::Function(_) | TypeKind::Module(_) | TypeKind::None | TypeKind::Void => {
+                self.handler.add_error(
+                    ErrorKind::TypeError,
+                    &[
+                        Message {
+                            range: schema_attr.ty.get_span_pos(),
+                            style: Style::LineAndColumn,
+                            message: format!(
+                                "can not define the type '{}' as schema attr",
+                                expected_ty.ty_str(),
+                            ),
+                            note: None,
+                            suggested_replacement: None,
+                        }
+                    ],
+                );
+            }
+
+            _ => {}
+        }
+
         self.node_ty_map.borrow_mut().insert(
             self.get_node_key(schema_attr.name.id.clone()),
             expected_ty.clone(),
