@@ -1718,6 +1718,36 @@ impl<'a> Parser<'a> {
             }
         };
 
+        if !need_skip_newlines {
+            // Only parse one inline key-value pair.
+            parse_body_item(self, &mut body, need_skip_newlines);
+        } else {
+            while parse_body_item(self, &mut body, need_skip_newlines) {
+                if self.token.kind == TokenKind::Eof {
+                    self.bump();
+                    break;
+                }
+                // bump optional comma at the endline.
+                if let TokenKind::Comma = self.token.kind {
+                    self.bump();
+                }
+                self.skip_newlines();
+            }
+        }
+
+        return if need_skip_newlines {
+            self.skip_newlines();
+            Box::new(Node::node(
+                body,
+                self.sess.struct_token_loc(token, self.prev_token),
+            ))
+        } else {
+            Box::new(Node::node(
+                body,
+                self.sess.struct_token_loc(token, self.prev_token),
+            ))
+        };
+
         fn parse_body_item(
             this: &mut Parser,
             body: &mut ConfigIfEntryExpr,
@@ -1843,32 +1873,6 @@ impl<'a> Parser<'a> {
             }
             this.drop(marker);
             true
-        }
-
-        if !need_skip_newlines {
-            // Only parse one inline key-value pair.
-            parse_body_item(self, &mut body, need_skip_newlines);
-        } else {
-            while parse_body_item(self, &mut body, need_skip_newlines) {
-                // bump optional comma at the endline.
-                if let TokenKind::Comma = self.token.kind {
-                    self.bump();
-                }
-                self.skip_newlines();
-            }
-        }
-
-        if need_skip_newlines {
-            self.skip_newlines();
-            Box::new(Node::node(
-                body,
-                self.sess.struct_token_loc(token, self.prev_token),
-            ))
-        } else {
-            Box::new(Node::node(
-                body,
-                self.sess.struct_token_loc(token, self.prev_token),
-            ))
         }
     }
 
