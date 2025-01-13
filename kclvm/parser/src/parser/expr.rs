@@ -1723,7 +1723,6 @@ impl<'a> Parser<'a> {
             parse_body_item(self, &mut body, need_skip_newlines);
         } else {
             while parse_body_item(self, &mut body, need_skip_newlines) {
-
                 if self.token.kind == TokenKind::Eof {
                     self.bump();
                     break;
