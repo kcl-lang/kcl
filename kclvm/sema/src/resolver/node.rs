@@ -400,18 +400,16 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
             TypeKind::Function(_) | TypeKind::Module(_) | TypeKind::None | TypeKind::Void => {
                 self.handler.add_error(
                     ErrorKind::TypeError,
-                    &[
-                        Message {
-                            range: schema_attr.ty.get_span_pos(),
-                            style: Style::LineAndColumn,
-                            message: format!(
-                                "can not define the type '{}' as schema attr",
-                                expected_ty.ty_str(),
-                            ),
-                            note: None,
-                            suggested_replacement: None,
-                        }
-                    ],
+                    &[Message {
+                        range: schema_attr.ty.get_span_pos(),
+                        style: Style::LineAndColumn,
+                        message: format!(
+                            "can not define the type '{}' as schema attr",
+                            expected_ty.ty_str(),
+                        ),
+                        note: None,
+                        suggested_replacement: None,
+                    }],
                 );
             }
 
