@@ -123,15 +123,22 @@ pub fn type_pack_and_check(
                                         .push(format!("Schema {} not contains attr {}", tpe, key));
                                 }
                             }
+
+                            for attr in SchemaEvalContext::get_attrs(s, &caller.ctx) {
+                                if !config.values.contains_key(&attr) {
+                                    error_msgs
+                                        .push(format!("Schema {}'s attr {} is missing", tpe, attr));
+                                }
+                            }
                         }
                     }
                 }
             }
         }
         panic!(
-            "expect {expected_type}, got {}. For details: {}",
+            "expect {expected_type}, got {}. For details:\n{}",
             val_plan::type_of(value, true),
-            error_msgs.join(" ")
+            error_msgs.join("\n")
         );
     }
     converted_value

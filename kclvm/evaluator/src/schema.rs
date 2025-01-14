@@ -205,6 +205,29 @@ impl SchemaEvalContext {
         false
     }
 
+    /// Get all attribute from schema
+    pub fn get_attrs(s: &Evaluator, ctx: &SchemaEvalContextRef) -> Vec<String> {
+        let mut attrs = vec![];
+        for stmt in &ctx.borrow().node.body {
+            if let ast::Stmt::SchemaAttr(attr) = &stmt.node {
+                attrs.push(attr.name.node.clone());
+            }
+        }
+        if let Some(index) = ctx.borrow().parent {
+            let frame = {
+                let frames = s.frames.borrow();
+                frames
+                    .get(index)
+                    .expect(kcl_error::INTERNAL_ERROR_MSG)
+                    .clone()
+            };
+            if let Proxy::Schema(schema) = &frame.proxy {
+                attrs.extend(SchemaEvalContext::get_attrs(s, &schema.ctx));
+            }
+        }
+        attrs
+    }
+
     /// Whether the index signature is the schema context.
     pub fn has_index_signature(s: &Evaluator, ctx: &SchemaEvalContextRef) -> bool {
         if ctx.borrow().node.index_signature.is_some() {
