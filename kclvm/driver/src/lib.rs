@@ -152,7 +152,20 @@ pub fn lookup_compile_workspaces(
                 if load_pkg {
                     if folder.is_dir() {
                         if let Ok(files) = get_kcl_files(folder.clone(), false) {
-                            workspaces.insert(workspace, (files, Some(load_opt), metadata));
+                            match lookup_the_nearest_file_dir(folder.to_path_buf(), KCL_MOD_FILE) {
+                                Some(dir) => {
+                                    let nearest_mod = dir.join(KCL_MOD_FILE);
+                                    let (_, opt, metadata) = lookup_compile_workspace(
+                                        tool,
+                                        &nearest_mod.adjust_canonicalization(),
+                                        load_pkg,
+                                    );
+                                    workspaces.insert(workspace, (files, opt, metadata));
+                                }
+                                None => {
+                                    workspaces.insert(workspace, (files, Some(load_opt), metadata));
+                                }
+                            }
                             return (workspaces, None);
                         }
                     }
