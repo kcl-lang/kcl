@@ -1,7 +1,7 @@
 use kclvm_runtime::{
-    check_type, dereference_type, is_dict_type, is_list_type, is_type_union, schema_config_meta,
-    schema_runtime_type, separate_kv, split_type_union, val_plan, ConfigEntryOperationKind,
-    ValueRef, BUILTIN_TYPES, KCL_TYPE_ANY, PKG_PATH_PREFIX,
+    check_type, dereference_type, is_dict_type, is_list_type, is_schema_type, is_type_union,
+    schema_config_meta, schema_runtime_type, separate_kv, split_type_union, val_plan,
+    ConfigEntryOperationKind, ValueRef, BUILTIN_TYPES, KCL_TYPE_ANY, PKG_PATH_PREFIX,
 };
 use scopeguard::defer;
 
@@ -72,7 +72,7 @@ pub fn type_pack_and_check(
     let mut checked = false;
     let mut converted_value = value.clone();
     let expected_type = &expected_types.join(" | ").replace('@', "");
-    for tpe in expected_types {
+    for tpe in &expected_types {
         if !is_schema {
             converted_value = convert_collection_value(s, value, tpe);
         }
@@ -88,9 +88,66 @@ pub fn type_pack_and_check(
         }
     }
     if !checked {
+        let mut error_msgs = vec![];
+        for tpe in &expected_types {
+            if is_schema_type(tpe) {
+                let schema_type_name = if tpe.contains('.') {
+                    if tpe.starts_with(PKG_PATH_PREFIX) {
+                        tpe.to_string()
+                    } else {
+                        format!("{PKG_PATH_PREFIX}{tpe}")
+                    }
+                } else {
+                    format!("{}.{}", s.current_pkgpath(), tpe)
+                };
+
+                if let Some(index) = s.schemas.borrow().get(&schema_type_name) {
+                    let frame = {
+                        let frames = s.frames.borrow();
+                        frames
+                            .get(*index)
+                            .expect(kcl_error::INTERNAL_ERROR_MSG)
+                            .clone()
+                    };
+                    if let Proxy::Schema(caller) = &frame.proxy {
+                        if value.is_config() {
+                            let config = value.as_dict_ref();
+                            for (key, _) in &config.values {
+                                let no_such_attr =
+                                    !SchemaEvalContext::has_attr(s, &caller.ctx, key)
+                                        && !key.starts_with('_');
+                                let has_index_signature =
+                                    SchemaEvalContext::has_index_signature(s, &caller.ctx);
+                                if !has_index_signature && no_such_attr {
+                                    error_msgs.push(format!(
+                                        "Schema {} does not contain attribute {}",
+                                        tpe, key
+                                    ));
+                                }
+                            }
+
+                            for (attr, is_optional) in SchemaEvalContext::get_attrs(s, &caller.ctx)
+                            {
+                                if !config.values.contains_key(&attr) && !is_optional {
+                                    error_msgs.push(format!(
+                                        "Schema {}'s attribute {} is missing",
+                                        tpe, attr
+                                    ));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
         panic!(
-            "expect {expected_type}, got {}",
-            val_plan::type_of(value, true)
+            "expect {expected_type}, got {}{}",
+            val_plan::type_of(value, true),
+            if error_msgs.is_empty() {
+                "".to_string()
+            } else {
+                format!(". For details:\n{}", error_msgs.join("\n"))
+            }
         );
     }
     converted_value
