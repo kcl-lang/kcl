@@ -2,5 +2,7 @@ error[E3M38]: EvaluationError
   --> ${CWD}/main.k:18:1
    |
 18 | child_a = _child_a as A
-   |  expect A, got child.A
+   |  expect A, got child.A. For details:
+Schema A does not contain attribute foo
+Schema A's attribute main is missing
    |

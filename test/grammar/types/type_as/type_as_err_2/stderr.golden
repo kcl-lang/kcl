@@ -2,5 +2,7 @@ error[E3M38]: EvaluationError
  --> ${CWD}/main.k:8:1
   |
 8 | bar = foo as Bar
-  |  expect Bar, got Foo
+  |  expect Bar, got Foo.For details:
+Schema Bar does not contain attribute foo
+Schema Bar's attribute bar is missing
   |

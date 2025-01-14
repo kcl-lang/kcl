@@ -119,16 +119,20 @@ pub fn type_pack_and_check(
                                 let has_index_signature =
                                     SchemaEvalContext::has_index_signature(s, &caller.ctx);
                                 if !has_index_signature && no_such_attr {
-                                    error_msgs
-                                        .push(format!("Schema {} does not contain attribute {}", tpe, key));
+                                    error_msgs.push(format!(
+                                        "Schema {} does not contain attribute {}",
+                                        tpe, key
+                                    ));
                                 }
                             }
 
                             for (attr, is_optional) in SchemaEvalContext::get_attrs(s, &caller.ctx)
                             {
                                 if !config.values.contains_key(&attr) && !is_optional {
-                                    error_msgs
-                                        .push(format!("Schema {}'s attribute {} is missing", tpe, attr));
+                                    error_msgs.push(format!(
+                                        "Schema {}'s attribute {} is missing",
+                                        tpe, attr
+                                    ));
                                 }
                             }
                         }
@@ -137,12 +141,12 @@ pub fn type_pack_and_check(
             }
         }
         panic!(
-            "expect {expected_type}, got {}.{}",
+            "expect {expected_type}, got {}{}",
             val_plan::type_of(value, true),
             if error_msgs.is_empty() {
                 "".to_string()
             } else {
-                format!("For details:\n{}", error_msgs.join("\n"))
+                format!(". For details:\n{}", error_msgs.join("\n"))
             }
         );
     }

@@ -2,5 +2,7 @@ error[E3M38]: EvaluationError
  --> ${CWD}/main.k:7:1
   |
 7 | person: Person = json.decode('{"err_name": "Alice", "age": 18}')
-  |  expect Person, got dict
+  |  expect Person, got dict.For details:
+Schema Person does not contain attribute err_name
+Schema Person's attribute name is missing
   |
