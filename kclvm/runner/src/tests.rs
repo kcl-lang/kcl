@@ -724,6 +724,14 @@ fn test_kcl_issue_1799() {
     assert!(res.is_ok());
     assert_eq!(
         res.as_ref().unwrap().yaml_result,
-        format!("a: {}", main_test_path.parent().unwrap().canonicalize().unwrap().adjust_canonicalization())
-    );       
+        format!(
+            "a: {}",
+            main_test_path
+                .parent()
+                .unwrap()
+                .canonicalize()
+                .unwrap()
+                .adjust_canonicalization()
+        )
+    );
 }
