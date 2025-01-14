@@ -21,6 +21,7 @@ use kclvm_parser::load_program;
 use kclvm_parser::ParseSession;
 #[cfg(feature = "llvm")]
 use kclvm_sema::resolver::resolve_program;
+use kclvm_utils::path::PathPrefix;
 use serde_json::Value;
 #[cfg(feature = "llvm")]
 use std::fs::create_dir_all;
@@ -723,15 +724,6 @@ fn test_kcl_issue_1799() {
     assert!(res.is_ok());
     assert_eq!(
         res.as_ref().unwrap().yaml_result,
-        format!(
-            "a: {}",
-            main_test_path
-                .parent()
-                .unwrap()
-                .canonicalize()
-                .unwrap()
-                .display()
-                .to_string()
-        )
-    );
+        format!("a: {}", main_test_path.parent().unwrap().canonicalize().unwrap().adjust_canonicalization())
+    );       
 }
