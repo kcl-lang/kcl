@@ -355,27 +355,26 @@ pub fn get_compile_entries_from_paths(
         result.push_entry(entry);
     }
 
-    let pkg_root = if result
+    let main_pkg_paths_count = result
         .get_unique_normal_paths_by_name(kclvm_ast::MAIN_PKG)
-        .len()
-        == 1
-        && opts.work_dir.is_empty()
-    {
+        .len();
+
+    let pkg_root = if main_pkg_paths_count == 1 {
         // If the 'kcl.mod' can be found only once, the package root path will be the path of the 'kcl.mod'.
         result
             .get_unique_normal_paths_by_name(kclvm_ast::MAIN_PKG)
             .get(0)
             .unwrap()
             .to_string()
-    } else if !opts.work_dir.is_empty() {
+    } else if main_pkg_paths_count > 1 && !opts.work_dir.is_empty() {
         // If the 'kcl.mod' can be found more than once, the package root path will be the 'work_dir'.
         if let Some(root_work_dir) = get_pkg_root(&opts.work_dir) {
             root_work_dir
         } else {
-            "".to_string()
+            opts.work_dir.to_string()
         }
     } else {
-        "".to_string()
+        opts.work_dir.to_string()
     };
     result.root_path = pkg_root.clone();
     // Replace the '${KCL_MOD}' of all the paths with package name '__main__'.

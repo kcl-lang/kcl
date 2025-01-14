@@ -21,6 +21,7 @@ use kclvm_parser::load_program;
 use kclvm_parser::ParseSession;
 #[cfg(feature = "llvm")]
 use kclvm_sema::resolver::resolve_program;
+use kclvm_utils::path::PathPrefix;
 use serde_json::Value;
 #[cfg(feature = "llvm")]
 use std::fs::create_dir_all;
@@ -709,5 +710,28 @@ fn test_compile_with_symbolic_link() {
     assert_eq!(
         res.as_ref().unwrap().json_result,
         "{\"The_first_kcl_program\": \"Hello World!\", \"b\": 1}"
+    );
+}
+
+#[test]
+fn test_kcl_issue_1799() {
+    let main_test_path = PathBuf::from("./src/test_issues/github.com/kcl-lang/kcl/1799/main.k");
+    let mut args = ExecProgramArgs::default();
+    args.k_filename_list
+        .push(main_test_path.display().to_string());
+    args.work_dir = Some(".".to_string());
+    let res = exec_program(Arc::new(ParseSession::default()), &args);
+    assert!(res.is_ok());
+    assert_eq!(
+        res.as_ref().unwrap().yaml_result,
+        format!(
+            "a: {}",
+            main_test_path
+                .parent()
+                .unwrap()
+                .canonicalize()
+                .unwrap()
+                .adjust_canonicalization()
+        )
     );
 }
