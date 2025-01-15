@@ -72,6 +72,9 @@ pub struct ExecProgramArgs {
     /// the result without any form of compilation.
     #[serde(skip)]
     pub fast_eval: bool,
+    /// sourcemap denotes whether to generate a source map.
+    /// This is used for debugging purposes.
+    pub sourcemap: bool,
 }
 
 impl ExecProgramArgs {
@@ -187,6 +190,7 @@ impl TryFrom<SettingsFile> for ExecProgramArgs {
             args.sort_keys = cli_configs.sort_keys.unwrap_or_default();
             args.show_hidden = cli_configs.show_hidden.unwrap_or_default();
             args.fast_eval = cli_configs.fast_eval.unwrap_or_default();
+            args.sourcemap = cli_configs.sourcemap.unwrap_or_default();
             args.include_schema_type_path =
                 cli_configs.include_schema_type_path.unwrap_or_default();
             for override_str in cli_configs.overrides.unwrap_or_default() {

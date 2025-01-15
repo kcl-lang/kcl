@@ -1,5 +1,6 @@
 //! Copyright The KCL Authors. All rights reserved.
 use anyhow::{Context, Result};
+use indexmap::set;
 use serde::{
     de::{DeserializeSeed, Error, MapAccess, SeqAccess, Unexpected, Visitor},
     Deserialize, Serialize,
@@ -390,6 +391,7 @@ pub fn merge_settings(settings: &[SettingsFile]) -> SettingsFile {
                 set_if!(result_kcl_cli_configs, sort_keys, kcl_cli_configs);
                 set_if!(result_kcl_cli_configs, show_hidden, kcl_cli_configs);
                 set_if!(result_kcl_cli_configs, fast_eval, kcl_cli_configs);
+                set_if!(result_kcl_cli_configs, sourcemap, kcl_cli_configs);
                 set_if!(
                     result_kcl_cli_configs,
                     include_schema_type_path,
