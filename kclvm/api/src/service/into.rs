@@ -49,6 +49,7 @@ impl IntoLoadSettingsFiles for SettingsFile {
                 show_hidden: config.show_hidden.unwrap_or_default(),
                 fast_eval: config.fast_eval.unwrap_or_default(),
                 include_schema_type_path: config.include_schema_type_path.unwrap_or_default(),
+                sourcemap: config.sourcemap.unwrap_or_default(),
             }),
             kcl_options: match self.kcl_options {
                 Some(opts) => opts

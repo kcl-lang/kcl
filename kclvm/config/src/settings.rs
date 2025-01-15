@@ -68,6 +68,7 @@ pub struct Config {
     pub package_maps: Option<HashMap<String, String>>,
     /// Use the evaluator to execute the AST program instead of AOT.
     pub fast_eval: Option<bool>,
+    pub sourcemap: Option<bool>,
 }
 
 impl SettingsFile {
@@ -88,6 +89,7 @@ impl SettingsFile {
                 fast_eval: Some(false),
                 include_schema_type_path: Some(false),
                 package_maps: Some(HashMap::default()),
+                sourcemap: Some(false),
             }),
             kcl_options: Some(vec![]),
         }
