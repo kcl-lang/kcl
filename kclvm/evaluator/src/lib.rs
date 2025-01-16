@@ -27,6 +27,7 @@ use generational_arena::{Arena, Index};
 use indexmap::IndexMap;
 use kclvm_runtime::val_plan::KCL_PRIVATE_VAR_PREFIX;
 use lazy::{BacktrackMeta, LazyEvalScope};
+use node::KCLSourceMap;
 use proxy::{Frame, Proxy};
 use rule::RuleEvalContextRef;
 use schema::SchemaEvalContextRef;
@@ -88,7 +89,9 @@ pub struct Evaluator<'ctx> {
     /// Schema attr backtrack meta.
     pub backtrack_meta: RefCell<Vec<BacktrackMeta>>,
     /// Current AST id for the evaluator walker.
-    pub ast_id: RefCell<AstIndex>,
+    pub ast_id: RefCell<AstIndex>, 
+    // Source map for code generated
+    pub source_map: std::option::Option<KCLSourceMap>,
 }
 
 #[derive(Clone)]
@@ -147,11 +150,12 @@ impl<'ctx> Evaluator<'ctx> {
             local_vars: RefCell::new(Default::default()),
             backtrack_meta: RefCell::new(Default::default()),
             ast_id: RefCell::new(AstIndex::default()),
+            source_map: Some(KCLSourceMap::new()),
         }
     }
 
     /// Evaluate the program and return the JSON and YAML result.
-    pub fn run(self: &Evaluator<'ctx>) -> Result<(String, String)> {
+    pub fn run(self: &Evaluator<'ctx> ) -> Result<(String, String)> {
         let modules = self.program.get_modules_for_pkg(kclvm_ast::MAIN_PKG);
         self.init_scope(kclvm_ast::MAIN_PKG);
         self.compile_ast_modules(&modules);

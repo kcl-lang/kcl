@@ -33,36 +33,6 @@ pub type kclvm_context_t = std::ffi::c_void;
 #[allow(non_camel_case_types)]
 pub type kclvm_value_ref_t = std::ffi::c_void;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct KCLSourceMap {
-    version: u8,
-    sources: Vec<String>,
-    mappings: HashMap<String, Vec<Mapping>>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Mapping {
-    generated_line: u32,
-    generated_column: u32,
-    original_line: u32,
-    original_column: u32,
-    source_index: usize,
-}
-
-impl KCLSourceMap {
-    pub fn new() -> Self {
-        Self {
-            version: 1,
-            sources: Vec::new(),
-            mappings: HashMap::new(),
-        }
-    }
-
-    pub fn add_mapping(&mut self, source: String, mapping: Mapping) {
-        self.mappings.entry(source).or_default().push(mapping);
-    }
-}
-
 
 /// ExecProgramArgs denotes the configuration required to execute the KCL program.
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -528,7 +498,6 @@ static ONCE_PANIC_HOOK: Lazy<()> = Lazy::new(|| {
 
 pub struct FastRunner {
     opts: RunnerOptions,
-    sourcemap: Option<KCLSourceMap>,
 }
 
 impl FastRunner {
@@ -536,7 +505,6 @@ impl FastRunner {
     pub fn new(opts: Option<RunnerOptions>) -> Self {
         Self {
             opts: opts.unwrap_or_default(),
-            sourcemap: None,
         }
     }
 
@@ -571,33 +539,29 @@ impl FastRunner {
                 }
             })
         }));
-        
-        // Before evaluation, initialize sourcemap if enabled
-        if args.sourcemap == "true" {
-            self.sourcemap = Some(KCLSourceMap::new());
-        }
 
         // During evaluation, track locations
         let evaluator_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            //boolean value to check if the sourcemap is enabled
             let result = evaluator.run();
             
-            // If sourcemap enabled, collect mappings
-            if let Some(sourcemap) = &mut self.sourcemap {
-                // Get source location from result
-                let source_loc = result.get_source_location();
+            // // If sourcemap enabled, collect mappings
+            // if let Some(sourcemap) = &mut self.sourcemap {
+            //     // Get source location from result
+            //     // let source_loc = result.get_source_location();
                 
-                // Create mapping
-                let mapping = Mapping {
-                    generated_line: result.yaml_line,
-                    generated_column: result.yaml_column,
-                    original_line: source_loc.line,
-                    original_column: source_loc.column,
-                    source_index: source_loc.file_index,
-                };
+            //     // // Create mapping
+            //     // let mapping = Mapping {
+            //     //     generated_line: result.yaml_line,
+            //     //     generated_column: result.yaml_column,
+            //     //     original_line: source_loc.line,
+            //     //     original_column: source_loc.column,
+            //     //     source_index: source_loc.file_index,
+            //     // };
 
-                // Add to sourcemap
-                sourcemap.add_mapping(source_loc.filename, mapping);
-            }
+            //     // Add to sourcemap
+            //     sourcemap.add_mapping(source_loc.filename, mapping);
+            // }
             
             result
         }));

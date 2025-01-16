@@ -6,6 +6,8 @@ use std::sync::{Arc, RwLock};
 
 use anyhow::Ok;
 use generational_arena::Index;
+// use serde::{Serialize, Deserialize};
+use crate::HashMap;
 use kclvm_ast::ast::{self, CallExpr, ConfigEntry, Module, NodeRef};
 use kclvm_ast::walker::TypedResultWalker;
 use kclvm_runtime::{
@@ -27,6 +29,36 @@ use crate::union::union_entry;
 use crate::{backtrack_break_here, backtrack_update_break};
 use crate::{error as kcl_error, GLOBAL_LEVEL, INNER_LEVEL};
 use crate::{EvalResult, Evaluator};
+
+
+pub struct KCLSourceMap {
+    version: u8,
+    sources: Vec<String>,
+    mappings: HashMap<String, Vec<Mapping>>,
+}
+
+pub struct Mapping {
+    generated_line: u32,
+    generated_column: u32,
+    original_line: u32,
+    original_column: u32,
+    source_index: usize,
+}
+
+impl KCLSourceMap {
+    pub fn new() -> Self {
+        Self {
+            version: 1,
+            sources: Vec::new(),
+            mappings: HashMap::new(),
+        }
+    }
+
+    pub fn add_mapping(&mut self, source: String, mapping: Mapping) {
+        self.mappings.entry(source).or_default().push(mapping);
+    }
+}
+
 
 /// Impl TypedResultWalker for Evaluator to visit AST nodes to evaluate the result.
 impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
