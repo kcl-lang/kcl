@@ -35,6 +35,10 @@ pub fn run_command<W: Write>(matches: &ArgMatches, writer: &mut W) -> Result<()>
                     // using [`writeln`] can be better to redirect the output.
                     None => writeln!(writer, "{}", result.yaml_result)?,
                 }
+                match sourcemap {
+                    Some(s) => std::fs::write(s, result.sourcemap_result)?,
+                    None => {}
+                }
             }
         }
         // Other error message
