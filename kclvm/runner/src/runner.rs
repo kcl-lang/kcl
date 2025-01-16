@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use kclvm_ast::token::LitKind::Str;
 use kclvm_evaluator::Evaluator;
 use std::collections::HashMap;
 use std::{cell::RefCell, rc::Rc};
@@ -74,7 +75,7 @@ pub struct ExecProgramArgs {
     pub fast_eval: bool,
     /// sourcemap denotes whether to generate a source map.
     /// This is used for debugging purposes.
-    pub sourcemap: bool,
+    pub sourcemap: String,
 }
 
 impl ExecProgramArgs {

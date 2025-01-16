@@ -58,7 +58,7 @@ pub fn app() -> Command {
             .arg(arg!(target: --target <target> "Specify the target type"))
             .arg(arg!(recursive: -R --recursive "Compile the files directory recursively"))
             .arg(arg!(package_map: -E --external <package_map> ... "Mapping of package name and path where the package is located").num_args(1..))
-            .arg(arg!(sourcemap: --sourcemap "Generate a sourcemap")),
+            .arg(arg!(sourcemap: --sourcemap <sourcemap> "Generate a sourcemap")),
         )
     .subcommand(Command::new("server").about("Start a rpc server for APIs"))
     .subcommand(Command::new("version").about("Show the KCL version"))

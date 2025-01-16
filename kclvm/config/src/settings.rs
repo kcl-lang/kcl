@@ -1,6 +1,7 @@
 //! Copyright The KCL Authors. All rights reserved.
 use anyhow::{Context, Result};
 use indexmap::set;
+use kclvm_ast::token::LitKind::Str;
 use serde::{
     de::{DeserializeSeed, Error, MapAccess, SeqAccess, Unexpected, Visitor},
     Deserialize, Serialize,
@@ -26,6 +27,15 @@ impl SettingsPathBuf {
     pub fn output(&self) -> Option<String> {
         match &self.1.kcl_cli_configs {
             Some(c) => c.output.clone(),
+            None => None,
+        }
+    }
+
+    /// Get the SourceMap setting.
+    #[inline]
+    pub fn sourcemap(&self) -> Option<String> {
+        match &self.1.kcl_cli_configs {
+            Some(c) => c.sourcemap.clone(),
             None => None,
         }
     }
@@ -69,7 +79,7 @@ pub struct Config {
     pub package_maps: Option<HashMap<String, String>>,
     /// Use the evaluator to execute the AST program instead of AOT.
     pub fast_eval: Option<bool>,
-    pub sourcemap: Option<bool>,
+    pub sourcemap: Option<String>,
 }
 
 impl SettingsFile {
@@ -90,7 +100,7 @@ impl SettingsFile {
                 fast_eval: Some(false),
                 include_schema_type_path: Some(false),
                 package_maps: Some(HashMap::default()),
-                sourcemap: Some(false),
+                sourcemap: None,
             }),
             kcl_options: Some(vec![]),
         }

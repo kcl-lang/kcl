@@ -13,6 +13,7 @@ pub fn run_command<W: Write>(matches: &ArgMatches, writer: &mut W) -> Result<()>
     // Config settings building
     let settings = must_build_settings(matches);
     let output = settings.output();
+    let sourcemap = settings.sourcemap();
     let sess = Arc::new(ParseSession::default());
     match exec_program(sess.clone(), &settings.try_into()?) {
         Ok(result) => {
