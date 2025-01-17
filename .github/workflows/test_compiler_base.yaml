@@ -43,7 +43,11 @@ jobs:
       - name: Install rust nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
+<<<<<<< HEAD
           toolchain: 1.83
+=======
+          toolchain: 1.84
+>>>>>>> 5b74ce66 (chore: bump version to 0.11.1)
           override: true
           components: clippy, rustfmt
       - name: Compiler_base rust unit test
