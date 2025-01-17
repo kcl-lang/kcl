@@ -29,12 +29,15 @@ use crate::union::union_entry;
 use crate::{backtrack_break_here, backtrack_update_break};
 use crate::{error as kcl_error, GLOBAL_LEVEL, INNER_LEVEL};
 use crate::{EvalResult, Evaluator};
-
-
 pub struct KCLSourceMap {
     version: u8,
     sources: Vec<String>,
     mappings: HashMap<String, Vec<Mapping>>,
+}
+
+pub struct SourcePos {
+    line: u32,
+    column: u32,
 }
 
 pub struct Mapping {
@@ -69,9 +72,12 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
      */
 
     fn walk_stmt(&self, stmt: &'ctx ast::Node<ast::Stmt>) -> Self::Result {
-        backtrack_break_here!(self, stmt);
-        self.update_ctx_panic_info(stmt);
-        self.update_ast_id(stmt);
+        self.current_source_pos = Some(SourcePos {
+            line: stmt.pos().1 as u32,
+            column: stmt.pos().2 as u32,
+        }).into();
+        
+        let yaml_start_line = self.get_current_yaml_line();
         let value = match &stmt.node {
             ast::Stmt::TypeAlias(type_alias) => self.walk_type_alias_stmt(type_alias),
             ast::Stmt::Expr(expr_stmt) => self.walk_expr_stmt(expr_stmt),
@@ -87,7 +93,15 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             ast::Stmt::Schema(schema_stmt) => self.walk_schema_stmt(schema_stmt),
             ast::Stmt::Rule(rule_stmt) => self.walk_rule_stmt(rule_stmt),
         };
-        backtrack_update_break!(self, stmt);
+        
+        // Store mapping after YAML generation
+        if let Some(pos) = *self.current_source_pos.borrow() {
+            if let Some(ref mut sm) = self.source_map {
+                let vec = sm.mappings.entry(stmt.filename.clone()).or_insert_with(Vec::new);
+                vec.push((pos.line, yaml_start_line));
+            }
+        }
+        
         value
     }
 
@@ -1274,7 +1288,7 @@ impl<'ctx> Evaluator<'ctx> {
                     }
                 } else {
                     // If variable exists in the scope and update it, if not, add it to the scope.
-                    if !self.store_variable_in_current_scope(name, value.clone()) {
+                    if (!self.store_variable_in_current_scope(name, value.clone())) {
                         self.add_variable(name, self.undefined_value());
                         self.store_variable(name, value);
                     }
@@ -1357,7 +1371,7 @@ impl<'ctx> Evaluator<'ctx> {
                             }
                         } else {
                             // If variable exists in the scope and update it, if not, add it to the scope.
-                            if !self.store_variable_in_current_scope(name, value.clone()) {
+                            if (!self.store_variable_in_current_scope(name, value.clone())) {
                                 self.add_variable(name, self.undefined_value());
                                 self.store_variable(name, value);
                             }
