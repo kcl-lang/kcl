@@ -40,7 +40,7 @@ type kclvm_int_t = i64;
 #[allow(dead_code, non_camel_case_types)]
 type kclvm_float_t = f64;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct RuntimePanicRecord {
     pub kcl_panic_info: bool,
     pub message: String,
@@ -85,7 +85,7 @@ fn new_ctx_with_opts(opts: FFIRunOptions, path_selector: &[String]) -> Context {
 #[no_mangle]
 #[runtime_fn]
 #[allow(clippy::too_many_arguments)]
-pub unsafe extern "C" fn _kcl_run(
+pub unsafe extern "C-unwind" fn _kcl_run(
     kclvm_main_ptr: u64, // main.k => kclvm_main
     option_len: kclvm_size_t,
     option_keys: *const *const kclvm_char_t,
@@ -110,7 +110,7 @@ pub unsafe extern "C" fn _kcl_run(
         kclvm_builtin_option_init(ctx, option_keys[i], option_values[i]);
     }
     let prev_hook = std::panic::take_hook();
-    std::panic::set_hook(Box::new(|info: &std::panic::PanicInfo| {
+    std::panic::set_hook(Box::new(|info: &std::panic::PanicHookInfo| {
         KCL_RUNTIME_PANIC_RECORD.with(|record| {
             let mut record = record.borrow_mut();
             record.kcl_panic_info = true;
@@ -172,7 +172,7 @@ unsafe fn _kcl_run_in_closure(
     kclvm_main_ptr: u64, // main.k => kclvm_main
 ) {
     let kclvm_main = (&kclvm_main_ptr as *const u64) as *const ()
-        as *const extern "C" fn(
+        as *const extern "C-unwind" fn(
             ctx: *mut kclvm_context_t,
             scope: *mut kclvm_eval_scope_t,
         ) -> *mut kclvm_value_ref_t;

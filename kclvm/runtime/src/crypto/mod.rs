@@ -21,7 +21,7 @@ type kclvm_value_ref_t = ValueRef;
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_crypto_md5(
+pub extern "C-unwind" fn kclvm_crypto_md5(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -43,7 +43,7 @@ pub extern "C" fn kclvm_crypto_md5(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_crypto_sha1(
+pub extern "C-unwind" fn kclvm_crypto_sha1(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -65,7 +65,7 @@ pub extern "C" fn kclvm_crypto_sha1(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_crypto_sha224(
+pub extern "C-unwind" fn kclvm_crypto_sha224(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -97,7 +97,7 @@ pub extern "C" fn kclvm_crypto_sha224(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_crypto_sha256(
+pub extern "C-unwind" fn kclvm_crypto_sha256(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -129,7 +129,7 @@ pub extern "C" fn kclvm_crypto_sha256(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_crypto_sha384(
+pub extern "C-unwind" fn kclvm_crypto_sha384(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -161,7 +161,7 @@ pub extern "C" fn kclvm_crypto_sha384(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_crypto_sha512(
+pub extern "C-unwind" fn kclvm_crypto_sha512(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -193,7 +193,7 @@ pub extern "C" fn kclvm_crypto_sha512(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_crypto_blake3(
+pub extern "C-unwind" fn kclvm_crypto_blake3(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -221,7 +221,7 @@ pub extern "C" fn kclvm_crypto_blake3(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_crypto_uuid(
+pub extern "C-unwind" fn kclvm_crypto_uuid(
     ctx: *mut kclvm_context_t,
     _args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -232,7 +232,7 @@ pub extern "C" fn kclvm_crypto_uuid(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_crypto_filesha256(
+pub extern "C-unwind" fn kclvm_crypto_filesha256(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -272,7 +272,7 @@ pub extern "C" fn kclvm_crypto_filesha256(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_crypto_filesha512(
+pub extern "C-unwind" fn kclvm_crypto_filesha512(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -310,7 +310,7 @@ pub extern "C" fn kclvm_crypto_filesha512(
 // fileblake3
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_crypto_fileblake3(
+pub extern "C-unwind" fn kclvm_crypto_fileblake3(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,

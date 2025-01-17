@@ -7,7 +7,7 @@ use handlebars::{html_escape, Handlebars};
 /// returns the string output.
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_template_execute(
+pub extern "C-unwind" fn kclvm_template_execute(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -39,7 +39,7 @@ pub extern "C" fn kclvm_template_execute(
 /// Replaces the characters `&"<>` with the equivalent html / xml entities.
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_template_html_escape(
+pub extern "C-unwind" fn kclvm_template_html_escape(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,

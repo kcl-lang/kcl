@@ -12,7 +12,7 @@
 #include <stdint.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C-unwind" {
 #endif
 
 // please keep same as 'kclvm/runtime/src/kind/mod.rs#Kind'
@@ -724,7 +724,7 @@ kclvm_value_ref_t* kclvm_yaml_encode_all(kclvm_context_t* ctx, kclvm_value_ref_t
 kclvm_value_ref_t* kclvm_yaml_validate(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 #ifdef __cplusplus
-} // extern "C"
+} // extern "C-unwind"
 #endif
 
 #endif // _kclvm_h_
