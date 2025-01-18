@@ -77,6 +77,17 @@ pub fn hover(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Hover> {
 
                         if !schema_ty.doc.is_empty() {
                             docs.push((schema_ty.doc.clone(), MarkedStringType::String));
+
+                            // Add examples to the hover content
+                            if !schema_ty.examples.is_empty() {
+                                let examples = schema_ty
+                                    .examples
+                                    .iter()
+                                    .map(|(_, example)| format!("{}\n", example.value))
+                                    .collect::<Vec<String>>()
+                                    .join("\n");
+                                docs.push((examples, MarkedStringType::LanguageString));
+                            }
                         }
                     }
                     _ => {}
@@ -776,5 +787,42 @@ mod tests {
                 value: "name: int".to_string(),
             }));
         assert_eq!(got.contents, expected);
+    }
+
+    #[test]
+    #[bench_test]
+    fn schema_doc_with_examples_hover_test() {
+        let (file, _program, _, gs, _) =
+            compile_test_file("src/test_data/hover_test/schema_with_examples.k");
+
+        let pos = KCLPos {
+            filename: file.clone(),
+            line: 1,
+            column: Some(8),
+        };
+        let got = hover(&pos, &gs).unwrap();
+
+        let expect_content = vec![
+            lsp_types::MarkedString::String("__main__".to_string()),
+            lsp_types::MarkedString::LanguageString(lsp_types::LanguageString {
+                language: "KCL".to_string(),
+                value: "schema Server:\n    workloadType: str = \"Deployment\"\n    name: str\n    labels?: {str:str}".to_string(),
+            }),
+            lsp_types::MarkedString::String("Server is an abstraction of Deployment and StatefulSet.".to_string()),
+            lsp_types::MarkedString::LanguageString(lsp_types::LanguageString {
+                language: "KCL".to_string(),
+                value: "import models.kube.frontend\nimport models.kube.frontend.container\nimport models.kube.templates.resource as res_tpl\n\nappConfiguration: frontend.Server {\n    mainContainer = container.Main {\n        name = \"php-redis\"\n        env: {\n            \"GET_HOSTS_FROM\": {value = \"dns\"}\n        }\n    }\n}\n".to_string()
+            }),
+        ];
+
+        match got.contents {
+            lsp_types::HoverContents::Array(vec) => {
+                assert_eq!(vec.len(), expect_content.len());
+                for (i, expected) in expect_content.iter().enumerate() {
+                    assert_eq!(&vec[i], expected);
+                }
+            }
+            _ => unreachable!("test error"),
+        }
     }
 }
