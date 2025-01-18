@@ -71,7 +71,8 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
      */
 
     fn walk_stmt(&self, stmt: &'ctx ast::Node<ast::Stmt>) -> Self::Result {
-        let current_source_pos = self.get_current_source_position();
+        // let current_source_pos = self.get_current_source_position();
+        *self.current_source_pos.borrow_mut() = (stmt.pos().1 as u32).into();
         let yaml_start_line = self.get_current_yaml_line();
         let value = match &stmt.node {
             ast::Stmt::TypeAlias(type_alias) => self.walk_type_alias_stmt(type_alias),
@@ -92,10 +93,9 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         // Store mapping after YAML generation
         if let Some(mut source_map) = self.get_source_map() {
             // let current_source_pos = current_source_pos.borrow();
-            let yaml_end_line = self.get_current_yaml_line();
             let mapping = Mapping {
-                generated_line: yaml_end_line,
-                original_line: yaml_start_line,
+                original_line: self.current_source_pos.borrow().clone(),
+                generated_line: yaml_start_line,
             };
             source_map.add_mapping(mapping);
         }
