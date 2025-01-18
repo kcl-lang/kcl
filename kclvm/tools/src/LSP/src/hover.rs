@@ -78,9 +78,15 @@ pub fn hover(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Hover> {
                         if !schema_ty.doc.is_empty() {
                             docs.push((schema_ty.doc.clone(), MarkedStringType::String));
 
-                            // Extract and include the Examples section if available
-                            if let Some(examples_section) = extract_examples(&schema_ty.doc) {
-                                docs.push((examples_section, MarkedStringType::LanguageString));
+                            // Add examples to the hover content
+                            if !schema_ty.examples.is_empty() {
+                                let examples = schema_ty
+                                    .examples
+                                    .iter()
+                                    .map(|(_, example)| format!("{}\n", example.value))
+                                    .collect::<Vec<String>>()
+                                    .join("\n");
+                                docs.push((examples, MarkedStringType::LanguageString));
                             }
                         }
                     }
@@ -162,17 +168,6 @@ pub fn hover(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Hover> {
         None => {}
     }
     docs_to_hover(docs)
-}
-
-/// Extract the "Examples" section from the documentation string
-fn extract_examples(doc: &str) -> Option<String> {
-    if let Some(start) = doc.find("Examples") {
-        // Extract from the start of the Examples section to the end
-        let examples = &doc[start..];
-        Some(examples.to_string())
-    } else {
-        None
-    }
 }
 
 fn ty_hover_content(ty: &Type) -> String {
@@ -803,21 +798,28 @@ mod tests {
         let pos = KCLPos {
             filename: file.clone(),
             line: 1,
-            column: Some(1),
+            column: Some(8),
         };
         let got = hover(&pos, &gs).unwrap();
 
+        let expect_content = vec![
+            lsp_types::MarkedString::String("__main__".to_string()),
+            lsp_types::MarkedString::LanguageString(lsp_types::LanguageString {
+                language: "KCL".to_string(),
+                value: "schema Server:\n    workloadType: str = \"Deployment\"\n    name: str\n    labels?: {str:str}".to_string(),
+            }),
+            lsp_types::MarkedString::String("Server is an abstraction of Deployment and StatefulSet.".to_string()),
+            lsp_types::MarkedString::LanguageString(lsp_types::LanguageString {
+                language: "KCL".to_string(),
+                value: "import models.kube.frontend\nimport models.kube.frontend.container\nimport models.kube.templates.resource as res_tpl\n\nappConfiguration: frontend.Server {\n    mainContainer = container.Main {\n        name = \"php-redis\"\n        env: {\n            \"GET_HOSTS_FROM\": {value = \"dns\"}\n        }\n    }\n}\n".to_string()
+            }),
+        ];
+
         match got.contents {
             lsp_types::HoverContents::Array(vec) => {
-                assert_eq!(vec.len(), 3);
-                if let lsp_types::MarkedString::LanguageString(s) = &vec[0] {
-                    assert_eq!(s.value, "schema Server:\n    name?: str");
-                }
-                if let lsp_types::MarkedString::String(s) = &vec[1] {
-                    assert_eq!(s, "Server is abstaction of Deployment and StatefulSet.");
-                }
-                if let lsp_types::MarkedString::String(s) = &vec[2] {
-                    assert_eq!(s, "Examples\n    --------\n    import models.kube.frontend\n    import models.kube.frontend.container\n    import models.kube.templates.resource as res_tpl\n    \n    appConfiguration: frontend.Server {\n        mainContainer = container.Main {\n            name = \"php-redis\"\n            env: {\n                \"GET_HOSTS_FROM\": {value = \"dns\"}\n            }\n        }\n    }");
+                assert_eq!(vec.len(), expect_content.len());
+                for (i, expected) in expect_content.iter().enumerate() {
+                    assert_eq!(&vec[i], expected);
                 }
             }
             _ => unreachable!("test error"),
