@@ -31,33 +31,28 @@ use crate::{EvalResult, Evaluator};
 
 #[derive(Clone)]
 pub struct KCLSourceMap {
-    // version: u8,
-    // sources: Vec<String>,
+    version: u8,
+    sources: Vec<String>,
     mappings: HashMap<String, Vec<Mapping>>,
 }
 
 #[derive(Clone)]
 pub struct Mapping {
-    generated_line: u32,
+    generated_line: (u32, u32),
     original_line: u32,
 }
 
 impl KCLSourceMap {
     pub fn new() -> Self {
         Self {
-            // version: 1,
-            // sources: Vec::new(),
+            version: 1,
+            sources: Vec::new(),
             mappings: HashMap::new(),
         }
     }
 
-    pub fn add_mapping(&mut self, mapping: Mapping) {
-        let key = mapping.original_line.to_string();
-        if let Some(mappings) = self.mappings.get_mut(&key) {
-            mappings.push(mapping);
-        } else {
-            self.mappings.insert(key, vec![mapping]);
-        }
+    pub fn add_mapping(&mut self, source: String, mapping: Mapping) {
+        self.mappings.entry(source).or_default().push(mapping);
     }
 }
 
@@ -73,7 +68,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
     fn walk_stmt(&self, stmt: &'ctx ast::Node<ast::Stmt>) -> Self::Result {
         // let current_source_pos = self.get_current_source_position();
         *self.current_source_pos.borrow_mut() = (stmt.pos().1 as u32).into();
-        let yaml_start_line = self.get_current_yaml_line();
+        let yaml_start_line = ValueRef::get_yaml_line_count();
         let value = match &stmt.node {
             ast::Stmt::TypeAlias(type_alias) => self.walk_type_alias_stmt(type_alias),
             ast::Stmt::Expr(expr_stmt) => self.walk_expr_stmt(expr_stmt),
@@ -89,15 +84,16 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             ast::Stmt::Schema(schema_stmt) => self.walk_schema_stmt(schema_stmt),
             ast::Stmt::Rule(rule_stmt) => self.walk_rule_stmt(rule_stmt),
         };
+        let yaml_end = ValueRef::get_yaml_line_count();
         
         // Store mapping after YAML generation
         if let Some(mut source_map) = self.get_source_map() {
             // let current_source_pos = current_source_pos.borrow();
             let mapping = Mapping {
                 original_line: self.current_source_pos.borrow().clone(),
-                generated_line: yaml_start_line,
+                generated_line: (yaml_start_line , yaml_end),
             };
-            source_map.add_mapping(mapping);
+            source_map.add_mapping( stmt.filename.clone() , mapping);
         }
         value
     }
