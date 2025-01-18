@@ -1,5 +1,7 @@
 use anyhow::{anyhow, Result};
+use kclvm_ast::token::LitKind::Str;
 use kclvm_evaluator::Evaluator;
+use kclvm_sema::eval;
 use std::collections::HashMap;
 use std::{cell::RefCell, rc::Rc};
 
@@ -31,6 +33,7 @@ pub type kclvm_size_t = i32;
 pub type kclvm_context_t = std::ffi::c_void;
 #[allow(non_camel_case_types)]
 pub type kclvm_value_ref_t = std::ffi::c_void;
+
 
 /// ExecProgramArgs denotes the configuration required to execute the KCL program.
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -72,6 +75,9 @@ pub struct ExecProgramArgs {
     /// the result without any form of compilation.
     #[serde(skip)]
     pub fast_eval: bool,
+    /// sourcemap denotes whether to generate a source map.
+    /// This is used for debugging purposes.
+    pub sourcemap: String,
 }
 
 impl ExecProgramArgs {
@@ -103,6 +109,7 @@ pub struct ExecProgramResult {
     pub yaml_result: String,
     pub log_message: String,
     pub err_message: String,
+    pub sourcemap_result: String,
 }
 
 pub trait MapErrorResult {
@@ -187,6 +194,7 @@ impl TryFrom<SettingsFile> for ExecProgramArgs {
             args.sort_keys = cli_configs.sort_keys.unwrap_or_default();
             args.show_hidden = cli_configs.show_hidden.unwrap_or_default();
             args.fast_eval = cli_configs.fast_eval.unwrap_or_default();
+            args.sourcemap = cli_configs.sourcemap.unwrap_or_default();
             args.include_schema_type_path =
                 cli_configs.include_schema_type_path.unwrap_or_default();
             for override_str in cli_configs.overrides.unwrap_or_default() {
@@ -502,7 +510,7 @@ impl FastRunner {
     }
 
     /// Run kcl library with exec arguments.
-    pub fn run(&self, program: &ast::Program, args: &ExecProgramArgs) -> Result<ExecProgramResult> {
+    pub fn run(&mut self, program: &ast::Program, args: &ExecProgramArgs) -> Result<ExecProgramResult> {
         let ctx = Rc::new(RefCell::new(args_to_ctx(program, args)));
         let evaluator = Evaluator::new_with_runtime_ctx(program, ctx.clone());
         #[cfg(target_arch = "wasm32")]
@@ -532,20 +540,26 @@ impl FastRunner {
                 }
             })
         }));
-        let evaluator_result = std::panic::catch_unwind(|| {
-            if self.opts.plugin_agent_ptr > 0 {
-                #[cfg(not(target_arch = "wasm32"))]
-                unsafe {
-                    let plugin_method: extern "C" fn(
-                        method: *const c_char,
-                        args: *const c_char,
-                        kwargs: *const c_char,
-                    ) -> *const c_char = std::mem::transmute(self.opts.plugin_agent_ptr);
-                    kclvm_plugin_init(plugin_method);
-                }
+
+        // During evaluation, track locations
+        let evaluator_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            //boolean value to check if the sourcemap is enabled
+            let sourcemap_enabled = !args.sourcemap.is_empty();
+            let result = evaluator.run();
+            let sourcemap = evaluator.source_map;
+            if sourcemap_enabled {
+            result.map(|r| {
+                let (json, yaml) = r;
+                (json, yaml, sourcemap)
+            })
+            } else {
+            result.map(|r| {
+                let (json, yaml) = r;
+                (json, yaml, None) 
+            })
             }
-            evaluator.run()
-        });
+        }));
+
         #[cfg(not(target_arch = "wasm32"))]
         std::panic::set_hook(prev_hook);
         KCL_RUNTIME_PANIC_RECORD.with(|record| {
@@ -559,9 +573,12 @@ impl FastRunner {
         let is_err = evaluator_result.is_err();
         match evaluator_result {
             Ok(r) => match r {
-                Ok((json, yaml)) => {
+                Ok((json, yaml , sourcemap)) => {
                     result.json_result = json;
                     result.yaml_result = yaml;
+                    if let Some(sourcemap) = sourcemap {
+                        result.sourcemap_result = format!("{:?}", sourcemap);
+                    }
                 }
                 Err(err) => {
                     result.err_message = err.to_string();

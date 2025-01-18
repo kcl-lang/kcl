@@ -6,6 +6,7 @@ use std::sync::{Arc, RwLock};
 
 use anyhow::Ok;
 use generational_arena::Index;
+use crate::HashMap;
 use kclvm_ast::ast::{self, CallExpr, ConfigEntry, Module, NodeRef};
 use kclvm_ast::walker::TypedResultWalker;
 use kclvm_runtime::{
@@ -27,6 +28,33 @@ use crate::union::union_entry;
 use crate::{backtrack_break_here, backtrack_update_break};
 use crate::{error as kcl_error, GLOBAL_LEVEL, INNER_LEVEL};
 use crate::{EvalResult, Evaluator};
+#[derive(Clone, Debug)]
+pub struct KCLSourceMap {
+    version: u8,
+    sources: Vec<String>,
+    mappings: HashMap<String, Vec<Mapping>>,
+}
+
+#[derive(Clone , Debug)]
+pub struct Mapping {
+    generated_line: (u32, u32),
+    original_line: u32,
+}
+
+impl KCLSourceMap {
+    pub fn new() -> Self {
+        Self {
+            version: 1,
+            sources: Vec::new(),
+            mappings: HashMap::new(),
+        }
+    }
+
+    pub fn add_mapping(&mut self, source: String, mapping: Mapping) {
+        self.mappings.entry(source).or_default().push(mapping);
+    }
+}
+
 
 /// Impl TypedResultWalker for Evaluator to visit AST nodes to evaluate the result.
 impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
@@ -37,9 +65,9 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
      */
 
     fn walk_stmt(&self, stmt: &'ctx ast::Node<ast::Stmt>) -> Self::Result {
-        backtrack_break_here!(self, stmt);
-        self.update_ctx_panic_info(stmt);
-        self.update_ast_id(stmt);
+        // let current_source_pos = self.get_current_source_position();
+        *self.current_source_pos.borrow_mut() = (stmt.pos().1 as u32).into();
+        let yaml_start_line = ValueRef::get_yaml_line_count();
         let value = match &stmt.node {
             ast::Stmt::TypeAlias(type_alias) => self.walk_type_alias_stmt(type_alias),
             ast::Stmt::Expr(expr_stmt) => self.walk_expr_stmt(expr_stmt),
@@ -55,7 +83,17 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             ast::Stmt::Schema(schema_stmt) => self.walk_schema_stmt(schema_stmt),
             ast::Stmt::Rule(rule_stmt) => self.walk_rule_stmt(rule_stmt),
         };
-        backtrack_update_break!(self, stmt);
+        let yaml_end = ValueRef::get_yaml_line_count();
+        
+        // Store mapping after YAML generation
+        if let Some(mut source_map) = self.get_source_map() {
+            // let current_source_pos = current_source_pos.borrow();
+            let mapping = Mapping {
+                original_line: self.current_source_pos.borrow().clone(),
+                generated_line: (yaml_start_line , yaml_end),
+            };
+            source_map.add_mapping( stmt.filename.clone() , mapping);
+        }
         value
     }
 
@@ -1129,6 +1167,12 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
 }
 
 impl<'ctx> Evaluator<'ctx> {
+
+    fn get_source_map(&self) -> Option<KCLSourceMap> {
+        self.source_map.clone()
+    }
+
+
     pub fn walk_stmts_except_import(&self, stmts: &'ctx [Box<ast::Node<ast::Stmt>>]) -> EvalResult {
         let mut result = self.ok_result();
         for stmt in stmts {
@@ -1242,7 +1286,7 @@ impl<'ctx> Evaluator<'ctx> {
                     }
                 } else {
                     // If variable exists in the scope and update it, if not, add it to the scope.
-                    if !self.store_variable_in_current_scope(name, value.clone()) {
+                    if (!self.store_variable_in_current_scope(name, value.clone())) {
                         self.add_variable(name, self.undefined_value());
                         self.store_variable(name, value);
                     }
@@ -1325,7 +1369,7 @@ impl<'ctx> Evaluator<'ctx> {
                             }
                         } else {
                             // If variable exists in the scope and update it, if not, add it to the scope.
-                            if !self.store_variable_in_current_scope(name, value.clone()) {
+                            if (!self.store_variable_in_current_scope(name, value.clone())) {
                                 self.add_variable(name, self.undefined_value());
                                 self.store_variable(name, value);
                             }

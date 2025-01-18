@@ -6,6 +6,7 @@ extern crate serde_yaml;
 use crate::*;
 
 use serde::{Deserialize, Serialize};
+use std::cell::RefCell;
 
 /// YAML encode options.
 /// - sort_keys: Sort the encode result by keys (defaults to false).
@@ -49,6 +50,10 @@ impl ValueRef {
         // We use JsonValue to implement the KCL universal serialization object.
         let json_value: JsonValue = serde_yaml::from_str(s)?;
         Ok(Self::from_json(ctx, serde_json::to_string(&json_value).unwrap().as_ref()).unwrap())
+    }
+
+    pub fn get_yaml_line_count() -> u32 {
+        YAML_LINE_COUNTER.with(|counter| *counter.borrow())
     }
 
     /// Decode yaml stream string that contains `---` to a ValueRef.
@@ -97,6 +102,11 @@ impl ValueRef {
         match serde_yaml::to_string(&yaml_value) {
             Ok(s) => {
                 let s = s.strip_prefix("---\n").unwrap_or_else(|| s.as_ref());
+                // Count newlines in generated YAML
+                let line_count = s.chars().filter(|&c| c == '\n').count();
+                YAML_LINE_COUNTER.with(|counter| {
+                    *counter.borrow_mut() += line_count as u32;
+                });
                 s.to_string()
             }
             Err(err) => panic!("{}", err),
@@ -117,11 +127,20 @@ impl ValueRef {
         match serde_yaml::to_string(&yaml_value) {
             Ok(s) => {
                 let s = s.strip_prefix("---\n").unwrap_or_else(|| s.as_ref());
+                // Count newlines in generated YAML with options
+                let line_count = s.chars().filter(|&c| c == '\n').count();
+                YAML_LINE_COUNTER.with(|counter| {
+                    *counter.borrow_mut() += line_count as u32;
+                });
                 s.to_string()
             }
             Err(err) => panic!("{}", err),
         }
     }
+}
+
+thread_local! {
+    static YAML_LINE_COUNTER: RefCell<u32> = RefCell::new(0);
 }
 
 #[cfg(test)]
