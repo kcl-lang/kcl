@@ -6,7 +6,6 @@ use std::sync::{Arc, RwLock};
 
 use anyhow::Ok;
 use generational_arena::Index;
-// use serde::{Serialize, Deserialize};
 use crate::HashMap;
 use kclvm_ast::ast::{self, CallExpr, ConfigEntry, Module, NodeRef};
 use kclvm_ast::walker::TypedResultWalker;
@@ -29,23 +28,18 @@ use crate::union::union_entry;
 use crate::{backtrack_break_here, backtrack_update_break};
 use crate::{error as kcl_error, GLOBAL_LEVEL, INNER_LEVEL};
 use crate::{EvalResult, Evaluator};
+
+#[derive(Clone)]
 pub struct KCLSourceMap {
     version: u8,
     sources: Vec<String>,
     mappings: HashMap<String, Vec<Mapping>>,
 }
 
-pub struct SourcePos {
-    line: u32,
-    column: u32,
-}
-
+#[derive(Clone)]
 pub struct Mapping {
     generated_line: u32,
-    generated_column: u32,
     original_line: u32,
-    original_column: u32,
-    source_index: usize,
 }
 
 impl KCLSourceMap {
@@ -72,11 +66,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
      */
 
     fn walk_stmt(&self, stmt: &'ctx ast::Node<ast::Stmt>) -> Self::Result {
-        self.current_source_pos = Some(SourcePos {
-            line: stmt.pos().1 as u32,
-            column: stmt.pos().2 as u32,
-        }).into();
-        
+        let current_source_pos = self.get_current_source_position();
         let yaml_start_line = self.get_current_yaml_line();
         let value = match &stmt.node {
             ast::Stmt::TypeAlias(type_alias) => self.walk_type_alias_stmt(type_alias),
@@ -95,13 +85,18 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         };
         
         // Store mapping after YAML generation
-        if let Some(pos) = *self.current_source_pos.borrow() {
-            if let Some(ref mut sm) = self.source_map {
-                let vec = sm.mappings.entry(stmt.filename.clone()).or_insert_with(Vec::new);
-                vec.push((pos.line, yaml_start_line));
-            }
+        if let Some(source_map) = self.get_source_map() {
+            let current_source_pos = current_source_pos.borrow();
+            let yaml_end_line = self.get_current_yaml_line();
+            let mapping = Mapping {
+                generated_line: yaml_end_line,
+                original_line: yaml_start_line,
+            };
+            source_map.borrow_mut().add_mapping(
+                current_source_pos.get_filename().to_string(),
+                mapping,
+            );
         }
-        
         value
     }
 
@@ -1175,6 +1170,29 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
 }
 
 impl<'ctx> Evaluator<'ctx> {
+
+    fn get_source_map(&self) -> Option<KCLSourceMap> {
+        self.source_map.clone()
+    }
+
+    fn get_current_source_position(&self) -> u32 {
+        *self.current_source_pos.borrow()
+    }
+
+    fn get_current_yaml_line(&self) -> u32 {
+        *self.yaml_line_counter.borrow()
+    }
+
+    // Increment line counter during YAML generation
+    fn increment_yaml_line(&self) {
+        *self.yaml_line_counter.borrow_mut() += 1;
+    }
+
+    // Reset counter when starting new evaluation
+    fn reset_yaml_line(&self) {
+        *self.yaml_line_counter.borrow_mut() = 0;
+    }
+
     pub fn walk_stmts_except_import(&self, stmts: &'ctx [Box<ast::Node<ast::Stmt>>]) -> EvalResult {
         let mut result = self.ok_result();
         for stmt in stmts {

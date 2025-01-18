@@ -27,7 +27,7 @@ use generational_arena::{Arena, Index};
 use indexmap::IndexMap;
 use kclvm_runtime::val_plan::KCL_PRIVATE_VAR_PREFIX;
 use lazy::{BacktrackMeta, LazyEvalScope};
-use node::{KCLSourceMap , SourcePos};
+use node::KCLSourceMap;
 use proxy::{Frame, Proxy};
 use rule::RuleEvalContextRef;
 use schema::SchemaEvalContextRef;
@@ -93,7 +93,9 @@ pub struct Evaluator<'ctx> {
     // Source map for code generated
     pub source_map: std::option::Option<KCLSourceMap>,
     // Current source position
-    pub current_source_pos: RefCell<Option<SourcePos>>,
+    pub current_source_pos: RefCell<u32>,
+    //Current YAML line
+    pub yaml_line_counter: RefCell<u32>,
 }
 
 #[derive(Clone)]
@@ -153,7 +155,8 @@ impl<'ctx> Evaluator<'ctx> {
             backtrack_meta: RefCell::new(Default::default()),
             ast_id: RefCell::new(AstIndex::default()),
             source_map: Some(KCLSourceMap::new()),
-            current_source_pos: RefCell::new(None),
+            current_source_pos: RefCell::new(0),
+            yaml_line_counter: RefCell::new(0),
         }
     }
 
