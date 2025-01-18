@@ -162,24 +162,6 @@ impl<'ctx> Evaluator<'ctx> {
 
     /// Evaluate the program and return the JSON and YAML result.
     pub fn run(self: &Evaluator<'ctx> ) -> Result<(String, String)> {
-        //ab yaha pe kuch circus karna h
-//         The modules variable represents the AST modules from the main package of the KCL program. It's retrieved via self.program.get_modules_for_pkg(kclvm_ast::MAIN_PKG).
-
-// Looking at the code structure:
-
-// Type: Vec<ProgramUnit>
-
-// Contains AST nodes for each KCL source file in the main package
-// Source: kclvm_ast::ast::Program
-
-// Each module represents a single KCL source file
-// Contains declarations, statements, and other AST nodes
-// Usage:
-
-// Passed to compile_ast_modules() for compilation
-// Contains source locations needed for sourcemap generation
-// Each module has file path, line numbers, and column information
-// This is where we need to start tracking source locations for the sourcemap, as these modules contain the original source position information.
         let modules = self.program.get_modules_for_pkg(kclvm_ast::MAIN_PKG);
         self.init_scope(kclvm_ast::MAIN_PKG);
         self.compile_ast_modules(&modules);

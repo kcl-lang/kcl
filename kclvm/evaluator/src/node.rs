@@ -28,15 +28,14 @@ use crate::union::union_entry;
 use crate::{backtrack_break_here, backtrack_update_break};
 use crate::{error as kcl_error, GLOBAL_LEVEL, INNER_LEVEL};
 use crate::{EvalResult, Evaluator};
-
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct KCLSourceMap {
     version: u8,
     sources: Vec<String>,
     mappings: HashMap<String, Vec<Mapping>>,
 }
 
-#[derive(Clone)]
+#[derive(Clone , Debug)]
 pub struct Mapping {
     generated_line: (u32, u32),
     original_line: u32,
@@ -1173,23 +1172,6 @@ impl<'ctx> Evaluator<'ctx> {
         self.source_map.clone()
     }
 
-    fn get_current_source_position(&self) -> u32 {
-        *self.current_source_pos.borrow()
-    }
-
-    fn get_current_yaml_line(&self) -> u32 {
-        *self.yaml_line_counter.borrow()
-    }
-
-    // Increment line counter during YAML generation
-    fn increment_yaml_line(&self) {
-        *self.yaml_line_counter.borrow_mut() += 1;
-    }
-
-    // Reset counter when starting new evaluation
-    fn reset_yaml_line(&self) {
-        *self.yaml_line_counter.borrow_mut() = 0;
-    }
 
     pub fn walk_stmts_except_import(&self, stmts: &'ctx [Box<ast::Node<ast::Stmt>>]) -> EvalResult {
         let mut result = self.ok_result();

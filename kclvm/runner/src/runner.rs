@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Result};
 use kclvm_ast::token::LitKind::Str;
 use kclvm_evaluator::Evaluator;
+use kclvm_sema::eval;
 use std::collections::HashMap;
 use std::{cell::RefCell, rc::Rc};
 
@@ -543,27 +544,20 @@ impl FastRunner {
         // During evaluation, track locations
         let evaluator_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             //boolean value to check if the sourcemap is enabled
+            let sourcemap_enabled = !args.sourcemap.is_empty();
             let result = evaluator.run();
-            
-            // // If sourcemap enabled, collect mappings
-            // if let Some(sourcemap) = &mut self.sourcemap {
-            //     // Get source location from result
-            //     // let source_loc = result.get_source_location();
-                
-            //     // // Create mapping
-            //     // let mapping = Mapping {
-            //     //     generated_line: result.yaml_line,
-            //     //     generated_column: result.yaml_column,
-            //     //     original_line: source_loc.line,
-            //     //     original_column: source_loc.column,
-            //     //     source_index: source_loc.file_index,
-            //     // };
-
-            //     // Add to sourcemap
-            //     sourcemap.add_mapping(source_loc.filename, mapping);
-            // }
-            
-            result
+            let sourcemap = evaluator.source_map;
+            if sourcemap_enabled {
+            result.map(|r| {
+                let (json, yaml) = r;
+                (json, yaml, sourcemap)
+            })
+            } else {
+            result.map(|r| {
+                let (json, yaml) = r;
+                (json, yaml, None) 
+            })
+            }
         }));
 
         #[cfg(not(target_arch = "wasm32"))]
@@ -579,9 +573,12 @@ impl FastRunner {
         let is_err = evaluator_result.is_err();
         match evaluator_result {
             Ok(r) => match r {
-                Ok((json, yaml)) => {
+                Ok((json, yaml , sourcemap)) => {
                     result.json_result = json;
                     result.yaml_result = yaml;
+                    if let Some(sourcemap) = sourcemap {
+                        result.sourcemap_result = format!("{:?}", sourcemap);
+                    }
                 }
                 Err(err) => {
                     result.err_message = err.to_string();
