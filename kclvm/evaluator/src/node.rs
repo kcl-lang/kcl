@@ -31,8 +31,8 @@ use crate::{EvalResult, Evaluator};
 
 #[derive(Clone)]
 pub struct KCLSourceMap {
-    version: u8,
-    sources: Vec<String>,
+    // version: u8,
+    // sources: Vec<String>,
     mappings: HashMap<String, Vec<Mapping>>,
 }
 
@@ -45,14 +45,19 @@ pub struct Mapping {
 impl KCLSourceMap {
     pub fn new() -> Self {
         Self {
-            version: 1,
-            sources: Vec::new(),
+            // version: 1,
+            // sources: Vec::new(),
             mappings: HashMap::new(),
         }
     }
 
-    pub fn add_mapping(&mut self, source: String, mapping: Mapping) {
-        self.mappings.entry(source).or_default().push(mapping);
+    pub fn add_mapping(&mut self, mapping: Mapping) {
+        let key = mapping.original_line.to_string();
+        if let Some(mappings) = self.mappings.get_mut(&key) {
+            mappings.push(mapping);
+        } else {
+            self.mappings.insert(key, vec![mapping]);
+        }
     }
 }
 
@@ -85,17 +90,14 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         };
         
         // Store mapping after YAML generation
-        if let Some(source_map) = self.get_source_map() {
-            let current_source_pos = current_source_pos.borrow();
+        if let Some(mut source_map) = self.get_source_map() {
+            // let current_source_pos = current_source_pos.borrow();
             let yaml_end_line = self.get_current_yaml_line();
             let mapping = Mapping {
                 generated_line: yaml_end_line,
                 original_line: yaml_start_line,
             };
-            source_map.borrow_mut().add_mapping(
-                current_source_pos.get_filename().to_string(),
-                mapping,
-            );
+            source_map.add_mapping(mapping);
         }
         value
     }
