@@ -27,7 +27,7 @@ jobs:
       - name: Unit test
         working-directory: ./kclvm
         run: |
-          rustup target add wasm32-wasi && make build-wasm
+          rustup target add wasm32-wasip1 && make build-wasm
           mv target/wasm32-wasi/release/kclvm_cli_cdylib.wasm target/wasm32-wasi/release/kcl.wasm
         shell: bash
 
