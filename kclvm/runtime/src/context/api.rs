@@ -42,13 +42,13 @@ type kclvm_float_t = f64;
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_new() -> *mut kclvm_context_t {
+pub unsafe extern "C-unwind" fn kclvm_context_new() -> *mut kclvm_context_t {
     Box::into_raw(Box::new(Context::new()))
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_delete(p: *mut kclvm_context_t) {
+pub unsafe extern "C-unwind" fn kclvm_context_delete(p: *mut kclvm_context_t) {
     let ctx = mut_ptr_as_ref(p);
     for o in &ctx.objects {
         let ptr = (*o) as *mut kclvm_value_ref_t;
@@ -63,7 +63,7 @@ pub unsafe extern "C" fn kclvm_context_delete(p: *mut kclvm_context_t) {
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_set_kcl_location(
+pub unsafe extern "C-unwind" fn kclvm_context_set_kcl_location(
     p: *mut kclvm_context_t,
     filename: *const c_char,
     line: i32,
@@ -79,7 +79,7 @@ pub unsafe extern "C" fn kclvm_context_set_kcl_location(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_set_kcl_pkgpath(
+pub unsafe extern "C-unwind" fn kclvm_context_set_kcl_pkgpath(
     p: *mut kclvm_context_t,
     pkgpath: *const c_char,
 ) {
@@ -91,7 +91,7 @@ pub unsafe extern "C" fn kclvm_context_set_kcl_pkgpath(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_set_kcl_modpath(
+pub unsafe extern "C-unwind" fn kclvm_context_set_kcl_modpath(
     p: *mut kclvm_context_t,
     module_path: *const c_char,
 ) {
@@ -103,7 +103,7 @@ pub unsafe extern "C" fn kclvm_context_set_kcl_modpath(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_set_kcl_workdir(
+pub unsafe extern "C-unwind" fn kclvm_context_set_kcl_workdir(
     p: *mut kclvm_context_t,
     workdir: *const c_char,
 ) {
@@ -115,7 +115,7 @@ pub unsafe extern "C" fn kclvm_context_set_kcl_workdir(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_set_kcl_filename(
+pub unsafe extern "C-unwind" fn kclvm_context_set_kcl_filename(
     ctx: *mut kclvm_context_t,
     filename: *const c_char,
 ) {
@@ -127,7 +127,7 @@ pub unsafe extern "C" fn kclvm_context_set_kcl_filename(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_set_kcl_line_col(
+pub unsafe extern "C-unwind" fn kclvm_context_set_kcl_line_col(
     ctx: *mut kclvm_context_t,
     line: i32,
     col: i32,
@@ -142,19 +142,19 @@ pub unsafe extern "C" fn kclvm_context_set_kcl_line_col(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_scope_new() -> *mut kclvm_eval_scope_t {
+pub unsafe extern "C-unwind" fn kclvm_scope_new() -> *mut kclvm_eval_scope_t {
     Box::into_raw(Box::default())
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_scope_delete(scope: *mut kclvm_eval_scope_t) {
+pub unsafe extern "C-unwind" fn kclvm_scope_delete(scope: *mut kclvm_eval_scope_t) {
     drop(Box::from_raw(scope));
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_scope_add_setter(
+pub unsafe extern "C-unwind" fn kclvm_scope_add_setter(
     _ctx: *mut kclvm_context_t,
     scope: *mut kclvm_eval_scope_t,
     pkg: *const c_char,
@@ -175,7 +175,7 @@ pub unsafe extern "C" fn kclvm_scope_add_setter(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_scope_set(
+pub unsafe extern "C-unwind" fn kclvm_scope_set(
     _ctx: *mut kclvm_context_t,
     scope: *mut kclvm_eval_scope_t,
     pkg: *const c_char,
@@ -192,7 +192,7 @@ pub unsafe extern "C" fn kclvm_scope_set(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_scope_get(
+pub unsafe extern "C-unwind" fn kclvm_scope_get(
     ctx: *mut kclvm_context_t,
     scope: *mut kclvm_eval_scope_t,
     pkg: *const c_char,
@@ -220,14 +220,17 @@ pub unsafe extern "C" fn kclvm_scope_get(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_set_debug_mode(p: *mut kclvm_context_t, v: kclvm_bool_t) {
+pub unsafe extern "C-unwind" fn kclvm_context_set_debug_mode(
+    p: *mut kclvm_context_t,
+    v: kclvm_bool_t,
+) {
     let p = mut_ptr_as_ref(p);
     p.cfg.debug_mode = v != 0;
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_set_strict_range_check(
+pub unsafe extern "C-unwind" fn kclvm_context_set_strict_range_check(
     p: *mut kclvm_context_t,
     v: kclvm_bool_t,
 ) {
@@ -237,14 +240,17 @@ pub unsafe extern "C" fn kclvm_context_set_strict_range_check(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_set_disable_none(p: *mut kclvm_context_t, v: kclvm_bool_t) {
+pub unsafe extern "C-unwind" fn kclvm_context_set_disable_none(
+    p: *mut kclvm_context_t,
+    v: kclvm_bool_t,
+) {
     let p = mut_ptr_as_ref(p);
     p.plan_opts.disable_none = v != 0;
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_set_disable_schema_check(
+pub unsafe extern "C-unwind" fn kclvm_context_set_disable_schema_check(
     p: *mut kclvm_context_t,
     v: kclvm_bool_t,
 ) {
@@ -258,7 +264,7 @@ pub unsafe extern "C" fn kclvm_context_set_disable_schema_check(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_invoke(
+pub unsafe extern "C-unwind" fn kclvm_context_invoke(
     p: *mut kclvm_context_t,
     method: *const c_char,
     args: *const c_char,
@@ -295,7 +301,7 @@ unsafe fn _kclvm_context_invoke(
     }
 
     let ptr = (&fn_addr as *const u64) as *const ()
-        as *const extern "C" fn(
+        as *const extern "C-unwind" fn(
             ctx: *mut kclvm_context_t,
             args: *const kclvm_value_ref_t,
             kwargs: *const kclvm_value_ref_t,
@@ -306,7 +312,7 @@ unsafe fn _kclvm_context_invoke(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_context_pkgpath_is_imported(
+pub unsafe extern "C-unwind" fn kclvm_context_pkgpath_is_imported(
     ctx: *mut kclvm_context_t,
     pkgpath: *const kclvm_char_t,
 ) -> kclvm_bool_t {

@@ -4,7 +4,7 @@ use crate::*;
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_value_union_all(
+pub extern "C-unwind" fn kclvm_value_union_all(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,

@@ -11,7 +11,7 @@ use std::sync::Mutex;
 lazy_static! {
     static ref PLUGIN_HANDLER_FN_PTR: Mutex<
         Option<
-            extern "C" fn(
+            extern "C-unwind" fn(
                 method: *const c_char,
                 args_json: *const c_char,
                 kwargs_json: *const c_char,
@@ -25,8 +25,8 @@ pub const PLUGIN_MODULE_PREFIX: &str = "kcl_plugin.";
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_plugin_init(
-    fn_ptr: extern "C" fn(
+pub extern "C-unwind" fn kclvm_plugin_init(
+    fn_ptr: extern "C-unwind" fn(
         method: *const c_char,
         args_json: *const c_char,
         kwargs_json: *const c_char,
@@ -43,7 +43,7 @@ pub extern "C" fn kclvm_plugin_init(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C" fn kclvm_plugin_invoke(
+pub unsafe extern "C-unwind" fn kclvm_plugin_invoke(
     ctx: *mut kclvm_context_t,
     method: *const c_char,
     args: *const kclvm_value_ref_t,
@@ -89,7 +89,7 @@ pub unsafe extern "C" fn kclvm_plugin_invoke(
 #[cfg(not(target_arch = "wasm32"))]
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_plugin_invoke_json(
+pub extern "C-unwind" fn kclvm_plugin_invoke_json(
     method: *const c_char,
     args: *const c_char,
     kwargs: *const c_char,
@@ -105,7 +105,7 @@ pub extern "C" fn kclvm_plugin_invoke_json(
 #[cfg(target_arch = "wasm32")]
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_plugin_invoke_json(
+pub extern "C-unwind" fn kclvm_plugin_invoke_json(
     method: *const c_char,
     args: *const c_char,
     kwargs: *const c_char,
@@ -116,7 +116,7 @@ pub extern "C" fn kclvm_plugin_invoke_json(
 }
 
 #[cfg(target_arch = "wasm32")]
-extern "C" {
+extern "C-unwind" {
     pub fn kclvm_plugin_invoke_json_wasm(
         method: *const c_char,
         args: *const c_char,

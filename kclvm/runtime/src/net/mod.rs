@@ -10,7 +10,7 @@ use crate::*;
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_split_host_port(
+pub extern "C-unwind" fn kclvm_net_split_host_port(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -34,7 +34,7 @@ pub extern "C" fn kclvm_net_split_host_port(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_join_host_port(
+pub extern "C-unwind" fn kclvm_net_join_host_port(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -61,7 +61,7 @@ pub extern "C" fn kclvm_net_join_host_port(
 #[cfg(not(target_arch = "wasm32"))]
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_fqdn(
+pub extern "C-unwind" fn kclvm_net_fqdn(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -98,7 +98,7 @@ pub extern "C" fn kclvm_net_fqdn(
 #[cfg(target_arch = "wasm32")]
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_fqdn(
+pub extern "C-unwind" fn kclvm_net_fqdn(
     _ctx: *mut kclvm_context_t,
     _args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -110,7 +110,7 @@ pub extern "C" fn kclvm_net_fqdn(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_parse_IP(
+pub extern "C-unwind" fn kclvm_net_parse_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -122,7 +122,7 @@ pub extern "C" fn kclvm_net_parse_IP(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_to_IP4(
+pub extern "C-unwind" fn kclvm_net_to_IP4(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -134,7 +134,7 @@ pub extern "C" fn kclvm_net_to_IP4(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_to_IP16(
+pub extern "C-unwind" fn kclvm_net_to_IP16(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -146,7 +146,7 @@ pub extern "C" fn kclvm_net_to_IP16(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_IP_string(
+pub extern "C-unwind" fn kclvm_net_IP_string(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -174,7 +174,7 @@ pub extern "C" fn kclvm_net_IP_string(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_is_IPv4(
+pub extern "C-unwind" fn kclvm_net_is_IPv4(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -200,7 +200,7 @@ pub extern "C" fn kclvm_net_is_IPv4(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_is_IP(
+pub extern "C-unwind" fn kclvm_net_is_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -223,7 +223,7 @@ pub extern "C" fn kclvm_net_is_IP(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_is_loopback_IP(
+pub extern "C-unwind" fn kclvm_net_is_loopback_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -251,7 +251,7 @@ pub extern "C" fn kclvm_net_is_loopback_IP(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_is_multicast_IP(
+pub extern "C-unwind" fn kclvm_net_is_multicast_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -279,7 +279,7 @@ pub extern "C" fn kclvm_net_is_multicast_IP(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_is_interface_local_multicast_IP(
+pub extern "C-unwind" fn kclvm_net_is_interface_local_multicast_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -309,7 +309,7 @@ pub extern "C" fn kclvm_net_is_interface_local_multicast_IP(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_is_link_local_multicast_IP(
+pub extern "C-unwind" fn kclvm_net_is_link_local_multicast_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -341,7 +341,7 @@ pub extern "C" fn kclvm_net_is_link_local_multicast_IP(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_is_link_local_unicast_IP(
+pub extern "C-unwind" fn kclvm_net_is_link_local_unicast_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -373,7 +373,7 @@ pub const fn Ipv6Addr_is_unicast_link_local(_self: &Ipv6Addr) -> bool {
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_is_global_unicast_IP(
+pub extern "C-unwind" fn kclvm_net_is_global_unicast_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -398,7 +398,7 @@ pub extern "C" fn kclvm_net_is_global_unicast_IP(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_parse_CIDR(
+pub extern "C-unwind" fn kclvm_net_parse_CIDR(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -429,7 +429,7 @@ pub extern "C" fn kclvm_net_parse_CIDR(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_hosts_in_CIDR(
+pub extern "C-unwind" fn kclvm_net_hosts_in_CIDR(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -464,7 +464,7 @@ pub extern "C" fn kclvm_net_hosts_in_CIDR(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_subnets_from_CIDR(
+pub extern "C-unwind" fn kclvm_net_subnets_from_CIDR(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -501,7 +501,7 @@ pub extern "C" fn kclvm_net_subnets_from_CIDR(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_is_IP_in_CIDR(
+pub extern "C-unwind" fn kclvm_net_is_IP_in_CIDR(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -583,7 +583,7 @@ const fn Ipv4Addr_is_benchmarking(_self: &std::net::Ipv4Addr) -> bool {
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_net_is_unspecified_IP(
+pub extern "C-unwind" fn kclvm_net_is_unspecified_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,

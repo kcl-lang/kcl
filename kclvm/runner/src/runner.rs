@@ -312,8 +312,8 @@ impl LibRunner {
     ) -> Result<()> {
         // get kclvm_plugin_init
         let kclvm_plugin_init: libloading::Symbol<
-            unsafe extern "C" fn(
-                fn_ptr: extern "C" fn(
+            unsafe extern "C-unwind" fn(
+                fn_ptr: extern "C-unwind" fn(
                     method: *const c_char,
                     args_json: *const c_char,
                     kwargs_json: *const c_char,
@@ -324,12 +324,12 @@ impl LibRunner {
         // get plugin_method
         let plugin_method_ptr = plugin_method_ptr;
         let plugin_method_ptr = (plugin_method_ptr as *const u64) as *const ()
-            as *const extern "C" fn(
+            as *const extern "C-unwind" fn(
                 method: *const c_char,
                 args: *const c_char,
                 kwargs: *const c_char,
             ) -> *const c_char;
-        let plugin_method: extern "C" fn(
+        let plugin_method: extern "C-unwind" fn(
             method: *const c_char,
             args: *const c_char,
             kwargs: *const c_char,
@@ -345,7 +345,7 @@ impl LibRunner {
         args: &ExecProgramArgs,
     ) -> Result<ExecProgramResult> {
         let kcl_run: libloading::Symbol<
-            unsafe extern "C" fn(
+            unsafe extern "C-unwind" fn(
                 kclvm_main_ptr: u64, // main.k => kclvm_main
                 option_len: kclvm_size_t,
                 option_keys: *const *const kclvm_char_t,
@@ -512,7 +512,7 @@ impl FastRunner {
         #[cfg(not(target_arch = "wasm32"))]
         let prev_hook = std::panic::take_hook();
         #[cfg(not(target_arch = "wasm32"))]
-        std::panic::set_hook(Box::new(|info: &std::panic::PanicInfo| {
+        std::panic::set_hook(Box::new(|info: &std::panic::PanicHookInfo| {
             KCL_RUNTIME_PANIC_RECORD.with(|record| {
                 let mut record = record.borrow_mut();
                 record.kcl_panic_info = true;
@@ -536,7 +536,7 @@ impl FastRunner {
             if self.opts.plugin_agent_ptr > 0 {
                 #[cfg(not(target_arch = "wasm32"))]
                 unsafe {
-                    let plugin_method: extern "C" fn(
+                    let plugin_method: extern "C-unwind" fn(
                         method: *const c_char,
                         args: *const c_char,
                         kwargs: *const c_char,

@@ -7,7 +7,7 @@ type kclvm_value_ref_t = ValueRef;
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_assert(
+pub extern "C-unwind" fn kclvm_assert(
     ctx: *mut kclvm_context_t,
     value: *const kclvm_value_ref_t,
     msg: *const kclvm_value_ref_t,

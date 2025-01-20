@@ -6,7 +6,7 @@ use crate::*;
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_json_encode(
+pub extern "C-unwind" fn kclvm_json_encode(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -27,7 +27,7 @@ pub extern "C" fn kclvm_json_encode(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_json_decode(
+pub extern "C-unwind" fn kclvm_json_decode(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -47,7 +47,7 @@ pub extern "C" fn kclvm_json_decode(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_json_validate(
+pub extern "C-unwind" fn kclvm_json_validate(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -67,7 +67,7 @@ pub extern "C" fn kclvm_json_validate(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_json_dump_to_file(
+pub extern "C-unwind" fn kclvm_json_dump_to_file(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,

@@ -21,7 +21,7 @@ fn c_char_to_vec(args: *const c_char, args_len: usize) -> Vec<u8> {
 
 /// Create an instance of kclvm_service and return its pointer
 #[no_mangle]
-pub extern "C" fn kclvm_service_new(plugin_agent: u64) -> *mut kclvm_service {
+pub extern "C-unwind" fn kclvm_service_new(plugin_agent: u64) -> *mut kclvm_service {
     let serv = kclvm_service { plugin_agent };
     Box::into_raw(Box::new(serv))
 }
@@ -31,7 +31,7 @@ pub extern "C" fn kclvm_service_new(plugin_agent: u64) -> *mut kclvm_service {
 /// This function should not be called twice on the same ptr.
 /// Delete KclvmService
 #[no_mangle]
-pub unsafe extern "C" fn kclvm_service_delete(serv: *mut kclvm_service) {
+pub unsafe extern "C-unwind" fn kclvm_service_delete(serv: *mut kclvm_service) {
     if !serv.is_null() {
         unsafe {
             drop(Box::from_raw(serv));
@@ -44,7 +44,7 @@ pub unsafe extern "C" fn kclvm_service_delete(serv: *mut kclvm_service) {
 /// This function should not be called twice on the same ptr.
 /// Free memory for string returned to the outside
 #[no_mangle]
-pub unsafe extern "C" fn kclvm_service_free_string(res: *mut c_char) {
+pub unsafe extern "C-unwind" fn kclvm_service_free_string(res: *mut c_char) {
     if !res.is_null() {
         unsafe {
             let _ = CString::from_raw(res);
@@ -90,7 +90,7 @@ macro_rules! call {
 /// result: [*const c_char]
 ///     Result of the call serialized as protobuf byte sequence
 #[no_mangle]
-pub extern "C" fn kclvm_service_call(
+pub extern "C-unwind" fn kclvm_service_call(
     serv: *mut kclvm_service,
     name: *const c_char,
     args: *const c_char,
@@ -120,7 +120,7 @@ pub extern "C" fn kclvm_service_call(
 /// result: [*const c_char]
 ///     Result of the call serialized as protobuf byte sequence
 #[no_mangle]
-pub extern "C" fn kclvm_service_call_with_length(
+pub extern "C-unwind" fn kclvm_service_call_with_length(
     serv: *mut kclvm_service,
     name: *const c_char,
     args: *const c_char,

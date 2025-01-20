@@ -10,7 +10,7 @@ use crate::*;
 /// `today() -> str`
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_datetime_today(
+pub extern "C-unwind" fn kclvm_datetime_today(
     ctx: *mut kclvm_context_t,
     _args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -26,7 +26,7 @@ pub extern "C" fn kclvm_datetime_today(
 /// `now() -> str`
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_datetime_now(
+pub extern "C-unwind" fn kclvm_datetime_now(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -44,7 +44,7 @@ pub extern "C" fn kclvm_datetime_now(
 /// `ticks() -> float`
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_datetime_ticks(
+pub extern "C-unwind" fn kclvm_datetime_ticks(
     ctx: *mut kclvm_context_t,
     _args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -58,7 +58,7 @@ pub extern "C" fn kclvm_datetime_ticks(
 /// `date() -> str`
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_datetime_date(
+pub extern "C-unwind" fn kclvm_datetime_date(
     ctx: *mut kclvm_context_t,
     _args: *const kclvm_value_ref_t,
     _kwargs: *const kclvm_value_ref_t,
@@ -72,7 +72,7 @@ pub extern "C" fn kclvm_datetime_date(
 /// `validate(str, str) -> bool`
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_datetime_validate(
+pub extern "C-unwind" fn kclvm_datetime_validate(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,

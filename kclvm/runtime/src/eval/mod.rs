@@ -9,8 +9,10 @@ use crate::{
 };
 
 /// Variable setter function type. fn(ctx: &mut Context, scope: &mut ScopeEval, args: ValueRef, kwargs: ValueRef) -> ValueRef.
-pub type SetterFuncType =
-    unsafe extern "C" fn(*mut kclvm_context_t, *mut kclvm_eval_scope_t) -> *const kclvm_value_ref_t;
+pub type SetterFuncType = unsafe extern "C-unwind" fn(
+    *mut kclvm_context_t,
+    *mut kclvm_eval_scope_t,
+) -> *const kclvm_value_ref_t;
 
 /// LazyEvalScope represents a scope of sequentially independent calculations, where
 /// the calculation of values is lazy and only recursively performed through

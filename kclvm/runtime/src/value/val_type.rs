@@ -37,7 +37,7 @@ pub const NUMBER_MULTIPLIER_TYPE: &str = "units.NumberMultiplier";
 pub const NUMBER_MULTIPLIER_REGEX: &str =
     r"^([1-9][0-9]{0,63})(E|P|T|G|M|K|k|m|u|n|Ei|Pi|Ti|Gi|Mi|Ki)$";
 
-pub type SchemaTypeFunc = unsafe extern "C" fn(
+pub type SchemaTypeFunc = unsafe extern "C-unwind" fn(
     *mut kclvm_context_t,
     *const kclvm_value_ref_t,
     *const kclvm_value_ref_t,

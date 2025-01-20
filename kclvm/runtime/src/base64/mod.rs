@@ -7,7 +7,7 @@ use crate::*;
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_base64_encode(
+pub extern "C-unwind" fn kclvm_base64_encode(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -24,7 +24,7 @@ pub extern "C" fn kclvm_base64_encode(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_base64_decode(
+pub extern "C-unwind" fn kclvm_base64_decode(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
