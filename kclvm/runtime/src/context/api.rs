@@ -220,7 +220,10 @@ pub unsafe extern "C-unwind" fn kclvm_scope_get(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C-unwind" fn kclvm_context_set_debug_mode(p: *mut kclvm_context_t, v: kclvm_bool_t) {
+pub unsafe extern "C-unwind" fn kclvm_context_set_debug_mode(
+    p: *mut kclvm_context_t,
+    v: kclvm_bool_t,
+) {
     let p = mut_ptr_as_ref(p);
     p.cfg.debug_mode = v != 0;
 }
@@ -237,7 +240,10 @@ pub unsafe extern "C-unwind" fn kclvm_context_set_strict_range_check(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C-unwind" fn kclvm_context_set_disable_none(p: *mut kclvm_context_t, v: kclvm_bool_t) {
+pub unsafe extern "C-unwind" fn kclvm_context_set_disable_none(
+    p: *mut kclvm_context_t,
+    v: kclvm_bool_t,
+) {
     let p = mut_ptr_as_ref(p);
     p.plan_opts.disable_none = v != 0;
 }

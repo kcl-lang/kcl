@@ -70,7 +70,10 @@ fn kclvm_cli_run_unsafe(
 
 /// KCL CLI main function CAPI.
 #[no_mangle]
-pub unsafe extern "C-unwind" fn kclvm_cli_main(argc: c_int, argv: *const *const c_char) -> *mut ExitCode {
+pub unsafe extern "C-unwind" fn kclvm_cli_main(
+    argc: c_int,
+    argv: *const *const c_char,
+) -> *mut ExitCode {
     let prev_hook = std::panic::take_hook();
 
     // disable print panic info

@@ -69,7 +69,9 @@ pub unsafe extern "C-unwind" fn kclvm_context_set_import_names(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C-unwind" fn kclvm_value_Undefined(ctx: *mut kclvm_context_t) -> *mut kclvm_value_ref_t {
+pub extern "C-unwind" fn kclvm_value_Undefined(
+    ctx: *mut kclvm_context_t,
+) -> *mut kclvm_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     new_mut_ptr(ctx, ValueRef::undefined())
 }
@@ -517,7 +519,9 @@ pub unsafe extern "C-unwind" fn kclvm_value_to_str_value(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C-unwind" fn kclvm_value_Str_ptr(p: *const kclvm_value_ref_t) -> *const kclvm_char_t {
+pub unsafe extern "C-unwind" fn kclvm_value_Str_ptr(
+    p: *const kclvm_value_ref_t,
+) -> *const kclvm_char_t {
     let p = ptr_as_ref(p);
     match &*p.rc.borrow() {
         Value::str_value(ref v) => v.as_ptr() as *const c_char,
@@ -527,7 +531,9 @@ pub unsafe extern "C-unwind" fn kclvm_value_Str_ptr(p: *const kclvm_value_ref_t)
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C-unwind" fn kclvm_value_function_ptr(p: *const kclvm_value_ref_t) -> *const u64 {
+pub unsafe extern "C-unwind" fn kclvm_value_function_ptr(
+    p: *const kclvm_value_ref_t,
+) -> *const u64 {
     let p = ptr_as_ref(p);
     match &*p.rc.borrow() {
         Value::func_value(ref v) => v.fn_ptr as *const u64,
@@ -537,7 +543,9 @@ pub unsafe extern "C-unwind" fn kclvm_value_function_ptr(p: *const kclvm_value_r
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C-unwind" fn kclvm_value_check_function_ptr(p: *const kclvm_value_ref_t) -> *const u64 {
+pub unsafe extern "C-unwind" fn kclvm_value_check_function_ptr(
+    p: *const kclvm_value_ref_t,
+) -> *const u64 {
     let p = ptr_as_ref(p);
     match &*p.rc.borrow() {
         Value::func_value(ref v) => v.check_fn_ptr as *const u64,
@@ -663,7 +671,9 @@ pub unsafe extern "C-unwind" fn kclvm_value_delete(p: *mut kclvm_value_ref_t) {
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C-unwind" fn kclvm_value_iter(p: *const kclvm_value_ref_t) -> *mut kclvm_iterator_t {
+pub unsafe extern "C-unwind" fn kclvm_value_iter(
+    p: *const kclvm_value_ref_t,
+) -> *mut kclvm_iterator_t {
     let p = ptr_as_ref(p);
     let iter = ValueIterator::from_value(p);
     Box::into_raw(Box::new(iter))
@@ -734,7 +744,10 @@ pub unsafe extern "C-unwind" fn kclvm_list_len(p: *const kclvm_value_ref_t) -> k
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C-unwind" fn kclvm_list_resize(p: *mut kclvm_value_ref_t, newsize: kclvm_size_t) {
+pub unsafe extern "C-unwind" fn kclvm_list_resize(
+    p: *mut kclvm_value_ref_t,
+    newsize: kclvm_size_t,
+) {
     let p = mut_ptr_as_ref(p);
     p.list_resize(newsize as usize);
 }
@@ -863,7 +876,10 @@ pub unsafe extern "C-unwind" fn kclvm_list_pop_first(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C-unwind" fn kclvm_list_append(p: *mut kclvm_value_ref_t, v: *const kclvm_value_ref_t) {
+pub unsafe extern "C-unwind" fn kclvm_list_append(
+    p: *mut kclvm_value_ref_t,
+    v: *const kclvm_value_ref_t,
+) {
     let p = mut_ptr_as_ref(p);
     let v = ptr_as_ref(v);
     p.list_append(v);
@@ -885,14 +901,20 @@ pub unsafe extern "C-unwind" fn kclvm_list_append_int(p: *mut kclvm_value_ref_t,
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C-unwind" fn kclvm_list_append_float(p: *mut kclvm_value_ref_t, v: kclvm_float_t) {
+pub unsafe extern "C-unwind" fn kclvm_list_append_float(
+    p: *mut kclvm_value_ref_t,
+    v: kclvm_float_t,
+) {
     let p = mut_ptr_as_ref(p);
     p.list_append(&ValueRef::float(v));
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C-unwind" fn kclvm_list_append_str(p: *mut kclvm_value_ref_t, v: *const kclvm_char_t) {
+pub unsafe extern "C-unwind" fn kclvm_list_append_str(
+    p: *mut kclvm_value_ref_t,
+    v: *const kclvm_char_t,
+) {
     let p = mut_ptr_as_ref(p);
     p.list_append(&ValueRef::str(c2str(v)));
 }
@@ -1283,14 +1305,20 @@ pub unsafe extern "C-unwind" fn kclvm_default_collection_insert_value(
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C-unwind" fn kclvm_dict_remove(p: *mut kclvm_value_ref_t, key: *const kclvm_char_t) {
+pub unsafe extern "C-unwind" fn kclvm_dict_remove(
+    p: *mut kclvm_value_ref_t,
+    key: *const kclvm_char_t,
+) {
     let p = mut_ptr_as_ref(p);
     p.dict_remove(c2str(key));
 }
 
 #[no_mangle]
 #[runtime_fn]
-pub unsafe extern "C-unwind" fn kclvm_dict_update(p: *mut kclvm_value_ref_t, v: *const kclvm_value_ref_t) {
+pub unsafe extern "C-unwind" fn kclvm_dict_update(
+    p: *mut kclvm_value_ref_t,
+    v: *const kclvm_value_ref_t,
+) {
     let p = mut_ptr_as_ref(p);
     let v = ptr_as_ref(v);
     p.dict_update(v);
