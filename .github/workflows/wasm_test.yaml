@@ -20,14 +20,14 @@ jobs:
       - name: Install rust nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.84
+          toolchain: 1.83
           override: true
           components: clippy, rustfmt
 
       - name: Unit test
         working-directory: ./kclvm
         run: |
-          rustup target add wasm32-wasip1 && make build-wasm
+          rustup target add wasm32-wasi && make build-wasm
           mv target/wasm32-wasi/release/kclvm_cli_cdylib.wasm target/wasm32-wasi/release/kcl.wasm
         shell: bash
 

@@ -50,7 +50,7 @@ fix:
 	cargo clippy --fix --allow-dirty
 
 build-wasm:
-	cargo build --target=wasm32-wasip1 --release
+	cargo build --target=wasm32-wasi --release
 
 build-lsp:
 	cargo build --release --manifest-path tools/src/LSP/Cargo.toml
