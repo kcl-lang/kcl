@@ -1,6 +1,6 @@
 # Copyright The KCL Authors. All rights reserved.
 
-FROM ubuntu:22.04
+FROM ghcr.io/zong-zhe/ubuntu:22.04
 
 #RUN uname -a
 #RUN cat /etc/os-release
@@ -28,7 +28,7 @@ RUN ln -sf /usr/local/python3.9/bin/python3.9 /usr/bin/python3.9
 
 # rust
 # https://www.rust-lang.org/tools/install
-RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
+RUN curl https://sh.rustup.rs -sSf | bash -s -- -y --default-toolchain 1.83.0
 ENV PATH="/root/.cargo/bin:${PATH}"
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 
@@ -49,7 +49,6 @@ RUN mkdir -p /root/download && cd /root/download \
   && tar -zxvf go1.20.5.linux-amd64.tar.gz \
   && mv ./go /usr/local/go1.20.5
 RUN ln -sf /usr/local/go1.20.5/bin/go /usr/bin/go
-RUN rm -rf /root/download
 
 ENV GOPATH=/go
 ENV GOLANG_VERSION=1.20.5

@@ -13,7 +13,7 @@ RUN sed -i -e "s|#baseurl=http://download.example/pub/fedora/linux|baseurl=https
 RUN dnf -y install make which wget git ca-certificates clang llvm-devel libffi-devel python3-devel
 
 # rust
-RUN curl https://sh.rustup.rs -sSf | bash -s -- -y && \
+RUN curl https://sh.rustup.rs -sSf | bash -s -- -y --default-toolchain 1.83.0
     echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
 ENV PATH="/root/.cargo/bin:${PATH}"
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
