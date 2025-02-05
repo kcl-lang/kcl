@@ -66,13 +66,13 @@ test:
 # Unit tests with code cov (Requires rust 1.60+)
 codecov:
 	rustup component add llvm-tools-preview
-	cargo install cargo-llvm-cov
+	cargo install cargo-llvm-cov@0.6.15
 	cargo llvm-cov --workspace --ignore-filename-regex gpyrpc.rs --html --open -- --nocapture
 
 # Unit tests with code cov and output the lcov file (Requires rust 1.60+)
 codecov-lcov:
 	rustup component add llvm-tools-preview
-	cargo install cargo-llvm-cov
+	cargo install cargo-llvm-cov@0.6.15
 	rm -rf $(PWD)/.kclvm_cov
 	mkdir $(PWD)/.kclvm_cov
 	cargo llvm-cov --lcov --output-path $(PWD)/.kclvm_cov/lcov.info -r --workspace --ignore-filename-regex gpyrpc.rs -- --nocapture
