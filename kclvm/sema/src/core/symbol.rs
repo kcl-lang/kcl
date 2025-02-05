@@ -240,6 +240,7 @@ impl SymbolData {
         match id.get_kind() {
             SymbolKind::Schema => {
                 self.schemas.remove(id.get_id());
+                self.symbols_info.schema_builtin_symbols.remove(id);
             }
             SymbolKind::Attribute => {
                 self.attributes.remove(id.get_id());
@@ -888,8 +889,18 @@ impl SymbolData {
     }
 
     #[inline]
+    pub fn get_node_symbol_map_mut(&mut self) -> &mut IndexMap<NodeKey, SymbolRef> {
+        &mut self.symbols_info.node_symbol_map
+    }
+
+    #[inline]
     pub fn get_symbol_node_map(&self) -> &IndexMap<SymbolRef, NodeKey> {
         &self.symbols_info.symbol_node_map
+    }
+
+    #[inline]
+    pub fn get_symbol_node_map_mut(&mut self) -> &mut IndexMap<SymbolRef, NodeKey> {
+        &mut self.symbols_info.symbol_node_map
     }
 
     #[inline]
@@ -913,6 +924,9 @@ impl SymbolData {
         }
         for symbol in to_remove {
             self.remove_symbol(&symbol);
+            if let Some(node_id) = self.get_symbol_node_map_mut().remove(&symbol) {
+                self.get_node_symbol_map_mut().remove(&node_id);
+            }
         }
     }
 

@@ -208,7 +208,6 @@ pub fn resolve_program_with_opts(
             cached_scope.invalidate_pkgs.clear();
             cached_scope.update(program);
             resolver.scope_map = cached_scope.scope_map.clone();
-            resolver.node_ty_map = Rc::new(RefCell::new(cached_scope.node_ty_map.clone()));
             resolver.ctx.schema_mapping = cached_scope.schema_mapping.clone();
             cached_scope
                 .invalidate_pkgs
@@ -216,6 +215,16 @@ pub fn resolve_program_with_opts(
             for pkg in &cached_scope.invalidate_pkgs {
                 resolver.scope_map.remove(pkg);
             }
+            let mut nodes = vec![];
+            for node in cached_scope.node_ty_map.keys() {
+                if cached_scope.invalidate_pkgs.contains(&node.pkgpath) {
+                    nodes.push(node.clone());
+                }
+            }
+            for node in nodes {
+                cached_scope.node_ty_map.remove(&node);
+            }
+            resolver.node_ty_map = Rc::new(RefCell::new(cached_scope.node_ty_map.clone()));
         }
     }
     let scope = resolver.check_and_lint_all_pkgs();

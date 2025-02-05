@@ -1098,3 +1098,54 @@ fn test_clear_cache_by_module() {
         assert_eq!(cached_scope.invalidate_pkgs, expect);
     };
 }
+
+#[test]
+fn clear_cache_test() {
+    let sess = Arc::new(ParseSession::default());
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_data/cache/main.k"],
+        None,
+        None,
+    )
+    .unwrap()
+    .program;
+
+    let scope_cache = Arc::new(RwLock::new(CachedScope::default()));
+    let first_scope = resolve_program_with_opts(
+        &mut program,
+        Options {
+            merge_program: false,
+            type_erasure: false,
+            ..Default::default()
+        },
+        Some(scope_cache.clone()),
+    );
+
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_data/cache/main.k"],
+        None,
+        None,
+    )
+    .unwrap()
+    .program;
+
+    let second_scope = resolve_program_with_opts(
+        &mut program,
+        Options {
+            merge_program: false,
+            type_erasure: false,
+            ..Default::default()
+        },
+        Some(scope_cache.clone()),
+    );
+    let first_node_ty_map_len = first_scope.node_ty_map.borrow().len();
+    let second_node_ty_map_len = second_scope.node_ty_map.borrow().len();
+    assert_eq!(first_node_ty_map_len, second_node_ty_map_len);
+    assert_eq!(first_scope.scope_map.len(), second_scope.scope_map.len());
+    assert_eq!(
+        first_scope.schema_mapping.len(),
+        second_scope.schema_mapping.len()
+    );
+}

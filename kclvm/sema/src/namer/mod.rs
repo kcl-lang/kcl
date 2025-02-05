@@ -100,13 +100,18 @@ impl<'ctx> Namer<'ctx> {
 
     // serial namer pass
     pub fn find_symbols(program: &'ctx Program, gs: &'ctx mut GlobalState) {
+        let has_init_builtin = gs.ctx.has_init_builtin;
+        gs.ctx.has_init_builtin = true;
         let mut namer = Self::new(program, gs);
         namer.ctx.current_package_info = Some(PackageInfo::new(
             BUILTIN_SYMBOL_PKG_PATH.to_string(),
             "".to_string(),
             true,
         ));
-        namer.init_builtin_symbols();
+        if !has_init_builtin {
+            namer.init_builtin_symbols();
+        }
+
         namer
             .gs
             .get_packages_mut()

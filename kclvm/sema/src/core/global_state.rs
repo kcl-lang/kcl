@@ -23,6 +23,13 @@ pub struct GlobalState {
     pub(crate) sema_db: SemanticDB,
     // new and invalidate(changed and affected by changed) pkg from CachedScope::update()
     pub new_or_invalidate_pkgs: HashSet<String>,
+
+    pub ctx: GlobalStateContext,
+}
+
+#[derive(Default, Debug, Clone)]
+pub struct GlobalStateContext {
+    pub has_init_builtin: bool,
 }
 
 impl GlobalState {
