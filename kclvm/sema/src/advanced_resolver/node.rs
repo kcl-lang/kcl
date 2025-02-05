@@ -1132,7 +1132,7 @@ impl<'ctx> AdvancedResolver<'_> {
             let module_info = self.get_current_module_info().unwrap();
 
             let import_info = module_info.get_import_info(&first_name.node);
-            if import_info.is_some() {
+            if import_info.is_some() && !maybe_def {
                 first_symbol = self
                     .gs
                     .get_symbols()
