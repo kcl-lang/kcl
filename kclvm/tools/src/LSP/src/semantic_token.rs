@@ -211,7 +211,7 @@ mod tests {
                     // (0, 10, 4, 0)  // item
                     // (2, 7, 3, 3), // net
                     // (2, 0, 1, 0), // c
-                    // (1, 4, 3, 0)  // net 
+                    // (1, 4, 3, 0)  // net
                     insta::assert_snapshot!(format!("{:?}", get));
                 }
                 lsp_types::SemanticTokensResult::Partial(_) => {
