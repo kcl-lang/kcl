@@ -13,7 +13,7 @@ use crate::*;
 /// message in case of a runtime panic.
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_runtime_catch(
+pub extern "C-unwind" fn kclvm_runtime_catch(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,

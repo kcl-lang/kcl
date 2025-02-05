@@ -8,7 +8,7 @@ use crate::*;
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_regex_match(
+pub extern "C-unwind" fn kclvm_regex_match(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -39,7 +39,7 @@ pub extern "C" fn kclvm_regex_match(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_regex_replace(
+pub extern "C-unwind" fn kclvm_regex_replace(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -66,7 +66,7 @@ pub extern "C" fn kclvm_regex_replace(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_regex_compile(
+pub extern "C-unwind" fn kclvm_regex_compile(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -87,7 +87,7 @@ pub extern "C" fn kclvm_regex_compile(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_regex_findall(
+pub extern "C-unwind" fn kclvm_regex_findall(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -127,7 +127,7 @@ pub extern "C" fn kclvm_regex_findall(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_regex_search(
+pub extern "C-unwind" fn kclvm_regex_search(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -153,7 +153,7 @@ pub extern "C" fn kclvm_regex_search(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C" fn kclvm_regex_split(
+pub extern "C-unwind" fn kclvm_regex_split(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,

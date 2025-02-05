@@ -16,7 +16,7 @@ use kclvm_runtime::PanicInfo;
 ///
 /// args is a ExecProgramArgs JSON string.
 #[no_mangle]
-pub unsafe extern "C" fn kclvm_cli_run(
+pub unsafe extern "C-unwind" fn kclvm_cli_run(
     args: *const c_char,
     plugin_agent: *const c_char,
 ) -> *const c_char {
@@ -70,7 +70,10 @@ fn kclvm_cli_run_unsafe(
 
 /// KCL CLI main function CAPI.
 #[no_mangle]
-pub unsafe extern "C" fn kclvm_cli_main(argc: c_int, argv: *const *const c_char) -> *mut ExitCode {
+pub unsafe extern "C-unwind" fn kclvm_cli_main(
+    argc: c_int,
+    argv: *const *const c_char,
+) -> *mut ExitCode {
     let prev_hook = std::panic::take_hook();
 
     // disable print panic info

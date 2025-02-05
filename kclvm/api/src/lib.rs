@@ -83,7 +83,7 @@ pub fn call_with_plugin_agent<'a>(
 /// the Protobuf byte sequence and length of the calling parameter, and the return parameter is the byte sequence and
 /// length of Protobuf.
 #[no_mangle]
-pub extern "C" fn call_native(
+pub extern "C-unwind" fn call_native(
     name_ptr: *const u8,
     name_len: usize,
     args_ptr: *const u8,

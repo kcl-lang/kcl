@@ -26,13 +26,13 @@ jobs:
 
       - name: Pull custom ARM64 Docker image
         run: |
-          docker pull --platform linux/arm64 kcllang/kcl-builder-arm64
+          docker pull --platform linux/arm64 ghcr.io/kcl-lang/kcl-builder-arm64
 
       - name: Build in Docker
         run: |
           docker run --rm --platform linux/arm64 \
             -v ${{ github.workspace }}:/workspace -w /workspace \
-            kcllang/kcl-builder-arm64 \
+            ghcr.io/kcl-lang/kcl-builder-arm64 \
             /bin/bash -c "export KCL_BUILD_GIT_SHA=$(git rev-parse HEAD) && git config --global --add safe.directory /workspace && git config --global user.name 'GitHub Action' && git config --global user.email 'action@github.com' && make && make release && _build/dist/linux/kclvm/bin/kclvm_cli version"
 
       - name: Read VERSION file

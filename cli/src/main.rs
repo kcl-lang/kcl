@@ -7,7 +7,7 @@ use std::{
 
 #[link(name = "kclvm_cli_cdylib")]
 #[allow(improper_ctypes)]
-extern "C" {
+extern "C-unwind" {
     fn kclvm_cli_main(argc: c_int, argv: *const *const c_char) -> *mut ExitCode;
 }
 
