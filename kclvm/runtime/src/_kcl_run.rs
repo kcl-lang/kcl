@@ -40,7 +40,7 @@ type kclvm_int_t = i64;
 #[allow(dead_code, non_camel_case_types)]
 type kclvm_float_t = f64;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct RuntimePanicRecord {
     pub kcl_panic_info: bool,
     pub message: String,
