@@ -21,3 +21,9 @@ schema Manifest:
 aaa: any = 1
 
 bbb = any item in [] { True }
+
+import net
+
+c = {
+    net: 1
+}
