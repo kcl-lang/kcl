@@ -245,6 +245,14 @@ impl<'p> Printer<'p> {
                     match self.comments.pop_front() {
                         Some(comment) => {
                             self.writeln(&comment.node.text);
+                            match self.comments.front() {
+                                Some(next_comment) => {
+                                    if next_comment.line >= comment.line + 2 && count > 0 {
+                                        self.write_newline();
+                                    }
+                                }
+                                None => {}
+                            }
                         }
                         None => break,
                     }

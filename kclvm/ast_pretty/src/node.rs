@@ -39,6 +39,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         if let Some(doc) = &module.doc {
             self.write(&doc.node);
             self.write_newline();
+            self.write_newline();
         }
 
         self.stmts(&module.body);
@@ -993,9 +994,13 @@ impl<'p> Printer<'p> {
             // Do not format out user-reserved blank lines: which does not mean that to preserve all user-written blank lines.
             // For situations where there are more than two blank lines, we only keep one blank line.
             let need_newline = if let Some(prev_stmt) = prev_stmt {
-                stmt.line > 0
-                    && stmt.line >= prev_stmt.end_line + 2
-                    && !self.has_comments_on_node(stmt)
+                if stmt.line > prev_stmt.end_line + 2 {
+                    true
+                } else if stmt.line == prev_stmt.end_line + 2 {
+                    stmt.line > 0 && !self.has_comments_on_node(stmt)
+                } else {
+                    false
+                }
             } else {
                 false
             };

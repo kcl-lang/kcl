@@ -78,3 +78,9 @@ data = [ # Comment One
     # Comment Six
     *[3, 4] # Comment Seven
 ]
+
+# This is a comment
+foo = "bar"
+
+# This is another comment
+fizz = "bazz"

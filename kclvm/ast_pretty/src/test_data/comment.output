@@ -34,10 +34,13 @@ appConfiguration = AppConfiguration {
         name: "kusion_override"
     }
     # Comment Seven
+    
     # Comment Eight
     overQuota: True
 }
+
 # Comment Nine
+
 # Deprecated
 @Deprecated()
 schema Foo:
@@ -91,3 +94,9 @@ data = [
     # Comment Seven
     *[3, 4]
 ]
+
+# This is a comment
+foo = "bar"
+
+# This is another comment
+fizz = "bazz"
