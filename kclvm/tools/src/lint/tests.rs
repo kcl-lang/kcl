@@ -1,4 +1,4 @@
-use super::lint_files;
+use super::{lint_files, lint_all_files};
 use std::path::PathBuf;
 
 #[test]
@@ -67,4 +67,47 @@ fn test_unused_check_for_each_file() {
         warnings[0].messages[0].range.0.filename,
         path.to_str().unwrap().to_string()
     );
+}
+
+#[test]
+fn test_lint_all_packages() {
+    let (errors, warnings) = lint_all_files(&"./src/lint/test_data", None);
+    let expected_warnings = [
+        "Module 'math' imported but unused",
+        "The import stmt should be placed at the top of the module",
+        "Module 'a' is reimported multiple times",
+        "Module 'a' imported but unused",
+        "Module 'a' imported but unused",
+        "Module 'abc' imported but unused",
+    ];
+   
+    assert_eq!(warnings.len(), expected_warnings.len());
+    for (diag, msg) in warnings.iter().zip(expected_warnings.iter()) {
+        assert_eq!(diag.messages[0].message, msg.to_string());
+    }
+    
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    path.push("src");
+    path.push("lint");
+    path.push("test_data");
+    path.push("abc");
+
+    let msgs = [
+        "pkgpath abc not found in the program",
+        "try 'kcl mod add abc' to download the missing package",
+        "browse more packages at 'https://artifacthub.io'",
+        &format!("Cannot find the module abc from {}", path.to_str().unwrap()),
+    ];
+    assert_eq!(
+        errors.len(),
+        msgs.len(),
+        "{:?}",
+        errors
+            .iter()
+            .map(|e| e.messages[0].message.clone())
+            .collect::<Vec<String>>()
+    );
+    for (diag, m) in errors.iter().zip(msgs.iter()) {
+        assert_eq!(diag.messages[0].message, m.to_string());
+    }
 }
