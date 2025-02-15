@@ -1,4 +1,4 @@
-name: build-and-test-ubuntu
+name: Build and Test on Linux AMD64
 on:
   pull_request:
     branches:

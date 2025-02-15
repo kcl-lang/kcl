@@ -1,4 +1,4 @@
-name: Build and Test Musl
+name: Build and Test on Alpine Linux Musl
 on:
   pull_request:
     branches:
