@@ -574,10 +574,10 @@ impl LanguageServerState {
             for folder in workspace_folders {
                 let path = file_path_from_url(&folder.uri).unwrap();
                 let mut watcher = &mut self.fs_event_watcher.handle;
-                watcher
-                    .watch(std::path::Path::new(&path), RecursiveMode::Recursive)
-                    .unwrap();
-                self.log_message(format!("Start watch {:?}", path));
+                match watcher.watch(std::path::Path::new(&path), RecursiveMode::Recursive) {
+                    Ok(_) => self.log_message(format!("Start watch {:?}", path)),
+                    Err(e) => self.log_message(format!("Failed watch {:?}: {:?}", path, e)),
+                }
                 let tool = Arc::clone(&self.tool);
                 let (workspaces, failed) = lookup_compile_workspaces(&*tool.read(), &path, true);
 
