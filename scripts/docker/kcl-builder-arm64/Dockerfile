@@ -12,7 +12,7 @@ RUN apt-get install -y curl make gcc git zlib1g-dev
 RUN apt install -y pkg-config libssl-dev
 
 # rust
-RUN curl https://sh.rustup.rs -sSf | bash -s -- -y --default-toolchain 1.83.0
+RUN curl https://sh.rustup.rs -sSf | bash -s -- -y --default-toolchain 1.84.1
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 
 RUN cargo version

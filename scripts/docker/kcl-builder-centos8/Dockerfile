@@ -23,7 +23,7 @@ RUN yum -y install ca-certificates
 # rust-1.54.0
 # cargo 1.54.0
 # RUN yum -y install rust cargo rustfmt
-RUN curl https://sh.rustup.rs -sSf | bash -s -- -y --default-toolchain 1.83.0
+RUN curl https://sh.rustup.rs -sSf | bash -s -- -y --default-toolchain 1.84.1
 RUN echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
 
 ENV PATH="/root/.cargo/bin:${PATH}"
