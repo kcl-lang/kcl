@@ -28,7 +28,7 @@ ENV GOPATH=/go \
     CARGO_NET_GIT_FETCH_WITH_CLI=true
 
 # install rust and cargo
-RUN wget -qO- https://sh.rustup.rs | bash -s -- -y --default-toolchain 1.83.0 \
+RUN wget -qO- https://sh.rustup.rs | bash -s -- -y --default-toolchain 1.84.1 \
     && echo 'source $HOME/.cargo/env' >> $HOME/.ashrc \
     && . $HOME/.cargo/env \
     && cargo version \

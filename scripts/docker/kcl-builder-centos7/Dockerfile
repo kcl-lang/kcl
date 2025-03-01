@@ -44,7 +44,7 @@ RUN yum install -y wget
 
 # rust
 # https://www.rust-lang.org/tools/install
-RUN curl https://sh.rustup.rs -sSf | bash -s -- -y --default-toolchain 1.83.0
+RUN curl https://sh.rustup.rs -sSf | bash -s -- -y --default-toolchain 1.84.1
 ENV PATH="/root/.cargo/bin:${PATH}"
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 
