@@ -11,7 +11,7 @@ use crate::{
     proxy::{Frame, Proxy},
     rule::RuleCaller,
     schema::SchemaCaller,
-    EvalContext, Evaluator,
+    EvalContext, Evaluator, LambdaOrSchemaEvalContext,
 };
 
 impl<'ctx> Evaluator<'ctx> {
@@ -69,7 +69,10 @@ impl<'ctx> Evaluator<'ctx> {
             // The scope cover is [lambda.ctx.level, self.scope_level()]
             self.push_scope_cover(lambda_ctx.level, level);
         }
-        self.lambda_stack.borrow_mut().push(lambda_ctx);
+        self.lambda_stack.borrow_mut().push(lambda_ctx.clone());
+        self.ctx_stack
+            .borrow_mut()
+            .push(LambdaOrSchemaEvalContext::Lambda(lambda_ctx));
     }
 
     /// Pop a lambda definition scope.
@@ -82,6 +85,7 @@ impl<'ctx> Evaluator<'ctx> {
         level: usize,
     ) {
         self.lambda_stack.borrow_mut().pop();
+        self.ctx_stack.borrow_mut().pop();
         // Inner scope function calling.
         if frame_pkgpath == current_pkgpath && level >= lambda_ctx.level {
             self.pop_scope_cover();
@@ -104,12 +108,16 @@ impl<'ctx> Evaluator<'ctx> {
 
     #[inline]
     pub fn push_schema(&self, v: EvalContext) {
-        self.schema_stack.borrow_mut().push(v);
+        self.schema_stack.borrow_mut().push(v.clone());
+        self.ctx_stack
+            .borrow_mut()
+            .push(LambdaOrSchemaEvalContext::Schema(v));
     }
 
     #[inline]
     pub fn pop_schema(&self) {
         self.schema_stack.borrow_mut().pop();
+        self.ctx_stack.borrow_mut().pop();
     }
 
     #[inline]

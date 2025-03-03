@@ -73,6 +73,8 @@ pub struct Evaluator<'ctx> {
     pub lambda_stack: RefCell<Vec<FunctionEvalContextRef>>,
     /// To judge is in the schema statement.
     pub schema_stack: RefCell<Vec<EvalContext>>,
+    /// Order lambda and schema ctx vec
+    pub ctx_stack: RefCell<Vec<LambdaOrSchemaEvalContext>>,
     /// To judge is in the schema expression.
     pub schema_expr_stack: RefCell<Vec<()>>,
     /// Import names mapping
@@ -89,6 +91,12 @@ pub struct Evaluator<'ctx> {
     pub backtrack_meta: RefCell<Vec<BacktrackMeta>>,
     /// Current AST id for the evaluator walker.
     pub ast_id: RefCell<AstIndex>,
+}
+
+#[derive(Clone)]
+pub enum LambdaOrSchemaEvalContext {
+    Schema(EvalContext),
+    Lambda(FunctionEvalContextRef),
 }
 
 #[derive(Clone)]
@@ -147,6 +155,7 @@ impl<'ctx> Evaluator<'ctx> {
             local_vars: RefCell::new(Default::default()),
             backtrack_meta: RefCell::new(Default::default()),
             ast_id: RefCell::new(AstIndex::default()),
+            ctx_stack: RefCell::new(Default::default()),
         }
     }
 
