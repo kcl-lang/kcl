@@ -398,6 +398,21 @@ func = lambda config: {str:} {
 x = func({key = 1})
 "#}
 
+evaluator_snapshot! {lambda_6, r#"
+schema A:
+    my_field: int
+
+    get_field: () -> int = lambda {
+        my_field
+    }
+
+_a = A{my_field = 2}
+my_dict = {
+    my_field = 1
+    x = _a.get_field()
+}
+"#}
+
 evaluator_snapshot! {schema_0, r#"
 schema Person:
     name: str = "Alice"

@@ -2279,9 +2279,47 @@ impl<'ctx> LLVMCodeGenContext<'ctx> {
             {
                 match self.resolve_variable_level(name) {
                     // Closure variable or local variables
-                    Some(level) if level > GLOBAL_LEVEL => self.get_variable(name),
+                    Some(level) if level > GLOBAL_LEVEL => {
+                        let ctx_stack = self.ctx_stack.borrow();
+                        let mut result = self.undefined_value();
+                        let mut found = false;
+                        for i in 0..ctx_stack.len() {
+                            let index = ctx_stack.len() - i - 1;
+                            match &ctx_stack[index] {
+                                crate::LambdaOrSchemaEvalContext::Schema(_) => {
+                                    let res = self.get_variable_in_schema_or_rule(name);
+
+                                    if !res.is_undefined() {
+                                        result = res;
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                crate::LambdaOrSchemaEvalContext::Lambda(_) => {
+                                    let current_pkgpath = self.current_pkgpath();
+                                    let res = self.get_variable_in_pkgpath_from_last_scope(
+                                        name,
+                                        &current_pkgpath,
+                                    );
+                                    if !res.is_undefined() {
+                                        result = res;
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if found {
+                            result
+                        } else {
+                            // Not found variable in the scope, maybe lambda closures captured in other package scopes.
+                            self.last_lambda_ctx()
+                                .map(|ctx| ctx.closure.get(name).cloned().unwrap_or(result.clone()))
+                                .unwrap_or(result)
+                        }
+                    }
                     // Schema closure or global variables
-                    _ => self.get_variable_in_schema(name),
+                    _ => self.get_variable_in_schema_or_rule(name),
                 }
             }
         }
