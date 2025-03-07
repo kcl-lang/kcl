@@ -445,11 +445,17 @@ pub extern "C-unwind" fn kclvm_net_hosts_in_CIDR(
             let mask = parts[1];
             if let Ok(ip) = Ipv4Addr::from_str(ip) {
                 if let Ok(mask) = mask.parse::<u8>() {
-                    let mask = u32::from_be_bytes(ip.octets()) & !((1 << (32 - mask)) - 1);
+                    if mask >= 31 {
+                        return ValueRef::list(None).into_raw(ctx);
+                    }
+
+                    let subnet_mask = !((1 << (32 - mask)) - 1);
+                    let network = u32::from(ip) & subnet_mask;
+                    let broadcast = network | !subnet_mask;
+
                     let mut hosts = vec![];
-                    for i in 1..(1 << (32 - mask)) - 1 {
-                        let ip = u32::from_be_bytes(ip.octets()) + i;
-                        hosts.push(ValueRef::str(Ipv4Addr::from(ip).to_string().as_str()));
+                    for i in (network + 1)..broadcast {
+                        hosts.push(ValueRef::str(Ipv4Addr::from(i).to_string().as_str()));
                     }
                     let hosts_refs: Vec<&ValueRef> = hosts.iter().collect();
                     return ValueRef::list(Some(&hosts_refs[..])).into_raw(ctx);
@@ -469,6 +475,9 @@ pub extern "C-unwind" fn kclvm_net_subnets_from_CIDR(
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
+    use std::net::Ipv4Addr;
+    use std::str::FromStr;
+
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -476,18 +485,34 @@ pub extern "C-unwind" fn kclvm_net_subnets_from_CIDR(
     if let Some(cidr) = get_call_arg_str(args, kwargs, 0, Some("cidr")) {
         let parts: Vec<&str> = cidr.split('/').collect();
         if parts.len() == 2 {
-            let ip = parts[0];
-            let mask = parts[1];
-            if let Ok(ip) = Ipv4Addr::from_str(ip) {
-                if let Ok(mask) = mask.parse::<u8>() {
-                    let mask = u32::from_be_bytes(ip.octets()) & !((1 << (32 - mask)) - 1);
+            if let Ok(ip) = Ipv4Addr::from_str(parts[0]) {
+                if let Ok(prefix) = parts[1].parse::<u8>() {
+                    if prefix >= 32 {
+                        return ValueRef::list(None).into_raw(ctx);
+                    }
+
+                    let ip_u32 = u32::from_be_bytes(ip.octets());
+                    let subnet_mask = !((1 << (32 - prefix)) - 1);
+                    let network_base = ip_u32 & subnet_mask;
+
+                    // Ensure we don't exceed 32 bits
+                    let new_prefix = prefix + 1;
+                    if new_prefix > 32 {
+                        return ValueRef::list(None).into_raw(ctx);
+                    }
+                    let step = 1 << (32 - new_prefix); // Size of each subnet
+
                     let mut subnets = vec![];
-                    for i in 1..(1 << (32 - mask)) - 1 {
-                        let ip = u32::from_be_bytes(ip.octets()) + i;
+                    for i in 0..2 {
+                        let subnet_ip = network_base + (i * step);
+                        if subnet_ip > u32::MAX {
+                            break;
+                        }
                         subnets.push(ValueRef::str(
-                            format!("{}/{}", Ipv4Addr::from(ip), mask).as_str(),
+                            format!("{}/{}", Ipv4Addr::from(subnet_ip), new_prefix).as_str(),
                         ));
                     }
+
                     let subnets_refs: Vec<&ValueRef> = subnets.iter().collect();
                     return ValueRef::list(Some(&subnets_refs)).into_raw(ctx);
                 }
