@@ -108,9 +108,11 @@ pub(crate) struct LanguageServerState {
     pub workspace_folders: Option<Vec<WorkspaceFolder>>,
     /// Actively monitor file system changes. These changes will not be notified through lsp,
     /// e.g., execute `kcl mod add xxx`, `kcl fmt xxx`
-    pub fs_event_watcher: Handle<
-        Box<RecommendedWatcher>,
-        mpsc::Receiver<std::result::Result<notify::Event, notify::Error>>,
+    pub fs_event_watcher: Option<
+        Handle<
+            Box<RecommendedWatcher>,
+            mpsc::Receiver<std::result::Result<notify::Event, notify::Error>>,
+        >,
     >,
 }
 
@@ -152,11 +154,21 @@ impl LanguageServerState {
 
         let fs_event_watcher = {
             let (tx, rx) = mpsc::channel::<notify::Result<notify::Event>>();
-            let mut watcher = notify::recommended_watcher(tx).unwrap();
-            let handle = Box::new(watcher);
-            Handle {
-                handle,
-                _receiver: rx,
+            match notify::recommended_watcher(tx) {
+                Ok(watcher) => {
+                    let handle = Box::new(watcher);
+                    Some(Handle {
+                        handle,
+                        _receiver: rx,
+                    })
+                }
+                Err(e) => {
+                    log_message(
+                        format!("Failed to init fs event watcher: {:?}", e),
+                        &task_sender,
+                    );
+                    None
+                }
             }
         };
 
@@ -190,47 +202,50 @@ impl LanguageServerState {
     /// Blocks until a new event is received from one of the many channels the language server
     /// listens to. Returns the first event that is received.
     fn next_event(&self, receiver: &Receiver<lsp_server::Message>) -> Option<Event> {
-        for event in self.fs_event_watcher._receiver.try_iter() {
-            if let Ok(e) = event {
-                match e.kind {
-                    notify::EventKind::Modify(kind) => {
-                        if let notify::event::ModifyKind::Data(data_change) = kind {
-                            if let notify::event::DataChange::Content = data_change {
-                                let paths = e.paths;
-                                let kcl_config_file: Vec<PathBuf> = filter_kcl_config_file(&paths);
-                                if !kcl_config_file.is_empty() {
-                                    // TODO: wait for fix `kcl mod metadata` to read only. Otherwise it will lead to an infinite loop
-                                    // return Some(Event::FileWatcher(
-                                    //     FileWatcherEvent::ChangedConfigFile(kcl_config_file),
-                                    // ));
+        if let Some(fs_event_watcher) = &self.fs_event_watcher {
+            for event in fs_event_watcher._receiver.try_iter() {
+                if let Ok(e) = event {
+                    match e.kind {
+                        notify::EventKind::Modify(kind) => {
+                            if let notify::event::ModifyKind::Data(data_change) = kind {
+                                if let notify::event::DataChange::Content = data_change {
+                                    let paths = e.paths;
+                                    let kcl_config_file: Vec<PathBuf> =
+                                        filter_kcl_config_file(&paths);
+                                    if !kcl_config_file.is_empty() {
+                                        // TODO: wait for fix `kcl mod metadata` to read only. Otherwise it will lead to an infinite loop
+                                        // return Some(Event::FileWatcher(
+                                        //     FileWatcherEvent::ChangedConfigFile(kcl_config_file),
+                                        // ));
+                                    }
                                 }
                             }
                         }
-                    }
-                    notify::EventKind::Remove(remove_kind) => {
-                        if let notify::event::RemoveKind::File = remove_kind {
-                            let paths = e.paths;
-                            let kcl_config_file: Vec<PathBuf> = filter_kcl_config_file(&paths);
-                            if !kcl_config_file.is_empty() {
-                                return Some(Event::FileWatcher(
-                                    FileWatcherEvent::RemoveConfigFile(kcl_config_file),
-                                ));
+                        notify::EventKind::Remove(remove_kind) => {
+                            if let notify::event::RemoveKind::File = remove_kind {
+                                let paths = e.paths;
+                                let kcl_config_file: Vec<PathBuf> = filter_kcl_config_file(&paths);
+                                if !kcl_config_file.is_empty() {
+                                    return Some(Event::FileWatcher(
+                                        FileWatcherEvent::RemoveConfigFile(kcl_config_file),
+                                    ));
+                                }
                             }
                         }
-                    }
 
-                    notify::EventKind::Create(create_kind) => {
-                        if let notify::event::CreateKind::File = create_kind {
-                            let paths = e.paths;
-                            let kcl_config_file: Vec<PathBuf> = filter_kcl_config_file(&paths);
-                            if !kcl_config_file.is_empty() {
-                                return Some(Event::FileWatcher(
-                                    FileWatcherEvent::CreateConfigFile(kcl_config_file),
-                                ));
+                        notify::EventKind::Create(create_kind) => {
+                            if let notify::event::CreateKind::File = create_kind {
+                                let paths = e.paths;
+                                let kcl_config_file: Vec<PathBuf> = filter_kcl_config_file(&paths);
+                                if !kcl_config_file.is_empty() {
+                                    return Some(Event::FileWatcher(
+                                        FileWatcherEvent::CreateConfigFile(kcl_config_file),
+                                    ));
+                                }
                             }
                         }
+                        _ => {}
                     }
-                    _ => {}
                 }
             }
         }
@@ -573,23 +588,26 @@ impl LanguageServerState {
         if let Some(workspace_folders) = &self.workspace_folders {
             for folder in workspace_folders {
                 let path = file_path_from_url(&folder.uri).unwrap();
-                let mut watcher = &mut self.fs_event_watcher.handle;
-                match watcher.watch(std::path::Path::new(&path), RecursiveMode::Recursive) {
-                    Ok(_) => self.log_message(format!("Start watch {:?}", path)),
-                    Err(e) => self.log_message(format!("Failed watch {:?}: {:?}", path, e)),
-                }
-                self.log_message(format!("Start watch {:?}", path));
-                let tool = Arc::clone(&self.tool);
-                let (workspaces, failed) = lookup_compile_workspaces(&*tool.read(), &path, true);
-
-                if let Some(failed) = failed {
-                    for (key, err) in failed {
-                        self.log_message(format!("parse kcl.work failed: {}: {}", key, err));
+                if let Some(fs_event_watcher) = &mut self.fs_event_watcher {
+                    let mut watcher = &mut fs_event_watcher.handle;
+                    match watcher.watch(std::path::Path::new(&path), RecursiveMode::Recursive) {
+                        Ok(_) => self.log_message(format!("Start watch {:?}", path)),
+                        Err(e) => self.log_message(format!("Failed watch {:?}: {:?}", path, e)),
                     }
-                }
+                    self.log_message(format!("Start watch {:?}", path));
+                    let tool = Arc::clone(&self.tool);
+                    let (workspaces, failed) =
+                        lookup_compile_workspaces(&*tool.read(), &path, true);
 
-                for (workspace, opts) in workspaces {
-                    self.async_compile(workspace, opts, None, false);
+                    if let Some(failed) = failed {
+                        for (key, err) in failed {
+                            self.log_message(format!("parse kcl.work failed: {}: {}", key, err));
+                        }
+                    }
+
+                    for (workspace, opts) in workspaces {
+                        self.async_compile(workspace, opts, None, false);
+                    }
                 }
             }
         }
