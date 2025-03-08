@@ -72,6 +72,9 @@ pub mod unification;
 pub mod value;
 pub use self::value::*;
 
+pub mod base32;
+pub use self::base32::*;
+
 pub mod base64;
 pub use self::base64::*;
 

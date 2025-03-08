@@ -1429,6 +1429,7 @@ mod tests {
                 "json",
                 "crypto",
                 "base64",
+                "base32",
                 "units",
                 "file",
                 "template",
