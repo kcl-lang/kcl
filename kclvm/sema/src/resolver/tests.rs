@@ -613,6 +613,21 @@ fn test_system_package() {
         .borrow()
         .ty
         .is_func());
+
+    // Add assertions for base32 module
+    assert!(main_scope.lookup("base32").unwrap().borrow().ty.is_module());
+    assert!(main_scope
+        .lookup("base32_encode")
+        .unwrap()
+        .borrow()
+        .ty
+        .is_func());
+    assert!(main_scope
+        .lookup("base32_decode")
+        .unwrap()
+        .borrow()
+        .ty
+        .is_func());
 }
 
 #[test]

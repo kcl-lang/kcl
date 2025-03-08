@@ -1,6 +1,7 @@
 ---
 source: loader/src/tests.rs
-expression: "format!(\"{:#?}\", p.symbols.values())"
+expression: "format! (\"{:#?}\", p.symbols.values())"
+snapshot_kind: text
 ---
 [
     SymbolInfo {
@@ -29,7 +30,7 @@ expression: "format!(\"{:#?}\", p.symbols.values())"
         owner: Some(
             SymbolRef {
                 id: Index {
-                    index: 15,
+                    index: 16,
                     generation: 0,
                 },
                 kind: Package,

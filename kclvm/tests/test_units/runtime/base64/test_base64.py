@@ -2,7 +2,12 @@
 
 import typing
 import unittest
+import sys
+import os
 
+# Add the parent directory to the path to import kclvm_runtime
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(parent_dir)
 import kclvm_runtime
 
 # https://github.com/python/cpython/blob/main/Lib/test/test_base64.py

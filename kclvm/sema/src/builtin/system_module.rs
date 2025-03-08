@@ -66,6 +66,57 @@ register_base64_member! {
 }
 
 // ------------------------------
+// base32 system package
+// ------------------------------
+
+pub const BASE32: &str = "base32";
+macro_rules! register_base32_member {
+    ($($name:ident => $ty:expr)*) => (
+        pub const BASE32_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+            let mut builtin_mapping = IndexMap::default();
+            $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
+            builtin_mapping
+        });
+        pub const BASE32_FUNCTION_NAMES: &[&str] = &[
+            $( stringify!($name), )*
+        ];
+    )
+}
+register_base32_member! {
+    encode => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "value".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Encode the string `value` using the base32 codec."#,
+        false,
+        None,
+    )
+    decode => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "value".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Decode the string `value` using the base32 codec."#,
+        false,
+        None,
+    )
+}
+
+// ------------------------------
 // net system package
 // ------------------------------
 
@@ -2267,7 +2318,7 @@ register_runtime_member! {
 
 pub const STANDARD_SYSTEM_MODULES: &[&str] = &[
     COLLECTION, NET, MANIFESTS, MATH, DATETIME, REGEX, YAML, JSON, CRYPTO, BASE64, UNITS, FILE,
-    TEMPLATE, RUNTIME,
+    TEMPLATE, RUNTIME, BASE32,
 ];
 
 pub const STANDARD_SYSTEM_MODULE_NAMES_WITH_AT: &[&str] = &[
@@ -2285,12 +2336,14 @@ pub const STANDARD_SYSTEM_MODULE_NAMES_WITH_AT: &[&str] = &[
     "@file",
     "@template",
     "@runtime",
+    "@base32",
 ];
 
 /// Get the system module members
 pub fn get_system_module_members(name: &str) -> Vec<&str> {
     match name {
         BASE64 => BASE64_FUNCTION_NAMES.to_vec(),
+        BASE32 => BASE32_FUNCTION_NAMES.to_vec(),
         NET => NET_FUNCTION_NAMES.to_vec(),
         MANIFESTS => MANIFESTS_FUNCTION_NAMES.to_vec(),
         MATH => MATH_FUNCTION_NAMES.to_vec(),
@@ -2317,6 +2370,10 @@ pub fn get_system_member_function_ty(name: &str, func: &str) -> TypeRef {
     let optional_ty = match name {
         BASE64 => {
             let types = BASE64_FUNCTION_TYPES;
+            types.get(func).cloned()
+        }
+        BASE32 => {
+            let types = BASE32_FUNCTION_TYPES;
             types.get(func).cloned()
         }
         NET => {

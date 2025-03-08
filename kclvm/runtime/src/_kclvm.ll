@@ -32,6 +32,10 @@
 
 declare void @kclvm_assert(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %value, %kclvm_value_ref_t* %msg);
 
+declare %kclvm_value_ref_t* @kclvm_base32_decode(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
+declare %kclvm_value_ref_t* @kclvm_base32_encode(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
 declare %kclvm_value_ref_t* @kclvm_base64_decode(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_base64_encode(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
@@ -386,7 +390,11 @@ declare %kclvm_value_ref_t* @kclvm_net_IP_string(%kclvm_context_t* %ctx, %kclvm_
 
 declare %kclvm_value_ref_t* @kclvm_net_fqdn(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
+declare %kclvm_value_ref_t* @kclvm_net_hosts_in_CIDR(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
 declare %kclvm_value_ref_t* @kclvm_net_is_IP(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
+declare %kclvm_value_ref_t* @kclvm_net_is_IP_in_CIDR(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_net_is_IPv4(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
@@ -406,9 +414,13 @@ declare %kclvm_value_ref_t* @kclvm_net_is_unspecified_IP(%kclvm_context_t* %ctx,
 
 declare %kclvm_value_ref_t* @kclvm_net_join_host_port(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
+declare %kclvm_value_ref_t* @kclvm_net_parse_CIDR(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
 declare %kclvm_value_ref_t* @kclvm_net_parse_IP(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_net_split_host_port(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
+declare %kclvm_value_ref_t* @kclvm_net_subnets_from_CIDR(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_net_to_IP16(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 

@@ -11,6 +11,7 @@ serde_yaml = {path = "../third-party/serde_yaml"}
 lazy_static = "1.4.0"
 generational-arena = "0.2.9"
 base64 = "0.13.0"
+base32 = "0.4.0"
 libc = "0.2.112"
 itertools = "0.10.3"
 unic-ucd-bidi = "0.9"
