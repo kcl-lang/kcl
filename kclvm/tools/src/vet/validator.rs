@@ -65,6 +65,8 @@
 //!         age > 10
 //! ```
 
+use std::collections::HashMap;
+
 use super::expr_builder::ExprBuilder;
 pub use crate::util::loader::LoaderKind;
 use anyhow::Result;
@@ -138,7 +140,7 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 /// let kind = LoaderKind::JSON;
 ///
 /// // One of the KCL file path or the content of the KCL file is enough.
-/// let result = validate(ValidateOption::new(schema_name, attr_name, validated_file_path.to_string(), kind, None, None));
+/// let result = validate(ValidateOption::new(schema_name, attr_name, validated_file_path.to_string(), kind, None, None, Default::default()));
 /// ```
 ///
 /// The json file used above conforms to the schema rules, so the content of `result` you get is :
@@ -187,7 +189,7 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool> {
             .as_slice(),
         Some(LoadProgramOptions {
             k_code_list: k_code,
-            package_maps: Default::default(),
+            package_maps: val_opt.package_maps,
             load_plugins: true,
             ..Default::default()
         }),
@@ -272,6 +274,7 @@ pub struct ValidateOption {
     validated_file_kind: LoaderKind,
     kcl_path: Option<String>,
     kcl_code: Option<String>,
+    package_maps: HashMap<String, String>,
 }
 
 impl ValidateOption {
@@ -282,6 +285,7 @@ impl ValidateOption {
         validated_file_kind: LoaderKind,
         kcl_path: Option<String>,
         kcl_code: Option<String>,
+        package_maps: HashMap<String, String>,
     ) -> Self {
         Self {
             schema_name,
@@ -290,6 +294,7 @@ impl ValidateOption {
             validated_file_kind,
             kcl_path,
             kcl_code,
+            package_maps,
         }
     }
 }

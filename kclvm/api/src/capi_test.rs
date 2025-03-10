@@ -154,6 +154,15 @@ fn test_c_api_call_exec_program_with_compile_only() {
 }
 
 #[test]
+fn test_c_api_validate_code_with_dep() {
+    test_c_api_without_wrapper::<ValidateCodeArgs, ValidateCodeResult>(
+        "KclvmService.ValidateCode",
+        "validate-code-file-with-dep.json",
+        "validate-code-file-with-dep.response.json",
+    );
+}
+
+#[test]
 fn test_c_api_validate_code() {
     test_c_api_without_wrapper::<ValidateCodeArgs, ValidateCodeResult>(
         "KclvmService.ValidateCode",

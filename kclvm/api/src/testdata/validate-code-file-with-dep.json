@@ -1,0 +1,10 @@
+{
+    "code": "import b\n\nschema Person:\n    name: b.Name\n",
+    "datafile": "./src/testdata/test-validate-with-dep.json",
+    "external_pkgs": [
+        {
+            "pkg_name": "b",
+            "pkg_path": "./src/testdata/dep/sub_dep"
+        }
+    ]
+}
