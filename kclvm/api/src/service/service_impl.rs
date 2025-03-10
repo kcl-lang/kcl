@@ -889,7 +889,8 @@ impl KclvmServiceImpl {
             args.datafile.clone()
         };
 
-        let dep_pkgs_map: HashMap<String, String> = args.external_pkgs
+        let dep_pkgs_map: HashMap<String, String> = args
+            .external_pkgs
             .iter()
             .map(|pkg| (pkg.pkg_name.clone(), pkg.pkg_path.clone()))
             .collect();
