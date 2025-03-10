@@ -140,7 +140,7 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 /// let kind = LoaderKind::JSON;
 ///
 /// // One of the KCL file path or the content of the KCL file is enough.
-/// let result = validate(ValidateOption::new(schema_name, attr_name, validated_file_path.to_string(), kind, None, None));
+/// let result = validate(ValidateOption::new(schema_name, attr_name, validated_file_path.to_string(), kind, None, None, Default::default()));
 /// ```
 ///
 /// The json file used above conforms to the schema rules, so the content of `result` you get is :
