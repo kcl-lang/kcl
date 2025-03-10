@@ -1,5 +1,6 @@
 # Copyright The KCL Authors. All rights reserved.
 
+import kclvm_runtime
 import os
 import tempfile
 import subprocess
@@ -9,7 +10,6 @@ import sys
 # Add the parent directory to the path to import kclvm_runtime
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
-import kclvm_runtime
 
 _Dylib = kclvm_runtime.KclvmRuntimeDylib()
 
