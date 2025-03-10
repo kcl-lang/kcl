@@ -1211,6 +1211,8 @@ message ValidateCode_Args {
 	string attribute_name = 6;
 	// Format of the validation (e.g., "json", "yaml").
 	string format = 7;
+	// List of external packages updated.
+	repeated ExternalPkg external_pkgs = 8;
 }
 
 // Message for validate code response.

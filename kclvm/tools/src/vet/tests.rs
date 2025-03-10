@@ -377,6 +377,7 @@ mod test_validater {
                     *LOADER_KIND[i],
                     Some(kcl_file_path.to_string()),
                     None,
+                    Default::default(),
                 );
 
                 match validate(opt) {
@@ -426,6 +427,7 @@ mod test_validater {
                     *LOADER_KIND[i],
                     Some(kcl_path),
                     Some(kcl_code),
+                    Default::default(),
                 );
 
                 let result = validate(opt).unwrap_err();
@@ -481,6 +483,7 @@ mod test_validater {
                 LoaderKind::YAML,
                 Some(kcl_path),
                 Some(kcl_code),
+                Default::default(),
             );
 
             let result = validate(opt).unwrap_err();
@@ -526,6 +529,7 @@ mod test_validater {
                     *LOADER_KIND[i],
                     None,
                     Some(kcl_code),
+                    Default::default(),
                 );
 
                 let result = validate(opt).unwrap_err();
@@ -542,6 +546,7 @@ mod test_validater {
             LoaderKind::JSON,
             None,
             None,
+            Default::default(),
         );
 
         match validate(opt) {
@@ -570,6 +575,7 @@ mod test_validater {
             LoaderKind::JSON,
             None,
             Some(kcl_code),
+            Default::default(),
         );
 
         match validate(opt) {
@@ -598,6 +604,7 @@ mod test_validater {
             LoaderKind::JSON,
             None,
             Some(kcl_code),
+            Default::default(),
         );
 
         match validate(opt) {

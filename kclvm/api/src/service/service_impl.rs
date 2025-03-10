@@ -889,6 +889,11 @@ impl KclvmServiceImpl {
             args.datafile.clone()
         };
 
+        let dep_pkgs_map: HashMap<String, String> = args.external_pkgs
+            .iter()
+            .map(|pkg| (pkg.pkg_name.clone(), pkg.pkg_path.clone()))
+            .collect();
+
         let (success, err_message) = match validate(ValidateOption::new(
             transform_str_para(&args.schema),
             args.attribute_name.clone(),
@@ -900,6 +905,7 @@ impl KclvmServiceImpl {
             },
             transform_str_para(&args.file),
             transform_str_para(&args.code),
+            dep_pkgs_map,
         )) {
             Ok(success) => (success, "".to_string()),
             Err(err) => (false, err.to_string()),
