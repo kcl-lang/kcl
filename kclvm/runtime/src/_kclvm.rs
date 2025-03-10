@@ -27,6 +27,8 @@ impl ApiType {
 #[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum ApiFunc {
     kclvm_assert,
+    kclvm_base32_decode,
+    kclvm_base32_encode,
     kclvm_base64_decode,
     kclvm_base64_encode,
     kclvm_builtin_abs,
