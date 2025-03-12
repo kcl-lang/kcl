@@ -69,6 +69,10 @@ typedef struct kclvm_value_t kclvm_value_t;
 
 void kclvm_assert(kclvm_context_t* ctx, kclvm_value_ref_t* value, kclvm_value_ref_t* msg);
 
+kclvm_value_ref_t* kclvm_base32_decode(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+
+kclvm_value_ref_t* kclvm_base32_encode(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+
 kclvm_value_ref_t* kclvm_base64_decode(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_base64_encode(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
