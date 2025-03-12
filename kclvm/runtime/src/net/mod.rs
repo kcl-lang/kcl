@@ -441,19 +441,26 @@ pub extern "C-unwind" fn kclvm_net_hosts_in_CIDR(
     if let Some(cidr) = get_call_arg_str(args, kwargs, 0, Some("cidr")) {
         let parts: Vec<&str> = cidr.split('/').collect();
         if parts.len() == 2 {
-            let ip = parts[0];
-            let mask = parts[1];
-            if let Ok(ip) = Ipv4Addr::from_str(ip) {
-                if let Ok(mask) = mask.parse::<u8>() {
-                    let mask = u32::from_be_bytes(ip.octets()) & !((1 << (32 - mask)) - 1);
-                    let mut hosts = vec![];
-                    for i in 1..(1 << (32 - mask)) - 1 {
-                        let ip = u32::from_be_bytes(ip.octets()) + i;
-                        hosts.push(ValueRef::str(Ipv4Addr::from(ip).to_string().as_str()));
-                    }
-                    let hosts_refs: Vec<&ValueRef> = hosts.iter().collect();
-                    return ValueRef::list(Some(&hosts_refs[..])).into_raw(ctx);
+            if let (Ok(ip), Ok(mask)) = (Ipv4Addr::from_str(parts[0]), parts[1].parse::<u8>()) {
+                if mask > 32 {
+                    return ValueRef::list(None).into_raw(ctx);
                 }
+
+                let ip_u32 = u32::from(ip);
+                let netmask = !((1 << (32 - mask)) - 1);
+                let network = ip_u32 & netmask;
+                let broadcast = network | !netmask;
+
+                let mut hosts = vec![];
+
+                // Exclude network (first) and broadcast (last) addresses
+                for i in 1..(broadcast - network) {
+                    let host_ip = Ipv4Addr::from(network + i);
+                    hosts.push(ValueRef::str(host_ip.to_string().as_str()));
+                }
+
+                let hosts_refs: Vec<&ValueRef> = hosts.iter().collect();
+                return ValueRef::list(Some(&hosts_refs)).into_raw(ctx);
             }
         }
         return ValueRef::list(None).into_raw(ctx);
