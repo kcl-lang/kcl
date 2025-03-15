@@ -104,9 +104,12 @@ fn parse_octet(first: char, chars: &mut std::iter::Peekable<Chars>) -> char {
     let mut octet_content = String::new();
     octet_content.push(first);
     while octet_content.len() < 3 {
-        let next_char = chars.next();
+        let next_char = chars.peek();
         match next_char {
-            Some(o @ '0'..='7') => octet_content.push(o),
+            Some(o @ '0'..='7') => {
+                octet_content.push(*o);
+                chars.next();
+            }
             _ => break,
         }
     }
