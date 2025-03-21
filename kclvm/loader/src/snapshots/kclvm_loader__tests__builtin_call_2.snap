@@ -156,7 +156,7 @@ snapshot_kind: text
         owner: Some(
             SymbolRef {
                 id: Index {
-                    index: 15,
+                    index: 16,
                     generation: 0,
                 },
                 kind: Package,
@@ -362,7 +362,7 @@ snapshot_kind: text
         owner: Some(
             SymbolRef {
                 id: Index {
-                    index: 15,
+                    index: 16,
                     generation: 0,
                 },
                 kind: Package,
@@ -580,20 +580,6 @@ snapshot_kind: text
         attrs: [
             SymbolRef {
                 id: Index {
-                    index: 145,
-                    generation: 0,
-                },
-                kind: Function,
-            },
-            SymbolRef {
-                id: Index {
-                    index: 146,
-                    generation: 0,
-                },
-                kind: Function,
-            },
-            SymbolRef {
-                id: Index {
                     index: 147,
                     generation: 0,
                 },
@@ -784,6 +770,20 @@ snapshot_kind: text
             SymbolRef {
                 id: Index {
                     index: 174,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 175,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 176,
                     generation: 0,
                 },
                 kind: Function,
@@ -829,20 +829,6 @@ snapshot_kind: text
         attrs: [
             SymbolRef {
                 id: Index {
-                    index: 145,
-                    generation: 0,
-                },
-                kind: Function,
-            },
-            SymbolRef {
-                id: Index {
-                    index: 146,
-                    generation: 0,
-                },
-                kind: Function,
-            },
-            SymbolRef {
-                id: Index {
                     index: 147,
                     generation: 0,
                 },
@@ -1033,6 +1019,20 @@ snapshot_kind: text
             SymbolRef {
                 id: Index {
                     index: 174,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 175,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 176,
                     generation: 0,
                 },
                 kind: Function,
@@ -1078,20 +1078,6 @@ snapshot_kind: text
         attrs: [
             SymbolRef {
                 id: Index {
-                    index: 145,
-                    generation: 0,
-                },
-                kind: Function,
-            },
-            SymbolRef {
-                id: Index {
-                    index: 146,
-                    generation: 0,
-                },
-                kind: Function,
-            },
-            SymbolRef {
-                id: Index {
                     index: 147,
                     generation: 0,
                 },
@@ -1282,6 +1268,20 @@ snapshot_kind: text
             SymbolRef {
                 id: Index {
                     index: 174,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 175,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 176,
                     generation: 0,
                 },
                 kind: Function,

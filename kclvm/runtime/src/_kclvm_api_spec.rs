@@ -762,6 +762,14 @@
 // api-spec(c):    kclvm_value_ref_t* kclvm_builtin_str_title(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_builtin_str_title(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %_kwargs);
 
+// api-spec:       kclvm_base32_encode
+// api-spec(c):    kclvm_value_ref_t* kclvm_base32_encode(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_base32_encode(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
+// api-spec:       kclvm_base32_decode
+// api-spec(c):    kclvm_value_ref_t* kclvm_base32_decode(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_base32_decode(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
 // api-spec:       kclvm_base64_encode
 // api-spec(c):    kclvm_value_ref_t* kclvm_base64_encode(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_base64_encode(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
@@ -981,6 +989,22 @@
 // api-spec:       kclvm_net_is_global_unicast_IP
 // api-spec(c):    kclvm_value_ref_t* kclvm_net_is_global_unicast_IP(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_net_is_global_unicast_IP(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
+// api-spec:       kclvm_net_parse_CIDR
+// api-spec(c):    kclvm_value_ref_t* kclvm_net_parse_CIDR(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_net_parse_CIDR(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
+// api-spec:       kclvm_net_hosts_in_CIDR
+// api-spec(c):    kclvm_value_ref_t* kclvm_net_hosts_in_CIDR(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_net_hosts_in_CIDR(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
+// api-spec:       kclvm_net_subnets_from_CIDR
+// api-spec(c):    kclvm_value_ref_t* kclvm_net_subnets_from_CIDR(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_net_subnets_from_CIDR(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
+// api-spec:       kclvm_net_is_IP_in_CIDR
+// api-spec(c):    kclvm_value_ref_t* kclvm_net_is_IP_in_CIDR(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_net_is_IP_in_CIDR(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_net_is_unspecified_IP
 // api-spec(c):    kclvm_value_ref_t* kclvm_net_is_unspecified_IP(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
