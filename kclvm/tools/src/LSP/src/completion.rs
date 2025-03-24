@@ -1433,6 +1433,7 @@ mod tests {
                 "file",
                 "template",
                 "runtime",
+                "base32",
             ]
             .iter()
             .map(|name| KCLCompletionItem {

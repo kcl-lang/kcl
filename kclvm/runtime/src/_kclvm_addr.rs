@@ -6,6 +6,8 @@
 pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
     match name {
         "kclvm_assert" => crate::kclvm_assert as *const () as u64,
+        "kclvm_base32_decode" => crate::kclvm_base32_decode as *const () as u64,
+        "kclvm_base32_encode" => crate::kclvm_base32_encode as *const () as u64,
         "kclvm_base64_decode" => crate::kclvm_base64_decode as *const () as u64,
         "kclvm_base64_encode" => crate::kclvm_base64_encode as *const () as u64,
         "kclvm_builtin_abs" => crate::kclvm_builtin_abs as *const () as u64,
