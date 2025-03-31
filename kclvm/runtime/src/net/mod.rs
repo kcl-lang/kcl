@@ -109,14 +109,12 @@ pub extern "C-unwind" fn kclvm_net_join_host_port(
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
 
-    if let Some(host) = get_call_arg_str(args, kwargs, 0, Some("host")) {
-        if let Some(port) = args.arg_i_int(1, None).or(kwargs.kwarg_int("port", None)) {
-            let s = format!("{host}:{port}");
-            return ValueRef::str(s.as_ref()).into_raw(ctx);
-        }
-        if let Some(port) = args.arg_i_str(1, None).or(kwargs.kwarg_str("port", None)) {
-            let s = format!("{host}:{port}");
-            return ValueRef::str(s.as_ref()).into_raw(ctx);
+    if let Some(host) = get_call_arg(args, kwargs, 0, Some("host")) {
+        if let Some(port) = get_call_arg(args, kwargs, 1, Some("port")) {
+            if host.is_none() || port.is_none() {
+                return ValueRef::none().into_raw(ctx);
+            }
+            return ValueRef::str(format!("{host}:{port}").as_ref()).into_raw(ctx);
         }
     }
     panic!("join_host_port() missing 2 required positional arguments: 'host' and 'port'");
@@ -783,6 +781,106 @@ mod test_net {
             let args = &ValueRef::list(Some(&[&ValueRef::str("[2001:db8::]:]80")]));
             kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
         });
+        std::panic::set_hook(prev_hook);
+    }
+
+    #[test]
+    fn test_join_host_port() {
+        let cases = [
+            (ValueRef::none(), ValueRef::none(), ValueRef::none()),
+            (ValueRef::none(), ValueRef::int(21), ValueRef::none()),
+            (ValueRef::none(), ValueRef::str("21"), ValueRef::none()),
+            (
+                ValueRef::str("invalid.invalid"),
+                ValueRef::none(),
+                ValueRef::none(),
+            ),
+            (
+                ValueRef::str("invalid.invalid"),
+                ValueRef::int(21),
+                ValueRef::str("invalid.invalid:21"),
+            ),
+            (
+                ValueRef::str("invalid.invalid"),
+                ValueRef::str("21"),
+                ValueRef::str("invalid.invalid:21"),
+            ),
+            (
+                ValueRef::str("192.0.2.1"),
+                ValueRef::int(14),
+                ValueRef::str("192.0.2.1:14"),
+            ),
+            (
+                ValueRef::str("192.0.2.1"),
+                ValueRef::str("14"),
+                ValueRef::str("192.0.2.1:14"),
+            ),
+        ];
+        let mut ctx = Context::default();
+        for (host, port, expected) in cases.iter() {
+            unsafe {
+                let actual = &*kclvm_net_join_host_port(
+                    &mut ctx,
+                    &ValueRef::list(Some(&[&host, &port])),
+                    &ValueRef::dict(None),
+                );
+                assert_eq!(expected, actual);
+            }
+            unsafe {
+                let actual = &*kclvm_net_join_host_port(
+                    &mut ctx,
+                    &ValueRef::list(None),
+                    &ValueRef::dict(Some(&[("host", host), ("port", port)])),
+                );
+                assert_eq!(expected, actual);
+            }
+        }
+    }
+
+    #[test]
+    fn test_join_host_port_invalid() {
+        let prev_hook = std::panic::take_hook();
+        // Disable print panic info in stderr.
+        std::panic::set_hook(Box::new(|_| {}));
+        assert_panic(
+            "join_host_port() missing 2 required positional arguments: 'host' and 'port'",
+            || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(None).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
+                kclvm_net_join_host_port(ctx.into_raw(), args, kwargs);
+            },
+        );
+        assert_panic(
+            "join_host_port() missing 2 required positional arguments: 'host' and 'port'",
+            || {
+                let mut ctx = Context::new();
+                let args =
+                    ValueRef::list(Some(&[&ValueRef::str("invalid.invalid")])).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
+                kclvm_net_join_host_port(ctx.into_raw(), args, kwargs);
+            },
+        );
+        assert_panic(
+            "join_host_port() missing 2 required positional arguments: 'host' and 'port'",
+            || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(None).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(Some(&[("host", &ValueRef::str("invalid.invalid"))]))
+                    .into_raw(&mut ctx);
+                kclvm_net_join_host_port(ctx.into_raw(), args, kwargs);
+            },
+        );
+        assert_panic(
+            "join_host_port() missing 2 required positional arguments: 'host' and 'port'",
+            || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(None).into_raw(&mut ctx);
+                let kwargs =
+                    ValueRef::dict(Some(&[("port", &ValueRef::str("80"))])).into_raw(&mut ctx);
+                kclvm_net_join_host_port(ctx.into_raw(), args, kwargs);
+            },
+        );
         std::panic::set_hook(prev_hook);
     }
 }
