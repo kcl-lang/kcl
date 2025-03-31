@@ -114,6 +114,9 @@ pub extern "C-unwind" fn kclvm_net_join_host_port(
             if host.is_none() || port.is_none() {
                 return ValueRef::none().into_raw(ctx);
             }
+            if host.as_str().contains(':') {
+                return ValueRef::str(format!("[{host}]:{port}").as_ref()).into_raw(ctx);
+            }
             return ValueRef::str(format!("{host}:{port}").as_ref()).into_raw(ctx);
         }
     }
@@ -814,6 +817,16 @@ mod test_net {
                 ValueRef::str("192.0.2.1"),
                 ValueRef::str("14"),
                 ValueRef::str("192.0.2.1:14"),
+            ),
+            (
+                ValueRef::str("2001:db8::"),
+                ValueRef::int(14),
+                ValueRef::str("[2001:db8::]:14"),
+            ),
+            (
+                ValueRef::str("2001:db8::"),
+                ValueRef::str("14"),
+                ValueRef::str("[2001:db8::]:14"),
             ),
         ];
         let mut ctx = Context::default();
