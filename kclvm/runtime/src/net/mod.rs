@@ -23,11 +23,16 @@ pub extern "C-unwind" fn kclvm_net_split_host_port(
         if ip_end_point.is_none() {
             return ValueRef::none().into_raw(ctx);
         }
-        let mut list = ValueRef::list(None);
-        for s in ip_end_point.as_str().split(':') {
-            list.list_append(&ValueRef::str(s));
+        match ip_end_point.as_str().rsplit_once(':') {
+            None => panic!(
+                "ip_end_point \"{}\" missing port",
+                ip_end_point.as_str().escape_default()
+            ),
+            Some((host, port)) => {
+                return ValueRef::list(Some(&[&ValueRef::str(host), &ValueRef::str(port)]))
+                    .into_raw(ctx);
+            }
         }
-        return list.into_raw(ctx);
     }
 
     panic!("split_host_port() missing 1 required positional argument: 'ip_end_point'");
@@ -661,6 +666,11 @@ mod test_net {
                 kclvm_net_split_host_port(ctx.into_raw(), args, kwargs);
             },
         );
+        assert_panic("ip_end_point \"test-host\" missing port", || {
+            let ctx = Context::new();
+            let args = &ValueRef::list(Some(&[&ValueRef::str("test-host")]));
+            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+        });
         std::panic::set_hook(prev_hook);
     }
 }
