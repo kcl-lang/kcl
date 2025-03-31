@@ -19,9 +19,12 @@ pub extern "C-unwind" fn kclvm_net_split_host_port(
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
 
-    if let Some(string) = get_call_arg_str(args, kwargs, 0, Some("ip_end_point")) {
+    if let Some(ip_end_point) = get_call_arg(args, kwargs, 0, Some("ip_end_point")) {
+        if ip_end_point.is_none() {
+            return ValueRef::none().into_raw(ctx);
+        }
         let mut list = ValueRef::list(None);
-        for s in string.split(':') {
+        for s in ip_end_point.as_str().split(':') {
             list.list_append(&ValueRef::str(s));
         }
         return list.into_raw(ctx);
@@ -601,4 +604,63 @@ pub extern "C-unwind" fn kclvm_net_is_unspecified_IP(
         return kclvm_value_False(ctx);
     }
     panic!("is_unspecified_IP() missing 1 required positional argument: 'ip'");
+}
+
+#[cfg(test)]
+mod test_net {
+    use super::*;
+
+    #[test]
+    fn test_split_host_port() {
+        let cases = [
+            (ValueRef::none(), ValueRef::none()),
+            (
+                ValueRef::str("invalid.invalid:21"),
+                ValueRef::list(Some(&[
+                    &ValueRef::str("invalid.invalid"),
+                    &ValueRef::str("21"),
+                ])),
+            ),
+            (
+                ValueRef::str("192.0.2.1:14"),
+                ValueRef::list(Some(&[&ValueRef::str("192.0.2.1"), &ValueRef::str("14")])),
+            ),
+        ];
+        let mut ctx = Context::default();
+        for (ip_end_point, expected) in cases.iter() {
+            unsafe {
+                let actual = &*kclvm_net_split_host_port(
+                    &mut ctx,
+                    &ValueRef::list(Some(&[&ip_end_point])),
+                    &ValueRef::dict(None),
+                );
+                assert_eq!(expected, actual);
+            }
+            unsafe {
+                let actual = &*kclvm_net_split_host_port(
+                    &mut ctx,
+                    &ValueRef::list(None),
+                    &ValueRef::dict(Some(&[("ip_end_point", ip_end_point)])),
+                );
+                assert_eq!(expected, actual);
+            }
+        }
+    }
+
+    #[test]
+    fn test_split_host_port_invalid() {
+        let prev_hook = std::panic::take_hook();
+        // Disable print panic info in stderr.
+        std::panic::set_hook(Box::new(|_| {}));
+        assert_panic(
+            "split_host_port() missing 1 required positional argument: 'ip_end_point'",
+            || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(None).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
+                kclvm_net_split_host_port(ctx.into_raw(), args, kwargs);
+            },
+        );
+        std::panic::set_hook(prev_hook);
+    }
 }
