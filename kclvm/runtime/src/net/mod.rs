@@ -19,12 +19,78 @@ pub extern "C-unwind" fn kclvm_net_split_host_port(
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
 
-    if let Some(string) = get_call_arg_str(args, kwargs, 0, Some("ip_end_point")) {
-        let mut list = ValueRef::list(None);
-        for s in string.split(':') {
-            list.list_append(&ValueRef::str(s));
+    if let Some(ip_end_point) = get_call_arg(args, kwargs, 0, Some("ip_end_point")) {
+        if ip_end_point.is_none() {
+            return ValueRef::none().into_raw(ctx);
         }
-        return list.into_raw(ctx);
+        let ip_end_point_str = ip_end_point.as_str();
+        match ip_end_point_str.rsplit_once(':') {
+            None => panic!(
+                "ip_end_point \"{}\" missing port",
+                ip_end_point_str.escape_default()
+            ),
+            Some((host, port)) => {
+                if host.starts_with('[') {
+                    match ip_end_point_str.find(']') {
+                        None => panic!(
+                            "ip_end_point \"{}\" missing ']'",
+                            ip_end_point_str.escape_default()
+                        ),
+                        Some(end) => {
+                            if end > host.len() || !ip_end_point_str[end + 1..].starts_with(':') {
+                                panic!(
+                                    "ip_end_point \"{}\" missing port",
+                                    ip_end_point_str.escape_default()
+                                );
+                            }
+                            if end < host.len() - 1 {
+                                panic!(
+                                    "ip_end_point \"{}\" too many colons",
+                                    ip_end_point_str.escape_default()
+                                );
+                            }
+                            if ip_end_point_str[1..].contains('[') {
+                                panic!(
+                                    "ip_end_point \"{}\" unexpected '['",
+                                    ip_end_point_str.escape_default()
+                                );
+                            }
+                            if port.contains(']') {
+                                panic!(
+                                    "ip_end_point \"{}\" unexpected ']'",
+                                    ip_end_point_str.escape_default()
+                                );
+                            }
+                            return ValueRef::list(Some(&[
+                                &ValueRef::str(&host[1..end]),
+                                &ValueRef::str(port),
+                            ]))
+                            .into_raw(ctx);
+                        }
+                    }
+                }
+                if host.contains(':') {
+                    panic!(
+                        "ip_end_point \"{}\" too many colons",
+                        ip_end_point_str.escape_default()
+                    );
+                }
+                if ip_end_point_str[1..].contains('[') {
+                    panic!(
+                        "ip_end_point \"{}\" unexpected '['",
+                        ip_end_point_str.escape_default()
+                    );
+                }
+                if ip_end_point_str.contains(']') {
+                    panic!(
+                        "ip_end_point \"{}\" unexpected ']'",
+                        ip_end_point_str.escape_default()
+                    );
+                }
+                return ValueRef::list(Some(&[&ValueRef::str(host), &ValueRef::str(port)]))
+                    .into_raw(ctx);
+            }
+        }
     }
 
     panic!("split_host_port() missing 1 required positional argument: 'ip_end_point'");
@@ -43,14 +109,15 @@ pub extern "C-unwind" fn kclvm_net_join_host_port(
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
 
-    if let Some(host) = get_call_arg_str(args, kwargs, 0, Some("host")) {
-        if let Some(port) = args.arg_i_int(1, None).or(kwargs.kwarg_int("port", None)) {
-            let s = format!("{host}:{port}");
-            return ValueRef::str(s.as_ref()).into_raw(ctx);
-        }
-        if let Some(port) = args.arg_i_str(1, None).or(kwargs.kwarg_str("port", None)) {
-            let s = format!("{host}:{port}");
-            return ValueRef::str(s.as_ref()).into_raw(ctx);
+    if let Some(host) = get_call_arg(args, kwargs, 0, Some("host")) {
+        if let Some(port) = get_call_arg(args, kwargs, 1, Some("port")) {
+            if host.is_none() || port.is_none() {
+                return ValueRef::none().into_raw(ctx);
+            }
+            if host.as_str().contains(':') {
+                return ValueRef::str(format!("[{host}]:{port}").as_ref()).into_raw(ctx);
+            }
+            return ValueRef::str(format!("{host}:{port}").as_ref()).into_raw(ctx);
         }
     }
     panic!("join_host_port() missing 2 required positional arguments: 'host' and 'port'");
@@ -601,4 +668,232 @@ pub extern "C-unwind" fn kclvm_net_is_unspecified_IP(
         return kclvm_value_False(ctx);
     }
     panic!("is_unspecified_IP() missing 1 required positional argument: 'ip'");
+}
+
+#[cfg(test)]
+mod test_net {
+    use super::*;
+
+    #[test]
+    fn test_split_host_port() {
+        let cases = [
+            (ValueRef::none(), ValueRef::none()),
+            (
+                ValueRef::str("invalid.invalid:21"),
+                ValueRef::list(Some(&[
+                    &ValueRef::str("invalid.invalid"),
+                    &ValueRef::str("21"),
+                ])),
+            ),
+            (
+                ValueRef::str("192.0.2.1:14"),
+                ValueRef::list(Some(&[&ValueRef::str("192.0.2.1"), &ValueRef::str("14")])),
+            ),
+            (
+                ValueRef::str("[2001:db8::]:80"),
+                ValueRef::list(Some(&[&ValueRef::str("2001:db8::"), &ValueRef::str("80")])),
+            ),
+        ];
+        let mut ctx = Context::default();
+        for (ip_end_point, expected) in cases.iter() {
+            unsafe {
+                let actual = &*kclvm_net_split_host_port(
+                    &mut ctx,
+                    &ValueRef::list(Some(&[&ip_end_point])),
+                    &ValueRef::dict(None),
+                );
+                assert_eq!(expected, actual);
+            }
+            unsafe {
+                let actual = &*kclvm_net_split_host_port(
+                    &mut ctx,
+                    &ValueRef::list(None),
+                    &ValueRef::dict(Some(&[("ip_end_point", ip_end_point)])),
+                );
+                assert_eq!(expected, actual);
+            }
+        }
+    }
+
+    #[test]
+    fn test_split_host_port_invalid() {
+        let prev_hook = std::panic::take_hook();
+        // Disable print panic info in stderr.
+        std::panic::set_hook(Box::new(|_| {}));
+        assert_panic(
+            "split_host_port() missing 1 required positional argument: 'ip_end_point'",
+            || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(None).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
+                kclvm_net_split_host_port(ctx.into_raw(), args, kwargs);
+            },
+        );
+        assert_panic("ip_end_point \"test-host\" missing port", || {
+            let ctx = Context::new();
+            let args = &ValueRef::list(Some(&[&ValueRef::str("test-host")]));
+            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+        });
+        assert_panic("ip_end_point \"test-host:7:80\" too many colons", || {
+            let ctx = Context::new();
+            let args = &ValueRef::list(Some(&[&ValueRef::str("test-host:7:80")]));
+            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+        });
+        assert_panic("ip_end_point \"[2001:db8::]\" missing port", || {
+            let ctx = Context::new();
+            let args = &ValueRef::list(Some(&[&ValueRef::str("[2001:db8::]")]));
+            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+        });
+        assert_panic("ip_end_point \"[2001:db8::]80\" missing port", || {
+            let ctx = Context::new();
+            let args = &ValueRef::list(Some(&[&ValueRef::str("[2001:db8::]80")]));
+            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+        });
+        assert_panic("ip_end_point \"[2001:db8::]9:80\" missing port", || {
+            let ctx = Context::new();
+            let args = &ValueRef::list(Some(&[&ValueRef::str("[2001:db8::]9:80")]));
+            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+        });
+        assert_panic("ip_end_point \"[2001:db8::]:9:80\" too many colons", || {
+            let ctx = Context::new();
+            let args = &ValueRef::list(Some(&[&ValueRef::str("[2001:db8::]:9:80")]));
+            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+        });
+        assert_panic("ip_end_point \"[2001:db8:::80\" missing ']'", || {
+            let ctx = Context::new();
+            let args = &ValueRef::list(Some(&[&ValueRef::str("[2001:db8:::80")]));
+            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+        });
+        assert_panic("ip_end_point \"t[est-host:80\" unexpected '['", || {
+            let ctx = Context::new();
+            let args = &ValueRef::list(Some(&[&ValueRef::str("t[est-host:80")]));
+            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+        });
+        assert_panic("ip_end_point \"]test-host:80\" unexpected ']'", || {
+            let ctx = Context::new();
+            let args = &ValueRef::list(Some(&[&ValueRef::str("]test-host:80")]));
+            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+        });
+        assert_panic("ip_end_point \"[[2001:db8::]:80\" unexpected '['", || {
+            let ctx = Context::new();
+            let args = &ValueRef::list(Some(&[&ValueRef::str("[[2001:db8::]:80")]));
+            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+        });
+        assert_panic("ip_end_point \"[2001:db8::]:]80\" unexpected ']'", || {
+            let ctx = Context::new();
+            let args = &ValueRef::list(Some(&[&ValueRef::str("[2001:db8::]:]80")]));
+            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+        });
+        std::panic::set_hook(prev_hook);
+    }
+
+    #[test]
+    fn test_join_host_port() {
+        let cases = [
+            (ValueRef::none(), ValueRef::none(), ValueRef::none()),
+            (ValueRef::none(), ValueRef::int(21), ValueRef::none()),
+            (ValueRef::none(), ValueRef::str("21"), ValueRef::none()),
+            (
+                ValueRef::str("invalid.invalid"),
+                ValueRef::none(),
+                ValueRef::none(),
+            ),
+            (
+                ValueRef::str("invalid.invalid"),
+                ValueRef::int(21),
+                ValueRef::str("invalid.invalid:21"),
+            ),
+            (
+                ValueRef::str("invalid.invalid"),
+                ValueRef::str("21"),
+                ValueRef::str("invalid.invalid:21"),
+            ),
+            (
+                ValueRef::str("192.0.2.1"),
+                ValueRef::int(14),
+                ValueRef::str("192.0.2.1:14"),
+            ),
+            (
+                ValueRef::str("192.0.2.1"),
+                ValueRef::str("14"),
+                ValueRef::str("192.0.2.1:14"),
+            ),
+            (
+                ValueRef::str("2001:db8::"),
+                ValueRef::int(14),
+                ValueRef::str("[2001:db8::]:14"),
+            ),
+            (
+                ValueRef::str("2001:db8::"),
+                ValueRef::str("14"),
+                ValueRef::str("[2001:db8::]:14"),
+            ),
+        ];
+        let mut ctx = Context::default();
+        for (host, port, expected) in cases.iter() {
+            unsafe {
+                let actual = &*kclvm_net_join_host_port(
+                    &mut ctx,
+                    &ValueRef::list(Some(&[&host, &port])),
+                    &ValueRef::dict(None),
+                );
+                assert_eq!(expected, actual);
+            }
+            unsafe {
+                let actual = &*kclvm_net_join_host_port(
+                    &mut ctx,
+                    &ValueRef::list(None),
+                    &ValueRef::dict(Some(&[("host", host), ("port", port)])),
+                );
+                assert_eq!(expected, actual);
+            }
+        }
+    }
+
+    #[test]
+    fn test_join_host_port_invalid() {
+        let prev_hook = std::panic::take_hook();
+        // Disable print panic info in stderr.
+        std::panic::set_hook(Box::new(|_| {}));
+        assert_panic(
+            "join_host_port() missing 2 required positional arguments: 'host' and 'port'",
+            || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(None).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
+                kclvm_net_join_host_port(ctx.into_raw(), args, kwargs);
+            },
+        );
+        assert_panic(
+            "join_host_port() missing 2 required positional arguments: 'host' and 'port'",
+            || {
+                let mut ctx = Context::new();
+                let args =
+                    ValueRef::list(Some(&[&ValueRef::str("invalid.invalid")])).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
+                kclvm_net_join_host_port(ctx.into_raw(), args, kwargs);
+            },
+        );
+        assert_panic(
+            "join_host_port() missing 2 required positional arguments: 'host' and 'port'",
+            || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(None).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(Some(&[("host", &ValueRef::str("invalid.invalid"))]))
+                    .into_raw(&mut ctx);
+                kclvm_net_join_host_port(ctx.into_raw(), args, kwargs);
+            },
+        );
+        assert_panic(
+            "join_host_port() missing 2 required positional arguments: 'host' and 'port'",
+            || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(None).into_raw(&mut ctx);
+                let kwargs =
+                    ValueRef::dict(Some(&[("port", &ValueRef::str("80"))])).into_raw(&mut ctx);
+                kclvm_net_join_host_port(ctx.into_raw(), args, kwargs);
+            },
+        );
+        std::panic::set_hook(prev_hook);
+    }
 }
