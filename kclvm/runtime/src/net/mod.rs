@@ -1,5 +1,6 @@
 //! Copyright The KCL Authors. All rights reserved.
 
+use std::net::IpAddr;
 use std::net::Ipv4Addr;
 use std::net::Ipv6Addr;
 use std::str::FromStr;
@@ -509,35 +510,72 @@ pub extern "C-unwind" fn kclvm_net_is_IP_in_CIDR(
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
-    if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
-        if let Some(cidr) = get_call_arg_str(args, kwargs, 1, Some("cidr")) {
-            let parts: Vec<&str> = cidr.split('/').collect();
-            if parts.len() == 2 {
-                let cidr_ip = parts[0];
-                let mask_bits = parts[1];
-                let ip_addr = match Ipv4Addr::from_str(&ip) {
-                    Ok(ip_addr) => ip_addr,
-                    Err(_) => return kclvm_value_False(ctx),
-                };
-                let cidr_ip_addr = match Ipv4Addr::from_str(cidr_ip) {
-                    Ok(cidr_ip_addr) => cidr_ip_addr,
-                    Err(_) => return kclvm_value_False(ctx),
-                };
-                let mask_bits = match mask_bits.parse::<u8>() {
-                    Ok(mask_bits) if mask_bits <= 32 => mask_bits,
-                    _ => return kclvm_value_False(ctx),
-                };
-                let mask = !((1 << (32 - mask_bits)) - 1);
-                let ip_u32 = u32::from_be_bytes(ip_addr.octets());
-                let cidr_ip_u32 = u32::from_be_bytes(cidr_ip_addr.octets());
-                let is_in_cidr = (ip_u32 & mask) == (cidr_ip_u32 & mask);
-                return kclvm_value_Bool(ctx, is_in_cidr as i8);
-            }
+    let ip = match get_call_arg_str(args, kwargs, 0, Some("ip")) {
+        Some(ip) => ip,
+        None => {
+            panic!("is_IP_in_CIDR() missing 2 required positional arguments: 'ip' and 'cidr'");
         }
-        return kclvm_value_False(ctx);
-    }
+    };
+    let cidr = match get_call_arg_str(args, kwargs, 1, Some("cidr")) {
+        Some(cidr) => cidr,
+        None => {
+            panic!("is_IP_in_CIDR() missing 2 required positional arguments: 'ip' and 'cidr'");
+        }
+    };
 
-    panic!("is_IP_in_CIDR() missing 2 required positional arguments: 'ip' and 'cidr'");
+    let (cidr_ip, mask_bits) = match _parse_cidr(&cidr) {
+        Some((ip, bits)) => (ip, bits),
+        None => return kclvm_value_False(ctx),
+    };
+
+    match (_parse_ip(&ip), cidr_ip) {
+        (Ok(IpAddr::V4(ip)), IpAddr::V4(cidr_ip)) => {
+            let mask_bits = match mask_bits {
+                Some(bits) if bits <= 32 => bits,
+                _ => return kclvm_value_False(ctx),
+            };
+            kclvm_value_Bool(ctx, _check_ipv4_cidr(ip, cidr_ip, mask_bits) as i8)
+        }
+        (Ok(IpAddr::V6(ip)), IpAddr::V6(cidr_ip)) => {
+            let mask_bits = match mask_bits {
+                Some(bits) if bits <= 128 => bits,
+                _ => return kclvm_value_False(ctx),
+            };
+            kclvm_value_Bool(ctx, _check_ipv6_cidr(ip, cidr_ip, mask_bits) as i8)
+        }
+        _ => kclvm_value_False(ctx),
+    }
+}
+
+fn _parse_cidr(cidr: &str) -> Option<(IpAddr, Option<u32>)> {
+    let parts: Vec<&str> = cidr.split('/').collect();
+    if parts.len() != 2 {
+        return None;
+    }
+    let ip = IpAddr::from_str(parts[0]).ok()?;
+    let mask_bits = parts[1].parse::<u32>().ok();
+    Some((ip, mask_bits))
+}
+
+fn _parse_ip(ip: &str) -> Result<IpAddr, ()> {
+    IpAddr::from_str(ip).map_err(|_| ())
+}
+
+fn _check_ipv4_cidr(ip: Ipv4Addr, cidr_ip: Ipv4Addr, mask_bits: u32) -> bool {
+    let mask = !((1u32 << (32 - mask_bits)) - 1);
+    let ip_u32 = u32::from(ip);
+    let cidr_u32 = u32::from(cidr_ip);
+    (ip_u32 & mask) == (cidr_u32 & mask)
+}
+
+fn _check_ipv6_cidr(ip: Ipv6Addr, cidr_ip: Ipv6Addr, mask_bits: u32) -> bool {
+    let mask = match 128 - mask_bits {
+        shift @ 0..=128 => !((1u128 << shift) - 1),
+        _ => return false,
+    };
+    let ip_u128 = u128::from(ip);
+    let cidr_u128 = u128::from(cidr_ip);
+    (ip_u128 & mask) == (cidr_u128 & mask)
 }
 
 #[allow(non_camel_case_types, non_snake_case)]
