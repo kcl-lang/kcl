@@ -1527,9 +1527,87 @@ fn complete_import_external_file_e2e_test() {
     }
 }
 
+#[test]
+fn mod_file_watcher_modify_test() {
+    let path = PathBuf::from(".")
+        .join("src")
+        .join("test_data")
+        .join("watcher")
+        .join("modify")
+        .canonicalize()
+        .unwrap();
+
+    let mod_file_path = path.join("kcl.mod");
+    let main_path = path.join("main.k");
+
+    let mod_src_bac = std::fs::read_to_string(mod_file_path.clone()).unwrap();
+    let main_src = std::fs::read_to_string(main_path.clone()).unwrap();
+
+    let initialize_params = InitializeParams {
+        workspace_folders: Some(vec![WorkspaceFolder {
+            uri: Url::from_file_path(path.clone()).unwrap(),
+            name: "test".to_string(),
+        }]),
+        ..Default::default()
+    };
+    let server = Project {}.server(initialize_params);
+
+    // Mock open file
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: Url::from_file_path(main_path.clone()).unwrap(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: main_src,
+            },
+        },
+    );
+
+    // Simulate modifying the kcl.mod file
+    std::fs::write(&mod_file_path, "[package]\nname = \"add\"\nedition = \"v0.9.0\"\nversion = \"0.0.1\"\n\n[dependencies]\nhelloworld = \"0.1.4\"\n").unwrap();
+
+    // wait for download dependence
+    wait_async!(5000);
+
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+
+    let r: Request = Request::new(
+        id.into(),
+        "textDocument/hover".to_string(),
+        HoverParams {
+            text_document_position_params: TextDocumentPositionParams {
+                text_document: TextDocumentIdentifier {
+                    uri: Url::from_file_path(main_path).unwrap(),
+                },
+                position: Position::new(0, 8),
+            },
+            work_done_progress_params: Default::default(),
+        },
+    );
+
+    // Send request and wait for it's response
+    let res = server.send_and_receive(r);
+
+    std::fs::write(mod_file_path, mod_src_bac).unwrap();
+    assert_eq!(
+        res.result.unwrap(),
+        to_json(Hover {
+            contents: HoverContents::Scalar(MarkedString::LanguageString(
+                lsp_types::LanguageString {
+                    language: "KCL".to_owned(),
+                    value: "helloworld: ".to_string(),
+                }
+            )),
+            range: None
+        })
+        .unwrap()
+    )
+}
+
 // TODO: wait for fix `kcl mod metadata` to read only. Otherwise it will lead to an infinite loop
-#[allow(dead_code)]
-// #[test]
+#[test]
 fn mod_file_watcher_test() {
     let path = PathBuf::from(".")
         .join("src")
