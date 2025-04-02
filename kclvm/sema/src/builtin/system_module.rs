@@ -408,7 +408,7 @@ register_net_member! {
                 range: dummy_range(),
             },
         ],
-        r#"Parse a CIDR block into network, prefix, minHost, and maxHost."#,
+        r#"Parse a CIDR prefix into a dict containing 'ip' (the IP) and 'mask' (the prefix bit length)."#,
         false,
         None,
     )
