@@ -1528,8 +1528,7 @@ fn complete_import_external_file_e2e_test() {
 }
 
 // TODO: wait for fix `kcl mod metadata` to read only. Otherwise it will lead to an infinite loop
-#[allow(dead_code)]
-// #[test]
+#[test]
 fn mod_file_watcher_test() {
     let path = PathBuf::from(".")
         .join("src")
