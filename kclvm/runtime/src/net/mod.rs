@@ -1,5 +1,6 @@
 //! Copyright The KCL Authors. All rights reserved.
 
+use cidr::IpCidr;
 use std::net::IpAddr;
 use std::net::Ipv4Addr;
 use std::net::Ipv6Addr;
@@ -475,19 +476,14 @@ pub extern "C-unwind" fn kclvm_net_parse_CIDR(
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
 
-    if let Some(cidr) = get_call_arg_str(args, kwargs, 0, Some("cidr")) {
-        let parts: Vec<&str> = cidr.split('/').collect();
-        if parts.len() == 2 {
-            let ip = parts[0];
-            let mask = parts[1];
-            if let Ok(ip) = Ipv4Addr::from_str(ip) {
-                if let Ok(mask) = mask.parse::<u8>() {
-                    let ip_value = ValueRef::str(ip.to_string().as_str());
-                    let mask_value = ValueRef::int(mask as i64);
-                    return ValueRef::dict(Some(&[("ip", &ip_value), ("mask", &mask_value)]))
-                        .into_raw(ctx);
-                }
-            }
+    if let Some(cidr) = get_call_arg(args, kwargs, 0, Some("cidr")) {
+        if cidr.is_none() {
+            return ValueRef::none().into_raw(ctx);
+        }
+        if let Ok(cidr) = IpCidr::from_str(&cidr.as_str()) {
+            let ip = ValueRef::str(&cidr.first_address().to_string());
+            let mask = ValueRef::int(cidr.network_length().into());
+            return ValueRef::dict(Some(&[("ip", &ip), ("mask", &mask)])).into_raw(ctx);
         }
         return ValueRef::dict(None).into_raw(ctx);
     }
@@ -930,6 +926,126 @@ mod test_net {
                 let kwargs =
                     ValueRef::dict(Some(&[("port", &ValueRef::str("80"))])).into_raw(&mut ctx);
                 kclvm_net_join_host_port(ctx.into_raw(), args, kwargs);
+            },
+        );
+        std::panic::set_hook(prev_hook);
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_parse_CIDR() {
+        let cases = [
+            (ValueRef::none(), ValueRef::none()),
+            (
+                ValueRef::str("0.0.0.0/0"),
+                ValueRef::dict(Some(&[
+                    ("ip", &ValueRef::str("0.0.0.0")),
+                    ("mask", &ValueRef::int(0)),
+                ])),
+            ),
+            (
+                ValueRef::str("::/0"),
+                ValueRef::dict(Some(&[
+                    ("ip", &ValueRef::str("::")),
+                    ("mask", &ValueRef::int(0)),
+                ])),
+            ),
+            (
+                ValueRef::str("10.0.0.0/8"),
+                ValueRef::dict(Some(&[
+                    ("ip", &ValueRef::str("10.0.0.0")),
+                    ("mask", &ValueRef::int(8)),
+                ])),
+            ),
+            (
+                ValueRef::str("2001:db8::/56"),
+                ValueRef::dict(Some(&[
+                    ("ip", &ValueRef::str("2001:db8::")),
+                    ("mask", &ValueRef::int(56)),
+                ])),
+            ),
+            (
+                ValueRef::str("10.1.2.3/32"),
+                ValueRef::dict(Some(&[
+                    ("ip", &ValueRef::str("10.1.2.3")),
+                    ("mask", &ValueRef::int(32)),
+                ])),
+            ),
+            (
+                ValueRef::str("2001:db8:1:2:3:4:5:7/128"),
+                ValueRef::dict(Some(&[
+                    ("ip", &ValueRef::str("2001:db8:1:2:3:4:5:7")),
+                    ("mask", &ValueRef::int(128)),
+                ])),
+            ),
+            (
+                ValueRef::str("10.1.2.3"),
+                ValueRef::dict(Some(&[
+                    ("ip", &ValueRef::str("10.1.2.3")),
+                    ("mask", &ValueRef::int(32)),
+                ])),
+            ),
+            (
+                ValueRef::str("2001:db8:1:2:3:4:5:7"),
+                ValueRef::dict(Some(&[
+                    ("ip", &ValueRef::str("2001:db8:1:2:3:4:5:7")),
+                    ("mask", &ValueRef::int(128)),
+                ])),
+            ),
+            (ValueRef::str("10.0.0/8"), ValueRef::dict(None)),
+            (ValueRef::str("10.0.0.0/33"), ValueRef::dict(None)),
+            (
+                ValueRef::str("2001:db8:1:2:3:4:5:7/129"),
+                ValueRef::dict(None),
+            ),
+            (ValueRef::str("0.0.0.0/256"), ValueRef::dict(None)),
+            (ValueRef::str("::/256"), ValueRef::dict(None)),
+            (ValueRef::str("10.0.0.0/8/8"), ValueRef::dict(None)),
+            (ValueRef::str("2001:db8::/56/56"), ValueRef::dict(None)),
+            (ValueRef::str("0.0.0.0/-1"), ValueRef::dict(None)),
+            (ValueRef::str("::/-1"), ValueRef::dict(None)),
+            (ValueRef::str("10.128.0.0/8"), ValueRef::dict(None)),
+            (ValueRef::str("2001:db8::/16"), ValueRef::dict(None)),
+            (ValueRef::str("10.1.2.3/31"), ValueRef::dict(None)),
+            (
+                ValueRef::str("2001:db8:1:2:3:4:5:7/127"),
+                ValueRef::dict(None),
+            ),
+        ];
+        let mut ctx = Context::default();
+        for (cidr, expected) in cases.iter() {
+            unsafe {
+                let actual = &*kclvm_net_parse_CIDR(
+                    &mut ctx,
+                    &ValueRef::list(Some(&[&cidr])),
+                    &ValueRef::dict(None),
+                );
+                assert_eq!(expected, actual, "{} positional", cidr);
+            }
+            unsafe {
+                let actual = &*kclvm_net_parse_CIDR(
+                    &mut ctx,
+                    &ValueRef::list(None),
+                    &ValueRef::dict(Some(&[("cidr", cidr)])),
+                );
+                assert_eq!(expected, actual, "{} named", cidr);
+            }
+        }
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_parse_CIDR_invalid() {
+        let prev_hook = std::panic::take_hook();
+        // Disable print panic info in stderr.
+        std::panic::set_hook(Box::new(|_| {}));
+        assert_panic(
+            "parse_CIDR() missing 1 required positional argument: 'cidr'",
+            || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(None).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
+                kclvm_net_parse_CIDR(ctx.into_raw(), args, kwargs);
             },
         );
         std::panic::set_hook(prev_hook);

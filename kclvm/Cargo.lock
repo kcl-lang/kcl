@@ -407,6 +407,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "cidr"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bd1b64030216239a2e7c364b13cd96a2097ebf0dfe5025f2dedee14a23f2ab60"
+
+[[package]]
 name = "clap"
 version = "4.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2250,6 +2256,7 @@ dependencies = [
  "blake3",
  "bstr",
  "chrono",
+ "cidr",
  "dns-lookup",
  "encoding",
  "fancy-regex",
