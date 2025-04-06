@@ -574,71 +574,36 @@ pub extern "C-unwind" fn kclvm_net_is_IP_in_CIDR(
     let kwargs = ptr_as_ref(kwargs);
 
     let ip = match get_call_arg_str(args, kwargs, 0, Some("ip")) {
-        Some(ip) => ip,
         None => {
             panic!("is_IP_in_CIDR() missing 2 required positional arguments: 'ip' and 'cidr'");
         }
+        Some(ip) => match IpAddr::from_str(ip.as_str()) {
+            Err(err) => panic!("is_IP_in_CIDR() invalid ip: {}", err),
+            Ok(ip) => ip,
+        },
     };
     let cidr = match get_call_arg_str(args, kwargs, 1, Some("cidr")) {
-        Some(cidr) => cidr,
         None => {
             panic!("is_IP_in_CIDR() missing 2 required positional arguments: 'ip' and 'cidr'");
         }
+        Some(cidr) => match IpCidr::from_str(&cidr.as_str()) {
+            Err(err) => panic!("is_IP_in_CIDR() invalid cidr: {}", err),
+            Ok(cidr) => cidr,
+        },
     };
 
-    let (cidr_ip, mask_bits) = match _parse_cidr(&cidr) {
-        Some((ip, bits)) => (ip, bits),
-        None => return kclvm_value_False(ctx),
-    };
-
-    match (_parse_ip(&ip), cidr_ip) {
-        (Ok(IpAddr::V4(ip)), IpAddr::V4(cidr_ip)) => {
-            let mask_bits = match mask_bits {
-                Some(bits) if bits <= 32 => bits,
-                _ => return kclvm_value_False(ctx),
-            };
-            kclvm_value_Bool(ctx, _check_ipv4_cidr(ip, cidr_ip, mask_bits) as i8)
+    if cidr.is_ipv6() {
+        match ip {
+            IpAddr::V4(ip) => {
+                return kclvm_value_Bool(
+                    ctx,
+                    cidr.contains(&IpAddr::V6(ip.to_ipv6_mapped())) as i8,
+                );
+            }
+            IpAddr::V6(_ip) => {}
         }
-        (Ok(IpAddr::V6(ip)), IpAddr::V6(cidr_ip)) => {
-            let mask_bits = match mask_bits {
-                Some(bits) if bits <= 128 => bits,
-                _ => return kclvm_value_False(ctx),
-            };
-            kclvm_value_Bool(ctx, _check_ipv6_cidr(ip, cidr_ip, mask_bits) as i8)
-        }
-        _ => kclvm_value_False(ctx),
     }
-}
-
-fn _parse_cidr(cidr: &str) -> Option<(IpAddr, Option<u32>)> {
-    let parts: Vec<&str> = cidr.split('/').collect();
-    if parts.len() != 2 {
-        return None;
-    }
-    let ip = IpAddr::from_str(parts[0]).ok()?;
-    let mask_bits = parts[1].parse::<u32>().ok();
-    Some((ip, mask_bits))
-}
-
-fn _parse_ip(ip: &str) -> Result<IpAddr, ()> {
-    IpAddr::from_str(ip).map_err(|_| ())
-}
-
-fn _check_ipv4_cidr(ip: Ipv4Addr, cidr_ip: Ipv4Addr, mask_bits: u32) -> bool {
-    let mask = !((1u32 << (32 - mask_bits)) - 1);
-    let ip_u32 = u32::from(ip);
-    let cidr_u32 = u32::from(cidr_ip);
-    (ip_u32 & mask) == (cidr_u32 & mask)
-}
-
-fn _check_ipv6_cidr(ip: Ipv6Addr, cidr_ip: Ipv6Addr, mask_bits: u32) -> bool {
-    let mask = match 128 - mask_bits {
-        shift @ 0..=128 => !((1u128 << shift) - 1),
-        _ => return false,
-    };
-    let ip_u128 = u128::from(ip);
-    let cidr_u128 = u128::from(cidr_ip);
-    (ip_u128 & mask) == (cidr_u128 & mask)
+    return kclvm_value_Bool(ctx, cidr.contains(&ip) as i8);
 }
 
 #[allow(non_camel_case_types, non_snake_case)]
@@ -1048,6 +1013,198 @@ mod test_net {
                 kclvm_net_parse_CIDR(ctx.into_raw(), args, kwargs);
             },
         );
+        std::panic::set_hook(prev_hook);
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_is_IP_in_CIDR() {
+        let cases = [
+            (
+                "0.0.0.0/0",
+                vec!["0.0.0.0", "255.255.255.255"],
+                vec!["::", "2001:db8::"],
+            ),
+            (
+                "::/0",
+                vec![
+                    "::",
+                    "2001:db8::",
+                    "10.1.2.3",
+                    "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+                ],
+                vec![],
+            ),
+            (
+                "10.0.0.0/8",
+                vec!["10.0.0.0", "10.1.2.3", "10.255.255.255"],
+                vec!["9.255.255.255", "11.0.0.0", "a000::"],
+            ),
+            (
+                "2001:db8::/56",
+                vec!["2001:db8::", "2001:db8:0000:ff:ffff:ffff:ffff:ffff"],
+                vec![
+                    "2001:db7:ffff:ffff:ffff:ffff:ffff:ffff",
+                    "2001:db8:0:100::",
+                    "10.1.2.3",
+                ],
+            ),
+            (
+                "10.1.2.3/32",
+                vec!["10.1.2.3"],
+                vec!["10.1.2.2", "10.1.2.4", "0a01:0203::"],
+            ),
+            (
+                "2001:db8:1:2:3:4:5:7/128",
+                vec!["2001:db8:1:2:3:4:5:7"],
+                vec!["2001:db8:1:2:3:4:5:6", "2001:db8:1:2:3:4:5:8", "10.1.2.3"],
+            ),
+            (
+                "10.1.2.3",
+                vec!["10.1.2.3"],
+                vec!["10.1.2.2", "10.1.2.4", "0a01:0203::"],
+            ),
+            (
+                "2001:db8:1:2:3:4:5:7",
+                vec!["2001:db8:1:2:3:4:5:7"],
+                vec!["2001:db8:1:2:3:4:5:6", "2001:db8:1:2:3:4:5:8", "10.1.2.3"],
+            ),
+        ];
+        let mut ctx = Context::default();
+        for (cidr, expect_in, expect_not_in) in cases.iter() {
+            for ip in expect_in.iter() {
+                unsafe {
+                    let actual = &*kclvm_net_is_IP_in_CIDR(
+                        &mut ctx,
+                        &ValueRef::list(Some(&[&ValueRef::str(ip), &ValueRef::str(cidr)])),
+                        &ValueRef::dict(None),
+                    );
+                    assert_eq!(
+                        &ValueRef::bool(true),
+                        actual,
+                        "{} in {} positional",
+                        ip,
+                        cidr
+                    );
+                }
+                unsafe {
+                    let actual = &*kclvm_net_is_IP_in_CIDR(
+                        &mut ctx,
+                        &ValueRef::list(None),
+                        &ValueRef::dict(Some(&[
+                            ("cidr", &ValueRef::str(cidr)),
+                            ("ip", &ValueRef::str(ip)),
+                        ])),
+                    );
+                    assert_eq!(&ValueRef::bool(true), actual, "{} in {} named", ip, cidr);
+                }
+            }
+            for ip in expect_not_in.iter() {
+                unsafe {
+                    let actual = &*kclvm_net_is_IP_in_CIDR(
+                        &mut ctx,
+                        &ValueRef::list(Some(&[&ValueRef::str(ip), &ValueRef::str(cidr)])),
+                        &ValueRef::dict(None),
+                    );
+                    assert_eq!(
+                        &ValueRef::bool(false),
+                        actual,
+                        "{} not in {} positional",
+                        ip,
+                        cidr
+                    );
+                }
+                unsafe {
+                    let actual = &*kclvm_net_is_IP_in_CIDR(
+                        &mut ctx,
+                        &ValueRef::list(None),
+                        &ValueRef::dict(Some(&[
+                            ("cidr", &ValueRef::str(cidr)),
+                            ("ip", &ValueRef::str(ip)),
+                        ])),
+                    );
+                    assert_eq!(
+                        &ValueRef::bool(false),
+                        actual,
+                        "{} not in {} named",
+                        ip,
+                        cidr
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_is_IP_in_CIDR_invalid() {
+        let prev_hook = std::panic::take_hook();
+        // Disable print panic info in stderr.
+        std::panic::set_hook(Box::new(|_| {}));
+        assert_panic(
+            "is_IP_in_CIDR() missing 2 required positional arguments: 'ip' and 'cidr'",
+            || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(None).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
+                kclvm_net_is_IP_in_CIDR(ctx.into_raw(), args, kwargs);
+            },
+        );
+        assert_panic(
+            "is_IP_in_CIDR() missing 2 required positional arguments: 'ip' and 'cidr'",
+            || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(Some(&[&ValueRef::str("10.1.2.3")])).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
+                kclvm_net_is_IP_in_CIDR(ctx.into_raw(), args, kwargs);
+            },
+        );
+        assert_panic(
+            "is_IP_in_CIDR() missing 2 required positional arguments: 'ip' and 'cidr'",
+            || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(None).into_raw(&mut ctx);
+                let kwargs =
+                    ValueRef::dict(Some(&[("ip", &ValueRef::str("10.1.2.3"))])).into_raw(&mut ctx);
+                kclvm_net_is_IP_in_CIDR(ctx.into_raw(), args, kwargs);
+            },
+        );
+        assert_panic(
+            "is_IP_in_CIDR() missing 2 required positional arguments: 'ip' and 'cidr'",
+            || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(None).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(Some(&[("cidr", &ValueRef::str("10.0.0.0/8"))]))
+                    .into_raw(&mut ctx);
+                kclvm_net_is_IP_in_CIDR(ctx.into_raw(), args, kwargs);
+            },
+        );
+        let cases = [
+            ("10.0.0/8", "10.0.0.1", "is_IP_in_CIDR() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
+            ("10.0.0.0/33", "10.0.0.1", "is_IP_in_CIDR() invalid cidr: invalid length for network: Network length 33 is too long for Ipv4 (maximum: 32)"),
+            ("2001:db8:1:2:3:4:5:7/129", "2001:db8::", "is_IP_in_CIDR() invalid cidr: invalid length for network: Network length 129 is too long for Ipv6 (maximum: 128)"),
+            ("0.0.0.0/256", "10.0.0.1", "is_IP_in_CIDR() invalid cidr: couldn't parse length in network: number too large to fit in target type"),
+            ("::/256", "2001:db8::", "is_IP_in_CIDR() invalid cidr: couldn't parse length in network: number too large to fit in target type"),
+            ("10.0.0.0/8/8", "10.0.0.1", "is_IP_in_CIDR() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
+            ("2001:db8::/56/56", "2001:db8::", "is_IP_in_CIDR() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
+            ("0.0.0.0/-1", "10.0.0.1", "is_IP_in_CIDR() invalid cidr: couldn't parse length in network: invalid digit found in string"),
+            ("::/-1", "2001:db8::", "is_IP_in_CIDR() invalid cidr: couldn't parse length in network: invalid digit found in string"),
+            ("10.128.0.0/8", "10.0.0.1", "is_IP_in_CIDR() invalid cidr: host part of address was not zero"),
+            ("2001:db8::/16", "2001:db8::", "is_IP_in_CIDR() invalid cidr: host part of address was not zero"),
+            ("10.1.2.3/31", "10.0.0.1", "is_IP_in_CIDR() invalid cidr: host part of address was not zero"),
+            ("2001:db8:1:2:3:4:5:7/127", "2001:db8::", "is_IP_in_CIDR() invalid cidr: host part of address was not zero"),
+            ("10.0.0.0/8", "10.0.0", "is_IP_in_CIDR() invalid ip: invalid IP address syntax"),
+            ("2001:db8::/56", "2001:db8:::", "is_IP_in_CIDR() invalid ip: invalid IP address syntax"),
+        ];
+        for (cidr, ip, expect_error) in cases.iter() {
+            assert_panic(expect_error, || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(Some(&[&ValueRef::str(ip), &ValueRef::str(cidr)]))
+                    .into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
+                kclvm_net_is_IP_in_CIDR(ctx.into_raw(), args, kwargs);
+            });
+        }
         std::panic::set_hook(prev_hook);
     }
 }
