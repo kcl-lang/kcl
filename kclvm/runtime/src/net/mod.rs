@@ -22,9 +22,6 @@ pub extern "C-unwind" fn kclvm_net_split_host_port(
     let ctx = mut_ptr_as_ref(ctx);
 
     if let Some(ip_end_point) = get_call_arg(args, kwargs, 0, Some("ip_end_point")) {
-        if ip_end_point.is_none() {
-            return ValueRef::none().into_raw(ctx);
-        }
         let ip_end_point_str = ip_end_point.as_str();
         match ip_end_point_str.rsplit_once(':') {
             None => panic!(
@@ -113,9 +110,6 @@ pub extern "C-unwind" fn kclvm_net_join_host_port(
 
     if let Some(host) = get_call_arg(args, kwargs, 0, Some("host")) {
         if let Some(port) = get_call_arg(args, kwargs, 1, Some("port")) {
-            if host.is_none() || port.is_none() {
-                return ValueRef::none().into_raw(ctx);
-            }
             if host.as_str().contains(':') {
                 return ValueRef::str(format!("[{host}]:{port}").as_ref()).into_raw(ctx);
             }
@@ -477,9 +471,6 @@ pub extern "C-unwind" fn kclvm_net_parse_CIDR(
     let ctx = mut_ptr_as_ref(ctx);
 
     if let Some(cidr) = get_call_arg(args, kwargs, 0, Some("cidr")) {
-        if cidr.is_none() {
-            return ValueRef::none().into_raw(ctx);
-        }
         if let Ok(cidr) = IpCidr::from_str(&cidr.as_str()) {
             let ip = ValueRef::str(&cidr.first_address().to_string());
             let mask = ValueRef::int(cidr.network_length().into());
@@ -676,7 +667,6 @@ mod test_net {
     #[test]
     fn test_split_host_port() {
         let cases = [
-            (ValueRef::none(), ValueRef::none()),
             (
                 ValueRef::str("invalid.invalid:21"),
                 ValueRef::list(Some(&[
@@ -789,14 +779,6 @@ mod test_net {
     #[test]
     fn test_join_host_port() {
         let cases = [
-            (ValueRef::none(), ValueRef::none(), ValueRef::none()),
-            (ValueRef::none(), ValueRef::int(21), ValueRef::none()),
-            (ValueRef::none(), ValueRef::str("21"), ValueRef::none()),
-            (
-                ValueRef::str("invalid.invalid"),
-                ValueRef::none(),
-                ValueRef::none(),
-            ),
             (
                 ValueRef::str("invalid.invalid"),
                 ValueRef::int(21),
@@ -900,7 +882,6 @@ mod test_net {
     #[allow(non_snake_case)]
     fn test_parse_CIDR() {
         let cases = [
-            (ValueRef::none(), ValueRef::none()),
             (
                 ValueRef::str("0.0.0.0/0"),
                 ValueRef::dict(Some(&[
