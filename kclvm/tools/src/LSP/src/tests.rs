@@ -1529,7 +1529,7 @@ fn complete_import_external_file_e2e_test() {
 
 #[test]
 fn mod_file_watcher_modify_test() {
-     let path = PathBuf::from(".")
+    let path = PathBuf::from(".")
         .join("src")
         .join("test_data")
         .join("watcher")
@@ -1563,7 +1563,7 @@ fn mod_file_watcher_modify_test() {
             },
         },
     );
-    
+
     // Simulate modifying the kcl.mod file
     std::fs::write(&mod_file_path, "[package]\nname = \"add\"\nedition = \"v0.9.0\"\nversion = \"0.0.1\"\n\n[dependencies]\nhelloworld = \"0.1.4\"\n").unwrap();
 
