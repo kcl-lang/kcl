@@ -204,6 +204,7 @@ pub enum ApiFunc {
     kclvm_math_modf,
     kclvm_math_pow,
     kclvm_math_sqrt,
+    kclvm_net_CIDR_subnet,
     kclvm_net_IP_string,
     kclvm_net_fqdn,
     kclvm_net_is_IP,

@@ -6,3 +6,5 @@ cidr2: []
 cidr3: true
 cidr4: false
 cidr5: true
+cidr6: '10.5.0.0/16'
+cidr7: '2001:db8:0:19::/64'
