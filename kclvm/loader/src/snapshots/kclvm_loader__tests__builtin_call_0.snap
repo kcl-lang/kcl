@@ -1,7 +1,7 @@
 ---
 source: loader/src/tests.rs
+assertion_line: 37
 expression: "format! (\"{:#?}\", p.symbols.values())"
-snapshot_kind: text
 ---
 [
     SymbolInfo {
@@ -89,13 +89,6 @@ snapshot_kind: text
             },
         ),
         attrs: [
-            SymbolRef {
-                id: Index {
-                    index: 147,
-                    generation: 0,
-                },
-                kind: Function,
-            },
             SymbolRef {
                 id: Index {
                     index: 148,
@@ -295,6 +288,13 @@ snapshot_kind: text
             SymbolRef {
                 id: Index {
                     index: 176,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 177,
                     generation: 0,
                 },
                 kind: Function,
