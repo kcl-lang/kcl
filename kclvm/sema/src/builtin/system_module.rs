@@ -134,6 +134,33 @@ macro_rules! register_net_member {
     )
 }
 register_net_member! {
+    CIDR_subnet => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "cidr".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,default_value: None,
+                range: dummy_range(),
+            },
+            Parameter {
+                name: "additional_bits".to_string(),
+                ty: Type::int_ref(),
+                has_default: false,default_value: None,
+                range: dummy_range(),
+            },
+            Parameter {
+                name: "net_num".to_string(),
+                ty: Type::int_ref(),
+                has_default: false,default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Calulate a subnet within an enclosing subnet."#,
+        false,
+        None,
+    )
     split_host_port => Type::function(
         None,
         Type::list_ref(Type::str_ref()),
