@@ -161,6 +161,27 @@ register_net_member! {
         false,
         None,
     )
+    CIDR_subnets => Type::function(
+        None,
+        Type::list_ref(Type::str_ref()),
+        &[
+            Parameter {
+                name: "cidr".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,default_value: None,
+                range: dummy_range(),
+            },
+            Parameter {
+                name: "additional_bits".to_string(),
+                ty: Type::list_ref(Type::int_ref()),
+                has_default: false,default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Allocate subnets within an enclosing subnet."#,
+        false,
+        None,
+    )
     split_host_port => Type::function(
         None,
         Type::list_ref(Type::str_ref()),

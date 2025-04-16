@@ -210,6 +210,7 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_math_pow" => crate::kclvm_math_pow as *const () as u64,
         "kclvm_math_sqrt" => crate::kclvm_math_sqrt as *const () as u64,
         "kclvm_net_CIDR_subnet" => crate::kclvm_net_CIDR_subnet as *const () as u64,
+        "kclvm_net_CIDR_subnets" => crate::kclvm_net_CIDR_subnets as *const () as u64,
         "kclvm_net_IP_string" => crate::kclvm_net_IP_string as *const () as u64,
         "kclvm_net_fqdn" => crate::kclvm_net_fqdn as *const () as u64,
         "kclvm_net_is_IP" => crate::kclvm_net_is_IP as *const () as u64,
