@@ -1,6 +1,8 @@
 //! Copyright The KCL Authors. All rights reserved.
 
+use crate::*;
 use cidr::{IpCidr, Ipv4Cidr, Ipv6Cidr};
+use itertools::Itertools;
 use std::net::IpAddr;
 use std::net::IpAddr::V4;
 use std::net::IpAddr::V6;
@@ -8,7 +10,6 @@ use std::net::Ipv4Addr;
 use std::net::Ipv6Addr;
 use std::str::FromStr;
 
-use crate::*;
 // split_host_port(ip_end_point: str) -> List[str]
 
 #[no_mangle]
@@ -661,7 +662,7 @@ pub extern "C-unwind" fn kclvm_net_is_unspecified_IP(
     panic!("is_unspecified_IP() missing 1 required positional argument: 'ip'");
 }
 
-// cidr_subnet(cidr: str, additional_bits: int, net_num: int) -> str
+// CIDR_subnet(cidr: str, additional_bits: int, net_num: int) -> str
 
 #[no_mangle]
 #[runtime_fn]
@@ -706,17 +707,25 @@ pub extern "C-unwind" fn kclvm_net_CIDR_subnet(
         panic!("CIDR_subnet() invalid net_num: cannot be negative");
     }
 
+    match CIDR_allocate(cidr, additional_bits, net_num) {
+        Ok(value) => return value.into_raw(ctx),
+        Err(message) => panic!("CIDR_subnet() {}", message),
+    };
+}
+
+#[allow(non_camel_case_types, non_snake_case)]
+fn CIDR_allocate(cidr: IpCidr, additional_bits: i64, net_num: i64) -> Result<ValueRef, String> {
     let len = cidr.network_length() as i64 + additional_bits;
     let new_cidr = match cidr.first_address() {
         V4(ipv4) => {
             if len > 32 {
-                panic!("CIDR_subnet() invalid additional_bits: would extend network length to {} bits, which is too long for IPv4", len);
+                return Err(format!("invalid additional_bits: would extend network length to {} bits, which is too long for IPv4", len));
             }
             if net_num >= (1 << additional_bits) {
-                panic!(
-                    "CIDR_subnet() additional_bits of {} does not accommodate a net_num of {}",
+                return Err(format!(
+                    "additional_bits of {} does not accommodate a net_num of {}",
                     additional_bits, net_num
-                );
+                ));
             }
             match Ipv4Cidr::new(
                 Ipv4Addr::from_bits(ipv4.to_bits() + (net_num << (32 - len)) as u32),
@@ -728,16 +737,16 @@ pub extern "C-unwind" fn kclvm_net_CIDR_subnet(
         }
         V6(ipv6) => {
             if len > 128 {
-                panic!("CIDR_subnet() invalid additional_bits: would extend network length to {} bits, which is too long for IPv6", len);
+                return Err(format!("invalid additional_bits: would extend network length to {} bits, which is too long for IPv6", len));
             }
             if additional_bits < 64 && net_num as u64 >= (1u64 << additional_bits) {
-                panic!(
-                    "CIDR_subnet() additional_bits of {} does not accommodate a net_num of {}",
+                return Err(format!(
+                    "additional_bits of {} does not accommodate a net_num of {}",
                     additional_bits, net_num
-                );
+                ));
             }
             if len == 0 {
-                return ValueRef::str("::/0").into_raw(ctx);
+                return Ok(ValueRef::str("::/0"));
             }
             match Ipv6Cidr::new(
                 Ipv6Addr::from_bits(ipv6.to_bits() + ((net_num as u128) << (128 - len))),
@@ -748,7 +757,100 @@ pub extern "C-unwind" fn kclvm_net_CIDR_subnet(
             }
         }
     };
-    ValueRef::str(new_cidr.as_str()).into_raw(ctx)
+    Ok(ValueRef::str(new_cidr.as_str()))
+}
+
+// CIDR_subnets(cidr: str, additional_bits: [int]) -> [str]
+
+#[no_mangle]
+#[runtime_fn]
+pub extern "C-unwind" fn kclvm_net_CIDR_subnets(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+    let ctx = mut_ptr_as_ref(ctx);
+
+    let cidr = match get_call_arg(args, kwargs, 0, Some("cidr")) {
+        None => {
+            panic!("CIDR_subnets() missing 2 required positional arguments: 'cidr' and 'additional_bits'");
+        }
+        Some(cidr) => match IpCidr::from_str(&cidr.as_str()) {
+            Err(err) => {
+                panic!("CIDR_subnets() invalid cidr: {}", err)
+            }
+            Ok(cidr) => cidr,
+        },
+    };
+
+    let additional_bits_valueref = match get_call_arg(args, kwargs, 1, Some("additional_bits")) {
+        None => {
+            panic!("CIDR_subnets() missing 2 required positional arguments: 'cidr' and 'additional_bits'");
+        }
+        Some(additional_bits) => additional_bits,
+    };
+    let additional_bits = additional_bits_valueref.as_list_ref();
+
+    let mut net_num: Vec<i64> = Vec::with_capacity(additional_bits.values.len());
+    for new_additional in additional_bits.values.iter() {
+        let mut num = 0i64;
+        let bits = new_additional.must_as_strict_int();
+
+        if bits < 0 {
+            panic!("CIDR_subnets() invalid additional_bits: cannot be negative");
+        }
+        let new_bits = cidr.network_length() as i64 + bits;
+        if cidr.is_ipv4() && new_bits > 32 {
+            panic!("CIDR_subnets() invalid additional_bits: would extend network length to {} bits, which is too long for IPv4", new_bits);
+        }
+        if cidr.is_ipv6() {
+            if bits > 63 {
+                panic!("CIDR_subnets() invalid additional_bits: cannot extend more than 63 bits")
+            }
+            if new_bits > 128 {
+                panic!("CIDR_subnets() invalid additional_bits: would extend network length to {} bits, which is too long for IPv6", new_bits);
+            }
+        }
+
+        let mut try_again = true;
+        while try_again {
+            try_again = false;
+            for i in 0..net_num.len() {
+                let mut allocated_num = net_num[i];
+                let mut allocated_bits = additional_bits.values[i].must_as_strict_int();
+                if allocated_bits > bits {
+                    allocated_num >>= allocated_bits - bits;
+                    allocated_bits = bits
+                }
+                if allocated_bits < bits {
+                    allocated_num <<= bits - allocated_bits;
+                }
+                if allocated_num == num {
+                    num += 1 << (bits - allocated_bits);
+                    try_again = true;
+                }
+            }
+        }
+        net_num.push(num);
+    }
+
+    let mut subnets = Vec::with_capacity(net_num.len());
+    for (additional, num) in additional_bits.values.iter().zip_eq(net_num.iter()) {
+        if *num as u64 >= (1u64 << additional.must_as_strict_int()) {
+            match subnets.pop() {
+                None => unreachable!(),
+                Some(last) => panic!("CIDR_subnets() not enough remaining address space for a subnet with a prefix of {} bits after {}", cidr.network_length() as i64 + additional.must_as_strict_int(), last)
+            }
+        }
+        let subnet = match CIDR_allocate(cidr, additional.must_as_strict_int(), *num) {
+            Ok(value) => value,
+            Err(message) => panic!("CIDR_subnets {}", message),
+        };
+        subnets.push(subnet);
+    }
+    ValueRef::list(Some(subnets.iter().collect_vec().as_slice())).into_raw(ctx)
 }
 
 #[cfg(test)]
@@ -1444,6 +1546,233 @@ mod test_net {
                 .into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
                 kclvm_net_CIDR_subnet(ctx.into_raw(), args, kwargs);
+            });
+        }
+        std::panic::set_hook(prev_hook);
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_CIDR_subnets() {
+        let cases = [
+            ("0.0.0.0/0", vec![0i64], vec!["0.0.0.0/0"]),
+            ("0.0.0.0/0", vec![], vec![]),
+            ("0.0.0.0/0", vec![1, 1], vec!["0.0.0.0/1", "128.0.0.0/1"]),
+            (
+                "0.0.0.0/0",
+                vec![8, 9, 9, 32, 32],
+                vec![
+                    "0.0.0.0/8",
+                    "1.0.0.0/9",
+                    "1.128.0.0/9",
+                    "2.0.0.0/32",
+                    "2.0.0.1/32",
+                ],
+            ),
+            (
+                "0.0.0.0/0",
+                vec![8, 32, 32, 9],
+                vec!["0.0.0.0/8", "1.0.0.0/32", "1.0.0.1/32", "1.128.0.0/9"],
+            ),
+            (
+                "10.0.0.0/8",
+                vec![8, 9, 9, 9, 8],
+                vec![
+                    "10.0.0.0/16",
+                    "10.1.0.0/17",
+                    "10.1.128.0/17",
+                    "10.2.0.0/17",
+                    "10.3.0.0/16",
+                ],
+            ),
+            (
+                "10.0.0.0/8",
+                vec![8, 10, 8, 9, 10, 10],
+                vec![
+                    "10.0.0.0/16",
+                    "10.1.0.0/18",
+                    "10.2.0.0/16",
+                    "10.1.128.0/17",
+                    "10.1.64.0/18",
+                    "10.3.0.0/18",
+                ],
+            ),
+            (
+                "255.1.2.254/31",
+                vec![1, 1],
+                vec!["255.1.2.254/32", "255.1.2.255/32"],
+            ),
+            ("255.255.255.255/32", vec![0], vec!["255.255.255.255/32"]),
+            ("::/0", vec![0], vec!["::/0"]),
+            ("::/0", vec![], vec![]),
+            ("::/0", vec![1, 1], vec!["::/1", "8000::/1"]),
+            (
+                "::/0",
+                vec![8, 9, 9, 63, 63],
+                vec!["::/8", "100::/9", "180::/9", "200::/63", "200:0:0:2::/63"],
+            ),
+            (
+                "::/0",
+                vec![8, 63, 63, 9],
+                vec!["::/8", "100::/63", "100:0:0:2::/63", "180::/9"],
+            ),
+            (
+                "2001:db8::/65",
+                vec![8, 63, 63, 63, 8],
+                vec![
+                    "2001:db8::/73",
+                    "2001:db8:0:0:80::/128",
+                    "2001:db8::80:0:0:1/128",
+                    "2001:db8::80:0:0:2/128",
+                    "2001:db8:0:0:100::/73",
+                ],
+            ),
+            (
+                "2001:db8::/65",
+                vec![8, 10, 8, 9, 10, 10],
+                vec![
+                    "2001:db8::/73",
+                    "2001:db8:0:0:80::/75",
+                    "2001:db8:0:0:100::/73",
+                    "2001:db8:0:0:c0::/74",
+                    "2001:db8:0:0:a0::/75",
+                    "2001:db8:0:0:180::/75",
+                ],
+            ),
+        ];
+        let mut ctx = Context::default();
+        for (cidr, additional_bits, expected) in cases.iter() {
+            let additional_bits_valueref = additional_bits
+                .iter()
+                .map(|x| ValueRef::int(*x))
+                .collect::<Vec<_>>();
+            let expected_valueref = expected
+                .iter()
+                .map(|x| ValueRef::str(*x))
+                .collect::<Vec<_>>();
+            unsafe {
+                let actual = &*kclvm_net_CIDR_subnets(
+                    &mut ctx,
+                    &ValueRef::list(Some(&[
+                        &ValueRef::str(cidr),
+                        &ValueRef::list(Some(&additional_bits_valueref.iter().collect::<Vec<_>>())),
+                    ])),
+                    &ValueRef::dict(None),
+                );
+                assert_eq!(
+                    &ValueRef::list(Some(&expected_valueref.iter().collect::<Vec<_>>())),
+                    actual,
+                    "{} {:?} positional",
+                    cidr,
+                    additional_bits,
+                );
+            }
+            unsafe {
+                let actual = &*kclvm_net_CIDR_subnets(
+                    &mut ctx,
+                    &ValueRef::list(None),
+                    &ValueRef::dict(Some(&[
+                        ("cidr", &ValueRef::str(cidr)),
+                        (
+                            "additional_bits",
+                            &ValueRef::list(Some(
+                                &additional_bits_valueref.iter().collect::<Vec<_>>(),
+                            )),
+                        ),
+                    ])),
+                );
+                assert_eq!(
+                    &ValueRef::list(Some(&expected_valueref.iter().collect::<Vec<_>>())),
+                    actual,
+                    "{} {:?} named",
+                    cidr,
+                    additional_bits,
+                );
+            }
+        }
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_CIDR_subnets_invalid() {
+        let prev_hook = std::panic::take_hook();
+        // Disable print panic info in stderr.
+        std::panic::set_hook(Box::new(|_| {}));
+        assert_panic(
+            "CIDR_subnets() missing 2 required positional arguments: 'cidr' and 'additional_bits'",
+            || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(None).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
+                kclvm_net_CIDR_subnets(ctx.into_raw(), args, kwargs);
+            },
+        );
+        assert_panic(
+            "CIDR_subnets() missing 2 required positional arguments: 'cidr' and 'additional_bits'",
+            || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(Some(&[&ValueRef::str("10.1.2.3")])).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
+                kclvm_net_CIDR_subnets(ctx.into_raw(), args, kwargs);
+            },
+        );
+        assert_panic(
+            "CIDR_subnets() missing 2 required positional arguments: 'cidr' and 'additional_bits'",
+            || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(None).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(Some(&[("cidr", &ValueRef::str("10.1.2.3"))]))
+                    .into_raw(&mut ctx);
+                kclvm_net_CIDR_subnets(ctx.into_raw(), args, kwargs);
+            },
+        );
+        assert_panic(
+            "CIDR_subnets() missing 2 required positional arguments: 'cidr' and 'additional_bits'",
+            || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(None).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(Some(&[("additional_bits", &ValueRef::int(1))]))
+                    .into_raw(&mut ctx);
+                kclvm_net_CIDR_subnets(ctx.into_raw(), args, kwargs);
+            },
+        );
+        let cases = [
+            ("10.0.0/8", vec![1i64], "CIDR_subnets() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
+            ("10.0.0.0/33", vec![1], "CIDR_subnets() invalid cidr: invalid length for network: Network length 33 is too long for Ipv4 (maximum: 32)"),
+            ("2001:db8:1:2:3:4:5:7/129", vec![1], "CIDR_subnets() invalid cidr: invalid length for network: Network length 129 is too long for Ipv6 (maximum: 128)"),
+            ("0.0.0.0/256", vec![1], "CIDR_subnets() invalid cidr: couldn't parse length in network: number too large to fit in target type"),
+            ("::/256", vec![1], "CIDR_subnets() invalid cidr: couldn't parse length in network: number too large to fit in target type"),
+            ("10.0.0.0/8/8", vec![1], "CIDR_subnets() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
+            ("2001:db8::/56/56", vec![1], "CIDR_subnets() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
+            ("0.0.0.0/-1", vec![1], "CIDR_subnets() invalid cidr: couldn't parse length in network: invalid digit found in string"),
+            ("::/-1", vec![1], "CIDR_subnets() invalid cidr: couldn't parse length in network: invalid digit found in string"),
+            ("10.128.0.0/8", vec![1], "CIDR_subnets() invalid cidr: host part of address was not zero"),
+            ("2001:db8::/16", vec![1], "CIDR_subnets() invalid cidr: host part of address was not zero"),
+            ("10.1.2.3/31", vec![1], "CIDR_subnets() invalid cidr: host part of address was not zero"),
+            ("2001:db8:1:2:3:4:5:7/127", vec![1], "CIDR_subnets() invalid cidr: host part of address was not zero"),
+            ("10.0.0.0/8", vec![3, 2, -1], "CIDR_subnets() invalid additional_bits: cannot be negative"),
+            ("10.0.0.0/8", vec![3, 2, 25], "CIDR_subnets() invalid additional_bits: would extend network length to 33 bits, which is too long for IPv4"),
+            ("2001:db8::/32", vec![3, 2, 64], "CIDR_subnets() invalid additional_bits: cannot extend more than 63 bits"),
+            ("2001:db8::/66", vec![3, 2, 63], "CIDR_subnets() invalid additional_bits: would extend network length to 129 bits, which is too long for IPv6"),
+            ("10.0.0.0/8", vec![1, 1, 1], "CIDR_subnets() not enough remaining address space for a subnet with a prefix of 9 bits after 10.128.0.0/9"),
+            ("2001:db8::/126", vec![1, 1, 1], "CIDR_subnets() not enough remaining address space for a subnet with a prefix of 127 bits after 2001:db8::2/127"),
+            // allocate 64+ bits
+        ];
+        for (cidr, additional_bits, expect_error) in cases.iter() {
+            assert_panic(expect_error, || {
+                let additional_bits_valueref = additional_bits
+                    .iter()
+                    .map(|x| ValueRef::int(*x))
+                    .collect::<Vec<_>>();
+                let mut ctx = Context::new();
+                let args = ValueRef::list(Some(&[
+                    &ValueRef::str(cidr),
+                    &ValueRef::list(Some(&additional_bits_valueref.iter().collect::<Vec<_>>())),
+                ]))
+                .into_raw(&mut ctx);
+
+                let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
+                kclvm_net_CIDR_subnets(ctx.into_raw(), args, kwargs);
             });
         }
         std::panic::set_hook(prev_hook);

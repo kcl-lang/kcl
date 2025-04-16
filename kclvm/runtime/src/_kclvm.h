@@ -12,7 +12,7 @@
 #include <stdint.h>
 
 #ifdef __cplusplus
-extern "C-unwind" {
+extern "C" {
 #endif
 
 // please keep same as 'kclvm/runtime/src/kind/mod.rs#Kind'
@@ -425,23 +425,21 @@ kclvm_value_ref_t* kclvm_math_sqrt(kclvm_context_t* ctx, kclvm_value_ref_t* args
 
 kclvm_value_ref_t* kclvm_net_CIDR_subnet(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
+kclvm_value_ref_t* kclvm_net_CIDR_subnets(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+
 kclvm_value_ref_t* kclvm_net_IP_string(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_net_fqdn(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
+kclvm_value_ref_t* kclvm_net_hosts_in_CIDR(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+
 kclvm_value_ref_t* kclvm_net_is_IP(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+
+kclvm_value_ref_t* kclvm_net_is_IP_in_CIDR(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_net_is_IPv4(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_net_is_global_unicast_IP(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
-
-kclvm_value_ref_t* kclvm_net_parse_CIDR (kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
-
-kclvm_value_ref_t* kclvm_net_hosts_in_CIDR (kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
-
-kclvm_value_ref_t* kclvm_net_subnets_from_CIDR (kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
-
-kclvm_value_ref_t* kclvm_net_is_IP_in_CIDR (kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* _kwargs);
 
 kclvm_value_ref_t* kclvm_net_is_interface_local_multicast_IP(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
@@ -457,9 +455,13 @@ kclvm_value_ref_t* kclvm_net_is_unspecified_IP(kclvm_context_t* ctx, kclvm_value
 
 kclvm_value_ref_t* kclvm_net_join_host_port(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
+kclvm_value_ref_t* kclvm_net_parse_CIDR(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+
 kclvm_value_ref_t* kclvm_net_parse_IP(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_net_split_host_port(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+
+kclvm_value_ref_t* kclvm_net_subnets_from_CIDR(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_net_to_IP16(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
@@ -730,7 +732,7 @@ kclvm_value_ref_t* kclvm_yaml_encode_all(kclvm_context_t* ctx, kclvm_value_ref_t
 kclvm_value_ref_t* kclvm_yaml_validate(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 #ifdef __cplusplus
-} // extern "C-unwind"
+} // extern "C"
 #endif
 
 #endif // _kclvm_h_
