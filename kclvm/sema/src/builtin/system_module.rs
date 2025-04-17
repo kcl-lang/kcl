@@ -496,38 +496,6 @@ register_net_member! {
         false,
         None,
     )
-    hosts_in_CIDR => Type::function(
-        None,
-        Type::list_ref(Type::str_ref()),
-        &[
-            Parameter {
-                name: "cidr".to_string(),
-                ty: Type::str_ref(),
-                has_default: false,
-                default_value: None,
-                range: dummy_range(),
-            },
-        ],
-        r#"Generate a list of all IP addresses in a CIDR block."#,
-        false,
-        None,
-    )
-    subnets_from_CIDR => Type::function(
-        None,
-        Type::list_ref(Type::str_ref()),
-        &[
-            Parameter {
-                name: "cidr".to_string(),
-                ty: Type::str_ref(),
-                has_default: false,
-                default_value: None,
-                range: dummy_range(),
-            }
-        ],
-        r#"Split a CIDR block into smaller subnets with a given prefix."#,
-        false,
-        None,
-    )
     is_IP_in_CIDR => Type::function(
         None,
         Type::bool_ref(),

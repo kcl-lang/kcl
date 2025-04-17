@@ -1,8 +1,6 @@
 cidr0:
   ip: '192.168.1.0'
   mask: 24
-cidr1: []
-cidr2: []
 cidr3: true
 cidr4: false
 cidr5: true
