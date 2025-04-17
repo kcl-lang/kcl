@@ -134,6 +134,27 @@ macro_rules! register_net_member {
     )
 }
 register_net_member! {
+    CIDR_host => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "cidr".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,default_value: None,
+                range: dummy_range(),
+            },
+            Parameter {
+                name: "host_num".to_string(),
+                ty: Type::int_ref(),
+                has_default: false,default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Calulate a host IP within an enclosing subnet."#,
+        false,
+        None,
+    )
     CIDR_subnet => Type::function(
         None,
         Type::str_ref(),

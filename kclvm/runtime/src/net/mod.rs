@@ -853,6 +853,77 @@ pub extern "C-unwind" fn kclvm_net_CIDR_subnets(
     ValueRef::list(Some(subnets.iter().collect_vec().as_slice())).into_raw(ctx)
 }
 
+// CIDR_host(cidr: str, host_num: int) -> str
+
+#[no_mangle]
+#[runtime_fn]
+pub extern "C-unwind" fn kclvm_net_CIDR_host(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+    let ctx = mut_ptr_as_ref(ctx);
+
+    let cidr = match get_call_arg(args, kwargs, 0, Some("cidr")) {
+        None => {
+            panic!("CIDR_host() missing 2 required positional arguments: 'cidr' and 'host_num'");
+        }
+        Some(cidr) => match IpCidr::from_str(&cidr.as_str()) {
+            Err(err) => {
+                panic!("CIDR_host() invalid cidr: {}", err)
+            }
+            Ok(cidr) => cidr,
+        },
+    };
+
+    let host_num = match get_call_arg(args, kwargs, 1, Some("host_num")) {
+        None => {
+            panic!("CIDR_host() missing 2 required positional arguments: 'cidr' and 'host_num'");
+        }
+        Some(net_num) => net_num.must_as_strict_int(),
+    };
+
+    let host_len = cidr.family().len() - cidr.network_length();
+    let abs_host_num = match host_num < 0 {
+        true => -(host_num + 1),
+        false => host_num,
+    } as u64;
+    if host_len < 64 && (1u64 << host_len) <= abs_host_num {
+        panic!(
+            "CIDR_host() prefix of {} does not accommodate a host numbered {}",
+            cidr.network_length(),
+            host_num
+        );
+    }
+
+    let addr = match cidr.first_address() {
+        V4(ipv4) => {
+            let mut bits = ipv4.to_bits() as i64;
+            if host_num < 0 {
+                bits += 1i64 << host_len
+            }
+            bits += host_num;
+            Ipv4Addr::from_bits(bits as u32).to_string()
+        }
+        V6(ipv6) => {
+            let mut bits = ipv6.to_bits();
+            if host_len == 128 {
+                bits = host_num as u128;
+            } else {
+                let host_bits = match host_num < 0 {
+                    true => (1u128 << host_len) - (-(host_num as i128)) as u128,
+                    false => host_num as u128,
+                };
+                bits += host_bits;
+            }
+            Ipv6Addr::from_bits(bits).to_string()
+        }
+    };
+    return ValueRef::str(addr.as_str()).into_raw(ctx);
+}
+
 #[cfg(test)]
 mod test_net {
     use super::*;
@@ -1756,7 +1827,6 @@ mod test_net {
             ("2001:db8::/66", vec![3, 2, 63], "CIDR_subnets() invalid additional_bits: would extend network length to 129 bits, which is too long for IPv6"),
             ("10.0.0.0/8", vec![1, 1, 1], "CIDR_subnets() not enough remaining address space for a subnet with a prefix of 9 bits after 10.128.0.0/9"),
             ("2001:db8::/126", vec![1, 1, 1], "CIDR_subnets() not enough remaining address space for a subnet with a prefix of 127 bits after 2001:db8::2/127"),
-            // allocate 64+ bits
         ];
         for (cidr, additional_bits, expect_error) in cases.iter() {
             assert_panic(expect_error, || {
@@ -1773,6 +1843,169 @@ mod test_net {
 
                 let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
                 kclvm_net_CIDR_subnets(ctx.into_raw(), args, kwargs);
+            });
+        }
+        std::panic::set_hook(prev_hook);
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_CIDR_host() {
+        let cases = [
+            ("0.0.0.0/0", 0i64, "0.0.0.0"),
+            ("0.0.0.0/0", 1, "0.0.0.1"),
+            ("0.0.0.0/0", -1, "255.255.255.255"),
+            ("0.0.0.0/0", 256, "0.0.1.0"),
+            ("0.0.0.0/0", -256, "255.255.255.0"),
+            ("0.0.0.0/0", 4294967295, "255.255.255.255"),
+            ("0.0.0.0/0", -4294967296, "0.0.0.0"),
+            ("10.0.0.0/8", 11, "10.0.0.11"),
+            ("10.0.0.0/8", 16777215, "10.255.255.255"),
+            ("10.0.0.0/8", -1, "10.255.255.255"),
+            ("255.1.2.254/31", 1, "255.1.2.255"),
+            ("255.255.255.254/31", 1, "255.255.255.255"),
+            ("255.255.255.255/32", 0, "255.255.255.255"),
+            ("255.255.255.255/32", -1, "255.255.255.255"),
+            ("::/0", 0, "::"),
+            ("::/0", 1, "::1"),
+            ("::/0", 16, "::10"),
+            ("::/0", -1, "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"),
+            ("::/0", 9223372036854775807, "::7fff:ffff:ffff:ffff"),
+            ("::/0", -9223372036854775808, "ffff:ffff:ffff:ffff:8000::"),
+            (
+                "2001:db8:0:2:8000::/65",
+                9223372036854775807,
+                "2001:db8:0:2:ffff:ffff:ffff:ffff",
+            ),
+            (
+                "2001:db8:0:2:8000::/65",
+                -9223372036854775808,
+                "2001:db8:0:2:8000::",
+            ),
+            (
+                "ffff:ffff:ffff:ffff:8000::/65",
+                9223372036854775807,
+                "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+            ),
+            ("2001:db8::/56", 5, "2001:db8::5"),
+            ("2001:db8:1:2:3:4:5:fffe/127", 1, "2001:db8:1:2:3:4:5:ffff"),
+            ("2001:db8:1:2:3:4:5:fffe/127", -1, "2001:db8:1:2:3:4:5:ffff"),
+            ("2001:db8:1:2:3:4:5:7/128", 0, "2001:db8:1:2:3:4:5:7"),
+            ("2001:db8:1:2:3:4:5:7/128", -1, "2001:db8:1:2:3:4:5:7"),
+        ];
+        let mut ctx = Context::default();
+        for (cidr, host_num, expected) in cases.iter() {
+            unsafe {
+                let actual = &*kclvm_net_CIDR_host(
+                    &mut ctx,
+                    &ValueRef::list(Some(&[&ValueRef::str(cidr), &ValueRef::int(*host_num)])),
+                    &ValueRef::dict(None),
+                );
+                assert_eq!(
+                    &ValueRef::str(expected),
+                    actual,
+                    "{} {} positional",
+                    cidr,
+                    host_num
+                );
+            }
+            unsafe {
+                let actual = &*kclvm_net_CIDR_host(
+                    &mut ctx,
+                    &ValueRef::list(None),
+                    &ValueRef::dict(Some(&[
+                        ("cidr", &ValueRef::str(cidr)),
+                        ("host_num", &ValueRef::int(*host_num)),
+                    ])),
+                );
+                assert_eq!(
+                    &ValueRef::str(expected),
+                    actual,
+                    "{} {} named",
+                    cidr,
+                    host_num
+                );
+            }
+        }
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_CIDR_host_invalid() {
+        let prev_hook = std::panic::take_hook();
+        // Disable print panic info in stderr.
+        std::panic::set_hook(Box::new(|_| {}));
+        assert_panic(
+            "CIDR_host() missing 2 required positional arguments: 'cidr' and 'host_num'",
+            || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(None).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
+                kclvm_net_CIDR_host(ctx.into_raw(), args, kwargs);
+            },
+        );
+        assert_panic(
+            "CIDR_host() missing 2 required positional arguments: 'cidr' and 'host_num'",
+            || {
+                let mut ctx = Context::new();
+                let args =
+                    ValueRef::list(Some(&[&ValueRef::str("10.1.2.3/32")])).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
+                kclvm_net_CIDR_host(ctx.into_raw(), args, kwargs);
+            },
+        );
+        assert_panic(
+            "CIDR_host() missing 2 required positional arguments: 'cidr' and 'host_num'",
+            || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(None).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(Some(&[("cidr", &ValueRef::str("10.1.2.3/32"))]))
+                    .into_raw(&mut ctx);
+                kclvm_net_CIDR_host(ctx.into_raw(), args, kwargs);
+            },
+        );
+        assert_panic(
+            "CIDR_host() missing 2 required positional arguments: 'cidr' and 'host_num'",
+            || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(None).into_raw(&mut ctx);
+                let kwargs =
+                    ValueRef::dict(Some(&[("host_num", &ValueRef::int(1))])).into_raw(&mut ctx);
+                kclvm_net_CIDR_host(ctx.into_raw(), args, kwargs);
+            },
+        );
+        let cases = [
+            ("10.0.0/8", 0i64, "CIDR_host() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
+            ("10.0.0.0/33", 0, "CIDR_host() invalid cidr: invalid length for network: Network length 33 is too long for Ipv4 (maximum: 32)"),
+            ("2001:db8:1:2:3:4:5:7/129", 0, "CIDR_host() invalid cidr: invalid length for network: Network length 129 is too long for Ipv6 (maximum: 128)"),
+            ("0.0.0.0/256", 0, "CIDR_host() invalid cidr: couldn't parse length in network: number too large to fit in target type"),
+            ("::/256", 0, "CIDR_host() invalid cidr: couldn't parse length in network: number too large to fit in target type"),
+            ("10.0.0.0/8/8", 0, "CIDR_host() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
+            ("2001:db8::/56/56", 0, "CIDR_host() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
+            ("0.0.0.0/-1", 0, "CIDR_host() invalid cidr: couldn't parse length in network: invalid digit found in string"),
+            ("::/-1", 0, "CIDR_host() invalid cidr: couldn't parse length in network: invalid digit found in string"),
+            ("10.128.0.0/8", 0, "CIDR_host() invalid cidr: host part of address was not zero"),
+            ("2001:db8::/16", 0, "CIDR_host() invalid cidr: host part of address was not zero"),
+            ("10.1.2.3/31", 0, "CIDR_host() invalid cidr: host part of address was not zero"),
+            ("2001:db8:1:2:3:4:5:7/127", 0, "CIDR_host() invalid cidr: host part of address was not zero"),
+            ("10.0.0.0/24", 256, "CIDR_host() prefix of 24 does not accommodate a host numbered 256"),
+            ("10.0.0.0/24", -257, "CIDR_host() prefix of 24 does not accommodate a host numbered -257"),
+            ("10.0.0.0/32", 1, "CIDR_host() prefix of 32 does not accommodate a host numbered 1"),
+            ("10.0.0.0/32", -2, "CIDR_host() prefix of 32 does not accommodate a host numbered -2"),
+            ("0.0.0.0/0", 4294967296, "CIDR_host() prefix of 0 does not accommodate a host numbered 4294967296"),
+            ("0.0.0.0/0", -4294967297, "CIDR_host() prefix of 0 does not accommodate a host numbered -4294967297"),
+            ("2001:db8::/120", 256, "CIDR_host() prefix of 120 does not accommodate a host numbered 256"),
+            ("2001:db8::/120", -257, "CIDR_host() prefix of 120 does not accommodate a host numbered -257"),
+            ("2001:db8::/66", 9223372036854775807, "CIDR_host() prefix of 66 does not accommodate a host numbered 9223372036854775807"),
+            ("2001:db8::/66", -9223372036854775808, "CIDR_host() prefix of 66 does not accommodate a host numbered -9223372036854775808"),
+        ];
+        for (cidr, host_num, expect_error) in cases.iter() {
+            assert_panic(expect_error, || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(Some(&[&ValueRef::str(cidr), &ValueRef::int(*host_num)]))
+                    .into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
+                kclvm_net_CIDR_host(ctx.into_raw(), args, kwargs);
             });
         }
         std::panic::set_hook(prev_hook);

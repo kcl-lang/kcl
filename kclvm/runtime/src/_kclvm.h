@@ -423,6 +423,8 @@ kclvm_value_ref_t* kclvm_math_pow(kclvm_context_t* ctx, kclvm_value_ref_t* args,
 
 kclvm_value_ref_t* kclvm_math_sqrt(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
+kclvm_value_ref_t* kclvm_net_CIDR_host(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+
 kclvm_value_ref_t* kclvm_net_CIDR_subnet(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 
 kclvm_value_ref_t* kclvm_net_CIDR_subnets(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
