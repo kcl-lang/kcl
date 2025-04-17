@@ -388,6 +388,8 @@ declare %kclvm_value_ref_t* @kclvm_math_sqrt(%kclvm_context_t* %ctx, %kclvm_valu
 
 declare %kclvm_value_ref_t* @kclvm_net_CIDR_host(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
+declare %kclvm_value_ref_t* @kclvm_net_CIDR_netmask(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
 declare %kclvm_value_ref_t* @kclvm_net_CIDR_subnet(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_net_CIDR_subnets(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);

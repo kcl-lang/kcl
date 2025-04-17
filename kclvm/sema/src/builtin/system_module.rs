@@ -155,6 +155,21 @@ register_net_member! {
         false,
         None,
     )
+    CIDR_netmask => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "cidr".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Calulate the netmask for a subnet."#,
+        false,
+        None,
+    )
     CIDR_subnet => Type::function(
         None,
         Type::str_ref(),
