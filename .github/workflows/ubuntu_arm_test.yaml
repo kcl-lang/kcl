@@ -69,7 +69,7 @@ jobs:
         shell: bash
       
       - name: Release
-        run: export PATH=$PATH:$PWD/../_build/dist/darwin/kclvm/bin && make release
+        run: export PATH=$PATH:$PWD/../_build/dist/linux/kclvm/bin && make release
         shell: bash
 
       - name: Read VERSION file
