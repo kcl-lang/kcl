@@ -172,7 +172,13 @@ pub fn compile_with_params(
 ) {
     let file = PathBuf::from(params.file.clone().unwrap())
         .canonicalize()
-        .unwrap()
+        .unwrap_or_else(|e| {
+            panic!(
+                "Failed to canonicalize file path '{}': {:?}",
+                params.file.clone().unwrap(),
+                e
+            );
+        })
         .to_str()
         .unwrap()
         .to_string();
