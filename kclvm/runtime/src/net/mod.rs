@@ -486,78 +486,6 @@ pub extern "C-unwind" fn kclvm_net_parse_CIDR(
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C-unwind" fn kclvm_net_hosts_in_CIDR(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let ctx = mut_ptr_as_ref(ctx);
-
-    if let Some(cidr) = get_call_arg_str(args, kwargs, 0, Some("cidr")) {
-        let parts: Vec<&str> = cidr.split('/').collect();
-        if parts.len() == 2 {
-            let ip = parts[0];
-            let mask = parts[1];
-            if let Ok(ip) = Ipv4Addr::from_str(ip) {
-                if let Ok(mask) = mask.parse::<u8>() {
-                    let mask = u32::from_be_bytes(ip.octets()) & !((1 << (32 - mask)) - 1);
-                    let mut hosts = vec![];
-                    for i in 1..(1 << (32 - mask)) - 1 {
-                        let ip = u32::from_be_bytes(ip.octets()) + i;
-                        hosts.push(ValueRef::str(Ipv4Addr::from(ip).to_string().as_str()));
-                    }
-                    let hosts_refs: Vec<&ValueRef> = hosts.iter().collect();
-                    return ValueRef::list(Some(&hosts_refs[..])).into_raw(ctx);
-                }
-            }
-        }
-        return ValueRef::list(None).into_raw(ctx);
-    }
-
-    panic!("hosts_in_CIDR() missing 1 required positional argument: 'cidr'");
-}
-
-#[no_mangle]
-#[runtime_fn]
-pub extern "C-unwind" fn kclvm_net_subnets_from_CIDR(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let ctx = mut_ptr_as_ref(ctx);
-
-    if let Some(cidr) = get_call_arg_str(args, kwargs, 0, Some("cidr")) {
-        let parts: Vec<&str> = cidr.split('/').collect();
-        if parts.len() == 2 {
-            let ip = parts[0];
-            let mask = parts[1];
-            if let Ok(ip) = Ipv4Addr::from_str(ip) {
-                if let Ok(mask) = mask.parse::<u8>() {
-                    let mask = u32::from_be_bytes(ip.octets()) & !((1 << (32 - mask)) - 1);
-                    let mut subnets = vec![];
-                    for i in 1..(1 << (32 - mask)) - 1 {
-                        let ip = u32::from_be_bytes(ip.octets()) + i;
-                        subnets.push(ValueRef::str(
-                            format!("{}/{}", Ipv4Addr::from(ip), mask).as_str(),
-                        ));
-                    }
-                    let subnets_refs: Vec<&ValueRef> = subnets.iter().collect();
-                    return ValueRef::list(Some(&subnets_refs)).into_raw(ctx);
-                }
-            }
-        }
-        return ValueRef::list(None).into_raw(ctx);
-    }
-
-    panic!("subnets_from_CIDR() missing 1 required positional argument: 'cidr'");
-}
-
-#[no_mangle]
-#[runtime_fn]
 pub extern "C-unwind" fn kclvm_net_is_IP_in_CIDR(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -922,6 +850,39 @@ pub extern "C-unwind" fn kclvm_net_CIDR_host(
         }
     };
     return ValueRef::str(addr.as_str()).into_raw(ctx);
+}
+
+// CIDR_netmask(cidr: str) -> str
+
+#[no_mangle]
+#[runtime_fn]
+pub extern "C-unwind" fn kclvm_net_CIDR_netmask(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+    let ctx = mut_ptr_as_ref(ctx);
+
+    let cidr = match get_call_arg(args, kwargs, 0, Some("cidr")) {
+        None => {
+            panic!("CIDR_netmask() missing 1 required positional argument: 'cidr'");
+        }
+        Some(cidr) => match IpCidr::from_str(&cidr.as_str()) {
+            Err(err) => {
+                panic!("CIDR_netmask() invalid cidr: {}", err)
+            }
+            Ok(cidr) => cidr,
+        },
+    };
+
+    if cidr.is_ipv6() {
+        panic!("CIDR_netmask() IPv6 addresses cannot have a netmask")
+    }
+
+    let bits = -1i64 << (32 - cidr.network_length());
+    return ValueRef::str(Ipv4Addr::from_bits(bits as u32).to_string().as_str()).into_raw(ctx);
 }
 
 #[cfg(test)]
@@ -2006,6 +1967,65 @@ mod test_net {
                     .into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
                 kclvm_net_CIDR_host(ctx.into_raw(), args, kwargs);
+            });
+        }
+        std::panic::set_hook(prev_hook);
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_CIDR_netmask() {
+        let cases = [
+            ("0.0.0.0/0", "0.0.0.0"),
+            ("0.0.0.0/1", "128.0.0.0"),
+            ("0.0.0.0/24", "255.255.255.0"),
+            ("0.0.0.0/31", "255.255.255.254"),
+            ("0.0.0.0/32", "255.255.255.255"),
+            ("10.0.0.0/8", "255.0.0.0"),
+        ];
+        let mut ctx = Context::default();
+        for (cidr, expected) in cases.iter() {
+            unsafe {
+                let actual = &*kclvm_net_CIDR_netmask(
+                    &mut ctx,
+                    &ValueRef::list(Some(&[&ValueRef::str(cidr)])),
+                    &ValueRef::dict(None),
+                );
+                assert_eq!(&ValueRef::str(expected), actual, "{} positional", cidr,);
+            }
+            unsafe {
+                let actual = &*kclvm_net_CIDR_netmask(
+                    &mut ctx,
+                    &ValueRef::list(None),
+                    &ValueRef::dict(Some(&[("cidr", &ValueRef::str(cidr))])),
+                );
+                assert_eq!(&ValueRef::str(expected), actual, "{} named", cidr,);
+            }
+        }
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_CIDR_netmask_invalid() {
+        let prev_hook = std::panic::take_hook();
+        // Disable print panic info in stderr.
+        std::panic::set_hook(Box::new(|_| {}));
+        let cases = [
+            ("10.0.0/8", "CIDR_netmask() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
+            ("10.0.0.0/33", "CIDR_netmask() invalid cidr: invalid length for network: Network length 33 is too long for Ipv4 (maximum: 32)"),
+            ("0.0.0.0/256", "CIDR_netmask() invalid cidr: couldn't parse length in network: number too large to fit in target type"),
+            ("10.0.0.0/8/8", "CIDR_netmask() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
+            ("0.0.0.0/-1", "CIDR_netmask() invalid cidr: couldn't parse length in network: invalid digit found in string"),
+            ("10.128.0.0/8", "CIDR_netmask() invalid cidr: host part of address was not zero"),
+            ("10.1.2.3/31", "CIDR_netmask() invalid cidr: host part of address was not zero"),
+            ("2001:db8::/64", "CIDR_netmask() IPv6 addresses cannot have a netmask"),
+        ];
+        for (cidr, expect_error) in cases.iter() {
+            assert_panic(expect_error, || {
+                let mut ctx = Context::new();
+                let args = ValueRef::list(Some(&[&ValueRef::str(cidr)])).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
+                kclvm_net_CIDR_netmask(ctx.into_raw(), args, kwargs);
             });
         }
         std::panic::set_hook(prev_hook);

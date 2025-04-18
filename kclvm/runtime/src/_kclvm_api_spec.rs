@@ -994,14 +994,6 @@
 // api-spec(c):    kclvm_value_ref_t* kclvm_net_parse_CIDR(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_net_parse_CIDR(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-// api-spec:       kclvm_net_hosts_in_CIDR
-// api-spec(c):    kclvm_value_ref_t* kclvm_net_hosts_in_CIDR(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_net_hosts_in_CIDR(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
-
-// api-spec:       kclvm_net_subnets_from_CIDR
-// api-spec(c):    kclvm_value_ref_t* kclvm_net_subnets_from_CIDR(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_net_subnets_from_CIDR(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
-
 // api-spec:       kclvm_net_is_IP_in_CIDR
 // api-spec(c):    kclvm_value_ref_t* kclvm_net_is_IP_in_CIDR(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_net_is_IP_in_CIDR(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
@@ -1021,6 +1013,10 @@
 // api-spec:       kclvm_net_CIDR_host
 // api-spec(c):    kclvm_value_ref_t* kclvm_net_CIDR_host(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_net_CIDR_host(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+
+// api-spec:       kclvm_net_CIDR_netmask
+// api-spec(c):    kclvm_value_ref_t* kclvm_net_CIDR_netmask(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_net_CIDR_netmask(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_regex_match
 // api-spec(c):    kclvm_value_ref_t* kclvm_regex_match(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
