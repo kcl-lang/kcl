@@ -352,20 +352,13 @@ pub extern "C-unwind" fn kclvm_net_is_interface_local_multicast_IP(
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
-        if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
-            // For IPv4, interface-local multicast addresses are in the range 224.0.0.0/24
-            let is_interface_local =
-                addr.octets()[0] == 224 && addr.octets()[1] == 0 && addr.octets()[2] == 0;
-            let x = is_interface_local && addr.is_multicast();
-            return kclvm_value_Bool(ctx, x as i8);
-        }
         if let Ok(addr) = Ipv6Addr::from_str(ip.as_ref()) {
-            // For IPv6, interface-local multicast addresses start with ff01::/16
-            let is_interface_local = addr.segments()[0] == 0xff01;
+            // For IPv6, interface-local multicast addresses start with ffx1::/16
+            let is_interface_local = (addr.segments()[0] & 0xff0f) == 0xff01;
             let x = is_interface_local && addr.is_multicast();
             return kclvm_value_Bool(ctx, x as i8);
         }
-        return kclvm_value_Bool(ctx, 0); // False for invalid IP addresses
+        return kclvm_value_Bool(ctx, 0); // False for IPv4 and invalid IP addresses
     }
     panic!("is_interface_local_multicast_IP() missing 1 required positional argument: 'ip'");
 }
@@ -391,8 +384,8 @@ pub extern "C-unwind" fn kclvm_net_is_link_local_multicast_IP(
             return kclvm_value_Bool(ctx, x as i8);
         }
         if let Ok(addr) = Ipv6Addr::from_str(ip.as_ref()) {
-            // For IPv6, link-local multicast addresses start with ff02::/16
-            let is_link_local_multicast = addr.segments()[0] == 0xff02;
+            // For IPv6, link-local multicast addresses start with ffx2::/16
+            let is_link_local_multicast = (addr.segments()[0] & 0xff0f) == 0xff02;
             let x = is_link_local_multicast && addr.is_multicast();
             return kclvm_value_Bool(ctx, x as i8);
         }
@@ -419,14 +412,43 @@ pub extern "C-unwind" fn kclvm_net_is_link_local_unicast_IP(
             let x = addr.is_link_local() && (!addr.is_multicast());
             return kclvm_value_Bool(ctx, x as i8);
         }
-        if let Ok(_addr) = Ipv6Addr::from_str(ip.as_ref()) {
-            let x = Ipv6Addr_is_unicast_link_local(&_addr) && (!_addr.is_multicast());
+        if let Ok(addr) = Ipv6Addr::from_str(ip.as_ref()) {
+            let x = Ipv6Addr_is_unicast_link_local(&addr) && (!addr.is_multicast());
             return kclvm_value_Bool(ctx, x as i8);
         }
         return kclvm_value_False(ctx);
     }
 
     panic!("is_link_local_unicast_IP() missing 1 required positional argument: 'ip'");
+}
+
+#[allow(non_camel_case_types, non_snake_case)]
+fn Ipv6Addr_is_global(_self: &std::net::Ipv6Addr) -> bool {
+    let segments = _self.segments();
+    // 2000::/3 global unicast
+    if (segments[0] & 0xe000) == 0x2000 {
+        // 2001:db8::/32 documentation
+        if segments[0] == 0x2001 && segments[1] == 0xdb8 {
+            return false;
+        }
+        // 2001:2::/48 benchmarking
+        if segments[0] == 0x2001 && segments[1] == 2 && segments[2] == 0 {
+            return false;
+        }
+        return true;
+    }
+    // 64:ff9b::/96 NAT64
+    if segments[0] == 0x64
+        && segments[1] == 0xff9b
+        && segments[2] == 0
+        && segments[3] == 0
+        && segments[4] == 0
+        && segments[5] == 0
+    {
+        let ipv4 = Ipv4Addr::from(((segments[6] as u32) << 16) + segments[7] as u32);
+        return Ipv4Addr_is_global(&ipv4) && (!ipv4.is_multicast());
+    }
+    return false;
 }
 
 #[allow(non_camel_case_types, non_snake_case)]
@@ -452,7 +474,7 @@ pub extern "C-unwind" fn kclvm_net_is_global_unicast_IP(
             return kclvm_value_Bool(ctx, x as i8);
         }
         if let Ok(addr) = Ipv6Addr::from_str(ip.as_ref()) {
-            return kclvm_value_Bool(ctx, addr.is_multicast() as i8);
+            return kclvm_value_Bool(ctx, Ipv6Addr_is_global(&addr) as i8);
         }
 
         return kclvm_value_False(ctx);
