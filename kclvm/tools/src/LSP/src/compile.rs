@@ -18,6 +18,7 @@ use std::collections::HashSet;
 use std::path::PathBuf;
 
 use crate::{
+    validator::validate_schema_attributes,
     state::{KCLGlobalStateCache, KCLVfs},
     util::load_files_code_from_vfs,
 };
@@ -126,7 +127,15 @@ pub fn compile(
         params.scope_cache.clone(),
     );
     let schema_map: IndexMap<String, Vec<SchemaType>> = filter_pkg_schemas(&prog_scope, None, None);
-    diags.extend(prog_scope.handler.diagnostics);
+    
+    // Clone diagnostics before moving prog_scope
+    let mut all_diags = IndexSet::new();
+    all_diags.extend(prog_scope.handler.diagnostics.clone());
+    
+    // Add schema validation
+    if let Err(validation_diags) = validate_schema_attributes(&program, &prog_scope) {
+        all_diags.extend(validation_diags);
+    }
 
     let mut default = GlobalState::default();
     let mut gs_ref;
@@ -158,8 +167,8 @@ pub fn compile(
     Namer::find_symbols(&program, gs);
 
     match AdvancedResolver::resolve_program(&program, gs, prog_scope.node_ty_map) {
-        Ok(_) => (diags, Ok((program, schema_map, gs.clone()))),
-        Err(e) => (diags, Err(anyhow::anyhow!("Resolve failed: {:?}", e))),
+        Ok(_) => (all_diags, Ok((program, schema_map, gs.clone()))),
+        Err(e) => (all_diags, Err(anyhow::anyhow!("Resolve failed: {:?}", e))),
     }
 }
 

@@ -21,7 +21,7 @@ mod state;
 mod to_lsp;
 mod util;
 mod word_index;
-
+mod validator;
 #[cfg(test)]
 mod tests;
 
