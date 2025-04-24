@@ -18,12 +18,12 @@ mod request;
 mod semantic_token;
 mod signature_help;
 mod state;
-mod to_lsp;
-mod util;
-mod word_index;
-mod validator;
 #[cfg(test)]
 mod tests;
+mod to_lsp;
+mod util;
+mod validator;
+mod word_index;
 
 use app::{app, main_loop};
 
