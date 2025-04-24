@@ -172,6 +172,9 @@ fn validate_schema_instance(
                 for item in &config_expr.items {
                     if let Node {
                         node: Expr::Schema(_),
+                        filename,
+                        line,
+                        column,
                         ..
                     } = &*item.node.value
                     {
@@ -183,8 +186,8 @@ fn validate_schema_instance(
                             &nested_assign,
                             schema_attrs,
                             filename,
-                            line,
-                            column,
+                            *line,
+                            *column,
                             diagnostics,
                         );
                     }

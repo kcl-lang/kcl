@@ -58,7 +58,7 @@ nested_person3 = NestedPerson {
     }
 }
 
-# Test case 7: Invalid instance - missing required 'age' attribute
+# Test case 7: Invalid instance - missing required 'age' attribute in lambda return
 # Expected error: Missing required attributes in Person instance: age
 # Expected error line: 70
 CreateTest = lambda name: str -> NestedPerson {
