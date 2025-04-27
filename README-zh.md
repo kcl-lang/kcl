@@ -16,6 +16,7 @@
   <a href="https://www.bestpractices.dev/projects/7867"><img src="https://www.bestpractices.dev/projects/7867/badge"></a>
   <img src="https://img.shields.io/github/downloads/kcl-lang/kcl/total?label=Github%20downloads&logo=github">
   <img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkcl-lang%2Fkcl.svg?type=shield">
+  <a href="https://app.devin.ai/devin_v4.png"><img src="https://deepwiki.com/kcl-lang/kcl"></a>
 </p>
 
 ## 介绍
@@ -67,6 +68,8 @@ KCL 是一个开源的基于约束的记录及函数语言并通过成熟的编�
 ## 文档
 
 更多文档请访问[KCL 网站](https://kcl-lang.io/)
+
+这里也有一个 [Devin](https://devin.ai/) 生成的非常不错的文档 [**deepwiki**](https://deepwiki.com/kcl-lang/kcl).
 
 ## 贡献
 
