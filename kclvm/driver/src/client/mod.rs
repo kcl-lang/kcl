@@ -10,8 +10,8 @@ use kclvm_config::modfile::{
 };
 use kclvm_config::modfile::{Dependency, GitSource, ModFile, OciSource};
 use kclvm_utils::fslock::open_lock_file;
-use oci_distribution::secrets::RegistryAuth;
-use oci_distribution::{Client, Reference, RegistryOperation};
+use oci_client::secrets::RegistryAuth;
+use oci_client::{Client, Reference, RegistryOperation};
 use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;

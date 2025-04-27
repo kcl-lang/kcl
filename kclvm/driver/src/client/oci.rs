@@ -1,8 +1,8 @@
 use crate::client::fs::directory_is_not_empty;
 use anyhow::Result;
-use oci_distribution::manifest::IMAGE_LAYER_MEDIA_TYPE;
-use oci_distribution::secrets::RegistryAuth;
-use oci_distribution::{Client, Reference};
+use oci_client::manifest::IMAGE_LAYER_MEDIA_TYPE;
+use oci_client::secrets::RegistryAuth;
+use oci_client::{Client, Reference};
 use std::path::{Path, PathBuf};
 
 const OCI_SCHEME_PREFIX: &str = "oci://";
