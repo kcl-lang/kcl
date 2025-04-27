@@ -18,7 +18,7 @@ install-rustc-wasm:
 
 # Install the wasm-wasi target
 install-rustc-wasm-wasi:
-	rustup target add wasm32-wasi
+	rustup target add wasm32-wasip1
 
 # Install python3 pytest
 install-test-deps:
@@ -50,7 +50,7 @@ fix:
 	cargo clippy --fix --allow-dirty
 
 build-wasm:
-	cargo build --target=wasm32-wasi --release
+	cargo build --target=wasm32-wasip1 --release
 
 build-lsp:
 	cargo build --release --manifest-path tools/src/LSP/Cargo.toml
