@@ -13,6 +13,7 @@ jobs:
     # Ref: https://github.com/actions/runner-images/tree/main/images/macos
     # Note: The arch of macos-13-xlarge and macos-14 is arm64
     strategy:
+      fail-fast: false
       matrix:
         os: [macos-13-xlarge, macos-14]
     runs-on: ${{ matrix.os }}
