@@ -16,6 +16,7 @@
   <a href="https://www.bestpractices.dev/projects/7867"><img src="https://www.bestpractices.dev/projects/7867/badge"></a>
   <img src="https://img.shields.io/github/downloads/kcl-lang/kcl/total?label=Github%20downloads&logo=github">
   <img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkcl-lang%2Fkcl.svg?type=shield">
+  <a href="https://app.devin.ai/devin_v4.png"><img src="https://deepwiki.com/kcl-lang/kcl"></a>
 </p>
 
 ## Introduction
@@ -66,6 +67,8 @@ For more information about installation, please check the [Installation Guide](h
 ## Documentation
 
 Detailed documentation is available at [KCL Website](https://kcl-lang.io/)
+
+There is also a very nice [Devin](https://devin.ai/) generated document available at [**deepwiki**](https://deepwiki.com/kcl-lang/kcl).
 
 ## Contributing
 
