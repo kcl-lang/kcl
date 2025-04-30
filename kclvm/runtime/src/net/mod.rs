@@ -2052,4 +2052,127 @@ mod test_net {
         }
         std::panic::set_hook(prev_hook);
     }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_is_interface_local_multicast_IP() {
+        let cases = [("ff11::1", true), ("224.0.0.0", false)];
+        let mut ctx = Context::default();
+        for (ip, expect) in cases.iter() {
+            unsafe {
+                let actual = &*kclvm_net_is_interface_local_multicast_IP(
+                    &mut ctx,
+                    &ValueRef::dict(None),
+                    &ValueRef::dict(Some(&[("ip", &ValueRef::str(ip))])),
+                );
+                assert_eq!(*expect, actual.as_bool(), "ip: {} ", ip);
+            }
+        }
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_is_link_local_multicast_IP() {
+        let cases = [("ff12::1", true)];
+        let mut ctx = Context::default();
+        for (ip, expect) in cases.iter() {
+            unsafe {
+                let actual = &*kclvm_net_is_link_local_multicast_IP(
+                    &mut ctx,
+                    &ValueRef::dict(None),
+                    &ValueRef::dict(Some(&[("ip", &ValueRef::str(ip))])),
+                );
+                assert_eq!(*expect, actual.as_bool(), "ip: {} ", ip);
+            }
+        }
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_is_global_unicast_IP() {
+        let cases = [
+            ("2607:f8b0:4005:802::200e", true),
+            ("64:ff9b::800:1", true),
+            ("220.181.108.89", true),
+        ];
+        let mut ctx = Context::default();
+        for (ip, expect) in cases.iter() {
+            unsafe {
+                let actual = &*kclvm_net_is_global_unicast_IP(
+                    &mut ctx,
+                    &ValueRef::dict(None),
+                    &ValueRef::dict(Some(&[("ip", &ValueRef::str(ip))])),
+                );
+                assert_eq!(*expect, actual.as_bool(), "ip: {} ", ip);
+            }
+        }
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_is_multicast_IP() {
+        let cases = [("239.255.255.255", true)];
+        let mut ctx = Context::default();
+        for (ip, expect) in cases.iter() {
+            unsafe {
+                let actual = &*kclvm_net_is_multicast_IP(
+                    &mut ctx,
+                    &ValueRef::dict(None),
+                    &ValueRef::dict(Some(&[("ip", &ValueRef::str(ip))])),
+                );
+                assert_eq!(*expect, actual.as_bool(), "ip: {} ", ip);
+            }
+        }
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_is_loopback_IP() {
+        let cases = [("127.0.0.1", true)];
+        let mut ctx = Context::default();
+        for (ip, expect) in cases.iter() {
+            unsafe {
+                let actual = &*kclvm_net_is_loopback_IP(
+                    &mut ctx,
+                    &ValueRef::dict(None),
+                    &ValueRef::dict(Some(&[("ip", &ValueRef::str(ip))])),
+                );
+                assert_eq!(*expect, actual.as_bool(), "ip: {} ", ip);
+            }
+        }
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_is_link_local_unicast_IP() {
+        let cases = [("fe80::2012:1", true)];
+        let mut ctx = Context::default();
+        for (ip, expect) in cases.iter() {
+            unsafe {
+                let actual = &*kclvm_net_is_link_local_unicast_IP(
+                    &mut ctx,
+                    &ValueRef::dict(None),
+                    &ValueRef::dict(Some(&[("ip", &ValueRef::str(ip))])),
+                );
+                assert_eq!(*expect, actual.as_bool(), "ip: {} ", ip);
+            }
+        }
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_is_unspecified_IP() {
+        let cases = [("0.0.0.0", true)];
+        let mut ctx = Context::default();
+        for (ip, expect) in cases.iter() {
+            unsafe {
+                let actual = &*kclvm_net_is_unspecified_IP(
+                    &mut ctx,
+                    &ValueRef::dict(None),
+                    &ValueRef::dict(Some(&[("ip", &ValueRef::str(ip))])),
+                );
+                assert_eq!(*expect, actual.as_bool(), "ip: {}", ip);
+            }
+        }
+    }
 }
