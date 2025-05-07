@@ -82,7 +82,7 @@ pub extern "C-unwind" fn kclvm_math_floor(
         return kclvm_value_Int(ctx, x);
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kclvm_value_Float(ctx, x.floor());
+        return kclvm_value_Int(ctx, x.floor() as i64);
     }
 
     panic!("floor() takes exactly one argument (0 given)");
