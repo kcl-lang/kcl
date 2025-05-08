@@ -256,8 +256,37 @@ impl<'ctx> Resolver<'_> {
 
                 self.set_type_to_scope(name, target_ty.clone(), &target.node.name);
 
-                // Check the type of value and the type annotation of target
-                self.must_assignable_to(value_ty.clone(), target_ty, target.get_span_pos(), None)
+                // Check if this is a list assignment with schema type annotation
+                let is_list_with_schema_elements = match (&target_ty.kind, &value_ty.kind) {
+                    (TypeKind::List(expected_item_ty), TypeKind::List(_)) => {
+                        // Check if the expected type is a Schema
+                        match &expected_item_ty.kind {
+                            TypeKind::Schema(_) => true,
+                            _ => false,
+                        }
+                    }
+                    _ => false,
+                };
+
+                // For list with schema elements, we need stricter checking
+                if is_list_with_schema_elements {
+                    // Type checking for lists with schema elements should be stricter to
+                    // ensure all elements are of the expected schema type
+                    self.must_assignable_to(
+                        value_ty.clone(),
+                        target_ty.clone(),
+                        target.get_span_pos(),
+                        None,
+                    );
+                } else {
+                    // Regular type checking for other types
+                    self.must_assignable_to(
+                        value_ty.clone(),
+                        target_ty,
+                        target.get_span_pos(),
+                        None,
+                    )
+                }
             }
         }
     }
@@ -268,6 +297,7 @@ impl<'ctx> Resolver<'_> {
         // Check assignable between types.
         match (&ty.kind, &expected_ty.kind) {
             (TypeKind::List(item_ty), TypeKind::List(expected_item_ty)) => {
+                // Check that the item type of the list is assignable to the expected item type
                 self.check_type(item_ty.clone(), expected_item_ty.clone(), range)
             }
             (
