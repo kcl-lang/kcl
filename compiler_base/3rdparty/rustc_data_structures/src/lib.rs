@@ -36,18 +36,13 @@ pub mod captures;
 pub mod flock;
 
 pub mod macros;
-pub mod stable_map;
 pub use ena::snapshot_vec;
-pub mod stable_set;
 #[macro_use]
 
-mod atomic_ref;
 pub mod sync;
-pub use atomic_ref::AtomicRef;
 pub mod frozen;
 
 pub mod temp_dir;
-pub mod unhash;
 
 pub use ena::undo_log;
 pub use ena::unify;
