@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use indexmap::{IndexMap, IndexSet};
+use kclvm_primitives::{IndexMap, IndexSet};
 
 #[derive(Default, Debug, Clone)]
 pub struct PackageDB {
@@ -15,7 +15,7 @@ impl PackageDB {
     }
 
     pub fn remove_package_info(&mut self, name: &str) {
-        self.package_info.remove(name);
+        self.package_info.swap_remove(name);
     }
 
     pub fn get_package_info(&self, name: &str) -> Option<&PackageInfo> {
@@ -31,7 +31,7 @@ impl PackageDB {
     }
 
     pub fn remove_module_info(&mut self, name: &str) {
-        self.module_info.remove(name);
+        self.module_info.swap_remove(name);
     }
 
     pub fn get_module_info_mut(&mut self, name: &str) -> Option<&mut ModuleInfo> {
@@ -44,7 +44,7 @@ impl PackageDB {
 
     pub fn clear_cache(&mut self, invalidate_pkgs: &HashSet<String>) {
         for invalidate_pkg in invalidate_pkgs {
-            self.package_info.remove(invalidate_pkg);
+            self.package_info.swap_remove(invalidate_pkg);
         }
     }
 }
@@ -119,7 +119,7 @@ impl ModuleInfo {
     }
 
     pub fn remove_import_info(&mut self, name: &str) {
-        self.imports.remove(name);
+        self.imports.swap_remove(name);
     }
 
     pub fn get_import_info(&self, name: &str) -> Option<&ImportInfo> {

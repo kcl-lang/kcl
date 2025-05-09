@@ -4,7 +4,7 @@ use std::{
 };
 
 use generational_arena::Arena;
-use indexmap::{IndexMap, IndexSet};
+use kclvm_primitives::{IndexMap, IndexSet};
 
 use kclvm_error::{diagnostic::Range, Position};
 use serde::Serialize;
@@ -235,12 +235,12 @@ impl SymbolData {
         if let Some(symbol) = self.get_symbol(id.clone()) {
             self.symbols_info
                 .symbol_pos_set
-                .remove(&symbol.get_range().1);
+                .swap_remove(&symbol.get_range().1);
         }
         match id.get_kind() {
             SymbolKind::Schema => {
                 self.schemas.remove(id.get_id());
-                self.symbols_info.schema_builtin_symbols.remove(id);
+                self.symbols_info.schema_builtin_symbols.swap_remove(id);
             }
             SymbolKind::Attribute => {
                 self.attributes.remove(id.get_id());
@@ -924,8 +924,8 @@ impl SymbolData {
         }
         for symbol in to_remove {
             self.remove_symbol(&symbol);
-            if let Some(node_id) = self.get_symbol_node_map_mut().remove(&symbol) {
-                self.get_node_symbol_map_mut().remove(&node_id);
+            if let Some(node_id) = self.get_symbol_node_map_mut().swap_remove(&symbol) {
+                self.get_node_symbol_map_mut().swap_remove(&node_id);
             }
         }
     }

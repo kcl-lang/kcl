@@ -8,15 +8,15 @@
 //! + attr type
 
 use crate::to_lsp::lsp_location;
-use indexmap::IndexSet;
 use kclvm_error::Position as KCLPos;
+use kclvm_primitives::{DefaultHashBuilder, IndexSet};
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::core::symbol::SymbolRef;
 use lsp_types::GotoDefinitionResponse;
 
 /// Navigates to the definition of an identifier.
 pub fn goto_def(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::GotoDefinitionResponse> {
-    let mut res = IndexSet::new();
+    let mut res = IndexSet::with_hasher(DefaultHashBuilder::default());
     let def = find_def(kcl_pos, gs, true);
 
     match def {

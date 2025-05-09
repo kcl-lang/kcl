@@ -589,7 +589,7 @@ fn testing_sum(_: &Context, args: &ValueRef, _: &ValueRef) -> anyhow::Result<Val
 }
 
 fn context_with_plugin() -> Rc<RefCell<Context>> {
-    let mut plugin_functions: kclvm_runtime::IndexMap<String, kclvm_runtime::PluginFunction> =
+    let mut plugin_functions: kclvm_primitives::IndexMap<String, kclvm_runtime::PluginFunction> =
         Default::default();
     let func = Arc::new(testing_sum);
     plugin_functions.insert("testing.add".to_string(), func);

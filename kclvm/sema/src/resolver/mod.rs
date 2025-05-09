@@ -19,8 +19,8 @@ mod var;
 #[cfg(test)]
 mod tests;
 
-use indexmap::{IndexMap, IndexSet};
 use kclvm_error::diagnostic::Range;
+use kclvm_primitives::{IndexMap, IndexSet};
 use std::sync::Arc;
 use std::{cell::RefCell, rc::Rc};
 
@@ -118,7 +118,7 @@ impl<'ctx> Resolver<'ctx> {
 
         let mut scope_map = self.scope_map.clone();
         for invalid_pkg_scope in &self.ctx.invalid_pkg_scope {
-            scope_map.remove(invalid_pkg_scope);
+            scope_map.swap_remove(invalid_pkg_scope);
         }
         let scope = ProgramScope {
             scope_map,
@@ -213,7 +213,7 @@ pub fn resolve_program_with_opts(
                 .invalidate_pkgs
                 .insert(kclvm_ast::MAIN_PKG.to_string());
             for pkg in &cached_scope.invalidate_pkgs {
-                resolver.scope_map.remove(pkg);
+                resolver.scope_map.swap_remove(pkg);
             }
             let mut nodes = vec![];
             for node in cached_scope.node_ty_map.keys() {
@@ -222,7 +222,7 @@ pub fn resolve_program_with_opts(
                 }
             }
             for node in nodes {
-                cached_scope.node_ty_map.remove(&node);
+                cached_scope.node_ty_map.swap_remove(&node);
             }
             resolver.node_ty_map = Rc::new(RefCell::new(cached_scope.node_ty_map.clone()));
         }
@@ -234,7 +234,7 @@ pub fn resolve_program_with_opts(
             cached_scope.update(program);
             cached_scope.scope_map = scope.scope_map.clone();
             cached_scope.node_ty_map = scope.node_ty_map.borrow().clone();
-            cached_scope.scope_map.remove(kclvm_ast::MAIN_PKG);
+            cached_scope.scope_map.swap_remove(kclvm_ast::MAIN_PKG);
             cached_scope.schema_mapping = resolver.ctx.schema_mapping;
             cached_scope
                 .invalidate_pkgs

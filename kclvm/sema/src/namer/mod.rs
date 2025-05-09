@@ -49,11 +49,11 @@ use crate::core::symbol::{
     FunctionSymbol, PackageSymbol, SymbolRef, BUILTIN_FUNCTION_PACKAGE, BUILTIN_STR_PACKAGE,
 };
 use crate::resolver::scope::NodeKey;
-use indexmap::IndexSet;
 use kclvm_ast::ast::AstIndex;
 use kclvm_ast::ast::Program;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
 use kclvm_error::Position;
+use kclvm_primitives::IndexSet;
 mod node;
 
 pub const BUILTIN_SYMBOL_PKG_PATH: &str = "@builtin";

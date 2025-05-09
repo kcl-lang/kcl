@@ -4,9 +4,9 @@ use crate::resolver::Resolver;
 use crate::ty::{
     has_any_type, is_upper_bound, sup, Type, TypeInferMethods, TypeKind, TypeRef, ZERO_LIT_TYPES,
 };
-use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_error::diagnostic::Range;
+use kclvm_primitives::{DefaultHashBuilder, IndexMap};
 
 const DIV_OR_MOD_ZERO_MSG: &str = "integer division or modulo by zero";
 
@@ -166,7 +166,7 @@ impl<'ctx> Resolver<'ctx> {
                 } else if let (TypeKind::Dict(t1_dict_ty), TypeKind::Dict(t2_dict_ty)) =
                     (&t1.kind, &t2.kind)
                 {
-                    let mut attrs = IndexMap::new();
+                    let mut attrs = IndexMap::with_hasher(DefaultHashBuilder::default());
                     for (k, v) in &t1_dict_ty.attrs {
                         attrs.insert(k.to_string(), v.clone());
                     }

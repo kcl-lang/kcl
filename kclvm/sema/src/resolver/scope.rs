@@ -1,12 +1,13 @@
 use anyhow::bail;
 use compiler_base_session::Session;
-use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast::NodeRef;
 use kclvm_ast::ast::Stmt;
 use kclvm_ast::ast::Stmt::Import;
 use kclvm_ast::{ast, MAIN_PKG};
 use kclvm_error::diagnostic::Range;
 use kclvm_error::{Handler, Level};
+use kclvm_primitives::DefaultHashBuilder;
+use kclvm_primitives::{IndexMap, IndexSet};
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::VecDeque;
@@ -133,9 +134,9 @@ impl Scope {
         let mut res = match &self.parent {
             Some(parent) => match parent.upgrade() {
                 Some(parent) => parent.borrow().all_usable_objects(),
-                None => IndexMap::new(),
+                None => IndexMap::with_hasher(DefaultHashBuilder::default()),
             },
-            None => IndexMap::new(),
+            None => IndexMap::with_hasher(DefaultHashBuilder::default()),
         };
 
         for (name, obj) in &self.elems {
@@ -751,7 +752,7 @@ impl CachedScope {
         match invalidated_pkgs {
             Ok(invalidated_pkgs) => {
                 for invalidated_pkg in invalidated_pkgs.iter() {
-                    self.scope_map.remove(invalidated_pkg);
+                    self.scope_map.swap_remove(invalidated_pkg);
                 }
                 self.invalidate_pkgs = invalidated_pkgs.clone();
             }

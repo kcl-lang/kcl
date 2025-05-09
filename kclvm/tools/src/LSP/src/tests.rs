@@ -1,11 +1,11 @@
 use crossbeam_channel::after;
 use crossbeam_channel::select;
-use indexmap::IndexMap;
-use indexmap::IndexSet;
 use kclvm_driver::lookup_compile_workspace;
 use kclvm_driver::toolchain;
 use kclvm_driver::toolchain::Metadata;
 use kclvm_driver::WorkSpaceKind;
+use kclvm_primitives::IndexMap;
+use kclvm_primitives::IndexSet;
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::ty::SchemaType;
 use kclvm_utils::path::PathPrefix;

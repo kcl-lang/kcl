@@ -3,6 +3,8 @@
 
 use std::{mem::transmute_copy, os::raw::c_char};
 
+use kclvm_primitives::IndexMap;
+
 use crate::*;
 
 use self::{eval::LazyEvalScope, walker::walk_value_mut};

@@ -132,5 +132,3 @@ pub use self::_kclvm::*;
 
 pub mod _kclvm_addr;
 pub use self::_kclvm_addr::*;
-
-pub type IndexMap<K, V> = indexmap::IndexMap<K, V, ahash::RandomState>;

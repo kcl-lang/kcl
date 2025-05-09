@@ -1,9 +1,9 @@
 // Copyright The KCL Authors. All rights reserved.
 
-use indexmap::IndexMap;
 use inkwell::module::Module;
 use inkwell::{context::Context, memory_buffer::MemoryBuffer};
 use kclvm_ast::ast;
+use kclvm_primitives::IndexMap;
 use once_cell::sync::OnceCell;
 use std::error;
 

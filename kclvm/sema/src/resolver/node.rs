@@ -1,9 +1,9 @@
-use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
 use kclvm_ast_pretty::{print_ast_node, ASTNode};
 use kclvm_error::*;
+use kclvm_primitives::IndexMap;
 use std::sync::Arc;
 
 use crate::info::is_private_field;

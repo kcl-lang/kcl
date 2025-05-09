@@ -34,7 +34,6 @@ pub mod base_n;
 
 pub mod captures;
 pub mod flock;
-pub mod fx;
 
 pub mod macros;
 pub mod stable_map;

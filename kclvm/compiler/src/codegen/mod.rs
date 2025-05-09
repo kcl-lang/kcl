@@ -1,7 +1,7 @@
 //! Copyright The KCL Authors. All rights reserved.
 
-use indexmap::IndexMap;
 use kclvm_ast::ast;
+use kclvm_primitives::IndexMap;
 
 mod abi;
 pub mod error;

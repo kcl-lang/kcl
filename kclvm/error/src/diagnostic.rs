@@ -1,4 +1,4 @@
-use indexmap::IndexSet;
+use kclvm_primitives::IndexSet;
 use kclvm_span::Loc;
 use std::fmt;
 use std::hash::Hash;

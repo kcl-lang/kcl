@@ -1,4 +1,3 @@
-use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast::Program;
 use kclvm_driver::{lookup_compile_workspace, toolchain};
 use kclvm_error::Diagnostic;
@@ -6,6 +5,7 @@ use kclvm_parser::{
     entry::get_normalized_k_files_from_paths, load_all_files_under_paths, KCLModuleCache,
     LoadProgramOptions, ParseSessionRef,
 };
+use kclvm_primitives::{IndexMap, IndexSet};
 use kclvm_query::query::filter_pkg_schemas;
 use kclvm_sema::{
     advanced_resolver::AdvancedResolver,
@@ -46,7 +46,7 @@ pub fn compile(
         Ok(file_list) => file_list,
         Err(e) => {
             return (
-                IndexSet::new(),
+                Default::default(),
                 Err(anyhow::anyhow!("Compile failed: {:?}", e)),
             )
         }
@@ -58,14 +58,14 @@ pub fn compile(
             Ok(code_list) => code_list,
             Err(e) => {
                 return (
-                    IndexSet::new(),
+                    Default::default(),
                     Err(anyhow::anyhow!("Compile failed: {:?}", e)),
                 )
             }
         };
         opts.k_code_list.append(&mut k_code_list);
     }
-    let mut diags = IndexSet::new();
+    let mut diags = Default::default();
 
     let files: Vec<&str> = files.iter().map(|s| s.as_str()).collect();
 

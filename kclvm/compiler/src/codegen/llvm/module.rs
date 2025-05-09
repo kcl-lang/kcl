@@ -1,10 +1,10 @@
 // Copyright The KCL Authors. All rights reserved.
 
-use indexmap::IndexMap;
 use inkwell::values::FunctionValue;
 use inkwell::AddressSpace;
 use kclvm_ast::ast;
 use kclvm_ast::walker::TypedResultWalker;
+use kclvm_primitives::IndexMap;
 use kclvm_runtime::ApiFunc;
 use kclvm_sema::pkgpath_without_prefix;
 

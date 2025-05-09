@@ -1,7 +1,7 @@
 use crate::info::is_private_field;
-use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::walker::MutSelfMutWalker;
 use kclvm_ast::{ast, walk_if_mut};
+use kclvm_primitives::{IndexMap, IndexSet};
 
 const NAME_NONE_BUCKET_KEY: &str = "$name_none";
 
@@ -302,7 +302,7 @@ fn unify_config_entries(
     entries: &[ast::NodeRef<ast::ConfigEntry>],
 ) -> Vec<ast::NodeRef<ast::ConfigEntry>> {
     // Using bucket map to check unique/merge option and store values
-    let mut bucket: IndexMap<String, Vec<ast::NodeRef<ast::ConfigEntry>>> = IndexMap::new();
+    let mut bucket: IndexMap<String, Vec<ast::NodeRef<ast::ConfigEntry>>> = Default::default();
     for entry in entries {
         let name = match &entry.node.key {
             Some(key) => match &key.node {

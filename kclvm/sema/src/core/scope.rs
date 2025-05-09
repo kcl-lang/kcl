@@ -1,8 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
-use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::pos::ContainsPos;
 use kclvm_error::{diagnostic::Range, Position};
+use kclvm_primitives::{IndexMap, IndexSet};
 use serde::Serialize;
 
 use crate::core::symbol::SymbolRef;
@@ -246,7 +246,7 @@ impl ScopeData {
 
     pub fn clear_cache(&mut self, invalidate_pkgs: &HashSet<String>) {
         for invalidate_pkg in invalidate_pkgs {
-            if let Some(scope_ref) = self.root_map.remove(invalidate_pkg) {
+            if let Some(scope_ref) = self.root_map.swap_remove(invalidate_pkg) {
                 self.clear_scope_and_child(scope_ref);
                 self.roots.remove(scope_ref.get_id());
             }

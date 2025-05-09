@@ -7,10 +7,10 @@ use super::{
 use crate::ty::{sup, DictType, TypeInferMethods, TypeRef};
 use crate::ty::{Attr, SchemaType};
 use crate::ty::{Type, TypeKind};
-use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
 use kclvm_error::{diagnostic::Range, ErrorKind, Message, Position, Style};
+use kclvm_primitives::IndexMap;
 
 /// Config Expr type check state.
 ///
@@ -688,7 +688,7 @@ impl<'ctx> Resolver<'_> {
         self.enter_scope(start, end, ScopeKind::Config);
         let mut key_types: Vec<TypeRef> = vec![];
         let mut val_types: Vec<TypeRef> = vec![];
-        let mut attrs: IndexMap<String, Attr> = IndexMap::new();
+        let mut attrs: IndexMap<String, Attr> = Default::default();
         for item in entries {
             let key = &item.node.key;
             let value = &item.node.value;

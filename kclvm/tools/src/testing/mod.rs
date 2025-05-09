@@ -10,7 +10,7 @@
 //! such as the execution time and whether the test passes or fails.
 pub use crate::testing::suite::{load_test_suites, TestSuite};
 use anyhow::{Error, Result};
-use indexmap::IndexMap;
+use kclvm_primitives::IndexMap;
 use kclvm_runner::ExecProgramArgs;
 use std::time::Duration;
 

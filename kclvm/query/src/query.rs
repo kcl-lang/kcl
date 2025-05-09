@@ -1,8 +1,8 @@
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use anyhow::Result;
-use indexmap::IndexMap;
 use kclvm_parser::{load_all_files_under_paths, load_program, LoadProgramOptions, ParseSession};
+use kclvm_primitives::{DefaultHashBuilder, IndexMap};
 use kclvm_sema::{
     resolver::{
         resolve_program_with_opts,
@@ -84,7 +84,7 @@ pub fn get_schema_type(
     schema_name: Option<&str>,
     opt: GetSchemaOption,
 ) -> Result<IndexMap<String, SchemaType>> {
-    let mut result = IndexMap::new();
+    let mut result = IndexMap::with_hasher(DefaultHashBuilder::default());
     let scope = resolve_file(&CompilationOptions {
         paths: vec![file.to_string()],
         loader_opts: code.map(|c| LoadProgramOptions {
@@ -164,7 +164,7 @@ pub fn get_full_schema_type(
     schema_name: Option<&str>,
     opts: CompilationOptions,
 ) -> Result<IndexMap<String, SchemaType>> {
-    let mut result = IndexMap::new();
+    let mut result = IndexMap::with_hasher(DefaultHashBuilder::default());
     let scope = resolve_file(&opts)?;
     for (name, o) in &scope.borrow().elems {
         if o.borrow().ty.is_schema() {
@@ -289,7 +289,7 @@ pub fn filter_pkg_schemas(
     schema_name: Option<&str>,
     opts: Option<CompilationOptions>,
 ) -> IndexMap<String, Vec<SchemaType>> {
-    let mut result = IndexMap::new();
+    let mut result = IndexMap::with_hasher(DefaultHashBuilder::default());
     for (pkg, scope) in &program_scope.scope_map {
         for (name, o) in &scope.borrow().elems {
             if o.borrow().ty.is_schema() {

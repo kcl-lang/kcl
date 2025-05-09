@@ -4,9 +4,9 @@ use std::{
 };
 
 use crate::{
-    kclvm_context_t, kclvm_eval_scope_t, kclvm_value_ref_t, mut_ptr_as_ref, Context, IndexMap,
-    ValueRef,
+    kclvm_context_t, kclvm_eval_scope_t, kclvm_value_ref_t, mut_ptr_as_ref, Context, ValueRef,
 };
+use kclvm_primitives::IndexMap;
 
 /// Variable setter function type. fn(ctx: &mut Context, scope: &mut ScopeEval, args: ValueRef, kwargs: ValueRef) -> ValueRef.
 pub type SetterFuncType = unsafe extern "C-unwind" fn(

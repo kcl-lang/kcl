@@ -426,10 +426,10 @@ impl ValueRef {
     pub fn dict_remove(&mut self, key: &str) {
         match &mut *self.rc.borrow_mut() {
             Value::dict_value(dict) => {
-                dict.values.remove(key);
+                dict.values.swap_remove(key);
             }
             Value::schema_value(schema) => {
-                schema.config.values.remove(key);
+                schema.config.values.swap_remove(key);
             }
             _ => panic!("invalid dict remove value: {}", self.type_str()),
         }

@@ -1,7 +1,7 @@
-use indexmap::IndexMap;
 use kclvm_ast::ast::Node;
 use kclvm_ast::walker::MutSelfMutWalker;
 use kclvm_ast::{ast, walk_if_mut, walk_list_mut};
+use kclvm_primitives::IndexMap;
 
 #[derive(Default)]
 struct TypeAliasTransformer {

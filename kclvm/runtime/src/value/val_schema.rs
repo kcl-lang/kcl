@@ -1,6 +1,6 @@
 //! Copyright The KCL Authors. All rights reserved.
 
-use indexmap::IndexSet;
+use kclvm_primitives::{DefaultHashBuilder, IndexSet};
 
 use crate::*;
 
@@ -134,7 +134,7 @@ impl ValueRef {
 
     /// Set of keys not in the schema.
     pub fn keys_not_in_schema(&self, ty: &SchemaType, cal_order: &ValueRef) -> IndexSet<String> {
-        let mut keys = IndexSet::new();
+        let mut keys = IndexSet::with_hasher(DefaultHashBuilder::default());
         if self.is_config() {
             let config = self.as_dict_ref();
             for (key, _) in &config.values {

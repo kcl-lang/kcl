@@ -1,7 +1,7 @@
 //! A YAML mapping and its iterator types.
 
 use crate::{private, Value};
-use indexmap::IndexMap;
+use kclvm_primitives::{DefaultHashBuilder, IndexMap};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::cmp::Ordering;
 use std::collections::hash_map::DefaultHasher;
@@ -26,7 +26,7 @@ impl Mapping {
     #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Mapping {
-            map: IndexMap::with_capacity(capacity),
+            map: IndexMap::with_capacity_and_hasher(capacity, DefaultHashBuilder::default()),
         }
     }
 

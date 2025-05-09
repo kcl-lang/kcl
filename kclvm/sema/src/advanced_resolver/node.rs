@@ -1,11 +1,11 @@
 use anyhow::anyhow;
 use std::sync::Arc;
 
-use indexmap::IndexMap;
 use kclvm_ast::ast::{self, Stmt};
 use kclvm_ast::pos::GetPos;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
 use kclvm_error::{diagnostic::Range, Position};
+use kclvm_primitives::{DefaultHashBuilder, IndexMap};
 
 use crate::core::symbol::Symbol;
 use crate::{
@@ -248,7 +248,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'_> {
             .schemas
             .contains(schema_symbol.get_id())
         {
-            let mut schema_builtin_member = IndexMap::new();
+            let mut schema_builtin_member = IndexMap::with_hasher(DefaultHashBuilder::default());
             for name in SCHEMA_MEMBER_FUNCTIONS.iter() {
                 let func_ty = Arc::new(Type::function(
                     Some(schema_ty.clone()),

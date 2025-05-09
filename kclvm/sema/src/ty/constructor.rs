@@ -61,7 +61,7 @@ impl Type {
             kind: TypeKind::Dict(DictType {
                 key_ty,
                 val_ty,
-                attrs: IndexMap::new(),
+                attrs: Default::default(),
             }),
             flags: TypeFlags::DICT,
             is_type_alias: false,

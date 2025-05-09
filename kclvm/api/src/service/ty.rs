@@ -1,5 +1,5 @@
 use crate::gpyrpc::{Decorator, Example, KclType};
-use indexmap::IndexSet;
+use kclvm_primitives::IndexSet;
 use kclvm_sema::ty::{DictType, SchemaType, Type};
 use std::collections::HashMap;
 

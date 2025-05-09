@@ -4,6 +4,7 @@ version = "0.11.2"
 edition = "2021"
 
 [dependencies]
+kclvm-primitives = { path = "../primitives" }
 kclvm_runtime_internal_macros = { path = "./internal_macros" }
 serde_json =  {package = "serde_json", version = "= 1.0.115"}
 serde = { version = "1", features = ["derive"] }
@@ -24,8 +25,6 @@ md5 = "0.7.0"
 sha2 = "0.9.8"
 sha1 = "0.6.0"
 chrono = "0.4.19"
-ahash = "0.7.2"
-indexmap = "1.0"
 phf = { version = "0.9", features = ["macros"] }
 fancy-regex = "0.7.1"
 num-integer = "0.1.44"

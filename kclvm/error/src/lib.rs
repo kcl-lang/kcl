@@ -21,7 +21,7 @@ use compiler_base_error::{
 use compiler_base_session::{Session, SessionDiagnostic};
 use compiler_base_span::{span::new_byte_pos, Span};
 use diagnostic::Range;
-use indexmap::IndexSet;
+use kclvm_primitives::{DefaultHashBuilder, IndexSet};
 use kclvm_runtime::PanicInfo;
 use std::{any::Any, sync::Arc};
 use thiserror::Error;
@@ -226,7 +226,10 @@ impl Handler {
 
     /// Classify diagnostics into errors and warnings.
     pub fn classification(&self) -> (IndexSet<Diagnostic>, IndexSet<Diagnostic>) {
-        let (mut errs, mut warnings) = (IndexSet::new(), IndexSet::new());
+        let (mut errs, mut warnings) = (
+            IndexSet::with_hasher(DefaultHashBuilder::default()),
+            IndexSet::with_hasher(DefaultHashBuilder::default()),
+        );
         for diag in &self.diagnostics {
             if diag.level == Level::Error || diag.level == Level::Suggestions {
                 errs.insert(diag.clone());

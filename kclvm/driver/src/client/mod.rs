@@ -4,11 +4,11 @@ mod oci;
 
 use anyhow::Result;
 use git::cmd_clone_git_repo_to;
-use indexmap::IndexSet;
 use kclvm_config::modfile::{
     get_vendor_home, load_mod_file, load_mod_lock_file, LockDependency, ModLockFile,
 };
 use kclvm_config::modfile::{Dependency, GitSource, ModFile, OciSource};
+use kclvm_primitives::IndexSet;
 use kclvm_utils::fslock::open_lock_file;
 use oci_client::secrets::RegistryAuth;
 use oci_client::{Client, Reference, RegistryOperation};

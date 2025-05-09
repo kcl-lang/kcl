@@ -1,4 +1,4 @@
-use indexmap::{IndexMap, IndexSet};
+use kclvm_primitives::{IndexMap, IndexSet};
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::core::symbol::{SymbolHint, SymbolHintKind};
 use lsp_types::{
@@ -43,7 +43,7 @@ pub fn inlay_hints(file: &str, gs: &GlobalState) -> Option<Vec<InlayHint>> {
     let mut inlay_hints: IndexSet<KCLInlayHint> = Default::default();
     let sema_db = gs.get_sema_db();
     if let Some(file_sema) = sema_db.get_file_sema(file) {
-        let mut line_hint: IndexMap<u64, SymbolHint> = IndexMap::new();
+        let mut line_hint: IndexMap<u64, SymbolHint> = Default::default();
         for hint in file_sema.get_hints() {
             match &hint.kind {
                 SymbolHintKind::KeyTypeHint(_) => match line_hint.get(&hint.pos.line) {
