@@ -313,3 +313,42 @@ fn test_skip_merge_program() {
         )
     }
 }
+
+#[test]
+fn test_list_type_validation() {
+    let code = r#"
+    schema Resource:
+        kind: str
+        apiGroup: str
+        metadata: any
+        spec: any
+
+    resource = Resource{
+        kind = "Pod"
+        apiGroup = "core"
+        metadata = {
+            name = "test"
+        }
+    }
+
+    resource2 = Resource{
+        kind = "Pod"
+        apiGroup = "core"
+        metadata = {
+            name = "test"
+        }
+    }
+
+    otherResource = {
+        name = "test"
+    }
+
+    resourceList: [Resource] = [resource, resource2, otherResource]
+    "#;
+
+    let result = parse_file_force_errors("test_list_type_validation.k", Some(code.to_string()));
+    assert!(
+        result.is_err(),
+        "Expected an evaluation error, but the code passed."
+    );
+}
