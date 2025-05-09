@@ -928,7 +928,7 @@ fn test_override_file_with_invalid_spec() {
     let result = override_file(&file, &specs, &import_paths);
     assert!(result.is_err());
     let err = result.err().unwrap();
-    assert_eq!(err.to_string(), "Invalid spec format '....', expected <field_path>=filed_value>, <field_path>:filed_value>, <field_path>+=filed_value> or <field_path>-");
+    assert_eq!(err.to_string(), "Invalid spec format '....', expected <field_path>=<filed_value>, <field_path>:<filed_value>, <field_path>+=<filed_value> or <field_path>-");
 }
 
 #[test]
