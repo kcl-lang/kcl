@@ -197,18 +197,6 @@ fn validate_schema_instance(
     }
 }
 
-fn get_schema_name(assign_stmt: &AssignStmt) -> Option<String> {
-    if let Node {
-        node: Expr::Schema(schema_expr),
-        ..
-    } = &*assign_stmt.value
-    {
-        schema_expr.name.node.names.last().map(|n| n.node.clone())
-    } else {
-        None
-    }
-}
-
 fn get_missing_attrs(assign_stmt: &AssignStmt, required_attrs: &[String]) -> Vec<String> {
     if let Node {
         node: Expr::Schema(schema_expr),
