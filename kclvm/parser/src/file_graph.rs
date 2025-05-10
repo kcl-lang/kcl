@@ -1,7 +1,7 @@
 use std::{collections::HashMap, path::PathBuf};
 
-use indexmap::IndexMap;
 use kclvm_ast::ast::Module;
+use kclvm_primitives::{DefaultHashBuilder, IndexMap};
 use kclvm_utils::path::PathPrefix;
 use petgraph::{prelude::StableDiGraph, visit::EdgeRef};
 use std::hash::Hash;
@@ -113,7 +113,7 @@ impl PkgFileGraph {
         IndexMap<PathBuf, petgraph::prelude::NodeIndex>,
     ) {
         let mut graph = StableDiGraph::new();
-        let mut node_map = IndexMap::new();
+        let mut node_map = IndexMap::with_hasher(DefaultHashBuilder::default());
         for node in self.graph.node_indices() {
             let path = self.graph[node].path.clone();
             let idx = graph.add_node(path.clone());
@@ -142,7 +142,7 @@ impl PkgFileGraph {
         IndexMap<String, petgraph::prelude::NodeIndex>,
     ) {
         let mut graph = StableDiGraph::new();
-        let mut node_map = IndexMap::new();
+        let mut node_map = IndexMap::with_hasher(DefaultHashBuilder::default());
 
         for pkg in pkgs.keys() {
             let idx = graph.add_node(pkg.clone());

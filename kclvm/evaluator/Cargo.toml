@@ -6,16 +6,16 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-indexmap = "1.0"
 anyhow = "1.0"
 generational-arena = "0.2.9"
-kclvm-ast = {path = "../ast"}
-kclvm-sema = {path = "../sema"}
-kclvm-runtime = {path = "../runtime"}
-kclvm-error = {path = "../error"}
+kclvm-ast = { path = "../ast" }
+kclvm-sema = { path = "../sema" }
+kclvm-runtime = { path = "../runtime" }
+kclvm-error = { path = "../error" }
+kclvm-primitives = { path = "../primitives" }
 scopeguard = "1.2.0"
 
 [dev-dependencies]
-kclvm-parser = {path = "../parser"}
-kclvm-loader = {path = "../loader"}
+kclvm-parser = { path = "../parser" }
+kclvm-loader = { path = "../loader" }
 insta = "1.8.0"

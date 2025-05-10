@@ -3,8 +3,8 @@ mod identifier;
 mod lit_ty_default_value;
 mod multi_assign;
 
-use indexmap::IndexMap;
 use kclvm_ast::ast;
+use kclvm_primitives::IndexMap;
 
 #[cfg(test)]
 mod tests;

@@ -3,9 +3,9 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use generational_arena::Index;
-use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_ast::walker::TypedResultWalker;
+use kclvm_primitives::{DefaultHashBuilder, IndexMap};
 use kclvm_runtime::{schema_runtime_type, ConfigEntryOperationKind, ValueRef};
 use scopeguard::defer;
 
@@ -270,7 +270,7 @@ impl SchemaEvalContext {
     /// Init the lazy scope used to cache the lazy evaluation result.
     pub fn init_lazy_scope(&mut self, s: &Evaluator, index: Option<Index>) {
         // TODO: cache the lazy scope cross different schema instances.
-        let mut setters = IndexMap::new();
+        let mut setters = IndexMap::with_hasher(DefaultHashBuilder::default());
         // Parent schema setters
         if let Some(idx) = self.parent {
             let frame = {

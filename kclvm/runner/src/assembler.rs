@@ -1,9 +1,9 @@
 use anyhow::Result;
 use compiler_base_macros::bug;
-use indexmap::IndexMap;
 use kclvm_ast::ast::{self, Program};
 use kclvm_compiler::codegen::{emit_code, EmitOptions, OBJECT_FILE_SUFFIX};
 use kclvm_config::cache::{load_pkg_cache, save_pkg_cache, CacheOption, KCL_CACHE_PATH_ENV_VAR};
+use kclvm_primitives::IndexMap;
 use kclvm_sema::resolver::scope::ProgramScope;
 use kclvm_utils::fslock::open_lock_file;
 use std::{
@@ -291,7 +291,7 @@ impl KclvmAssembler {
                 IndexMap<String, IndexMap<String, String>>,
                 PathBuf,
             ),
-        > = IndexMap::default();
+        > = Default::default();
         for (pkgpath, modules) in self.program.pkgs {
             let mut pkgs = HashMap::new();
             pkgs.insert(pkgpath.clone(), modules);

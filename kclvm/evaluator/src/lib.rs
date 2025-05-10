@@ -24,7 +24,7 @@ extern crate kclvm_error;
 
 use func::FunctionEvalContextRef;
 use generational_arena::{Arena, Index};
-use indexmap::IndexMap;
+use kclvm_primitives::IndexMap;
 use kclvm_runtime::val_plan::KCL_PRIVATE_VAR_PREFIX;
 use lazy::{BacktrackMeta, LazyEvalScope};
 use proxy::{Frame, Proxy};
@@ -140,7 +140,7 @@ impl<'ctx> Evaluator<'ctx> {
             runtime_ctx,
             program,
             frames: RefCell::new(Arena::new()),
-            schemas: RefCell::new(IndexMap::new()),
+            schemas: RefCell::new(Default::default()),
             target_vars: RefCell::new(vec![]),
             lambda_stack: RefCell::new(vec![]),
             imported: RefCell::new(Default::default()),

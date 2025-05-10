@@ -1,6 +1,6 @@
 use std::{collections::HashSet, sync::Arc};
 
-use indexmap::IndexMap;
+use kclvm_primitives::IndexMap;
 
 use super::{SchemaType, Type, TypeKind, TypeRef};
 
@@ -159,7 +159,7 @@ pub fn r#typeof(types: &[TypeRef], should_remove_sub_types: bool) -> TypeRef {
             }
         }
         for i in remove_index_set {
-            type_set.remove(&i);
+            type_set.swap_remove(&i);
         }
     }
     if type_set.is_empty() {

@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
-use indexmap::{IndexMap, IndexSet};
 use kclvm_error::Position;
+use kclvm_primitives::{IndexMap, IndexSet};
 
 use super::{
     package::{ModuleInfo, PackageDB},
@@ -399,7 +399,7 @@ impl GlobalState {
         file_sema_map_cache: &mut IndexMap<String, FileSemanticInfo>,
     ) {
         // put symbols
-        let mut file_sema_map: IndexMap<String, FileSemanticInfo> = IndexMap::new();
+        let mut file_sema_map: IndexMap<String, FileSemanticInfo> = Default::default();
 
         for (index, symbol) in self.symbols.schemas.iter() {
             if file_sema_map_cache.contains_key(&symbol.start.filename) {
@@ -642,7 +642,7 @@ impl GlobalState {
         }
 
         // remove dummy file
-        file_sema_map.remove("");
+        file_sema_map.swap_remove("");
 
         for (_, sema_info) in file_sema_map.iter_mut() {
             sema_info
@@ -732,7 +732,7 @@ impl GlobalState {
 
     fn clear_sema_db_cache(&mut self, invalidate_pkgs: &HashSet<String>) {
         let mut to_remove: Vec<SymbolRef> = Vec::new();
-        let mut files: IndexSet<String> = IndexSet::new();
+        let mut files: IndexSet<String> = Default::default();
         for invalidate_pkg in invalidate_pkgs {
             if let Some(symbols) = self
                 .get_symbols()
@@ -749,7 +749,7 @@ impl GlobalState {
             }
         }
         for file in files {
-            self.sema_db.file_sema_map.remove(&file);
+            self.sema_db.file_sema_map.swap_remove(&file);
         }
     }
 }

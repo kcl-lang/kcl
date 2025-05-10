@@ -1,7 +1,7 @@
 //! Copyright The KCL Authors. All rights reserved.
 
 use bstr::ByteSlice;
-use indexmap::IndexMap;
+use kclvm_primitives::{DefaultHashBuilder, IndexMap};
 use serde::{
     de::{DeserializeSeed, MapAccess, SeqAccess, Visitor},
     Deserialize, Serialize,
@@ -168,7 +168,7 @@ impl<'de> Deserialize<'de> for JsonValue {
             {
                 match visitor.next_key_seed(MapKeyClass)? {
                     Some(first_key) => {
-                        let mut values = IndexMap::new();
+                        let mut values = IndexMap::with_hasher(DefaultHashBuilder::default());
 
                         values.insert(first_key, tri!(visitor.next_value()));
                         while let Some((key, value)) = tri!(visitor.next_entry()) {
@@ -177,7 +177,7 @@ impl<'de> Deserialize<'de> for JsonValue {
 
                         Ok(Self::Value::Object(values))
                     }
-                    None => Ok(Self::Value::Object(IndexMap::new())),
+                    None => Ok(Self::Value::Object(Default::default())),
                 }
             }
         }
@@ -486,7 +486,7 @@ impl ValueRef {
                 JsonValue::Array(val_array)
             }
             crate::Value::dict_value(ref v) => {
-                let mut val_map = IndexMap::new();
+                let mut val_map = IndexMap::with_hasher(DefaultHashBuilder::default());
                 let mut vals = v.values.clone();
                 if opts.sort_keys {
                     vals.sort_keys();
@@ -516,7 +516,7 @@ impl ValueRef {
             }
 
             crate::Value::schema_value(ref v) => {
-                let mut val_map = IndexMap::new();
+                let mut val_map = IndexMap::with_hasher(DefaultHashBuilder::default());
                 let mut vals = v.config.values.clone();
                 if opts.sort_keys {
                     vals.sort_keys();

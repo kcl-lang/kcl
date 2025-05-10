@@ -52,6 +52,9 @@ version = "1.0.195"
 [dependencies.unsafe-libyaml]
 version = "0.2.11"
 
+[dependencies.kclvm-primitives]
+path = "../../primitives"
+
 [dev-dependencies.anyhow]
 version = "1.0.79"
 

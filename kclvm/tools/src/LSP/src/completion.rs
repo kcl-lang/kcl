@@ -17,13 +17,13 @@
 
 use crate::goto_def::{find_def, find_symbol};
 use crate::to_lsp::lsp_pos;
-use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast::{self, ImportStmt, Program, Stmt};
 use kclvm_ast::MAIN_PKG;
 use kclvm_config::modfile::KCL_FILE_EXTENSION;
 use kclvm_driver::toolchain::{get_real_path_from_external, Metadata, Toolchain};
 use kclvm_error::diagnostic::Range;
 use kclvm_parser::get_kcl_files;
+use kclvm_primitives::{DefaultHashBuilder, IndexMap, IndexSet};
 use kclvm_sema::core::global_state::GlobalState;
 use std::io;
 use std::{fs, path::Path};
@@ -102,7 +102,7 @@ pub fn completion(
             _ => None,
         },
         None => {
-            let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
+            let mut completions: IndexSet<KCLCompletionItem> = Default::default();
             // Complete builtin pkgs if in import stmt
             completions.extend(completion_import_stmt(program, pos, metadata));
             if !completions.is_empty() {
@@ -239,7 +239,7 @@ fn completion_dot(
     gs: &GlobalState,
     tool: &dyn Toolchain,
 ) -> Option<lsp_types::CompletionResponse> {
-    let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
+    let mut items: IndexSet<KCLCompletionItem> = Default::default();
 
     // get pre position of trigger character '.'
     let pre_pos = KCLPos {
@@ -362,7 +362,7 @@ fn completion_dot(
 /// Get completion items for trigger '=' or ':'
 /// Now, just completion for schema attr value
 fn completion_assign(pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::CompletionResponse> {
-    let mut items = IndexSet::new();
+    let mut items = IndexSet::with_hasher(DefaultHashBuilder::default());
     if let Some(symbol_ref) = find_def(pos, gs, false) {
         if let Some(symbol) = gs.get_symbols().get_symbol(symbol_ref) {
             if let Some(def) = symbol.get_definition() {
@@ -410,7 +410,7 @@ fn completion_newline(
     pos: &KCLPos,
     gs: &GlobalState,
 ) -> Option<lsp_types::CompletionResponse> {
-    let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
+    let mut completions: IndexSet<KCLCompletionItem> = Default::default();
 
     if let Some((doc, schema)) = is_in_docstring(program, pos) {
         let doc = parse_schema_doc_string(&doc.node);
@@ -485,7 +485,7 @@ fn completion_import_stmt(
     pos: &KCLPos,
     metadata: Option<Metadata>,
 ) -> IndexSet<KCLCompletionItem> {
-    let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
+    let mut completions: IndexSet<KCLCompletionItem> = Default::default();
     // completion position not contained in import stmt
     // import <space>  <cursor>
     // |             | |  <- input `m` here for complete `math`
@@ -524,7 +524,7 @@ fn completion_import_internal_pkg(
     program: &Program,
     line_start_pos: &KCLPos,
 ) -> IndexSet<KCLCompletionItem> {
-    let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
+    let mut completions: IndexSet<KCLCompletionItem> = Default::default();
     if let Ok(entries) = fs::read_dir(program.root.clone()) {
         for entry in entries {
             if let Ok(entry) = entry {
@@ -595,7 +595,7 @@ fn completion_import_external_pkg(metadata: Option<Metadata>) -> IndexSet<KCLCom
                 additional_text_edits: None,
             })
             .collect(),
-        None => IndexSet::new(),
+        None => Default::default(),
     }
 }
 
@@ -749,7 +749,7 @@ fn dot_completion_in_import_stmt(
     program: &Program,
     tool: &dyn Toolchain,
 ) -> Option<lsp_types::CompletionResponse> {
-    let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
+    let mut items: IndexSet<KCLCompletionItem> = Default::default();
     let pkgpath = &stmt.path.node;
     let mut real_path =
         Path::new(&program.root).join(pkgpath.replace('.', std::path::MAIN_SEPARATOR_STR));
@@ -948,7 +948,7 @@ fn unimport_schemas(
     schema_map: &IndexMap<String, Vec<SchemaType>>,
 ) -> IndexSet<KCLCompletionItem> {
     let module = gs.get_packages().get_module_info(filename);
-    let mut completions: IndexSet<KCLCompletionItem> = IndexSet::new();
+    let mut completions: IndexSet<KCLCompletionItem> = Default::default();
     for (_, schemas) in schema_map {
         for schema in schemas {
             let has_import = match module {
@@ -975,9 +975,9 @@ mod tests {
         },
         tests::{compile_test_file, compile_test_file_and_metadata},
     };
-    use indexmap::IndexSet;
     use kclvm_driver::toolchain;
     use kclvm_error::Position as KCLPos;
+    use kclvm_primitives::IndexSet;
     use kclvm_sema::builtin::{
         BUILTIN_FUNCTIONS, MATH_FUNCTION_TYPES, STANDARD_SYSTEM_MODULES, STRING_MEMBER_FUNCTIONS,
     };
@@ -1402,7 +1402,7 @@ mod tests {
     fn import_builtin_package() {
         let (file, program, _, gs, schema_map) =
             compile_test_file("src/test_data/completion_test/import/builtin/builtin_pkg.k");
-        let mut items: IndexSet<KCLCompletionItem> = IndexSet::new();
+        let mut items: IndexSet<KCLCompletionItem> = Default::default();
 
         // test completion for builtin packages
         let pos = KCLPos {

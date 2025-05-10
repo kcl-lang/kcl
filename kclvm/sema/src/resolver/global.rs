@@ -7,10 +7,10 @@ use crate::ty::{
     full_ty_str, is_upper_bound, DecoratorTarget, FunctionType, Parameter, SchemaAttr,
     SchemaIndexSignature, SchemaType, Type, TypeKind, RESERVED_TYPE_IDENTIFIERS,
 };
-use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_ast_pretty::{print_ast_node, print_schema_expr, ASTNode};
 use kclvm_error::*;
+use kclvm_primitives::IndexMap;
 
 use super::doc::parse_schema_doc_string;
 use super::scope::{ScopeObject, ScopeObjectKind};

@@ -5,9 +5,9 @@ use crate::lazy::merge_setters;
 use crate::{
     error as kcl_error, lazy::LazyEvalScope, rule::RuleEvalContextRef, schema::SchemaEvalContextRef,
 };
-use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast;
 use kclvm_ast::walker::TypedResultWalker;
+use kclvm_primitives::{DefaultHashBuilder, IndexMap, IndexSet};
 use kclvm_runtime::{ValueRef, _kclvm_get_fn_ptr_by_name, MAIN_PKG_PATH};
 use kclvm_sema::{builtin, plugin};
 
@@ -74,7 +74,7 @@ impl<'ctx> Evaluator<'ctx> {
         // Init lazy scopes.
         {
             let mut lazy_scopes = self.lazy_scopes.borrow_mut();
-            let mut setters = IndexMap::new();
+            let mut setters = IndexMap::with_hasher(DefaultHashBuilder::default());
             for (index, module) in module_list.iter().enumerate() {
                 let index = self.add_global_body(index);
                 let module = module.read().expect("Failed to acquire module lock");

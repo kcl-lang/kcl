@@ -1,6 +1,5 @@
 // Copyright The KCL Authors. All rights reserved.
 
-use indexmap::{IndexMap, IndexSet};
 use inkwell::basic_block::BasicBlock;
 use inkwell::builder::Builder;
 use inkwell::context::Context;
@@ -13,6 +12,7 @@ use inkwell::values::{
     BasicMetadataValueEnum, BasicValueEnum, FunctionValue, IntValue, PointerValue,
 };
 use inkwell::{AddressSpace, IntPredicate};
+use kclvm_primitives::{IndexMap, IndexSet};
 use phf::{phf_map, Map};
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};

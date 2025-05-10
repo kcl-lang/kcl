@@ -7,8 +7,8 @@ pub mod system_module;
 
 use std::sync::Arc;
 
-use indexmap::IndexMap;
 use kclvm_error::diagnostic::dummy_range;
+use kclvm_primitives::IndexMap;
 use once_cell::sync::Lazy;
 
 use crate::ty::{Parameter, Type};

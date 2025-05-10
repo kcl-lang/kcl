@@ -4,7 +4,6 @@ use crate::from_lsp::file_path_from_url;
 use crate::to_lsp::{kcl_diag_to_lsp_diags, url_from_path};
 use crate::util::{filter_kcl_config_file, get_file_name, to_json};
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
-use indexmap::IndexSet;
 use kclvm_driver::toolchain::{self, Toolchain};
 use kclvm_driver::{
     lookup_compile_workspace, lookup_compile_workspaces, CompileUnitOptions, WorkSpaceKind,
@@ -644,9 +643,9 @@ impl LanguageServerState {
                         Some(option_db) => match option_db {
                             DBState::Ready(db) => db.diags.clone(),
                             DBState::Compiling(db) => db.diags.clone(),
-                            DBState::Init | DBState::Failed(_) => IndexSet::new(),
+                            DBState::Init | DBState::Failed(_) => Default::default(),
                         },
-                        None => IndexSet::new(),
+                        None => Default::default(),
                     }
                 };
 

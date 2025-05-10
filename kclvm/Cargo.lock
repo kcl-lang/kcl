@@ -18,17 +18,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 
 [[package]]
-name = "ahash"
-version = "0.7.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "891477e0c6a8957309ee5c45a6368af3ae14bb510732d2684ffa19af310920f9"
-dependencies = [
- "getrandom",
- "once_cell",
- "version_check",
-]
-
-[[package]]
 name = "aho-corasick"
 version = "1.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1019,7 +1008,7 @@ dependencies = [
  "fluent-syntax",
  "intl-memoizer",
  "intl_pluralrules",
- "rustc-hash",
+ "rustc-hash 1.1.0",
  "self_cell 0.10.3",
  "smallvec",
  "unic-langid",
@@ -1270,6 +1259,12 @@ name = "hashbrown"
 version = "0.14.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e5274423e17b7c9fc20b6e7e208532f9b19825d82dfd615708b70edd83df41f1"
+
+[[package]]
+name = "hashbrown"
+version = "0.15.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "84b26c544d002229e640969970a2e74021aadf6e2f96372b9c58eff97de08eb3"
 
 [[package]]
 name = "heck"
@@ -1628,12 +1623,12 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "2.2.6"
+version = "2.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "168fb715dda47215e360912c096649d23d58bf392ac62f73919e831745e40f26"
+checksum = "cea70ddb795996207ad57735b50c5982d8844f38ba9ee5f1aedcfb708a2aa11e"
 dependencies = [
  "equivalent",
- "hashbrown 0.14.5",
+ "hashbrown 0.15.3",
 ]
 
 [[package]]
@@ -1869,13 +1864,13 @@ dependencies = [
  "dashmap",
  "env_logger",
  "im-rc",
- "indexmap 1.9.3",
  "insta",
  "kclvm-ast",
  "kclvm-config",
  "kclvm-driver",
  "kclvm-error",
  "kclvm-parser",
+ "kclvm-primitives",
  "kclvm-query",
  "kclvm-sema",
  "kclvm-span",
@@ -1892,7 +1887,7 @@ dependencies = [
  "ra_ap_vfs",
  "ra_ap_vfs-notify",
  "ropey",
- "rustc-hash",
+ "rustc-hash 1.1.0",
  "rustc_lexer",
  "salsa",
  "serde",
@@ -1916,6 +1911,7 @@ dependencies = [
  "kclvm-evaluator",
  "kclvm-loader",
  "kclvm-parser",
+ "kclvm-primitives",
  "kclvm-query",
  "kclvm-runner",
  "kclvm-runtime",
@@ -1931,7 +1927,6 @@ dependencies = [
  "anyhow",
  "criterion",
  "futures",
- "indexmap 1.9.3",
  "jsonrpc-stdio-server",
  "kcl-language-server",
  "kclvm-ast",
@@ -1941,6 +1936,7 @@ dependencies = [
  "kclvm-error",
  "kclvm-loader",
  "kclvm-parser",
+ "kclvm-primitives",
  "kclvm-query",
  "kclvm-runner",
  "kclvm-runtime",
@@ -1987,10 +1983,10 @@ dependencies = [
  "compiler_base_macros",
  "compiler_base_session",
  "fancy-regex",
- "indexmap 1.9.3",
  "kclvm-ast",
  "kclvm-error",
  "kclvm-parser",
+ "kclvm-primitives",
  "pretty_assertions",
 ]
 
@@ -2016,14 +2012,13 @@ dependencies = [
 name = "kclvm-compiler"
 version = "0.11.2"
 dependencies = [
- "ahash",
  "bit-set",
  "bitflags 1.3.2",
  "fancy-regex",
- "indexmap 1.9.3",
  "inkwell",
  "kclvm-ast",
  "kclvm-error",
+ "kclvm-primitives",
  "kclvm-runtime",
  "kclvm-sema",
  "once_cell",
@@ -2036,12 +2031,10 @@ dependencies = [
 name = "kclvm-config"
 version = "0.11.2"
 dependencies = [
- "ahash",
  "anyhow",
  "chrono",
  "dirs",
  "glob",
- "indexmap 1.9.3",
  "kclvm-ast",
  "kclvm-utils",
  "kclvm-version",
@@ -2062,10 +2055,10 @@ version = "0.11.2"
 dependencies = [
  "anyhow",
  "flate2",
- "indexmap 2.2.6",
  "kclvm-ast",
  "kclvm-config",
  "kclvm-parser",
+ "kclvm-primitives",
  "kclvm-runtime",
  "kclvm-utils",
  "oci-client",
@@ -2088,7 +2081,7 @@ dependencies = [
  "compiler_base_macros",
  "compiler_base_session",
  "compiler_base_span",
- "indexmap 1.9.3",
+ "kclvm-primitives",
  "kclvm-runtime",
  "kclvm-span",
  "kclvm-utils",
@@ -2105,12 +2098,12 @@ version = "0.11.2"
 dependencies = [
  "anyhow",
  "generational-arena",
- "indexmap 1.9.3",
  "insta",
  "kclvm-ast",
  "kclvm-error",
  "kclvm-loader",
  "kclvm-parser",
+ "kclvm-primitives",
  "kclvm-runtime",
  "kclvm-sema",
  "scopeguard",
@@ -2131,12 +2124,12 @@ name = "kclvm-loader"
 version = "0.11.2"
 dependencies = [
  "anyhow",
- "indexmap 1.9.3",
  "insta",
  "kclvm-ast",
  "kclvm-ast-pretty",
  "kclvm-error",
  "kclvm-parser",
+ "kclvm-primitives",
  "kclvm-query",
  "kclvm-sema",
  "kclvm-utils",
@@ -2167,12 +2160,12 @@ dependencies = [
  "enquote",
  "expect-test",
  "glob",
- "indexmap 1.9.3",
  "insta",
  "kclvm-ast",
  "kclvm-config",
  "kclvm-error",
  "kclvm-lexer",
+ "kclvm-primitives",
  "kclvm-sema",
  "kclvm-span",
  "kclvm-utils",
@@ -2189,6 +2182,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "kclvm-primitives"
+version = "0.11.2"
+dependencies = [
+ "indexmap 2.9.0",
+ "rustc-hash 2.1.1",
+]
+
+[[package]]
 name = "kclvm-query"
 version = "0.11.2"
 dependencies = [
@@ -2196,12 +2197,12 @@ dependencies = [
  "compiler_base_macros",
  "compiler_base_session",
  "fancy-regex",
- "indexmap 1.9.3",
  "insta",
  "kclvm-ast",
  "kclvm-ast-pretty",
  "kclvm-error",
  "kclvm-parser",
+ "kclvm-primitives",
  "kclvm-sema",
  "kclvm-utils",
  "maplit",
@@ -2221,7 +2222,6 @@ dependencies = [
  "compiler_base_session",
  "criterion",
  "glob",
- "indexmap 1.9.3",
  "kclvm-ast",
  "kclvm-compiler",
  "kclvm-config",
@@ -2229,6 +2229,7 @@ dependencies = [
  "kclvm-error",
  "kclvm-evaluator",
  "kclvm-parser",
+ "kclvm-primitives",
  "kclvm-query",
  "kclvm-runtime",
  "kclvm-sema",
@@ -2249,7 +2250,6 @@ dependencies = [
 name = "kclvm-runtime"
 version = "0.11.2"
 dependencies = [
- "ahash",
  "anyhow",
  "base32",
  "base64 0.13.1",
@@ -2264,8 +2264,8 @@ dependencies = [
  "glob",
  "handlebars",
  "hostname",
- "indexmap 1.9.3",
  "itertools",
+ "kclvm-primitives",
  "kclvm_runtime_internal_macros",
  "lazy_static",
  "libc",
@@ -2289,7 +2289,6 @@ dependencies = [
 name = "kclvm-sema"
 version = "0.11.2"
 dependencies = [
- "ahash",
  "anyhow",
  "bit-set",
  "bitflags 1.3.2",
@@ -2300,11 +2299,11 @@ dependencies = [
  "criterion",
  "fancy-regex",
  "generational-arena",
- "indexmap 1.9.3",
  "kclvm-ast",
  "kclvm-ast-pretty",
  "kclvm-error",
  "kclvm-parser",
+ "kclvm-primitives",
  "kclvm-runtime",
  "kclvm-span",
  "kclvm-utils",
@@ -2339,7 +2338,6 @@ dependencies = [
  "compiler_base_span",
  "criterion",
  "fancy-regex",
- "indexmap 1.9.3",
  "insta",
  "json-spanned-value",
  "kclvm-ast",
@@ -2348,6 +2346,7 @@ dependencies = [
  "kclvm-driver",
  "kclvm-error",
  "kclvm-parser",
+ "kclvm-primitives",
  "kclvm-query",
  "kclvm-runner",
  "kclvm-runtime",
@@ -2921,7 +2920,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4c5cc86750666a3ed20bdaf5ca2a0344f9c67674cae0515bec2da16fbaa47db"
 dependencies = [
  "fixedbitset",
- "indexmap 2.2.6",
+ "indexmap 2.9.0",
 ]
 
 [[package]]
@@ -3262,7 +3261,7 @@ dependencies = [
  "pin-project-lite",
  "quinn-proto",
  "quinn-udp",
- "rustc-hash",
+ "rustc-hash 1.1.0",
  "rustls",
  "thiserror",
  "tokio",
@@ -3278,7 +3277,7 @@ dependencies = [
  "bytes",
  "rand",
  "ring",
- "rustc-hash",
+ "rustc-hash 1.1.0",
  "rustls",
  "slab",
  "thiserror",
@@ -3335,7 +3334,7 @@ dependencies = [
  "indexmap 1.9.3",
  "ra_ap_paths",
  "ra_ap_stdx",
- "rustc-hash",
+ "rustc-hash 1.1.0",
 ]
 
 [[package]]
@@ -3578,6 +3577,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
+name = "rustc-hash"
+version = "2.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "357703d41365b4b27c590e3ed91eabb1b663f07c4c084095e60cbed4362dff0d"
+
+[[package]]
 name = "rustc-rayon"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3637,7 +3642,7 @@ dependencies = [
  "libc",
  "memmap2",
  "parking_lot 0.12.3",
- "rustc-hash",
+ "rustc-hash 1.1.0",
  "rustc-rayon 0.3.2",
  "rustc-rayon-core 0.3.2",
  "stable_deref_trait",
@@ -3777,7 +3782,7 @@ dependencies = [
  "log",
  "oorandom",
  "parking_lot 0.11.2",
- "rustc-hash",
+ "rustc-hash 1.1.0",
  "salsa-macros",
  "smallvec",
 ]
@@ -3928,9 +3933,10 @@ name = "serde_yaml"
 version = "0.9.34+deprecated"
 dependencies = [
  "anyhow",
- "indexmap 2.2.6",
+ "indexmap 2.9.0",
  "indoc",
  "itoa",
+ "kclvm-primitives",
  "ryu",
  "serde",
  "serde_derive",
@@ -4561,7 +4567,7 @@ version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "deb68604048ff8fa93347f02441e4487594adc20bb8a084f9e564d2b827a0a9f"
 dependencies = [
- "rustc-hash",
+ "rustc-hash 1.1.0",
 ]
 
 [[package]]

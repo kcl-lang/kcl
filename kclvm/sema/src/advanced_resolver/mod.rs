@@ -36,8 +36,8 @@
 
 use std::{cell::RefCell, rc::Rc};
 
-use indexmap::IndexSet;
 use kclvm_error::Position;
+use kclvm_primitives::IndexSet;
 
 use crate::{
     core::{

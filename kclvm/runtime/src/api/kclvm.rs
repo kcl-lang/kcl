@@ -1,8 +1,8 @@
 //! Copyright The KCL Authors. All rights reserved.
 
-use crate::{new_mut_ptr, val_plan::PlanOptions, IndexMap};
+use crate::{new_mut_ptr, val_plan::PlanOptions};
 use generational_arena::Index;
-use indexmap::IndexSet;
+use kclvm_primitives::{IndexMap, IndexSet};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::panic::{RefUnwindSafe, UnwindSafe};

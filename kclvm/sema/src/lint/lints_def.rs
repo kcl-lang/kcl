@@ -2,10 +2,10 @@ use crate::lint::lint::{Lint, LintArray, LintContext};
 use crate::lint::lintpass::LintPass;
 use crate::resolver::scope::Scope;
 use crate::{declare_lint_pass, resolver::scope::ScopeObjectKind};
-use indexmap::IndexSet;
 use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
 use kclvm_error::{Handler, Level, Message, Style, WarningKind};
+use kclvm_primitives::IndexSet;
 
 /// The 'import_position' lint detects import statements that are not declared at the top of file.
 /// ### Example
@@ -151,7 +151,7 @@ impl LintPass for ReImport {
         _ctx: &mut LintContext,
         module: &ast::Module,
     ) {
-        let mut import_names = IndexSet::<String>::new();
+        let mut import_names = IndexSet::<String>::default();
         for stmt in &module.body {
             if let ast::Stmt::Import(import_stmt) = &stmt.node {
                 if import_names.contains(&import_stmt.path.node) {

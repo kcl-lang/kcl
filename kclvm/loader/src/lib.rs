@@ -5,10 +5,10 @@ pub mod option;
 pub mod util;
 
 use anyhow::Result;
-use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast::Program;
 use kclvm_error::{diagnostic::Range, Diagnostic};
 use kclvm_parser::{load_program, KCLModuleCache, LoadProgramOptions, ParseSessionRef};
+use kclvm_primitives::{IndexMap, IndexSet};
 use kclvm_sema::{
     advanced_resolver::AdvancedResolver,
     core::{

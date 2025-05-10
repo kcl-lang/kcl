@@ -2,8 +2,8 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use generational_arena::Index;
-use indexmap::IndexMap;
 use kclvm_ast::ast;
+use kclvm_primitives::IndexMap;
 use kclvm_runtime::ValueRef;
 use scopeguard::defer;
 

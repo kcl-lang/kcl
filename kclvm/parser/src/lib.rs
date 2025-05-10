@@ -17,12 +17,12 @@ use compiler_base_macros::bug;
 use compiler_base_session::Session;
 use compiler_base_span::span::new_byte_pos;
 use file_graph::{toposort, Pkg, PkgFile, PkgFileGraph, PkgMap};
-use indexmap::IndexMap;
 use kclvm_ast::ast::Module;
 use kclvm_ast::{ast, MAIN_PKG};
 use kclvm_config::modfile::{get_vendor_home, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE};
 use kclvm_error::diagnostic::{Errors, Range};
 use kclvm_error::{ErrorKind, Message, Position, Style};
+use kclvm_primitives::IndexMap;
 use kclvm_sema::plugin::PLUGIN_MODULE_PREFIX;
 use kclvm_utils::path::PathPrefix;
 use kclvm_utils::pkgpath::parse_external_pkg_name;
@@ -327,11 +327,11 @@ pub struct ModuleCache {
 
 impl ModuleCache {
     pub fn clear(&mut self, path: &PathBuf) {
-        self.ast_cache.remove(path);
-        self.source_code.remove(path);
-        if let Some(pkgs) = self.file_pkg.remove(path) {
+        self.ast_cache.swap_remove(path);
+        self.source_code.swap_remove(path);
+        if let Some(pkgs) = self.file_pkg.swap_remove(path) {
             for pkg in &pkgs {
-                self.dep_cache.remove(pkg);
+                self.dep_cache.swap_remove(pkg);
             }
         }
     }
@@ -362,7 +362,7 @@ impl Loader {
             opts: opts.unwrap_or_default(),
             module_cache: module_cache.unwrap_or_default(),
             file_graph: FileGraphCache::default(),
-            pkgmap: PkgMap::new(),
+            pkgmap: Default::default(),
             parsed_file: HashSet::new(),
         }
     }

@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 chrono = "0.4.19"
-indexmap = "1.0"
 env_logger = "0.11.2"
 ropey = "1.3.2"
 tokio-test = "0.4.2"
@@ -18,6 +17,7 @@ im-rc = "15.0.0"
 rustc_lexer = "0.1.0"
 clap = { version = "4.3.0", features = ["string"] }
 maplit = "1.0.2"
+compiler_base_session = "0.1.3"
 
 kclvm-tools = { path = "../../../tools" }
 kclvm-error = { path = "../../../error" }
@@ -28,9 +28,9 @@ kclvm-sema = { path = "../../../sema" }
 kclvm-ast = { path = "../../../ast" }
 kclvm-utils = { path = "../../../utils" }
 kclvm-version = { path = "../../../version" }
-compiler_base_session = "0.1.3"
 kclvm-query = { path = "../../../query" }
 kclvm-span = { path = "../../../span" }
+kclvm-primitives = { path = "../../../primitives" }
 
 lsp-server = { version = "0.7.7", default-features = false }
 anyhow = { version = "1.0", default-features = false, features = ["std"] }

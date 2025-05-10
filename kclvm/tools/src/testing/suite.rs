@@ -2,11 +2,11 @@ use std::{fs::remove_file, path::Path};
 
 use crate::testing::{TestCaseInfo, TestOptions, TestResult, TestRun};
 use anyhow::{anyhow, Result};
-use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_driver::get_pkg_list;
 use kclvm_parser::get_kcl_files;
 use kclvm_parser::{parse_file_force_errors, ParseSessionRef};
+use kclvm_primitives::{DefaultHashBuilder, IndexMap};
 #[cfg(feature = "llvm")]
 use kclvm_runner::build_program;
 use kclvm_runner::exec_program;
@@ -163,7 +163,7 @@ pub fn load_test_suites<P: AsRef<str>>(path: P, opts: &TestOptions) -> Result<Ve
     let mut suites = vec![];
     for pkg in &pkg_list {
         let (normal_files, test_files) = get_test_files(pkg)?;
-        let mut cases = IndexMap::new();
+        let mut cases = IndexMap::with_hasher(DefaultHashBuilder::default());
         for file in &test_files {
             let module = parse_file_force_errors(file, None)?;
             for stmt in &module.body {

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use super::{Type, TypeFlags, TypeKind};
 
-use indexmap::IndexMap;
+use kclvm_primitives::IndexMap;
 use once_cell::sync::Lazy;
 
 /* Type string constants */

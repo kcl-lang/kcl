@@ -9,8 +9,6 @@ edition = "2021"
 serde = { version = "1", features = ["derive"] }
 serde_yaml = {path = "../third-party/serde_yaml"}
 serde_json = "1.0"
-indexmap = "1.0"
-ahash = "0.7.2"
 toml = "0.5.8"
 ron = "0.7.0"
 chrono = "0.4.19"

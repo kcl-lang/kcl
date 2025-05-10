@@ -2,9 +2,9 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use generational_arena::Index;
-use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_ast::ast::AstIndex;
+use kclvm_primitives::IndexMap;
 use kclvm_runtime::ValueRef;
 
 use crate::error as kcl_error;
@@ -191,7 +191,7 @@ impl<'ctx> Evaluator<'ctx> {
         body: &'ctx [Box<ast::Node<ast::Stmt>>],
         index: Option<Index>,
     ) -> IndexMap<String, Vec<Setter>> {
-        let mut body_map: IndexMap<String, Vec<Setter>> = IndexMap::new();
+        let mut body_map: IndexMap<String, Vec<Setter>> = Default::default();
         self.emit_setters_with(body, &mut body_map, false, &mut vec![], index);
         body_map
     }
