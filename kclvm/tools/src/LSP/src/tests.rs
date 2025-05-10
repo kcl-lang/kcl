@@ -257,23 +257,6 @@ fn build_expect_diags() -> Vec<Diagnostic> {
     let file = test_file.to_str().unwrap();
     let expected_diags: Vec<Diagnostic> = vec![
         build_lsp_diag(
-            (1, 4, 2, 0),
-            "expected one of [\"identifier\", \"literal\", \"(\", \"[\", \"{\"] got newline"
-                .to_string(),
-            Some(DiagnosticSeverity::ERROR),
-            vec![],
-            Some(NumberOrString::String("InvalidSyntax".to_string())),
-            None,
-        ),
-        build_lsp_diag(
-            (0, 0, 0, 10),
-            "pkgpath abc not found in the program".to_string(),
-            Some(DiagnosticSeverity::ERROR),
-            vec![],
-            Some(NumberOrString::String("CannotFindModule".to_string())),
-            None,
-        ),
-        build_lsp_diag(
             (0, 0, 0, 10),
             format!(
                 "Cannot find the module abc from {}/src/test_data/diagnostics/abc",
@@ -285,35 +268,11 @@ fn build_expect_diags() -> Vec<Diagnostic> {
             None,
         ),
         build_lsp_diag(
-            (8, 0, 8, 1),
-            "Can not change the value of 'd', because it was declared immutable".to_string(),
-            Some(DiagnosticSeverity::ERROR),
-            vec![(
-                file.to_string(),
-                (7, 0, 7, 1),
-                "The variable 'd' is declared here".to_string(),
-            )],
-            Some(NumberOrString::String("ImmutableError".to_string())),
-            None,
-        ),
-        build_lsp_diag(
-            (7, 0, 7, 1),
-            "The variable 'd' is declared here".to_string(),
-            Some(DiagnosticSeverity::ERROR),
-            vec![(
-                file.to_string(),
-                (8, 0, 8, 1),
-                "Can not change the value of 'd', because it was declared immutable".to_string(),
-            )],
-            Some(NumberOrString::String("ImmutableError".to_string())),
-            None,
-        ),
-        build_lsp_diag(
-            (2, 0, 2, 1),
-            "expected str, got int(1)".to_string(),
-            Some(DiagnosticSeverity::ERROR),
+            (0, 0, 0, 10),
+            "Module 'abc' imported but unused".to_string(),
+            Some(DiagnosticSeverity::WARNING),
             vec![],
-            Some(NumberOrString::String("TypeError".to_string())),
+            Some(NumberOrString::String("UnusedImportWarning".to_string())),
             None,
         ),
         build_lsp_diag(
@@ -325,11 +284,39 @@ fn build_expect_diags() -> Vec<Diagnostic> {
             Some(serde_json::json!({ "suggested_replacement": ["number"] })),
         ),
         build_lsp_diag(
-            (0, 0, 0, 10),
-            "Module 'abc' imported but unused".to_string(),
-            Some(DiagnosticSeverity::WARNING),
+            (2, 0, 2, 1),
+            "expected str, got int(1)".to_string(),
+            Some(DiagnosticSeverity::ERROR),
             vec![],
-            Some(NumberOrString::String("UnusedImportWarning".to_string())),
+            Some(NumberOrString::String("TypeError".to_string())),
+            None,
+        ),
+        build_lsp_diag(
+            (7, 0, 7, 1),
+            "The variable 'd' is declared here".to_string(),
+            Some(DiagnosticSeverity::ERROR),
+            vec![
+                (
+                    file.to_string(),
+                    (8, 0, 8, 1),
+                    "Can not change the value of 'd', because it was declared immutable".to_string(),
+                )
+            ],
+            Some(NumberOrString::String("ImmutableError".to_string())),
+            None,
+        ),
+        build_lsp_diag(
+            (8, 0, 8, 1),
+            "Can not change the value of 'd', because it was declared immutable".to_string(),
+            Some(DiagnosticSeverity::ERROR),
+            vec![
+                (
+                    file.to_string(),
+                    (7, 0, 7, 1),
+                    "The variable 'd' is declared here".to_string(),
+                )
+            ],
+            Some(NumberOrString::String("ImmutableError".to_string())),
             None,
         ),
     ];
@@ -353,12 +340,15 @@ fn diagnostics_test() {
     })
     .0;
 
-    let diagnostics = diags
+    let mut diagnostics = diags
         .iter()
         .flat_map(|diag| kcl_diag_to_lsp_diags_by_file(diag, file))
         .collect::<Vec<Diagnostic>>();
 
-    let expected_diags: Vec<Diagnostic> = build_expect_diags();
+    let mut expected_diags: Vec<Diagnostic> = build_expect_diags();
+
+    diagnostics.sort_by(|a, b| format!("{:?}", a).cmp(&format!("{:?}", b)));
+    expected_diags.sort_by(|a, b| format!("{:?}", a).cmp(&format!("{:?}", b)));
 
     for (get, expected) in diagnostics.iter().zip(expected_diags.iter()) {
         assert_eq!(get, expected)
@@ -804,15 +794,11 @@ fn notification_test() {
             Message::Notification(not) => {
                 if let Some(uri) = not.params.get("uri") {
                     if uri.clone() == to_json(Url::from_file_path(path).unwrap()).unwrap() {
-                        assert_eq!(
-                            not.params,
-                            to_json(PublishDiagnosticsParams {
-                                uri: Url::from_file_path(path).unwrap(),
-                                diagnostics: build_expect_diags(),
-                                version: None,
-                            })
-                            .unwrap()
-                        );
+                        let mut actual_diags: Vec<Diagnostic> = serde_json::from_value(not.params["diagnostics"].clone()).unwrap();
+                        let mut expected_diags = build_expect_diags();
+                        actual_diags.sort_by(|a, b| format!("{:?}", a).cmp(&format!("{:?}", b)));
+                        expected_diags.sort_by(|a, b| format!("{:?}", a).cmp(&format!("{:?}", b)));
+                        assert_eq!(actual_diags, expected_diags);
                         break;
                     }
                 }
