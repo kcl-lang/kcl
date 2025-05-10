@@ -195,6 +195,35 @@ pub extern "C-unwind" fn kclvm_net_to_IP4(
     kclvm_net_IP_string(ctx, args, kwargs)
 }
 
+#[no_mangle]
+#[runtime_fn]
+pub extern "C-unwind" fn kclvm_net_IP6_to_IP4_string(
+    ctx: *mut kclvm_context_t,
+    args: *const kclvm_value_ref_t,
+    kwargs: *const kclvm_value_ref_t,
+) -> *const kclvm_value_ref_t {
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+    let ctx = mut_ptr_as_ref(ctx);
+    if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
+        match Ipv6Addr::from_str(ip.as_ref()) {
+            Ok(addr) => {
+                if let Some(v4) = addr.to_ipv4() {
+                    let s = format!("{v4}");
+                    return ValueRef::str(s.as_ref()).into_raw(ctx);
+                }
+                let s = format!("can not parse {} ipv6 to ipv4!", ip);
+                return ValueRef::str(s.as_ref()).into_raw(ctx);
+            }
+            Err(e) => {
+                let s = format!("can not parse {} to ipv6:{}", ip, e);
+                return ValueRef::str(s.as_ref()).into_raw(ctx);
+            }
+        }
+    }
+    panic!("IP_string() missing 1 required positional argument: 'ip'");
+}
+
 // to_IP16(ip) -> int
 
 #[no_mangle]
@@ -910,6 +939,29 @@ pub extern "C-unwind" fn kclvm_net_CIDR_netmask(
 #[cfg(test)]
 mod test_net {
     use super::*;
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_ip6_to_ip4() {
+        let cases = [
+            ("::FFFF:192.168.1.10", "192.168.1.10"),
+            (
+                "::FFFF:192.168.x.10",
+                "can not parse ::FFFF:192.168.x.10 to ipv6:invalid IPv6 address syntax",
+            ),
+        ];
+        let mut ctx = Context::default();
+        for (ip6, expected) in cases.iter() {
+            unsafe {
+                let actual = &*kclvm_net_IP6_to_IP4_string(
+                    &mut ctx,
+                    &ValueRef::list(Some(&[&ValueRef::str(ip6)])),
+                    &ValueRef::dict(None),
+                );
+                assert_eq!(&ValueRef::str(expected), actual, "{} positional", ip6,);
+            }
+        }
+    }
 
     #[test]
     fn test_split_host_port() {
