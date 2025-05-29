@@ -192,7 +192,32 @@ pub extern "C-unwind" fn kclvm_net_to_IP4(
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
-    kclvm_net_IP_string(ctx, args, kwargs)
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+    let ctx = mut_ptr_as_ref(ctx);
+    if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
+        match Ipv4Addr::from_str(ip.as_ref()) {
+            Ok(addr) => {
+                let s = format!("{addr}");
+                return ValueRef::str(s.as_ref()).into_raw(ctx);
+            }
+            Err(_e) => match Ipv6Addr::from_str(ip.as_ref()) {
+                Ok(addr) => {
+                    if let Some(v4) = addr.to_ipv4() {
+                        let s = format!("{v4}");
+                        return ValueRef::str(s.as_ref()).into_raw(ctx);
+                    }
+                    let s = format!("can not parse {} ipv6 to ipv4!", ip);
+                    return ValueRef::str(s.as_ref()).into_raw(ctx);
+                }
+                Err(e) => {
+                    let s = format!("can not both parse {} to ipv6 and ipv4,err:{}", ip, e);
+                    return ValueRef::str(s.as_ref()).into_raw(ctx);
+                }
+            },
+        }
+    }
+    panic!("IP_string() missing 1 required positional argument: 'ip'");
 }
 
 // to_IP16(ip) -> int
@@ -204,7 +229,33 @@ pub extern "C-unwind" fn kclvm_net_to_IP16(
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
 ) -> *const kclvm_value_ref_t {
-    kclvm_net_IP_string(ctx, args, kwargs)
+    let args = ptr_as_ref(args);
+    let kwargs = ptr_as_ref(kwargs);
+    let ctx = mut_ptr_as_ref(ctx);
+    if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
+        match Ipv6Addr::from_str(ip.as_ref()) {
+            Ok(addr) => {
+                let s = format!("{addr}");
+                return ValueRef::str(s.as_ref()).into_raw(ctx);
+            }
+            Err(e) => {
+                // print!("can not parse {} to ipv6:{},parsing {} to ipv4", ip, e, ip);
+                match Ipv4Addr::from_str(ip.as_ref()) {
+                    Ok(addr) => {
+                        // Convert IPv4 to IPv6-mapped address (::ffff:0:0/96)
+                        let v6 = addr.to_ipv6_mapped();
+                        let s = format!("{v6}");
+                        return ValueRef::str(s.as_ref()).into_raw(ctx);
+                    }
+                    Err(e) => {
+                        let s = format!("can not both parse {} to ipv6 and ipv4,err:{}", ip, e);
+                        return ValueRef::str(s.as_ref()).into_raw(ctx);
+                    }
+                }
+            }
+        }
+    }
+    panic!("IP_string() missing 1 required positional argument: 'ip'");
 }
 
 // IP_string(ip: str) -> str
@@ -912,6 +963,79 @@ mod test_net {
     use super::*;
 
     #[test]
+    #[allow(non_snake_case)]
+    fn test_to_ip4() {
+        let cases = [
+            ("::FFFF:192.168.1.10", "192.168.1.10"),
+            (
+                "::FFFF:192.168.x.10",
+                "can not both parse ::FFFF:192.168.x.10 to ipv6 and ipv4,err:invalid IPv6 address syntax",
+            ),
+            ("::FFFF:10.0.0.1", "10.0.0.1"),
+            ("::FFFF:172.16.0.1", "172.16.0.1"), 
+            ("::FFFF:127.0.0.1", "127.0.0.1"),
+            ("0000:0000:0000:0000:0000:FFFF:0A00:0001", "10.0.0.1"),
+            ("::FFFF:224.0.0.1", "224.0.0.1"),
+            (
+                "::FFFF:invalid.ip",
+                "can not both parse ::FFFF:invalid.ip to ipv6 and ipv4,err:invalid IPv6 address syntax"  
+            ),
+            // IPv4-mapped IPv6 addresses
+            ("::FFFF:0A00:0001", "10.0.0.1"),
+            ("0:0:0:0:0:FFFF:AC10:0001", "172.16.0.1"),
+        ];
+        let mut ctx = Context::default();
+        for (ip6, expected) in cases.iter() {
+            unsafe {
+                let actual = &*kclvm_net_to_IP4(
+                    &mut ctx,
+                    &ValueRef::list(Some(&[&ValueRef::str(ip6)])),
+                    &ValueRef::dict(None),
+                );
+                assert_eq!(&ValueRef::str(expected), actual, "{} positional", ip6,);
+            }
+        }
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_to_ip6() {
+        let cases = [
+            ("192.168.1.10", "::ffff:192.168.1.10"),
+            (
+                "192.168.x.10",
+                "can not both parse 192.168.x.10 to ipv6 and ipv4,err:invalid IPv4 address syntax",
+            ),
+            ("10.0.0.1", "::ffff:10.0.0.1"),
+            ("172.16.0.1", "::ffff:172.16.0.1"),
+            ("127.0.0.1", "::ffff:127.0.0.1"),
+            ("224.0.0.1", "::ffff:224.0.0.1"),
+            (
+                "invalid.ip",
+                "can not both parse invalid.ip to ipv6 and ipv4,err:invalid IPv4 address syntax",
+            ),
+            // IPv6 addresses
+            ("2001:db8::1", "2001:db8::1"),
+            ("::1", "::1"),
+            (
+                "2001:db8:::1",
+                "can not both parse 2001:db8:::1 to ipv6 and ipv4,err:invalid IPv4 address syntax",
+            ),
+        ];
+        let mut ctx = Context::default();
+        for (ip4, expected) in cases.iter() {
+            unsafe {
+                let actual = &*kclvm_net_to_IP16(
+                    &mut ctx,
+                    &ValueRef::list(Some(&[&ValueRef::str(ip4)])),
+                    &ValueRef::dict(None),
+                );
+                assert_eq!(&ValueRef::str(expected), actual, "{} positional", ip4,);
+            }
+        }
+    }
+
+    #[test]
     fn test_split_host_port() {
         let cases = [
             (
@@ -950,7 +1074,6 @@ mod test_net {
             }
         }
     }
-
     #[test]
     fn test_split_host_port_invalid() {
         let prev_hook = std::panic::take_hook();
