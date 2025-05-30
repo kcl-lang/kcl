@@ -426,7 +426,7 @@ declare %kclvm_value_ref_t* @kclvm_net_parse_IP(%kclvm_context_t* %ctx, %kclvm_v
 
 declare %kclvm_value_ref_t* @kclvm_net_split_host_port(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-declare %kclvm_value_ref_t* @kclvm_net_to_IP16(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+declare %kclvm_value_ref_t* @kclvm_net_to_IP6(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 declare %kclvm_value_ref_t* @kclvm_net_to_IP4(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 

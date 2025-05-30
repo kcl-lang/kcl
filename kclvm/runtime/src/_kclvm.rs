@@ -224,7 +224,7 @@ pub enum ApiFunc {
     kclvm_net_parse_CIDR,
     kclvm_net_parse_IP,
     kclvm_net_split_host_port,
-    kclvm_net_to_IP16,
+    kclvm_net_to_IP6,
     kclvm_net_to_IP4,
     kclvm_plugin_init,
     kclvm_plugin_invoke,

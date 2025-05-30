@@ -950,9 +950,9 @@
 // api-spec(c):    kclvm_value_ref_t* kclvm_net_to_IP4(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
 // api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_net_to_IP4(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
-// api-spec:       kclvm_net_to_IP16
-// api-spec(c):    kclvm_value_ref_t* kclvm_net_to_IP16(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
-// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_net_to_IP16(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
+// api-spec:       kclvm_net_to_IP6
+// api-spec(c):    kclvm_value_ref_t* kclvm_net_to_IP6(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);
+// api-spec(llvm): declare %kclvm_value_ref_t* @kclvm_net_to_IP6(%kclvm_context_t* %ctx, %kclvm_value_ref_t* %args, %kclvm_value_ref_t* %kwargs);
 
 // api-spec:       kclvm_net_IP_string
 // api-spec(c):    kclvm_value_ref_t* kclvm_net_IP_string(kclvm_context_t* ctx, kclvm_value_ref_t* args, kclvm_value_ref_t* kwargs);

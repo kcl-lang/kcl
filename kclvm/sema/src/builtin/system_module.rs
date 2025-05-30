@@ -320,7 +320,7 @@ register_net_member! {
         false,
         None,
     )
-    to_IP16 => Type::function(
+    to_IP6 => Type::function(
         None,
         Type::str_ref(),
         &[
@@ -332,7 +332,7 @@ register_net_member! {
                 range: dummy_range(),
             },
         ],
-        r#"Get the IP16 form of ip."#,
+        r#"Get the IP6 form of ip."#,
         false,
         None,
     )
