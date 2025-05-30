@@ -237,7 +237,7 @@ pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {
         "kclvm_net_join_host_port" => crate::kclvm_net_join_host_port as *const () as u64,
         "kclvm_net_parse_IP" => crate::kclvm_net_parse_IP as *const () as u64,
         "kclvm_net_split_host_port" => crate::kclvm_net_split_host_port as *const () as u64,
-        "kclvm_net_to_IP16" => crate::kclvm_net_to_IP16 as *const () as u64,
+        "kclvm_net_to_IP6" => crate::kclvm_net_to_IP6 as *const () as u64,
         "kclvm_net_to_IP4" => crate::kclvm_net_to_IP4 as *const () as u64,
         "kclvm_plugin_init" => crate::kclvm_plugin_init as *const () as u64,
         "kclvm_plugin_invoke" => crate::kclvm_plugin_invoke as *const () as u64,

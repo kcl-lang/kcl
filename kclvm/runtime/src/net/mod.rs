@@ -220,11 +220,11 @@ pub extern "C-unwind" fn kclvm_net_to_IP4(
     panic!("IP_string() missing 1 required positional argument: 'ip'");
 }
 
-// to_IP16(ip) -> int
+// to_IP6(ip) -> str
 
 #[no_mangle]
 #[runtime_fn]
-pub extern "C-unwind" fn kclvm_net_to_IP16(
+pub extern "C-unwind" fn kclvm_net_to_IP6(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
     kwargs: *const kclvm_value_ref_t,
@@ -239,7 +239,6 @@ pub extern "C-unwind" fn kclvm_net_to_IP16(
                 return ValueRef::str(s.as_ref()).into_raw(ctx);
             }
             Err(e) => {
-                // print!("can not parse {} to ipv6:{},parsing {} to ipv4", ip, e, ip);
                 match Ipv4Addr::from_str(ip.as_ref()) {
                     Ok(addr) => {
                         // Convert IPv4 to IPv6-mapped address (::ffff:0:0/96)
@@ -1025,7 +1024,7 @@ mod test_net {
         let mut ctx = Context::default();
         for (ip4, expected) in cases.iter() {
             unsafe {
-                let actual = &*kclvm_net_to_IP16(
+                let actual = &*kclvm_net_to_IP6(
                     &mut ctx,
                     &ValueRef::list(Some(&[&ValueRef::str(ip4)])),
                     &ValueRef::dict(None),
