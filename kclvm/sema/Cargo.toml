@@ -1,5 +1,5 @@
 [package]
-name = "kclvm-sema"
+name = "kcl-sema"
 version = "0.11.2"
 edition = "2021"
 

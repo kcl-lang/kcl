@@ -1,5 +1,5 @@
 [package]
-name = "kclvm-evaluator"
+name = "kcl-evaluator"
 version = "0.11.2"
 edition = "2021"
 
