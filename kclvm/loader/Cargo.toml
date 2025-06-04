@@ -1,5 +1,5 @@
 [package]
-name = "kclvm-loader"
+name = "kcl-loader"
 version = "0.11.2"
 edition = "2021"
 
