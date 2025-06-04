@@ -1,5 +1,5 @@
 [package]
-name = "kclvm-lexer"
+name = "kcl-lexer"
 version = "0.11.2"
 edition = "2021"
 
