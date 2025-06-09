@@ -1,5 +1,5 @@
 use super::*;
-use kclvm_ast::pos::GetPos;
+use kcl_ast::pos::GetPos;
 
 impl Type {
     /// Downcast ty into the list type.
@@ -162,7 +162,7 @@ impl From<ast::Type> for Type {
                     suffix: suffix_option,
                 }) => match suffix_option {
                     Some(suffix) => Type::number_multiplier(
-                        kclvm_runtime::cal_num(v, &suffix.value()),
+                        kcl_runtime::cal_num(v, &suffix.value()),
                         v,
                         &suffix.value(),
                     ),

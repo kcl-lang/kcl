@@ -7,11 +7,12 @@
 //!
 //! Reference:
 
-use proc_macro2::{Span, TokenStream};
+use proc_macro::TokenStream;
 use quote::quote;
 use std::collections::HashMap;
 use syn::parse::{Parse, ParseStream, Result};
 use syn::{braced, punctuated::Punctuated, Ident, LitStr, Token};
+use proc_macro2::Span;
 
 #[cfg(test)]
 mod tests;
@@ -86,17 +87,17 @@ impl Errors {
 }
 
 pub fn symbols(input: TokenStream) -> TokenStream {
-    let (mut output, errors) = symbols_with_errors(input);
+    let (mut output, errors) = symbols_with_errors(input.clone().into());
 
     // If we generated any errors, then report them as compiler_error!() macro calls.
     // This lets the errors point back to the most relevant span. It also allows us
     // to report as many errors as we can during a single run.
     output.extend(errors.into_iter().map(|e| e.to_compile_error()));
 
-    output
+    output.into()
 }
 
-fn symbols_with_errors(input: TokenStream) -> (TokenStream, Vec<syn::Error>) {
+fn symbols_with_errors(input: proc_macro2::TokenStream) -> (proc_macro2::TokenStream, Vec<syn::Error>) {
     let mut errors = Errors::default();
 
     let input: Input = match syn::parse2(input) {

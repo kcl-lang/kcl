@@ -7,15 +7,15 @@ use crate::resolver::resolve_program_with_opts;
 use crate::resolver::scope::*;
 use crate::ty::{Type, TypeKind};
 use anyhow::Result;
-use kclvm_ast::ast;
-use kclvm_ast::pos::ContainsPos;
-use kclvm_ast::MAIN_PKG;
-use kclvm_error::*;
-use kclvm_parser::load_program;
-use kclvm_parser::parse_file_force_errors;
-use kclvm_parser::LoadProgramOptions;
-use kclvm_parser::ParseSession;
-use kclvm_utils::path::PathPrefix;
+use kcl_ast::ast;
+use kcl_ast::pos::ContainsPos;
+use kcl_ast::MAIN_PKG;
+use kcl_error::*;
+use kcl_parser::load_program;
+use kcl_parser::parse_file_force_errors;
+use kcl_parser::LoadProgramOptions;
+use kcl_parser::ParseSession;
+use kcl_utils::path::PathPrefix;
 use parking_lot::lock_api::RwLock;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -38,7 +38,7 @@ pub fn parse_program(filename: &str) -> Result<ast::Program> {
     module.filename = filename.to_string();
 
     prog.pkgs
-        .insert(kclvm_ast::MAIN_PKG.to_string(), vec![filename.to_string()]);
+        .insert(kcl_ast::MAIN_PKG.to_string(), vec![filename.to_string()]);
 
     prog.modules
         .insert(filename.to_string(), Arc::new(Lock::new(module)));
@@ -278,7 +278,7 @@ fn test_record_used_module() {
     let scope = resolve_program(&mut program);
     let main_scope = scope
         .scope_map
-        .get(kclvm_runtime::MAIN_PKG_PATH)
+        .get(kcl_runtime::MAIN_PKG_PATH)
         .unwrap()
         .borrow_mut()
         .clone();
@@ -487,7 +487,7 @@ fn test_resolve_schema_doc() {
     let scope = resolve_program(&mut program);
     let main_scope = scope
         .scope_map
-        .get(kclvm_runtime::MAIN_PKG_PATH)
+        .get(kcl_runtime::MAIN_PKG_PATH)
         .unwrap()
         .borrow_mut()
         .clone();
@@ -546,7 +546,7 @@ fn test_pkg_scope() {
     assert_eq!(scope.scope_map.len(), 2);
     let main_scope = scope
         .scope_map
-        .get(kclvm_runtime::MAIN_PKG_PATH)
+        .get(kcl_runtime::MAIN_PKG_PATH)
         .unwrap()
         .borrow_mut()
         .clone();
@@ -595,7 +595,7 @@ fn test_system_package() {
     let scope = resolve_program(&mut program);
     let main_scope = scope
         .scope_map
-        .get(kclvm_runtime::MAIN_PKG_PATH)
+        .get(kcl_runtime::MAIN_PKG_PATH)
         .unwrap()
         .borrow_mut()
         .clone();

@@ -1,5 +1,5 @@
-use kclvm_ast::walker::MutSelfMutWalker;
-use kclvm_ast::{ast, walk_if_mut, walk_list_mut};
+use kcl_ast::walker::MutSelfMutWalker;
+use kcl_ast::{ast, walk_if_mut, walk_list_mut};
 
 #[derive(Default)]
 struct TypeErasureTransformer;

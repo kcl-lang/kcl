@@ -2,7 +2,7 @@
 
 use crate::{new_mut_ptr, val_plan::PlanOptions};
 use generational_arena::Index;
-use kclvm_primitives::{IndexMap, IndexSet};
+use kcl_primitives::{IndexMap, IndexSet};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::panic::{RefUnwindSafe, UnwindSafe};

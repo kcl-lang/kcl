@@ -1,5 +1,5 @@
-use kclvm_primitives::IndexSet;
-use kclvm_span::Loc;
+use kcl_primitives::IndexSet;
+use kcl_span::Loc;
 use std::fmt;
 use std::hash::Hash;
 
@@ -84,7 +84,7 @@ impl Position {
 
 impl From<Loc> for Position {
     fn from(loc: Loc) -> Self {
-        let filename = kclvm_utils::path::convert_windows_drive_letter(&format!(
+        let filename = kcl_utils::path::convert_windows_drive_letter(&format!(
             "{}",
             loc.file.name.prefer_remapped()
         ));

@@ -1853,6 +1853,218 @@ dependencies = [
 ]
 
 [[package]]
+name = "kcl"
+version = "0.11.2"
+dependencies = [
+ "kcl-api",
+ "kcl-ast",
+ "kcl-cmd",
+ "kcl-compiler",
+ "kcl-config",
+ "kcl-driver",
+ "kcl-error",
+ "kcl-evaluator",
+ "kcl-loader",
+ "kcl-parser",
+ "kcl-primitives",
+ "kcl-query",
+ "kcl-runner",
+ "kcl-runtime",
+ "kcl-sema",
+ "kcl-tools",
+ "kcl-version",
+]
+
+[[package]]
+name = "kcl-api"
+version = "0.11.2"
+dependencies = [
+ "anyhow",
+ "criterion",
+ "futures",
+ "jsonrpc-stdio-server",
+ "kcl-ast",
+ "kcl-ast-pretty",
+ "kcl-config",
+ "kcl-driver",
+ "kcl-error",
+ "kcl-language-server",
+ "kcl-loader",
+ "kcl-parser",
+ "kcl-primitives",
+ "kcl-query",
+ "kcl-runner",
+ "kcl-runtime",
+ "kcl-sema",
+ "kcl-tools",
+ "kcl-utils",
+ "kcl-version",
+ "maplit",
+ "once_cell",
+ "prost",
+ "prost-build",
+ "prost-types",
+ "prost-wkt",
+ "prost-wkt-build",
+ "prost-wkt-types",
+ "protoc-bin-vendored",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
+name = "kcl-ast"
+version = "0.11.2"
+dependencies = [
+ "anyhow",
+ "compiler_base_span",
+ "kcl-error",
+ "kcl-parser",
+ "kcl-span",
+ "kcl-utils",
+ "serde",
+ "serde_json",
+ "thread_local",
+ "uuid",
+]
+
+[[package]]
+name = "kcl-ast-pretty"
+version = "0.11.2"
+dependencies = [
+ "compiler_base_macros",
+ "compiler_base_session",
+ "fancy-regex",
+ "kcl-ast",
+ "kcl-error",
+ "kcl-parser",
+ "kcl-primitives",
+ "pretty_assertions",
+]
+
+[[package]]
+name = "kcl-cmd"
+version = "0.11.2"
+dependencies = [
+ "anyhow",
+ "clap",
+ "compiler_base_session",
+ "kcl-api",
+ "kcl-config",
+ "kcl-driver",
+ "kcl-error",
+ "kcl-parser",
+ "kcl-runner",
+ "kcl-runtime",
+ "kcl-tools",
+ "kcl-version",
+]
+
+[[package]]
+name = "kcl-compiler"
+version = "0.11.2"
+dependencies = [
+ "bit-set",
+ "bitflags 1.3.2",
+ "fancy-regex",
+ "inkwell",
+ "kcl-ast",
+ "kcl-error",
+ "kcl-primitives",
+ "kcl-runtime",
+ "kcl-sema",
+ "once_cell",
+ "phf",
+ "time 0.2.27",
+ "unicode_names2",
+]
+
+[[package]]
+name = "kcl-config"
+version = "0.11.2"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "dirs",
+ "glob",
+ "kcl-ast",
+ "kcl-utils",
+ "kcl-version",
+ "md-5 0.8.0",
+ "pathdiff",
+ "regex",
+ "ron",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "toml",
+ "url",
+]
+
+[[package]]
+name = "kcl-driver"
+version = "0.11.2"
+dependencies = [
+ "anyhow",
+ "flate2",
+ "kcl-ast",
+ "kcl-config",
+ "kcl-parser",
+ "kcl-primitives",
+ "kcl-runtime",
+ "kcl-utils",
+ "oci-client",
+ "once_cell",
+ "parking_lot 0.12.3",
+ "serde",
+ "serde_json",
+ "tar",
+ "tokio",
+ "walkdir",
+]
+
+[[package]]
+name = "kcl-error"
+version = "0.11.2"
+dependencies = [
+ "annotate-snippets",
+ "anyhow",
+ "compiler_base_error",
+ "compiler_base_macros",
+ "compiler_base_session",
+ "compiler_base_span",
+ "kcl-primitives",
+ "kcl-runtime",
+ "kcl-span",
+ "kcl-utils",
+ "serde",
+ "serde_json",
+ "termize",
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
+name = "kcl-evaluator"
+version = "0.11.2"
+dependencies = [
+ "anyhow",
+ "generational-arena",
+ "insta",
+ "kcl-ast",
+ "kcl-error",
+ "kcl-loader",
+ "kcl-parser",
+ "kcl-primitives",
+ "kcl-runtime",
+ "kcl-sema",
+ "scopeguard",
+]
+
+[[package]]
 name = "kcl-language-server"
 version = "0.11.2"
 dependencies = [
@@ -1865,18 +2077,18 @@ dependencies = [
  "env_logger",
  "im-rc",
  "insta",
- "kclvm-ast",
- "kclvm-config",
- "kclvm-driver",
- "kclvm-error",
- "kclvm-parser",
- "kclvm-primitives",
- "kclvm-query",
- "kclvm-sema",
- "kclvm-span",
- "kclvm-tools",
- "kclvm-utils",
- "kclvm-version",
+ "kcl-ast",
+ "kcl-config",
+ "kcl-driver",
+ "kcl-error",
+ "kcl-parser",
+ "kcl-primitives",
+ "kcl-query",
+ "kcl-sema",
+ "kcl-span",
+ "kcl-tools",
+ "kcl-utils",
+ "kcl-version",
  "log",
  "lsp-server",
  "lsp-types",
@@ -1898,256 +2110,47 @@ dependencies = [
 ]
 
 [[package]]
-name = "kclvm"
-version = "0.11.2"
-dependencies = [
- "kclvm-api",
- "kclvm-ast",
- "kclvm-cmd",
- "kclvm-compiler",
- "kclvm-config",
- "kclvm-driver",
- "kclvm-error",
- "kclvm-evaluator",
- "kclvm-loader",
- "kclvm-parser",
- "kclvm-primitives",
- "kclvm-query",
- "kclvm-runner",
- "kclvm-runtime",
- "kclvm-sema",
- "kclvm-tools",
- "kclvm-version",
-]
-
-[[package]]
-name = "kclvm-api"
-version = "0.11.2"
-dependencies = [
- "anyhow",
- "criterion",
- "futures",
- "jsonrpc-stdio-server",
- "kcl-language-server",
- "kclvm-ast",
- "kclvm-ast-pretty",
- "kclvm-config",
- "kclvm-driver",
- "kclvm-error",
- "kclvm-loader",
- "kclvm-parser",
- "kclvm-primitives",
- "kclvm-query",
- "kclvm-runner",
- "kclvm-runtime",
- "kclvm-sema",
- "kclvm-tools",
- "kclvm-utils",
- "kclvm-version",
- "maplit",
- "once_cell",
- "prost",
- "prost-build",
- "prost-types",
- "prost-wkt",
- "prost-wkt-build",
- "prost-wkt-types",
- "protoc-bin-vendored",
- "serde",
- "serde_json",
- "serde_yaml",
- "tempfile",
- "tokio",
-]
-
-[[package]]
-name = "kclvm-ast"
-version = "0.11.2"
-dependencies = [
- "anyhow",
- "compiler_base_span",
- "kclvm-error",
- "kclvm-parser",
- "kclvm-span",
- "kclvm-utils",
- "serde",
- "serde_json",
- "thread_local",
- "uuid",
-]
-
-[[package]]
-name = "kclvm-ast-pretty"
-version = "0.11.2"
-dependencies = [
- "compiler_base_macros",
- "compiler_base_session",
- "fancy-regex",
- "kclvm-ast",
- "kclvm-error",
- "kclvm-parser",
- "kclvm-primitives",
- "pretty_assertions",
-]
-
-[[package]]
-name = "kclvm-cmd"
-version = "0.11.2"
-dependencies = [
- "anyhow",
- "clap",
- "compiler_base_session",
- "kclvm-api",
- "kclvm-config",
- "kclvm-driver",
- "kclvm-error",
- "kclvm-parser",
- "kclvm-runner",
- "kclvm-runtime",
- "kclvm-tools",
- "kclvm-version",
-]
-
-[[package]]
-name = "kclvm-compiler"
-version = "0.11.2"
-dependencies = [
- "bit-set",
- "bitflags 1.3.2",
- "fancy-regex",
- "inkwell",
- "kclvm-ast",
- "kclvm-error",
- "kclvm-primitives",
- "kclvm-runtime",
- "kclvm-sema",
- "once_cell",
- "phf",
- "time 0.2.27",
- "unicode_names2",
-]
-
-[[package]]
-name = "kclvm-config"
-version = "0.11.2"
-dependencies = [
- "anyhow",
- "chrono",
- "dirs",
- "glob",
- "kclvm-ast",
- "kclvm-utils",
- "kclvm-version",
- "md-5 0.8.0",
- "pathdiff",
- "regex",
- "ron",
- "serde",
- "serde_json",
- "serde_yaml",
- "toml",
- "url",
-]
-
-[[package]]
-name = "kclvm-driver"
-version = "0.11.2"
-dependencies = [
- "anyhow",
- "flate2",
- "kclvm-ast",
- "kclvm-config",
- "kclvm-parser",
- "kclvm-primitives",
- "kclvm-runtime",
- "kclvm-utils",
- "oci-client",
- "once_cell",
- "parking_lot 0.12.3",
- "serde",
- "serde_json",
- "tar",
- "tokio",
- "walkdir",
-]
-
-[[package]]
-name = "kclvm-error"
-version = "0.11.2"
-dependencies = [
- "annotate-snippets",
- "anyhow",
- "compiler_base_error",
- "compiler_base_macros",
- "compiler_base_session",
- "compiler_base_span",
- "kclvm-primitives",
- "kclvm-runtime",
- "kclvm-span",
- "kclvm-utils",
- "serde",
- "serde_json",
- "termize",
- "thiserror",
- "tracing",
-]
-
-[[package]]
-name = "kclvm-evaluator"
-version = "0.11.2"
-dependencies = [
- "anyhow",
- "generational-arena",
- "insta",
- "kclvm-ast",
- "kclvm-error",
- "kclvm-loader",
- "kclvm-parser",
- "kclvm-primitives",
- "kclvm-runtime",
- "kclvm-sema",
- "scopeguard",
-]
-
-[[package]]
-name = "kclvm-lexer"
+name = "kcl-lexer"
 version = "0.11.2"
 dependencies = [
  "expect-test",
- "kclvm-error",
+ "kcl-error",
+ "kcl-primitives",
+ "kcl-utils",
  "rustc_lexer",
  "unic-emoji-char",
 ]
 
 [[package]]
-name = "kclvm-loader"
+name = "kcl-loader"
 version = "0.11.2"
 dependencies = [
  "anyhow",
  "insta",
- "kclvm-ast",
- "kclvm-ast-pretty",
- "kclvm-error",
- "kclvm-parser",
- "kclvm-primitives",
- "kclvm-query",
- "kclvm-sema",
- "kclvm-utils",
+ "kcl-ast",
+ "kcl-ast-pretty",
+ "kcl-error",
+ "kcl-parser",
+ "kcl-primitives",
+ "kcl-query",
+ "kcl-sema",
+ "kcl-utils",
  "maplit",
 ]
 
 [[package]]
-name = "kclvm-macros"
+name = "kcl-macros"
 version = "0.11.2"
 dependencies = [
+ "kcl-primitives",
+ "kcl-utils",
  "proc-macro2",
  "quote",
- "syn 1.0.109",
- "synstructure 0.12.6",
+ "syn 2.0.72",
 ]
 
 [[package]]
-name = "kclvm-parser"
+name = "kcl-parser"
 version = "0.11.2"
 dependencies = [
  "anyhow",
@@ -2161,14 +2164,14 @@ dependencies = [
  "expect-test",
  "glob",
  "insta",
- "kclvm-ast",
- "kclvm-config",
- "kclvm-error",
- "kclvm-lexer",
- "kclvm-primitives",
- "kclvm-sema",
- "kclvm-span",
- "kclvm-utils",
+ "kcl-ast",
+ "kcl-config",
+ "kcl-error",
+ "kcl-lexer",
+ "kcl-primitives",
+ "kcl-sema",
+ "kcl-span",
+ "kcl-utils",
  "num-bigint",
  "parking_lot 0.12.3",
  "petgraph",
@@ -2182,7 +2185,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kclvm-primitives"
+name = "kcl-primitives"
 version = "0.11.2"
 dependencies = [
  "indexmap 2.9.0",
@@ -2190,7 +2193,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kclvm-query"
+name = "kcl-query"
 version = "0.11.2"
 dependencies = [
  "anyhow",
@@ -2198,13 +2201,13 @@ dependencies = [
  "compiler_base_session",
  "fancy-regex",
  "insta",
- "kclvm-ast",
- "kclvm-ast-pretty",
- "kclvm-error",
- "kclvm-parser",
- "kclvm-primitives",
- "kclvm-sema",
- "kclvm-utils",
+ "kcl-ast",
+ "kcl-ast-pretty",
+ "kcl-error",
+ "kcl-parser",
+ "kcl-primitives",
+ "kcl-sema",
+ "kcl-utils",
  "maplit",
  "pretty_assertions",
  "serde",
@@ -2212,7 +2215,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kclvm-runner"
+name = "kcl-runner"
 version = "0.11.2"
 dependencies = [
  "anyhow",
@@ -2222,19 +2225,19 @@ dependencies = [
  "compiler_base_session",
  "criterion",
  "glob",
- "kclvm-ast",
- "kclvm-compiler",
- "kclvm-config",
- "kclvm-driver",
- "kclvm-error",
- "kclvm-evaluator",
- "kclvm-parser",
- "kclvm-primitives",
- "kclvm-query",
- "kclvm-runtime",
- "kclvm-sema",
- "kclvm-utils",
- "kclvm-version",
+ "kcl-ast",
+ "kcl-compiler",
+ "kcl-config",
+ "kcl-driver",
+ "kcl-error",
+ "kcl-evaluator",
+ "kcl-parser",
+ "kcl-primitives",
+ "kcl-query",
+ "kcl-runtime",
+ "kcl-sema",
+ "kcl-utils",
+ "kcl-version",
  "libc",
  "libloading",
  "once_cell",
@@ -2247,7 +2250,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kclvm-runtime"
+name = "kcl-runtime"
 version = "0.11.2"
 dependencies = [
  "anyhow",
@@ -2265,8 +2268,8 @@ dependencies = [
  "handlebars",
  "hostname",
  "itertools",
- "kclvm-primitives",
- "kclvm_runtime_internal_macros",
+ "kcl-primitives",
+ "kcl_runtime_internal_macros",
  "lazy_static",
  "libc",
  "md5",
@@ -2286,7 +2289,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kclvm-sema"
+name = "kcl-sema"
 version = "0.11.2"
 dependencies = [
  "anyhow",
@@ -2299,14 +2302,14 @@ dependencies = [
  "criterion",
  "fancy-regex",
  "generational-arena",
- "kclvm-ast",
- "kclvm-ast-pretty",
- "kclvm-error",
- "kclvm-parser",
- "kclvm-primitives",
- "kclvm-runtime",
- "kclvm-span",
- "kclvm-utils",
+ "kcl-ast",
+ "kcl-ast-pretty",
+ "kcl-error",
+ "kcl-parser",
+ "kcl-primitives",
+ "kcl-runtime",
+ "kcl-span",
+ "kcl-utils",
  "lazy_static",
  "once_cell",
  "parking_lot 0.12.3",
@@ -2320,17 +2323,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "kclvm-span"
+name = "kcl-span"
 version = "0.11.2"
 dependencies = [
  "compiler_base_span",
- "kclvm-macros",
+ "kcl-macros",
  "parking_lot 0.11.2",
  "scoped-tls",
 ]
 
 [[package]]
-name = "kclvm-tools"
+name = "kcl-tools"
 version = "0.11.2"
 dependencies = [
  "anyhow",
@@ -2340,18 +2343,18 @@ dependencies = [
  "fancy-regex",
  "insta",
  "json-spanned-value",
- "kclvm-ast",
- "kclvm-ast-pretty",
- "kclvm-config",
- "kclvm-driver",
- "kclvm-error",
- "kclvm-parser",
- "kclvm-primitives",
- "kclvm-query",
- "kclvm-runner",
- "kclvm-runtime",
- "kclvm-sema",
- "kclvm-utils",
+ "kcl-ast",
+ "kcl-ast-pretty",
+ "kcl-config",
+ "kcl-driver",
+ "kcl-error",
+ "kcl-parser",
+ "kcl-primitives",
+ "kcl-query",
+ "kcl-runner",
+ "kcl-runtime",
+ "kcl-sema",
+ "kcl-utils",
  "located_yaml",
  "once_cell",
  "pretty_assertions",
@@ -2363,7 +2366,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kclvm-utils"
+name = "kcl-utils"
 version = "0.11.2"
 dependencies = [
  "anyhow",
@@ -2372,14 +2375,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "kclvm-version"
+name = "kcl-version"
 version = "0.11.2"
 dependencies = [
  "vergen-gitcl",
 ]
 
 [[package]]
-name = "kclvm_runtime_internal_macros"
+name = "kcl_runtime_internal_macros"
 version = "0.5.0"
 dependencies = [
  "proc-macro2",
@@ -3936,7 +3939,7 @@ dependencies = [
  "indexmap 2.9.0",
  "indoc",
  "itoa",
- "kclvm-primitives",
+ "kcl-primitives",
  "ryu",
  "serde",
  "serde_derive",
@@ -4185,18 +4188,6 @@ name = "sync_wrapper"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7065abeca94b6a8a577f9bd45aa0867a2238b74e8eb67cf10d492bc39351394"
-
-[[package]]
-name = "synstructure"
-version = "0.12.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f36bdaa60a83aca3921b5259d5400cbf5e90fc51931376a9bd4a0eb79aa7210f"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
- "unicode-xid",
-]
 
 [[package]]
 name = "synstructure"
@@ -5353,7 +5344,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.72",
- "synstructure 0.13.1",
+ "synstructure",
 ]
 
 [[package]]
@@ -5374,7 +5365,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.72",
- "synstructure 0.13.1",
+ "synstructure",
 ]
 
 [[package]]

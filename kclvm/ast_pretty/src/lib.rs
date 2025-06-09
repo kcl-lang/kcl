@@ -1,9 +1,9 @@
-use kclvm_ast::{
+use kcl_ast::{
     ast::{self, Module},
     token::TokenKind,
     walker::MutSelfTypedResultWalker,
 };
-use kclvm_primitives::IndexMap;
+use kcl_primitives::IndexMap;
 use std::collections::VecDeque;
 mod node;
 

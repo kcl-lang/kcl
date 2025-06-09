@@ -1,4 +1,4 @@
-use kclvm_ast::ast::{self, SchemaStmt};
+use kcl_ast::ast::{self, SchemaStmt};
 use std::collections::{HashMap, HashSet};
 use std::iter::Iterator;
 use std::str;

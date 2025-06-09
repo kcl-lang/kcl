@@ -6,7 +6,7 @@ use crate::ty::{
 };
 use kclvm_ast::ast;
 use kclvm_error::diagnostic::Range;
-use kclvm_primitives::{DefaultHashBuilder, IndexMap};
+use kcl_primitives::{DefaultHashBuilder, IndexMap};
 
 const DIV_OR_MOD_ZERO_MSG: &str = "integer division or modulo by zero";
 

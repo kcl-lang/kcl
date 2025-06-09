@@ -11,7 +11,7 @@ pub use TokenKind::*;
 pub use UnaryOpToken::*;
 
 use compiler_base_span::{Span, DUMMY_SP};
-pub use kclvm_span::symbol::{Ident, Symbol};
+pub use kcl_span::symbol::{Ident, Symbol};
 pub const VALID_SPACES_LENGTH: usize = 0;
 
 #[derive(Clone, Copy, PartialEq, Debug)]

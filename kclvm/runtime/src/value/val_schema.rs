@@ -1,6 +1,6 @@
 //! Copyright The KCL Authors. All rights reserved.
 
-use kclvm_primitives::{DefaultHashBuilder, IndexSet};
+use kcl_primitives::{DefaultHashBuilder, IndexSet};
 
 use crate::*;
 

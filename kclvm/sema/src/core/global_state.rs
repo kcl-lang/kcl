@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
-use kclvm_error::Position;
-use kclvm_primitives::{IndexMap, IndexSet};
+use kcl_error::Position;
+use kcl_primitives::{IndexMap, IndexSet};
 
 use super::{
     package::{ModuleInfo, PackageDB},

@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use kclvm_utils::path::PathPrefix;
+use kcl_utils::path::PathPrefix;
 
 extern crate pathdiff;
 

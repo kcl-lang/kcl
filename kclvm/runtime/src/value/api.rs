@@ -3,7 +3,7 @@
 
 use std::{mem::transmute_copy, os::raw::c_char};
 
-use kclvm_primitives::IndexMap;
+use kcl_primitives::IndexMap;
 
 use crate::*;
 

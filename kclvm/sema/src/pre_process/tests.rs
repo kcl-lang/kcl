@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use super::*;
-use kclvm_ast::path::get_attr_paths_from_config_expr;
-use kclvm_parser::{load_program, parse_file_force_errors, ParseSession};
-use kclvm_primitives::IndexMap;
+use kcl_ast::path::get_attr_paths_from_config_expr;
+use kcl_parser::{load_program, parse_file_force_errors, ParseSession};
+use kcl_primitives::IndexMap;
 
 #[test]
 fn test_fix_qualified_identifier() {

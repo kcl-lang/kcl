@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use kclvm_error::diagnostic::dummy_range;
-use kclvm_primitives::IndexMap;
+use kcl_error::diagnostic::dummy_range;
+use kcl_primitives::IndexMap;
 use once_cell::sync::Lazy;
 
 use crate::ty::{Parameter, Type};

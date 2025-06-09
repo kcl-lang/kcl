@@ -3,8 +3,8 @@
 use std::sync::Arc;
 
 use crate::ty::{Parameter, Type, TypeRef};
-use kclvm_error::diagnostic::dummy_range;
-use kclvm_primitives::IndexMap;
+use kcl_error::diagnostic::dummy_range;
+use kcl_primitives::IndexMap;
 use once_cell::sync::Lazy;
 
 // ------------------------------

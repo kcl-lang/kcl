@@ -6,16 +6,11 @@ use crate::{
     builtin::system_module::STANDARD_SYSTEM_MODULES,
     ty::{Type, TypeKind},
 };
-use kclvm_ast::ast;
-use kclvm_error::*;
-use kclvm_primitives::IndexMap;
-use std::rc::Rc;
-use std::sync::Arc;
-use std::{cell::RefCell, path::Path};
-
-use super::scope::{Scope, ScopeKind, ScopeObject, ScopeObjectKind};
-use kclvm_ast::pos::GetPos;
-use kclvm_utils::pkgpath::parse_external_pkg_name;
+use kcl_ast::ast;
+use kcl_error::*;
+use kcl_primitives::IndexMap;
+use kcl_ast::pos::GetPos;
+use kcl_utils::pkgpath::parse_external_pkg_name;
 
 impl<'ctx> Resolver<'ctx> {
     /// Check import error
