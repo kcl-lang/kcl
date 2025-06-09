@@ -18,22 +18,22 @@ once_cell = "1.5.2"
 prost-wkt = { path = "../third-party/prost-wkt", version = "0.4.1" }
 prost-wkt-types = { path = "../third-party/prost-wkt/wkt-types", version = "0.4.1" }
 
-kclvm-runner = { path = "../runner" }
-kclvm-config = { path = "../config" }
-kclvm-driver = { path = "../driver" }
-kclvm-error = { path = "../error" }
-kclvm-parser = { path = "../parser" }
-kclvm-loader = { path = "../loader" }
-kclvm-sema = { path = "../sema" }
-kclvm-ast = { path = "../ast" }
-kclvm-ast-pretty = { path = "../ast_pretty" }
-kclvm-runtime = { path = "../runtime" }
-kclvm-tools = { path = "../tools" }
-kclvm-query = { path = "../query" }
-kclvm-version = { path = "../version" }
+kcl-runner = { path = "../runner" }
+kcl-config = { path = "../config" }
+kcl-driver = { path = "../driver" }
+kcl-error = { path = "../error" }
+kcl-parser = { path = "../parser" }
+kcl-loader = { path = "../loader" }
+kcl-sema = { path = "../sema" }
+kcl-ast = { path = "../ast" }
+kcl-ast-pretty = { path = "../ast_pretty" }
+kcl-runtime = { path = "../runtime" }
+kcl-tools = { path = "../tools" }
+kcl-query = { path = "../query" }
+kcl-version = { path = "../version" }
 kcl-language-server = { path = "../tools/src/LSP" }
-kclvm-primitives = { path = "../primitives" }
-kclvm-utils = { path = "../utils" }
+kcl-primitives = { path = "../primitives" }
+kcl-utils = { path = "../utils" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 jsonrpc-stdio-server = "18.0.0"
@@ -48,4 +48,4 @@ prost-build = "0.11.8"
 prost-wkt-build = { path = "../third-party/prost-wkt/wkt-build", version = "0.4.1" }
 
 [features]
-llvm = ["kclvm-runner/llvm"]
+llvm = ["kcl-runner/llvm"]

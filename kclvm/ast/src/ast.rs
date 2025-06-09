@@ -33,7 +33,8 @@
 //! in the compiler and regenerate the walker code.
 //! :copyright: Copyright The KCL Authors. All rights reserved.
 
-use kclvm_utils::path::PathPrefix;
+use kcl_error::{diagnostic::Range, Position};
+use kcl_utils::path::PathPrefix;
 use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
 use std::{
     collections::HashMap,
@@ -47,7 +48,6 @@ use uuid;
 
 use super::token;
 use crate::{node_ref, pos::ContainsPos};
-use kclvm_error::{diagnostic::Range, Position};
 use std::cell::RefCell;
 
 thread_local! {
@@ -210,7 +210,7 @@ impl<T> Node<T> {
     }
 
     pub fn node(node: T, (lo, hi): (Loc, Loc)) -> Self {
-        let filename = kclvm_utils::path::convert_windows_drive_letter(&format!(
+        let filename = kcl_utils::path::convert_windows_drive_letter(&format!(
             "{}",
             lo.file.name.prefer_remapped()
         ))
@@ -2010,7 +2010,7 @@ impl TryFrom<token::Token> for UnaryOp {
     type Error = ();
 
     fn try_from(token: token::Token) -> Result<Self, Self::Error> {
-        use kclvm_span::symbol::kw;
+        use kcl_span::symbol::kw;
 
         match token.kind {
             token::TokenKind::UnaryOp(token::UnaryOpToken::UTilde) => Ok(UnaryOp::Invert),
@@ -2041,7 +2041,7 @@ impl TryFrom<token::Token> for BinOrCmpOp {
     type Error = ();
 
     fn try_from(token: token::Token) -> Result<Self, Self::Error> {
-        use kclvm_span::symbol::kw;
+        use kcl_span::symbol::kw;
 
         match token.kind {
             token::TokenKind::BinOp(ot) => match ot {

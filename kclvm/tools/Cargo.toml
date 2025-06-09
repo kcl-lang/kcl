@@ -12,18 +12,18 @@ anyhow = "1.0"
 compiler_base_session = "0.1.3"
 
 rustc_lexer = "0.1.0"
-kclvm-ast = { path = "../ast" }
-kclvm-error = { path = "../error" }
-kclvm-parser = { path = "../parser" }
-kclvm-sema = { path = "../sema" }
-kclvm-config = { path = "../config" }
-kclvm-ast-pretty = { path = "../ast_pretty" }
-kclvm-query = { path = "../query" }
-kclvm-runner = { path = "../runner" }
-kclvm-runtime = { path = "../runtime" }
-kclvm-driver = { path = "../driver" }
-kclvm-utils = { path = "../utils" }
-kclvm-primitives = { path = "../primitives" }
+kcl-ast = { path = "../ast" }
+kcl-error = { path = "../error" }
+kcl-parser = { path = "../parser" }
+kcl-sema = { path = "../sema" }
+kcl-config = { path = "../config" }
+kcl-ast-pretty = { path = "../ast_pretty" }
+kcl-query = { path = "../query" }
+kcl-runner = { path = "../runner" }
+kcl-runtime = { path = "../runtime" }
+kcl-driver = { path = "../driver" }
+kcl-utils = { path = "../utils" }
+kcl-primitives = { path = "../primitives" }
 
 serde_json = "1.0"
 serde_yaml = { path = "../third-party/serde_yaml" }
@@ -43,4 +43,4 @@ name = "benchmark"
 harness = false
 
 [features]
-llvm = ["kclvm-runner/llvm"]
+llvm = ["kcl-runner/llvm"]

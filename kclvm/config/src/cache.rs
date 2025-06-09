@@ -2,8 +2,10 @@
 extern crate chrono;
 use super::modfile::KCL_FILE_SUFFIX;
 use anyhow::Result;
-use kclvm_utils::fslock::open_lock_file;
-use kclvm_utils::pkgpath::{parse_external_pkg_name, rm_external_pkg_name};
+use kcl_utils::fslock::open_lock_file;
+use kcl_utils::pkgpath::{parse_external_pkg_name, rm_external_pkg_name};
+use kcl_utils::path::PathPrefix;
+use kcl_version as version;
 use md5::{Digest, Md5};
 use serde::{de::DeserializeOwned, Serialize};
 use std::collections::HashMap;
@@ -11,8 +13,6 @@ use std::error;
 use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
 use std::path::Path;
-
-use kclvm_version as version;
 
 const LOCK_SUFFIX: &str = ".lock";
 const DEFAULT_CACHE_DIR: &str = ".kclvm/cache";

@@ -1,11 +1,11 @@
 use anyhow::anyhow;
 use std::sync::Arc;
 
-use kclvm_ast::ast::{self, Stmt};
-use kclvm_ast::pos::GetPos;
-use kclvm_ast::walker::MutSelfTypedResultWalker;
-use kclvm_error::{diagnostic::Range, Position};
-use kclvm_primitives::{DefaultHashBuilder, IndexMap};
+use kcl_ast::ast::{self, Stmt};
+use kcl_ast::pos::GetPos;
+use kcl_ast::walker::MutSelfTypedResultWalker;
+use kcl_error::{diagnostic::Range, Position};
+use kcl_primitives::{DefaultHashBuilder, IndexMap};
 
 use crate::core::symbol::Symbol;
 use crate::{
@@ -942,7 +942,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'_> {
         Ok(None)
     }
 
-    fn walk_arguments(&mut self, arguments: &'ctx ast::Arguments) -> Self::Result {
+    fn walk_arguments(&mut self, arguments: &'ctx ast::Arguments) -> <AdvancedResolver<'_> as MutSelfTypedResultWalker<'ctx>>::Result {
         for (i, arg) in arguments.args.iter().enumerate() {
             let ty = arguments.get_arg_type_node(i);
             self.walk_type_expr(ty)?;

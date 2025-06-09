@@ -28,7 +28,7 @@ mod number;
 #[cfg(test)]
 mod tests;
 
-extern crate kclvm_error;
+extern crate kcl_error;
 
 use cursor::EOF_CHAR;
 

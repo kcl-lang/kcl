@@ -16,9 +16,9 @@ glob = "0.3.0"
 pathdiff = "0.2.1"
 anyhow = "1.0"
 
-kclvm-version = {path = "../version"}
-kclvm-utils = {path = "../utils"}
-kclvm-ast = {path = "../ast"}
+kcl-version = {path = "../version"}
+kcl-utils = {path = "../utils"}
+kcl-ast = {path = "../ast"}
 dirs = "5.0.0"
 md-5 = "0.8.0"
 regex = "1.10.4"

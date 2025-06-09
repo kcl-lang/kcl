@@ -8,14 +8,14 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0"
 
-kclvm-ast = { path = "../ast" }
-kclvm-ast-pretty = { path = "../ast_pretty" }
-kclvm-parser = { path = "../parser" }
-kclvm-sema = { path = "../sema" }
-kclvm-error = { path = "../error" }
-kclvm-query = { path = "../query" }
-kclvm-utils = { path = "../utils" }
-kclvm-primitives = { path = "../primitives" }
+kcl-ast = { path = "../ast" }
+kcl-ast-pretty = { path = "../ast_pretty" }
+kcl-parser = { path = "../parser" }
+kcl-sema = { path = "../sema" }
+kcl-error = { path = "../error" }
+kcl-query = { path = "../query" }
+kcl-utils = { path = "../utils" }
+kcl-primitives = { path = "../primitives" }
 maplit = "1.0.2"
 
 [dev-dependencies]

@@ -1,6 +1,6 @@
 //! Copyright The KCL Authors. All rights reserved.
 
-use kclvm_runtime_internal_macros::runtime_fn;
+use kcl_runtime_internal_macros::runtime_fn;
 
 // api-spec:       kclvm_context_t
 // api-spec(c):    typedef struct kclvm_context_t kclvm_context_t;

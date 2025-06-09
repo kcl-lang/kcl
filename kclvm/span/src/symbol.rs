@@ -6,6 +6,7 @@ use std::{
 
 use crate::session_globals::Interner;
 use crate::with_session_globals;
+use kcl_macros::symbols;
 
 // The proc macro code for this is in `kclvm_macros/src/symbols.rs`.
 symbols! {

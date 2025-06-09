@@ -9,7 +9,8 @@ edition = "2021"
 proc-macro = true
 
 [dependencies]
-synstructure = "0.12.1"
-syn = { version = "1", features = ["full"] }
-proc-macro2 = "1"
-quote = "1"
+quote = "1.0"
+syn = { version = "2.0", features = ["full", "extra-traits"] }
+proc-macro2 = "1.0"
+kcl-utils = { path = "../utils" }
+kcl-primitives = { path = "../primitives" }

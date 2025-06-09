@@ -1,7 +1,7 @@
 //! A YAML mapping and its iterator types.
 
 use crate::{private, Value};
-use kclvm_primitives::{DefaultHashBuilder, IndexMap};
+use kcl_primitives::{DefaultHashBuilder, IndexMap};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::cmp::Ordering;
 use std::collections::hash_map::DefaultHasher;

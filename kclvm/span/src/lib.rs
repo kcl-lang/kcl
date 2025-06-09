@@ -19,4 +19,4 @@ use session_globals::with_session_globals;
 pub use symbol::{Ident, Symbol};
 
 #[macro_use]
-extern crate kclvm_macros;
+extern crate kcl_macros;

@@ -20,13 +20,13 @@ anyhow = "1.0"
 regex = "1.7.0"
 lazy_static = "1.4.0"
 
-kclvm-primitives = { path = "../primitives" }
-kclvm-ast = { path = "../ast" }
-kclvm-ast-pretty = { path = "../ast_pretty" }
-kclvm-runtime = { path = "../runtime" }
-kclvm-error = { path = "../error" }
-kclvm-span = { path = "../span" }
-kclvm-utils = { path = "../utils" }
+kcl-primitives = { path = "../primitives" }
+kcl-ast = { path = "../ast" }
+kcl-ast-pretty = { path = "../ast_pretty" }
+kcl-runtime = { path = "../runtime" }
+kcl-error = { path = "../error" }
+kcl-span = { path = "../span" }
+kcl-utils = { path = "../utils" }
 compiler_base_span = "0.1.2"
 compiler_base_session = "0.1.3"
 compiler_base_macros = "0.1.1"
@@ -35,7 +35,7 @@ suggestions = "0.1.1"
 parking_lot = { version = "0.12.0", default-features = false }
 
 [dev-dependencies]
-kclvm-parser = { path = "../parser" }
+kcl-parser = { path = "../parser" }
 criterion = "0.5"
 
 [[bench]]

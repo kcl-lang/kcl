@@ -8,12 +8,12 @@ anyhow = "1.0"
 clap = "4.3.0"
 compiler_base_session = "0.1.3"
 
-kclvm-api = {path = "../api"}
-kclvm-parser = {path = "../parser"}
-kclvm-runner = {path = "../runner"}
-kclvm-config = {path = "../config"}
-kclvm-driver = {path = "../driver"}
-kclvm-runtime = {path = "../runtime"}
-kclvm-tools = {path = "../tools"}
-kclvm-error = {path = "../error"}
-kclvm-version = {path = "../version"}
+kcl-api = {path = "../api"}
+kcl-parser = {path = "../parser"}
+kcl-runner = {path = "../runner"}
+kcl-config = {path = "../config"}
+kcl-driver = {path = "../driver"}
+kcl-runtime = {path = "../runtime"}
+kcl-tools = {path = "../tools"}
+kcl-error = {path = "../error"}
+kcl-version = {path = "../version"}

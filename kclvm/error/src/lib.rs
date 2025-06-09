@@ -21,8 +21,8 @@ use compiler_base_error::{
 use compiler_base_session::{Session, SessionDiagnostic};
 use compiler_base_span::{span::new_byte_pos, Span};
 use diagnostic::Range;
-use kclvm_primitives::{DefaultHashBuilder, IndexSet};
-use kclvm_runtime::PanicInfo;
+use kcl_primitives::{DefaultHashBuilder, IndexSet};
+use kcl_runtime::PanicInfo;
 use std::{any::Any, sync::Arc};
 use thiserror::Error;
 
