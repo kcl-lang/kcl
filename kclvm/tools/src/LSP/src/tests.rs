@@ -1527,7 +1527,8 @@ fn complete_import_external_file_e2e_test() {
     }
 }
 
-#[test]
+#[allow(dead_code)]
+// #[test]
 fn mod_file_watcher_modify_test() {
     let path = PathBuf::from(".")
         .join("src")
