@@ -354,7 +354,7 @@ pub struct TestSettingsFile {
 pub fn load_file(filename: &str) -> Result<SettingsFile> {
     let f = std::fs::File::open(filename)
         .with_context(|| format!("Failed to load '{}', no such file or directory", filename))?;
-    let data: SettingsFile = serde_yaml::from_reader(f)
+    let data: SettingsFile = serde_yaml_ng::from_reader(f)
         .with_context(|| format!("Failed to load '{}', invalid setting file format", filename))?;
     Ok(data)
 }

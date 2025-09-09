@@ -110,7 +110,7 @@ mod test_expr_builder {
             let expr_builder =
                 ExprBuilder::new_with_file_path(*LOADER_KIND[1], file_path.clone()).unwrap();
             let expr_ast = expr_builder.build(None).unwrap();
-            let got_ast_yaml = serde_yaml::to_value(&expr_ast).unwrap();
+            let got_ast_yaml = serde_yaml_ng::to_value(&expr_ast).unwrap();
 
             let got_ast_yaml_str = serde_json::to_string(&got_ast_yaml).unwrap().replace(
                 &deal_windows_filepath(construct_full_path("yaml").unwrap(), |s| {
@@ -191,7 +191,7 @@ mod test_expr_builder {
             let expr_ast = expr_builder
                 .build(Some(SCHEMA_NAMES[i].to_string()))
                 .unwrap();
-            let got_ast_yaml = serde_yaml::to_value(&expr_ast).unwrap();
+            let got_ast_yaml = serde_yaml_ng::to_value(&expr_ast).unwrap();
 
             let got_ast_yaml_str = serde_json::to_string(&got_ast_yaml).unwrap().replace(
                 &deal_windows_filepath(construct_full_path("yaml").unwrap(), |s| {
