@@ -1,0 +1,19 @@
+{
+    name: "name"
+    # comment 1
+    another: {
+        # comment 2
+
+        
+        nested: "value"
+        # comment 3
+
+    }
+    # comment 4
+}
+[
+    # comment 5
+    "test"
+
+    # comment 6
+]

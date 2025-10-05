@@ -5,7 +5,7 @@ use walkdir::WalkDir;
 
 const FILE_INPUT_SUFFIX: &str = ".input";
 const FILE_OUTPUT_SUFFIX: &str = ".golden";
-const TEST_CASES: &[&str; 22] = &[
+const TEST_CASES: &[&str; 23] = &[
     "assert",
     "check",
     "blankline",
@@ -28,6 +28,7 @@ const TEST_CASES: &[&str; 22] = &[
     "union_types",
     "layout_import_stmt",
     "different_stmts_line_breaks",
+    "trailing_comment_collection",
     // "list_dict_schema_expr",
 ];
 

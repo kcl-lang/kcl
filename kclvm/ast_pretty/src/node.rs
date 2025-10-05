@@ -501,6 +501,9 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             list_expr.elts
         );
         if !in_one_line {
+            if let Some(end_line) = self.current_expr_end_line() {
+                self.write_comments_until_line(end_line.saturating_sub(1));
+            }
             self.write_indentation(Indentation::DedentWithNewline);
         }
         self.write_token(TokenKind::CloseDelim(DelimToken::Bracket));
@@ -687,6 +690,9 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
                 config_expr.items
             );
             if !in_one_line {
+                if let Some(end_line) = self.current_expr_end_line() {
+                    self.write_comments_until_line(end_line.saturating_sub(1));
+                }
                 self.write_indentation(Indentation::DedentWithNewline);
             }
         }
@@ -962,10 +968,12 @@ impl<'p> Printer<'p> {
     // ------------------------------
 
     pub fn expr(&mut self, expr: &ast::NodeRef<ast::Expr>) {
+        self.push_expr_span(expr.line, expr.end_line);
         self.hook.pre(self, super::ASTNode::Expr(expr));
         self.update_last_ast_line(expr);
         self.walk_expr(&expr.node);
         self.hook.post(self, super::ASTNode::Expr(expr));
+        self.pop_expr_span();
     }
 
     pub fn stmt(&mut self, stmt: &ast::NodeRef<ast::Stmt>) {
