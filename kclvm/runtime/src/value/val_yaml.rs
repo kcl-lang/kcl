@@ -131,7 +131,7 @@ mod test_value_yaml {
     #[test]
     fn test_serde_yaml_ng_on_str() {
         let on_str = serde_yaml_ng::to_string("on").unwrap();
-        assert_eq!(on_str, "'on'\n");
+        assert_eq!(on_str, "on\n");
     }
 
     #[test]
