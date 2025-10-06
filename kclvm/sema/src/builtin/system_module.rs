@@ -1683,7 +1683,7 @@ register_crypto_member! {
         None,
         Type::str_ref(),
         &[],
-        r#"Generate a random UUID."#,
+        r#"Generate a random UUIDv4."#,
         false,
         None,
     )
