@@ -70,6 +70,8 @@ pub struct Printer<'p> {
     pub hook: &'p (dyn PrinterHook + 'p),
     /// Last AST expr/stmt line, default is 0.
     last_ast_line: u64,
+    /// Stack of the current expression span (start_line, end_line).
+    expr_span_stack: Vec<(u64, u64)>,
 }
 
 impl Default for Printer<'_> {
@@ -82,6 +84,7 @@ impl Default for Printer<'_> {
             comments: Default::default(),
             import_spec: Default::default(),
             last_ast_line: Default::default(),
+            expr_span_stack: Default::default(),
         }
     }
 }
@@ -96,6 +99,7 @@ impl<'p> Printer<'p> {
             import_spec: IndexMap::default(),
             hook,
             last_ast_line: 0,
+            expr_span_stack: Vec::default(),
         }
     }
 
@@ -262,6 +266,45 @@ impl<'p> Printer<'p> {
         }
     }
 
+    pub fn write_comments_until_line(&mut self, line: u64) {
+        if !self.cfg.write_comments || line == 0 {
+            return;
+        }
+
+        let mut comments_written = 0;
+        while let Some(comment) = self.comments.front() {
+            if comment.line == 0 || comment.line > line {
+                break;
+            }
+
+            let comment = self.comments.pop_front().unwrap();
+
+            // Add newline before first comment if not already at line start
+            if comments_written == 0 && !self.out.ends_with('\n') {
+                self.write_newline_without_fill();
+            }
+
+            self.fill("");
+            self.write(&comment.node.text);
+            self.write_newline_without_fill();
+
+            // Add extra newline if next comment is 2+ lines away
+            if let Some(next) = self.comments.front() {
+                if next.line >= comment.line + 2 && next.line <= line {
+                    self.write_newline_without_fill();
+                }
+            }
+
+            self.last_ast_line = self.last_ast_line.max(comment.line);
+            comments_written += 1;
+        }
+
+        // Remove trailing newline if we wrote any comments
+        if comments_written > 0 && self.out.ends_with('\n') {
+            self.out.pop();
+        }
+    }
+
     // --------------------------
     // Indent and scope functions
     // --------------------------
@@ -274,6 +317,18 @@ impl<'p> Printer<'p> {
     /// Leave with a dedent
     pub fn leave(&mut self) {
         self.indent -= 1;
+    }
+
+    pub(crate) fn push_expr_span(&mut self, start_line: u64, end_line: u64) {
+        self.expr_span_stack.push((start_line, end_line));
+    }
+
+    pub(crate) fn pop_expr_span(&mut self) {
+        self.expr_span_stack.pop();
+    }
+
+    pub(crate) fn current_expr_end_line(&self) -> Option<u64> {
+        self.expr_span_stack.last().map(|(_, end_line)| *end_line)
     }
 }
 
