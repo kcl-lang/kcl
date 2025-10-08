@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
-serde_yaml = {path = "../third-party/serde_yaml"}
+serde_yaml_ng = "0.10.0"
 serde_json = "1.0"
 toml = "0.5.8"
 ron = "0.7.0"

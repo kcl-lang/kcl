@@ -149,9 +149,10 @@ websites:
                 &format!("{}{}", FILE_TEST_CASES[0], FILE_EXTENSIONS[1]),
             );
 
-            let got_yaml = <DataLoader as Loader<serde_yaml::Value>>::load(&yaml_loader).unwrap();
-            let expect_yaml: serde_yaml::Value =
-                serde_yaml::from_str(yaml_loader.get_data()).unwrap();
+            let got_yaml =
+                <DataLoader as Loader<serde_yaml_ng::Value>>::load(&yaml_loader).unwrap();
+            let expect_yaml: serde_yaml_ng::Value =
+                serde_yaml_ng::from_str(yaml_loader.get_data()).unwrap();
 
             assert_eq!(got_yaml, expect_yaml);
 
@@ -188,7 +189,7 @@ websites:
                 &format!("{}{}", FILE_TEST_CASES[0], FILE_EXTENSIONS[0]),
             );
 
-            match <DataLoader as Loader<serde_yaml::Value>>::load(&json_loader) {
+            match <DataLoader as Loader<serde_yaml_ng::Value>>::load(&json_loader) {
                 Ok(_) => {
                     panic!("unreachable")
                 }
@@ -238,7 +239,7 @@ websites:
             let yaml_loader =
                 DataLoader::new_with_file_path(LoaderKind::YAML, &invalid_yaml_file_path).unwrap();
 
-            match <DataLoader as Loader<serde_yaml::Value>>::load(&yaml_loader) {
+            match <DataLoader as Loader<serde_yaml_ng::Value>>::load(&yaml_loader) {
                 Ok(_) => {
                     panic!("unreachable")
                 }
