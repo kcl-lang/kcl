@@ -12,7 +12,10 @@ pub fn encode_text(value: &str, encoding: Option<String>) -> Result<Vec<u8>> {
             let (cow, _, had_errors) = encoding.encode(value);
 
             if had_errors {
-                bail!("encoding errors occurred while encoding to {}", encoding_name);
+                bail!(
+                    "encoding errors occurred while encoding to {}",
+                    encoding_name
+                );
             }
 
             Ok(cow.into_owned())
