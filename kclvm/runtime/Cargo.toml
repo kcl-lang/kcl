@@ -34,7 +34,7 @@ handlebars = "5.1.2"
 walkdir = "2.5.0"
 anyhow = "1"
 blake3 = "1.5.4"
-encoding_rs = "0.8"
+encoding_rs = "0.8.35"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 hostname = "0.4.0"
