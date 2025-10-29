@@ -1560,21 +1560,21 @@ dependencies = [
 
 [[package]]
 name = "inkwell"
-version = "0.6.0"
-source = "git+https://github.com/TheDan64/inkwell?branch=master#0f8d2d6c9061cfe80d3e83b75ea00f6df94ee562"
+version = "0.2.0"
+source = "git+https://github.com/TheDan64/inkwell?branch=master#4030f764f1c889f36429ac02ef32e04fcfa8ce33"
 dependencies = [
  "either",
  "inkwell_internals",
  "libc",
  "llvm-sys",
  "once_cell",
- "thiserror 2.0.17",
+ "parking_lot 0.12.5",
 ]
 
 [[package]]
 name = "inkwell_internals"
-version = "0.11.0"
-source = "git+https://github.com/TheDan64/inkwell?branch=master#0f8d2d6c9061cfe80d3e83b75ea00f6df94ee562"
+version = "0.8.0"
+source = "git+https://github.com/TheDan64/inkwell?branch=master#4030f764f1c889f36429ac02ef32e04fcfa8ce33"
 dependencies = [
  "proc-macro2",
  "quote",
