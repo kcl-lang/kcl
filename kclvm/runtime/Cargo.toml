@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 kclvm-primitives = { path = "../primitives" }
 kclvm_runtime_internal_macros = { path = "./internal_macros" }
-serde_json =  {package = "serde_json", version = "= 1.0.115"}
+serde_json = "1.0.132"
 serde = { version = "1", features = ["derive"] }
 serde_yaml_ng = "0.10.0"
 lazy_static = "1.4.0"
@@ -34,7 +34,7 @@ handlebars = "5.1.2"
 walkdir = "2.5.0"
 anyhow = "1"
 blake3 = "1.5.4"
-encoding = "0.2.33"
+encoding_rs = "0.8.35"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 hostname = "0.4.0"

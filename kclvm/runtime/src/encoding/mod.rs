@@ -1,19 +1,27 @@
 use anyhow::{bail, Result};
-use encoding::{all::encodings, EncoderTrap};
+use encoding_rs::Encoding;
 
 /// Encoding string value to bytes with specific encoding format.
 pub fn encode_text(value: &str, encoding: Option<String>) -> Result<Vec<u8>> {
-    if let Some(encoding) = encoding {
-        let encoding = normalize_encoding_name(&encoding)?;
-        let valid_encodings = encodings();
-        for valid_encoding in valid_encodings {
-            if valid_encoding.name() == encoding {
-                return valid_encoding
-                    .encode(value, EncoderTrap::Strict)
-                    .map_err(|e| anyhow::anyhow!(e));
+    if let Some(encoding_name) = encoding {
+        let encoding_name = normalize_encoding_name(&encoding_name)?;
+
+        // Look up the encoding by label
+        if let Some(encoding) = Encoding::for_label(encoding_name.as_bytes()) {
+            // Encode the string
+            let (cow, _, had_errors) = encoding.encode(value);
+
+            if had_errors {
+                bail!(
+                    "encoding errors occurred while encoding to {}",
+                    encoding_name
+                );
             }
+
+            Ok(cow.into_owned())
+        } else {
+            bail!("unknown encoding {}", encoding_name)
         }
-        bail!("unknown encoding {encoding}")
     } else {
         Ok(value.as_bytes().to_vec())
     }
