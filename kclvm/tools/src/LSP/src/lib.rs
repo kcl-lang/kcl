@@ -24,4 +24,5 @@ mod state;
 mod tests;
 pub mod to_lsp;
 mod util;
+mod validator;
 mod word_index;
