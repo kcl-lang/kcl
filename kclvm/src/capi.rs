@@ -198,7 +198,7 @@ pub unsafe extern "C-unwind" fn kcl_run(
 
     match intern_run(filename, src) {
         Ok(result) => CString::new(result.yaml_result).unwrap().into_raw(),
-        Err(err) => CString::new(format!("ERROR:{}", err)).unwrap().into_raw(),
+        Err(err) => CString::new(format!("ERROR:{err}")).unwrap().into_raw(),
     }
 }
 
@@ -218,7 +218,7 @@ pub unsafe extern "C-unwind" fn kcl_run_with_log_message(
         Ok(result) => CString::new(result.log_message + &result.yaml_result)
             .unwrap()
             .into_raw(),
-        Err(err) => CString::new(format!("ERROR:{}", err)).unwrap().into_raw(),
+        Err(err) => CString::new(format!("ERROR:{err}")).unwrap().into_raw(),
     }
 }
 
@@ -232,7 +232,7 @@ pub unsafe extern "C-unwind" fn kcl_fmt(src_ptr: *const c_char) -> *const c_char
 
     match intern_fmt(src) {
         Ok(result) => CString::new(result).unwrap().into_raw(),
-        Err(err) => CString::new(format!("ERROR:{}", err)).unwrap().into_raw(),
+        Err(err) => CString::new(format!("ERROR:{err}")).unwrap().into_raw(),
     }
 }
 

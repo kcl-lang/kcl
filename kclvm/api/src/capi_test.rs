@@ -273,7 +273,7 @@ fn test_c_api_testing() {
 fn test_c_api_without_wrapper<A, R>(svc_name: &str, input: &str, output: &str)
 where
     A: Message + DeserializeOwned,
-    R: Message + Default + PartialEq + DeserializeOwned + serde::Serialize,
+    R: Message + Default + std::fmt::Debug + PartialEq + DeserializeOwned + serde::Serialize,
 {
     test_c_api::<A, R, _>(svc_name, input, output, |_| {})
 }
@@ -281,7 +281,13 @@ where
 fn test_c_api<A, R, F>(svc_name: &str, input: &str, output: &str, wrapper: F)
 where
     A: Message + DeserializeOwned,
-    R: Message + Default + PartialEq + DeserializeOwned + serde::Serialize + ?Sized,
+    R: Message
+        + Default
+        + std::fmt::Debug
+        + PartialEq
+        + DeserializeOwned
+        + serde::Serialize
+        + ?Sized,
     F: Fn(&mut R),
 {
     let _test_lock = TEST_MUTEX.lock().unwrap();
