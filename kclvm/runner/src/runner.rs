@@ -467,7 +467,7 @@ thread_local! {
 
 #[cfg(target_arch = "wasm32")]
 static ONCE_PANIC_HOOK: Lazy<()> = Lazy::new(|| {
-    std::panic::set_hook(Box::new(|info: &std::panic::PanicInfo| {
+    std::panic::set_hook(Box::new(|info: &std::panic::PanicHookInfo| {
         KCL_RUNTIME_PANIC_RECORD.with(|record| {
             let mut record = record.borrow_mut();
             record.kcl_panic_info = true;
