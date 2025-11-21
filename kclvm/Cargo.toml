@@ -37,9 +37,6 @@ lto = true
 
 [workspace]
 members = [
-    "third-party/prost-wkt",
-    "third-party/prost-wkt/wkt-build",
-    "third-party/prost-wkt/wkt-types",
     "primitives",
     "api",
     "cmd",
