@@ -238,7 +238,7 @@ pub extern "C-unwind" fn kclvm_net_to_IP6(
                 let s = format!("{addr}");
                 return ValueRef::str(s.as_ref()).into_raw(ctx);
             }
-            Err(e) => {
+            Err(_) => {
                 match Ipv4Addr::from_str(ip.as_ref()) {
                     Ok(addr) => {
                         // Convert IPv4 to IPv6-mapped address (::ffff:0:0/96)

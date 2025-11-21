@@ -54,7 +54,6 @@ impl Command {
             .cargo_metadata(false)
             .no_default_flags(false)
             .pic(true)
-            .shared_flag(true)
             .opt_level(0)
             .target(&target)
             .host(&target)
