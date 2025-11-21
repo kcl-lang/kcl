@@ -8,7 +8,6 @@
 </p>
 
 <p align="center">
-  <img src="https://github.com/kcl-lang/kcl/workflows/release/badge.svg">
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square">
   <img src="https://coveralls.io/repos/github/kcl-lang/kcl/badge.svg">
   <img src="https://img.shields.io/github/release/kcl-lang/kcl.svg">
@@ -16,7 +15,7 @@
   <a href="https://www.bestpractices.dev/projects/7867"><img src="https://www.bestpractices.dev/projects/7867/badge"></a>
   <img src="https://img.shields.io/github/downloads/kcl-lang/kcl/total?label=Github%20downloads&logo=github">
   <img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkcl-lang%2Fkcl.svg?type=shield">
-  <a href="https://app.devin.ai/devin_v4.png"><img src="https://deepwiki.com/kcl-lang/kcl"></a>
+  <a href="https://deepwiki.com/kcl-lang/kcl"><img src="https://deepwiki.com/badge.svg"></a>
 </p>
 
 ## Introduction
