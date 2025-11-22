@@ -136,7 +136,7 @@ fn build_virtual_word_index_with_file_content(
 
 #[cfg(test)]
 mod tests {
-    use super::{line_to_words, Word};
+    use super::{Word, line_to_words};
     use std::collections::HashMap;
 
     #[test]

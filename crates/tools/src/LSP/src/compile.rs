@@ -2,8 +2,8 @@ use kcl_ast::ast::Program;
 use kcl_driver::{lookup_compile_workspace, toolchain};
 use kcl_error::Diagnostic;
 use kcl_parser::{
-    entry::get_normalized_k_files_from_paths, load_all_files_under_paths, KCLModuleCache,
-    LoadProgramOptions, ParseSessionRef,
+    KCLModuleCache, LoadProgramOptions, ParseSessionRef, entry::get_normalized_k_files_from_paths,
+    load_all_files_under_paths,
 };
 use kcl_primitives::{IndexMap, IndexSet};
 use kcl_query::query::filter_pkg_schemas;
@@ -48,7 +48,7 @@ pub fn compile(
             return (
                 Default::default(),
                 Err(anyhow::anyhow!("Compile failed: {:?}", e)),
-            )
+            );
         }
     };
     let normalized_files: Vec<&str> = normalized_files.iter().map(|s| s.as_str()).collect();
@@ -60,7 +60,7 @@ pub fn compile(
                 return (
                     Default::default(),
                     Err(anyhow::anyhow!("Compile failed: {:?}", e)),
-                )
+                );
             }
         };
         opts.k_code_list.append(&mut k_code_list);
@@ -93,7 +93,7 @@ pub fn compile(
                         "Failed to get module cache RwLock: {:?}",
                         e
                     )),
-                )
+                );
             }
         }
     }

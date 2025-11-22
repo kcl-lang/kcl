@@ -24,7 +24,7 @@ use crate::{
     quick_fix,
     semantic_token::semantic_tokens_full,
     signature_help::signature_help,
-    state::{log_message, LanguageServerSnapshot, LanguageServerState, Task},
+    state::{LanguageServerSnapshot, LanguageServerState, Task, log_message},
 };
 
 impl LanguageServerState {

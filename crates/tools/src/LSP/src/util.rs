@@ -13,7 +13,7 @@ use crate::state::KCLVfs;
 use lsp_types::Url;
 use parking_lot::RwLockReadGuard;
 use ra_ap_vfs::{FileId, Vfs};
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 
 use std::fs;
 use std::path::{Path, PathBuf};

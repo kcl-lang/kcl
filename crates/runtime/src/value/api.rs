@@ -550,7 +550,7 @@ pub unsafe extern "C-unwind" fn kcl_value_check_function_ptr(
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C-unwind" fn kcl_value_function_invoke(
+pub unsafe fn kcl_value_function_invoke(
     p: *const kcl_value_ref_t,
     ctx: *mut kcl_context_t,
     args: *mut kcl_value_ref_t,

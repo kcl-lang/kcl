@@ -1,12 +1,12 @@
 use crate::analysis::{Analysis, AnalysisDatabase, DBState, OpenFileInfo};
-use crate::compile::{compile, Params};
+use crate::compile::{Params, compile};
 use crate::from_lsp::file_path_from_url;
 use crate::to_lsp::{kcl_diag_to_lsp_diags, url_from_path};
 use crate::util::{filter_kcl_config_file, get_file_name, to_json};
-use crossbeam_channel::{select, unbounded, Receiver, Sender};
+use crossbeam_channel::{Receiver, Sender, select, unbounded};
 use kcl_driver::toolchain::{self, Toolchain};
 use kcl_driver::{
-    lookup_compile_workspace, lookup_compile_workspaces, CompileUnitOptions, WorkSpaceKind,
+    CompileUnitOptions, WorkSpaceKind, lookup_compile_workspace, lookup_compile_workspaces,
 };
 use kcl_parser::KCLModuleCache;
 use kcl_sema::core::global_state::GlobalState;
@@ -14,8 +14,8 @@ use kcl_sema::resolver::scope::KCLScopeCache;
 use lsp_server::RequestId;
 use lsp_server::{ReqQueue, Request, Response};
 use lsp_types::{
-    notification::{Notification, PublishDiagnostics},
     InitializeParams, PublishDiagnosticsParams, WorkspaceFolder,
+    notification::{Notification, PublishDiagnostics},
 };
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use parking_lot::RwLock;
@@ -25,7 +25,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
-use std::{sync::mpsc, sync::Arc, time::Instant};
+use std::{sync::Arc, sync::mpsc, time::Instant};
 
 pub(crate) type RequestHandler = fn(&mut LanguageServerState, lsp_server::Response);
 

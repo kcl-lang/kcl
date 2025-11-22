@@ -2,7 +2,7 @@ use kcl_error::Position as KCLPos;
 use kcl_sema::{
     builtin::BUILTIN_DECORATORS,
     core::global_state::GlobalState,
-    ty::{FunctionType, Type, ANY_TYPE_STR},
+    ty::{ANY_TYPE_STR, FunctionType, Type},
 };
 use lsp_types::{Hover, HoverContents, MarkedString};
 
@@ -258,8 +258,8 @@ fn build_func_hover_content(
 
 #[cfg(test)]
 mod tests {
-    use crate::hover::docs_to_hover;
     use crate::hover::MarkedStringType;
+    use crate::hover::docs_to_hover;
     use std::path::PathBuf;
 
     use kcl_error::Position as KCLPos;
@@ -514,7 +514,10 @@ mod tests {
                     );
                 }
                 if let MarkedString::String(s) = vec[2].clone() {
-                    assert_eq!(s, "Return the number of non-overlapping occurrences of substring sub in the range [start, end]. Optional arguments start and end are interpreted as in slice notation.");
+                    assert_eq!(
+                        s,
+                        "Return the number of non-overlapping occurrences of substring sub in the range [start, end]. Optional arguments start and end are interpreted as in slice notation."
+                    );
                 }
             }
             _ => unreachable!("test error"),
@@ -534,7 +537,10 @@ mod tests {
                     assert_eq!(s.value, "function print() -> NoneType");
                 }
                 if let MarkedString::String(s) = vec[1].clone() {
-                    assert_eq!(s, "Prints the values to a stream, or to the system stdout by default.\n\nOptional keyword arguments:\n\nsep:   string inserted between values, default a space.\n\nend:   string appended after the last value, default a newline.");
+                    assert_eq!(
+                        s,
+                        "Prints the values to a stream, or to the system stdout by default.\n\nOptional keyword arguments:\n\nsep:   string inserted between values, default a space.\n\nend:   string appended after the last value, default a newline."
+                    );
                 }
             }
             _ => unreachable!("test error"),
@@ -602,7 +608,10 @@ mod tests {
                     assert_eq!(s.value, "function capitalize() -> str");
                 }
                 if let MarkedString::String(s) = vec[2].clone() {
-                    assert_eq!(s, "Return a copy of the string with its first character capitalized and the rest lowercased.");
+                    assert_eq!(
+                        s,
+                        "Return a copy of the string with its first character capitalized and the rest lowercased."
+                    );
                 }
             }
             _ => unreachable!("test error"),

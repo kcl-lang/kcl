@@ -1,5 +1,5 @@
 use crate::state::LanguageServerState;
-use clap::{builder::Str, Command};
+use clap::{Command, builder::Str};
 use lsp_server::Connection;
 use lsp_types::InitializeParams;
 

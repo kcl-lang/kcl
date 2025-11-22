@@ -53,7 +53,7 @@ Ant Group, Youzan, and Huawei are notable production users managing large-scale 
 - 362+ Rust source files
 - ~32,673 lines of Rust code in core modules
 - **Requires Rust 1.88+** for building
-- Rust 2021 edition
+- Rust 2024 edition
 
 ### Secondary Languages
 - **KCL** - The language itself (.k files for examples and tests)

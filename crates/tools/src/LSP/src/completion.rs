@@ -17,10 +17,10 @@
 
 use crate::goto_def::{find_def, find_symbol};
 use crate::to_lsp::lsp_pos;
-use kcl_ast::ast::{self, ImportStmt, Program, Stmt};
 use kcl_ast::MAIN_PKG;
+use kcl_ast::ast::{self, ImportStmt, Program, Stmt};
 use kcl_config::modfile::KCL_FILE_EXTENSION;
-use kcl_driver::toolchain::{get_real_path_from_external, Metadata, Toolchain};
+use kcl_driver::toolchain::{Metadata, Toolchain, get_real_path_from_external};
 use kcl_error::diagnostic::Range;
 use kcl_parser::get_kcl_files;
 use kcl_primitives::{DefaultHashBuilder, IndexMap, IndexSet};
@@ -33,7 +33,7 @@ use kcl_sema::builtin::{BUILTIN_FUNCTIONS, STANDARD_SYSTEM_MODULES};
 use kcl_sema::core::package::ModuleInfo;
 use kcl_sema::core::scope::{LocalSymbolScopeKind, ScopeKind};
 use kcl_sema::core::symbol::SymbolKind;
-use kcl_sema::resolver::doc::{parse_schema_doc_string, SchemaDoc};
+use kcl_sema::resolver::doc::{SchemaDoc, parse_schema_doc_string};
 use kcl_sema::ty::{FunctionType, SchemaType, Type, TypeKind};
 use kcl_utils::path::PathPrefix;
 use lsp_types::{CompletionItem, CompletionItemKind, InsertTextFormat};
@@ -257,7 +257,7 @@ fn completion_dot(
                     match node.node {
                         // if the complete trigger character in string, skip it
                         ast::Expr::StringLit(_) | ast::Expr::JoinedString(_) => {
-                            return Some(into_completion_items(&items).into())
+                            return Some(into_completion_items(&items).into());
                         }
                         _ => {}
                     }
@@ -970,8 +970,8 @@ fn unimport_schemas(
 mod tests {
     use crate::{
         completion::{
-            completion, func_ty_complete_insert_text, func_ty_complete_label,
-            into_completion_items, KCLCompletionItem, KCLCompletionItemKind,
+            KCLCompletionItem, KCLCompletionItemKind, completion, func_ty_complete_insert_text,
+            func_ty_complete_label, into_completion_items,
         },
         tests::{compile_test_file, compile_test_file_and_metadata},
     };
@@ -1644,9 +1644,10 @@ mod tests {
 
         match &got {
             CompletionResponse::Array(arr) => {
-                assert!(arr
-                    .iter()
-                    .all(|item| item.kind == Some(CompletionItemKind::FUNCTION)))
+                assert!(
+                    arr.iter()
+                        .all(|item| item.kind == Some(CompletionItemKind::FUNCTION))
+                )
             }
             CompletionResponse::List(_) => panic!("test failed"),
         };
@@ -1722,9 +1723,10 @@ mod tests {
         let got = completion(Some('.'), &program, &pos, &gs, &tool, None, &schema_map).unwrap();
         match got {
             CompletionResponse::Array(arr) => {
-                assert!(arr
-                    .iter()
-                    .all(|item| item.kind == Some(CompletionItemKind::FUNCTION)))
+                assert!(
+                    arr.iter()
+                        .all(|item| item.kind == Some(CompletionItemKind::FUNCTION))
+                )
             }
             CompletionResponse::List(_) => panic!("test failed"),
         };

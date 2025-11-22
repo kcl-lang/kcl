@@ -148,12 +148,12 @@ mod tests {
     ) -> DocumentSymbol {
         let range: Range = Range {
             start: Position {
-                line: range.0 .0,
-                character: range.0 .1,
+                line: range.0.0,
+                character: range.0.1,
             },
             end: Position {
-                line: range.1 .0,
-                character: range.1 .1,
+                line: range.1.0,
+                character: range.1.1,
             },
         };
         DocumentSymbol {

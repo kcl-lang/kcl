@@ -1,9 +1,9 @@
 use crossbeam_channel::after;
 use crossbeam_channel::select;
+use kcl_driver::WorkSpaceKind;
 use kcl_driver::lookup_compile_workspace;
 use kcl_driver::toolchain;
 use kcl_driver::toolchain::Metadata;
-use kcl_driver::WorkSpaceKind;
 use kcl_primitives::IndexMap;
 use kcl_primitives::IndexSet;
 use kcl_sema::core::global_state::GlobalState;
@@ -13,8 +13,6 @@ use kcl_utils::path::PathPrefix;
 use kcl_sema::resolver::scope::KCLScopeCache;
 use lsp_server::RequestId;
 use lsp_server::Response;
-use lsp_types::notification::Exit;
-use lsp_types::request::GotoTypeDefinitionResponse;
 use lsp_types::CompletionContext;
 use lsp_types::CompletionItem;
 use lsp_types::CompletionItemKind;
@@ -44,6 +42,8 @@ use lsp_types::Url;
 use lsp_types::WorkDoneProgressParams;
 use lsp_types::WorkspaceEdit;
 use lsp_types::WorkspaceFolder;
+use lsp_types::notification::Exit;
+use lsp_types::request::GotoTypeDefinitionResponse;
 
 use parking_lot::lock_api::RwLock;
 use serde::Serialize;

@@ -1,10 +1,10 @@
 use crate::state::KCLVfs;
-use crate::word_index::{build_virtual_word_index, VirtualLocation};
+use crate::word_index::{VirtualLocation, build_virtual_word_index};
 use crate::{from_lsp::kcl_pos, goto_def::find_def};
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use kcl_ast::ast::{self, Program};
 use kcl_error::diagnostic;
-use kcl_parser::{load_program, LoadProgramOptions, ParseSessionRef};
+use kcl_parser::{LoadProgramOptions, ParseSessionRef, load_program};
 use kcl_query::{path::parse_attribute_path, selector::parse_symbol_selector_spec};
 use kcl_sema::{
     advanced_resolver::AdvancedResolver, core::global_state::GlobalState, namer::Namer,
@@ -813,7 +813,10 @@ a = {
 d = a.abc
 e = a["abc"]"#
         );
-        assert_eq!(main_new_content, "import .base\n\na = base.NewPerson {\n    age: 1,\n    name: {\n        first: \"aa\"\n    }\n}");
+        assert_eq!(
+            main_new_content,
+            "import .base\n\na = base.NewPerson {\n    age: 1,\n    name: {\n        first: \"aa\"\n    }\n}"
+        );
 
         // after test, restore the old file content
         for path in [base_path.clone(), main_path.clone()] {

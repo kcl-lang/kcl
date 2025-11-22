@@ -1,7 +1,7 @@
 use crossbeam_channel::Sender;
 use lsp_server::{ExtractError, Request};
-use serde::de::DeserializeOwned;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 use std::error::Error;
 
 use crate::{

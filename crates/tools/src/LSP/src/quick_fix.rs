@@ -167,7 +167,7 @@ mod tests {
 
     use super::quick_fix;
     use crate::{
-        compile::{compile_with_params, Params},
+        compile::{Params, compile_with_params},
         state::KCLVfs,
         to_lsp::kcl_diag_to_lsp_diags_by_file,
     };
