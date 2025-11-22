@@ -1,0 +1,106 @@
+---
+source: crates/parser/src/tests/file.rs
+expression: "$crate :: tests :: parsing_file_string(\"testdata/import-01.k\")"
+---
+{
+  "filename": "import-01.k",
+  "doc": null,
+  "body": [
+    {
+      "node": {
+        "type": "Import",
+        "path": {
+          "node": "a1",
+          "filename": "import-01.k",
+          "line": 1,
+          "column": 7,
+          "end_line": 1,
+          "end_column": 9
+        },
+        "rawpath": "a1",
+        "name": "a1",
+        "asname": null,
+        "pkg_name": "__main__"
+      },
+      "filename": "import-01.k",
+      "line": 1,
+      "column": 0,
+      "end_line": 1,
+      "end_column": 9
+    },
+    {
+      "node": {
+        "type": "Import",
+        "path": {
+          "node": "a2",
+          "filename": "import-01.k",
+          "line": 3,
+          "column": 7,
+          "end_line": 3,
+          "end_column": 9
+        },
+        "rawpath": "a2",
+        "name": "a2_pkg",
+        "asname": {
+          "node": "a2_pkg",
+          "filename": "import-01.k",
+          "line": 3,
+          "column": 13,
+          "end_line": 3,
+          "end_column": 19
+        },
+        "pkg_name": "__main__"
+      },
+      "filename": "import-01.k",
+      "line": 3,
+      "column": 0,
+      "end_line": 3,
+      "end_column": 19
+    },
+    {
+      "node": {
+        "type": "Import",
+        "path": {
+          "node": "subpkg.b1.c1",
+          "filename": "import-01.k",
+          "line": 5,
+          "column": 7,
+          "end_line": 5,
+          "end_column": 19
+        },
+        "rawpath": "subpkg.b1.c1",
+        "name": "c1",
+        "asname": null,
+        "pkg_name": "__main__"
+      },
+      "filename": "import-01.k",
+      "line": 5,
+      "column": 0,
+      "end_line": 5,
+      "end_column": 19
+    },
+    {
+      "node": {
+        "type": "Import",
+        "path": {
+          "node": "a3",
+          "filename": "import-01.k",
+          "line": 7,
+          "column": 7,
+          "end_line": 7,
+          "end_column": 10
+        },
+        "rawpath": ".a3",
+        "name": "a3",
+        "asname": null,
+        "pkg_name": "__main__"
+      },
+      "filename": "import-01.k",
+      "line": 7,
+      "column": 0,
+      "end_line": 7,
+      "end_column": 10
+    }
+  ],
+  "comments": []
+}

@@ -1,5 +1,0 @@
----
-source: parser/src/tests/types.rs
-expression: "crate::tests::parsing_type_node_string(r####\"bool | True |  int  | str|str\"####)"
----
-bool | True | int | str | str

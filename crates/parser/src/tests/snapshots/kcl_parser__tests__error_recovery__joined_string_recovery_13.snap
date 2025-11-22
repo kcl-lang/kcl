@@ -1,0 +1,127 @@
+---
+source: crates/parser/src/tests/error_recovery.rs
+expression: "$crate :: tests ::\nparsing_expr_string(r#\"'\\\"false\\\" \\${item.kind}: a${item.metadata.name} \\\"true\\\" \\${item} '\"#)"
+---
+Node {
+    node: JoinedString(
+        JoinedString {
+            is_long_string: false,
+            values: [
+                Node {
+                    node: StringLit(
+                        StringLit {
+                            is_long_string: false,
+                            raw_value: "\\\"false\\\" \\${item.kind}",
+                            value: "\"false\" ${item.kind}",
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 1,
+                },
+                Node {
+                    node: StringLit(
+                        StringLit {
+                            is_long_string: false,
+                            raw_value: ": a",
+                            value: ": a",
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 1,
+                },
+                Node {
+                    node: FormattedValue(
+                        FormattedValue {
+                            is_long_string: false,
+                            value: Node {
+                                node: Identifier(
+                                    Identifier {
+                                        names: [
+                                            Node {
+                                                node: "item",
+                                                filename: "",
+                                                line: 1,
+                                                column: 29,
+                                                end_line: 1,
+                                                end_column: 33,
+                                            },
+                                            Node {
+                                                node: "metadata",
+                                                filename: "",
+                                                line: 1,
+                                                column: 34,
+                                                end_line: 1,
+                                                end_column: 42,
+                                            },
+                                            Node {
+                                                node: "name",
+                                                filename: "",
+                                                line: 1,
+                                                column: 43,
+                                                end_line: 1,
+                                                end_column: 47,
+                                            },
+                                        ],
+                                        pkgpath: "",
+                                        ctx: Load,
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 29,
+                                end_line: 1,
+                                end_column: 47,
+                            },
+                            format_spec: None,
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 29,
+                    end_line: 1,
+                    end_column: 47,
+                },
+                Node {
+                    node: StringLit(
+                        StringLit {
+                            is_long_string: false,
+                            raw_value: " \\\"true\\\" \\${item}",
+                            value: " \"true\" ${item}",
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 1,
+                },
+                Node {
+                    node: StringLit(
+                        StringLit {
+                            is_long_string: false,
+                            raw_value: " ",
+                            value: " ",
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 1,
+                },
+            ],
+            raw_value: "'\\\"false\\\" \\${item.kind}: a${item.metadata.name} \\\"true\\\" \\${item} '",
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 68,
+}

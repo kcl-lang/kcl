@@ -1,5 +1,0 @@
----
-source: tools/src/vet/tests.rs
-expression: got_ast_yaml_str
----
-{"node":{"type":"Schema","name":{"node":{"names":[{"node":"only_with_bool","filename":"<workspace>/only_with_bool.yaml","line":1,"column":8,"end_line":0,"end_column":0}],"pkgpath":"","ctx":"Load"},"filename":"<workspace>/only_with_bool.yaml","line":1,"column":8,"end_line":0,"end_column":0},"args":[],"kwargs":[],"config":{"node":{"type":"Config","items":[{"node":{"key":{"node":{"type":"StringLit","is_long_string":false,"raw_value":"\"bool_val\"","value":"bool_val"},"filename":"<workspace>/only_with_bool.yaml","line":1,"column":0,"end_line":0,"end_column":0},"value":{"node":{"type":"NameConstantLit","value":"True"},"filename":"<workspace>/only_with_bool.yaml","line":1,"column":10,"end_line":0,"end_column":0},"operation":"Union"},"filename":"<workspace>/only_with_bool.yaml","line":1,"column":8,"end_line":0,"end_column":0}]},"filename":"<workspace>/only_with_bool.yaml","line":1,"column":8,"end_line":0,"end_column":0}},"filename":"<workspace>/only_with_bool.yaml","line":1,"column":8,"end_line":0,"end_column":0}

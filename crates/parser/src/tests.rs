@@ -205,7 +205,7 @@ pub fn test_vendor_home() {
         .display()
         .to_string()
         .adjust_canonicalization();
-    env::set_var(KCL_PKG_PATH, vendor);
+    unsafe { env::set_var(KCL_PKG_PATH, vendor) };
     assert_eq!(get_vendor_home(), vendor.to_string());
 }
 
@@ -219,7 +219,7 @@ fn set_vendor_home() -> String {
         .display()
         .to_string()
         .adjust_canonicalization();
-    env::set_var(KCL_PKG_PATH, vendor);
+    unsafe { env::set_var(KCL_PKG_PATH, vendor) };
     debug_assert_eq!(get_vendor_home(), vendor.to_string());
     vendor.to_string()
 }
@@ -378,7 +378,7 @@ pub fn test_import_vendor_without_kclmod() {
 }
 
 pub fn test_import_vendor_without_vendor_home() {
-    env::set_var(KCL_PKG_PATH, "");
+    unsafe { env::set_var(KCL_PKG_PATH, "") };
     let sm = SourceMap::new(FilePathMapping::empty());
     let sess = Arc::new(ParseSession::with_source_map(Arc::new(sm)));
     let dir = &PathBuf::from(".")

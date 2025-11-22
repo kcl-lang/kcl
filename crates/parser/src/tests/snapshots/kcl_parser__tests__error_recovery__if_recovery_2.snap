@@ -1,0 +1,52 @@
+---
+source: crates/parser/src/tests/error_recovery.rs
+expression: "$crate :: tests :: parsing_expr_string(r#\"1 if True\"#)"
+---
+Node {
+    node: If(
+        IfExpr {
+            body: Node {
+                node: NumberLit(
+                    NumberLit {
+                        binary_suffix: None,
+                        value: Int(
+                            1,
+                        ),
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 1,
+            },
+            cond: Node {
+                node: NameConstantLit(
+                    NameConstantLit {
+                        value: True,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 5,
+                end_line: 1,
+                end_column: 9,
+            },
+            orelse: Node {
+                node: Missing(
+                    MissingExpr,
+                ),
+                filename: "",
+                line: 1,
+                column: 9,
+                end_line: 1,
+                end_column: 9,
+            },
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 9,
+}

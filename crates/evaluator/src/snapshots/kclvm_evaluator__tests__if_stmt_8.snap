@@ -1,9 +1,0 @@
----
-source: evaluator/src/tests.rs
-expression: "format!(\"{}\", evaluator.run().unwrap().1)"
----
-items:
-- key2: value2
-c:
-  items:
-  - key2: value2

@@ -1,0 +1,65 @@
+---
+source: crates/parser/src/tests/error_recovery.rs
+expression: "$crate :: tests :: parsing_module_string(r#\"a: int =\"#)"
+---
+Module {
+    filename: "",
+    doc: None,
+    body: [
+        Node {
+            node: Assign(
+                AssignStmt {
+                    targets: [
+                        Node {
+                            node: Target {
+                                name: Node {
+                                    node: "a",
+                                    filename: "",
+                                    line: 1,
+                                    column: 0,
+                                    end_line: 1,
+                                    end_column: 1,
+                                },
+                                paths: [],
+                                pkgpath: "",
+                            },
+                            filename: "",
+                            line: 1,
+                            column: 0,
+                            end_line: 1,
+                            end_column: 1,
+                        },
+                    ],
+                    value: Node {
+                        node: Missing(
+                            MissingExpr,
+                        ),
+                        filename: "",
+                        line: 1,
+                        column: 8,
+                        end_line: 1,
+                        end_column: 8,
+                    },
+                    ty: Some(
+                        Node {
+                            node: Basic(
+                                Int,
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 3,
+                            end_line: 1,
+                            end_column: 6,
+                        },
+                    ),
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 1,
+            end_column: 8,
+        },
+    ],
+    comments: [],
+}

@@ -1,0 +1,230 @@
+---
+source: crates/parser/src/tests/file.rs
+expression: "$crate :: tests :: parsing_file_string(\"testdata/assign-01.k\")"
+---
+{
+  "filename": "assign-01.k",
+  "doc": null,
+  "body": [
+    {
+      "node": {
+        "type": "Assign",
+        "targets": [
+          {
+            "node": {
+              "name": {
+                "node": "a",
+                "filename": "assign-01.k",
+                "line": 1,
+                "column": 0,
+                "end_line": 1,
+                "end_column": 1
+              },
+              "paths": [],
+              "pkgpath": ""
+            },
+            "filename": "assign-01.k",
+            "line": 1,
+            "column": 0,
+            "end_line": 1,
+            "end_column": 1
+          }
+        ],
+        "value": {
+          "node": {
+            "type": "NumberLit",
+            "binary_suffix": null,
+            "value": {
+              "type": "Int",
+              "value": 1
+            }
+          },
+          "filename": "assign-01.k",
+          "line": 1,
+          "column": 2,
+          "end_line": 1,
+          "end_column": 3
+        },
+        "ty": null
+      },
+      "filename": "assign-01.k",
+      "line": 1,
+      "column": 0,
+      "end_line": 1,
+      "end_column": 3
+    },
+    {
+      "node": {
+        "type": "Assign",
+        "targets": [
+          {
+            "node": {
+              "name": {
+                "node": "b",
+                "filename": "assign-01.k",
+                "line": 2,
+                "column": 0,
+                "end_line": 2,
+                "end_column": 1
+              },
+              "paths": [],
+              "pkgpath": ""
+            },
+            "filename": "assign-01.k",
+            "line": 2,
+            "column": 0,
+            "end_line": 2,
+            "end_column": 1
+          }
+        ],
+        "value": {
+          "node": {
+            "type": "Binary",
+            "left": {
+              "node": {
+                "type": "NumberLit",
+                "binary_suffix": null,
+                "value": {
+                  "type": "Int",
+                  "value": 1
+                }
+              },
+              "filename": "assign-01.k",
+              "line": 2,
+              "column": 4,
+              "end_line": 2,
+              "end_column": 5
+            },
+            "op": "Add",
+            "right": {
+              "node": {
+                "type": "NumberLit",
+                "binary_suffix": null,
+                "value": {
+                  "type": "Int",
+                  "value": 2
+                }
+              },
+              "filename": "assign-01.k",
+              "line": 2,
+              "column": 8,
+              "end_line": 2,
+              "end_column": 9
+            }
+          },
+          "filename": "assign-01.k",
+          "line": 2,
+          "column": 4,
+          "end_line": 2,
+          "end_column": 9
+        },
+        "ty": null
+      },
+      "filename": "assign-01.k",
+      "line": 2,
+      "column": 0,
+      "end_line": 2,
+      "end_column": 9
+    },
+    {
+      "node": {
+        "type": "Assign",
+        "targets": [
+          {
+            "node": {
+              "name": {
+                "node": "c",
+                "filename": "assign-01.k",
+                "line": 3,
+                "column": 0,
+                "end_line": 3,
+                "end_column": 1
+              },
+              "paths": [],
+              "pkgpath": ""
+            },
+            "filename": "assign-01.k",
+            "line": 3,
+            "column": 0,
+            "end_line": 3,
+            "end_column": 1
+          }
+        ],
+        "value": {
+          "node": {
+            "type": "Binary",
+            "left": {
+              "node": {
+                "type": "NumberLit",
+                "binary_suffix": null,
+                "value": {
+                  "type": "Int",
+                  "value": 2
+                }
+              },
+              "filename": "assign-01.k",
+              "line": 3,
+              "column": 4,
+              "end_line": 3,
+              "end_column": 5
+            },
+            "op": "Add",
+            "right": {
+              "node": {
+                "type": "Binary",
+                "left": {
+                  "node": {
+                    "type": "NumberLit",
+                    "binary_suffix": null,
+                    "value": {
+                      "type": "Int",
+                      "value": 2
+                    }
+                  },
+                  "filename": "assign-01.k",
+                  "line": 3,
+                  "column": 8,
+                  "end_line": 3,
+                  "end_column": 9
+                },
+                "op": "Mul",
+                "right": {
+                  "node": {
+                    "type": "NumberLit",
+                    "binary_suffix": null,
+                    "value": {
+                      "type": "Int",
+                      "value": 3
+                    }
+                  },
+                  "filename": "assign-01.k",
+                  "line": 3,
+                  "column": 10,
+                  "end_line": 3,
+                  "end_column": 11
+                }
+              },
+              "filename": "assign-01.k",
+              "line": 3,
+              "column": 8,
+              "end_line": 3,
+              "end_column": 11
+            }
+          },
+          "filename": "assign-01.k",
+          "line": 3,
+          "column": 4,
+          "end_line": 3,
+          "end_column": 11
+        },
+        "ty": null
+      },
+      "filename": "assign-01.k",
+      "line": 3,
+      "column": 0,
+      "end_line": 3,
+      "end_column": 11
+    }
+  ],
+  "comments": []
+}

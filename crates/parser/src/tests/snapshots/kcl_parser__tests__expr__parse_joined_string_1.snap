@@ -1,0 +1,110 @@
+---
+source: crates/parser/src/tests/expr.rs
+expression: "$crate :: tests :: parsing_expr_string(r####\"'abc${a+1}cde'\"####)"
+---
+Node {
+    node: JoinedString(
+        JoinedString {
+            is_long_string: false,
+            values: [
+                Node {
+                    node: StringLit(
+                        StringLit {
+                            is_long_string: false,
+                            raw_value: "abc",
+                            value: "abc",
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 1,
+                },
+                Node {
+                    node: FormattedValue(
+                        FormattedValue {
+                            is_long_string: false,
+                            value: Node {
+                                node: Binary(
+                                    BinaryExpr {
+                                        left: Node {
+                                            node: Identifier(
+                                                Identifier {
+                                                    names: [
+                                                        Node {
+                                                            node: "a",
+                                                            filename: "",
+                                                            line: 1,
+                                                            column: 6,
+                                                            end_line: 1,
+                                                            end_column: 7,
+                                                        },
+                                                    ],
+                                                    pkgpath: "",
+                                                    ctx: Load,
+                                                },
+                                            ),
+                                            filename: "",
+                                            line: 1,
+                                            column: 6,
+                                            end_line: 1,
+                                            end_column: 7,
+                                        },
+                                        op: Add,
+                                        right: Node {
+                                            node: NumberLit(
+                                                NumberLit {
+                                                    binary_suffix: None,
+                                                    value: Int(
+                                                        1,
+                                                    ),
+                                                },
+                                            ),
+                                            filename: "",
+                                            line: 1,
+                                            column: 8,
+                                            end_line: 1,
+                                            end_column: 9,
+                                        },
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 6,
+                                end_line: 1,
+                                end_column: 9,
+                            },
+                            format_spec: None,
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 6,
+                    end_line: 1,
+                    end_column: 9,
+                },
+                Node {
+                    node: StringLit(
+                        StringLit {
+                            is_long_string: false,
+                            raw_value: "cde",
+                            value: "cde",
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 1,
+                },
+            ],
+            raw_value: "'abc${a+1}cde'",
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 14,
+}

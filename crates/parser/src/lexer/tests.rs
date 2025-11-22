@@ -117,15 +117,15 @@ fn smoke_test() {
     check_lexing(
         "lambda { println(\"kcl\") }\n",
         expect![[r#"
-        Token { kind: Ident(Symbol(SymbolIndex { idx: 18 })), span: Span { base_or_index: 0, len_or_tag: 6 } }
-        Token { kind: OpenDelim(Brace), span: Span { base_or_index: 7, len_or_tag: 1 } }
-        Token { kind: Ident(Symbol(SymbolIndex { idx: 42 })), span: Span { base_or_index: 9, len_or_tag: 7 } }
-        Token { kind: OpenDelim(Paren), span: Span { base_or_index: 16, len_or_tag: 1 } }
-        Token { kind: Literal(Lit { kind: Str { is_long_string: false, is_raw: false }, symbol: Symbol(SymbolIndex { idx: 43 }), suffix: None, raw: Some(Symbol(SymbolIndex { idx: 44 })) }), span: Span { base_or_index: 17, len_or_tag: 7 } }
-        Token { kind: CloseDelim(Paren), span: Span { base_or_index: 24, len_or_tag: 1 } }
-        Token { kind: CloseDelim(Brace), span: Span { base_or_index: 26, len_or_tag: 1 } }
-        Token { kind: Newline, span: Span { base_or_index: 27, len_or_tag: 1 } }
-        Token { kind: Eof, span: Span { base_or_index: 28, len_or_tag: 0 } }
+            Token { kind: Ident(Symbol(SymbolIndex { idx: 18 })), span: Span { base_or_index: 0, len_or_tag: 6 } }
+            Token { kind: OpenDelim(Brace), span: Span { base_or_index: 7, len_or_tag: 1 } }
+            Token { kind: Ident(Symbol(SymbolIndex { idx: 42 })), span: Span { base_or_index: 9, len_or_tag: 7 } }
+            Token { kind: OpenDelim(Paren), span: Span { base_or_index: 16, len_or_tag: 1 } }
+            Token { kind: Literal(Lit { kind: Str { is_long_string: false, is_raw: false }, symbol: Symbol(SymbolIndex { idx: 43 }), suffix: None, raw: Some(Symbol(SymbolIndex { idx: 44 })) }), span: Span { base_or_index: 17, len_or_tag: 5 } }
+            Token { kind: CloseDelim(Paren), span: Span { base_or_index: 22, len_or_tag: 1 } }
+            Token { kind: CloseDelim(Brace), span: Span { base_or_index: 24, len_or_tag: 1 } }
+            Token { kind: Newline, span: Span { base_or_index: 25, len_or_tag: 1 } }
+            Token { kind: Eof, span: Span { base_or_index: 26, len_or_tag: 0 } }
         "#]],
     )
 }

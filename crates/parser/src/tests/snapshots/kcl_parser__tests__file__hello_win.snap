@@ -1,0 +1,163 @@
+---
+source: crates/parser/src/tests/file.rs
+expression: "$crate :: tests :: parsing_file_string(\"testdata/hello_win.k\")"
+---
+{
+  "filename": "hello_win.k",
+  "doc": null,
+  "body": [
+    {
+      "node": {
+        "type": "Schema",
+        "doc": null,
+        "name": {
+          "node": "Person",
+          "filename": "hello_win.k",
+          "line": 2,
+          "column": 7,
+          "end_line": 2,
+          "end_column": 13
+        },
+        "parent_name": null,
+        "for_host_name": null,
+        "is_mixin": false,
+        "is_protocol": false,
+        "args": null,
+        "mixins": [],
+        "body": [
+          {
+            "node": {
+              "type": "SchemaAttr",
+              "doc": "",
+              "name": {
+                "node": "name",
+                "filename": "hello_win.k",
+                "line": 3,
+                "column": 4,
+                "end_line": 3,
+                "end_column": 8
+              },
+              "op": "Assign",
+              "value": {
+                "node": {
+                  "type": "StringLit",
+                  "is_long_string": false,
+                  "raw_value": "\"kcl\"",
+                  "value": "kcl"
+                },
+                "filename": "hello_win.k",
+                "line": 3,
+                "column": 16,
+                "end_line": 3,
+                "end_column": 21
+              },
+              "is_optional": false,
+              "decorators": [],
+              "ty": {
+                "node": {
+                  "type": "Basic",
+                  "value": "Str"
+                },
+                "filename": "hello_win.k",
+                "line": 3,
+                "column": 10,
+                "end_line": 3,
+                "end_column": 13
+              }
+            },
+            "filename": "hello_win.k",
+            "line": 3,
+            "column": 4,
+            "end_line": 3,
+            "end_column": 21
+          }
+        ],
+        "decorators": [],
+        "checks": [],
+        "index_signature": null
+      },
+      "filename": "hello_win.k",
+      "line": 2,
+      "column": 0,
+      "end_line": 5,
+      "end_column": 0
+    },
+    {
+      "node": {
+        "type": "Assign",
+        "targets": [
+          {
+            "node": {
+              "name": {
+                "node": "x0",
+                "filename": "hello_win.k",
+                "line": 5,
+                "column": 0,
+                "end_line": 5,
+                "end_column": 2
+              },
+              "paths": [],
+              "pkgpath": ""
+            },
+            "filename": "hello_win.k",
+            "line": 5,
+            "column": 0,
+            "end_line": 5,
+            "end_column": 2
+          }
+        ],
+        "value": {
+          "node": {
+            "type": "Schema",
+            "name": {
+              "node": {
+                "names": [
+                  {
+                    "node": "Person",
+                    "filename": "hello_win.k",
+                    "line": 5,
+                    "column": 5,
+                    "end_line": 5,
+                    "end_column": 11
+                  }
+                ],
+                "pkgpath": "",
+                "ctx": "Load"
+              },
+              "filename": "hello_win.k",
+              "line": 5,
+              "column": 5,
+              "end_line": 5,
+              "end_column": 11
+            },
+            "args": [],
+            "kwargs": [],
+            "config": {
+              "node": {
+                "type": "Config",
+                "items": []
+              },
+              "filename": "hello_win.k",
+              "line": 5,
+              "column": 12,
+              "end_line": 5,
+              "end_column": 14
+            }
+          },
+          "filename": "hello_win.k",
+          "line": 5,
+          "column": 5,
+          "end_line": 5,
+          "end_column": 14
+        },
+        "ty": null
+      },
+      "filename": "hello_win.k",
+      "line": 5,
+      "column": 0,
+      "end_line": 5,
+      "end_column": 14
+    }
+  ],
+  "comments": []
+}

@@ -1,0 +1,42 @@
+---
+source: crates/parser/src/tests/error_recovery.rs
+expression: "$crate :: tests :: parsing_expr_string(r#\"'${}'\"#)"
+---
+Node {
+    node: JoinedString(
+        JoinedString {
+            is_long_string: false,
+            values: [
+                Node {
+                    node: FormattedValue(
+                        FormattedValue {
+                            is_long_string: false,
+                            value: Node {
+                                node: Missing(
+                                    MissingExpr,
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 3,
+                                end_line: 1,
+                                end_column: 3,
+                            },
+                            format_spec: None,
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 3,
+                    end_line: 1,
+                    end_column: 3,
+                },
+            ],
+            raw_value: "'${}'",
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 5,
+}

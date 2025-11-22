@@ -1,0 +1,16 @@
+---
+source: crates/query/src/tests.rs
+expression: got_json
+---
+{
+  "dict2.b.d": [
+    {
+      "name": "d",
+      "type_name": "",
+      "op_sym": ":",
+      "value": "3",
+      "list_items": [],
+      "dict_entries": []
+    }
+  ]
+}

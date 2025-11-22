@@ -1,0 +1,73 @@
+---
+source: crates/query/src/tests.rs
+expression: got_json
+---
+{
+  "c.a": [
+    {
+      "name": "a",
+      "type_name": "",
+      "op_sym": ":",
+      "value": "{\n    name: \"Hello\"\n}",
+      "list_items": [],
+      "dict_entries": [
+        {
+          "key": "name",
+          "value": {
+            "name": "name",
+            "type_name": "",
+            "op_sym": ":",
+            "value": "\"Hello\"",
+            "list_items": [],
+            "dict_entries": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "a",
+      "type_name": "",
+      "op_sym": ":",
+      "value": "{\n    ids: [7, 8, 9]\n}",
+      "list_items": [],
+      "dict_entries": [
+        {
+          "key": "ids",
+          "value": {
+            "name": "ids",
+            "type_name": "",
+            "op_sym": ":",
+            "value": "[\n    7\n    8\n    9\n]",
+            "list_items": [
+              {
+                "name": "",
+                "type_name": "",
+                "op_sym": "",
+                "value": "7",
+                "list_items": [],
+                "dict_entries": []
+              },
+              {
+                "name": "",
+                "type_name": "",
+                "op_sym": "",
+                "value": "8",
+                "list_items": [],
+                "dict_entries": []
+              },
+              {
+                "name": "",
+                "type_name": "",
+                "op_sym": "",
+                "value": "9",
+                "list_items": [],
+                "dict_entries": []
+              }
+            ],
+            "dict_entries": []
+          }
+        }
+      ]
+    }
+  ]
+}

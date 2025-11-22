@@ -1,0 +1,241 @@
+---
+source: crates/parser/src/tests/file.rs
+expression: "$crate :: tests :: parsing_file_string(\"testdata/assert-if-0.k\")"
+---
+{
+  "filename": "assert-if-0.k",
+  "doc": null,
+  "body": [
+    {
+      "node": {
+        "type": "Assert",
+        "test": {
+          "node": {
+            "type": "NameConstantLit",
+            "value": "True"
+          },
+          "filename": "assert-if-0.k",
+          "line": 1,
+          "column": 7,
+          "end_line": 1,
+          "end_column": 11
+        },
+        "if_cond": null,
+        "msg": null
+      },
+      "filename": "assert-if-0.k",
+      "line": 1,
+      "column": 0,
+      "end_line": 1,
+      "end_column": 11
+    },
+    {
+      "node": {
+        "type": "Assert",
+        "test": {
+          "node": {
+            "type": "Compare",
+            "left": {
+              "node": {
+                "type": "NumberLit",
+                "binary_suffix": null,
+                "value": {
+                  "type": "Int",
+                  "value": 1
+                }
+              },
+              "filename": "assert-if-0.k",
+              "line": 2,
+              "column": 7,
+              "end_line": 2,
+              "end_column": 8
+            },
+            "ops": [
+              "Eq"
+            ],
+            "comparators": [
+              {
+                "node": {
+                  "type": "NumberLit",
+                  "binary_suffix": null,
+                  "value": {
+                    "type": "Int",
+                    "value": 1
+                  }
+                },
+                "filename": "assert-if-0.k",
+                "line": 2,
+                "column": 12,
+                "end_line": 2,
+                "end_column": 13
+              }
+            ]
+          },
+          "filename": "assert-if-0.k",
+          "line": 2,
+          "column": 7,
+          "end_line": 2,
+          "end_column": 13
+        },
+        "if_cond": {
+          "node": {
+            "type": "NameConstantLit",
+            "value": "True"
+          },
+          "filename": "assert-if-0.k",
+          "line": 2,
+          "column": 17,
+          "end_line": 2,
+          "end_column": 21
+        },
+        "msg": null
+      },
+      "filename": "assert-if-0.k",
+      "line": 2,
+      "column": 0,
+      "end_line": 2,
+      "end_column": 21
+    },
+    {
+      "node": {
+        "type": "Assign",
+        "targets": [
+          {
+            "node": {
+              "name": {
+                "node": "_x",
+                "filename": "assert-if-0.k",
+                "line": 3,
+                "column": 0,
+                "end_line": 3,
+                "end_column": 2
+              },
+              "paths": [],
+              "pkgpath": ""
+            },
+            "filename": "assert-if-0.k",
+            "line": 3,
+            "column": 0,
+            "end_line": 3,
+            "end_column": 2
+          }
+        ],
+        "value": {
+          "node": {
+            "type": "StringLit",
+            "is_long_string": false,
+            "raw_value": "\"good case\"",
+            "value": "good case"
+          },
+          "filename": "assert-if-0.k",
+          "line": 3,
+          "column": 5,
+          "end_line": 3,
+          "end_column": 16
+        },
+        "ty": null
+      },
+      "filename": "assert-if-0.k",
+      "line": 3,
+      "column": 0,
+      "end_line": 3,
+      "end_column": 16
+    },
+    {
+      "node": {
+        "type": "Assert",
+        "test": {
+          "node": {
+            "type": "Compare",
+            "left": {
+              "node": {
+                "type": "Identifier",
+                "names": [
+                  {
+                    "node": "_x",
+                    "filename": "assert-if-0.k",
+                    "line": 4,
+                    "column": 7,
+                    "end_line": 4,
+                    "end_column": 9
+                  }
+                ],
+                "pkgpath": "",
+                "ctx": "Load"
+              },
+              "filename": "assert-if-0.k",
+              "line": 4,
+              "column": 7,
+              "end_line": 4,
+              "end_column": 9
+            },
+            "ops": [
+              "Eq"
+            ],
+            "comparators": [
+              {
+                "node": {
+                  "type": "StringLit",
+                  "is_long_string": false,
+                  "raw_value": "\"good case\"",
+                  "value": "good case"
+                },
+                "filename": "assert-if-0.k",
+                "line": 4,
+                "column": 13,
+                "end_line": 4,
+                "end_column": 24
+              }
+            ]
+          },
+          "filename": "assert-if-0.k",
+          "line": 4,
+          "column": 7,
+          "end_line": 4,
+          "end_column": 24
+        },
+        "if_cond": {
+          "node": {
+            "type": "Identifier",
+            "names": [
+              {
+                "node": "_x",
+                "filename": "assert-if-0.k",
+                "line": 4,
+                "column": 28,
+                "end_line": 4,
+                "end_column": 30
+              }
+            ],
+            "pkgpath": "",
+            "ctx": "Load"
+          },
+          "filename": "assert-if-0.k",
+          "line": 4,
+          "column": 28,
+          "end_line": 4,
+          "end_column": 30
+        },
+        "msg": {
+          "node": {
+            "type": "StringLit",
+            "is_long_string": false,
+            "raw_value": "\"_x need to be 'good case'\"",
+            "value": "_x need to be 'good case'"
+          },
+          "filename": "assert-if-0.k",
+          "line": 4,
+          "column": 32,
+          "end_line": 4,
+          "end_column": 59
+        }
+      },
+      "filename": "assert-if-0.k",
+      "line": 4,
+      "column": 0,
+      "end_line": 4,
+      "end_column": 59
+    }
+  ],
+  "comments": []
+}
