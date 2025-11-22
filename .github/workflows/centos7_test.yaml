@@ -28,13 +28,13 @@ jobs:
         run: |
           docker pull kcllang/kcl-builder:centos7
 
-      # Use llvm7 to build kcl in centos7
+      # Build kcl lib in centos7
       - name: Release
         run: |
           docker run --rm \
             -v ${{ github.workspace }}:/workspace -w /workspace \
             kcllang/kcl-builder:centos7 \
-            /bin/bash -c "export KCL_BUILD_GIT_SHA=$(git rev-parse HEAD) && source ~/.bash_profile && export PATH=$PATH:/opt/build/bin/ && git config --global --add safe.directory /workspace && git config --global user.name 'GitHub Action' && git config --global user.email 'action@github.com' && git add . && git commit -m 'chore: bump llvm version to 7.0' && make && make release"
+            /bin/bash -c "export KCL_BUILD_GIT_SHA=$(git rev-parse HEAD) && source ~/.bash_profile && export PATH=$PATH:/opt/build/bin/ && make && make release"
 
       - name: Show Artifact Version
         run: _build/dist/linux/core/libkcl version
