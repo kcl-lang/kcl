@@ -58,10 +58,10 @@ jobs:
           $version = ($pkgId -split '@')[1]
           echo "VERSION=v$version" >> $env:GITHUB_ENV
 
-      - name: Rename kcl-core-windows folder
+      - name: Rename kcl-core folder
         run: |
           $version = "${{ env.VERSION }}"
-          Rename-Item -Path ".\scripts\windows\_output\kcl-core-windows" -NewName "kcl-core-$version-windows"
+          Rename-Item -Path ".\scripts\windows\_output\kcl-core" -NewName "kcl-core-$version-windows"
 
       - uses: actions/upload-artifact@v4
         with:

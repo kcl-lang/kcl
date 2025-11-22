@@ -14,9 +14,9 @@ use crate::{
 
 #[test]
 fn test_vendor_home() {
-    env::set_var(KCL_PKG_PATH, "test_vendor_home");
+    unsafe { env::set_var(KCL_PKG_PATH, "test_vendor_home") };
     assert_eq!(get_vendor_home(), "test_vendor_home");
-    env::remove_var(KCL_PKG_PATH);
+    unsafe { env::remove_var(KCL_PKG_PATH) };
 
     #[cfg(target_os = "windows")]
     let root_dir = env::var("USERPROFILE").unwrap();

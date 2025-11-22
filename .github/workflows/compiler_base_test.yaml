@@ -47,8 +47,3 @@ jobs:
         working-directory: ./compiler_base
         run: make test
         shell: bash
-      - name: Coveralls upload
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ./compiler_base/.compiler_base/lcov.info
