@@ -16,7 +16,6 @@ kcl-cmd.workspace = true
 kcl-ast.workspace = true
 kcl-runner.workspace = true
 kcl-parser.workspace = true
-kcl-compiler.workspace = true
 kcl-config.workspace = true
 kcl-loader.workspace = true
 kcl-runtime.workspace = true

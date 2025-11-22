@@ -27,7 +27,6 @@ compiler_base_macros = "0.1.1"
 
 kcl-ast = { path = "../ast" }
 kcl-parser = { path = "../parser" }
-kcl-compiler = { path = "../compiler" }
 kcl-config = { path = "../config" }
 kcl-runtime = { path = "../runtime" }
 kcl-sema = { path = "../sema" }
