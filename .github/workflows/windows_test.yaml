@@ -54,7 +54,8 @@ jobs:
       - name: Read VERSION file
         id: read_version
         run: |
-          $version = Get-Content VERSION
+          $pkgId = cargo pkgid -p kcl-api
+          $version = ($pkgId -split '@')[1]
           echo "VERSION=v$version" >> $env:GITHUB_ENV
 
       - name: Rename kcl-core-windows folder

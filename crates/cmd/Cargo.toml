@@ -1,5 +1,5 @@
 [package]
-name = "kclvm-cmd"
+name = "kcl-cmd"
 version.workspace = true
 edition.workspace = true
 
@@ -8,12 +8,12 @@ anyhow = "1.0"
 clap = "4.3.0"
 compiler_base_session = "0.1.3"
 
-kclvm-api = {path = "../api"}
-kclvm-parser = {path = "../parser"}
-kclvm-runner = {path = "../runner"}
-kclvm-config = {path = "../config"}
-kclvm-driver = {path = "../driver"}
-kclvm-runtime = {path = "../runtime"}
-kclvm-tools = {path = "../tools"}
-kclvm-error = {path = "../error"}
-kclvm-version = {path = "../version"}
+kcl-api.workspace = true
+kcl-parser.workspace = true
+kcl-runner.workspace = true
+kcl-config.workspace = true
+kcl-driver.workspace = true
+kcl-runtime.workspace = true
+kcl-tools.workspace = true
+kcl-error.workspace = true
+kcl-version.workspace = true

@@ -67,7 +67,7 @@ def generate_golden_file(py_file_name):
     if os.path.isfile(py_file_name):
         try:
             process = subprocess.Popen(
-                ["kclvm", py_file_name],
+                ["kcl", py_file_name],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 env=dict(os.environ),

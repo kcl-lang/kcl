@@ -1,8 +1,8 @@
-use kclvm_ast::ast::Program;
-use kclvm_driver::WorkSpaceKind;
-use kclvm_error::Diagnostic;
-use kclvm_primitives::{IndexMap, IndexSet};
-use kclvm_sema::{core::global_state::GlobalState, ty::SchemaType};
+use kcl_ast::ast::Program;
+use kcl_driver::WorkSpaceKind;
+use kcl_error::Diagnostic;
+use kcl_primitives::{IndexMap, IndexSet};
+use kcl_sema::{core::global_state::GlobalState, ty::SchemaType};
 use parking_lot::RwLock;
 use std::{
     collections::{HashMap, HashSet},

@@ -5,11 +5,11 @@ pub mod option;
 pub mod util;
 
 use anyhow::Result;
-use kclvm_ast::ast::Program;
-use kclvm_error::{Diagnostic, diagnostic::Range};
-use kclvm_parser::{KCLModuleCache, LoadProgramOptions, ParseSessionRef, load_program};
-use kclvm_primitives::{IndexMap, IndexSet};
-use kclvm_sema::{
+use kcl_ast::ast::Program;
+use kcl_error::{Diagnostic, diagnostic::Range};
+use kcl_parser::{KCLModuleCache, LoadProgramOptions, ParseSessionRef, load_program};
+use kcl_primitives::{IndexMap, IndexSet};
+use kcl_sema::{
     advanced_resolver::AdvancedResolver,
     core::{
         global_state::GlobalState,
@@ -23,7 +23,7 @@ use kclvm_sema::{
     },
     ty::{Type, TypeRef},
 };
-use kclvm_utils::path::PathPrefix;
+use kcl_utils::path::PathPrefix;
 use std::path::PathBuf;
 
 type Errors = IndexSet<Diagnostic>;
@@ -142,7 +142,7 @@ pub fn load_packages_with_cache(
         let mut program = parse_result.program;
         let prog_scope = resolve_program_with_opts(
             &mut program,
-            kclvm_sema::resolver::Options {
+            kcl_sema::resolver::Options {
                 merge_program: false,
                 type_erasure: false,
                 ..Default::default()

@@ -1,10 +1,10 @@
 //! A KCL lexer.
 //!
-//! The lexer is built on the low level [`kclvm_lexer`]
+//! The lexer is built on the low level [`kcl_lexer`]
 //!
 //! It's main responsibilities:
-//! 1. Mapping low level [`kclvm_lexer::Token`] tokens into [`kclvm_ast::Token`] tokens,
-//! and provide TokenStream to downstream [`kclvm_parser::parser`].
+//! 1. Mapping low level [`kcl_lexer::Token`] tokens into [`kcl_ast::Token`] tokens,
+//! and provide TokenStream to downstream [`kcl_parser::parser`].
 //! 2. Validations on Literals(String, Int, Float).
 //! 3. Validations on closure of delim tokens.
 //! 4. Validations on indent and dedent.
@@ -22,13 +22,13 @@ mod tests;
 
 use compiler_base_macros::bug;
 use compiler_base_span::{self, BytePos, Span, span::new_byte_pos};
-use kclvm_ast::ast::NumberBinarySuffix;
-use kclvm_ast::token::VALID_SPACES_LENGTH;
-use kclvm_ast::token::{self, BinOpToken, CommentKind, Token, TokenKind};
-use kclvm_ast::token_stream::TokenStream;
-use kclvm_error::ParseErrorMessage;
-use kclvm_lexer::Base;
-use kclvm_span::symbol::Symbol;
+use kcl_ast::ast::NumberBinarySuffix;
+use kcl_ast::token::VALID_SPACES_LENGTH;
+use kcl_ast::token::{self, BinOpToken, CommentKind, Token, TokenKind};
+use kcl_ast::token_stream::TokenStream;
+use kcl_error::ParseErrorMessage;
+use kcl_lexer::Base;
+use kcl_span::symbol::Symbol;
 pub(crate) use string::str_content_eval;
 
 use self::indent::IndentLevel;
@@ -181,7 +181,7 @@ impl<'a> Lexer<'a> {
             }
 
             // fetch next token
-            let token = kclvm_lexer::first_token(text);
+            let token = kcl_lexer::first_token(text);
 
             // Detect and handle indent cases before lexing on-going token
             let indent = self.lex_indent_context(token.kind);
@@ -219,34 +219,34 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    /// Turns `kclvm_lexer::TokenKind` into a rich `kclvm_ast::TokenKind`.
+    /// Turns `kcl_lexer::TokenKind` into a rich `kcl_ast::TokenKind`.
     fn lex_token(
         &mut self,
-        token: kclvm_lexer::Token,
+        token: kcl_lexer::Token,
         start: BytePos,
         tok_stream_builder: &mut TokenStreamBuilder,
     ) -> Option<TokenKind> {
         Some(match token.kind {
-            kclvm_lexer::TokenKind::LineComment { doc_style: _ } => {
+            kcl_lexer::TokenKind::LineComment { doc_style: _ } => {
                 let s = self.str_from(start);
                 token::DocComment(CommentKind::Line(Symbol::intern(s)))
             }
             // Whitespace
-            kclvm_lexer::TokenKind::Newline => {
+            kcl_lexer::TokenKind::Newline => {
                 self.indent_cxt.new_line_beginning = true;
                 token::Newline
             }
-            kclvm_lexer::TokenKind::Tab
-            | kclvm_lexer::TokenKind::Space
-            | kclvm_lexer::TokenKind::CarriageReturn
-            | kclvm_lexer::TokenKind::Whitespace => return None,
+            kcl_lexer::TokenKind::Tab
+            | kcl_lexer::TokenKind::Space
+            | kcl_lexer::TokenKind::CarriageReturn
+            | kcl_lexer::TokenKind::Whitespace => return None,
             // Identifier
-            kclvm_lexer::TokenKind::Ident => {
+            kcl_lexer::TokenKind::Ident => {
                 let s = self.str_from(start);
                 token::Ident(Symbol::intern(s))
             }
             // Literal
-            kclvm_lexer::TokenKind::Literal { kind, suffix_start } => {
+            kcl_lexer::TokenKind::Literal { kind, suffix_start } => {
                 let suffix_start = start + new_byte_pos(suffix_start as u32);
                 let (kind, symbol, suffix, raw) = self.lex_literal(start, suffix_start, kind);
                 token::Literal(token::Lit {
@@ -257,8 +257,8 @@ impl<'a> Lexer<'a> {
                 })
             }
             // Unary op
-            kclvm_lexer::TokenKind::Tilde => token::UnaryOp(token::UTilde),
-            kclvm_lexer::TokenKind::Bang => {
+            kcl_lexer::TokenKind::Tilde => token::UnaryOp(token::UTilde),
+            kcl_lexer::TokenKind::Bang => {
                 self.sess.struct_message_error_with_suggestions(
                     ParseErrorMessage::InvalidTokenNot,
                     self.span(start, self.pos),
@@ -267,59 +267,59 @@ impl<'a> Lexer<'a> {
                 token::UnaryOp(token::UNot)
             }
             // Binary op
-            kclvm_lexer::TokenKind::Plus => token::BinOp(token::Plus),
-            kclvm_lexer::TokenKind::Minus => token::BinOp(token::Minus),
-            kclvm_lexer::TokenKind::Star => token::BinOp(token::Star),
-            kclvm_lexer::TokenKind::Slash => token::BinOp(token::Slash),
-            kclvm_lexer::TokenKind::Percent => token::BinOp(token::Percent),
-            kclvm_lexer::TokenKind::StarStar => token::BinOp(token::StarStar),
-            kclvm_lexer::TokenKind::SlashSlash => token::BinOp(token::SlashSlash),
-            kclvm_lexer::TokenKind::Caret => token::BinOp(token::Caret),
-            kclvm_lexer::TokenKind::And => token::BinOp(token::And),
-            kclvm_lexer::TokenKind::Or => token::BinOp(token::Or),
-            kclvm_lexer::TokenKind::LtLt => token::BinOp(token::Shl),
-            kclvm_lexer::TokenKind::GtGt => token::BinOp(token::Shr),
+            kcl_lexer::TokenKind::Plus => token::BinOp(token::Plus),
+            kcl_lexer::TokenKind::Minus => token::BinOp(token::Minus),
+            kcl_lexer::TokenKind::Star => token::BinOp(token::Star),
+            kcl_lexer::TokenKind::Slash => token::BinOp(token::Slash),
+            kcl_lexer::TokenKind::Percent => token::BinOp(token::Percent),
+            kcl_lexer::TokenKind::StarStar => token::BinOp(token::StarStar),
+            kcl_lexer::TokenKind::SlashSlash => token::BinOp(token::SlashSlash),
+            kcl_lexer::TokenKind::Caret => token::BinOp(token::Caret),
+            kcl_lexer::TokenKind::And => token::BinOp(token::And),
+            kcl_lexer::TokenKind::Or => token::BinOp(token::Or),
+            kcl_lexer::TokenKind::LtLt => token::BinOp(token::Shl),
+            kcl_lexer::TokenKind::GtGt => token::BinOp(token::Shr),
             // Binary op eq
-            kclvm_lexer::TokenKind::PlusEq => token::BinOpEq(token::Plus),
-            kclvm_lexer::TokenKind::MinusEq => token::BinOpEq(token::Minus),
-            kclvm_lexer::TokenKind::StarEq => token::BinOpEq(token::Star),
-            kclvm_lexer::TokenKind::SlashEq => token::BinOpEq(token::Slash),
-            kclvm_lexer::TokenKind::PercentEq => token::BinOpEq(token::Percent),
-            kclvm_lexer::TokenKind::StarStarEq => token::BinOpEq(token::StarStar),
-            kclvm_lexer::TokenKind::SlashSlashEq => token::BinOpEq(token::SlashSlash),
-            kclvm_lexer::TokenKind::CaretEq => token::BinOpEq(token::Caret),
-            kclvm_lexer::TokenKind::AndEq => token::BinOpEq(token::And),
-            kclvm_lexer::TokenKind::OrEq => token::BinOpEq(token::Or),
-            kclvm_lexer::TokenKind::LtLtEq => token::BinOpEq(token::Shl),
-            kclvm_lexer::TokenKind::GtGtEq => token::BinOpEq(token::Shr),
+            kcl_lexer::TokenKind::PlusEq => token::BinOpEq(token::Plus),
+            kcl_lexer::TokenKind::MinusEq => token::BinOpEq(token::Minus),
+            kcl_lexer::TokenKind::StarEq => token::BinOpEq(token::Star),
+            kcl_lexer::TokenKind::SlashEq => token::BinOpEq(token::Slash),
+            kcl_lexer::TokenKind::PercentEq => token::BinOpEq(token::Percent),
+            kcl_lexer::TokenKind::StarStarEq => token::BinOpEq(token::StarStar),
+            kcl_lexer::TokenKind::SlashSlashEq => token::BinOpEq(token::SlashSlash),
+            kcl_lexer::TokenKind::CaretEq => token::BinOpEq(token::Caret),
+            kcl_lexer::TokenKind::AndEq => token::BinOpEq(token::And),
+            kcl_lexer::TokenKind::OrEq => token::BinOpEq(token::Or),
+            kcl_lexer::TokenKind::LtLtEq => token::BinOpEq(token::Shl),
+            kcl_lexer::TokenKind::GtGtEq => token::BinOpEq(token::Shr),
             // Binary cmp
-            kclvm_lexer::TokenKind::EqEq => token::BinCmp(token::Eq),
-            kclvm_lexer::TokenKind::BangEq => token::BinCmp(token::NotEq),
-            kclvm_lexer::TokenKind::Lt => token::BinCmp(token::Lt),
-            kclvm_lexer::TokenKind::LtEq => token::BinCmp(token::LtEq),
+            kcl_lexer::TokenKind::EqEq => token::BinCmp(token::Eq),
+            kcl_lexer::TokenKind::BangEq => token::BinCmp(token::NotEq),
+            kcl_lexer::TokenKind::Lt => token::BinCmp(token::Lt),
+            kcl_lexer::TokenKind::LtEq => token::BinCmp(token::LtEq),
             // If the current token is '>',
             // then lexer need to check whether the previous token is '-',
             // if yes, return token '->', if not return token '>'.
-            kclvm_lexer::TokenKind::Gt => match self.look_behind(&token, tok_stream_builder) {
+            kcl_lexer::TokenKind::Gt => match self.look_behind(&token, tok_stream_builder) {
                 Some(tok_kind) => tok_kind,
                 None => token::BinCmp(token::Gt),
             },
-            kclvm_lexer::TokenKind::GtEq => token::BinCmp(token::GtEq),
+            kcl_lexer::TokenKind::GtEq => token::BinCmp(token::GtEq),
             // Structural symbols
-            kclvm_lexer::TokenKind::At => token::At,
-            kclvm_lexer::TokenKind::Dot => token::Dot,
-            kclvm_lexer::TokenKind::DotDotDot => token::DotDotDot,
-            kclvm_lexer::TokenKind::Comma => token::Comma,
-            kclvm_lexer::TokenKind::Colon => token::Colon,
-            kclvm_lexer::TokenKind::Dollar => token::Dollar,
-            kclvm_lexer::TokenKind::Question => token::Question,
-            kclvm_lexer::TokenKind::Eq => token::Assign,
+            kcl_lexer::TokenKind::At => token::At,
+            kcl_lexer::TokenKind::Dot => token::Dot,
+            kcl_lexer::TokenKind::DotDotDot => token::DotDotDot,
+            kcl_lexer::TokenKind::Comma => token::Comma,
+            kcl_lexer::TokenKind::Colon => token::Colon,
+            kcl_lexer::TokenKind::Dollar => token::Dollar,
+            kcl_lexer::TokenKind::Question => token::Question,
+            kcl_lexer::TokenKind::Eq => token::Assign,
             // Delim tokens
-            kclvm_lexer::TokenKind::OpenParen => {
+            kcl_lexer::TokenKind::OpenParen => {
                 self.indent_cxt.delims.push(token::OpenDelim(token::Paren));
                 token::OpenDelim(token::Paren)
             }
-            kclvm_lexer::TokenKind::CloseParen => match self.indent_cxt.delims.pop() {
+            kcl_lexer::TokenKind::CloseParen => match self.indent_cxt.delims.pop() {
                 // check delim stack
                 Some(delim) => match delim {
                     // expected case
@@ -352,11 +352,11 @@ impl<'a> Lexer<'a> {
                     token::CloseDelim(token::Paren)
                 }
             },
-            kclvm_lexer::TokenKind::OpenBrace => {
+            kcl_lexer::TokenKind::OpenBrace => {
                 self.indent_cxt.delims.push(token::OpenDelim(token::Brace));
                 token::OpenDelim(token::Brace)
             }
-            kclvm_lexer::TokenKind::CloseBrace => match self.indent_cxt.delims.pop() {
+            kcl_lexer::TokenKind::CloseBrace => match self.indent_cxt.delims.pop() {
                 // check delim stack
                 Some(delim) => match delim {
                     // expected case
@@ -389,13 +389,13 @@ impl<'a> Lexer<'a> {
                     token::CloseDelim(token::Brace)
                 }
             },
-            kclvm_lexer::TokenKind::OpenBracket => {
+            kcl_lexer::TokenKind::OpenBracket => {
                 self.indent_cxt
                     .delims
                     .push(token::OpenDelim(token::Bracket));
                 token::OpenDelim(token::Bracket)
             }
-            kclvm_lexer::TokenKind::CloseBracket => match self.indent_cxt.delims.pop() {
+            kcl_lexer::TokenKind::CloseBracket => match self.indent_cxt.delims.pop() {
                 // check delim stack
                 Some(delim) => match delim {
                     // expected case
@@ -428,8 +428,8 @@ impl<'a> Lexer<'a> {
                     token::CloseDelim(token::Bracket)
                 }
             },
-            kclvm_lexer::TokenKind::LineContinue => return None,
-            kclvm_lexer::TokenKind::InvalidLineContinue => {
+            kcl_lexer::TokenKind::LineContinue => return None,
+            kcl_lexer::TokenKind::InvalidLineContinue => {
                 // If we encounter an illegal line continuation character,
                 // we will restore it to a normal line continuation character.
                 self.sess.struct_message_error_with_suggestions(
@@ -439,7 +439,7 @@ impl<'a> Lexer<'a> {
                 );
                 return None;
             }
-            kclvm_lexer::TokenKind::Semi => {
+            kcl_lexer::TokenKind::Semi => {
                 // If we encounter an illegal semi token ';', raise a friendly error.
                 self.sess.struct_message_error_with_suggestions(
                     ParseErrorMessage::RedundantSemicolon,
@@ -461,14 +461,14 @@ impl<'a> Lexer<'a> {
     /// If not, return None.
     fn look_behind(
         &mut self,
-        tok: &kclvm_lexer::Token,
+        tok: &kcl_lexer::Token,
         tok_stream_builder: &mut TokenStreamBuilder,
     ) -> Option<TokenKind> {
         match tok.kind {
-            // Most multi-character tokens are lexed in ['kclvm-lexer'],
-            // and the multi-character tokens that need to be lexed in ['kclvm-parser/lexer'] are only token '->'.
+            // Most multi-character tokens are lexed in ['kcl-lexer'],
+            // and the multi-character tokens that need to be lexed in ['kcl-parser/lexer'] are only token '->'.
             // If a new multi-character token is added later, the corresponding operation can be added here.
-            kclvm_lexer::TokenKind::Gt => {
+            kcl_lexer::TokenKind::Gt => {
                 if tok_stream_builder
                     .pop_if_tok_kind(&TokenKind::BinOp(BinOpToken::Minus))
                     .is_some()
@@ -491,10 +491,10 @@ impl<'a> Lexer<'a> {
         &self,
         start: BytePos,
         suffix_start: BytePos,
-        kind: kclvm_lexer::LiteralKind,
+        kind: kcl_lexer::LiteralKind,
     ) -> (token::LitKind, Symbol, Option<Symbol>, Option<Symbol>) {
         match kind {
-            kclvm_lexer::LiteralKind::Str {
+            kcl_lexer::LiteralKind::Str {
                 terminated,
                 triple_quoted,
             } => {
@@ -566,7 +566,7 @@ impl<'a> Lexer<'a> {
                     Some(self.symbol_from_to(start, suffix_start)),
                 )
             }
-            kclvm_lexer::LiteralKind::Int { base, empty_int } => {
+            kcl_lexer::LiteralKind::Int { base, empty_int } => {
                 if empty_int {
                     self.sess.struct_span_error(
                         "no valid digits found for number",
@@ -601,7 +601,7 @@ impl<'a> Lexer<'a> {
                 }
             }
 
-            kclvm_lexer::LiteralKind::Float {
+            kcl_lexer::LiteralKind::Float {
                 base,
                 empty_exponent,
             } => {
@@ -612,7 +612,7 @@ impl<'a> Lexer<'a> {
                 };
                 (token::Float, symbol, None, None)
             }
-            kclvm_lexer::LiteralKind::Bool { terminated: _ } => (
+            kcl_lexer::LiteralKind::Bool { terminated: _ } => (
                 token::Bool,
                 self.symbol_from_to(start, suffix_start),
                 None,
@@ -659,9 +659,7 @@ impl<'a> Lexer<'a> {
             false
         } else {
             match base {
-                kclvm_lexer::Base::Hexadecimal
-                | kclvm_lexer::Base::Octal
-                | kclvm_lexer::Base::Binary => {
+                kcl_lexer::Base::Hexadecimal | kcl_lexer::Base::Octal | kcl_lexer::Base::Binary => {
                     self.sess.struct_span_error(
                         &format!("{} float literal is not supported", base.describe()),
                         self.span(start, self.pos),

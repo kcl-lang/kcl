@@ -1,7 +1,7 @@
 use anyhow::Result;
-use kclvm_ast::{ast, walker::MutSelfWalker};
-use kclvm_sema::builtin::BUILTIN_FUNCTIONS;
-use kclvm_sema::{builtin::option::OptionHelp, resolver::scope::NodeKey};
+use kcl_ast::{ast, walker::MutSelfWalker};
+use kcl_sema::builtin::BUILTIN_FUNCTIONS;
+use kcl_sema::{builtin::option::OptionHelp, resolver::scope::NodeKey};
 
 use crate::util::{get_call_args_string, get_call_args_strip_string};
 use crate::{LoadPackageOptions, Packages, load_packages, util::get_call_args_bool};

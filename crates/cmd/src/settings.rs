@@ -1,10 +1,10 @@
 use crate::util::*;
 use anyhow::Result;
 use clap::ArgMatches;
-use kclvm_config::settings::{Config, SettingsFile, SettingsPathBuf, build_settings_pathbuf};
-use kclvm_driver::arguments::parse_key_value_pair;
-use kclvm_error::Handler;
-use kclvm_runtime::PanicInfo;
+use kcl_config::settings::{Config, SettingsFile, SettingsPathBuf, build_settings_pathbuf};
+use kcl_driver::arguments::parse_key_value_pair;
+use kcl_error::Handler;
+use kcl_runtime::PanicInfo;
 
 /// Build settings from arg matches.
 pub(crate) fn must_build_settings(matches: &ArgMatches) -> SettingsPathBuf {

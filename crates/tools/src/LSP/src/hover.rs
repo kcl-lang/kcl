@@ -1,5 +1,5 @@
-use kclvm_error::Position as KCLPos;
-use kclvm_sema::{
+use kcl_error::Position as KCLPos;
+use kcl_sema::{
     builtin::BUILTIN_DECORATORS,
     core::global_state::GlobalState,
     ty::{FunctionType, Type, ANY_TYPE_STR},
@@ -22,7 +22,7 @@ pub fn hover(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Hover> {
     match def {
         Some(def_ref) => match gs.get_symbols().get_symbol(def_ref) {
             Some(obj) => match def_ref.get_kind() {
-                kclvm_sema::core::symbol::SymbolKind::Schema => match &obj.get_sema_info().ty {
+                kcl_sema::core::symbol::SymbolKind::Schema => match &obj.get_sema_info().ty {
                     Some(ty) => {
                         // Build hover content for schema definition
                         // Schema Definition hover
@@ -47,7 +47,7 @@ pub fn hover(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Hover> {
                         let schema_attrs = obj.get_all_attributes(gs.get_symbols(), module_info);
                         let mut attrs: Vec<String> = vec![];
                         for schema_attr in schema_attrs {
-                            if let kclvm_sema::core::symbol::SymbolKind::Attribute =
+                            if let kcl_sema::core::symbol::SymbolKind::Attribute =
                                 schema_attr.get_kind()
                             {
                                 let attr = gs.get_symbols().get_symbol(schema_attr).unwrap();
@@ -92,7 +92,7 @@ pub fn hover(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Hover> {
                     }
                     _ => {}
                 },
-                kclvm_sema::core::symbol::SymbolKind::Attribute => {
+                kcl_sema::core::symbol::SymbolKind::Attribute => {
                     let sema_info = obj.get_sema_info();
                     let attr_symbol = gs.get_symbols().get_attr_symbol(def_ref).unwrap();
                     let default_value_content = match attr_symbol.get_default_value() {
@@ -119,10 +119,10 @@ pub fn hover(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Hover> {
                         _ => {}
                     }
                 }
-                kclvm_sema::core::symbol::SymbolKind::Value
-                | kclvm_sema::core::symbol::SymbolKind::Function => match &obj.get_sema_info().ty {
+                kcl_sema::core::symbol::SymbolKind::Value
+                | kcl_sema::core::symbol::SymbolKind::Function => match &obj.get_sema_info().ty {
                     Some(ty) => match &ty.kind {
-                        kclvm_sema::ty::TypeKind::Function(func_ty) => {
+                        kcl_sema::ty::TypeKind::Function(func_ty) => {
                             docs.append(&mut build_func_hover_content(
                                 func_ty.clone(),
                                 obj.get_name().clone(),
@@ -137,9 +137,9 @@ pub fn hover(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Hover> {
                     },
                     _ => {}
                 },
-                kclvm_sema::core::symbol::SymbolKind::Expression => return None,
-                kclvm_sema::core::symbol::SymbolKind::Comment => return None,
-                kclvm_sema::core::symbol::SymbolKind::Decorator => {
+                kcl_sema::core::symbol::SymbolKind::Expression => return None,
+                kcl_sema::core::symbol::SymbolKind::Comment => return None,
+                kcl_sema::core::symbol::SymbolKind::Decorator => {
                     match BUILTIN_DECORATORS.get(&obj.get_name()) {
                         Some(ty) => {
                             let mut hover_content = build_func_hover_content(
@@ -262,7 +262,7 @@ mod tests {
     use crate::hover::MarkedStringType;
     use std::path::PathBuf;
 
-    use kclvm_error::Position as KCLPos;
+    use kcl_error::Position as KCLPos;
     use lsp_types::{LanguageString, MarkedString};
     use proc_macro_crate::bench_test;
 

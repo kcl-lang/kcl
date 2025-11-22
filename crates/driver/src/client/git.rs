@@ -4,7 +4,7 @@ use std::process::Command;
 
 use crate::client::fs::directory_is_not_empty;
 use anyhow::Result;
-use kclvm_utils::path::PathPrefix;
+use kcl_utils::path::PathPrefix;
 
 pub(crate) fn cmd_clone_git_repo_to(
     url: &str,

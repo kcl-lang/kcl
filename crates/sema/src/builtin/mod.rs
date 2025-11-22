@@ -7,8 +7,8 @@ pub mod system_module;
 
 use std::sync::Arc;
 
-use kclvm_error::diagnostic::dummy_range;
-use kclvm_primitives::IndexMap;
+use kcl_error::diagnostic::dummy_range;
+use kcl_primitives::IndexMap;
 use once_cell::sync::Lazy;
 
 use crate::ty::{Parameter, Type};
@@ -16,8 +16,8 @@ pub use decorator::BUILTIN_DECORATORS;
 pub use string::STRING_MEMBER_FUNCTIONS;
 pub use system_module::*;
 
-pub const KCL_BUILTIN_FUNCTION_MANGLE_PREFIX: &str = "kclvm_builtin";
-pub const KCL_SYSTEM_MODULE_MANGLE_PREFIX: &str = "kclvm_";
+pub const KCL_BUILTIN_FUNCTION_MANGLE_PREFIX: &str = "kcl_builtin";
+pub const KCL_SYSTEM_MODULE_MANGLE_PREFIX: &str = "kcl_";
 pub const BUILTIN_FUNCTION_PREFIX: &str = "$builtin";
 
 macro_rules! register_builtin {

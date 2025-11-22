@@ -20,12 +20,12 @@ mod ty;
 mod union;
 mod value;
 
-extern crate kclvm_error;
+extern crate kcl_error;
 
 use func::FunctionEvalContextRef;
 use generational_arena::{Arena, Index};
-use kclvm_primitives::IndexMap;
-use kclvm_runtime::val_plan::KCL_PRIVATE_VAR_PREFIX;
+use kcl_primitives::IndexMap;
+use kcl_runtime::val_plan::KCL_PRIVATE_VAR_PREFIX;
 use lazy::{BacktrackMeta, LazyEvalScope};
 use proxy::{Frame, Proxy};
 use rule::RuleEvalContextRef;
@@ -37,10 +37,10 @@ use std::rc::Rc;
 use std::str;
 use std::{cell::RefCell, panic::UnwindSafe};
 
-use crate::error as kcl_error;
+use crate::error as eval_error;
 use anyhow::Result;
-use kclvm_ast::ast::{self, AstIndex};
-use kclvm_runtime::{Context, ValueRef};
+use kcl_ast::ast::{self, AstIndex};
+use kcl_runtime::{Context, ValueRef};
 
 /// SCALAR_KEY denotes the temp scalar key for the global variable json plan process.
 const SCALAR_KEY: &str = "";
@@ -146,7 +146,7 @@ impl<'ctx> Evaluator<'ctx> {
             imported: RefCell::new(Default::default()),
             schema_stack: RefCell::new(Default::default()),
             schema_expr_stack: RefCell::new(Default::default()),
-            pkgpath_stack: RefCell::new(vec![kclvm_ast::MAIN_PKG.to_string()]),
+            pkgpath_stack: RefCell::new(vec![kcl_ast::MAIN_PKG.to_string()]),
             filename_stack: RefCell::new(Default::default()),
             import_names: RefCell::new(Default::default()),
             pkg_scopes: RefCell::new(Default::default()),
@@ -161,8 +161,8 @@ impl<'ctx> Evaluator<'ctx> {
 
     /// Evaluate the program and return the JSON and YAML result.
     pub fn run(self: &Evaluator<'ctx>) -> Result<(String, String)> {
-        let modules = self.program.get_modules_for_pkg(kclvm_ast::MAIN_PKG);
-        self.init_scope(kclvm_ast::MAIN_PKG);
+        let modules = self.program.get_modules_for_pkg(kcl_ast::MAIN_PKG);
+        self.init_scope(kcl_ast::MAIN_PKG);
         self.compile_ast_modules(&modules);
         Ok(self.plan_globals_to_string())
     }
@@ -172,11 +172,11 @@ impl<'ctx> Evaluator<'ctx> {
     /// return the result of the function run, rather than a dictionary composed of each
     /// configuration attribute.
     pub fn run_as_function(self: &Evaluator<'ctx>) -> ValueRef {
-        let modules = self.program.get_modules_for_pkg(kclvm_ast::MAIN_PKG);
+        let modules = self.program.get_modules_for_pkg(kcl_ast::MAIN_PKG);
         if modules.is_empty() {
             ValueRef::undefined()
         } else {
-            self.init_scope(kclvm_ast::MAIN_PKG);
+            self.init_scope(kcl_ast::MAIN_PKG);
             self.compile_ast_modules(&modules)
         }
     }
@@ -189,7 +189,7 @@ impl<'ctx> Evaluator<'ctx> {
             .get(&current_pkgpath)
             .unwrap_or_else(|| panic!("pkgpath {} is not found", current_pkgpath));
         // The global scope.
-        let scope = scopes.last().expect(kcl_error::INTERNAL_ERROR_MSG);
+        let scope = scopes.last().expect(eval_error::INTERNAL_ERROR_MSG);
         let scalars = &scope.scalars;
         let globals = &scope.variables;
         // Construct a plan object.

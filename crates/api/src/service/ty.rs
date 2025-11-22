@@ -1,28 +1,28 @@
 use crate::gpyrpc::{Decorator, Example, KclType};
-use kclvm_primitives::IndexSet;
-use kclvm_sema::ty::{DictType, SchemaType, Type};
+use kcl_primitives::IndexSet;
+use kcl_sema::ty::{DictType, SchemaType, Type};
 use std::collections::HashMap;
 
 /// Convert the kcl sematic type to the kcl protobuf type.
 pub(crate) fn kcl_ty_to_pb_ty(ty: &Type) -> KclType {
     match &ty.kind {
-        kclvm_sema::ty::TypeKind::List(item_ty) => KclType {
+        kcl_sema::ty::TypeKind::List(item_ty) => KclType {
             r#type: "list".to_string(),
             item: Some(Box::new(kcl_ty_to_pb_ty(item_ty))),
             ..Default::default()
         },
-        kclvm_sema::ty::TypeKind::Dict(DictType { key_ty, val_ty, .. }) => KclType {
+        kcl_sema::ty::TypeKind::Dict(DictType { key_ty, val_ty, .. }) => KclType {
             r#type: "dict".to_string(),
             key: Some(Box::new(kcl_ty_to_pb_ty(key_ty))),
             item: Some(Box::new(kcl_ty_to_pb_ty(val_ty))),
             ..Default::default()
         },
-        kclvm_sema::ty::TypeKind::Union(types) => KclType {
+        kcl_sema::ty::TypeKind::Union(types) => KclType {
             r#type: "union".to_string(),
             union_types: types.iter().map(|ty| kcl_ty_to_pb_ty(ty)).collect(),
             ..Default::default()
         },
-        kclvm_sema::ty::TypeKind::Schema(schema_ty) => kcl_schema_ty_to_pb_ty(schema_ty),
+        kcl_sema::ty::TypeKind::Schema(schema_ty) => kcl_schema_ty_to_pb_ty(schema_ty),
         _ => KclType {
             r#type: ty.ty_str(),
             ..Default::default()

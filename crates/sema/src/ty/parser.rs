@@ -190,7 +190,7 @@ pub fn parse_lit_type_str(ty_str: &str) -> TypeRef {
 
 /// Parse number multiplier literal type.
 pub fn parse_number_multiplier_literal_type_str(ty_str: &str) -> TypeRef {
-    let suffix_index = if &ty_str[ty_str.len() - 1..] == kclvm_runtime::IEC_SUFFIX {
+    let suffix_index = if &ty_str[ty_str.len() - 1..] == kcl_runtime::IEC_SUFFIX {
         ty_str.len() - 2
     } else {
         ty_str.len() - 1
@@ -203,7 +203,7 @@ pub fn parse_number_multiplier_literal_type_str(ty_str: &str) -> TypeRef {
         &ty_str[suffix_index..],
     );
     Arc::new(Type::number_multiplier(
-        kclvm_runtime::cal_num(value, suffix),
+        kcl_runtime::cal_num(value, suffix),
         value,
         suffix,
     ))

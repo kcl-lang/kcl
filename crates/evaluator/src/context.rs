@@ -1,8 +1,8 @@
 use std::{collections::HashSet, rc::Rc};
 
 use generational_arena::Index;
-use kclvm_ast::ast;
-use kclvm_runtime::{BacktraceFrame, MAIN_PKG_PATH};
+use kcl_ast::ast;
+use kcl_runtime::{BacktraceFrame, MAIN_PKG_PATH};
 
 use crate::{
     EvalContext, Evaluator, LambdaOrSchemaEvalContext, error as kcl_error,

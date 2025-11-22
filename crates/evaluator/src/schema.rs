@@ -3,10 +3,10 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use generational_arena::Index;
-use kclvm_ast::ast;
-use kclvm_ast::walker::TypedResultWalker;
-use kclvm_primitives::{DefaultHashBuilder, IndexMap};
-use kclvm_runtime::{ConfigEntryOperationKind, ValueRef, schema_runtime_type};
+use kcl_ast::ast;
+use kcl_ast::walker::TypedResultWalker;
+use kcl_primitives::{DefaultHashBuilder, IndexMap};
+use kcl_runtime::{ConfigEntryOperationKind, ValueRef, schema_runtime_type};
 use scopeguard::defer;
 
 use crate::lazy::{LazyEvalScope, LazyEvalScopeRef, merge_variables_and_setters};
@@ -481,7 +481,7 @@ pub(crate) fn schema_body(
             s.walk_decorator_with_name(&decorator.node, Some(&schema_name), true)
                 .expect(kcl_error::RUNTIME_ERROR_MSG);
         }
-        let runtime_type = kclvm_runtime::schema_runtime_type(&schema_name, schema_pkgpath);
+        let runtime_type = kcl_runtime::schema_runtime_type(&schema_name, schema_pkgpath);
         schema_ctx_value.set_potential_schema_type(&runtime_type);
         // Set schema arguments and keyword arguments
         schema_ctx_value.set_schema_args(args, kwargs);
@@ -817,15 +817,11 @@ impl<'ctx> Evaluator<'ctx> {
         let mut config_meta = self.dict_value();
         if let Some(n) = n {
             let value = self.string_value(&n.filename);
-            self.dict_insert_value(
-                &mut config_meta,
-                kclvm_runtime::CONFIG_META_FILENAME,
-                &value,
-            );
+            self.dict_insert_value(&mut config_meta, kcl_runtime::CONFIG_META_FILENAME, &value);
             let value = self.int_value(n.line as i64);
-            self.dict_insert_value(&mut config_meta, kclvm_runtime::CONFIG_META_LINE, &value);
+            self.dict_insert_value(&mut config_meta, kcl_runtime::CONFIG_META_LINE, &value);
             let value = self.int_value(n.column as i64);
-            self.dict_insert_value(&mut config_meta, kclvm_runtime::CONFIG_META_COLUMN, &value);
+            self.dict_insert_value(&mut config_meta, kcl_runtime::CONFIG_META_COLUMN, &value);
         }
         for item in &t.items {
             if let Some(key) = &item.node.key {
@@ -837,17 +833,13 @@ impl<'ctx> Evaluator<'ctx> {
                     },
                     ast::Expr::StringLit(t) => t.value.clone(),
                     ast::Expr::NameConstantLit(t) => match t.value {
-                        ast::NameConstant::True => {
-                            kclvm_runtime::KCL_NAME_CONSTANT_TRUE.to_string()
-                        }
+                        ast::NameConstant::True => kcl_runtime::KCL_NAME_CONSTANT_TRUE.to_string(),
                         ast::NameConstant::False => {
-                            kclvm_runtime::KCL_NAME_CONSTANT_FALSE.to_string()
+                            kcl_runtime::KCL_NAME_CONSTANT_FALSE.to_string()
                         }
-                        ast::NameConstant::None => {
-                            kclvm_runtime::KCL_NAME_CONSTANT_NONE.to_string()
-                        }
+                        ast::NameConstant::None => kcl_runtime::KCL_NAME_CONSTANT_NONE.to_string(),
                         ast::NameConstant::Undefined => {
-                            kclvm_runtime::KCL_NAME_CONSTANT_UNDEFINED.to_string()
+                            kcl_runtime::KCL_NAME_CONSTANT_UNDEFINED.to_string()
                         }
                     },
                     _ => format!("{:?}", key.node),
@@ -856,19 +848,19 @@ impl<'ctx> Evaluator<'ctx> {
                 let value = self.string_value(&key.filename);
                 self.dict_insert_value(
                     &mut config_item_meta,
-                    kclvm_runtime::CONFIG_ITEM_META_FILENAME,
+                    kcl_runtime::CONFIG_ITEM_META_FILENAME,
                     &value,
                 );
                 let value = self.int_value(key.line as i64);
                 self.dict_insert_value(
                     &mut config_item_meta,
-                    kclvm_runtime::CONFIG_ITEM_META_LINE,
+                    kcl_runtime::CONFIG_ITEM_META_LINE,
                     &value,
                 );
                 let value = self.int_value(key.column as i64);
                 self.dict_insert_value(
                     &mut config_item_meta,
-                    kclvm_runtime::CONFIG_ITEM_META_COLUMN,
+                    kcl_runtime::CONFIG_ITEM_META_COLUMN,
                     &value,
                 );
                 let value = match &item.node.value.node {
@@ -879,7 +871,7 @@ impl<'ctx> Evaluator<'ctx> {
                 };
                 self.dict_insert_value(
                     &mut config_item_meta,
-                    kclvm_runtime::CONFIG_ITEM_META,
+                    kcl_runtime::CONFIG_ITEM_META,
                     &value,
                 );
                 self.dict_insert_value(&mut config_meta, &name, &config_item_meta)

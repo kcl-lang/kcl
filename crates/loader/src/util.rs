@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use kclvm_ast::ast;
-use kclvm_ast_pretty::{ASTNode, print_ast_node};
-use kclvm_sema::eval::str_literal_eval;
+use kcl_ast::ast;
+use kcl_ast_pretty::{ASTNode, print_ast_node};
+use kcl_sema::eval::str_literal_eval;
 
 pub(crate) fn get_call_args_bool(
     call_expr: &ast::CallExpr,

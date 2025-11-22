@@ -1,5 +1,5 @@
 [package]
-name = "kclvm-lib"
+name = "kcl-lib"
 version.workspace = true
 edition.workspace = true
 
@@ -11,20 +11,20 @@ path = "src/lib.rs"
 name = "kcl"
 
 [dependencies]
-kclvm-api.workspace = true
-kclvm-cmd.workspace = true
-kclvm-ast.workspace = true
-kclvm-runner.workspace = true
-kclvm-parser.workspace = true
-kclvm-compiler.workspace = true
-kclvm-config.workspace = true
-kclvm-loader.workspace = true
-kclvm-runtime.workspace = true
-kclvm-sema.workspace = true
-kclvm-tools.workspace = true
-kclvm-version.workspace = true
-kclvm-error.workspace = true
-kclvm-evaluator.workspace = true
-kclvm-query.workspace = true
-kclvm-driver.workspace = true
-kclvm-primitives.workspace = true
+kcl-api.workspace = true
+kcl-cmd.workspace = true
+kcl-ast.workspace = true
+kcl-runner.workspace = true
+kcl-parser.workspace = true
+kcl-compiler.workspace = true
+kcl-config.workspace = true
+kcl-loader.workspace = true
+kcl-runtime.workspace = true
+kcl-sema.workspace = true
+kcl-tools.workspace = true
+kcl-version.workspace = true
+kcl-error.workspace = true
+kcl-evaluator.workspace = true
+kcl-query.workspace = true
+kcl-driver.workspace = true
+kcl-primitives.workspace = true

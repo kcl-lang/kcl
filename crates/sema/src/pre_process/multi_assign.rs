@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
-use kclvm_ast::{ast, walker::MutSelfMutWalker};
+use kcl_ast::{ast, walker::MutSelfMutWalker};
 
 /// Transform AST and split multi target assign statements to multiple assign statements.
 ///
 /// # Examples
 ///
 /// ```
-/// use kclvm_parser::parse_file_force_errors;
-/// use kclvm_sema::pre_process::transform_multi_assign;
+/// use kcl_parser::parse_file_force_errors;
+/// use kcl_sema::pre_process::transform_multi_assign;
 ///
 /// let mut module = parse_file_force_errors("", Some("a = b = Config {}".to_string())).unwrap();
 /// assert_eq!(module.body.len(), 1);

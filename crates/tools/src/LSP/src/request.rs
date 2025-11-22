@@ -1,8 +1,8 @@
 use anyhow::anyhow;
 use crossbeam_channel::Sender;
 
-use kclvm_driver::WorkSpaceKind;
-use kclvm_sema::info::is_valid_kcl_name;
+use kcl_driver::WorkSpaceKind;
+use kcl_sema::info::is_valid_kcl_name;
 use lsp_types::{Location, SemanticTokensResult, TextEdit};
 use ra_ap_vfs::VfsPath;
 use std::collections::HashMap;

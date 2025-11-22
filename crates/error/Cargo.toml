@@ -1,5 +1,5 @@
 [package]
-name = "kclvm-error"
+name = "kcl-error"
 version.workspace = true
 edition.workspace = true
 
@@ -11,10 +11,10 @@ compiler_base_session = "0.1.3"
 compiler_base_error = "0.1.6"
 compiler_base_macros = "0.1.1"
 
-kclvm-primitives = { path = "../primitives" }
-kclvm-span = { path = "../span" }
-kclvm-runtime = { path = "../runtime" }
-kclvm-utils = { path = "../utils" }
+kcl-primitives = { path = "../primitives" }
+kcl-span = { path = "../span" }
+kcl-runtime = { path = "../runtime" }
+kcl-utils = { path = "../utils" }
 
 anyhow = "1.0"
 tracing = "0.1"

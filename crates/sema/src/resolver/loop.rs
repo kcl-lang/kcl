@@ -1,7 +1,7 @@
 use crate::resolver::Resolver;
 use crate::ty::{DictType, TypeKind, TypeRef, sup};
-use kclvm_ast::ast;
-use kclvm_error::diagnostic::Range;
+use kcl_ast::ast;
+use kcl_error::diagnostic::Range;
 
 impl<'ctx> Resolver<'ctx> {
     /// Do loop type check including quant and comp for expression.

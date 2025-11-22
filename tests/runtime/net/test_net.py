@@ -5,13 +5,13 @@ import unittest
 import sys
 import os
 
-# Add the parent directory to the path to import kclvm_runtime
+# Add the parent directory to the path to import kcl_runtime
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
-import kclvm_runtime
+import tests.runtime.kcl_runtime as kcl_runtime
 
 # https://github.com/python/cpython/blob/main/Lib/test
-_Dylib = kclvm_runtime.KclRuntimeDylib()
+_Dylib = kcl_runtime.KclRuntimeDylib()
 
 
 class kclx_Net:

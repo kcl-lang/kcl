@@ -1,6 +1,6 @@
 //! Copyright The KCL Authors. All rights reserved.
 
-use kclvm_primitives::IndexMap;
+use kcl_primitives::IndexMap;
 
 use crate::*;
 

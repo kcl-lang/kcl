@@ -1,4 +1,4 @@
-//! Diagnostics creation and emission for `KCLVM`.
+//! Diagnostics creation and emission for `KCL`.
 //! This module contains the code for creating and emitting diagnostics.
 //!
 //! We can use `Handler` to create and emit diagnostics.
@@ -21,8 +21,8 @@ use compiler_base_error::{
 use compiler_base_session::{Session, SessionDiagnostic};
 use compiler_base_span::{Span, span::new_byte_pos};
 use diagnostic::Range;
-use kclvm_primitives::{DefaultHashBuilder, IndexSet};
-use kclvm_runtime::PanicInfo;
+use kcl_primitives::{DefaultHashBuilder, IndexSet};
+use kcl_runtime::PanicInfo;
 use std::{any::Any, sync::Arc};
 use thiserror::Error;
 
@@ -158,7 +158,7 @@ impl Handler {
 
     /// Add an error into the handler
     /// ```
-    /// use kclvm_error::*;
+    /// use kcl_error::*;
     /// let mut handler = Handler::default();
     /// handler.add_error(ErrorKind::InvalidSyntax, &[
     ///     Message {
@@ -201,7 +201,7 @@ impl Handler {
 
     /// Add an warning into the handler
     /// ```
-    /// use kclvm_error::*;
+    /// use kcl_error::*;
     /// let mut handler = Handler::default();
     /// handler.add_warning(WarningKind::UnusedImportWarning, &[
     ///     Message {
@@ -247,7 +247,7 @@ impl Handler {
     /// # Example
     ///
     /// ```
-    /// use kclvm_error::*;
+    /// use kcl_error::*;
     /// let mut handler = Handler::default();
     /// handler.add_diagnostic(Diagnostic::new_with_code(Level::Error, "error message", None, (Position::dummy_pos(), Position::dummy_pos()), Some(DiagnosticId::Error(E1001.kind)), None));
     /// ```
@@ -601,7 +601,7 @@ impl SessionDiagnostic for StringError {
 /// Convert an error to string.
 ///
 /// ```
-/// use kclvm_error::err_to_str;
+/// use kcl_error::err_to_str;
 ///
 /// assert_eq!(err_to_str(Box::new("error_string".to_string())), "error_string");
 /// ```

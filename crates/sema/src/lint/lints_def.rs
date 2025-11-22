@@ -2,10 +2,10 @@ use crate::lint::lint::{Lint, LintArray, LintContext};
 use crate::lint::lintpass::LintPass;
 use crate::resolver::scope::Scope;
 use crate::{declare_lint_pass, resolver::scope::ScopeObjectKind};
-use kclvm_ast::ast;
-use kclvm_ast::pos::GetPos;
-use kclvm_error::{Handler, Level, Message, Style, WarningKind};
-use kclvm_primitives::IndexSet;
+use kcl_ast::ast;
+use kcl_ast::pos::GetPos;
+use kcl_error::{Handler, Level, Message, Style, WarningKind};
+use kcl_primitives::IndexSet;
 
 /// The 'import_position' lint detects import statements that are not declared at the top of file.
 /// ### Example

@@ -2,9 +2,9 @@ use crate::r#override::build_expr_from_string;
 
 use super::util::{invalid_symbol_selector_spec_error, split_field_path};
 use anyhow::Result;
-use kclvm_ast::{ast, path::get_target_path};
-use kclvm_error::diagnostic::Errors;
-use kclvm_parser::ParseSession;
+use kcl_ast::{ast, path::get_target_path};
+use kcl_error::diagnostic::Errors;
+use kcl_parser::ParseSession;
 use serde::{Deserialize, Serialize};
 
 use std::{
@@ -14,14 +14,14 @@ use std::{
     vec,
 };
 
-use kclvm_ast::path::get_key_path;
+use kcl_ast::path::get_key_path;
 
-use kclvm_ast::walker::MutSelfWalker;
-use kclvm_ast_pretty::{ASTNode, print_ast_node};
-use kclvm_parser::load_program;
+use kcl_ast::walker::MutSelfWalker;
+use kcl_ast_pretty::{ASTNode, print_ast_node};
+use kcl_parser::load_program;
 
-use kclvm_sema::pre_process::pre_process_program;
-use kclvm_sema::resolver::Options;
+use kcl_sema::pre_process::pre_process_program;
+use kcl_sema::resolver::Options;
 #[derive(Debug, Default)]
 /// UnsupportedSelectee is used to store the unsupported selectee, such as if, for, etc.
 pub struct UnsupportedSelectee {
@@ -748,7 +748,7 @@ pub fn list_variables(
 /// # Examples
 ///
 /// ```
-/// use kclvm_query::selector::parse_symbol_selector_spec;
+/// use kcl_query::selector::parse_symbol_selector_spec;
 ///
 /// if let Ok(spec) = parse_symbol_selector_spec("", "alice.age") {
 ///     assert_eq!(spec.pkgpath, "".to_string());

@@ -4,16 +4,16 @@ mod abi;
 pub mod error;
 mod traits;
 
-/// The kclvm runner main function name.
-pub const MODULE_NAME: &str = "kclvm_main";
-/// The kclvm runner main function entry block name.
+/// The kcl runner main function name.
+pub const MODULE_NAME: &str = "kcl_main";
+/// The kcl runner main function entry block name.
 pub const ENTRY_NAME: &str = "entry";
-/// The kclvm runtime value type name.
-pub const VALUE_TYPE_NAME: &str = "kclvm_value_ref_t";
-/// The kclvm runtime context type name.
-pub const CONTEXT_TYPE_NAME: &str = "kclvm_context_t";
-/// The kclvm runtime evaluation type name.
-pub const SCOPE_TYPE_NAME: &str = "kclvm_eval_scope_t";
+/// The kcl runtime value type name.
+pub const VALUE_TYPE_NAME: &str = "kcl_value_ref_t";
+/// The kcl runtime context type name.
+pub const CONTEXT_TYPE_NAME: &str = "kcl_context_t";
+/// The kcl runtime evaluation type name.
+pub const SCOPE_TYPE_NAME: &str = "kcl_eval_scope_t";
 /// Package init function name suffix
 pub const PKG_INIT_FUNCTION_SUFFIX: &str = "init";
 /// Global level

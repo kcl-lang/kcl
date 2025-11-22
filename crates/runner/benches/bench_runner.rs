@@ -5,13 +5,13 @@ use std::sync::Arc;
 use criterion::{Criterion, criterion_group, criterion_main};
 use walkdir::WalkDir;
 
-use kclvm_parser::{ParseSession, load_program};
-use kclvm_runner::{execute, runner::ExecProgramArgs};
+use kcl_parser::{ParseSession, load_program};
+use kcl_runner::{execute, runner::ExecProgramArgs};
 
 const EXEC_DATA_PATH: &str = "./src/exec_data/";
 
 pub fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("refactor kclvm-runner", |b| {
+    c.bench_function("refactor kcl-runner", |b| {
         b.iter(|| {
             let prev_hook = std::panic::take_hook();
             // disable print panic info

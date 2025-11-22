@@ -1,12 +1,12 @@
-use kclvm_ast::ast::{
+use kcl_ast::ast::{
     ConfigEntry, Expr, Identifier, MemberOrIndex, Node, NodeRef, PosTuple, Program, SchemaStmt,
     Stmt, Type,
 };
-use kclvm_ast::node_ref;
-use kclvm_ast::pos::ContainsPos;
+use kcl_ast::node_ref;
+use kcl_ast::pos::ContainsPos;
 
-use kclvm_error::Position as KCLPos;
-use kclvm_parser::entry::get_dir_files;
+use kcl_error::Position as KCLPos;
+use kcl_parser::entry::get_dir_files;
 
 use crate::from_lsp;
 use crate::state::KCLVfs;
@@ -111,9 +111,9 @@ pub(crate) fn filter_kcl_config_file(paths: &[PathBuf]) -> Vec<PathBuf> {
     paths
         .iter()
         .filter(|p| {
-            p.file_name().map(|n| n.to_str().unwrap()) == Some(kclvm_config::modfile::KCL_MOD_FILE)
+            p.file_name().map(|n| n.to_str().unwrap()) == Some(kcl_config::modfile::KCL_MOD_FILE)
                 || p.file_name().map(|n| n.to_str().unwrap())
-                    == Some(kclvm_config::settings::DEFAULT_SETTING_FILE)
+                    == Some(kcl_config::settings::DEFAULT_SETTING_FILE)
         })
         .map(|p| p.clone())
         .collect()
@@ -263,7 +263,7 @@ pub(crate) fn inner_most_expr_in_stmt(
                             ),
                         ),
                         pkgpath: "".to_string(),
-                        ctx: kclvm_ast::ast::ExprContext::Load,
+                        ctx: kcl_ast::ast::ExprContext::Load,
                     }),
                     (
                         schema_stmt.name.filename.clone(),
@@ -304,7 +304,7 @@ pub(crate) fn inner_most_expr_in_stmt(
                     Expr::Identifier(Identifier {
                         names: vec![*schema_attr_expr.name.clone()],
                         pkgpath: "".to_string(),
-                        ctx: kclvm_ast::ast::ExprContext::Load,
+                        ctx: kcl_ast::ast::ExprContext::Load,
                     }),
                     (
                         schema_attr_expr.name.filename.clone(),
@@ -602,7 +602,7 @@ fn build_identifier_from_string(s: &NodeRef<String>) -> Node<Expr> {
                 ),
             ),
             pkgpath: "".to_string(),
-            ctx: kclvm_ast::ast::ExprContext::Load,
+            ctx: kcl_ast::ast::ExprContext::Load,
         }),
         (
             s.filename.clone(),

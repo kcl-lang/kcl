@@ -1,5 +1,5 @@
 [package]
-name = "kclvm-compiler"
+name = "kcl-compiler"
 version.workspace = true
 edition.workspace = true
 
@@ -13,8 +13,8 @@ bitflags = "1.2.1"
 once_cell = "1.5.2"
 fancy-regex = "0.7.1"
 unicode_names2 = "0.4"
-kclvm-ast = { path = "../ast" }
-kclvm-sema = { path = "../sema" }
-kclvm-runtime = { path = "../runtime" }
-kclvm-error = { path = "../error" }
-kclvm-primitives = { path = "../primitives" }
+kcl-ast = { path = "../ast" }
+kcl-sema = { path = "../sema" }
+kcl-runtime = { path = "../runtime" }
+kcl-error = { path = "../error" }
+kcl-primitives = { path = "../primitives" }

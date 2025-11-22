@@ -1,4 +1,4 @@
-//! The `kclvm` command-line interface.
+//! The `libkcl` command-line interface.
 
 use std::{
     ffi::{CString, c_char, c_int},

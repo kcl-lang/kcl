@@ -3,7 +3,7 @@
 import typing
 import unittest
 
-import kclvm_runtime
+import tests.runtime.kcl_runtime as kcl_runtime
 
 # md5(value: str, encoding: str = "utf-8") -> str
 # sha1(value: str, encoding: str = "utf-8") -> str
@@ -12,7 +12,7 @@ import kclvm_runtime
 # sha384(value: str, encoding: str = "utf-8") -> str
 # sha512(value: str, encoding: str = "utf-8") -> str
 
-_Dylib = kclvm_runtime.KclRuntimeDylib()
+_Dylib = kcl_runtime.KclRuntimeDylib()
 
 
 class BaseTest(unittest.TestCase):

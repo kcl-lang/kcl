@@ -6,30 +6,30 @@ resolver = "2"
 [workspace.dependencies]
 compiler_base = { path = "crates/compiler_base" }
 
-kclvm-api = { path = "crates/api" }
-kclvm-ast = { path = "crates/ast" }
-kclvm-ast-pretty = { path = "crates/ast_pretty" }
-kclvm-cli = { path = "crates/cli" }
-kclvm-cmd = { path = "crates/cmd" }
-kclvm-compiler = { path = "crates/compiler" }
-kclvm-config = { path = "crates/config" }
-kclvm-driver = { path = "crates/driver" }
-kclvm-error = { path = "crates/error" }
-kclvm-evaluator = { path = "crates/evaluator" }
-kclvm-lexer = { path = "crates/lexer" }
-kclvm-lib = { path = "crates/lib" }
-kclvm-loader = { path = "crates/loader" }
-kclvm-macros = { path = "crates/macros" }
-kclvm-parser = { path = "crates/parser" }
-kclvm-primitives = { path = "crates/primitives" }
-kclvm-query = { path = "crates/query" }
-kclvm-runner = { path = "crates/runner" }
-kclvm-runtime = { path = "crates/runtime" }
-kclvm-sema = { path = "crates/sema" }
-kclvm-span = { path = "crates/span" }
-kclvm-tools = { path = "crates/tools" }
-kclvm-utils = { path = "crates/utils" }
-kclvm-version = { path = "crates/version" }
+kcl-api = { path = "crates/api" }
+kcl-ast = { path = "crates/ast" }
+kcl-ast-pretty = { path = "crates/ast_pretty" }
+kcl-cli = { path = "crates/cli" }
+kcl-cmd = { path = "crates/cmd" }
+kcl-compiler = { path = "crates/compiler" }
+kcl-config = { path = "crates/config" }
+kcl-driver = { path = "crates/driver" }
+kcl-error = { path = "crates/error" }
+kcl-evaluator = { path = "crates/evaluator" }
+kcl-lexer = { path = "crates/lexer" }
+kcl-lib = { path = "crates/lib" }
+kcl-loader = { path = "crates/loader" }
+kcl-macros = { path = "crates/macros" }
+kcl-parser = { path = "crates/parser" }
+kcl-primitives = { path = "crates/primitives" }
+kcl-query = { path = "crates/query" }
+kcl-runner = { path = "crates/runner" }
+kcl-runtime = { path = "crates/runtime" }
+kcl-sema = { path = "crates/sema" }
+kcl-span = { path = "crates/span" }
+kcl-tools = { path = "crates/tools" }
+kcl-utils = { path = "crates/utils" }
+kcl-version = { path = "crates/version" }
 
 [workspace.package]
 version = "0.12.0"

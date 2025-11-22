@@ -1,10 +1,10 @@
 use im_rc::HashMap;
-use kclvm_error::Diagnostic as KCLDiagnostic;
-use kclvm_error::DiagnosticId;
-use kclvm_error::Level;
-use kclvm_error::Message;
-use kclvm_error::Position as KCLPos;
-use kclvm_utils::path::PathPrefix;
+use kcl_error::Diagnostic as KCLDiagnostic;
+use kcl_error::DiagnosticId;
+use kcl_error::Level;
+use kcl_error::Message;
+use kcl_error::Position as KCLPos;
+use kcl_utils::path::PathPrefix;
 use lsp_types::*;
 use serde_json::json;
 

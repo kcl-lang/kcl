@@ -3,13 +3,13 @@
 //! ## How to Use
 //!
 //! ```no_check,no_run
-//! cargo add --git https://github.com/kcl-lang/kcl kclvm_api
+//! cargo add --git https://github.com/kcl-lang/kcl kcl_api
 //! ```
 //!
 //! Write the Code
 //!
 //! ```no_run
-//! use kclvm_api::*;
+//! use kcl_api::*;
 //! use std::path::Path;
 //! use anyhow::Result;
 //!
@@ -34,12 +34,12 @@ pub mod gpyrpc {
 }
 
 pub use crate::gpyrpc::*;
-use crate::service::capi::{kclvm_service_call_with_length, kclvm_service_new};
-use crate::service::service_impl::KclvmServiceImpl;
+use crate::service::capi::{kcl_service_call_with_length, kcl_service_new};
+use crate::service::service_impl::KclServiceImpl;
 use anyhow::Result;
 use std::ffi::{CString, c_char};
 
-pub type API = KclvmServiceImpl;
+pub type API = KclServiceImpl;
 
 /// Call KCL API with the API name and argument protobuf bytes.
 #[inline]
@@ -55,11 +55,11 @@ pub fn call_with_plugin_agent<'a>(
 ) -> Result<Vec<u8>> {
     let mut result_len: usize = 0;
     let result_ptr = {
-        let serv = kclvm_service_new(plugin_agent);
+        let serv = kcl_service_new(plugin_agent);
         let args_len = args.len();
         let name = unsafe { CString::from_vec_unchecked(name.to_vec()) };
         let args = unsafe { CString::from_vec_unchecked(args.to_vec()) };
-        kclvm_service_call_with_length(
+        kcl_service_call_with_length(
             serv,
             name.as_ptr(),
             args.as_ptr() as *const c_char,

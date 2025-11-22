@@ -1,13 +1,13 @@
 use anyhow::bail;
 use compiler_base_session::Session;
-use kclvm_ast::ast::NodeRef;
-use kclvm_ast::ast::Stmt;
-use kclvm_ast::ast::Stmt::Import;
-use kclvm_ast::{MAIN_PKG, ast};
-use kclvm_error::diagnostic::Range;
-use kclvm_error::{Handler, Level};
-use kclvm_primitives::DefaultHashBuilder;
-use kclvm_primitives::{IndexMap, IndexSet};
+use kcl_ast::ast::NodeRef;
+use kcl_ast::ast::Stmt;
+use kcl_ast::ast::Stmt::Import;
+use kcl_ast::{MAIN_PKG, ast};
+use kcl_error::diagnostic::Range;
+use kcl_error::{Handler, Level};
+use kcl_primitives::DefaultHashBuilder;
+use kcl_primitives::{IndexMap, IndexSet};
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::VecDeque;
@@ -21,10 +21,10 @@ use crate::resolver::Resolver;
 use crate::ty::SchemaType;
 use crate::ty::TypeRef;
 use crate::{builtin::BUILTIN_FUNCTIONS, ty::TypeInferMethods};
-use kclvm_ast::ast::AstIndex;
-use kclvm_ast::pos::ContainsPos;
-use kclvm_ast::pos::GetPos;
-use kclvm_error::Position;
+use kcl_ast::ast::AstIndex;
+use kcl_ast::pos::ContainsPos;
+use kcl_ast::pos::GetPos;
+use kcl_error::Position;
 use parking_lot::RwLock;
 use serde::Serialize;
 
@@ -526,7 +526,7 @@ pub struct NodeKey {
 pub type NodeTyMap = IndexMap<NodeKey, TypeRef>;
 pub type KCLScopeCache = Arc<RwLock<CachedScope>>;
 
-/// For CachedScope, we assume that all changed files must be located in kclvm_ast::MAIN_PKG ,
+/// For CachedScope, we assume that all changed files must be located in kcl_ast::MAIN_PKG ,
 /// if this is not the case, please clear the cache directly
 #[derive(Debug, Clone, Default)]
 pub struct CachedScope {
@@ -565,7 +565,7 @@ impl DependencyGraph {
     ) -> Result<HashSet<String>, String> {
         let mut new_modules = HashMap::new();
         for (pkgpath, modules) in program.pkgs.iter() {
-            if pkgpath == kclvm_ast::MAIN_PKG {
+            if pkgpath == kcl_ast::MAIN_PKG {
                 continue;
             }
             if !self.node_map.contains_key(pkgpath) {
@@ -617,7 +617,7 @@ impl DependencyGraph {
                 }
             }
             None => {
-                if let Some(main_modules) = program.pkgs.get(kclvm_ast::MAIN_PKG) {
+                if let Some(main_modules) = program.pkgs.get(kcl_ast::MAIN_PKG) {
                     for module in main_modules {
                         let module = program
                             .get_module(module)

@@ -8,10 +8,10 @@
 //! + attr type
 
 use crate::to_lsp::lsp_location;
-use kclvm_error::Position as KCLPos;
-use kclvm_primitives::{DefaultHashBuilder, IndexSet};
-use kclvm_sema::core::global_state::GlobalState;
-use kclvm_sema::core::symbol::SymbolRef;
+use kcl_error::Position as KCLPos;
+use kcl_primitives::{DefaultHashBuilder, IndexSet};
+use kcl_sema::core::global_state::GlobalState;
+use kcl_sema::core::symbol::SymbolRef;
 use lsp_types::GotoDefinitionResponse;
 
 /// Navigates to the definition of an identifier.
@@ -22,7 +22,7 @@ pub fn goto_def(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::GotoDef
     match def {
         Some(def_ref) => match gs.get_symbols().get_symbol(def_ref) {
             Some(def) => match def_ref.get_kind() {
-                kclvm_sema::core::symbol::SymbolKind::Package => {
+                kcl_sema::core::symbol::SymbolKind::Package => {
                     let pkg_info = match gs.get_packages().get_package_info(&def.get_name()) {
                         Some(pkg_info) => pkg_info,
                         None => return None,
@@ -108,7 +108,7 @@ fn positions_to_goto_def_resp(
 mod tests {
     use super::goto_def;
     use crate::{from_lsp::file_path_from_url, tests::compile_test_file};
-    use kclvm_error::Position as KCLPos;
+    use kcl_error::Position as KCLPos;
     use std::path::{Path, PathBuf};
 
     #[macro_export]

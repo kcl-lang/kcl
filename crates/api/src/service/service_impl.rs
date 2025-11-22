@@ -5,33 +5,33 @@ use std::string::String;
 
 use crate::gpyrpc::{self, *};
 
+use kcl_ast::ast::SerializeProgram;
+use kcl_config::settings::build_settings_pathbuf;
 use kcl_language_server::rename;
-use kclvm_ast::ast::SerializeProgram;
-use kclvm_config::settings::build_settings_pathbuf;
-use kclvm_loader::option::list_options;
-use kclvm_loader::{LoadPackageOptions, load_packages_with_cache};
-use kclvm_parser::KCLModuleCache;
-use kclvm_parser::LoadProgramOptions;
-use kclvm_parser::ParseSessionRef;
-use kclvm_parser::entry::{canonicalize_input_file, get_normalized_k_files_from_paths};
-use kclvm_parser::load_program;
-use kclvm_parser::parse_single_file;
-use kclvm_query::GetSchemaOption;
-use kclvm_query::override_file;
-use kclvm_query::query::CompilationOptions;
-use kclvm_query::query::{get_full_schema_type, get_full_schema_type_under_path};
-use kclvm_query::selector::{ListOptions, list_variables};
-use kclvm_runner::exec_program;
-use kclvm_sema::core::global_state::GlobalState;
-use kclvm_sema::resolver::Options;
-use kclvm_sema::resolver::scope::KCLScopeCache;
-use kclvm_tools::format::{FormatOptions, format, format_source};
-use kclvm_tools::lint::lint_files;
-use kclvm_tools::testing;
-use kclvm_tools::testing::TestRun;
-use kclvm_tools::vet::validator::LoaderKind;
-use kclvm_tools::vet::validator::ValidateOption;
-use kclvm_tools::vet::validator::validate;
+use kcl_loader::option::list_options;
+use kcl_loader::{LoadPackageOptions, load_packages_with_cache};
+use kcl_parser::KCLModuleCache;
+use kcl_parser::LoadProgramOptions;
+use kcl_parser::ParseSessionRef;
+use kcl_parser::entry::{canonicalize_input_file, get_normalized_k_files_from_paths};
+use kcl_parser::load_program;
+use kcl_parser::parse_single_file;
+use kcl_query::GetSchemaOption;
+use kcl_query::override_file;
+use kcl_query::query::CompilationOptions;
+use kcl_query::query::{get_full_schema_type, get_full_schema_type_under_path};
+use kcl_query::selector::{ListOptions, list_variables};
+use kcl_runner::exec_program;
+use kcl_sema::core::global_state::GlobalState;
+use kcl_sema::resolver::Options;
+use kcl_sema::resolver::scope::KCLScopeCache;
+use kcl_tools::format::{FormatOptions, format, format_source};
+use kcl_tools::lint::lint_files;
+use kcl_tools::testing;
+use kcl_tools::testing::TestRun;
+use kcl_tools::vet::validator::LoaderKind;
+use kcl_tools::vet::validator::ValidateOption;
+use kcl_tools::vet::validator::validate;
 use tempfile::NamedTempFile;
 
 use super::into::*;
@@ -40,12 +40,12 @@ use super::util::{transform_exec_para, transform_str_para};
 
 /// Specific implementation of calling service
 #[derive(Debug, Clone, Default)]
-pub struct KclvmServiceImpl {
+pub struct KclServiceImpl {
     pub plugin_agent: u64,
 }
 
-impl From<&kclvm_query::selector::Variable> for Variable {
-    fn from(var: &kclvm_query::selector::Variable) -> Self {
+impl From<&kcl_query::selector::Variable> for Variable {
+    fn from(var: &kcl_query::selector::Variable) -> Self {
         Variable {
             value: var.value.to_string(),
             type_name: var.type_name.to_string(),
@@ -63,15 +63,15 @@ impl From<&kclvm_query::selector::Variable> for Variable {
     }
 }
 
-impl KclvmServiceImpl {
-    /// Ping KclvmService, return the same value as the parameter
+impl KclServiceImpl {
+    /// Ping KclService, return the same value as the parameter
     ///
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
-    /// let serv = KclvmServiceImpl::default();
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
+    /// let serv = KclServiceImpl::default();
     /// let args = &PingArgs {
     ///     value: "hello".to_string(),
     ///     ..Default::default()
@@ -86,14 +86,14 @@ impl KclvmServiceImpl {
         })
     }
 
-    /// GetVersion KclvmService, return the kclvm service version information
+    /// GetVersion KclService, return the kcl service version information
     ///
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
-    /// let serv = KclvmServiceImpl::default();
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
+    /// let serv = KclServiceImpl::default();
     /// let args = &GetVersionArgs {
     ///     ..Default::default()
     /// };
@@ -103,10 +103,10 @@ impl KclvmServiceImpl {
     ///
     pub fn get_version(&self, _args: &GetVersionArgs) -> anyhow::Result<GetVersionResult> {
         Ok(GetVersionResult {
-            version: kclvm_version::VERSION.to_string(),
-            checksum: kclvm_version::CHECK_SUM.to_string(),
-            git_sha: kclvm_version::GIT_SHA.to_string(),
-            version_info: kclvm_version::get_version_info(),
+            version: kcl_version::VERSION.to_string(),
+            checksum: kcl_version::CHECK_SUM.to_string(),
+            git_sha: kcl_version::GIT_SHA.to_string(),
+            version_info: kcl_version::get_version_info(),
         })
     }
 
@@ -115,11 +115,11 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
     /// use std::path::Path;
     /// // File case
-    /// let serv = KclvmServiceImpl::default();
+    /// let serv = KclServiceImpl::default();
     /// let args = &ParseProgramArgs {
     ///     paths: vec![Path::new(".").join("src").join("testdata").join("test.k").canonicalize().unwrap().display().to_string()],
     ///     ..Default::default()
@@ -166,11 +166,11 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
     /// use std::path::Path;
     /// // File case
-    /// let serv = KclvmServiceImpl::default();
+    /// let serv = KclServiceImpl::default();
     /// let args = &ParseFileArgs {
     ///     path: Path::new(".").join("src").join("testdata").join("parse").join("main.k").canonicalize().unwrap().display().to_string(),
     ///     ..Default::default()
@@ -201,12 +201,12 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
     /// use std::path::Path;
-    /// use kclvm_utils::path::PathPrefix;
+    /// use kcl_utils::path::PathPrefix;
     ///
-    /// let serv = KclvmServiceImpl::default();
+    /// let serv = KclServiceImpl::default();
     /// let args = &LoadPackageArgs {
     ///     parse_args: Some(ParseProgramArgs {
     ///         paths: vec![Path::new(".").join("src").join("testdata").join("parse").join("main.k").canonicalize().unwrap().display().to_string().adjust_canonicalization()],
@@ -262,7 +262,7 @@ impl KclvmServiceImpl {
         )?;
         if args.with_ast_index {
             // Thread local options
-            kclvm_ast::ast::set_should_serialize_id(true);
+            kcl_ast::ast::set_should_serialize_id(true);
         }
         let serialize_program: SerializeProgram = packages.program.into();
         let program_json = serde_json::to_string(&serialize_program)?;
@@ -326,11 +326,11 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
     /// use std::path::Path;
     ///
-    /// let serv = KclvmServiceImpl::default();
+    /// let serv = KclServiceImpl::default();
     /// let args = &ParseProgramArgs {
     ///     paths: vec![Path::new(".").join("src").join("testdata").join("option").join("main.k").canonicalize().unwrap().display().to_string()],
     ///     ..Default::default()
@@ -373,11 +373,11 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
     /// use std::path::Path;
     ///
-    /// let serv = KclvmServiceImpl::default();
+    /// let serv = KclServiceImpl::default();
     /// let args = &ListVariablesArgs {
     ///     files: vec![Path::new(".").join("src").join("testdata").join("variables").join("main.k").canonicalize().unwrap().display().to_string()],
     ///     specs: vec!["a".to_string()],
@@ -437,11 +437,11 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
     /// use std::path::Path;
     /// // File case
-    /// let serv = KclvmServiceImpl::default();
+    /// let serv = KclServiceImpl::default();
     /// let args = &ExecProgramArgs {
     ///     work_dir: Path::new(".").join("src").join("testdata").canonicalize().unwrap().display().to_string(),
     ///     k_filename_list: vec!["test.k".to_string()],
@@ -493,10 +493,10 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
     ///
-    /// let serv = KclvmServiceImpl::default();
+    /// let serv = KclServiceImpl::default();
     /// let args = &OverrideFileArgs {
     ///     file: "./src/testdata/test.k".to_string(),
     ///     specs: vec!["alice.age=18".to_string()],
@@ -535,11 +535,11 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
     /// use std::path::Path;
     ///
-    /// let serv = KclvmServiceImpl::default();
+    /// let serv = KclServiceImpl::default();
     /// let work_dir_parent = Path::new(".").join("src").join("testdata").join("get_schema_ty");
     /// let args = ExecProgramArgs {
     ///     work_dir: work_dir_parent.join("aaa").canonicalize().unwrap().display().to_string(),
@@ -592,12 +592,12 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
     /// use std::path::Path;
-    /// use kclvm_ast::MAIN_PKG;
+    /// use kcl_ast::MAIN_PKG;
     ///
-    /// let serv = KclvmServiceImpl::default();
+    /// let serv = KclServiceImpl::default();
     /// let work_dir_parent = Path::new(".").join("src").join("testdata").join("get_schema_ty_under_path");
     /// let args = ExecProgramArgs {
     ///     k_filename_list: vec![
@@ -661,10 +661,10 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
     ///
-    /// let serv = KclvmServiceImpl::default();
+    /// let serv = KclServiceImpl::default();
     /// let source = r#"schema Person:
     ///     name: str
     ///     age: int
@@ -701,10 +701,10 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
     ///
-    /// let serv = KclvmServiceImpl::default();
+    /// let serv = KclServiceImpl::default();
     /// let result = serv.format_path(&FormatPathArgs {
     ///     path: "./src/testdata/test.k".to_string(),
     ///     ..Default::default()
@@ -736,10 +736,10 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
     ///
-    /// let serv = KclvmServiceImpl::default();
+    /// let serv = KclServiceImpl::default();
     /// let result = serv.lint_path(&LintPathArgs {
     ///     paths: vec!["./src/testdata/test-lint.k".to_string()],
     ///     ..Default::default()
@@ -775,10 +775,10 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```no_run
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
     ///
-    /// let serv = KclvmServiceImpl::default();
+    /// let serv = KclServiceImpl::default();
     /// let code = r#"
     /// schema Person:
     ///     name: str
@@ -843,10 +843,10 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
     ///
-    /// let serv = KclvmServiceImpl::default();
+    /// let serv = KclServiceImpl::default();
     /// let result = serv.load_settings_files(&LoadSettingsFilesArgs {
     ///     files: vec!["./src/testdata/settings/kcl.yaml".to_string()],
     ///     work_dir: "./src/testdata/settings".to_string(),
@@ -883,12 +883,12 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
     /// # use std::path::PathBuf;
     /// # use std::fs;
     /// #
-    /// # let serv = KclvmServiceImpl::default();
+    /// # let serv = KclServiceImpl::default();
     /// # // before test, load template from .bak
     /// # let path = PathBuf::from(".").join("src").join("testdata").join("rename_doc").join("main.k");
     /// # let backup_path = path.with_extension("bak");
@@ -933,10 +933,10 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
     ///
-    /// let serv = KclvmServiceImpl::default();
+    /// let serv = KclServiceImpl::default();
     /// let result = serv.rename_code(&RenameCodeArgs {
     ///     package_root: "/mock/path".to_string(),
     ///     symbol_path: "a".to_string(),
@@ -962,10 +962,10 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
     ///
-    /// let serv = KclvmServiceImpl::default();
+    /// let serv = KclServiceImpl::default();
     /// let result = serv.test(&TestArgs {
     ///     pkg_list: vec!["./src/testdata/testing/module/...".to_string()],
     ///     ..TestArgs::default()
@@ -1011,12 +1011,12 @@ impl KclvmServiceImpl {
     /// # Examples
     ///
     /// ```
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
     /// use std::path::Path;
     /// use std::fs::remove_dir_all;
     ///
-    /// let serv = KclvmServiceImpl::default();
+    /// let serv = KclServiceImpl::default();
     /// let result = serv.update_dependencies(&UpdateDependenciesArgs {
     ///     manifest_path: "./src/testdata/update_dependencies".to_string(),
     ///     ..Default::default()
@@ -1035,7 +1035,7 @@ impl KclvmServiceImpl {
         &self,
         args: &UpdateDependenciesArgs,
     ) -> anyhow::Result<UpdateDependenciesResult> {
-        use kclvm_driver::client::ModClient;
+        use kcl_driver::client::ModClient;
         use std::path::Path;
         let mut client = ModClient::new(&args.manifest_path)?;
         if args.vendor {

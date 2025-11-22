@@ -7,11 +7,11 @@ use handlebars::{Handlebars, html_escape};
 /// returns the string output.
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_template_execute(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_template_execute(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -39,11 +39,11 @@ pub extern "C-unwind" fn kclvm_template_execute(
 /// Replaces the characters `&"<>` with the equivalent html / xml entities.
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_template_html_escape(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_template_html_escape(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);

@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use kclvm_primitives::{IndexMap, IndexSet};
+use kcl_primitives::{IndexMap, IndexSet};
 
 #[derive(Default, Debug, Clone)]
 pub struct PackageDB {

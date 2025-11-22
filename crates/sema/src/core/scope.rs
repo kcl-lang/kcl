@@ -1,8 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
-use kclvm_ast::pos::ContainsPos;
-use kclvm_error::{Position, diagnostic::Range};
-use kclvm_primitives::{IndexMap, IndexSet};
+use kcl_ast::pos::ContainsPos;
+use kcl_error::{Position, diagnostic::Range};
+use kcl_primitives::{IndexMap, IndexSet};
 use serde::Serialize;
 
 use crate::core::symbol::SymbolRef;

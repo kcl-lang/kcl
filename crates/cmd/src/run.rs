@@ -1,8 +1,8 @@
 use anyhow::Result;
 use clap::ArgMatches;
-use kclvm_error::StringError;
-use kclvm_parser::ParseSession;
-use kclvm_runner::exec_program;
+use kcl_error::StringError;
+use kcl_parser::ParseSession;
+use kcl_runner::exec_program;
 use std::io::Write;
 use std::sync::Arc;
 

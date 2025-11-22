@@ -1,5 +1,5 @@
 use super::*;
-use kclvm_parser::parse_file_force_errors;
+use kcl_parser::parse_file_force_errors;
 use pretty_assertions::assert_eq;
 use walkdir::WalkDir;
 

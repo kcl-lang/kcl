@@ -1,5 +1,5 @@
 use criterion::{Criterion, criterion_group, criterion_main};
-use kclvm_sema::ty::*;
+use kcl_sema::ty::*;
 
 use std::sync::Arc;
 

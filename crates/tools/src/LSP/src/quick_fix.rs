@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use kclvm_error::{DiagnosticId, ErrorKind, WarningKind};
+use kcl_error::{DiagnosticId, ErrorKind, WarningKind};
 use lsp_types::{
     CodeAction, CodeActionKind, CodeActionOrCommand, Diagnostic, NumberOrString, TextEdit, Url,
 };

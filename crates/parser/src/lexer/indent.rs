@@ -4,8 +4,8 @@ use std::cmp::Ordering;
 
 use crate::lexer::IndentOrDedents;
 use crate::lexer::Lexer;
-use kclvm_ast::token::VALID_SPACES_LENGTH;
-use kclvm_ast::token::{self, Token};
+use kcl_ast::token::VALID_SPACES_LENGTH;
+use kcl_ast::token::{self, Token};
 
 #[derive(Clone, Copy, PartialEq, Debug, Default)]
 pub(crate) struct IndentLevel {
@@ -38,7 +38,7 @@ impl IndentLevel {
 impl<'a> Lexer<'a> {
     pub(crate) fn lex_indent_context(
         &mut self,
-        token: kclvm_lexer::TokenKind,
+        token: kcl_lexer::TokenKind,
     ) -> Option<IndentOrDedents> {
         // process for indent context for a newline
         if !self.indent_cxt.new_line_beginning {
@@ -46,18 +46,17 @@ impl<'a> Lexer<'a> {
         }
 
         match token {
-            kclvm_lexer::TokenKind::LineComment { doc_style: _ }
-            | kclvm_lexer::TokenKind::Newline => {
+            kcl_lexer::TokenKind::LineComment { doc_style: _ } | kcl_lexer::TokenKind::Newline => {
                 // No in(de)ent in comment line and new line
                 self.indent_cxt.tabs = 0;
                 self.indent_cxt.spaces = 0;
                 None
             }
-            kclvm_lexer::TokenKind::Tab => {
+            kcl_lexer::TokenKind::Tab => {
                 self.indent_cxt.tabs += 1;
                 None
             }
-            kclvm_lexer::TokenKind::Space => {
+            kcl_lexer::TokenKind::Space => {
                 self.indent_cxt.spaces += 1;
                 None
             }

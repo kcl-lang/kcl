@@ -57,7 +57,7 @@ impl ModRelativePath {
     /// # Examples
     ///
     /// ```rust
-    /// use kclvm_config::path::ModRelativePath;
+    /// use kcl_config::path::ModRelativePath;
     /// let path = ModRelativePath::new("${my_pkg:KCL_MOD}/src/path.rs".to_string());
     /// assert_eq!(path.is_relative_path().unwrap(), true);
     ///
@@ -81,7 +81,7 @@ impl ModRelativePath {
     /// # Examples
     ///
     /// ```rust
-    /// use kclvm_config::path::ModRelativePath;
+    /// use kcl_config::path::ModRelativePath;
     /// let path = ModRelativePath::new("${my_pkg:KCL_MOD}/src/path.rs".to_string());
     /// assert_eq!(path.get_root_pkg_name().unwrap(), Some("my_pkg".to_string()));
     ///
@@ -107,7 +107,7 @@ impl ModRelativePath {
     /// # Examples
     ///
     /// ```rust
-    /// use kclvm_config::path::ModRelativePath;
+    /// use kcl_config::path::ModRelativePath;
     /// let path = ModRelativePath::new("${name:KCL_MOD}/src/path".to_string());
     /// #[cfg(target_os = "windows")]
     /// assert_eq!(path.canonicalize_by_root_path("/usr/my_pkg").unwrap(), "/usr/my_pkg\\src/path");

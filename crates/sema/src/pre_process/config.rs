@@ -1,7 +1,7 @@
 use crate::info::is_private_field;
-use kclvm_ast::walker::MutSelfMutWalker;
-use kclvm_ast::{ast, walk_if_mut};
-use kclvm_primitives::{IndexMap, IndexSet};
+use kcl_ast::walker::MutSelfMutWalker;
+use kcl_ast::{ast, walk_if_mut};
+use kcl_primitives::{IndexMap, IndexSet};
 
 const NAME_NONE_BUCKET_KEY: &str = "$name_none";
 
@@ -125,7 +125,7 @@ impl ConfigMergeTransformer {
             Vec<(String, usize, usize, ConfigMergeKind)>,
         > = IndexMap::default();
         // 1. Collect merged config
-        let modules = program.get_modules_for_pkg(kclvm_ast::MAIN_PKG);
+        let modules = program.get_modules_for_pkg(kcl_ast::MAIN_PKG);
         for (module_id, module) in modules.iter().enumerate() {
             let mut module = module.write().expect("Failed to acquire module lock");
             let filename = module.filename.to_string();
@@ -195,7 +195,7 @@ impl ConfigMergeTransformer {
                 let (filename, merged_id, merged_index, merged_kind) = index_list.last().unwrap();
                 let mut items: Vec<ast::NodeRef<ast::ConfigEntry>> = vec![];
                 for (merged_filename, merged_id, index, kind) in index_list {
-                    let modules = program.get_modules_for_pkg(kclvm_ast::MAIN_PKG);
+                    let modules = program.get_modules_for_pkg(kcl_ast::MAIN_PKG);
                     for (module_id, module) in modules.iter().enumerate() {
                         let mut module = module.write().expect("Failed to acquire module lock");
                         if &module.filename == merged_filename && module_id == *merged_id {

@@ -1,5 +1,5 @@
 schema Backend:
-    """ existence of this attribute indicates that the model will be treated standalone by KCLVM.
+    """ existence of this attribute indicates that the model will be treated standalone by KCL.
     """
 
     apiVersion?: str = "v1"

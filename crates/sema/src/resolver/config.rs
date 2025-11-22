@@ -7,10 +7,10 @@ use super::{
 use crate::ty::{Attr, SchemaType};
 use crate::ty::{DictType, TypeInferMethods, TypeRef, sup};
 use crate::ty::{Type, TypeKind};
-use kclvm_ast::ast;
-use kclvm_ast::pos::GetPos;
-use kclvm_error::{ErrorKind, Message, Position, Style, diagnostic::Range};
-use kclvm_primitives::IndexMap;
+use kcl_ast::ast;
+use kcl_ast::pos::GetPos;
+use kcl_error::{ErrorKind, Message, Position, Style, diagnostic::Range};
+use kcl_primitives::IndexMap;
 
 /// Config Expr type check state.
 ///
@@ -91,11 +91,10 @@ impl<'ctx> Resolver<'_> {
                                     Some(attr_ty_obj) => {
                                         let ty = match &attr_ty_obj.ty.kind {
                                             TypeKind::Schema(schema_ty) => {
-                                                let runtime_type =
-                                                    kclvm_runtime::schema_runtime_type(
-                                                        &schema_ty.name,
-                                                        &schema_ty.pkgpath,
-                                                    );
+                                                let runtime_type = kcl_runtime::schema_runtime_type(
+                                                    &schema_ty.name,
+                                                    &schema_ty.pkgpath,
+                                                );
                                                 if let Some(runtime_scehma_ty) =
                                                     self.ctx.schema_mapping.get(&runtime_type)
                                                 {
@@ -544,7 +543,7 @@ impl<'ctx> Resolver<'_> {
         range: &Range,
         attr_range: Option<&Range>,
     ) {
-        let runtime_type = kclvm_runtime::schema_runtime_type(&schema_ty.name, &schema_ty.pkgpath);
+        let runtime_type = kcl_runtime::schema_runtime_type(&schema_ty.name, &schema_ty.pkgpath);
         match self.ctx.schema_mapping.get(&runtime_type) {
             Some(schema_mapping_ty) => {
                 let schema_ty = schema_mapping_ty.clone();
@@ -645,7 +644,7 @@ impl<'ctx> Resolver<'_> {
         schema_ty: &SchemaType,
         attr: &str,
     ) -> (bool, TypeRef) {
-        let runtime_type = kclvm_runtime::schema_runtime_type(&schema_ty.name, &schema_ty.pkgpath);
+        let runtime_type = kcl_runtime::schema_runtime_type(&schema_ty.name, &schema_ty.pkgpath);
         match self.ctx.schema_mapping.get(&runtime_type) {
             Some(schema_mapping_ty) => {
                 let schema_ty = schema_mapping_ty.borrow();

@@ -17,25 +17,25 @@
 
 use crate::goto_def::{find_def, find_symbol};
 use crate::to_lsp::lsp_pos;
-use kclvm_ast::ast::{self, ImportStmt, Program, Stmt};
-use kclvm_ast::MAIN_PKG;
-use kclvm_config::modfile::KCL_FILE_EXTENSION;
-use kclvm_driver::toolchain::{get_real_path_from_external, Metadata, Toolchain};
-use kclvm_error::diagnostic::Range;
-use kclvm_parser::get_kcl_files;
-use kclvm_primitives::{DefaultHashBuilder, IndexMap, IndexSet};
-use kclvm_sema::core::global_state::GlobalState;
+use kcl_ast::ast::{self, ImportStmt, Program, Stmt};
+use kcl_ast::MAIN_PKG;
+use kcl_config::modfile::KCL_FILE_EXTENSION;
+use kcl_driver::toolchain::{get_real_path_from_external, Metadata, Toolchain};
+use kcl_error::diagnostic::Range;
+use kcl_parser::get_kcl_files;
+use kcl_primitives::{DefaultHashBuilder, IndexMap, IndexSet};
+use kcl_sema::core::global_state::GlobalState;
 use std::io;
 use std::{fs, path::Path};
 
-use kclvm_error::Position as KCLPos;
-use kclvm_sema::builtin::{BUILTIN_FUNCTIONS, STANDARD_SYSTEM_MODULES};
-use kclvm_sema::core::package::ModuleInfo;
-use kclvm_sema::core::scope::{LocalSymbolScopeKind, ScopeKind};
-use kclvm_sema::core::symbol::SymbolKind;
-use kclvm_sema::resolver::doc::{parse_schema_doc_string, SchemaDoc};
-use kclvm_sema::ty::{FunctionType, SchemaType, Type, TypeKind};
-use kclvm_utils::path::PathPrefix;
+use kcl_error::Position as KCLPos;
+use kcl_sema::builtin::{BUILTIN_FUNCTIONS, STANDARD_SYSTEM_MODULES};
+use kcl_sema::core::package::ModuleInfo;
+use kcl_sema::core::scope::{LocalSymbolScopeKind, ScopeKind};
+use kcl_sema::core::symbol::SymbolKind;
+use kcl_sema::resolver::doc::{parse_schema_doc_string, SchemaDoc};
+use kcl_sema::ty::{FunctionType, SchemaType, Type, TypeKind};
+use kcl_utils::path::PathPrefix;
 use lsp_types::{CompletionItem, CompletionItemKind, InsertTextFormat};
 
 use crate::util::{inner_most_expr_in_stmt, is_in_docstring};
@@ -124,10 +124,10 @@ pub fn completion(
             if let Some(scope) = gs.look_up_scope(pos) {
                 // Complete builtin functions in root scope and lambda
                 match scope.get_kind() {
-                    kclvm_sema::core::scope::ScopeKind::Local => {
+                    kcl_sema::core::scope::ScopeKind::Local => {
                         if let Some(local_scope) = gs.get_scopes().try_get_local_scope(&scope) {
                             match local_scope.get_kind() {
-                                kclvm_sema::core::scope::LocalSymbolScopeKind::Lambda => {
+                                kcl_sema::core::scope::LocalSymbolScopeKind::Lambda => {
                                     completions.extend(BUILTIN_FUNCTIONS.iter().map(
                                         |(name, ty)| KCLCompletionItem {
                                             label: func_ty_complete_label(
@@ -151,7 +151,7 @@ pub fn completion(
                             }
                         }
                     }
-                    kclvm_sema::core::scope::ScopeKind::Root => {
+                    kcl_sema::core::scope::ScopeKind::Root => {
                         completions.extend(BUILTIN_FUNCTIONS.iter().map(|(name, ty)| {
                             KCLCompletionItem {
                                 label: func_ty_complete_label(name, &ty.into_func_type()),
@@ -975,10 +975,10 @@ mod tests {
         },
         tests::{compile_test_file, compile_test_file_and_metadata},
     };
-    use kclvm_driver::toolchain;
-    use kclvm_error::Position as KCLPos;
-    use kclvm_primitives::IndexSet;
-    use kclvm_sema::builtin::{
+    use kcl_driver::toolchain;
+    use kcl_error::Position as KCLPos;
+    use kcl_primitives::IndexSet;
+    use kcl_sema::builtin::{
         BUILTIN_FUNCTIONS, MATH_FUNCTION_TYPES, STANDARD_SYSTEM_MODULES, STRING_MEMBER_FUNCTIONS,
     };
     use lsp_types::{CompletionItem, CompletionItemKind, CompletionResponse, InsertTextFormat};

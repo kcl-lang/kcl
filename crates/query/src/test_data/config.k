@@ -19,8 +19,8 @@ schema AppConfiguration:
     probe?: Probe
 
 appConfiguration = AppConfiguration {
-    appName: "kclvm"
-    image: "kclvm/kclvm:v0.1.0"
+    appName: "kcl"
+    image: "kcl/kcl:v0.1.0"
     resource: {
         cpu: "4"
         disk: "50Gi"
@@ -32,7 +32,7 @@ appConfiguration = AppConfiguration {
         }
     }
     mainContainer: Main {
-        name: "kclvm"
+        name: "kcl"
     }
     overQuota = True
     overQuota = True
@@ -40,8 +40,8 @@ appConfiguration = AppConfiguration {
 }
 
 appConfigurationUnification: AppConfiguration {
-    appName: "kclvm"
-    image: "kclvm/kclvm:v0.1.0"
+    appName: "kcl"
+    image: "kcl/kcl:v0.1.0"
     resource: {
         cpu: "4"
         disk: "50Gi"
@@ -53,7 +53,7 @@ appConfigurationUnification: AppConfiguration {
         }
     }
     mainContainer: Main {
-        name: "kclvm"
+        name: "kcl"
     }
     overQuota: True
 }

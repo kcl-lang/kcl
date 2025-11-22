@@ -1,10 +1,10 @@
-use kclvm_ast::{
+use kcl_ast::{
     ast::{self},
     walker::MutSelfMutWalker,
 };
 
-use kclvm_ast::walk_if_mut;
-use kclvm_ast::walk_list_mut;
+use kcl_ast::walk_if_mut;
+use kcl_ast::walk_list_mut;
 
 /// `AstNodeMover` will move the AST node by offset
 pub struct AstNodeMover {

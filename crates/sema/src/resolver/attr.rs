@@ -7,9 +7,9 @@ use crate::ty::TypeKind::Schema;
 use crate::ty::{
     DictType, ModuleKind, Parameter, SCHEMA_MEMBER_FUNCTIONS, Type, TypeKind, TypeRef,
 };
-use kclvm_ast::ast;
-use kclvm_error::diagnostic::{Range, dummy_range};
-use kclvm_error::*;
+use kcl_ast::ast;
+use kcl_error::diagnostic::{Range, dummy_range};
+use kcl_error::*;
 
 use super::node::ResolvedResult;
 

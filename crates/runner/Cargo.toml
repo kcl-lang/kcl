@@ -1,5 +1,5 @@
 [package]
-name = "kclvm-runner"
+name = "kcl-runner"
 version.workspace = true
 edition.workspace = true
 
@@ -25,22 +25,22 @@ uuid = "1.7.0"
 compiler_base_session = "0.1.3"
 compiler_base_macros = "0.1.1"
 
-kclvm-ast = { path = "../ast" }
-kclvm-parser = { path = "../parser" }
-kclvm-compiler = { path = "../compiler" }
-kclvm-config = { path = "../config" }
-kclvm-runtime = { path = "../runtime" }
-kclvm-sema = { path = "../sema" }
-kclvm-version = { path = "../version" }
-kclvm-error = { path = "../error" }
-kclvm-query = { path = "../query" }
-kclvm-utils = { path = "../utils" }
-kclvm-driver = { path = "../driver" }
-kclvm-evaluator = { path = "../evaluator" }
-kclvm-primitives = { path = "../primitives" }
+kcl-ast = { path = "../ast" }
+kcl-parser = { path = "../parser" }
+kcl-compiler = { path = "../compiler" }
+kcl-config = { path = "../config" }
+kcl-runtime = { path = "../runtime" }
+kcl-sema = { path = "../sema" }
+kcl-version = { path = "../version" }
+kcl-error = { path = "../error" }
+kcl-query = { path = "../query" }
+kcl-utils = { path = "../utils" }
+kcl-driver = { path = "../driver" }
+kcl-evaluator = { path = "../evaluator" }
+kcl-primitives = { path = "../primitives" }
 
 [dev-dependencies]
-kclvm-parser = { path = "../parser" }
+kcl-parser = { path = "../parser" }
 criterion = "0.5"
 
 [[bench]]

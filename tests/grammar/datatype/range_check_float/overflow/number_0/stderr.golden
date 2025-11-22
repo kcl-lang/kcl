@@ -5,5 +5,5 @@ error[E3M38]: EvaluationError
   |  3.4e+40: A 32-bit floating point number overflow
   |
 note: backtrace:
-	0: kclvm_main
+	0: kcl_main
 		at ${CWD}/main.k:8

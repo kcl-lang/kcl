@@ -2,10 +2,10 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use generational_arena::Index;
-use kclvm_ast::ast;
-use kclvm_ast::ast::AstIndex;
-use kclvm_primitives::IndexMap;
-use kclvm_runtime::ValueRef;
+use kcl_ast::ast;
+use kcl_ast::ast::AstIndex;
+use kcl_primitives::IndexMap;
+use kcl_runtime::ValueRef;
 
 use crate::Evaluator;
 use crate::error as kcl_error;

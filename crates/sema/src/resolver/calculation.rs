@@ -4,9 +4,9 @@ use crate::resolver::Resolver;
 use crate::ty::{
     Type, TypeInferMethods, TypeKind, TypeRef, ZERO_LIT_TYPES, has_any_type, is_upper_bound, sup,
 };
-use kclvm_ast::ast;
-use kclvm_error::diagnostic::Range;
-use kclvm_primitives::{DefaultHashBuilder, IndexMap};
+use kcl_ast::ast;
+use kcl_error::diagnostic::Range;
+use kcl_primitives::{DefaultHashBuilder, IndexMap};
 
 const DIV_OR_MOD_ZERO_MSG: &str = "integer division or modulo by zero";
 

@@ -7,14 +7,14 @@ use crate::ty::{
     DecoratorTarget, FunctionType, Parameter, RESERVED_TYPE_IDENTIFIERS, SchemaAttr,
     SchemaIndexSignature, SchemaType, Type, TypeKind, full_ty_str, is_upper_bound,
 };
-use kclvm_ast::ast;
-use kclvm_ast_pretty::{ASTNode, print_ast_node, print_schema_expr};
-use kclvm_error::*;
-use kclvm_primitives::IndexMap;
+use kcl_ast::ast;
+use kcl_ast_pretty::{ASTNode, print_ast_node, print_schema_expr};
+use kcl_error::*;
+use kcl_primitives::IndexMap;
 
 use super::doc::parse_schema_doc_string;
 use super::scope::{ScopeObject, ScopeObjectKind};
-use kclvm_ast::pos::GetPos;
+use kcl_ast::pos::GetPos;
 
 const MAX_SCOPE_SCAN_COUNT: usize = 3;
 pub const MIXIN_SUFFIX: &str = "Mixin";
@@ -850,7 +850,7 @@ impl<'ctx> Resolver<'_> {
             index_signature,
             decorators,
         };
-        let schema_runtime_ty = kclvm_runtime::schema_runtime_type(name, &self.ctx.pkgpath);
+        let schema_runtime_ty = kcl_runtime::schema_runtime_type(name, &self.ctx.pkgpath);
         self.ctx
             .schema_mapping
             .insert(schema_runtime_ty, Arc::new(RefCell::new(schema_ty.clone())));

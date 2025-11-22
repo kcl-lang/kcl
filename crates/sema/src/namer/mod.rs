@@ -49,11 +49,11 @@ use crate::core::symbol::{
     BUILTIN_FUNCTION_PACKAGE, BUILTIN_STR_PACKAGE, FunctionSymbol, PackageSymbol, SymbolRef,
 };
 use crate::resolver::scope::NodeKey;
-use kclvm_ast::ast::AstIndex;
-use kclvm_ast::ast::Program;
-use kclvm_ast::walker::MutSelfTypedResultWalker;
-use kclvm_error::Position;
-use kclvm_primitives::IndexSet;
+use kcl_ast::ast::AstIndex;
+use kcl_ast::ast::Program;
+use kcl_ast::walker::MutSelfTypedResultWalker;
+use kcl_error::Position;
+use kcl_primitives::IndexSet;
 mod node;
 
 pub const BUILTIN_SYMBOL_PKG_PATH: &str = "@builtin";
@@ -145,7 +145,7 @@ impl<'ctx> Namer<'ctx> {
                 .to_str()
                 .unwrap()
                 .to_string();
-            if name == kclvm_ast::MAIN_PKG {
+            if name == kcl_ast::MAIN_PKG {
                 real_path = self.ctx.program.root.clone()
             }
             let pkg_pos = Position {
@@ -295,8 +295,8 @@ mod tests {
     use super::Namer;
     use crate::core::global_state::GlobalState;
     use crate::core::symbol::SymbolKind;
-    use kclvm_parser::ParseSession;
-    use kclvm_parser::load_program;
+    use kcl_parser::ParseSession;
+    use kcl_parser::load_program;
     use std::sync::Arc;
 
     #[test]

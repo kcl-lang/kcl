@@ -19,8 +19,8 @@ mod var;
 #[cfg(test)]
 mod tests;
 
-use kclvm_error::diagnostic::Range;
-use kclvm_primitives::{IndexMap, IndexSet};
+use kcl_error::diagnostic::Range;
+use kcl_primitives::{IndexMap, IndexSet};
 use std::sync::Arc;
 use std::{cell::RefCell, rc::Rc};
 
@@ -31,8 +31,8 @@ use crate::resolver::ty_alias::type_alias_pass;
 use crate::resolver::ty_erasure::type_func_erasure_pass;
 use crate::ty::TypeContext;
 use crate::{resolver::scope::Scope, ty::SchemaType};
-use kclvm_ast::ast::Program;
-use kclvm_error::*;
+use kcl_ast::ast::Program;
+use kcl_error::*;
 
 use self::scope::{KCLScopeCache, NodeTyMap, ProgramScope, builtin_scope};
 
@@ -103,7 +103,7 @@ impl<'ctx> Resolver<'ctx> {
     }
 
     pub(crate) fn check_and_lint_all_pkgs(&mut self) -> ProgramScope {
-        self.check(kclvm_ast::MAIN_PKG);
+        self.check(kcl_ast::MAIN_PKG);
         self.lint_check_scope_map();
         let mut handler = self.handler.clone();
         for diag in &self.linter.handler.diagnostics {
@@ -211,7 +211,7 @@ pub fn resolve_program_with_opts(
             resolver.ctx.schema_mapping = cached_scope.schema_mapping.clone();
             cached_scope
                 .invalidate_pkgs
-                .insert(kclvm_ast::MAIN_PKG.to_string());
+                .insert(kcl_ast::MAIN_PKG.to_string());
             for pkg in &cached_scope.invalidate_pkgs {
                 resolver.scope_map.swap_remove(pkg);
             }
@@ -234,11 +234,11 @@ pub fn resolve_program_with_opts(
             cached_scope.update(program);
             cached_scope.scope_map = scope.scope_map.clone();
             cached_scope.node_ty_map = scope.node_ty_map.borrow().clone();
-            cached_scope.scope_map.swap_remove(kclvm_ast::MAIN_PKG);
+            cached_scope.scope_map.swap_remove(kcl_ast::MAIN_PKG);
             cached_scope.schema_mapping = resolver.ctx.schema_mapping;
             cached_scope
                 .invalidate_pkgs
-                .insert(kclvm_ast::MAIN_PKG.to_string());
+                .insert(kcl_ast::MAIN_PKG.to_string());
             cached_scope.invalidate_pkg_modules = None;
         }
     }

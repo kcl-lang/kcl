@@ -1,15 +1,15 @@
-import kclvm_runtime
+import kcl_runtime
 import os
 import tempfile
 import subprocess
 import unittest
 import sys
 
-# Add the parent directory to the path to import kclvm_runtime
+# Add the parent directory to the path to import kcl_runtime
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
 
-_Dylib = kclvm_runtime.KclRuntimeDylib()
+_Dylib = kcl_runtime.KclRuntimeDylib()
 
 
 class kclx_Base32:

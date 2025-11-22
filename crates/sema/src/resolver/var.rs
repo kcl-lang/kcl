@@ -1,9 +1,9 @@
 use crate::resolver::Resolver;
-use kclvm_ast::ast;
-use kclvm_ast::pos::GetPos;
-use kclvm_error::diagnostic::Range;
-use kclvm_error::*;
-use kclvm_primitives::IndexMap;
+use kcl_ast::ast;
+use kcl_ast::pos::GetPos;
+use kcl_error::diagnostic::Range;
+use kcl_error::*;
+use kcl_primitives::IndexMap;
 
 use super::node::ResolvedResult;
 use super::scope::{ScopeObject, ScopeObjectKind};

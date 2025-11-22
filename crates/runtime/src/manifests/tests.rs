@@ -1,7 +1,7 @@
 use crate::*;
 
 #[test]
-fn test_kclvm_manifests_yaml_stream() {
+fn test_kcl_manifests_yaml_stream() {
     let cases = [
         (
             "a: 1\n",
@@ -76,7 +76,7 @@ fn test_kclvm_manifests_yaml_stream() {
             ConfigEntryOperationKind::Override,
             None,
         );
-        kclvm_manifests_yaml_stream(&mut ctx, &args, &kwargs);
+        kcl_manifests_yaml_stream(&mut ctx, &args, &kwargs);
         assert_eq!(
             Some(yaml_str.to_string()),
             ctx.buffer.custom_manifests_output
@@ -85,7 +85,7 @@ fn test_kclvm_manifests_yaml_stream() {
 }
 
 #[test]
-fn test_kclvm_manifests_yaml_stream_invalid() {
+fn test_kcl_manifests_yaml_stream_invalid() {
     let prev_hook = std::panic::take_hook();
     // Disable print panic info in stderr.
     std::panic::set_hook(Box::new(|_| {}));
@@ -95,7 +95,7 @@ fn test_kclvm_manifests_yaml_stream_invalid() {
             let mut ctx = Context::new();
             let args = ValueRef::list(None).into_raw(&mut ctx);
             let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
-            kclvm_manifests_yaml_stream(ctx.into_raw(), args, kwargs);
+            kcl_manifests_yaml_stream(ctx.into_raw(), args, kwargs);
         },
     );
     assert_panic(
@@ -105,7 +105,7 @@ fn test_kclvm_manifests_yaml_stream_invalid() {
             let args = ValueRef::list(None).into_raw(&mut ctx);
             let kwargs = ValueRef::dict(Some(&[("opts", &ValueRef::str("invalid_kwarg"))]))
                 .into_raw(&mut ctx);
-            kclvm_manifests_yaml_stream(ctx.into_raw(), args, kwargs);
+            kcl_manifests_yaml_stream(ctx.into_raw(), args, kwargs);
         },
     );
     assert_panic(
@@ -114,7 +114,7 @@ fn test_kclvm_manifests_yaml_stream_invalid() {
             let mut ctx = Context::new();
             let args = ValueRef::list(None).into_raw(&mut ctx);
             let kwargs = ValueRef::dict(Some(&[("opts", &ValueRef::none())])).into_raw(&mut ctx);
-            kclvm_manifests_yaml_stream(ctx.into_raw(), args, kwargs);
+            kcl_manifests_yaml_stream(ctx.into_raw(), args, kwargs);
         },
     );
     std::panic::set_hook(prev_hook);

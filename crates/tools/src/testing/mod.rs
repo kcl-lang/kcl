@@ -1,17 +1,17 @@
-//! [kclvm_tools::testing] module mainly contains some functions of language testing tool.
+//! [kcl_tools::testing] module mainly contains some functions of language testing tool.
 //!
 //! The basic principle of the testing tool is to search for test files in the KCL package
 //! that have the suffix "_test.k" and do not start with "_". These test files will be regard
 //! as test suites. Within these files, any lambda literals starting with "test_" will be
 //! considered as test cases, but these lambda functions should not have any parameters.
 //! To perform the testing, the tool compiles the test suite file and its dependencies into an
-//! [kclvm_runner::Artifact], which is regard as a new compilation entry point. Then,
+//! [kcl_runner::Artifact], which is regard as a new compilation entry point. Then,
 //! it executes each test case separately and collects information about the test cases,
 //! such as the execution time and whether the test passes or fails.
 pub use crate::testing::suite::{TestSuite, load_test_suites};
 use anyhow::{Error, Result};
-use kclvm_primitives::IndexMap;
-use kclvm_runner::ExecProgramArgs;
+use kcl_primitives::IndexMap;
+use kcl_runner::ExecProgramArgs;
 use std::time::Duration;
 
 mod suite;

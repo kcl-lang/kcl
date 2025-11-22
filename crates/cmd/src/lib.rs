@@ -1,4 +1,4 @@
-//! The `kclvm` command-line interface.
+//! The `libkcl` command-line interface.
 
 #[macro_use]
 extern crate clap;
@@ -24,11 +24,11 @@ pub fn main(args: &[&str]) -> Result<()> {
     match matches.subcommand() {
         Some(("run", sub_matches)) => run_command(sub_matches, &mut io::stdout()),
         Some(("version", _)) => {
-            println!("{}", kclvm_version::get_version_info());
+            println!("{}", kcl_version::get_version_info());
             Ok(())
         }
         #[cfg(not(target_arch = "wasm32"))]
-        Some(("server", _)) => kclvm_api::service::jsonrpc::start_stdio_server(),
+        Some(("server", _)) => kcl_api::service::jsonrpc::start_stdio_server(),
         _ => Ok(()),
     }
 }
@@ -37,7 +37,7 @@ pub fn main(args: &[&str]) -> Result<()> {
 /// a gPRC server command to interacting with external systems.
 pub fn app() -> Command {
     Command::new("libkcl")
-        .version(kclvm_version::VERSION)
+        .version(kcl_version::VERSION)
         .about("KCL main CLI.")
         .subcommand(
             Command::new("run")

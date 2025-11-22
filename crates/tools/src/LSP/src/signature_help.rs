@@ -1,10 +1,10 @@
 use crate::goto_def::find_def;
-use kclvm_error::Position as KCLPos;
-use kclvm_sema::core::global_state::GlobalState;
-use kclvm_sema::core::scope::Scope;
-use kclvm_sema::core::symbol::SymbolKind;
-use kclvm_sema::core::symbol::SymbolRef;
-use kclvm_sema::ty::FunctionType;
+use kcl_error::Position as KCLPos;
+use kcl_sema::core::global_state::GlobalState;
+use kcl_sema::core::scope::Scope;
+use kcl_sema::core::symbol::SymbolKind;
+use kcl_sema::core::symbol::SymbolRef;
+use kcl_sema::ty::FunctionType;
 use lsp_types::ParameterInformation;
 use lsp_types::SignatureHelp;
 use lsp_types::SignatureInformation;
@@ -23,7 +23,7 @@ pub fn signature_help(
                 SymbolKind::Value | SymbolKind::Function => {
                     let symbol = gs.get_symbols().get_symbol(def)?;
                     let ty = &symbol.get_sema_info().ty.clone()?;
-                    if let kclvm_sema::ty::TypeKind::Function(func_ty) = &ty.kind {
+                    if let kcl_sema::ty::TypeKind::Function(func_ty) = &ty.kind {
                         let (label, parameters) =
                             function_signatue_help(&symbol.get_name(), func_ty);
                         let documentation = symbol
@@ -51,15 +51,15 @@ pub fn signature_help(
         // func(arg1<cursor>)
         "," => {
             let scope = gs.look_up_scope(pos)?;
-            if let kclvm_sema::core::scope::ScopeKind::Local = scope.get_kind() {
+            if let kcl_sema::core::scope::ScopeKind::Local = scope.get_kind() {
                 let local_scope = gs.get_scopes().try_get_local_scope(&scope)?;
-                if let kclvm_sema::core::scope::LocalSymbolScopeKind::Callable =
+                if let kcl_sema::core::scope::LocalSymbolScopeKind::Callable =
                     local_scope.get_kind()
                 {
                     let func_symbol = local_scope.get_owner()?;
                     let symbol = gs.get_symbols().get_symbol(func_symbol)?;
                     let ty = &symbol.get_sema_info().ty.clone()?;
-                    if let kclvm_sema::ty::TypeKind::Function(func_ty) = &ty.kind {
+                    if let kcl_sema::ty::TypeKind::Function(func_ty) = &ty.kind {
                         let (label, parameters) =
                             function_signatue_help(&symbol.get_name(), func_ty);
                         let documentation = symbol
@@ -146,7 +146,7 @@ mod tests {
     use super::signature_help;
 
     use crate::tests::compile_test_file;
-    use kclvm_error::Position as KCLPos;
+    use kcl_error::Position as KCLPos;
 
     #[macro_export]
     macro_rules! signature_help_test_snapshot {

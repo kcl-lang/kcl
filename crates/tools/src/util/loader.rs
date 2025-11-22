@@ -3,7 +3,7 @@ use std::{fs, path::PathBuf};
 use anyhow::{Context, Result, bail};
 use compiler_base_span::{BytePos, FilePathMapping, SourceMap, span::new_byte_pos};
 use json_spanned_value::{self as jsv, spanned};
-use kclvm_ast::ast::PosTuple;
+use kcl_ast::ast::PosTuple;
 use located_yaml::YamlLoader;
 
 pub(crate) trait Loader<T> {
@@ -66,7 +66,7 @@ impl DataLoader {
     pub fn byte_pos_to_pos_in_sourcemap(&self, lo: BytePos, hi: BytePos) -> PosTuple {
         let lo = self.sm.lookup_char_pos(lo);
         let hi = self.sm.lookup_char_pos(hi);
-        let filename = kclvm_utils::path::convert_windows_drive_letter(&format!(
+        let filename = kcl_utils::path::convert_windows_drive_letter(&format!(
             "{}",
             lo.file.name.prefer_remapped()
         ));
@@ -80,7 +80,7 @@ impl DataLoader {
     }
 
     pub fn file_name(&self) -> String {
-        kclvm_utils::path::convert_windows_drive_letter(&format!(
+        kcl_utils::path::convert_windows_drive_letter(&format!(
             "{}",
             self.sm
                 .lookup_char_pos(new_byte_pos(0))

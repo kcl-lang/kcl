@@ -1,5 +1,5 @@
 [package]
-name = "kclvm-macros"
+name = "kcl-macros"
 version.workspace = true
 edition.workspace = true
 

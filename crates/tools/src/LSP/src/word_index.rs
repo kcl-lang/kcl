@@ -1,4 +1,4 @@
-use kclvm_span::symbol::reserved;
+use kcl_span::symbol::reserved;
 use lsp_types::{Position, Range};
 use std::collections::HashMap;
 

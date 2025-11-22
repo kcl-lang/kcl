@@ -13,11 +13,11 @@ use either::{self, Either};
 use crate::parser::precedence::Precedence;
 use anyhow::Result;
 use compiler_base_error::unit_type::{TypeWithUnit, UnitUsize};
-use kclvm_ast::ast::*;
-use kclvm_ast::node_ref;
-use kclvm_ast::token;
-use kclvm_ast::token::{BinOpToken, DelimToken, TokenKind, VALID_SPACES_LENGTH};
-use kclvm_span::symbol::kw;
+use kcl_ast::ast::*;
+use kcl_ast::node_ref;
+use kcl_ast::token;
+use kcl_ast::token::{BinOpToken, DelimToken, TokenKind, VALID_SPACES_LENGTH};
+use kcl_span::symbol::kw;
 
 /// Parser implementation of expressions, which consists of sub-expressions,
 /// operand and tokens. Like the general LL1 parser, parser constantly looking for
@@ -169,7 +169,7 @@ impl<'a> Parser<'a> {
                 // If no peek is found, a dummy token is returned for error recovery.
                 let peek = match self.cursor.peek() {
                     Some(peek) => peek,
-                    None => kclvm_ast::token::Token::dummy(),
+                    None => kcl_ast::token::Token::dummy(),
                 };
                 if self.token.is_keyword(kw::Not) && peek.is_keyword(kw::In) {
                     BinOrCmpOp::Cmp(CmpOp::NotIn)
@@ -253,7 +253,7 @@ impl<'a> Parser<'a> {
     fn parse_if_expr(
         &mut self,
         body: NodeRef<Expr>,
-        token: kclvm_ast::token::Token,
+        token: kcl_ast::token::Token,
     ) -> NodeRef<Expr> {
         if self.token.is_keyword(kw::If) {
             self.bump();
@@ -1056,7 +1056,7 @@ impl<'a> Parser<'a> {
     /// Syntax:
     /// list_items: expr ((COMMA [NEWLINE] | NEWLINE) expr)* [COMMA] [NEWLINE]
     pub(crate) fn parse_list_items(&mut self, has_newline: bool) -> Vec<NodeRef<Expr>> {
-        let is_terminator = |token: &kclvm_ast::token::Token| match &token.kind {
+        let is_terminator = |token: &kcl_ast::token::Token| match &token.kind {
             TokenKind::CloseDelim(DelimToken::Bracket) | TokenKind::Eof => true,
             TokenKind::Newline if !has_newline => true,
             _ => token.is_keyword(kw::For),
@@ -1382,7 +1382,7 @@ impl<'a> Parser<'a> {
     /// Syntax:
     /// config_entries: config_entry ((COMMA [NEWLINE] | NEWLINE) config_entry)* [COMMA] [NEWLINE]
     fn parse_config_entries(&mut self, has_newline: bool) -> Vec<NodeRef<ConfigEntry>> {
-        let is_terminator = |token: &kclvm_ast::token::Token| match &token.kind {
+        let is_terminator = |token: &kcl_ast::token::Token| match &token.kind {
             TokenKind::CloseDelim(DelimToken::Brace) | TokenKind::Eof => true,
             TokenKind::Newline if !has_newline => true,
             _ => token.is_keyword(kw::For),
@@ -2049,7 +2049,7 @@ impl<'a> Parser<'a> {
         let mut args: Vec<NodeRef<Expr>> = Vec::new();
         let mut keywords: Vec<NodeRef<Keyword>> = Vec::new();
         let mut has_keyword = false;
-        let is_terminator = |token: &kclvm_ast::token::Token| match &token.kind {
+        let is_terminator = |token: &kcl_ast::token::Token| match &token.kind {
             TokenKind::CloseDelim(DelimToken::Paren) | TokenKind::Eof => true,
             TokenKind::Newline if !has_newline => true,
             _ => token.is_keyword(kw::For),
@@ -2428,7 +2428,7 @@ impl<'a> Parser<'a> {
     pub(crate) fn expr_as_identifier(
         &mut self,
         expr: NodeRef<Expr>,
-        token: kclvm_ast::token::Token,
+        token: kcl_ast::token::Token,
     ) -> Identifier {
         if let Expr::Identifier(x) = expr.node {
             x

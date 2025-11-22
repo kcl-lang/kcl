@@ -14,11 +14,11 @@ use std::str::FromStr;
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_split_host_port(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_net_split_host_port(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -101,11 +101,11 @@ pub extern "C-unwind" fn kclvm_net_split_host_port(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_join_host_port(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_net_join_host_port(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -126,11 +126,11 @@ pub extern "C-unwind" fn kclvm_net_join_host_port(
 #[cfg(not(target_arch = "wasm32"))]
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_fqdn(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_net_fqdn(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     use std::net::ToSocketAddrs;
     let ctx = mut_ptr_as_ref(ctx);
     let args = ptr_as_ref(args);
@@ -163,11 +163,11 @@ pub extern "C-unwind" fn kclvm_net_fqdn(
 #[cfg(target_arch = "wasm32")]
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_fqdn(
-    _ctx: *mut kclvm_context_t,
-    _args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_net_fqdn(
+    _ctx: *mut kcl_context_t,
+    _args: *const kcl_value_ref_t,
+    _kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     panic!("fqdn() do not support the WASM target");
 }
 
@@ -175,23 +175,23 @@ pub extern "C-unwind" fn kclvm_net_fqdn(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_parse_IP(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
-    kclvm_net_IP_string(ctx, args, kwargs)
+pub extern "C-unwind" fn kcl_net_parse_IP(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
+    kcl_net_IP_string(ctx, args, kwargs)
 }
 
 // to_IP4(ip) -> str
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_to_IP4(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_net_to_IP4(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -224,11 +224,11 @@ pub extern "C-unwind" fn kclvm_net_to_IP4(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_to_IP6(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_net_to_IP6(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -261,11 +261,11 @@ pub extern "C-unwind" fn kclvm_net_to_IP6(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_IP_string(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_net_IP_string(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -289,23 +289,23 @@ pub extern "C-unwind" fn kclvm_net_IP_string(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_is_IPv4(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_net_is_IPv4(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
     if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
         if let Ok(_addr) = Ipv4Addr::from_str(ip.as_ref()) {
-            return kclvm_value_True(ctx);
+            return kcl_value_True(ctx);
         }
         if let Ok(_addr) = Ipv6Addr::from_str(ip.as_ref()) {
-            return kclvm_value_False(ctx);
+            return kcl_value_False(ctx);
         }
 
-        return kclvm_value_False(ctx);
+        return kcl_value_False(ctx);
     }
 
     panic!("is_IPv4() missing 1 required positional argument: 'ip'");
@@ -315,19 +315,19 @@ pub extern "C-unwind" fn kclvm_net_is_IPv4(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_is_IP(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_net_is_IP(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
     if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
         if Ipv4Addr::from_str(ip.as_ref()).is_ok() || Ipv6Addr::from_str(ip.as_ref()).is_ok() {
-            kclvm_value_True(ctx)
+            kcl_value_True(ctx)
         } else {
-            kclvm_value_False(ctx)
+            kcl_value_False(ctx)
         }
     } else {
         panic!("is_IP() missing 1 required positional argument: 'ip'");
@@ -338,25 +338,25 @@ pub extern "C-unwind" fn kclvm_net_is_IP(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_is_loopback_IP(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_net_is_loopback_IP(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
     if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
         if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
             let x = addr.is_loopback();
-            return kclvm_value_Bool(ctx, x as i8);
+            return kcl_value_Bool(ctx, x as i8);
         }
         if let Ok(addr) = Ipv6Addr::from_str(ip.as_ref()) {
             let x = addr.is_loopback();
-            return kclvm_value_Bool(ctx, x as i8);
+            return kcl_value_Bool(ctx, x as i8);
         }
 
-        return kclvm_value_False(ctx);
+        return kcl_value_False(ctx);
     }
 
     panic!("is_loopback_IP() missing 1 required positional argument: 'ip'");
@@ -366,39 +366,39 @@ pub extern "C-unwind" fn kclvm_net_is_loopback_IP(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_is_multicast_IP(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_net_is_multicast_IP(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
     if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
         if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
             let x = addr.is_multicast();
-            return kclvm_value_Bool(ctx, x as i8);
+            return kcl_value_Bool(ctx, x as i8);
         }
         if let Ok(addr) = Ipv6Addr::from_str(ip.as_ref()) {
             let x = addr.is_multicast();
-            return kclvm_value_Bool(ctx, x as i8);
+            return kcl_value_Bool(ctx, x as i8);
         }
 
-        return kclvm_value_False(ctx);
+        return kcl_value_False(ctx);
     }
 
-    panic!("kclvm_net_is_multicast_IP() missing 1 required positional argument: 'ip'");
+    panic!("kcl_net_is_multicast_IP() missing 1 required positional argument: 'ip'");
 }
 
 // is_interface_local_multicast_IP(ip: str) -> bool
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_is_interface_local_multicast_IP(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_net_is_interface_local_multicast_IP(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
@@ -406,9 +406,9 @@ pub extern "C-unwind" fn kclvm_net_is_interface_local_multicast_IP(
             // For IPv6, interface-local multicast addresses start with ffx1::/16
             let is_interface_local = (addr.segments()[0] & 0xff0f) == 0xff01;
             let x = is_interface_local && addr.is_multicast();
-            return kclvm_value_Bool(ctx, x as i8);
+            return kcl_value_Bool(ctx, x as i8);
         }
-        return kclvm_value_Bool(ctx, 0); // False for IPv4 and invalid IP addresses
+        return kcl_value_Bool(ctx, 0); // False for IPv4 and invalid IP addresses
     }
     panic!("is_interface_local_multicast_IP() missing 1 required positional argument: 'ip'");
 }
@@ -417,11 +417,11 @@ pub extern "C-unwind" fn kclvm_net_is_interface_local_multicast_IP(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_is_link_local_multicast_IP(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_net_is_link_local_multicast_IP(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
@@ -431,15 +431,15 @@ pub extern "C-unwind" fn kclvm_net_is_link_local_multicast_IP(
             let is_link_local_multicast =
                 addr.octets()[0] == 224 && addr.octets()[1] == 0 && addr.octets()[2] == 0;
             let x = is_link_local_multicast && addr.is_multicast();
-            return kclvm_value_Bool(ctx, x as i8);
+            return kcl_value_Bool(ctx, x as i8);
         }
         if let Ok(addr) = Ipv6Addr::from_str(ip.as_ref()) {
             // For IPv6, link-local multicast addresses start with ffx2::/16
             let is_link_local_multicast = (addr.segments()[0] & 0xff0f) == 0xff02;
             let x = is_link_local_multicast && addr.is_multicast();
-            return kclvm_value_Bool(ctx, x as i8);
+            return kcl_value_Bool(ctx, x as i8);
         }
-        return kclvm_value_Bool(ctx, 0); // False for invalid IP addresses
+        return kcl_value_Bool(ctx, 0); // False for invalid IP addresses
     }
 
     panic!("is_link_local_multicast_IP() missing 1 required positional argument: 'ip'");
@@ -449,24 +449,24 @@ pub extern "C-unwind" fn kclvm_net_is_link_local_multicast_IP(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_is_link_local_unicast_IP(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_net_is_link_local_unicast_IP(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
     if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
         if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
             let x = addr.is_link_local() && (!addr.is_multicast());
-            return kclvm_value_Bool(ctx, x as i8);
+            return kcl_value_Bool(ctx, x as i8);
         }
         if let Ok(addr) = Ipv6Addr::from_str(ip.as_ref()) {
             let x = Ipv6Addr_is_unicast_link_local(&addr) && (!addr.is_multicast());
-            return kclvm_value_Bool(ctx, x as i8);
+            return kcl_value_Bool(ctx, x as i8);
         }
-        return kclvm_value_False(ctx);
+        return kcl_value_False(ctx);
     }
 
     panic!("is_link_local_unicast_IP() missing 1 required positional argument: 'ip'");
@@ -510,24 +510,24 @@ pub const fn Ipv6Addr_is_unicast_link_local(_self: &Ipv6Addr) -> bool {
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_is_global_unicast_IP(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_net_is_global_unicast_IP(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
     if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
         if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
             let x = Ipv4Addr_is_global(&addr) && (!addr.is_multicast());
-            return kclvm_value_Bool(ctx, x as i8);
+            return kcl_value_Bool(ctx, x as i8);
         }
         if let Ok(addr) = Ipv6Addr::from_str(ip.as_ref()) {
-            return kclvm_value_Bool(ctx, Ipv6Addr_is_global(&addr) as i8);
+            return kcl_value_Bool(ctx, Ipv6Addr_is_global(&addr) as i8);
         }
 
-        return kclvm_value_False(ctx);
+        return kcl_value_False(ctx);
     }
 
     panic!("is_global_unicast_IP() missing 1 required positional argument: 'ip'");
@@ -535,11 +535,11 @@ pub extern "C-unwind" fn kclvm_net_is_global_unicast_IP(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_parse_CIDR(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_net_parse_CIDR(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -558,11 +558,11 @@ pub extern "C-unwind" fn kclvm_net_parse_CIDR(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_is_IP_in_CIDR(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_net_is_IP_in_CIDR(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
@@ -588,15 +588,12 @@ pub extern "C-unwind" fn kclvm_net_is_IP_in_CIDR(
     if cidr.is_ipv6() {
         match ip {
             IpAddr::V4(ip) => {
-                return kclvm_value_Bool(
-                    ctx,
-                    cidr.contains(&IpAddr::V6(ip.to_ipv6_mapped())) as i8,
-                );
+                return kcl_value_Bool(ctx, cidr.contains(&IpAddr::V6(ip.to_ipv6_mapped())) as i8);
             }
             IpAddr::V6(_ip) => {}
         }
     }
-    return kclvm_value_Bool(ctx, cidr.contains(&ip) as i8);
+    return kcl_value_Bool(ctx, cidr.contains(&ip) as i8);
 }
 
 #[allow(non_camel_case_types, non_snake_case)]
@@ -642,22 +639,22 @@ const fn Ipv4Addr_is_benchmarking(_self: &std::net::Ipv4Addr) -> bool {
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_is_unspecified_IP(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_net_is_unspecified_IP(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
     if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
         if let Ok(addr) = Ipv4Addr::from_str(ip.as_ref()) {
-            return kclvm_value_Bool(ctx, addr.is_unspecified() as i8);
+            return kcl_value_Bool(ctx, addr.is_unspecified() as i8);
         }
         if let Ok(addr) = Ipv6Addr::from_str(ip.as_ref()) {
-            return kclvm_value_Bool(ctx, addr.is_unspecified() as i8);
+            return kcl_value_Bool(ctx, addr.is_unspecified() as i8);
         }
-        return kclvm_value_False(ctx);
+        return kcl_value_False(ctx);
     }
     panic!("is_unspecified_IP() missing 1 required positional argument: 'ip'");
 }
@@ -666,11 +663,11 @@ pub extern "C-unwind" fn kclvm_net_is_unspecified_IP(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_CIDR_subnet(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_net_CIDR_subnet(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -776,11 +773,11 @@ fn CIDR_allocate(cidr: IpCidr, additional_bits: i64, net_num: i64) -> Result<Val
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_CIDR_subnets(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_net_CIDR_subnets(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -883,11 +880,11 @@ pub extern "C-unwind" fn kclvm_net_CIDR_subnets(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_CIDR_host(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_net_CIDR_host(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -954,11 +951,11 @@ pub extern "C-unwind" fn kclvm_net_CIDR_host(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_net_CIDR_netmask(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_net_CIDR_netmask(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -1012,7 +1009,7 @@ mod test_net {
         let mut ctx = Context::default();
         for (ip6, expected) in cases.iter() {
             unsafe {
-                let actual = &*kclvm_net_to_IP4(
+                let actual = &*kcl_net_to_IP4(
                     &mut ctx,
                     &ValueRef::list(Some(&[&ValueRef::str(ip6)])),
                     &ValueRef::dict(None),
@@ -1050,7 +1047,7 @@ mod test_net {
         let mut ctx = Context::default();
         for (ip4, expected) in cases.iter() {
             unsafe {
-                let actual = &*kclvm_net_to_IP6(
+                let actual = &*kcl_net_to_IP6(
                     &mut ctx,
                     &ValueRef::list(Some(&[&ValueRef::str(ip4)])),
                     &ValueRef::dict(None),
@@ -1082,7 +1079,7 @@ mod test_net {
         let mut ctx = Context::default();
         for (ip_end_point, expected) in cases.iter() {
             unsafe {
-                let actual = &*kclvm_net_split_host_port(
+                let actual = &*kcl_net_split_host_port(
                     &mut ctx,
                     &ValueRef::list(Some(&[&ip_end_point])),
                     &ValueRef::dict(None),
@@ -1090,7 +1087,7 @@ mod test_net {
                 assert_eq!(expected, actual);
             }
             unsafe {
-                let actual = &*kclvm_net_split_host_port(
+                let actual = &*kcl_net_split_host_port(
                     &mut ctx,
                     &ValueRef::list(None),
                     &ValueRef::dict(Some(&[("ip_end_point", ip_end_point)])),
@@ -1110,63 +1107,63 @@ mod test_net {
                 let mut ctx = Context::new();
                 let args = ValueRef::list(None).into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
-                kclvm_net_split_host_port(ctx.into_raw(), args, kwargs);
+                kcl_net_split_host_port(ctx.into_raw(), args, kwargs);
             },
         );
         assert_panic("ip_end_point \"test-host\" missing port", || {
             let ctx = Context::new();
             let args = &ValueRef::list(Some(&[&ValueRef::str("test-host")]));
-            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+            kcl_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
         });
         assert_panic("ip_end_point \"test-host:7:80\" too many colons", || {
             let ctx = Context::new();
             let args = &ValueRef::list(Some(&[&ValueRef::str("test-host:7:80")]));
-            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+            kcl_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
         });
         assert_panic("ip_end_point \"[2001:db8::]\" missing port", || {
             let ctx = Context::new();
             let args = &ValueRef::list(Some(&[&ValueRef::str("[2001:db8::]")]));
-            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+            kcl_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
         });
         assert_panic("ip_end_point \"[2001:db8::]80\" missing port", || {
             let ctx = Context::new();
             let args = &ValueRef::list(Some(&[&ValueRef::str("[2001:db8::]80")]));
-            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+            kcl_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
         });
         assert_panic("ip_end_point \"[2001:db8::]9:80\" missing port", || {
             let ctx = Context::new();
             let args = &ValueRef::list(Some(&[&ValueRef::str("[2001:db8::]9:80")]));
-            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+            kcl_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
         });
         assert_panic("ip_end_point \"[2001:db8::]:9:80\" too many colons", || {
             let ctx = Context::new();
             let args = &ValueRef::list(Some(&[&ValueRef::str("[2001:db8::]:9:80")]));
-            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+            kcl_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
         });
         assert_panic("ip_end_point \"[2001:db8:::80\" missing ']'", || {
             let ctx = Context::new();
             let args = &ValueRef::list(Some(&[&ValueRef::str("[2001:db8:::80")]));
-            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+            kcl_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
         });
         assert_panic("ip_end_point \"t[est-host:80\" unexpected '['", || {
             let ctx = Context::new();
             let args = &ValueRef::list(Some(&[&ValueRef::str("t[est-host:80")]));
-            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+            kcl_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
         });
         assert_panic("ip_end_point \"]test-host:80\" unexpected ']'", || {
             let ctx = Context::new();
             let args = &ValueRef::list(Some(&[&ValueRef::str("]test-host:80")]));
-            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+            kcl_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
         });
         assert_panic("ip_end_point \"[[2001:db8::]:80\" unexpected '['", || {
             let ctx = Context::new();
             let args = &ValueRef::list(Some(&[&ValueRef::str("[[2001:db8::]:80")]));
-            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+            kcl_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
         });
         assert_panic("ip_end_point \"[2001:db8::]:]80\" unexpected ']'", || {
             let ctx = Context::new();
             let args = &ValueRef::list(Some(&[&ValueRef::str("[2001:db8::]:]80")]));
-            kclvm_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
+            kcl_net_split_host_port(ctx.into_raw(), args, &ValueRef::dict(None));
         });
         std::panic::set_hook(prev_hook);
     }
@@ -1208,7 +1205,7 @@ mod test_net {
         let mut ctx = Context::default();
         for (host, port, expected) in cases.iter() {
             unsafe {
-                let actual = &*kclvm_net_join_host_port(
+                let actual = &*kcl_net_join_host_port(
                     &mut ctx,
                     &ValueRef::list(Some(&[&host, &port])),
                     &ValueRef::dict(None),
@@ -1216,7 +1213,7 @@ mod test_net {
                 assert_eq!(expected, actual);
             }
             unsafe {
-                let actual = &*kclvm_net_join_host_port(
+                let actual = &*kcl_net_join_host_port(
                     &mut ctx,
                     &ValueRef::list(None),
                     &ValueRef::dict(Some(&[("host", host), ("port", port)])),
@@ -1237,7 +1234,7 @@ mod test_net {
                 let mut ctx = Context::new();
                 let args = ValueRef::list(None).into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
-                kclvm_net_join_host_port(ctx.into_raw(), args, kwargs);
+                kcl_net_join_host_port(ctx.into_raw(), args, kwargs);
             },
         );
         assert_panic(
@@ -1247,7 +1244,7 @@ mod test_net {
                 let args =
                     ValueRef::list(Some(&[&ValueRef::str("invalid.invalid")])).into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
-                kclvm_net_join_host_port(ctx.into_raw(), args, kwargs);
+                kcl_net_join_host_port(ctx.into_raw(), args, kwargs);
             },
         );
         assert_panic(
@@ -1257,7 +1254,7 @@ mod test_net {
                 let args = ValueRef::list(None).into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(Some(&[("host", &ValueRef::str("invalid.invalid"))]))
                     .into_raw(&mut ctx);
-                kclvm_net_join_host_port(ctx.into_raw(), args, kwargs);
+                kcl_net_join_host_port(ctx.into_raw(), args, kwargs);
             },
         );
         assert_panic(
@@ -1267,7 +1264,7 @@ mod test_net {
                 let args = ValueRef::list(None).into_raw(&mut ctx);
                 let kwargs =
                     ValueRef::dict(Some(&[("port", &ValueRef::str("80"))])).into_raw(&mut ctx);
-                kclvm_net_join_host_port(ctx.into_raw(), args, kwargs);
+                kcl_net_join_host_port(ctx.into_raw(), args, kwargs);
             },
         );
         std::panic::set_hook(prev_hook);
@@ -1356,7 +1353,7 @@ mod test_net {
         let mut ctx = Context::default();
         for (cidr, expected) in cases.iter() {
             unsafe {
-                let actual = &*kclvm_net_parse_CIDR(
+                let actual = &*kcl_net_parse_CIDR(
                     &mut ctx,
                     &ValueRef::list(Some(&[&cidr])),
                     &ValueRef::dict(None),
@@ -1364,7 +1361,7 @@ mod test_net {
                 assert_eq!(expected, actual, "{} positional", cidr);
             }
             unsafe {
-                let actual = &*kclvm_net_parse_CIDR(
+                let actual = &*kcl_net_parse_CIDR(
                     &mut ctx,
                     &ValueRef::list(None),
                     &ValueRef::dict(Some(&[("cidr", cidr)])),
@@ -1386,7 +1383,7 @@ mod test_net {
                 let mut ctx = Context::new();
                 let args = ValueRef::list(None).into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
-                kclvm_net_parse_CIDR(ctx.into_raw(), args, kwargs);
+                kcl_net_parse_CIDR(ctx.into_raw(), args, kwargs);
             },
         );
         std::panic::set_hook(prev_hook);
@@ -1450,7 +1447,7 @@ mod test_net {
         for (cidr, expect_in, expect_not_in) in cases.iter() {
             for ip in expect_in.iter() {
                 unsafe {
-                    let actual = &*kclvm_net_is_IP_in_CIDR(
+                    let actual = &*kcl_net_is_IP_in_CIDR(
                         &mut ctx,
                         &ValueRef::list(Some(&[&ValueRef::str(ip), &ValueRef::str(cidr)])),
                         &ValueRef::dict(None),
@@ -1464,7 +1461,7 @@ mod test_net {
                     );
                 }
                 unsafe {
-                    let actual = &*kclvm_net_is_IP_in_CIDR(
+                    let actual = &*kcl_net_is_IP_in_CIDR(
                         &mut ctx,
                         &ValueRef::list(None),
                         &ValueRef::dict(Some(&[
@@ -1477,7 +1474,7 @@ mod test_net {
             }
             for ip in expect_not_in.iter() {
                 unsafe {
-                    let actual = &*kclvm_net_is_IP_in_CIDR(
+                    let actual = &*kcl_net_is_IP_in_CIDR(
                         &mut ctx,
                         &ValueRef::list(Some(&[&ValueRef::str(ip), &ValueRef::str(cidr)])),
                         &ValueRef::dict(None),
@@ -1491,7 +1488,7 @@ mod test_net {
                     );
                 }
                 unsafe {
-                    let actual = &*kclvm_net_is_IP_in_CIDR(
+                    let actual = &*kcl_net_is_IP_in_CIDR(
                         &mut ctx,
                         &ValueRef::list(None),
                         &ValueRef::dict(Some(&[
@@ -1523,7 +1520,7 @@ mod test_net {
                 let mut ctx = Context::new();
                 let args = ValueRef::list(None).into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
-                kclvm_net_is_IP_in_CIDR(ctx.into_raw(), args, kwargs);
+                kcl_net_is_IP_in_CIDR(ctx.into_raw(), args, kwargs);
             },
         );
         assert_panic(
@@ -1532,7 +1529,7 @@ mod test_net {
                 let mut ctx = Context::new();
                 let args = ValueRef::list(Some(&[&ValueRef::str("10.1.2.3")])).into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
-                kclvm_net_is_IP_in_CIDR(ctx.into_raw(), args, kwargs);
+                kcl_net_is_IP_in_CIDR(ctx.into_raw(), args, kwargs);
             },
         );
         assert_panic(
@@ -1542,7 +1539,7 @@ mod test_net {
                 let args = ValueRef::list(None).into_raw(&mut ctx);
                 let kwargs =
                     ValueRef::dict(Some(&[("ip", &ValueRef::str("10.1.2.3"))])).into_raw(&mut ctx);
-                kclvm_net_is_IP_in_CIDR(ctx.into_raw(), args, kwargs);
+                kcl_net_is_IP_in_CIDR(ctx.into_raw(), args, kwargs);
             },
         );
         assert_panic(
@@ -1552,7 +1549,7 @@ mod test_net {
                 let args = ValueRef::list(None).into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(Some(&[("cidr", &ValueRef::str("10.0.0.0/8"))]))
                     .into_raw(&mut ctx);
-                kclvm_net_is_IP_in_CIDR(ctx.into_raw(), args, kwargs);
+                kcl_net_is_IP_in_CIDR(ctx.into_raw(), args, kwargs);
             },
         );
         let cases = [
@@ -1638,7 +1635,7 @@ mod test_net {
                 let args = ValueRef::list(Some(&[&ValueRef::str(ip), &ValueRef::str(cidr)]))
                     .into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
-                kclvm_net_is_IP_in_CIDR(ctx.into_raw(), args, kwargs);
+                kcl_net_is_IP_in_CIDR(ctx.into_raw(), args, kwargs);
             });
         }
         std::panic::set_hook(prev_hook);
@@ -1682,7 +1679,7 @@ mod test_net {
         let mut ctx = Context::default();
         for (cidr, additional_bits, net_num, expected) in cases.iter() {
             unsafe {
-                let actual = &*kclvm_net_CIDR_subnet(
+                let actual = &*kcl_net_CIDR_subnet(
                     &mut ctx,
                     &ValueRef::list(Some(&[
                         &ValueRef::str(cidr),
@@ -1701,7 +1698,7 @@ mod test_net {
                 );
             }
             unsafe {
-                let actual = &*kclvm_net_CIDR_subnet(
+                let actual = &*kcl_net_CIDR_subnet(
                     &mut ctx,
                     &ValueRef::list(None),
                     &ValueRef::dict(Some(&[
@@ -1734,7 +1731,7 @@ mod test_net {
                 let mut ctx = Context::new();
                 let args = ValueRef::list(None).into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
-                kclvm_net_CIDR_subnet(ctx.into_raw(), args, kwargs);
+                kcl_net_CIDR_subnet(ctx.into_raw(), args, kwargs);
             },
         );
         assert_panic(
@@ -1744,7 +1741,7 @@ mod test_net {
                 let args = ValueRef::list(Some(&[&ValueRef::str("10.1.2.3"), &ValueRef::int(1)]))
                     .into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
-                kclvm_net_CIDR_subnet(ctx.into_raw(), args, kwargs);
+                kcl_net_CIDR_subnet(ctx.into_raw(), args, kwargs);
             },
         );
         assert_panic(
@@ -1757,7 +1754,7 @@ mod test_net {
                     ("additional_bits", &ValueRef::int(1)),
                 ]))
                 .into_raw(&mut ctx);
-                kclvm_net_CIDR_subnet(ctx.into_raw(), args, kwargs);
+                kcl_net_CIDR_subnet(ctx.into_raw(), args, kwargs);
             },
         );
         assert_panic(
@@ -1770,7 +1767,7 @@ mod test_net {
                     ("net_num", &ValueRef::int(1)),
                 ]))
                 .into_raw(&mut ctx);
-                kclvm_net_CIDR_subnet(ctx.into_raw(), args, kwargs);
+                kcl_net_CIDR_subnet(ctx.into_raw(), args, kwargs);
             },
         );
         assert_panic(
@@ -1783,7 +1780,7 @@ mod test_net {
                     ("net_num", &ValueRef::int(1)),
                 ]))
                 .into_raw(&mut ctx);
-                kclvm_net_CIDR_subnet(ctx.into_raw(), args, kwargs);
+                kcl_net_CIDR_subnet(ctx.into_raw(), args, kwargs);
             },
         );
         let cases = [
@@ -1912,7 +1909,7 @@ mod test_net {
                 ]))
                 .into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
-                kclvm_net_CIDR_subnet(ctx.into_raw(), args, kwargs);
+                kcl_net_CIDR_subnet(ctx.into_raw(), args, kwargs);
             });
         }
         std::panic::set_hook(prev_hook);
@@ -2018,7 +2015,7 @@ mod test_net {
                 .map(|x| ValueRef::str(*x))
                 .collect::<Vec<_>>();
             unsafe {
-                let actual = &*kclvm_net_CIDR_subnets(
+                let actual = &*kcl_net_CIDR_subnets(
                     &mut ctx,
                     &ValueRef::list(Some(&[
                         &ValueRef::str(cidr),
@@ -2035,7 +2032,7 @@ mod test_net {
                 );
             }
             unsafe {
-                let actual = &*kclvm_net_CIDR_subnets(
+                let actual = &*kcl_net_CIDR_subnets(
                     &mut ctx,
                     &ValueRef::list(None),
                     &ValueRef::dict(Some(&[
@@ -2071,7 +2068,7 @@ mod test_net {
                 let mut ctx = Context::new();
                 let args = ValueRef::list(None).into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
-                kclvm_net_CIDR_subnets(ctx.into_raw(), args, kwargs);
+                kcl_net_CIDR_subnets(ctx.into_raw(), args, kwargs);
             },
         );
         assert_panic(
@@ -2080,7 +2077,7 @@ mod test_net {
                 let mut ctx = Context::new();
                 let args = ValueRef::list(Some(&[&ValueRef::str("10.1.2.3")])).into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
-                kclvm_net_CIDR_subnets(ctx.into_raw(), args, kwargs);
+                kcl_net_CIDR_subnets(ctx.into_raw(), args, kwargs);
             },
         );
         assert_panic(
@@ -2090,7 +2087,7 @@ mod test_net {
                 let args = ValueRef::list(None).into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(Some(&[("cidr", &ValueRef::str("10.1.2.3"))]))
                     .into_raw(&mut ctx);
-                kclvm_net_CIDR_subnets(ctx.into_raw(), args, kwargs);
+                kcl_net_CIDR_subnets(ctx.into_raw(), args, kwargs);
             },
         );
         assert_panic(
@@ -2100,7 +2097,7 @@ mod test_net {
                 let args = ValueRef::list(None).into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(Some(&[("additional_bits", &ValueRef::int(1))]))
                     .into_raw(&mut ctx);
-                kclvm_net_CIDR_subnets(ctx.into_raw(), args, kwargs);
+                kcl_net_CIDR_subnets(ctx.into_raw(), args, kwargs);
             },
         );
         let cases = [
@@ -2214,7 +2211,7 @@ mod test_net {
                 .into_raw(&mut ctx);
 
                 let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
-                kclvm_net_CIDR_subnets(ctx.into_raw(), args, kwargs);
+                kcl_net_CIDR_subnets(ctx.into_raw(), args, kwargs);
             });
         }
         std::panic::set_hook(prev_hook);
@@ -2268,7 +2265,7 @@ mod test_net {
         let mut ctx = Context::default();
         for (cidr, host_num, expected) in cases.iter() {
             unsafe {
-                let actual = &*kclvm_net_CIDR_host(
+                let actual = &*kcl_net_CIDR_host(
                     &mut ctx,
                     &ValueRef::list(Some(&[&ValueRef::str(cidr), &ValueRef::int(*host_num)])),
                     &ValueRef::dict(None),
@@ -2282,7 +2279,7 @@ mod test_net {
                 );
             }
             unsafe {
-                let actual = &*kclvm_net_CIDR_host(
+                let actual = &*kcl_net_CIDR_host(
                     &mut ctx,
                     &ValueRef::list(None),
                     &ValueRef::dict(Some(&[
@@ -2313,7 +2310,7 @@ mod test_net {
                 let mut ctx = Context::new();
                 let args = ValueRef::list(None).into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
-                kclvm_net_CIDR_host(ctx.into_raw(), args, kwargs);
+                kcl_net_CIDR_host(ctx.into_raw(), args, kwargs);
             },
         );
         assert_panic(
@@ -2323,7 +2320,7 @@ mod test_net {
                 let args =
                     ValueRef::list(Some(&[&ValueRef::str("10.1.2.3/32")])).into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
-                kclvm_net_CIDR_host(ctx.into_raw(), args, kwargs);
+                kcl_net_CIDR_host(ctx.into_raw(), args, kwargs);
             },
         );
         assert_panic(
@@ -2333,7 +2330,7 @@ mod test_net {
                 let args = ValueRef::list(None).into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(Some(&[("cidr", &ValueRef::str("10.1.2.3/32"))]))
                     .into_raw(&mut ctx);
-                kclvm_net_CIDR_host(ctx.into_raw(), args, kwargs);
+                kcl_net_CIDR_host(ctx.into_raw(), args, kwargs);
             },
         );
         assert_panic(
@@ -2343,7 +2340,7 @@ mod test_net {
                 let args = ValueRef::list(None).into_raw(&mut ctx);
                 let kwargs =
                     ValueRef::dict(Some(&[("host_num", &ValueRef::int(1))])).into_raw(&mut ctx);
-                kclvm_net_CIDR_host(ctx.into_raw(), args, kwargs);
+                kcl_net_CIDR_host(ctx.into_raw(), args, kwargs);
             },
         );
         let cases = [
@@ -2469,7 +2466,7 @@ mod test_net {
                 let args = ValueRef::list(Some(&[&ValueRef::str(cidr), &ValueRef::int(*host_num)]))
                     .into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
-                kclvm_net_CIDR_host(ctx.into_raw(), args, kwargs);
+                kcl_net_CIDR_host(ctx.into_raw(), args, kwargs);
             });
         }
         std::panic::set_hook(prev_hook);
@@ -2489,7 +2486,7 @@ mod test_net {
         let mut ctx = Context::default();
         for (cidr, expected) in cases.iter() {
             unsafe {
-                let actual = &*kclvm_net_CIDR_netmask(
+                let actual = &*kcl_net_CIDR_netmask(
                     &mut ctx,
                     &ValueRef::list(Some(&[&ValueRef::str(cidr)])),
                     &ValueRef::dict(None),
@@ -2497,7 +2494,7 @@ mod test_net {
                 assert_eq!(&ValueRef::str(expected), actual, "{} positional", cidr,);
             }
             unsafe {
-                let actual = &*kclvm_net_CIDR_netmask(
+                let actual = &*kcl_net_CIDR_netmask(
                     &mut ctx,
                     &ValueRef::list(None),
                     &ValueRef::dict(Some(&[("cidr", &ValueRef::str(cidr))])),
@@ -2552,7 +2549,7 @@ mod test_net {
                 let mut ctx = Context::new();
                 let args = ValueRef::list(Some(&[&ValueRef::str(cidr)])).into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
-                kclvm_net_CIDR_netmask(ctx.into_raw(), args, kwargs);
+                kcl_net_CIDR_netmask(ctx.into_raw(), args, kwargs);
             });
         }
         std::panic::set_hook(prev_hook);
@@ -2565,7 +2562,7 @@ mod test_net {
         let mut ctx = Context::default();
         for (ip, expect) in cases.iter() {
             unsafe {
-                let actual = &*kclvm_net_is_interface_local_multicast_IP(
+                let actual = &*kcl_net_is_interface_local_multicast_IP(
                     &mut ctx,
                     &ValueRef::dict(None),
                     &ValueRef::dict(Some(&[("ip", &ValueRef::str(ip))])),
@@ -2582,7 +2579,7 @@ mod test_net {
         let mut ctx = Context::default();
         for (ip, expect) in cases.iter() {
             unsafe {
-                let actual = &*kclvm_net_is_link_local_multicast_IP(
+                let actual = &*kcl_net_is_link_local_multicast_IP(
                     &mut ctx,
                     &ValueRef::dict(None),
                     &ValueRef::dict(Some(&[("ip", &ValueRef::str(ip))])),
@@ -2603,7 +2600,7 @@ mod test_net {
         let mut ctx = Context::default();
         for (ip, expect) in cases.iter() {
             unsafe {
-                let actual = &*kclvm_net_is_global_unicast_IP(
+                let actual = &*kcl_net_is_global_unicast_IP(
                     &mut ctx,
                     &ValueRef::dict(None),
                     &ValueRef::dict(Some(&[("ip", &ValueRef::str(ip))])),
@@ -2620,7 +2617,7 @@ mod test_net {
         let mut ctx = Context::default();
         for (ip, expect) in cases.iter() {
             unsafe {
-                let actual = &*kclvm_net_is_multicast_IP(
+                let actual = &*kcl_net_is_multicast_IP(
                     &mut ctx,
                     &ValueRef::dict(None),
                     &ValueRef::dict(Some(&[("ip", &ValueRef::str(ip))])),
@@ -2637,7 +2634,7 @@ mod test_net {
         let mut ctx = Context::default();
         for (ip, expect) in cases.iter() {
             unsafe {
-                let actual = &*kclvm_net_is_loopback_IP(
+                let actual = &*kcl_net_is_loopback_IP(
                     &mut ctx,
                     &ValueRef::dict(None),
                     &ValueRef::dict(Some(&[("ip", &ValueRef::str(ip))])),
@@ -2654,7 +2651,7 @@ mod test_net {
         let mut ctx = Context::default();
         for (ip, expect) in cases.iter() {
             unsafe {
-                let actual = &*kclvm_net_is_link_local_unicast_IP(
+                let actual = &*kcl_net_is_link_local_unicast_IP(
                     &mut ctx,
                     &ValueRef::dict(None),
                     &ValueRef::dict(Some(&[("ip", &ValueRef::str(ip))])),
@@ -2671,7 +2668,7 @@ mod test_net {
         let mut ctx = Context::default();
         for (ip, expect) in cases.iter() {
             unsafe {
-                let actual = &*kclvm_net_is_unspecified_IP(
+                let actual = &*kcl_net_is_unspecified_IP(
                     &mut ctx,
                     &ValueRef::dict(None),
                     &ValueRef::dict(Some(&[("ip", &ValueRef::str(ip))])),

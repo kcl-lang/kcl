@@ -6,8 +6,8 @@ schema Data:
     config: Config {
         name = "config"
         args: ["kcl", "-d"]
-        args = ["kclvm"]
-        name = "kclvm"
+        args = ["kcl"]
+        name = "kcl"
     }
 
 data = Data {}

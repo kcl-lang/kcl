@@ -1,5 +1,5 @@
-use kclvm_ast::ast;
-use kclvm_ast::walker::MutSelfMutWalker;
+use kcl_ast::ast;
+use kcl_ast::walker::MutSelfMutWalker;
 
 #[derive(Default)]
 struct LitTypeDefaultValueTransformer;
@@ -50,7 +50,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for LitTypeDefaultValueTransformer {
                         )));
                     }
                     ast::LiteralType::Float(val) => {
-                        let value = kclvm_runtime::float_to_string(*val);
+                        let value = kcl_runtime::float_to_string(*val);
                         let column_offset = value.len() as u64;
                         schema_attr.value = Some(Box::new(ast::Node::new(
                             ast::Expr::NumberLit(ast::NumberLit {

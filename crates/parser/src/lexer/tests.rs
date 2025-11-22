@@ -5,8 +5,8 @@ use compiler_base_error::diagnostic_handler::DiagnosticHandler;
 use compiler_base_session::Session;
 use compiler_base_span::{FilePathMapping, SourceMap, span::new_byte_pos};
 use expect_test::{Expect, expect};
-use kclvm_error::Handler;
-use kclvm_span::create_session_globals_then;
+use kcl_error::Handler;
+use kcl_span::create_session_globals_then;
 use parking_lot::RwLock;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -115,7 +115,7 @@ fn test_str_content_eval() {
 #[test]
 fn smoke_test() {
     check_lexing(
-        "lambda { println(\"kclvm\") }\n",
+        "lambda { println(\"kcl\") }\n",
         expect![[r#"
         Token { kind: Ident(Symbol(SymbolIndex { idx: 18 })), span: Span { base_or_index: 0, len_or_tag: 6 } }
         Token { kind: OpenDelim(Brace), span: Span { base_or_index: 7, len_or_tag: 1 } }
@@ -592,7 +592,7 @@ x0 = Person {}
 #[test]
 fn test_source_file() {
     let src = "\r\n\r\n\r\r\n\n\n\r".to_string();
-    let sm = kclvm_span::SourceMap::new(FilePathMapping::empty());
+    let sm = kcl_span::SourceMap::new(FilePathMapping::empty());
     let sf = sm.new_source_file(PathBuf::from("").into(), src);
     match sf.src.as_ref() {
         Some(src_from_sf) => {

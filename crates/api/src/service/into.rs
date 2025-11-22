@@ -3,10 +3,10 @@ use crate::gpyrpc::{
     Symbol, SymbolIndex,
 };
 use crate::service::ty::kcl_ty_to_pb_ty;
-use kclvm_config::settings::SettingsFile;
-use kclvm_error::Diagnostic;
-use kclvm_loader::{ScopeInfo, SymbolInfo};
-use kclvm_sema::core::{scope::ScopeRef, symbol::SymbolRef};
+use kcl_config::settings::SettingsFile;
+use kcl_error::Diagnostic;
+use kcl_loader::{ScopeInfo, SymbolInfo};
+use kcl_sema::core::{scope::ScopeRef, symbol::SymbolRef};
 
 pub(crate) trait IntoLoadSettingsFiles {
     /// Convert self into the LoadSettingsFiles structure.
@@ -70,8 +70,8 @@ impl IntoError for Diagnostic {
             level: self.level.to_string(),
             code: format!(
                 "{:?}",
-                self.code.unwrap_or(kclvm_error::DiagnosticId::Error(
-                    kclvm_error::ErrorKind::InvalidSyntax,
+                self.code.unwrap_or(kcl_error::DiagnosticId::Error(
+                    kcl_error::ErrorKind::InvalidSyntax,
                 ))
             ),
             messages: self

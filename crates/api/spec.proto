@@ -59,8 +59,8 @@ service BuiltinService {
 }
 
 // Service for KCL VM interactions.
-service KclvmService {
-	/// Ping KclvmService, return the same value as the parameter
+service KclService {
+	/// Ping KclService, return the same value as the parameter
 	///
 	/// # Examples
 	///
@@ -86,7 +86,7 @@ service KclvmService {
 	/// ```
 	rpc Ping(Ping_Args) returns (Ping_Result);
 
-	/// GetVersion KclvmService, return the kclvm service version information
+	/// GetVersion KclService, return the kcl service version information
 	///
 	/// # Examples
 	///

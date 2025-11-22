@@ -38,10 +38,10 @@ pub const NUMBER_MULTIPLIER_REGEX: &str =
     r"^([1-9][0-9]{0,63})(E|P|T|G|M|K|k|m|u|n|Ei|Pi|Ti|Gi|Mi|Ki)$";
 
 pub type SchemaTypeFunc = unsafe extern "C-unwind" fn(
-    *mut kclvm_context_t,
-    *const kclvm_value_ref_t,
-    *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t;
+    *mut kcl_context_t,
+    *const kcl_value_ref_t,
+    *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t;
 
 // common
 impl ValueRef {
@@ -94,29 +94,29 @@ pub fn resolve_schema(ctx: &mut Context, schema: &ValueRef, keys: &[String]) -> 
         let config_meta_new = config_meta.clone();
         let value = unsafe {
             let schema_fn: SchemaTypeFunc = transmute_copy(&schema_fn_ptr);
-            let cal_map = kclvm_value_Dict(ctx as *mut Context);
+            let cal_map = kcl_value_Dict(ctx as *mut Context);
             let list = schema_value.args.clone().into_raw(ctx);
             // Schema function closures
             // is sub schema
-            kclvm_list_append(list, ValueRef::bool(false).into_raw(ctx));
+            kcl_list_append(list, ValueRef::bool(false).into_raw(ctx));
             // config meta
-            kclvm_list_append(list, config_meta.into_raw(ctx));
+            kcl_list_append(list, config_meta.into_raw(ctx));
             // schema
-            kclvm_list_append(list, config.into_raw(ctx));
+            kcl_list_append(list, config.into_raw(ctx));
             // config
-            kclvm_list_append(list, kclvm_value_Dict(ctx as *mut Context));
+            kcl_list_append(list, kcl_value_Dict(ctx as *mut Context));
             // optional mapping
-            kclvm_list_append(list, kclvm_value_Dict(ctx as *mut Context));
+            kcl_list_append(list, kcl_value_Dict(ctx as *mut Context));
             // cal order map
-            kclvm_list_append(list, cal_map);
+            kcl_list_append(list, cal_map);
             // backtrack level map
-            kclvm_list_append(list, kclvm_value_Dict(ctx as *mut Context));
+            kcl_list_append(list, kcl_value_Dict(ctx as *mut Context));
             // backtrack cache
-            kclvm_list_append(list, kclvm_value_Dict(ctx as *mut Context));
+            kcl_list_append(list, kcl_value_Dict(ctx as *mut Context));
             // record instance
-            kclvm_list_append(list, ValueRef::bool(false).into_raw(ctx));
+            kcl_list_append(list, ValueRef::bool(false).into_raw(ctx));
             // instance pkgpath
-            kclvm_list_append(
+            kcl_list_append(
                 list,
                 ValueRef::str(&now_meta_info.kcl_pkgpath).into_raw(ctx),
             );
@@ -125,25 +125,25 @@ pub fn resolve_schema(ctx: &mut Context, schema: &ValueRef, keys: &[String]) -> 
             let list = schema_value.args.clone().into_raw(ctx);
             // Schema function closures
             // is sub schema
-            kclvm_list_append(list, ValueRef::bool(true).into_raw(ctx));
+            kcl_list_append(list, ValueRef::bool(true).into_raw(ctx));
             // config meta
-            kclvm_list_append(list, config_meta_new.into_raw(ctx));
+            kcl_list_append(list, config_meta_new.into_raw(ctx));
             // schema
-            kclvm_list_append(list, config_new.into_raw(ctx));
+            kcl_list_append(list, config_new.into_raw(ctx));
             // config
-            kclvm_list_append(list, kclvm_value_Dict(ctx as *mut Context));
+            kcl_list_append(list, kcl_value_Dict(ctx as *mut Context));
             // optional mapping
-            kclvm_list_append(list, kclvm_value_Dict(ctx as *mut Context));
+            kcl_list_append(list, kcl_value_Dict(ctx as *mut Context));
             // cal order map
-            kclvm_list_append(list, cal_map);
+            kcl_list_append(list, cal_map);
             // backtrack level map
-            kclvm_list_append(list, kclvm_value_Dict(ctx as *mut Context));
+            kcl_list_append(list, kcl_value_Dict(ctx as *mut Context));
             // backtrack cache
-            kclvm_list_append(list, kclvm_value_Dict(ctx as *mut Context));
+            kcl_list_append(list, kcl_value_Dict(ctx as *mut Context));
             // record instance
-            kclvm_list_append(list, ValueRef::bool(true).into_raw(ctx));
+            kcl_list_append(list, ValueRef::bool(true).into_raw(ctx));
             // instance pkgpath
-            kclvm_list_append(
+            kcl_list_append(
                 list,
                 ValueRef::str(&now_meta_info.kcl_pkgpath).into_raw(ctx),
             );
@@ -296,35 +296,35 @@ pub fn convert_collection_value(ctx: &mut Context, value: &ValueRef, tpe: &str) 
             let schema_fn_ptr = schema_fn.fn_ptr;
             let value = unsafe {
                 let schema_fn: SchemaTypeFunc = transmute_copy(&schema_fn_ptr);
-                let cal_order = kclvm_value_Dict(ctx as *mut Context);
-                let list = kclvm_value_List(ctx as *mut Context);
+                let cal_order = kcl_value_Dict(ctx as *mut Context);
+                let list = kcl_value_List(ctx as *mut Context);
                 // Schema function closures
                 // is_sub_schema
-                kclvm_list_append(list, ValueRef::bool(false).into_raw(ctx));
+                kcl_list_append(list, ValueRef::bool(false).into_raw(ctx));
                 // config meta
-                kclvm_list_append(list, kclvm_value_Dict(ctx as *mut Context));
+                kcl_list_append(list, kcl_value_Dict(ctx as *mut Context));
                 // config
-                kclvm_list_append(list, value.clone().into_raw(ctx));
+                kcl_list_append(list, value.clone().into_raw(ctx));
                 // schema
-                kclvm_list_append(list, kclvm_value_Dict(ctx as *mut Context));
+                kcl_list_append(list, kcl_value_Dict(ctx as *mut Context));
                 // optional mapping
-                kclvm_list_append(list, kclvm_value_Dict(ctx as *mut Context));
+                kcl_list_append(list, kcl_value_Dict(ctx as *mut Context));
                 // cal order map
-                kclvm_list_append(list, cal_order);
+                kcl_list_append(list, cal_order);
                 // backtrack level map
-                kclvm_list_append(list, kclvm_value_Dict(ctx as *mut Context));
+                kcl_list_append(list, kcl_value_Dict(ctx as *mut Context));
                 // backtrack cache
-                kclvm_list_append(list, kclvm_value_Dict(ctx as *mut Context));
+                kcl_list_append(list, kcl_value_Dict(ctx as *mut Context));
                 // record instance
-                kclvm_list_append(list, ValueRef::bool(false).into_raw(ctx));
+                kcl_list_append(list, ValueRef::bool(false).into_raw(ctx));
                 // instance pkgpath
-                kclvm_list_append(
+                kcl_list_append(
                     list,
                     ValueRef::str(&now_meta_info.kcl_pkgpath).into_raw(ctx),
                 );
-                let dict = kclvm_value_Dict(ctx as *mut Context);
+                let dict = kcl_value_Dict(ctx as *mut Context);
                 schema_fn(ctx, list, dict);
-                let list = kclvm_value_List(ctx as *mut Context);
+                let list = kcl_value_List(ctx as *mut Context);
 
                 // Try convert the  config to schema, if failed, return the config
                 if !value.is_fit_schema(&schema_type, ptr_as_ref(cal_order)) {
@@ -333,25 +333,25 @@ pub fn convert_collection_value(ctx: &mut Context, value: &ValueRef, tpe: &str) 
 
                 // Schema function closures
                 // is_sub_schema
-                kclvm_list_append(list, ValueRef::bool(true).into_raw(ctx));
+                kcl_list_append(list, ValueRef::bool(true).into_raw(ctx));
                 // config meta
-                kclvm_list_append(list, kclvm_value_Dict(ctx as *mut Context));
+                kcl_list_append(list, kcl_value_Dict(ctx as *mut Context));
                 // config
-                kclvm_list_append(list, value.clone().into_raw(ctx));
+                kcl_list_append(list, value.clone().into_raw(ctx));
                 // schema
-                kclvm_list_append(list, kclvm_value_Dict(ctx as *mut Context));
+                kcl_list_append(list, kcl_value_Dict(ctx as *mut Context));
                 // optional mapping
-                kclvm_list_append(list, kclvm_value_Dict(ctx as *mut Context));
+                kcl_list_append(list, kcl_value_Dict(ctx as *mut Context));
                 // cal order map
-                kclvm_list_append(list, cal_order);
+                kcl_list_append(list, cal_order);
                 // backtrack level map
-                kclvm_list_append(list, kclvm_value_Dict(ctx as *mut Context));
+                kcl_list_append(list, kcl_value_Dict(ctx as *mut Context));
                 // backtrack cache
-                kclvm_list_append(list, kclvm_value_Dict(ctx as *mut Context));
+                kcl_list_append(list, kcl_value_Dict(ctx as *mut Context));
                 // record instance
-                kclvm_list_append(list, ValueRef::bool(true).into_raw(ctx));
+                kcl_list_append(list, ValueRef::bool(true).into_raw(ctx));
                 // instance pkgpath
-                kclvm_list_append(
+                kcl_list_append(
                     list,
                     ValueRef::str(&now_meta_info.kcl_pkgpath).into_raw(ctx),
                 );

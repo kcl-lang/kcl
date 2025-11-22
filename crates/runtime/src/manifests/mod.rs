@@ -9,7 +9,7 @@ mod tests;
 mod yaml;
 
 #[allow(non_camel_case_types)]
-type kclvm_value_ref_t = ValueRef;
+type kcl_value_ref_t = ValueRef;
 
 /// The function is to serialize a list of KCL objects to YAML and output using the style with
 /// the `---\n` separator, and put it to the custom manifest output in the context.
@@ -51,11 +51,11 @@ type kclvm_value_ref_t = ValueRef;
 /// TODO: more options on the function `yaml_stream`.
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_manifests_yaml_stream(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_manifests_yaml_stream(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);

@@ -44,8 +44,6 @@ Ant Group, Youzan, and Huawei are notable production users managing large-scale 
 
 ### Key Files
 - `Makefile` - Top-level build orchestration
-- `run.sh` - Build and release automation script
-- `VERSION` - Current version: **0.11.2**
 - `LICENSE` - Apache License 2.0
 - `README.md` - Project documentation
 
@@ -90,44 +88,44 @@ Output (YAML/JSON)
 ### Key Components (/crates)
 
 **Frontend (Parsing & Analysis):**
-- `kclvm-lexer` - Lexical analysis and tokenization
-- `kclvm-parser` - Parse KCL source into AST
-- `kclvm-ast` - Abstract Syntax Tree definitions and walker
-- `kclvm-ast-pretty` - AST formatting and pretty-printing
-- `kclvm-span` - Source code span/position tracking
-- `kclvm-error` - Error handling and diagnostics
+- `kcl-lexer` - Lexical analysis and tokenization
+- `kcl-parser` - Parse KCL source into AST
+- `kcl-ast` - Abstract Syntax Tree definitions and walker
+- `kcl-ast-pretty` - AST formatting and pretty-printing
+- `kcl-span` - Source code span/position tracking
+- `kcl-error` - Error handling and diagnostics
 
 **Semantic Analysis:**
-- `kclvm-sema` - Semantic analysis, type checking, and validation
-- `kclvm-loader` - Module loading and dependency management
-- `kclvm-query` - Code query and information retrieval
+- `kcl-sema` - Semantic analysis, type checking, and validation
+- `kcl-loader` - Module loading and dependency management
+- `kcl-query` - Code query and information retrieval
 
 **Compilation & Execution:**
-- `kclvm-evaluator` - Expression evaluation engine
-- `kclvm-runner` - Program execution environment
-- `kclvm-driver` - Compilation driver and orchestration
+- `kcl-evaluator` - Expression evaluation engine
+- `kcl-runner` - Program execution environment
+- `kcl-driver` - Compilation driver and orchestration
 
 **Runtime:**
-- `kclvm-runtime` - Runtime support libraries with extensive standard library
+- `kcl-runtime` - Runtime support libraries with extensive standard library
   - Value representation and type system
   - Standard library modules: json, yaml, base64, regex, crypto, datetime, math, net, etc.
   - Template rendering (handlebars)
   - File I/O and manifests
 
 **Tooling:**
-- `kclvm-tools` - Development tools
+- `kcl-tools` - Development tools
   - Format, Lint, Fix, Vet
   - Testing infrastructure
   - **LSP** (Language Server) - Full IDE support with autocomplete, goto-definition, diagnostics
-- `kclvm-api` - Public API layer for multi-language SDKs
-- `kclvm-cmd` - CLI command implementation
+- `kcl-api` - Public API layer for multi-language SDKs
+- `kcl-cmd` - CLI command implementation
 
 **Utilities:**
-- `kclvm-config` - Configuration parsing
-- `kclvm-version` - Version management
-- `kclvm-utils` - Common utilities
-- `kclvm-primitives` - Primitive type definitions
-- `kclvm-macros` - Procedural macros
+- `kcl-config` - Configuration parsing
+- `kcl-version` - Version management
+- `kcl-utils` - Common utilities
+- `kcl-primitives` - Primitive type definitions
+- `kcl-macros` - Procedural macros
 
 ### Language Server Architecture
 - Salsa-based incremental compilation for performance

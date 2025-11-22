@@ -2,7 +2,7 @@
 
 use std::os::raw::c_char;
 
-use crate::{Context, ValueRef, kclvm_size_t};
+use crate::{Context, ValueRef, kcl_size_t};
 
 /// New a mutable raw pointer.
 /// Safety: The caller must ensure that `ctx` lives longer than the returned pointer
@@ -41,7 +41,7 @@ pub fn mut_ptr_as_ref<'a, T>(p: *mut T) -> &'a mut T {
 }
 
 /// Copy str to mutable pointer with length
-pub(crate) fn copy_str_to(v: &str, p: *mut c_char, size: *mut kclvm_size_t) {
+pub(crate) fn copy_str_to(v: &str, p: *mut c_char, size: *mut kcl_size_t) {
     assert!(!p.is_null() || !size.is_null());
 
     unsafe {

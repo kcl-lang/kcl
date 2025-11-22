@@ -1,60 +1,60 @@
 //! Copyright The KCL Authors. All rights reserved.
 
-// api-spec:       kclvm_context_t
-// api-spec(c):    typedef struct kclvm_context_t kclvm_context_t;
-// api-spec(llvm): %"kclvm_context_t" = type { i8* }
+// api-spec:       kcl_context_t
+// api-spec(c):    typedef struct kcl_context_t kcl_context_t;
+// api-spec(llvm): %"kcl_context_t" = type { i8* }
 
-// api-spec:       kclvm_eval_scope_t
-// api-spec(c):    typedef struct kclvm_eval_scope_t kclvm_eval_scope_t;
-// api-spec(llvm): %"kclvm_eval_scope_t" = type { i8* }
+// api-spec:       kcl_eval_scope_t
+// api-spec(c):    typedef struct kcl_eval_scope_t kcl_eval_scope_t;
+// api-spec(llvm): %"kcl_eval_scope_t" = type { i8* }
 
-// api-spec:       kclvm_type_t
-// api-spec(c):    typedef struct kclvm_type_t kclvm_type_t;
-// api-spec(llvm): %"kclvm_type_t" = type { i8* }
+// api-spec:       kcl_type_t
+// api-spec(c):    typedef struct kcl_type_t kcl_type_t;
+// api-spec(llvm): %"kcl_type_t" = type { i8* }
 
-// api-spec:       kclvm_value_t
-// api-spec(c):    typedef struct kclvm_value_t kclvm_value_t;
-// api-spec(llvm): %"kclvm_value_t" = type { i8* }
+// api-spec:       kcl_value_t
+// api-spec(c):    typedef struct kcl_value_t kcl_value_t;
+// api-spec(llvm): %"kcl_value_t" = type { i8* }
 
-// api-spec:       kclvm_value_ref_t
-// api-spec(c):    typedef struct kclvm_value_ref_t kclvm_value_ref_t;
-// api-spec(llvm): %"kclvm_value_ref_t" = type { i8* }
+// api-spec:       kcl_value_ref_t
+// api-spec(c):    typedef struct kcl_value_ref_t kcl_value_ref_t;
+// api-spec(llvm): %"kcl_value_ref_t" = type { i8* }
 
-// api-spec:       kclvm_iterator_t
-// api-spec(c):    typedef struct kclvm_iterator_t kclvm_iterator_t;
-// api-spec(llvm): %"kclvm_iterator_t" = type { i8* }
+// api-spec:       kcl_iterator_t
+// api-spec(c):    typedef struct kcl_iterator_t kcl_iterator_t;
+// api-spec(llvm): %"kcl_iterator_t" = type { i8* }
 
-// api-spec:       kclvm_buffer_t
-// api-spec(c):    typedef struct kclvm_buffer_t kclvm_buffer_t;
-// api-spec(llvm): %"kclvm_buffer_t" = type { i8* }
+// api-spec:       kcl_buffer_t
+// api-spec(c):    typedef struct kcl_buffer_t kcl_buffer_t;
+// api-spec(llvm): %"kcl_buffer_t" = type { i8* }
 
-// api-spec:       kclvm_kind_t
-// api-spec(c):    typedef enum kclvm_kind_t kclvm_kind_t;
-// api-spec(llvm): %"kclvm_kind_t" = type i32
+// api-spec:       kcl_kind_t
+// api-spec(c):    typedef enum kcl_kind_t kcl_kind_t;
+// api-spec(llvm): %"kcl_kind_t" = type i32
 
-// api-spec:       kclvm_size_t
-// api-spec(c):    typedef int32_t kclvm_size_t;
-// api-spec(llvm): %"kclvm_size_t" = type i32
+// api-spec:       kcl_size_t
+// api-spec(c):    typedef int32_t kcl_size_t;
+// api-spec(llvm): %"kcl_size_t" = type i32
 
-// api-spec:       kclvm_char_t
-// api-spec(c):    typedef char kclvm_char_t;
-// api-spec(llvm): %"kclvm_char_t" = type i8
+// api-spec:       kcl_char_t
+// api-spec(c):    typedef char kcl_char_t;
+// api-spec(llvm): %"kcl_char_t" = type i8
 
-// api-spec:       kclvm_bool_t
-// api-spec(c):    typedef int8_t kclvm_bool_t;
-// api-spec(llvm): %"kclvm_bool_t" = type i8
+// api-spec:       kcl_bool_t
+// api-spec(c):    typedef int8_t kcl_bool_t;
+// api-spec(llvm): %"kcl_bool_t" = type i8
 
-// api-spec:       kclvm_int_t
-// api-spec(c):    typedef int64_t kclvm_int_t;
-// api-spec(llvm): %"kclvm_int_t" = type i64
+// api-spec:       kcl_int_t
+// api-spec(c):    typedef int64_t kcl_int_t;
+// api-spec(llvm): %"kcl_int_t" = type i64
 
-// api-spec:       kclvm_float_t
-// api-spec(c):    typedef double kclvm_float_t;
-// api-spec(llvm): %"kclvm_float_t" = type double
+// api-spec:       kcl_float_t
+// api-spec(c):    typedef double kcl_float_t;
+// api-spec(llvm): %"kcl_float_t" = type double
 
-// api-spec:       kclvm_decorator_value_t
-// api-spec(c):    typedef struct kclvm_decorator_value_t kclvm_decorator_value_t;
-// api-spec(llvm): %"kclvm_decorator_value_t" = type opaque
+// api-spec:       kcl_decorator_value_t
+// api-spec(c):    typedef struct kcl_decorator_value_t kcl_decorator_value_t;
+// api-spec(llvm): %"kcl_decorator_value_t" = type opaque
 
 pub mod api;
 pub use self::api::*;
@@ -125,8 +125,8 @@ pub use self::panic::*;
 pub mod _kcl_run;
 pub use self::_kcl_run::*;
 
-pub mod _kclvm;
-pub use self::_kclvm::*;
+pub mod _kcl;
+pub use self::_kcl::*;
 
-pub mod _kclvm_addr;
-pub use self::_kclvm_addr::*;
+pub mod _kcl_addr;
+pub use self::_kcl_addr::*;

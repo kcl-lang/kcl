@@ -1,16 +1,16 @@
-//! [kclvm_tools::format] module mainly contains some functions of language formatting,
+//! [kcl_tools::format] module mainly contains some functions of language formatting,
 //! the main API function is `format`, which accepts a path to be formatted and
 //! formatted options.
 //!
-//! The basic principle is to call the [kclvm_parser::parse_file] function to parse the
-//! AST Module, and then use the AST printer [kclvm_tools::printer::print_ast_module]
+//! The basic principle is to call the [kcl_parser::parse_file] function to parse the
+//! AST Module, and then use the AST printer [kcl_tools::printer::print_ast_module]
 //! to print it as source code string.
 use anyhow::Result;
-use kclvm_ast_pretty::print_ast_module;
-use kclvm_parser::get_kcl_files;
+use kcl_ast_pretty::print_ast_module;
+use kcl_parser::get_kcl_files;
 use std::path::Path;
 
-use kclvm_parser::{parse_file_force_errors, parse_single_file};
+use kcl_parser::{parse_file_force_errors, parse_single_file};
 
 #[cfg(test)]
 mod tests;
@@ -32,7 +32,7 @@ pub struct FormatOptions {
 /// # Examples
 ///
 /// ```no_run
-/// use kclvm_tools::format::{format, FormatOptions};
+/// use kcl_tools::format::{format, FormatOptions};
 ///
 /// // Format a single file.
 /// format("path_to_a_single_file.k", &FormatOptions::default()).unwrap();

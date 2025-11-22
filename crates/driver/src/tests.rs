@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 use std::{env, fs, panic};
 
-use kclvm_config::modfile::get_vendor_home;
-use kclvm_config::settings::KeyValuePair;
-use kclvm_parser::LoadProgramOptions;
+use kcl_config::modfile::get_vendor_home;
+use kcl_config::settings::KeyValuePair;
+use kcl_parser::LoadProgramOptions;
 use walkdir::WalkDir;
 
 use crate::arguments::parse_key_value_pair;

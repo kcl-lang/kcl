@@ -29,7 +29,7 @@ where
     ///
     /// ```rust
     /// use std::path::Path;
-    /// use kclvm_utils::path::PathPrefix;
+    /// use kcl_utils::path::PathPrefix;
     ///
     /// let path = Path::new(".").canonicalize().unwrap();
     /// assert_eq!(
@@ -42,7 +42,7 @@ where
     }
 
     #[cfg(target_os = "windows")]
-    /// For kclvm on windows, the "\\?\ " will cause the obj file to not be found when linking by "cl.exe".
+    /// For kcl on windows, the "\\?\ " will cause the obj file to not be found when linking by "cl.exe".
     ///
     /// Slicing this path directly is not a good solution,
     /// we will find a more fluent way to solve this problem in the future. @zongz
@@ -53,7 +53,7 @@ where
     ///
     /// ```rust
     /// use std::path::Path;
-    /// use kclvm_utils::path::PathPrefix;
+    /// use kcl_utils::path::PathPrefix;
     ///
     /// let path = Path::new(".").canonicalize().unwrap();
     /// assert!(path.display().to_string().contains("\\\\?\\"));

@@ -70,8 +70,6 @@ lark_parser.pickle
 *.tar.gz
 
 # KCL cache and temp output
-.kclvm
-.kclvm_cov
 *.dylib
 *.so
 *.dll

@@ -1,5 +1,5 @@
-use kclvm_utils::path::PathPrefix;
-use kclvm_version as version;
+use kcl_utils::path::PathPrefix;
+use kcl_version as version;
 use std::{
     collections::HashMap,
     env,
@@ -48,7 +48,7 @@ fn test_pkg_cache() {
     );
 
     let lock_path = Path::new(&root)
-        .join(".kclvm/cache")
+        .join(".kcl/cache")
         .join(format!("{}-{}", version::VERSION, version::CHECK_SUM))
         .join("test_target");
 

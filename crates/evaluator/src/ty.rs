@@ -1,4 +1,4 @@
-use kclvm_runtime::{
+use kcl_runtime::{
     BUILTIN_TYPES, ConfigEntryOperationKind, KCL_TYPE_ANY, PKG_PATH_PREFIX, ValueRef, check_type,
     dereference_type, is_dict_type, is_list_type, is_schema_type, is_type_union,
     schema_config_meta, schema_runtime_type, separate_kv, split_type_union, val_plan,

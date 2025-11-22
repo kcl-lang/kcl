@@ -3,14 +3,14 @@
 use std::ffi::{CStr, c_char, c_int};
 use std::process::ExitCode;
 
-use kclvm_api::FormatCodeArgs;
-use kclvm_api::{API, ExecProgramArgs};
+use kcl_api::FormatCodeArgs;
+use kcl_api::{API, ExecProgramArgs};
 
 mod capi;
 pub use capi::*;
-use kclvm_parser::ParseSessionRef;
-use kclvm_runner::exec_program;
-use kclvm_runtime::PanicInfo;
+use kcl_parser::ParseSessionRef;
+use kcl_runner::exec_program;
+use kcl_runtime::PanicInfo;
 
 /// KCL CLI run function CAPI.
 ///
@@ -45,7 +45,7 @@ pub unsafe extern "C-unwind" fn libkcl_run(
             }
         },
         Err(err) => {
-            let err_message = kclvm_error::err_to_str(err);
+            let err_message = kcl_error::err_to_str(err);
             let result = format!("ERROR:{err_message:}");
             let c_string = std::ffi::CString::new(result.as_str()).expect("CString::new failed");
             let ptr = c_string.into_raw();
@@ -56,7 +56,7 @@ pub unsafe extern "C-unwind" fn libkcl_run(
 
 /// KCL CLI run function CAPI.
 fn libkcl_run_unsafe(args: *const c_char, plugin_agent: *const c_char) -> Result<String, String> {
-    let mut args = kclvm_runner::ExecProgramArgs::from_str(
+    let mut args = kcl_runner::ExecProgramArgs::from_str(
         unsafe { std::ffi::CStr::from_ptr(args) }.to_str().unwrap(),
     );
     args.plugin_agent = plugin_agent as u64;
@@ -82,7 +82,7 @@ pub unsafe extern "C-unwind" fn libkcl_main(
                 .map(|ptr| CStr::from_ptr(*ptr).to_str().unwrap())
                 .collect()
         };
-        kclvm_cmd::main(args.as_slice())
+        kcl_cmd::main(args.as_slice())
     });
     std::panic::set_hook(prev_hook);
 
@@ -100,7 +100,7 @@ pub unsafe extern "C-unwind" fn libkcl_main(
             }
         },
         Err(err) => {
-            let err_str = kclvm_error::err_to_str(err);
+            let err_str = kcl_error::err_to_str(err);
             if !err_str.is_empty() {
                 eprintln!("{err_str}");
             }
@@ -109,7 +109,7 @@ pub unsafe extern "C-unwind" fn libkcl_main(
     }
 }
 
-fn intern_run(filename: &str, src: &str) -> Result<kclvm_api::ExecProgramResult, String> {
+fn intern_run(filename: &str, src: &str) -> Result<kcl_api::ExecProgramResult, String> {
     let api = API::default();
     let args = &ExecProgramArgs {
         k_filename_list: vec![filename.to_string()],

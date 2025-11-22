@@ -1,5 +1,5 @@
-use kclvm_ast::ast::AstIndex;
-use kclvm_primitives::IndexMap;
+use kcl_ast::ast::AstIndex;
+use kcl_primitives::IndexMap;
 use std::sync::Arc;
 
 use super::{

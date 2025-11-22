@@ -1,7 +1,7 @@
 use std::{error, fmt, panic};
 
 /// `bug!` macro is used to report compiler internal bug.
-/// You can use bug! macros directly by adding `#[macro_use]extern crate kclvm_error;`
+/// You can use bug! macros directly by adding `#[macro_use]extern crate kcl_error;`
 /// in the lib.rs, and then call as follows:
 /// ```no_check
 /// bug!();

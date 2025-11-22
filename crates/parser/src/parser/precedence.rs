@@ -1,6 +1,6 @@
-use kclvm_ast::token::{Token, TokenKind};
+use kcl_ast::token::{Token, TokenKind};
 
-use kclvm_span::symbol::kw;
+use kcl_span::symbol::kw;
 
 #[repr(i32)]
 #[derive(PartialEq, PartialOrd, Debug, Clone)]
@@ -47,29 +47,29 @@ impl From<Token> for Precedence {
         match tok.kind {
             TokenKind::UnaryOp(_) => Precedence::Prefix,
             TokenKind::BinOp(ot) => match ot {
-                kclvm_ast::token::BinOpToken::Plus | kclvm_ast::token::BinOpToken::Minus => {
+                kcl_ast::token::BinOpToken::Plus | kcl_ast::token::BinOpToken::Minus => {
                     Precedence::Sum
                 }
-                kclvm_ast::token::BinOpToken::Star
-                | kclvm_ast::token::BinOpToken::Slash
-                | kclvm_ast::token::BinOpToken::Percent
-                | kclvm_ast::token::BinOpToken::SlashSlash => Precedence::Product,
-                kclvm_ast::token::BinOpToken::StarStar => Precedence::Power,
-                kclvm_ast::token::BinOpToken::Caret => Precedence::BitXor,
-                kclvm_ast::token::BinOpToken::And => Precedence::BitAnd,
-                kclvm_ast::token::BinOpToken::Or => Precedence::BitOr,
-                kclvm_ast::token::BinOpToken::Shl | kclvm_ast::token::BinOpToken::Shr => {
+                kcl_ast::token::BinOpToken::Star
+                | kcl_ast::token::BinOpToken::Slash
+                | kcl_ast::token::BinOpToken::Percent
+                | kcl_ast::token::BinOpToken::SlashSlash => Precedence::Product,
+                kcl_ast::token::BinOpToken::StarStar => Precedence::Power,
+                kcl_ast::token::BinOpToken::Caret => Precedence::BitXor,
+                kcl_ast::token::BinOpToken::And => Precedence::BitAnd,
+                kcl_ast::token::BinOpToken::Or => Precedence::BitOr,
+                kcl_ast::token::BinOpToken::Shl | kcl_ast::token::BinOpToken::Shr => {
                     Precedence::Shift
                 }
             },
             TokenKind::BinCmp(ct) => match ct {
-                kclvm_ast::token::BinCmpToken::Eq | kclvm_ast::token::BinCmpToken::NotEq => {
+                kcl_ast::token::BinCmpToken::Eq | kcl_ast::token::BinCmpToken::NotEq => {
                     Precedence::Equals
                 }
-                kclvm_ast::token::BinCmpToken::Lt
-                | kclvm_ast::token::BinCmpToken::LtEq
-                | kclvm_ast::token::BinCmpToken::Gt
-                | kclvm_ast::token::BinCmpToken::GtEq => Precedence::LessGreater,
+                kcl_ast::token::BinCmpToken::Lt
+                | kcl_ast::token::BinCmpToken::LtEq
+                | kcl_ast::token::BinCmpToken::Gt
+                | kcl_ast::token::BinCmpToken::GtEq => Precedence::LessGreater,
             },
             _ => {
                 if tok.is_keyword(kw::Or) {

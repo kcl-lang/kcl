@@ -6,7 +6,7 @@ use std::{
 
 use compiler_base_span::{FilePathMapping, SourceMap};
 use entry::expand_input_files;
-use kclvm_config::modfile::{KCL_PKG_PATH, get_vendor_home};
+use kcl_config::modfile::{KCL_PKG_PATH, get_vendor_home};
 
 use crate::*;
 

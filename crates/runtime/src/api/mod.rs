@@ -1,7 +1,7 @@
 //! Copyright The KCL Authors. All rights reserved.
 
-pub mod kclvm;
-pub use self::kclvm::*;
+pub mod kcl;
+pub use self::kcl::*;
 
 pub mod utils;
 pub use self::utils::*;

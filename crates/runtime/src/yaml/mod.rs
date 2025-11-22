@@ -7,11 +7,11 @@ pub const JSON_STREAM_SEP: &str = "\n";
 /// encode(data, sort_keys=False, ignore_private=False, ignore_none=False)
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_yaml_encode(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_yaml_encode(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
@@ -28,11 +28,11 @@ pub extern "C-unwind" fn kclvm_yaml_encode(
 /// encode_all(data, sort_keys=False, ignore_private=False, ignore_none=False)
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_yaml_encode_all(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_yaml_encode_all(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
@@ -53,11 +53,11 @@ pub extern "C-unwind" fn kclvm_yaml_encode_all(
 /// decode(value)
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_yaml_decode(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_yaml_decode(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -74,11 +74,11 @@ pub extern "C-unwind" fn kclvm_yaml_decode(
 /// decode_all(value)
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_yaml_decode_all(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_yaml_decode_all(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -95,11 +95,11 @@ pub extern "C-unwind" fn kclvm_yaml_decode_all(
 /// dump_to_file(data, sort_keys=False, ignore_private=False, ignore_none=False)
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_yaml_dump_to_file(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_yaml_dump_to_file(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let data = args.arg_i(0).or(kwargs.get_by_key("data"));
@@ -111,7 +111,7 @@ pub extern "C-unwind" fn kclvm_yaml_dump_to_file(
             let yaml = data.to_yaml_string_with_options(&args_to_opts(args, kwargs, 2));
             std::fs::write(&filename, yaml)
                 .unwrap_or_else(|e| panic!("Unable to write file '{}': {}", filename, e));
-            kclvm_value_Undefined(ctx)
+            kcl_value_Undefined(ctx)
         }
         _ => {
             panic!("dump_to_file() missing 2 required positional arguments: 'data' and 'filename'")
@@ -122,11 +122,11 @@ pub extern "C-unwind" fn kclvm_yaml_dump_to_file(
 /// dump_all_to_file(data, sort_keys=False, ignore_private=False, ignore_none=False)
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_yaml_dump_all_to_file(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_yaml_dump_all_to_file(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
@@ -144,7 +144,7 @@ pub extern "C-unwind" fn kclvm_yaml_dump_all_to_file(
                 .collect::<Vec<String>>();
 
             std::fs::write(filename, results.join(YAML_STREAM_SEP)).expect("Unable to write file");
-            kclvm_value_Undefined(ctx)
+            kcl_value_Undefined(ctx)
         }
         _ => {
             panic!(
@@ -157,19 +157,19 @@ pub extern "C-unwind" fn kclvm_yaml_dump_all_to_file(
 /// validate(value: str) -> bool
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_yaml_validate(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_yaml_validate(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
 
     if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("value")) {
         match ValueRef::from_yaml_stream(ctx, arg0.as_str().as_ref()) {
-            Ok(_) => return kclvm_value_True(ctx),
-            Err(_) => return kclvm_value_False(ctx),
+            Ok(_) => return kcl_value_True(ctx),
+            Err(_) => return kcl_value_False(ctx),
         }
     }
     panic!("validate() missing 1 required positional argument: 'value'")

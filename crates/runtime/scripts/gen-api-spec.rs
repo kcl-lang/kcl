@@ -7,10 +7,10 @@ use std::process::ExitStatus;
 use walkdir::WalkDir;
 
 const ROOT: &str = "./src";
-const C_API_FILE: &str = "./src/_kclvm.h";
-const LL_API_FILE: &str = "./src/_kclvm.ll";
-const RUST_API_ENUM: &str = "./src/_kclvm.rs";
-const RUST_API_ADDR: &str = "./src/_kclvm_addr.rs";
+const C_API_FILE: &str = "./src/_kcl.h";
+const LL_API_FILE: &str = "./src/_kcl.ll";
+const RUST_API_ENUM: &str = "./src/_kcl.rs";
+const RUST_API_ADDR: &str = "./src/_kcl_addr.rs";
 
 #[derive(Debug, Default)]
 struct ApiSpec {
@@ -24,7 +24,7 @@ struct ApiSpec {
 
 fn main() -> Result<(), Box<dyn Error>> {
     unsafe {
-        std::env::set_var("KCLVM_RUNTIME_GEN_API_SPEC", "1");
+        std::env::set_var("KCL_RUNTIME_GEN_API_SPEC", "1");
     }
     let specs = load_all_api_spec(ROOT);
     let src = gen_c_api(&specs);
@@ -128,12 +128,12 @@ fn gen_c_api(specs: &[ApiSpec]) -> String {
     buf.push_str("// Copyright The KCL Authors. All rights reserved.\n\n");
     buf.push_str("// Auto generated, DONOT EDIT!!!\n\n");
     buf.push_str("#pragma once\n\n");
-    buf.push_str("#ifndef _kclvm_h_\n#define _kclvm_h_\n\n");
+    buf.push_str("#ifndef _kcl_h_\n#define _kcl_h_\n\n");
     buf.push_str("#include <stdarg.h>\n#include <stdbool.h>\n#include <stdint.h>\n\n");
     buf.push_str("#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n");
 
-    buf.push_str("// please keep same as 'kclvm/runtime/src/kind/mod.rs#Kind'\n\n");
-    buf.push_str("enum kclvm_kind_t {\n");
+    buf.push_str("// please keep same as 'kcl/runtime/src/kind/mod.rs#Kind'\n\n");
+    buf.push_str("enum kcl_kind_t {\n");
     buf.push_str("    Invalid = 0,\n");
     buf.push_str("    Undefined = 1,\n");
     buf.push_str("    None = 2,\n");
@@ -170,7 +170,7 @@ fn gen_c_api(specs: &[ApiSpec]) -> String {
     }
 
     buf.push_str("#ifdef __cplusplus\n} // extern \"C\"\n#endif\n\n");
-    buf.push_str("#endif // _kclvm_h_\n");
+    buf.push_str("#endif // _kcl_h_\n");
 
     fmt_code(&buf)
 }
@@ -196,9 +196,9 @@ fn gen_ll_api(specs: &[ApiSpec]) -> String {
     }
 
     buf.push_str(
-        "define void @__kcl_keep_link_runtime(%kclvm_value_ref_t* %_a, %kclvm_context_t* %_b) {\n",
+        "define void @__kcl_keep_link_runtime(%kcl_value_ref_t* %_a, %kcl_context_t* %_b) {\n",
     );
-    buf.push_str("    call %kclvm_value_ref_t* @kclvm_value_None(%kclvm_context_t* %_b)\n");
+    buf.push_str("    call %kcl_value_ref_t* @kcl_value_None(%kcl_context_t* %_b)\n");
     buf.push_str("    ret void\n");
     buf.push_str("}\n");
 
@@ -221,7 +221,7 @@ fn gen_rust_api_enum(specs: &[ApiSpec]) -> String {
     buf.push_str("impl std::fmt::Display for ApiType {\n");
     buf.push_str("    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {\n");
     buf.push_str("        match self {\n");
-    buf.push_str("            ApiType::Value => write!(f, \"{:?}\", \"api::kclvm::Value\"),\n");
+    buf.push_str("            ApiType::Value => write!(f, \"{:?}\", \"api::kcl::Value\"),\n");
     buf.push_str("        }\n");
     buf.push_str("    }\n");
     buf.push_str("}\n");
@@ -271,7 +271,7 @@ fn gen_rust_api_addr(specs: &[ApiSpec]) -> String {
     buf.push_str("// Auto generated, DONOT EDIT!!!\n\n");
 
     buf.push_str("#[allow(dead_code)]\n");
-    buf.push_str("pub fn _kclvm_get_fn_ptr_by_name(name: &str) -> u64 {\n");
+    buf.push_str("pub fn _kcl_get_fn_ptr_by_name(name: &str) -> u64 {\n");
     buf.push_str("    match name {\n");
 
     for spec in specs {

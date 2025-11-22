@@ -2,9 +2,9 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use generational_arena::Index;
-use kclvm_ast::ast;
-use kclvm_primitives::IndexMap;
-use kclvm_runtime::ValueRef;
+use kcl_ast::ast;
+use kcl_primitives::IndexMap;
+use kcl_runtime::ValueRef;
 use scopeguard::defer;
 
 use crate::Evaluator;

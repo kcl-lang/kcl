@@ -2,7 +2,7 @@
 
 use crate::{new_mut_ptr, val_plan::PlanOptions};
 use generational_arena::Index;
-use kclvm_primitives::{IndexMap, IndexSet};
+use kcl_primitives::{IndexMap, IndexSet};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::panic::{RefUnwindSafe, UnwindSafe};
@@ -316,7 +316,7 @@ pub struct ContextConfig {
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct ContextBuffer {
-    pub kclvm_context_invoke_result: String,
+    pub kcl_context_invoke_result: String,
     /// Custom manifest output string.
     pub custom_manifests_output: Option<String>,
 }
@@ -324,7 +324,7 @@ pub struct ContextBuffer {
 impl Default for ContextBuffer {
     fn default() -> Self {
         Self {
-            kclvm_context_invoke_result: "\0".to_string(),
+            kcl_context_invoke_result: "\0".to_string(),
             custom_manifests_output: None,
         }
     }
@@ -387,7 +387,7 @@ impl Default for BacktraceFrame {
     fn default() -> Self {
         Self {
             file: Default::default(),
-            func: "_kclvm_main".to_string(),
+            func: "_kcl_main".to_string(),
             col: Default::default(),
             line: Default::default(),
         }
@@ -410,7 +410,7 @@ impl Context {
         Context {
             instances: IndexMap::default(),
             panic_info: PanicInfo {
-                kcl_func: "kclvm_main".to_string(),
+                kcl_func: "kcl_main".to_string(),
                 ..Default::default()
             },
             ..Default::default()

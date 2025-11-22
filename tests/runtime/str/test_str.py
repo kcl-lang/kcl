@@ -3,9 +3,9 @@
 import sys
 import unittest
 
-import kclvm_runtime
+import tests.runtime.kcl_runtime as kcl_runtime
 
-dylib = kclvm_runtime.KclRuntimeDylib()
+dylib = kcl_runtime.KclRuntimeDylib()
 
 # https://github.com/python/cpython/blob/main/Lib/test/string_tests.py
 

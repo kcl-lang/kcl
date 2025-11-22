@@ -42,7 +42,7 @@ jobs:
       - name: Read VERSION file
         id: read_version
         run: |
-          VERSION=$(cat VERSION)
+          VERSION=$(cargo pkgid -p kcl-api | cut -d'@' -f2)
           echo "VERSION=v${VERSION}" >> $GITHUB_ENV
 
       - name: Upload Artifact

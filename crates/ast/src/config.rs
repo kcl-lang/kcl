@@ -7,9 +7,9 @@ use crate::ast;
 /// # Examples
 ///
 /// ```
-/// use kclvm_parser::parse_expr;
-/// use kclvm_ast::ast;
-/// use kclvm_ast::config::try_get_config_expr_mut;
+/// use kcl_parser::parse_expr;
+/// use kcl_ast::ast;
+/// use kcl_ast::config::try_get_config_expr_mut;
 ///
 /// let mut expr = parse_expr(r#"{
 ///     a: {b: {c = 1}}

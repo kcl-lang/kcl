@@ -1,8 +1,8 @@
-use kclvm_ast::MAIN_PKG;
-use kclvm_error::Position;
-use kclvm_sema::core::global_state::GlobalState;
-use kclvm_sema::core::symbol::KCLSymbol;
-use kclvm_sema::core::symbol::SymbolKind as KCLSymbolKind;
+use kcl_ast::MAIN_PKG;
+use kcl_error::Position;
+use kcl_sema::core::global_state::GlobalState;
+use kcl_sema::core::symbol::KCLSymbol;
+use kcl_sema::core::symbol::SymbolKind as KCLSymbolKind;
 use lsp_types::Range;
 use lsp_types::{DocumentSymbol, DocumentSymbolResponse, SymbolKind};
 

@@ -3,18 +3,18 @@
 import typing
 import unittest
 
-import kclvm_runtime
+import tests.runtime.kcl_runtime as kcl_runtime
 
 # https://github.com/python/cpython/blob/main/Lib/test/test_re.py
 
-# kclvm_regex_compile,
-# kclvm_regex_findall,
-# kclvm_regex_match,
-# kclvm_regex_replace,
-# kclvm_regex_search,
-# kclvm_regex_split,
+# kcl_regex_compile,
+# kcl_regex_findall,
+# kcl_regex_match,
+# kcl_regex_replace,
+# kcl_regex_search,
+# kcl_regex_split,
 
-_Dylib = kclvm_runtime.KclRuntimeDylib()
+_Dylib = kcl_runtime.KclRuntimeDylib()
 
 
 class kclx_Regex:

@@ -1,5 +1,5 @@
 [package]
-name = "kclvm-lexer"
+name = "kcl-lexer"
 version.workspace = true
 edition.workspace = true
 
@@ -8,7 +8,7 @@ edition.workspace = true
 [dependencies]
 rustc_lexer = "0.1.0"
 unic-emoji-char = "0.9.0"
-kclvm-error.workspace = true
+kcl-error.workspace = true
 
 [dev-dependencies]
 expect-test = "1.0"

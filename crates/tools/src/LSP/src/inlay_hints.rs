@@ -1,6 +1,6 @@
-use kclvm_primitives::{IndexMap, IndexSet};
-use kclvm_sema::core::global_state::GlobalState;
-use kclvm_sema::core::symbol::{SymbolHint, SymbolHintKind};
+use kcl_primitives::{IndexMap, IndexSet};
+use kcl_sema::core::global_state::GlobalState;
+use kcl_sema::core::symbol::{SymbolHint, SymbolHintKind};
 use lsp_types::{
     InlayHint, InlayHintKind, InlayHintLabelPart, Position as LspPosition, Range, TextEdit,
 };

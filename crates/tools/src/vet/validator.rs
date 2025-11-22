@@ -7,12 +7,12 @@
 //! - Validation rules for validating file contents are defined in KCL statment.
 //! - Convert the json or yaml file to be verified into a KCL assign expression.
 //! - Combine KCL statment and KCL expression into a KCL program,
-//!   and the KCL program is checked by the KCLVM compiler.
+//!   and the KCL program is checked by the KCL compiler.
 //!
 //! For example.
 //!
 //! 1. If the json file to be verified is as follows:
-//! (kclvm/tools/src/vet/test_datas/validate_cases/test.json)
+//! (kcl/tools/src/vet/test_datas/validate_cases/test.json)
 //!
 //! ```ignore
 //! {
@@ -23,7 +23,7 @@
 //! ```
 //!
 //! 2. You can define KCL like below and define validation rules in check block.
-//! (kclvm/tools/src/vet/test_datas/validate_cases/test.k)
+//! (kcl/tools/src/vet/test_datas/validate_cases/test.k)
 //!
 //! ```ignore
 //! schema User:
@@ -46,7 +46,7 @@
 //! }
 //! ```
 //!
-//! 4. Finally, a KCL program like the following will be handed over to KCLVM to compile and check for problems.
+//! 4. Finally, a KCL program like the following will be handed over to KCL to compile and check for problems.
 //!
 //! ```ignore
 //! value = User {
@@ -70,12 +70,12 @@ use std::collections::HashMap;
 use super::expr_builder::ExprBuilder;
 pub use crate::util::loader::LoaderKind;
 use anyhow::Result;
-use kclvm_ast::{
+use kcl_ast::{
     ast::{AssignStmt, Expr, Node, NodeRef, Program, SchemaStmt, Stmt, Target},
     node_ref,
 };
-use kclvm_parser::{LoadProgramOptions, ParseSessionRef};
-use kclvm_runner::{ExecProgramArgs, MapErrorResult, execute};
+use kcl_parser::{LoadProgramOptions, ParseSessionRef};
+use kcl_runner::{ExecProgramArgs, MapErrorResult, execute};
 
 const TMP_FILE: &str = "validationTempKCLCode.k";
 
@@ -91,7 +91,7 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 /// # Examples
 ///
 /// 1. If you want to verify the following json file.
-/// (kclvm/tools/src/vet/test_datas/validate_cases/test.json)
+/// (kcl/tools/src/vet/test_datas/validate_cases/test.json)
 /// ```ignore
 /// {
 ///     "name": "Alice",
@@ -101,7 +101,7 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 /// ```
 ///
 /// 2. First, you can create a KCL schema and write validation rules.
-/// (kclvm/tools/src/vet/test_datas/validate_cases/test.k)
+/// (kcl/tools/src/vet/test_datas/validate_cases/test.k)
 /// ```ignore
 /// schema User:
 ///     name: str
@@ -115,10 +115,10 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 ///
 /// 3. Second, you can call this method as follows to validate the content of the json file with the kcl file.
 /// ```
-/// use kclvm_tools::vet::validator::validate;
+/// use kcl_tools::vet::validator::validate;
 /// use std::path::PathBuf;
-/// use kclvm_tools::util::loader::LoaderKind;
-/// use kclvm_tools::vet::validator::ValidateOption;
+/// use kcl_tools::util::loader::LoaderKind;
+/// use kcl_tools::vet::validator::ValidateOption;
 /// // First get the file path of the file to be verified.
 /// let mut validated_file_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 /// validated_file_path.push("src/vet/test_datas/validate_cases/test.json");
@@ -162,7 +162,7 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 ///     "rust_line": 2203,
 ///     "rust_col": 9,
 ///     "kcl_pkgpath": "__main__",
-///     "kcl_file": "kclvm/tools/src/vet/test_datas/invalid_validate_cases/test.json",
+///     "kcl_file": "kcl/tools/src/vet/test_datas/invalid_validate_cases/test.json",
 ///     "kcl_line": 7,
 ///     "kcl_col": 0,
 ///     "kcl_arg_msg": "Check failed on the condition",
@@ -180,7 +180,7 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool> {
     let k_code = val_opt.kcl_code.map_or_else(Vec::new, |code| vec![code]);
 
     let sess = ParseSessionRef::default();
-    let compile_res = kclvm_parser::load_program(
+    let compile_res = kcl_parser::load_program(
         sess,
         [k_path]
             .iter()
@@ -209,7 +209,7 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool> {
 
     let assign_stmt = build_assign(&val_opt.attribute_name, validated_expr);
 
-    match compile_res.program.pkgs.get(kclvm_ast::MAIN_PKG) {
+    match compile_res.program.pkgs.get(kcl_ast::MAIN_PKG) {
         Some(pkg) => {
             if let Some(module) = pkg.first() {
                 let mut m = compile_res
@@ -251,7 +251,7 @@ fn build_assign(attr_name: &str, node: NodeRef<Expr>) -> NodeRef<Stmt> {
 fn filter_schema_stmt_from_prog(prog: &Program) -> Vec<SchemaStmt> {
     let mut result = vec![];
     for (pkg_name, modules) in &prog.pkgs {
-        if pkg_name != kclvm_ast::MAIN_PKG {
+        if pkg_name != kcl_ast::MAIN_PKG {
             continue;
         }
         for module in modules {

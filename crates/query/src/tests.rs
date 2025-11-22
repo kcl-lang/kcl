@@ -4,9 +4,9 @@ use super::{r#override::apply_override_on_module, *};
 use crate::{
     r#override::parse_override_spec, path::parse_attribute_path, selector::list_variables,
 };
-use kclvm_error::{DiagnosticId, ErrorKind, Level};
-use kclvm_parser::parse_file_force_errors;
-use kclvm_utils::path::PathPrefix;
+use kcl_error::{DiagnosticId, ErrorKind, Level};
+use kcl_parser::parse_file_force_errors;
+use kcl_utils::path::PathPrefix;
 use pretty_assertions::assert_eq;
 use selector::ListOptions;
 
@@ -168,7 +168,7 @@ schema AppConfiguration:
     probe?: Probe
 
 appConfiguration = AppConfiguration {
-    appName: "kclvm"
+    appName: "kcl"
     image: "kcl/kcl:{}".format(version)
     labels: {
         key: {
@@ -187,7 +187,7 @@ appConfiguration = AppConfiguration {
 }
 
 appConfigurationUnification: AppConfiguration {
-    appName: "kclvm"
+    appName: "kcl"
     image: "kcl/kcl:v0.1"
     resource: {
         disk: "50Gi"

@@ -7,7 +7,7 @@ use std::{
 use crate::session_globals::Interner;
 use crate::with_session_globals;
 
-// The proc macro code for this is in `kclvm_macros/src/symbols.rs`.
+// The proc macro code for this is in `kcl_macros/src/symbols.rs`.
 symbols! {
     // After modifying this list adjust `is_special`, `is_used_keyword`/`is_unused_keyword`,
     // this should be rarely necessary though if the keywords are kept in alphabetic order.
@@ -43,7 +43,7 @@ symbols! {
         None:            "None",
         Undefined:       "Undefined",
     }
-    // Pre-interned symbols that can be referred to with `kclvm_span::sym::*`.
+    // Pre-interned symbols that can be referred to with `kcl_span::sym::*`.
     Symbols {
         bool,
         float,
@@ -55,7 +55,7 @@ symbols! {
 /// Ident denotes a identifier with a symbol name and span
 ///
 /// ```
-/// use kclvm_span::*;
+/// use kcl_span::*;
 /// use compiler_base_span::span::new_byte_pos;
 ///
 /// create_session_globals_then(||{
@@ -133,7 +133,7 @@ impl Hash for Ident {
 /// (including hashing, equality, and ordering) operate on that index.
 ///
 /// ```
-/// use kclvm_span::*;
+/// use kcl_span::*;
 /// create_session_globals_then(||{
 ///     let sym = Symbol::intern("name");
 /// });

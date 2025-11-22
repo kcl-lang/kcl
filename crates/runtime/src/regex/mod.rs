@@ -8,11 +8,11 @@ use crate::*;
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_regex_match(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_regex_match(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
@@ -22,12 +22,12 @@ pub extern "C-unwind" fn kclvm_regex_match(
             match re.is_match(string.as_ref()) {
                 Ok(ok) => {
                     if ok {
-                        return kclvm_value_Bool(ctx, 1);
+                        return kcl_value_Bool(ctx, 1);
                     } else {
-                        return kclvm_value_Bool(ctx, 0);
+                        return kcl_value_Bool(ctx, 0);
                     }
                 }
-                _ => return kclvm_value_Bool(ctx, 0),
+                _ => return kcl_value_Bool(ctx, 0),
             }
         }
     }
@@ -39,11 +39,11 @@ pub extern "C-unwind" fn kclvm_regex_match(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_regex_replace(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *mut kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_regex_replace(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *mut kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -66,18 +66,18 @@ pub extern "C-unwind" fn kclvm_regex_replace(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_regex_compile(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *mut kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_regex_compile(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *mut kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
     if let Some(pattern) = get_call_arg_str(args, kwargs, 0, Some("pattern")) {
         match fancy_regex::Regex::new(pattern.as_ref()) {
-            Ok(_) => return kclvm_value_Bool(ctx, 1),
-            _ => return kclvm_value_Bool(ctx, 0),
+            Ok(_) => return kcl_value_Bool(ctx, 1),
+            _ => return kcl_value_Bool(ctx, 0),
         }
     }
     panic!("compile() missing the required positional argument: 'pattern'")
@@ -87,11 +87,11 @@ pub extern "C-unwind" fn kclvm_regex_compile(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_regex_findall(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *mut kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_regex_findall(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *mut kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -127,11 +127,11 @@ pub extern "C-unwind" fn kclvm_regex_findall(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_regex_search(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *mut kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_regex_search(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *mut kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
@@ -140,9 +140,9 @@ pub extern "C-unwind" fn kclvm_regex_search(
             let re = fancy_regex::Regex::new(pattern.as_ref()).unwrap();
 
             if let Ok(Some(..)) = re.find(string.as_ref()) {
-                return kclvm_value_Bool(ctx, 1);
+                return kcl_value_Bool(ctx, 1);
             }
-            return kclvm_value_Bool(ctx, 0);
+            return kcl_value_Bool(ctx, 0);
         }
         panic!("search() missing the required positional argument: 'pattern'");
     }
@@ -153,11 +153,11 @@ pub extern "C-unwind" fn kclvm_regex_search(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_regex_split(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *mut kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_regex_split(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *mut kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);

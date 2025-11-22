@@ -75,14 +75,14 @@
 //! should be copied here so that it can continue to traverse the child nodes.
 
 use crate::resolver::{Resolver, scope::Scope};
-use kclvm_ast::pos::GetPos;
-use kclvm_error::{Handler, Position};
+use kcl_ast::pos::GetPos;
+use kcl_error::{Handler, Position};
 mod combinedlintpass;
 mod lint;
 mod lintpass;
 mod lints_def;
-use kclvm_ast::ast;
-use kclvm_ast::walker::MutSelfWalker;
+use kcl_ast::ast;
+use kcl_ast::walker::MutSelfWalker;
 
 pub use self::{combinedlintpass::CombinedLintPass, lint::LintContext, lintpass::LintPass};
 

@@ -148,8 +148,8 @@ pub enum WarningKind {
 
 /// Test warning `fmt`
 /// ```
-/// use kclvm_error::*;
-/// use kclvm_error::DiagnosticId::Warning;
+/// use kcl_error::*;
+/// use kcl_error::DiagnosticId::Warning;
 /// let mut handler = Handler::default();
 /// handler.add_warning(WarningKind::UnusedImportWarning, &[
 ///     Message {
@@ -175,8 +175,8 @@ impl std::fmt::Display for WarningKind {
 
 /// Test warning `name`
 /// ```
-/// use kclvm_error::*;
-/// use kclvm_error::DiagnosticId::Warning;
+/// use kcl_error::*;
+/// use kcl_error::DiagnosticId::Warning;
 /// let mut handler = Handler::default();
 /// handler.add_warning(WarningKind::UnusedImportWarning, &[
 ///     Message {

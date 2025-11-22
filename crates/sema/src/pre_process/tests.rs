@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use super::*;
-use kclvm_ast::path::get_attr_paths_from_config_expr;
-use kclvm_parser::{ParseSession, load_program, parse_file_force_errors};
-use kclvm_primitives::IndexMap;
+use kcl_ast::path::get_attr_paths_from_config_expr;
+use kcl_parser::{ParseSession, load_program, parse_file_force_errors};
+use kcl_primitives::IndexMap;
 
 #[test]
 fn test_fix_qualified_identifier() {
@@ -170,7 +170,7 @@ fn test_config_merge() {
     .unwrap()
     .program;
     merge_program(&mut program);
-    let modules = program.pkgs.get(kclvm_ast::MAIN_PKG).unwrap();
+    let modules = program.pkgs.get(kcl_ast::MAIN_PKG).unwrap();
     assert_eq!(modules.len(), 3);
     // Test the module merge result
     let module = modules.last().unwrap();
@@ -217,7 +217,7 @@ fn test_config_override() {
     .unwrap()
     .program;
     merge_program(&mut program);
-    let modules = program.pkgs.get(kclvm_ast::MAIN_PKG).unwrap();
+    let modules = program.pkgs.get(kcl_ast::MAIN_PKG).unwrap();
     assert_eq!(modules.len(), 1);
     // Test the module merge result
     let module = modules.first().unwrap();
@@ -267,7 +267,7 @@ fn test_skip_merge_program() {
     .program;
     // skip merge program and save raw config ast node
     // merge_program(&mut program);
-    let modules = program.pkgs.get(kclvm_ast::MAIN_PKG).unwrap();
+    let modules = program.pkgs.get(kcl_ast::MAIN_PKG).unwrap();
     assert_eq!(modules.len(), 3);
     let config1 = &modules[1];
     let config2 = &modules[1];

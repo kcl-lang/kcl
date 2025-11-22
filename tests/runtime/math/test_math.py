@@ -6,12 +6,12 @@ import unittest
 import math as pymath
 import struct
 
-import kclvm_runtime
+import tests.runtime.kcl_runtime as kcl_runtime
 
 # https://github.com/python/cpython/blob/main/Lib/test/test_math.py
 
 
-_Dylib = kclvm_runtime.KclRuntimeDylib()
+_Dylib = kcl_runtime.KclRuntimeDylib()
 
 
 eps = 1e-05

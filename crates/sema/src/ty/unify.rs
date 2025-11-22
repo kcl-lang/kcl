@@ -1,6 +1,6 @@
 use std::{collections::HashSet, sync::Arc};
 
-use kclvm_primitives::IndexMap;
+use kcl_primitives::IndexMap;
 
 use super::{SchemaType, Type, TypeKind, TypeRef};
 

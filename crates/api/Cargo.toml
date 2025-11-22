@@ -1,5 +1,5 @@
 [package]
-name = "kclvm-api"
+name = "kcl-api"
 version.workspace = true
 edition.workspace = true
 
@@ -18,22 +18,22 @@ prost = "0.14.1"
 prost-wkt = "0.7.0"
 prost-types = "0.14.1"
 
-kclvm-runner = { path = "../runner" }
-kclvm-config = { path = "../config" }
-kclvm-driver = { path = "../driver" }
-kclvm-error = { path = "../error" }
-kclvm-parser = { path = "../parser" }
-kclvm-loader = { path = "../loader" }
-kclvm-sema = { path = "../sema" }
-kclvm-ast = { path = "../ast" }
-kclvm-ast-pretty = { path = "../ast_pretty" }
-kclvm-runtime = { path = "../runtime" }
-kclvm-tools = { path = "../tools" }
-kclvm-query = { path = "../query" }
-kclvm-version = { path = "../version" }
+kcl-runner = { path = "../runner" }
+kcl-config = { path = "../config" }
+kcl-driver = { path = "../driver" }
+kcl-error = { path = "../error" }
+kcl-parser = { path = "../parser" }
+kcl-loader = { path = "../loader" }
+kcl-sema = { path = "../sema" }
+kcl-ast = { path = "../ast" }
+kcl-ast-pretty = { path = "../ast_pretty" }
+kcl-runtime = { path = "../runtime" }
+kcl-tools = { path = "../tools" }
+kcl-query = { path = "../query" }
+kcl-version = { path = "../version" }
 kcl-language-server = { path = "../tools/src/LSP" }
-kclvm-primitives = { path = "../primitives" }
-kclvm-utils = { path = "../utils" }
+kcl-primitives = { path = "../primitives" }
+kcl-utils = { path = "../utils" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 jsonrpc-stdio-server = "18.0.0"

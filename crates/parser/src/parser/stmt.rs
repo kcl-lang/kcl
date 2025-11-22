@@ -2,16 +2,16 @@
 #![allow(unused_macros)]
 
 use compiler_base_span::{BytePos, Span, span::new_byte_pos};
-use kclvm_ast::token::VALID_SPACES_LENGTH;
-use kclvm_ast::token::{CommentKind, DelimToken, LitKind, Token, TokenKind};
-use kclvm_ast::{ast::*, expr_as, node_ref};
-use kclvm_error::ParseErrorMessage;
-use kclvm_span::symbol::kw;
+use kcl_ast::token::VALID_SPACES_LENGTH;
+use kcl_ast::token::{CommentKind, DelimToken, LitKind, Token, TokenKind};
+use kcl_ast::{ast::*, expr_as, node_ref};
+use kcl_error::ParseErrorMessage;
+use kcl_span::symbol::kw;
 
 use super::Parser;
 
 /// Parser implementation of statements, which consists of expressions and tokens.
-/// Parser uses `parse_exprlist` and `parse_expr` in [`kclvm_parser::parser::expr`]
+/// Parser uses `parse_exprlist` and `parse_expr` in [`kcl_parser::parser::expr`]
 /// to get a expression node, and then concretize it into the specified expression node,
 /// and then assemble it into the corresponding statement node.
 impl<'a> Parser<'a> {
@@ -717,12 +717,12 @@ impl<'a> Parser<'a> {
 
         if name
             .node
-            .ends_with(kclvm_sema::resolver::global::MIXIN_SUFFIX)
+            .ends_with(kcl_sema::resolver::global::MIXIN_SUFFIX)
         {
             is_mixin = true;
         } else if name
             .node
-            .ends_with(kclvm_sema::resolver::global::PROTOCOL_SUFFIX)
+            .ends_with(kcl_sema::resolver::global::PROTOCOL_SUFFIX)
         {
             is_protocol = true;
         }
@@ -901,7 +901,7 @@ impl<'a> Parser<'a> {
             if matches!(self.token.kind, TokenKind::Newline | TokenKind::Eof) {
                 let expect_tokens: Vec<String> = close_tokens
                     .iter()
-                    .map(|t| <kclvm_ast::token::TokenKind as Into<String>>::into(*t))
+                    .map(|t| <kcl_ast::token::TokenKind as Into<String>>::into(*t))
                     .collect();
                 self.sess.struct_token_error(&expect_tokens, self.token);
                 break;

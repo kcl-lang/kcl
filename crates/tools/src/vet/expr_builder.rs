@@ -1,5 +1,5 @@
 use compiler_base_span::span::new_byte_pos;
-use kclvm_ast::{
+use kcl_ast::{
     ast::{
         ConfigEntry, ConfigEntryOperation, ConfigExpr, Expr, ExprContext, Identifier, ListExpr,
         NameConstant, NameConstantLit, Node, NodeRef, NumberLit, NumberLitValue, SchemaExpr,

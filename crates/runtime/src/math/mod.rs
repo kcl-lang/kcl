@@ -10,19 +10,19 @@ use crate::*;
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_math_ceil(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_math_ceil(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
     if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
-        return kclvm_value_Int(ctx, x);
+        return kcl_value_Int(ctx, x);
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kclvm_value_Int(ctx, x.ceil() as i64);
+        return kcl_value_Int(ctx, x.ceil() as i64);
     }
 
     panic!("ceil() takes exactly one argument (0 given)");
@@ -30,11 +30,11 @@ pub extern "C-unwind" fn kclvm_math_ceil(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_math_factorial(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_math_factorial(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     fn factorial(num: i64) -> i64 {
         if num >= 21 {
             // overflow: 21! = 51090942171709440000
@@ -53,12 +53,12 @@ pub extern "C-unwind" fn kclvm_math_factorial(
 
     if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
         if x >= 0 {
-            return kclvm_value_Int(ctx, factorial(x));
+            return kcl_value_Int(ctx, factorial(x));
         }
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
         if x >= 0.0 && (x as i64 as f64) == x {
-            return kclvm_value_Float(ctx, factorial(x as i64) as f64);
+            return kcl_value_Float(ctx, factorial(x as i64) as f64);
         }
     }
 
@@ -70,19 +70,19 @@ pub extern "C-unwind" fn kclvm_math_factorial(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_math_floor(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_math_floor(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
     if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
-        return kclvm_value_Int(ctx, x);
+        return kcl_value_Int(ctx, x);
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kclvm_value_Int(ctx, x.floor() as i64);
+        return kcl_value_Int(ctx, x.floor() as i64);
     }
 
     panic!("floor() takes exactly one argument (0 given)");
@@ -90,17 +90,17 @@ pub extern "C-unwind" fn kclvm_math_floor(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_math_gcd(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_math_gcd(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
     if let Some(a) = args.arg_i_int(0, None).or(kwargs.kwarg_int("a", None)) {
         if let Some(b) = args.arg_i_int(1, None).or(kwargs.kwarg_int("b", None)) {
-            return kclvm_value_Int(ctx, num_integer::gcd(a, b));
+            return kcl_value_Int(ctx, num_integer::gcd(a, b));
         }
     }
 
@@ -112,11 +112,11 @@ pub extern "C-unwind" fn kclvm_math_gcd(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_math_isfinite(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_math_isfinite(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
@@ -125,10 +125,10 @@ pub extern "C-unwind" fn kclvm_math_isfinite(
         .or(kwargs.kwarg_int("x", None))
         .is_some()
     {
-        return kclvm_value_Bool(ctx, true as i8);
+        return kcl_value_Bool(ctx, true as i8);
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kclvm_value_Bool(ctx, x.is_finite() as i8);
+        return kcl_value_Bool(ctx, x.is_finite() as i8);
     }
 
     panic!("isfinite() takes exactly one argument (0 given)");
@@ -136,11 +136,11 @@ pub extern "C-unwind" fn kclvm_math_isfinite(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_math_isinf(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_math_isinf(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
@@ -149,13 +149,13 @@ pub extern "C-unwind" fn kclvm_math_isinf(
         .or(kwargs.kwarg_int("x", None))
         .is_some()
     {
-        return kclvm_value_Bool(ctx, false as i8);
+        return kcl_value_Bool(ctx, false as i8);
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kclvm_value_Bool(ctx, x.is_infinite() as i8);
+        return kcl_value_Bool(ctx, x.is_infinite() as i8);
     }
     if args.arg_i_bool(0, None).is_some() {
-        return kclvm_value_Bool(ctx, false as i8);
+        return kcl_value_Bool(ctx, false as i8);
     }
 
     panic!("isinf() takes exactly one argument (0 given)");
@@ -163,11 +163,11 @@ pub extern "C-unwind" fn kclvm_math_isinf(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_math_isnan(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_math_isnan(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
@@ -176,10 +176,10 @@ pub extern "C-unwind" fn kclvm_math_isnan(
         .or(kwargs.kwarg_int("x", None))
         .is_some()
     {
-        return kclvm_value_Bool(ctx, false as i8);
+        return kcl_value_Bool(ctx, false as i8);
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kclvm_value_Bool(ctx, x.is_nan() as i8);
+        return kcl_value_Bool(ctx, x.is_nan() as i8);
     }
 
     panic!("isnan() takes exactly one argument (0 given)");
@@ -187,11 +187,11 @@ pub extern "C-unwind" fn kclvm_math_isnan(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_math_modf(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_math_modf(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let ctx = mut_ptr_as_ref(ctx);
     let kwargs = ptr_as_ref(kwargs);
@@ -219,49 +219,49 @@ pub extern "C-unwind" fn kclvm_math_modf(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_math_exp(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_math_exp(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
     if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
-        return kclvm_value_Float(ctx, (x as f64).exp());
+        return kcl_value_Float(ctx, (x as f64).exp());
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kclvm_value_Float(ctx, x.exp());
+        return kcl_value_Float(ctx, x.exp());
     }
     panic!("exp() takes exactly one argument (0 given)");
 }
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_math_expm1(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_math_expm1(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
     if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
-        return kclvm_value_Float(ctx, (x as f64).exp_m1());
+        return kcl_value_Float(ctx, (x as f64).exp_m1());
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kclvm_value_Float(ctx, x.exp_m1());
+        return kcl_value_Float(ctx, x.exp_m1());
     }
     panic!("expm1() takes exactly one argument (0 given)");
 }
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_math_log(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_math_log(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
@@ -270,7 +270,7 @@ pub extern "C-unwind" fn kclvm_math_log(
             .arg_i_float(1, Some(std::f64::consts::E))
             .or_else(|| kwargs.kwarg_float("e", Some(std::f64::consts::E)))
         {
-            return kclvm_value_Int(ctx, (x as f64).log(base) as i64);
+            return kcl_value_Int(ctx, (x as f64).log(base) as i64);
         }
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
@@ -278,7 +278,7 @@ pub extern "C-unwind" fn kclvm_math_log(
             .arg_i_float(1, Some(std::f64::consts::E))
             .or_else(|| kwargs.kwarg_float("e", Some(std::f64::consts::E)))
         {
-            return kclvm_value_Float(ctx, x.log(base));
+            return kcl_value_Float(ctx, x.log(base));
         }
     }
     panic!("log() takes exactly one argument (0 given)");
@@ -286,89 +286,89 @@ pub extern "C-unwind" fn kclvm_math_log(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_math_log1p(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_math_log1p(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
     if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
-        return kclvm_value_Float(ctx, ((x + 1) as f64).ln_1p());
+        return kcl_value_Float(ctx, ((x + 1) as f64).ln_1p());
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kclvm_value_Float(ctx, (x + 1.0).ln_1p());
+        return kcl_value_Float(ctx, (x + 1.0).ln_1p());
     }
     panic!("log1p() takes exactly one argument (0 given)");
 }
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_math_log2(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_math_log2(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
     if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
-        return kclvm_value_Int(ctx, (x as f64).log2() as i64);
+        return kcl_value_Int(ctx, (x as f64).log2() as i64);
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kclvm_value_Float(ctx, x.log2());
+        return kcl_value_Float(ctx, x.log2());
     }
     panic!("log2() takes exactly one argument (0 given)");
 }
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_math_log10(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_math_log10(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
     if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
-        return kclvm_value_Float(ctx, (x as f64).log10());
+        return kcl_value_Float(ctx, (x as f64).log10());
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kclvm_value_Float(ctx, x.log10());
+        return kcl_value_Float(ctx, x.log10());
     }
     panic!("log10() takes exactly one argument (0 given)");
 }
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_math_pow(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_math_pow(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
     if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
         if let Some(n) = args.arg_i_int(1, None).or(kwargs.kwarg_int("n", None)) {
             if n < 0 {
-                return kclvm_value_Float(ctx, (x as f64).powf(n as f64));
+                return kcl_value_Float(ctx, (x as f64).powf(n as f64));
             } else {
-                return kclvm_value_Int(ctx, x.pow(n as u32));
+                return kcl_value_Int(ctx, x.pow(n as u32));
             }
         }
         if let Some(n) = args.arg_i_float(1, None).or(kwargs.kwarg_float("n", None)) {
-            return kclvm_value_Float(ctx, (x as f64).powf(n));
+            return kcl_value_Float(ctx, (x as f64).powf(n));
         }
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
         if let Some(n) = args.arg_i_int(1, None).or(kwargs.kwarg_int("n", None)) {
-            return kclvm_value_Float(ctx, x.powi(n as i32));
+            return kcl_value_Float(ctx, x.powi(n as i32));
         }
         if let Some(n) = args.arg_i_float(1, None).or(kwargs.kwarg_float("n", None)) {
-            return kclvm_value_Float(ctx, x.powf(n));
+            return kcl_value_Float(ctx, x.powf(n));
         }
     }
     panic!("pow() takes exactly one argument (0 given)");
@@ -376,19 +376,19 @@ pub extern "C-unwind" fn kclvm_math_pow(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_math_sqrt(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_math_sqrt(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
 
     if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
-        return kclvm_value_Float(ctx, (x as f64).sqrt());
+        return kcl_value_Float(ctx, (x as f64).sqrt());
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kclvm_value_Float(ctx, x.sqrt());
+        return kcl_value_Float(ctx, x.sqrt());
     }
     panic!("sqrt() takes exactly one argument (0 given)");
 }

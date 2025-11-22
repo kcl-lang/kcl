@@ -7,7 +7,7 @@ use std::{collections::HashMap, sync::Arc};
 /// threads within the compilation session, but is not accessible outside the
 /// session.
 ///
-/// The `kclvm_span::Symbol` uses `SessionGlobals` to implement a fast global
+/// The `kcl_span::Symbol` uses `SessionGlobals` to implement a fast global
 /// string cache.
 #[derive(Debug)]
 pub struct SessionGlobals {

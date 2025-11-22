@@ -1,7 +1,7 @@
 /* Calculation methods */
 
-use kclvm_ast::ast;
-use kclvm_runtime::{ConfigEntryOperationKind, DictValue, UnionOptions, Value, ValueRef};
+use kcl_ast::ast;
+use kcl_runtime::{ConfigEntryOperationKind, DictValue, UnionOptions, Value, ValueRef};
 
 use crate::Evaluator;
 use crate::ty::{resolve_schema, type_pack_and_check};

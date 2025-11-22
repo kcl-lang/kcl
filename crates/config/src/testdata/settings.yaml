@@ -10,9 +10,9 @@ kcl_cli_configs:
   sort_keys: true
 kcl_options:
   - key: app-name
-    value: kclvm
+    value: kcl
   - key: image
-    value: kclvm:v0.0.1
+    value: kcl:v0.0.1
   - key: env-type
     value: TEST
   - key: deploy-topology

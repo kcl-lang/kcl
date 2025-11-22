@@ -5,8 +5,8 @@ use crate::lint::lints_def::ReImport;
 use crate::lint::lints_def::UnusedImport;
 use crate::lint_methods;
 use crate::resolver::scope::Scope;
-use kclvm_ast::ast;
-use kclvm_error::Handler;
+use kcl_ast::ast;
+use kcl_error::Handler;
 
 /// Call the `check_*` method of each lintpass in CombinedLintLass.check_*.
 /// ```ignore

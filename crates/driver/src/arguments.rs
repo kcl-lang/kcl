@@ -1,7 +1,7 @@
 use anyhow::Result;
-use kclvm_ast::ast;
-use kclvm_config::settings::KeyValuePair;
-use kclvm_parser::parse_expr;
+use kcl_ast::ast;
+use kcl_config::settings::KeyValuePair;
+use kcl_parser::parse_expr;
 
 /// Parse key value pair string k=v to [KeyValuePair], note the value will be convert a json string.
 pub fn parse_key_value_pair(spec: &str) -> Result<KeyValuePair> {

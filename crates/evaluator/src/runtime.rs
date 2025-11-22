@@ -4,9 +4,9 @@ use std::{
     panic::{AssertUnwindSafe, catch_unwind},
 };
 
-use kclvm_runtime::{
+use kcl_runtime::{
     Context, SchemaTypeFunc, UnsafeWrapper, ValueRef, get_call_arg, is_runtime_catch_function,
-    kclvm_plugin_invoke, ptr_as_ref,
+    kcl_plugin_invoke, ptr_as_ref,
 };
 
 use crate::Evaluator;
@@ -31,7 +31,7 @@ pub fn invoke_function(
                 // Call schema constructor twice
                 let value = if func.is_external {
                     let name = format!("{}\0", func.name);
-                    kclvm_plugin_invoke(ctx, name.as_ptr() as *const c_char, args, kwargs)
+                    kcl_plugin_invoke(ctx, name.as_ptr() as *const c_char, args, kwargs)
                 } else {
                     let call_fn: SchemaTypeFunc = transmute_copy(&fn_ptr);
                     args.list_append_unpack_first(closure);
@@ -64,7 +64,7 @@ pub fn runtime_catch(s: &Evaluator, args: &ValueRef, kwargs: &ValueRef) -> Value
         }));
         return match result {
             Ok(_) => ValueRef::undefined(),
-            Err(err) => ValueRef::str(&kclvm_error::err_to_str(err)),
+            Err(err) => ValueRef::str(&kcl_error::err_to_str(err)),
         };
     }
     panic!("catch() takes exactly one argument (0 given)");

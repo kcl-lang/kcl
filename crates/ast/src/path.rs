@@ -6,8 +6,8 @@ use crate::ast;
 /// # Examples
 ///
 /// ```
-/// use kclvm_ast::ast;
-/// use kclvm_ast::path::get_key_path;
+/// use kcl_ast::ast;
+/// use kcl_ast::path::get_key_path;
 ///
 /// let ident = Some(Box::new(ast::Node::dummy_node(ast::Expr::Identifier(ast::Identifier {
 ///     names: vec![ast::Node::dummy_node("alice".to_string())],
@@ -56,8 +56,8 @@ pub fn get_key_parts(key: &Option<ast::NodeRef<ast::Expr>>) -> Vec<&str> {
 /// # Examples
 ///
 /// ```
-/// use kclvm_ast::ast;
-/// use kclvm_ast::path::get_target_path;
+/// use kcl_ast::ast;
+/// use kcl_ast::path::get_target_path;
 ///
 /// let target = ast::Target {
 ///     name: ast::Node::dummy_node("alice".to_string()),
@@ -109,9 +109,9 @@ pub fn get_target_path(key: &ast::Target) -> String {
 /// # Examples
 ///
 /// ```
-/// use kclvm_parser::parse_expr;
-/// use kclvm_ast::ast;
-/// use kclvm_ast::path::get_attr_paths_from_config_expr;
+/// use kcl_parser::parse_expr;
+/// use kcl_ast::ast;
+/// use kcl_ast::path::get_attr_paths_from_config_expr;
 ///
 /// let expr = parse_expr(r#"{
 ///     a: {b: {c = 1}}

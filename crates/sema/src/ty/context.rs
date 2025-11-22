@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use super::{DictType, Type, TypeFlags, TypeKind, TypeRef, sup};
-use kclvm_error::diagnostic::Range;
+use kcl_error::diagnostic::Range;
 use petgraph::algo::kosaraju_scc;
 use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::visit::{DfsEvent, depth_first_search};

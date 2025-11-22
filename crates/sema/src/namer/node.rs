@@ -4,11 +4,11 @@ use crate::core::symbol::{
 };
 
 use super::Namer;
-use kclvm_ast::ast;
-use kclvm_ast::pos::GetPos;
-use kclvm_ast::walker::MutSelfTypedResultWalker;
-use kclvm_ast_pretty::{ASTNode, print_ast_node};
-use kclvm_error::diagnostic::Range;
+use kcl_ast::ast;
+use kcl_ast::pos::GetPos;
+use kcl_ast::walker::MutSelfTypedResultWalker;
+use kcl_ast_pretty::{ASTNode, print_ast_node};
+use kcl_error::diagnostic::Range;
 
 impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'_> {
     type Result = Option<Vec<SymbolRef>>;

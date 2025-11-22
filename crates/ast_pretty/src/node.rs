@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use compiler_base_macros::bug;
-use kclvm_ast::{
+use kcl_ast::{
     ast::{self, CallExpr},
     token::{DelimToken, TokenKind},
     walker::MutSelfTypedResultWalker,

@@ -1,11 +1,11 @@
 use anyhow::anyhow;
 use std::sync::Arc;
 
-use kclvm_ast::ast::{self, Stmt};
-use kclvm_ast::pos::GetPos;
-use kclvm_ast::walker::MutSelfTypedResultWalker;
-use kclvm_error::{Position, diagnostic::Range};
-use kclvm_primitives::{DefaultHashBuilder, IndexMap};
+use kcl_ast::ast::{self, Stmt};
+use kcl_ast::pos::GetPos;
+use kcl_ast::walker::MutSelfTypedResultWalker;
+use kcl_error::{Position, diagnostic::Range};
+use kcl_primitives::{DefaultHashBuilder, IndexMap};
 
 use crate::core::symbol::Symbol;
 use crate::{
@@ -2022,7 +2022,7 @@ impl<'ctx> AdvancedResolver<'_> {
         for decorator in decorators {
             let func_ident = &decorator.node.func;
             let (start, end) = func_ident.get_span_pos();
-            if let kclvm_ast::ast::Expr::Identifier(id) = &func_ident.node {
+            if let kcl_ast::ast::Expr::Identifier(id) = &func_ident.node {
                 let decorator_symbol = DecoratorSymbol::new(start, end, id.get_name());
                 self.gs.get_symbols_mut().alloc_decorator_symbol(
                     decorator_symbol,

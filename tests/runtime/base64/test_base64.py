@@ -5,20 +5,20 @@ import unittest
 import sys
 import os
 
-# Add the parent directory to the path to import kclvm_runtime
+# Add the parent directory to the path to import kcl_runtime
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
-import kclvm_runtime
+import tests.runtime.kcl_runtime as kcl_runtime
 
 # https://github.com/python/cpython/blob/main/Lib/test/test_base64.py
 
 # encode(value: str, encoding: str = "utf-8") -> str
 # decode(value: str, encoding: str = "utf-8") -> str
 
-# kclvm_base64_encode
-# kclvm_base64_decode
+# kcl_base64_encode
+# kcl_base64_decode
 
-_Dylib = kclvm_runtime.KclRuntimeDylib()
+_Dylib = kcl_runtime.KclRuntimeDylib()
 
 
 class kclx_Base64:

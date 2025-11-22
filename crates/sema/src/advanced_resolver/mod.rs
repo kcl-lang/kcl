@@ -36,8 +36,8 @@
 
 use std::{cell::RefCell, rc::Rc};
 
-use kclvm_error::Position;
-use kclvm_primitives::IndexSet;
+use kcl_error::Position;
+use kcl_primitives::IndexSet;
 
 use crate::{
     core::{
@@ -49,9 +49,9 @@ use crate::{
     resolver::scope::{NodeKey, NodeTyMap},
 };
 
-use kclvm_ast::ast::AstIndex;
-use kclvm_ast::ast::Program;
-use kclvm_ast::walker::MutSelfTypedResultWalker;
+use kcl_ast::ast::AstIndex;
+use kcl_ast::ast::Program;
+use kcl_ast::walker::MutSelfTypedResultWalker;
 mod node;
 
 ///  AdvancedResolver mainly does two tasks:
@@ -307,10 +307,10 @@ mod tests {
     use crate::namer::Namer;
     use crate::resolver;
 
-    use kclvm_ast::MAIN_PKG;
-    use kclvm_error::Position;
-    use kclvm_parser::ParseSession;
-    use kclvm_parser::load_program;
+    use kcl_ast::MAIN_PKG;
+    use kcl_error::Position;
+    use kcl_parser::ParseSession;
+    use kcl_parser::load_program;
     use std::path::Path;
     use std::sync::Arc;
 

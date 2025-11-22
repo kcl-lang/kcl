@@ -44,33 +44,33 @@ class KclRuntimeDylib:
         self._app_lib = ctypes.CDLL(dllpath)
         self.ctx = None
 
-        # kclvm_context_t* kclvm_context_new();
-        self._app_lib.kclvm_context_new.restype = ctypes.c_void_p
+        # kcl_context_t* kcl_context_new();
+        self._app_lib.kcl_context_new.restype = ctypes.c_void_p
 
-        # void kclvm_context_delete(kclvm_context_t* p);
-        self._app_lib.kclvm_context_delete.argtypes = [
+        # void kcl_context_delete(kcl_context_t* p);
+        self._app_lib.kcl_context_delete.argtypes = [
             ctypes.c_void_p,
         ]
 
-        # const char* kclvm_context_invoke(kclvm_context_t* p, const char* method, const char* args, const char* kwargs);
-        self._app_lib.kclvm_context_invoke.restype = ctypes.c_char_p
-        self._app_lib.kclvm_context_invoke.argtypes = [
+        # const char* kcl_context_invoke(kcl_context_t* p, const char* method, const char* args, const char* kwargs);
+        self._app_lib.kcl_context_invoke.restype = ctypes.c_char_p
+        self._app_lib.kcl_context_invoke.argtypes = [
             ctypes.c_void_p,
             ctypes.c_char_p,
             ctypes.c_char_p,
             ctypes.c_char_p,
         ]
 
-    def _kclvm_context_new(self) -> ctypes.c_void_p:
-        return self._app_lib.kclvm_context_new()
+    def _kcl_context_new(self) -> ctypes.c_void_p:
+        return self._app_lib.kcl_context_new()
 
-    def kclvm_context_delete(self, ctx: ctypes.c_void_p):
-        self._app_lib.kclvm_context_delete(ctx)
+    def kcl_context_delete(self, ctx: ctypes.c_void_p):
+        self._app_lib.kcl_context_delete(ctx)
 
-    def _kclvm_context_invoke(
+    def _kcl_context_invoke(
         self, ctx: ctypes.c_void_p, method: str, args: str, kwargs: str
     ) -> any:
-        jsonValue = self._app_lib.kclvm_context_invoke(
+        jsonValue = self._app_lib.kcl_context_invoke(
             ctx, method.encode(), args.encode(), kwargs.encode()
         )
         return json.loads(jsonValue)
@@ -80,24 +80,24 @@ class KclRuntimeDylib:
 
     def Invoke(self, method: str, *args, **kwargs) -> any:
         if self.ctx is None:
-            self.ctx = self._kclvm_context_new()
+            self.ctx = self._kcl_context_new()
 
-        if not method.startswith("kclvm_"):
+        if not method.startswith("kcl_"):
             if method.startswith("str."):
-                # str.startswith => kclvm_builtin_str_startswith
-                method = f'kclvm_builtin_{method.replace(".", "_")}'
+                # str.startswith => kcl_builtin_str_startswith
+                method = f'kcl_builtin_{method.replace(".", "_")}'
             elif "." in method:
-                # regex.match => kclvm_regex_match
-                method = f'kclvm_{method.replace(".", "_")}'  # json.encode => kclvm_json_encode
+                # regex.match => kcl_regex_match
+                method = f'kcl_{method.replace(".", "_")}'  # json.encode => kcl_json_encode
             else:
-                method = f"kclvm_builtin_{method}"  # print => kclvm_builtin_print
+                method = f"kcl_builtin_{method}"  # print => kcl_builtin_print
 
-        return self._kclvm_context_invoke(
+        return self._kcl_context_invoke(
             self.ctx, method, json.dumps(args), json.dumps(kwargs)
         )
 
 
 if __name__ == "__main__":
     dylib = KclRuntimeDylib()
-    dylib.Invoke(f"print", "hello kclvm")
+    dylib.Invoke(f"print", "hello kcl")
 

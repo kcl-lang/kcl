@@ -1,4 +1,4 @@
-use kclvm_tools::format::{format_source, FormatOptions};
+use kcl_tools::format::{format_source, FormatOptions};
 use lsp_types::{Position, Range, TextEdit};
 
 pub fn format(

@@ -14,7 +14,7 @@ pub fn main_loop(
 /// Get the kcl language server CLI application.
 pub fn app() -> Command {
     Command::new("kcl-language-server")
-        .version(Str::from(kclvm_version::get_version_info()))
+        .version(Str::from(kcl_version::get_version_info()))
         .about("KCL language server CLI.")
         .subcommand(Command::new("version").about("Show the KCL language server version"))
 }

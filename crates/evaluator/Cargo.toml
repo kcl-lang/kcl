@@ -1,5 +1,5 @@
 [package]
-name = "kclvm-evaluator"
+name = "kcl-evaluator"
 version.workspace = true
 edition.workspace = true
 
@@ -8,14 +8,14 @@ edition.workspace = true
 [dependencies]
 anyhow = "1.0"
 generational-arena = "0.2.9"
-kclvm-ast = { path = "../ast" }
-kclvm-sema = { path = "../sema" }
-kclvm-runtime = { path = "../runtime" }
-kclvm-error = { path = "../error" }
-kclvm-primitives = { path = "../primitives" }
+kcl-ast = { path = "../ast" }
+kcl-sema = { path = "../sema" }
+kcl-runtime = { path = "../runtime" }
+kcl-error = { path = "../error" }
+kcl-primitives = { path = "../primitives" }
 scopeguard = "1.2.0"
 
 [dev-dependencies]
-kclvm-parser = { path = "../parser" }
-kclvm-loader = { path = "../loader" }
+kcl-parser = { path = "../parser" }
+kcl-loader = { path = "../loader" }
 insta = "1.8.0"

@@ -36,7 +36,7 @@ fn main() -> Result<(), anyhow::Error> {
     match matches {
         Ok(arg_matches) => match arg_matches.subcommand() {
             Some(("version", _)) => {
-                println!("{}", kclvm_version::get_version_info());
+                println!("{}", kcl_version::get_version_info());
                 Ok(())
             }
             Some((subcommand, _)) => Err(anyhow::anyhow!("unknown subcommand: {}", subcommand)),

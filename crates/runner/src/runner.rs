@@ -1,17 +1,17 @@
 use anyhow::{Result, anyhow};
-use kclvm_evaluator::Evaluator;
+use kcl_evaluator::Evaluator;
 use std::collections::HashMap;
 use std::{cell::RefCell, rc::Rc};
 
-use kclvm_ast::ast;
-use kclvm_config::{
+use kcl_ast::ast;
+use kcl_config::{
     modfile::get_vendor_home,
     settings::{SettingsFile, SettingsPathBuf},
 };
-use kclvm_error::{Diagnostic, Handler};
+use kcl_error::{Diagnostic, Handler};
 #[cfg(not(target_arch = "wasm32"))]
-use kclvm_runtime::kclvm_plugin_init;
-use kclvm_runtime::{Context, PanicInfo, RuntimePanicRecord};
+use kcl_runtime::kcl_plugin_init;
+use kcl_runtime::{Context, PanicInfo, RuntimePanicRecord};
 #[cfg(target_arch = "wasm32")]
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -21,13 +21,13 @@ const RESULT_SIZE: usize = 2048 * 2048;
 const KCL_DEBUG_ERROR_ENV_VAR: &str = "KCL_DEBUG_ERROR";
 
 #[allow(non_camel_case_types)]
-pub type kclvm_char_t = c_char;
+pub type kcl_char_t = c_char;
 #[allow(non_camel_case_types)]
-pub type kclvm_size_t = i32;
+pub type kcl_size_t = i32;
 #[allow(non_camel_case_types)]
-pub type kclvm_context_t = std::ffi::c_void;
+pub type kcl_context_t = std::ffi::c_void;
 #[allow(non_camel_case_types)]
-pub type kclvm_value_ref_t = std::ffi::c_void;
+pub type kcl_value_ref_t = std::ffi::c_void;
 
 /// ExecProgramArgs denotes the configuration required to execute the KCL program.
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -155,9 +155,9 @@ impl ExecProgramArgs {
         self.k_filename_list.iter().map(|s| s.as_str()).collect()
     }
 
-    /// Get the [`kclvm_parser::LoadProgramOptions`] from the [`kclvm_runner::ExecProgramArgs`]
-    pub fn get_load_program_options(&self) -> kclvm_parser::LoadProgramOptions {
-        kclvm_parser::LoadProgramOptions {
+    /// Get the [`kcl_parser::LoadProgramOptions`] from the [`kcl_runner::ExecProgramArgs`]
+    pub fn get_load_program_options(&self) -> kcl_parser::LoadProgramOptions {
+        kcl_parser::LoadProgramOptions {
             work_dir: self.work_dir.clone().unwrap_or_default(),
             vendor_dirs: vec![get_vendor_home()],
             package_maps: self.get_package_maps_from_external_pkg(),
@@ -307,7 +307,7 @@ impl FastRunner {
                         args: *const c_char,
                         kwargs: *const c_char,
                     ) -> *const c_char = std::mem::transmute(self.opts.plugin_agent_ptr);
-                    kclvm_plugin_init(plugin_method);
+                    kcl_plugin_init(plugin_method);
                 }
             }
             evaluator.run()
@@ -339,7 +339,7 @@ impl FastRunner {
                         .get_panic_info_json_string()
                         .unwrap_or_default()
                 } else {
-                    kclvm_error::err_to_str(err)
+                    kcl_error::err_to_str(err)
                 };
             }
         }

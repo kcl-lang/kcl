@@ -5,11 +5,11 @@ use crate::lazy::merge_setters;
 use crate::{
     error as kcl_error, lazy::LazyEvalScope, rule::RuleEvalContextRef, schema::SchemaEvalContextRef,
 };
-use kclvm_ast::ast;
-use kclvm_ast::walker::TypedResultWalker;
-use kclvm_primitives::{DefaultHashBuilder, IndexMap, IndexSet};
-use kclvm_runtime::{_kclvm_get_fn_ptr_by_name, MAIN_PKG_PATH, ValueRef};
-use kclvm_sema::{builtin, plugin};
+use kcl_ast::ast;
+use kcl_ast::walker::TypedResultWalker;
+use kcl_primitives::{DefaultHashBuilder, IndexMap, IndexSet};
+use kcl_runtime::{_kcl_get_fn_ptr_by_name, MAIN_PKG_PATH, ValueRef};
+use kcl_sema::{builtin, plugin};
 
 use crate::{EvalResult, Evaluator, GLOBAL_LEVEL, INNER_LEVEL};
 
@@ -43,7 +43,7 @@ impl<'ctx> Evaluator<'ctx> {
         let module_list: Vec<Arc<RwLock<ast::Module>>> = if self.program.pkgs.contains_key(pkgpath)
         {
             self.program.get_modules_for_pkg(pkgpath)
-        } else if pkgpath.starts_with(kclvm_runtime::PKG_PATH_PREFIX)
+        } else if pkgpath.starts_with(kcl_runtime::PKG_PATH_PREFIX)
             && self.program.pkgs.contains_key(&pkgpath[1..])
         {
             self.program.get_modules_for_pkg(&pkgpath[1..])
@@ -68,7 +68,7 @@ impl<'ctx> Evaluator<'ctx> {
         for symbol in builtin::BUILTIN_FUNCTION_NAMES {
             let function_name =
                 format!("{}_{}", builtin::KCL_BUILTIN_FUNCTION_MANGLE_PREFIX, symbol);
-            let function_ptr = _kclvm_get_fn_ptr_by_name(&function_name);
+            let function_ptr = _kcl_get_fn_ptr_by_name(&function_name);
             self.add_variable(symbol, self.function_value_with_ptr(function_ptr));
         }
         // Init lazy scopes.
@@ -376,8 +376,8 @@ impl<'ctx> Evaluator<'ctx> {
     pub fn get_variable_in_pkgpath(&self, name: &str, pkgpath: &str) -> ValueRef {
         let pkg_scopes = self.pkg_scopes.borrow();
         let pkgpath =
-            if !pkgpath.starts_with(kclvm_runtime::PKG_PATH_PREFIX) && pkgpath != MAIN_PKG_PATH {
-                format!("{}{}", kclvm_runtime::PKG_PATH_PREFIX, pkgpath)
+            if !pkgpath.starts_with(kcl_runtime::PKG_PATH_PREFIX) && pkgpath != MAIN_PKG_PATH {
+                format!("{}{}", kcl_runtime::PKG_PATH_PREFIX, pkgpath)
             } else {
                 pkgpath.to_string()
             };
@@ -389,8 +389,8 @@ impl<'ctx> Evaluator<'ctx> {
             if pkgpath == builtin::system_module::UNITS
                 && builtin::system_module::UNITS_FIELD_NAMES.contains(&name)
             {
-                let value_float: f64 = kclvm_runtime::f64_unit_value(name);
-                let value_int: u64 = kclvm_runtime::u64_unit_value(name);
+                let value_float: f64 = kcl_runtime::f64_unit_value(name);
+                let value_int: u64 = kcl_runtime::u64_unit_value(name);
                 if value_int != 1 {
                     self.int_value(value_int as i64)
                 } else {
@@ -403,7 +403,7 @@ impl<'ctx> Evaluator<'ctx> {
                     pkgpath,
                     name
                 );
-                let function_ptr = _kclvm_get_fn_ptr_by_name(&func_name);
+                let function_ptr = _kcl_get_fn_ptr_by_name(&func_name);
                 self.function_value_with_ptr(function_ptr)
             }
         }
@@ -462,8 +462,8 @@ impl<'ctx> Evaluator<'ctx> {
     fn get_variable_in_pkgpath_from_last_scope(&self, name: &str, pkgpath: &str) -> ValueRef {
         let pkg_scopes = self.pkg_scopes.borrow();
         let pkgpath =
-            if !pkgpath.starts_with(kclvm_runtime::PKG_PATH_PREFIX) && pkgpath != MAIN_PKG_PATH {
-                format!("{}{}", kclvm_runtime::PKG_PATH_PREFIX, pkgpath)
+            if !pkgpath.starts_with(kcl_runtime::PKG_PATH_PREFIX) && pkgpath != MAIN_PKG_PATH {
+                format!("{}{}", kcl_runtime::PKG_PATH_PREFIX, pkgpath)
             } else {
                 pkgpath.to_string()
             };
@@ -475,8 +475,8 @@ impl<'ctx> Evaluator<'ctx> {
             if pkgpath == builtin::system_module::UNITS
                 && builtin::system_module::UNITS_FIELD_NAMES.contains(&name)
             {
-                let value_float: f64 = kclvm_runtime::f64_unit_value(name);
-                let value_int: u64 = kclvm_runtime::u64_unit_value(name);
+                let value_float: f64 = kcl_runtime::f64_unit_value(name);
+                let value_int: u64 = kcl_runtime::u64_unit_value(name);
                 if value_int != 1 {
                     self.int_value(value_int as i64)
                 } else {
@@ -489,7 +489,7 @@ impl<'ctx> Evaluator<'ctx> {
                     pkgpath,
                     name
                 );
-                let function_ptr = _kclvm_get_fn_ptr_by_name(&func_name);
+                let function_ptr = _kcl_get_fn_ptr_by_name(&func_name);
                 self.function_value_with_ptr(function_ptr)
             }
         }

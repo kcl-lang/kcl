@@ -1,5 +1,5 @@
 [package]
-name = "kclvm-ast"
+name = "kcl-ast"
 version.workspace = true
 edition.workspace = true
 
@@ -11,11 +11,11 @@ compiler_base_span = "0.1.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
 
-kclvm-span = { path = "../span" }
-kclvm-error = { path = "../error" }
+kcl-span = { path = "../span" }
+kcl-error = { path = "../error" }
 thread_local = "1.1.7"
-kclvm-utils = {path = "../utils"}
+kcl-utils = {path = "../utils"}
 anyhow = "1.0"
 
 [dev-dependencies]
-kclvm-parser = { path = "../parser" }
+kcl-parser = { path = "../parser" }

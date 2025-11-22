@@ -1,9 +1,9 @@
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use anyhow::Result;
-use kclvm_parser::{LoadProgramOptions, ParseSession, load_all_files_under_paths, load_program};
-use kclvm_primitives::{DefaultHashBuilder, IndexMap};
-use kclvm_sema::{
+use kcl_parser::{LoadProgramOptions, ParseSession, load_all_files_under_paths, load_program};
+use kcl_primitives::{DefaultHashBuilder, IndexMap};
+use kcl_sema::{
     resolver::{
         Options, resolve_program_with_opts,
         scope::{ProgramScope, Scope},
@@ -40,7 +40,7 @@ impl Default for GetSchemaOption {
 /// # Examples
 ///
 /// ```
-/// use kclvm_query::query::{get_schema_type, GetSchemaOption};
+/// use kcl_query::query::{get_schema_type, GetSchemaOption};
 ///
 /// let file = "schema.k";
 /// let code = r#"
@@ -133,9 +133,9 @@ pub struct CompilationOptions {
 /// # Examples
 ///
 /// ```
-/// use kclvm_parser::LoadProgramOptions;
-/// use kclvm_query::query::CompilationOptions;
-/// use kclvm_query::query::get_full_schema_type;
+/// use kcl_parser::LoadProgramOptions;
+/// use kcl_query::query::CompilationOptions;
+/// use kcl_query::query::get_full_schema_type;
 /// use std::path::Path;
 /// use maplit::hashmap;
 ///
@@ -199,12 +199,12 @@ pub fn get_full_schema_type(
 /// # Examples
 ///
 /// ```
-/// use kclvm_parser::LoadProgramOptions;
-/// use kclvm_query::query::CompilationOptions;
-/// use kclvm_query::query::get_full_schema_type_under_path;
+/// use kcl_parser::LoadProgramOptions;
+/// use kcl_query::query::CompilationOptions;
+/// use kcl_query::query::get_full_schema_type_under_path;
 /// use std::path::Path;
 /// use maplit::hashmap;
-/// use kclvm_ast::MAIN_PKG;
+/// use kcl_ast::MAIN_PKG;
 ///
 /// let work_dir_parent = Path::new(env!("CARGO_MANIFEST_DIR")).join("src").join("test_data").join("get_schema_ty_under_path");
 ///

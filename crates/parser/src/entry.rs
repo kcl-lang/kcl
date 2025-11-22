@@ -1,10 +1,10 @@
 use anyhow::Result;
 use glob::glob;
-use kclvm_config::modfile::KCL_FILE_SUFFIX;
-use kclvm_config::modfile::get_pkg_root;
-use kclvm_config::path::ModRelativePath;
-use kclvm_utils::path::PathPrefix;
-use kclvm_utils::path::{is_absolute, is_dir, path_exist};
+use kcl_config::modfile::KCL_FILE_SUFFIX;
+use kcl_config::modfile::get_pkg_root;
+use kcl_config::path::ModRelativePath;
+use kcl_utils::path::PathPrefix;
+use kcl_utils::path::{is_absolute, is_dir, path_exist};
 use std::collections::VecDeque;
 use std::fs;
 use std::path::Path;
@@ -216,8 +216,8 @@ pub fn get_normalized_k_files_from_paths(
 ///
 /// ```rust
 /// use std::path::PathBuf;
-/// use kclvm_parser::entry::get_compile_entries_from_paths;
-/// use kclvm_parser::LoadProgramOptions;
+/// use kcl_parser::entry::get_compile_entries_from_paths;
+/// use kcl_parser::LoadProgramOptions;
 /// let testpath = PathBuf::from("./src/testdata/multimods").canonicalize().unwrap();
 ///
 /// // [`kcl1_path`] is a normal path of the package [`kcl1`] root directory.
@@ -325,15 +325,15 @@ pub fn get_compile_entries_from_paths(
             // If the [`ModRelativePath`] with prefix '${KCL_MOD}'
         } else if path.is_relative_path()? && path.get_root_pkg_name()?.is_none() {
             // Push it into `result`, and deal it later.
-            let mut entry = Entry::new(kclvm_ast::MAIN_PKG.to_string(), path.get_path());
+            let mut entry = Entry::new(kcl_ast::MAIN_PKG.to_string(), path.get_path());
             entry.push_k_code(k_code_queue.pop_front());
             result.push_entry(entry);
             continue;
         } else if let Some(root) = get_pkg_root(&file) {
             // If the path is a normal path.
-            let mut entry: Entry = Entry::new(kclvm_ast::MAIN_PKG.to_string(), root.clone());
+            let mut entry: Entry = Entry::new(kcl_ast::MAIN_PKG.to_string(), root.clone());
             entry.extend_k_files_and_codes(
-                get_main_files_from_pkg_path(&file, &root, kclvm_ast::MAIN_PKG, opts)?,
+                get_main_files_from_pkg_path(&file, &root, kcl_ast::MAIN_PKG, opts)?,
                 &mut k_code_queue,
             );
             result.push_entry(entry);
@@ -342,13 +342,13 @@ pub fn get_compile_entries_from_paths(
 
     // The main 'kcl.mod' can not be found, the empty path "" will be took by default.
     if result
-        .get_unique_normal_paths_by_name(kclvm_ast::MAIN_PKG)
+        .get_unique_normal_paths_by_name(kcl_ast::MAIN_PKG)
         .is_empty()
     {
-        let mut entry = Entry::new(kclvm_ast::MAIN_PKG.to_string(), "".to_string());
+        let mut entry = Entry::new(kcl_ast::MAIN_PKG.to_string(), "".to_string());
         for file in &file_paths {
             entry.extend_k_files_and_codes(
-                get_main_files_from_pkg_path(&file, "", kclvm_ast::MAIN_PKG, opts)?,
+                get_main_files_from_pkg_path(&file, "", kcl_ast::MAIN_PKG, opts)?,
                 &mut k_code_queue,
             );
         }
@@ -356,13 +356,13 @@ pub fn get_compile_entries_from_paths(
     }
 
     let main_pkg_paths_count = result
-        .get_unique_normal_paths_by_name(kclvm_ast::MAIN_PKG)
+        .get_unique_normal_paths_by_name(kcl_ast::MAIN_PKG)
         .len();
 
     let pkg_root = if main_pkg_paths_count == 1 {
         // If the 'kcl.mod' can be found only once, the package root path will be the path of the 'kcl.mod'.
         result
-            .get_unique_normal_paths_by_name(kclvm_ast::MAIN_PKG)
+            .get_unique_normal_paths_by_name(kcl_ast::MAIN_PKG)
             .get(0)
             .unwrap()
             .to_string()
@@ -380,12 +380,12 @@ pub fn get_compile_entries_from_paths(
     // Replace the '${KCL_MOD}' of all the paths with package name '__main__'.
     result.apply_to_all_entries(|entry| {
         let path = ModRelativePath::from(entry.path().to_string());
-        if entry.name() == kclvm_ast::MAIN_PKG && path.is_relative_path()? {
+        if entry.name() == kcl_ast::MAIN_PKG && path.is_relative_path()? {
             entry.set_path(pkg_root.to_string());
             entry.extend_k_files(get_main_files_from_pkg_path(
                 &path.canonicalize_by_root_path(&pkg_root)?,
                 &pkg_root,
-                kclvm_ast::MAIN_PKG,
+                kcl_ast::MAIN_PKG,
                 opts,
             )?);
         }

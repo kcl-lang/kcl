@@ -1,5 +1,5 @@
 data:
   config:
-    name: kclvm
+    name: kcl
     args:
-    - kclvm
+    - kcl

@@ -1,7 +1,7 @@
 //! A KCL Parser.
 //!
-//! The parser is built on top of the [`kclvm_parser::lexer`], and ordering KCL tokens
-//! [`kclvm_ast::token`] to KCL ast nodes [`kclvm_ast::ast`].
+//! The parser is built on top of the [`kcl_parser::lexer`], and ordering KCL tokens
+//! [`kcl_ast::token`] to KCL ast nodes [`kcl_ast::ast`].
 //!
 //! The parser follows a LL1 parsing method, which constantly looking for
 //! left-side derivation until a terminal token found. Since we hand-written the parser,
@@ -27,15 +27,15 @@ mod ty;
 use crate::session::ParseSession;
 
 use compiler_base_span::span::{BytePos, new_byte_pos};
-use kclvm_ast::ast::{Comment, NodeRef, PosTuple};
-use kclvm_ast::token::{CommentKind, Token, TokenKind};
-use kclvm_ast::token_stream::{Cursor, TokenStream};
-use kclvm_error::ParseErrorMessage;
-use kclvm_span::symbol::Symbol;
-use kclvm_utils::path::PathPrefix;
+use kcl_ast::ast::{Comment, NodeRef, PosTuple};
+use kcl_ast::token::{CommentKind, Token, TokenKind};
+use kcl_ast::token_stream::{Cursor, TokenStream};
+use kcl_error::ParseErrorMessage;
+use kcl_span::symbol::Symbol;
+use kcl_utils::path::PathPrefix;
 
-/// The parser is built on top of the [`kclvm_parser::lexer`], and ordering KCL tokens
-/// [`kclvm_ast::token`] to KCL ast nodes [`kclvm_ast::ast`].
+/// The parser is built on top of the [`kcl_parser::lexer`], and ordering KCL tokens
+/// [`kcl_ast::token`] to KCL ast nodes [`kcl_ast::ast`].
 pub struct Parser<'a> {
     /// The current token.
     pub token: Token,
@@ -84,7 +84,7 @@ impl<'a> Parser<'a> {
         let lo = self.sess.lookup_char_pos(lo);
         let hi = self.sess.lookup_char_pos(hi);
 
-        let filename = kclvm_utils::path::convert_windows_drive_letter(&format!(
+        let filename = kcl_utils::path::convert_windows_drive_letter(&format!(
             "{}",
             lo.file.name.prefer_remapped()
         ))
@@ -171,7 +171,7 @@ impl<'a> Parser<'a> {
             let prev_token = if i == 0 {
                 Token {
                     kind: TokenKind::Dummy,
-                    span: kclvm_span::Span::new(new_byte_pos(0), new_byte_pos(0)),
+                    span: kcl_span::Span::new(new_byte_pos(0), new_byte_pos(0)),
                 }
             } else {
                 stream[i - 1]
@@ -197,13 +197,14 @@ impl<'a> Parser<'a> {
                         CommentKind::Line(x) => {
                             let lo = sess.lookup_char_pos(tok.span.lo());
                             let hi = sess.lookup_char_pos(tok.span.hi());
-                            let filename = kclvm_utils::path::convert_windows_drive_letter(
-                                &format!("{}", lo.file.name.prefer_remapped()),
-                            )
+                            let filename = kcl_utils::path::convert_windows_drive_letter(&format!(
+                                "{}",
+                                lo.file.name.prefer_remapped()
+                            ))
                             .adjust_canonicalization();
 
-                            let node = kclvm_ast::ast::Node {
-                                id: kclvm_ast::ast::AstIndex::default(),
+                            let node = kcl_ast::ast::Node {
+                                id: kcl_ast::ast::AstIndex::default(),
                                 node: Comment {
                                     text: x.as_str().to_string(),
                                 },

@@ -15,17 +15,17 @@ use crate::*;
 use uuid::Uuid;
 
 #[allow(non_camel_case_types)]
-type kclvm_value_ref_t = ValueRef;
+type kcl_value_ref_t = ValueRef;
 
 // md5(value: str, encoding: str = "utf-8") -> str
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_crypto_md5(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_crypto_md5(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -43,11 +43,11 @@ pub extern "C-unwind" fn kclvm_crypto_md5(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_crypto_sha1(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_crypto_sha1(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -65,11 +65,11 @@ pub extern "C-unwind" fn kclvm_crypto_sha1(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_crypto_sha224(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_crypto_sha224(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -97,11 +97,11 @@ pub extern "C-unwind" fn kclvm_crypto_sha224(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_crypto_sha256(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_crypto_sha256(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -129,11 +129,11 @@ pub extern "C-unwind" fn kclvm_crypto_sha256(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_crypto_sha384(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_crypto_sha384(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -161,11 +161,11 @@ pub extern "C-unwind" fn kclvm_crypto_sha384(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_crypto_sha512(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_crypto_sha512(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -193,11 +193,11 @@ pub extern "C-unwind" fn kclvm_crypto_sha512(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_crypto_blake3(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_crypto_blake3(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -221,22 +221,22 @@ pub extern "C-unwind" fn kclvm_crypto_blake3(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_crypto_uuid(
-    ctx: *mut kclvm_context_t,
-    _args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_crypto_uuid(
+    ctx: *mut kcl_context_t,
+    _args: *const kcl_value_ref_t,
+    _kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     return ValueRef::str(Uuid::new_v4().to_string().as_ref()).into_raw(ctx);
 }
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_crypto_filesha256(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_crypto_filesha256(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -272,11 +272,11 @@ pub extern "C-unwind" fn kclvm_crypto_filesha256(
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_crypto_filesha512(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_crypto_filesha512(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -310,11 +310,11 @@ pub extern "C-unwind" fn kclvm_crypto_filesha512(
 // fileblake3
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_crypto_fileblake3(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_crypto_fileblake3(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);

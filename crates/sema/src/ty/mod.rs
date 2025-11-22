@@ -11,11 +11,11 @@ use std::sync::Arc;
 
 pub use constants::*;
 pub use context::{TypeContext, TypeInferMethods};
-use kclvm_ast::MAIN_PKG;
-use kclvm_ast::ast;
-use kclvm_error::Position;
-use kclvm_error::diagnostic::Range;
-use kclvm_primitives::IndexMap;
+use kcl_ast::MAIN_PKG;
+use kcl_ast::ast;
+use kcl_error::Position;
+use kcl_error::diagnostic::Range;
+use kcl_primitives::IndexMap;
 pub use unify::*;
 pub use walker::walk_type;
 

@@ -1,8 +1,8 @@
 use crate::{kcl, lookup_the_nearest_file_dir};
 use anyhow::{Result, bail};
-use kclvm_config::modfile::KCL_MOD_FILE;
-use kclvm_parser::LoadProgramOptions;
-use kclvm_utils::pkgpath::rm_external_pkg_name;
+use kcl_config::modfile::KCL_MOD_FILE;
+use kcl_parser::LoadProgramOptions;
+use kcl_utils::pkgpath::rm_external_pkg_name;
 use serde::{Deserialize, Serialize};
 use std::ffi::OsStr;
 use std::{collections::HashMap, path::PathBuf, process::Command};

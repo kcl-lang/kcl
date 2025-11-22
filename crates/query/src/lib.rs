@@ -14,11 +14,11 @@ mod tests;
 mod util;
 
 use anyhow::{Result, anyhow};
-use kclvm_ast_pretty::print_ast_module;
-use kclvm_error::diagnostic::Errors;
-use kclvm_parser::parse_single_file;
+use kcl_ast_pretty::print_ast_module;
+use kcl_error::diagnostic::Errors;
+use kcl_parser::parse_single_file;
 
-use kclvm_sema::pre_process::fix_config_expr_nest_attr;
+use kcl_sema::pre_process::fix_config_expr_nest_attr;
 pub use r#override::{apply_override_on_module, apply_overrides};
 pub use query::{GetSchemaOption, get_schema_type};
 
@@ -46,7 +46,7 @@ pub use query::{GetSchemaOption, get_schema_type};
 /// # Examples
 ///
 /// ```no_run
-/// use kclvm_query::override_file;
+/// use kcl_query::override_file;
 ///
 /// let result = override_file(
 ///     "test.k",

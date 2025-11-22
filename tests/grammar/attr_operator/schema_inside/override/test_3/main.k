@@ -6,8 +6,8 @@ schema Data:
     _config: Config {
         name = "config"
         args: ["kcl", "-d"]
-        args = ["kclvm"]
-        name = "kclvm"
+        args = ["kcl"]
+        name = "kcl"
     }
     config: Config = _config | {name = "override"}
 

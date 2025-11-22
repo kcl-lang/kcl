@@ -3,16 +3,14 @@ use std::{
     panic::{RefUnwindSafe, UnwindSafe},
 };
 
-use crate::{
-    Context, ValueRef, kclvm_context_t, kclvm_eval_scope_t, kclvm_value_ref_t, mut_ptr_as_ref,
-};
-use kclvm_primitives::IndexMap;
+use crate::{Context, ValueRef, kcl_context_t, kcl_eval_scope_t, kcl_value_ref_t, mut_ptr_as_ref};
+use kcl_primitives::IndexMap;
 
 /// Variable setter function type. fn(ctx: &mut Context, scope: &mut ScopeEval, args: ValueRef, kwargs: ValueRef) -> ValueRef.
 pub type SetterFuncType = unsafe extern "C-unwind" fn(
-    *mut kclvm_context_t,
-    *mut kclvm_eval_scope_t,
-) -> *const kclvm_value_ref_t;
+    *mut kcl_context_t,
+    *mut kcl_eval_scope_t,
+) -> *const kcl_value_ref_t;
 
 /// LazyEvalScope represents a scope of sequentially independent calculations, where
 /// the calculation of values is lazy and only recursively performed through

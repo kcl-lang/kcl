@@ -10,11 +10,11 @@ use crate::*;
 /// `today() -> str`
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_datetime_today(
-    ctx: *mut kclvm_context_t,
-    _args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_datetime_today(
+    ctx: *mut kcl_context_t,
+    _args: *const kcl_value_ref_t,
+    _kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let s = Local::now();
     let ctx = mut_ptr_as_ref(ctx);
     ValueRef::str(&(s.format("%Y-%m-%d %H:%M:%S").to_string() + "." + &s.timestamp().to_string()))
@@ -26,11 +26,11 @@ pub extern "C-unwind" fn kclvm_datetime_today(
 /// `now() -> str`
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_datetime_now(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_datetime_now(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let s = Local::now();
     let ctx = mut_ptr_as_ref(ctx);
     let args = ptr_as_ref(args);
@@ -44,11 +44,11 @@ pub extern "C-unwind" fn kclvm_datetime_now(
 /// `ticks() -> float`
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_datetime_ticks(
-    ctx: *mut kclvm_context_t,
-    _args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_datetime_ticks(
+    ctx: *mut kcl_context_t,
+    _args: *const kcl_value_ref_t,
+    _kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     let x = Local::now().timestamp();
     ValueRef::float(x as f64).into_raw(ctx)
@@ -58,11 +58,11 @@ pub extern "C-unwind" fn kclvm_datetime_ticks(
 /// `date() -> str`
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_datetime_date(
-    ctx: *mut kclvm_context_t,
-    _args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_datetime_date(
+    ctx: *mut kcl_context_t,
+    _args: *const kcl_value_ref_t,
+    _kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let s = Local::now();
     let ctx = mut_ptr_as_ref(ctx);
     ValueRef::str(&s.format("%Y-%m-%d %H:%M:%S").to_string()).into_raw(ctx)
@@ -72,11 +72,11 @@ pub extern "C-unwind" fn kclvm_datetime_date(
 /// `validate(str, str) -> bool`
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_datetime_validate(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_datetime_validate(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);

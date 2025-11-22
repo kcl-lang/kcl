@@ -1,6 +1,6 @@
-use kclvm_ast::ast::*;
-use kclvm_ast::node_ref;
-use kclvm_ast::{token::LitKind, token::TokenKind};
+use kcl_ast::ast::*;
+use kcl_ast::node_ref;
+use kcl_ast::{token::LitKind, token::TokenKind};
 
 use super::Parser;
 

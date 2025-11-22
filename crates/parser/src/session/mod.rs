@@ -1,10 +1,10 @@
 use anyhow::Result;
 use compiler_base_macros::bug;
 use compiler_base_session::Session;
-use kclvm_ast::token::Token;
-use kclvm_error::{Diagnostic, Handler, ParseError, ParseErrorMessage};
-use kclvm_primitives::IndexSet;
-use kclvm_span::{BytePos, Loc, Span};
+use kcl_ast::token::Token;
+use kcl_error::{Diagnostic, Handler, ParseError, ParseErrorMessage};
+use kcl_primitives::IndexSet;
+use kcl_span::{BytePos, Loc, Span};
 use parking_lot::RwLock;
 use std::sync::Arc;
 

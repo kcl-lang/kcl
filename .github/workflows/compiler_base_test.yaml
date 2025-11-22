@@ -45,7 +45,7 @@ jobs:
           components: clippy, rustfmt
       - name: Compiler_base rust unit test
         working-directory: ./compiler_base
-        run: make codecov-lcov
+        run: make test
         shell: bash
       - name: Coveralls upload
         uses: coverallsapp/github-action@master

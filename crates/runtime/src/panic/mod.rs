@@ -13,11 +13,11 @@ use crate::*;
 /// message in case of a runtime panic.
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_runtime_catch(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_runtime_catch(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let kwargs = ptr_as_ref(kwargs);
     let ctx = mut_ptr_as_ref(ctx);
@@ -39,7 +39,7 @@ pub extern "C-unwind" fn kclvm_runtime_catch(
                 // Call schema constructor twice
                 if func.is_external {
                     let name = format!("{}\0", func.name);
-                    kclvm_plugin_invoke(ctx, name.as_ptr() as *const c_char, args, kwargs)
+                    kcl_plugin_invoke(ctx, name.as_ptr() as *const c_char, args, kwargs)
                 } else {
                     call_fn(ctx, args, kwargs)
                 };
@@ -63,7 +63,7 @@ pub extern "C-unwind" fn kclvm_runtime_catch(
 
 #[inline]
 pub fn is_runtime_catch_function(ptr: u64) -> bool {
-    ptr == kclvm_runtime_catch as *const () as u64
+    ptr == kcl_runtime_catch as *const () as u64
 }
 
 /// Convert an error to string.

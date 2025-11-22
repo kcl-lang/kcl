@@ -1,7 +1,7 @@
 use std::ops::Range;
 
-use kclvm_error::Position as KCLPos;
-use kclvm_utils::path::PathPrefix;
+use kcl_error::Position as KCLPos;
+use kcl_utils::path::PathPrefix;
 use lsp_types::{Position, Url};
 use ra_ap_vfs::AbsPathBuf;
 
@@ -18,7 +18,7 @@ pub(crate) fn abs_path(uri: &Url) -> anyhow::Result<AbsPathBuf> {
 // The position in lsp protocol is different with position in ast node whose line number is 1 based.
 pub(crate) fn kcl_pos(file: &str, pos: Position) -> KCLPos {
     KCLPos {
-        filename: kclvm_utils::path::convert_windows_drive_letter(file).adjust_canonicalization(),
+        filename: kcl_utils::path::convert_windows_drive_letter(file).adjust_canonicalization(),
         line: (pos.line + 1) as u64,
         column: Some(pos.character as u64),
     }
@@ -55,7 +55,7 @@ pub(crate) fn file_path_from_url(url: &Url) -> anyhow::Result<String> {
         .ok()
         .and_then(|path| {
             path.to_str()
-                .map(kclvm_utils::path::convert_windows_drive_letter)
+                .map(kcl_utils::path::convert_windows_drive_letter)
         })
         .ok_or_else(|| anyhow::anyhow!("can't convert url to file path: {}", url))
 }

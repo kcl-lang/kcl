@@ -13,7 +13,7 @@ fn check_lexing(src: &str, expect: Expect) {
 #[test]
 fn smoke_test() {
     check_lexing(
-        "  lambda { println(\"kclvm\"); }\n",
+        "  lambda { println(\"kcl\"); }\n",
         expect![[r#"
             Token { kind: Space, len: 1 }
             Token { kind: Space, len: 1 }

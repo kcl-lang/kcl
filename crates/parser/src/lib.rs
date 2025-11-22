@@ -9,7 +9,7 @@ mod session;
 #[cfg(test)]
 mod tests;
 
-extern crate kclvm_error;
+extern crate kcl_error;
 
 use crate::entry::get_compile_entries_from_paths;
 pub use crate::session::{ParseSession, ParseSessionRef};
@@ -17,16 +17,16 @@ use compiler_base_macros::bug;
 use compiler_base_session::Session;
 use compiler_base_span::span::new_byte_pos;
 use file_graph::{Pkg, PkgFile, PkgFileGraph, PkgMap, toposort};
-use kclvm_ast::ast::Module;
-use kclvm_ast::{MAIN_PKG, ast};
-use kclvm_config::modfile::{KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE, get_vendor_home};
-use kclvm_error::diagnostic::{Errors, Range};
-use kclvm_error::{ErrorKind, Message, Position, Style};
-use kclvm_primitives::IndexMap;
-use kclvm_sema::plugin::PLUGIN_MODULE_PREFIX;
-use kclvm_utils::path::PathPrefix;
-use kclvm_utils::pkgpath::parse_external_pkg_name;
-use kclvm_utils::pkgpath::rm_external_pkg_name;
+use kcl_ast::ast::Module;
+use kcl_ast::{MAIN_PKG, ast};
+use kcl_config::modfile::{KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE, get_vendor_home};
+use kcl_error::diagnostic::{Errors, Range};
+use kcl_error::{ErrorKind, Message, Position, Style};
+use kcl_primitives::IndexMap;
+use kcl_sema::plugin::PLUGIN_MODULE_PREFIX;
+use kcl_utils::path::PathPrefix;
+use kcl_utils::pkgpath::parse_external_pkg_name;
+use kcl_utils::pkgpath::rm_external_pkg_name;
 
 use anyhow::Result;
 use lexer::parse_token_streams;
@@ -35,7 +35,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
-use kclvm_span::create_session_globals_then;
+use kcl_span::create_session_globals_then;
 
 #[derive(Default, Debug)]
 /// [`PkgInfo`] is some basic information about a kcl package.
@@ -216,8 +216,8 @@ pub fn parse_file_with_global_session(
 ///
 /// # Examples
 /// ```
-/// use kclvm_ast::ast;
-/// use kclvm_parser::parse_expr;
+/// use kcl_ast::ast;
+/// use kcl_parser::parse_expr;
 ///
 /// let expr = parse_expr("'alice'").unwrap();
 /// assert!(matches!(expr.node, ast::Expr::StringLit(_)));
@@ -285,9 +285,9 @@ impl Default for LoadProgramOptions {
 /// # Examples
 ///
 /// ```
-/// use kclvm_parser::{load_program, ParseSession};
-/// use kclvm_parser::KCLModuleCache;
-/// use kclvm_ast::ast::Program;
+/// use kcl_parser::{load_program, ParseSession};
+/// use kcl_parser::KCLModuleCache;
+/// use kcl_ast::ast::Program;
 /// use std::sync::Arc;
 ///
 /// // Create sessions
@@ -357,7 +357,7 @@ impl Loader {
             sess,
             paths: paths
                 .iter()
-                .map(|s| kclvm_utils::path::convert_windows_drive_letter(s))
+                .map(|s| kcl_utils::path::convert_windows_drive_letter(s))
                 .collect(),
             opts: opts.unwrap_or_default(),
             module_cache: module_cache.unwrap_or_default(),
@@ -396,7 +396,7 @@ fn fix_rel_import_path_with_file(
     for stmt in &mut m.body {
         let pos = stmt.pos().clone();
         if let ast::Stmt::Import(import_spec) = &mut stmt.node {
-            let fix_path = kclvm_config::vfs::fix_import_path(
+            let fix_path = kcl_config::vfs::fix_import_path(
                 pkgroot,
                 &m.filename,
                 import_spec.path.node.as_str(),
@@ -416,7 +416,7 @@ fn fix_rel_import_path_with_file(
             )
             .unwrap_or(None);
             if let Some(pkg_info) = &pkg_info {
-                // Add the external package name as prefix of the [`kclvm_ast::ImportStmt`]'s member [`path`].
+                // Add the external package name as prefix of the [`kcl_ast::ImportStmt`]'s member [`path`].
                 import_spec.path.node = pkg_info.pkg_path.to_string();
                 import_spec.pkg_name = pkg_info.pkg_name.clone();
             }
@@ -429,7 +429,7 @@ fn is_plugin_pkg(pkgpath: &str) -> bool {
 }
 
 fn is_builtin_pkg(pkgpath: &str) -> bool {
-    let system_modules = kclvm_sema::builtin::system_module::STANDARD_SYSTEM_MODULES;
+    let system_modules = kcl_sema::builtin::system_module::STANDARD_SYSTEM_MODULES;
     system_modules.contains(&pkgpath)
 }
 
@@ -552,7 +552,7 @@ fn pkg_exists_in_path(path: &str, pkgpath: &str) -> bool {
 fn is_internal_pkg(pkg_name: &str, pkg_root: &str, pkg_path: &str) -> Result<Option<PkgInfo>> {
     match pkg_exists(&[pkg_root.to_string()], pkg_path) {
         Some(internal_pkg_root) => {
-            let fullpath = if pkg_name == kclvm_ast::MAIN_PKG {
+            let fullpath = if pkg_name == kcl_ast::MAIN_PKG {
                 pkg_path.to_string()
             } else {
                 format!("{}.{}", pkg_name, pkg_path)
@@ -747,7 +747,7 @@ pub fn get_deps(
         let pos = stmt.pos().clone();
         let pkg = pkgmap.get(file).expect("file not in pkgmap").clone();
         if let ast::Stmt::Import(import_spec) = &stmt.node {
-            let fix_path = kclvm_config::vfs::fix_import_path(
+            let fix_path = kcl_config::vfs::fix_import_path(
                 &pkg.pkg_root,
                 &m.filename,
                 import_spec.path.node.as_str(),

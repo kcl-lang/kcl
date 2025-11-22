@@ -2,11 +2,11 @@ use crate::state::KCLVfs;
 use crate::word_index::{build_virtual_word_index, VirtualLocation};
 use crate::{from_lsp::kcl_pos, goto_def::find_def};
 use anyhow::{anyhow, Result};
-use kclvm_ast::ast::{self, Program};
-use kclvm_error::diagnostic;
-use kclvm_parser::{load_program, LoadProgramOptions, ParseSessionRef};
-use kclvm_query::{path::parse_attribute_path, selector::parse_symbol_selector_spec};
-use kclvm_sema::{
+use kcl_ast::ast::{self, Program};
+use kcl_error::diagnostic;
+use kcl_parser::{load_program, LoadProgramOptions, ParseSessionRef};
+use kcl_query::{path::parse_attribute_path, selector::parse_symbol_selector_spec};
+use kcl_sema::{
     advanced_resolver::AdvancedResolver, core::global_state::GlobalState, namer::Namer,
     resolver::resolve_program_with_opts,
 };
@@ -131,7 +131,7 @@ where
     ) {
         if let Some(symbol_ref) = gs
             .get_symbols()
-            .get_symbol_by_fully_qualified_name(kclvm_ast::MAIN_PKG)
+            .get_symbol_by_fully_qualified_name(kcl_ast::MAIN_PKG)
         {
             let mut owner_ref = symbol_ref;
             let mut target = None;
@@ -180,7 +180,7 @@ where
 
     let prog_scope = resolve_program_with_opts(
         &mut program,
-        kclvm_sema::resolver::Options {
+        kcl_sema::resolver::Options {
             merge_program: false,
             type_erasure: false,
             ..Default::default()
@@ -386,8 +386,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use kclvm_ast::ast;
-    use kclvm_error::diagnostic;
+    use kcl_ast::ast;
+    use kcl_error::diagnostic;
     use lsp_types::{Position, Range, TextEdit};
     use maplit::hashmap;
     use std::collections::{HashMap, HashSet};

@@ -1,9 +1,9 @@
-use kclvm_ast::ast;
-use kclvm_ast::pos::GetPos;
-use kclvm_ast::walker::MutSelfTypedResultWalker;
-use kclvm_ast_pretty::{ASTNode, print_ast_node};
-use kclvm_error::*;
-use kclvm_primitives::IndexMap;
+use kcl_ast::ast;
+use kcl_ast::pos::GetPos;
+use kcl_ast::walker::MutSelfTypedResultWalker;
+use kcl_ast_pretty::{ASTNode, print_ast_node};
+use kcl_error::*;
+use kcl_primitives::IndexMap;
 use std::sync::Arc;
 
 use crate::info::is_private_field;
@@ -1172,7 +1172,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
                     }
                 };
                 let binary_suffix_str: String = binary_suffix.value();
-                let value = kclvm_runtime::units::cal_num(raw_value, &binary_suffix_str);
+                let value = kcl_runtime::units::cal_num(raw_value, &binary_suffix_str);
                 Arc::new(Type::number_multiplier(
                     value,
                     raw_value,

@@ -1,6 +1,6 @@
 use crate::to_lsp::lsp_location;
-use kclvm_error::Position as KCLPos;
-use kclvm_sema::core::global_state::GlobalState;
+use kcl_error::Position as KCLPos;
+use kcl_sema::core::global_state::GlobalState;
 use lsp_types::Location;
 use std::collections::HashSet;
 
@@ -48,7 +48,7 @@ mod tests {
     use std::path::{Path, PathBuf};
 
     use crate::tests::compile_test_file;
-    use kclvm_error::Position as KCLPos;
+    use kcl_error::Position as KCLPos;
 
     #[macro_export]
     macro_rules! find_ref_test_snapshot {

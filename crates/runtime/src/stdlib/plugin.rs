@@ -25,7 +25,7 @@ pub const PLUGIN_MODULE_PREFIX: &str = "kcl_plugin.";
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_plugin_init(
+pub extern "C-unwind" fn kcl_plugin_init(
     fn_ptr: extern "C-unwind" fn(
         method: *const c_char,
         args_json: *const c_char,
@@ -39,16 +39,16 @@ pub extern "C-unwind" fn kclvm_plugin_init(
 // import kcl_plugin.hello
 // hello.say_hello()
 //
-// => return kclvm_plugin_invoke("kcl_plugin.hello.say_hello", args, kwargs)
+// => return kcl_plugin_invoke("kcl_plugin.hello.say_hello", args, kwargs)
 
 #[unsafe(no_mangle)]
 
-pub unsafe extern "C-unwind" fn kclvm_plugin_invoke(
-    ctx: *mut kclvm_context_t,
+pub unsafe extern "C-unwind" fn kcl_plugin_invoke(
+    ctx: *mut kcl_context_t,
     method: *const c_char,
-    args: *const kclvm_value_ref_t,
-    kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let ctx_ref = mut_ptr_as_ref(ctx);
     let method_ref = c2str(method);
     let plugin_short_method = match method_ref.strip_prefix(PLUGIN_MODULE_PREFIX) {
@@ -61,19 +61,19 @@ pub unsafe extern "C-unwind" fn kclvm_plugin_invoke(
         let result = func(ctx_ref, args, kwargs);
         return result.unwrap().into_raw(ctx_ref);
     }
-    let args_s = unsafe { kclvm_value_to_json_value_with_null(ctx, args) };
-    let kwargs_s = unsafe { kclvm_value_to_json_value_with_null(ctx, kwargs) };
+    let args_s = unsafe { kcl_value_to_json_value_with_null(ctx, args) };
+    let kwargs_s = unsafe { kcl_value_to_json_value_with_null(ctx, kwargs) };
 
-    let args_json = unsafe { kclvm_value_Str_ptr(args_s) };
-    let kwargs_json = unsafe { kclvm_value_Str_ptr(kwargs_s) };
+    let args_json = unsafe { kcl_value_Str_ptr(args_s) };
+    let kwargs_json = unsafe { kcl_value_Str_ptr(kwargs_s) };
 
-    let result_json = kclvm_plugin_invoke_json(method, args_json, kwargs_json);
+    let result_json = kcl_plugin_invoke_json(method, args_json, kwargs_json);
 
     // Value delete by context.
-    // kclvm_value_delete(args_s);
-    // kclvm_value_delete(kwargs_s);
+    // kcl_value_delete(args_s);
+    // kcl_value_delete(kwargs_s);
 
-    let ptr = unsafe { kclvm_value_from_json(ctx, result_json) };
+    let ptr = unsafe { kcl_value_from_json(ctx, result_json) };
     {
         if let Some(msg) = ptr_as_ref(ptr).dict_get_value("__kcl_PanicInfo__") {
             let ctx = mut_ptr_as_ref(ctx);
@@ -89,7 +89,7 @@ pub unsafe extern "C-unwind" fn kclvm_plugin_invoke(
 #[cfg(not(target_arch = "wasm32"))]
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_plugin_invoke_json(
+pub extern "C-unwind" fn kcl_plugin_invoke_json(
     method: *const c_char,
     args: *const c_char,
     kwargs: *const c_char,
@@ -98,26 +98,26 @@ pub extern "C-unwind" fn kclvm_plugin_invoke_json(
     if let Some(fn_ptr) = *fn_ptr_guard {
         fn_ptr(method, args, kwargs)
     } else {
-        panic!("plugin handler is nil, should call kclvm_plugin_init at first");
+        panic!("plugin handler is nil, should call kcl_plugin_init at first");
     }
 }
 
 #[cfg(target_arch = "wasm32")]
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_plugin_invoke_json(
+pub extern "C-unwind" fn kcl_plugin_invoke_json(
     method: *const c_char,
     args: *const c_char,
     kwargs: *const c_char,
 ) -> *const c_char {
     unsafe {
-        return kclvm_plugin_invoke_json_wasm(method, args, kwargs);
+        return kcl_plugin_invoke_json_wasm(method, args, kwargs);
     }
 }
 
 #[cfg(target_arch = "wasm32")]
 unsafe extern "C-unwind" {
-    pub fn kclvm_plugin_invoke_json_wasm(
+    pub fn kcl_plugin_invoke_json_wasm(
         method: *const c_char,
         args: *const c_char,
         kwargs: *const c_char,

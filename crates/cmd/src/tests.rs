@@ -5,9 +5,9 @@ use std::{
     sync::Arc,
 };
 
-use kclvm_config::modfile::KCL_PKG_PATH;
-use kclvm_parser::ParseSession;
-use kclvm_runner::{MapErrorResult, exec_program};
+use kcl_config::modfile::KCL_PKG_PATH;
+use kcl_parser::ParseSession;
+use kcl_runner::{MapErrorResult, exec_program};
 
 use crate::{
     app,

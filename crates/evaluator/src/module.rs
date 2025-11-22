@@ -2,9 +2,9 @@
 
 use std::sync::{Arc, RwLock};
 
-use kclvm_ast::ast;
-use kclvm_ast::walker::TypedResultWalker;
-use kclvm_runtime::ValueRef;
+use kcl_ast::ast;
+use kcl_ast::walker::TypedResultWalker;
+use kcl_runtime::ValueRef;
 
 use super::Evaluator;
 use crate::error as kcl_error;

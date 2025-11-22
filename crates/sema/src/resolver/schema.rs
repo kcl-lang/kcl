@@ -5,12 +5,12 @@ use std::rc::Rc;
 use crate::builtin::BUILTIN_DECORATORS;
 use crate::resolver::Resolver;
 use crate::ty::{Decorator, DecoratorTarget, TypeKind, TypeRef};
-use kclvm_ast::ast;
-use kclvm_ast::pos::GetPos;
-use kclvm_ast::walker::MutSelfTypedResultWalker;
-use kclvm_ast_pretty::{ASTNode, print_ast_node};
-use kclvm_error::diagnostic::Range;
-use kclvm_error::{ErrorKind, Message, Position, Style};
+use kcl_ast::ast;
+use kcl_ast::pos::GetPos;
+use kcl_ast::walker::MutSelfTypedResultWalker;
+use kcl_ast_pretty::{ASTNode, print_ast_node};
+use kcl_error::diagnostic::Range;
+use kcl_error::{ErrorKind, Message, Position, Style};
 
 use super::node::ResolvedResult;
 use super::scope::{ScopeKind, ScopeObject, ScopeObjectKind};

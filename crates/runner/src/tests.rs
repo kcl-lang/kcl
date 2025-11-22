@@ -1,11 +1,11 @@
 use crate::exec_program;
 use crate::{execute, runner::ExecProgramArgs};
 use anyhow::Result;
-use kclvm_ast::ast::{Module, Program};
-use kclvm_config::settings::load_file;
-use kclvm_parser::ParseSession;
-use kclvm_parser::load_program;
-use kclvm_utils::path::PathPrefix;
+use kcl_ast::ast::{Module, Program};
+use kcl_config::settings::load_file;
+use kcl_parser::ParseSession;
+use kcl_parser::load_program;
+use kcl_utils::path::PathPrefix;
 use serde_json::Value;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -80,7 +80,7 @@ struct SimplePanicInfo {
 
 /// Load test kcl file to ast.Program
 fn load_test_program(filename: String) -> Program {
-    let module = kclvm_parser::parse_file_force_errors(&filename, None).unwrap();
+    let module = kcl_parser::parse_file_force_errors(&filename, None).unwrap();
     construct_program(module)
 }
 
@@ -125,7 +125,7 @@ fn execute_for_test(kcl_path: &String) -> String {
         .json_result
 }
 
-fn test_kclvm_runner_execute() {
+fn test_kcl_runner_execute() {
     for case in TEST_CASES {
         let kcl_path = &Path::new(&test_case_path())
             .join(case)
@@ -217,7 +217,7 @@ fn test_exec() {
         Path::new(".")
             .join("src")
             .join("exec_data")
-            .join(".kclvm")
+            .join(".kcl")
             .display()
             .to_string(),
     );
@@ -226,7 +226,7 @@ fn test_exec() {
         Path::new(".")
             .join("src")
             .join("exec_err_data")
-            .join(".kclvm")
+            .join(".kcl")
             .display()
             .to_string(),
     );
@@ -234,8 +234,8 @@ fn test_exec() {
     test_exec_file();
     println!("test_exec_file - PASS");
 
-    test_kclvm_runner_execute();
-    println!("test_kclvm_runner_execute - PASS");
+    test_kcl_runner_execute();
+    println!("test_kcl_runner_execute - PASS");
 
     test_custom_manifests_output();
     println!("test_custom_manifests_output - PASS");

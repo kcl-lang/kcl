@@ -1,16 +1,16 @@
 use crossbeam_channel::after;
 use crossbeam_channel::select;
-use kclvm_driver::lookup_compile_workspace;
-use kclvm_driver::toolchain;
-use kclvm_driver::toolchain::Metadata;
-use kclvm_driver::WorkSpaceKind;
-use kclvm_primitives::IndexMap;
-use kclvm_primitives::IndexSet;
-use kclvm_sema::core::global_state::GlobalState;
-use kclvm_sema::ty::SchemaType;
-use kclvm_utils::path::PathPrefix;
+use kcl_driver::lookup_compile_workspace;
+use kcl_driver::toolchain;
+use kcl_driver::toolchain::Metadata;
+use kcl_driver::WorkSpaceKind;
+use kcl_primitives::IndexMap;
+use kcl_primitives::IndexSet;
+use kcl_sema::core::global_state::GlobalState;
+use kcl_sema::ty::SchemaType;
+use kcl_utils::path::PathPrefix;
 
-use kclvm_sema::resolver::scope::KCLScopeCache;
+use kcl_sema::resolver::scope::KCLScopeCache;
 use lsp_server::RequestId;
 use lsp_server::Response;
 use lsp_types::notification::Exit;
@@ -60,9 +60,9 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
-use kclvm_ast::ast::Program;
-use kclvm_error::Diagnostic as KCLDiagnostic;
-use kclvm_parser::KCLModuleCache;
+use kcl_ast::ast::Program;
+use kcl_error::Diagnostic as KCLDiagnostic;
+use kcl_parser::KCLModuleCache;
 
 use lsp_types::Diagnostic;
 use lsp_types::DiagnosticRelatedInformation;
@@ -1685,7 +1685,7 @@ fn kcl_workspace_init_kclwork_test() {
     work.push("work");
 
     let (workspaces, failed) =
-        kclvm_driver::lookup_compile_workspaces(&*tool.read(), work.to_str().unwrap(), true);
+        kcl_driver::lookup_compile_workspaces(&*tool.read(), work.to_str().unwrap(), true);
 
     let mut expected = HashSet::new();
 
@@ -1743,7 +1743,7 @@ fn kcl_workspace_init_kclmod_test() {
     main.push("main.k");
 
     let (workspaces, failed) =
-        kclvm_driver::lookup_compile_workspaces(&*tool.read(), work.to_str().unwrap(), true);
+        kcl_driver::lookup_compile_workspaces(&*tool.read(), work.to_str().unwrap(), true);
 
     let mut expected = HashSet::new();
 
@@ -1783,7 +1783,7 @@ fn kcl_workspace_init_settings_file_test() {
     a.push("a.k");
 
     let (workspaces, failed) =
-        kclvm_driver::lookup_compile_workspaces(&*tool.read(), work.to_str().unwrap(), true);
+        kcl_driver::lookup_compile_workspaces(&*tool.read(), work.to_str().unwrap(), true);
 
     let mut expected = HashSet::new();
 
@@ -1820,7 +1820,7 @@ fn kcl_workspace_init_folder_test() {
     work.push("folder");
 
     let (workspaces, failed) =
-        kclvm_driver::lookup_compile_workspaces(&*tool.read(), work.to_str().unwrap(), true);
+        kcl_driver::lookup_compile_workspaces(&*tool.read(), work.to_str().unwrap(), true);
 
     let mut expected = HashSet::new();
 

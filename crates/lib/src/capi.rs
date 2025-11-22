@@ -1,6 +1,6 @@
 #![allow(clippy::missing_safety_doc)]
 
-use kclvm_runner::runner::KCL_RUNTIME_PANIC_RECORD;
+use kcl_runner::runner::KCL_RUNTIME_PANIC_RECORD;
 use std::alloc::{Layout, alloc, dealloc};
 use std::ffi::c_char;
 use std::ffi::{CStr, CString};
@@ -239,7 +239,7 @@ pub unsafe extern "C-unwind" fn kcl_fmt(src_ptr: *const c_char) -> *const c_char
 /// Exposes a normal kcl version function to the WASM host.
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_version() -> *const c_char {
-    CString::new(kclvm_version::VERSION).unwrap().into_raw()
+    CString::new(kcl_version::VERSION).unwrap().into_raw()
 }
 
 /// Exposes a normal kcl runtime error function to the WASM host.

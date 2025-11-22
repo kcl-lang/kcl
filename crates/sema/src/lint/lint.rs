@@ -1,4 +1,4 @@
-use kclvm_error::{Level, Position};
+use kcl_error::{Level, Position};
 
 /// Record the information at `LintContext` when traversing the AST for analysis across AST nodes, e.g., record
 /// used importstmt(used_import_names) when traversing `ast::Identifier` and `ast::SchemaAttr`, and detect unused

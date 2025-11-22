@@ -3,8 +3,8 @@ mod identifier;
 mod lit_ty_default_value;
 mod multi_assign;
 
-use kclvm_ast::ast;
-use kclvm_primitives::IndexMap;
+use kcl_ast::ast;
+use kcl_primitives::IndexMap;
 
 #[cfg(test)]
 mod tests;
@@ -20,7 +20,7 @@ use crate::resolver::Options;
 pub fn pre_process_program(program: &mut ast::Program, opts: &Options) {
     for (pkgpath, modules) in program.pkgs.iter() {
         let mut import_names = IndexMap::default();
-        if pkgpath == kclvm_ast::MAIN_PKG {
+        if pkgpath == kcl_ast::MAIN_PKG {
             for module in modules.iter() {
                 let module = program
                     .get_module(module)
@@ -39,7 +39,7 @@ pub fn pre_process_program(program: &mut ast::Program, opts: &Options) {
                 .get_module_mut(module)
                 .expect("Failed to acquire module lock")
                 .expect(&format!("module {:?} not found in program", module));
-            if pkgpath != kclvm_ast::MAIN_PKG {
+            if pkgpath != kcl_ast::MAIN_PKG {
                 import_names.clear();
             }
             // First we should transform the raw identifier to avoid raw identifier that happens to be a package path.

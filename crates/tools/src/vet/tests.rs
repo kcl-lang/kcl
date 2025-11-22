@@ -636,7 +636,7 @@ where
     return filepath;
     #[cfg(target_os = "windows")]
     {
-        use kclvm_utils::path::PathPrefix;
+        use kcl_utils::path::PathPrefix;
         let path = PathBuf::from(filepath)
             .canonicalize()
             .unwrap()

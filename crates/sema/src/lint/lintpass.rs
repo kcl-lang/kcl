@@ -1,7 +1,7 @@
 use crate::lint::lint::LintContext;
 use crate::resolver::scope::Scope;
-use kclvm_ast::ast;
-use kclvm_error::Handler;
+use kcl_ast::ast;
+use kcl_error::Handler;
 
 #[macro_export]
 /// A summary of the methods that need to be implemented in lintpass, to be added when constructing new lint

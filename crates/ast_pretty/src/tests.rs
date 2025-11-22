@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use super::print_ast_module;
-use kclvm_parser::parse_file_force_errors;
+use kcl_parser::parse_file_force_errors;
 use pretty_assertions::assert_eq;
 
 const FILE_INPUT_SUFFIX: &str = ".input";

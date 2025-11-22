@@ -1,8 +1,8 @@
 //! Copyright The KCL Authors. All rights reserved.
 
 use crate::*;
-use kclvm_runtime::unification::value_subsume;
-use kclvm_runtime::{
+use kcl_runtime::unification::value_subsume;
+use kcl_runtime::{
     ConfigEntryOperationKind, DictValue, UnionContext, UnionOptions, Value, must_normalize_index,
 };
 

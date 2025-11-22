@@ -6,13 +6,13 @@ use std::sync::{Arc, RwLock};
 
 use anyhow::Ok;
 use generational_arena::Index;
-use kclvm_ast::ast::{self, CallExpr, ConfigEntry, Module, NodeRef};
-use kclvm_ast::walker::TypedResultWalker;
-use kclvm_runtime::{
+use kcl_ast::ast::{self, CallExpr, ConfigEntry, Module, NodeRef};
+use kcl_ast::walker::TypedResultWalker;
+use kcl_runtime::{
     ConfigEntryOperationKind, DecoratorValue, PKG_PATH_PREFIX, RuntimeErrorType, UnionOptions,
     ValueRef, schema_assert, schema_runtime_type,
 };
-use kclvm_sema::{builtin, pkgpath_without_prefix, plugin};
+use kcl_sema::{builtin, pkgpath_without_prefix, plugin};
 use scopeguard::defer;
 
 use crate::error::INTERNAL_ERROR_MSG;
@@ -1054,7 +1054,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             ast::NumberLitValue::Int(int_value) => match &number_lit.binary_suffix {
                 Some(binary_suffix) => {
                     let unit = binary_suffix.value();
-                    let value = kclvm_runtime::cal_num(int_value, unit.as_str());
+                    let value = kcl_runtime::cal_num(int_value, unit.as_str());
                     Ok(self.unit_value(value, int_value, &unit))
                 }
                 None => Ok(self.int_value(int_value)),

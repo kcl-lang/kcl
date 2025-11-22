@@ -6,11 +6,11 @@ use crate::ty::parser::parse_type_str;
 use crate::ty::{
     Attr, DictType, Parameter, SchemaType, Type, TypeKind, TypeRef, assignable_to, is_upper_bound,
 };
-use kclvm_ast::ast;
-use kclvm_ast::pos::GetPos;
-use kclvm_error::diagnostic::Range;
-use kclvm_error::*;
-use kclvm_primitives::IndexMap;
+use kcl_ast::ast;
+use kcl_ast::pos::GetPos;
+use kcl_error::diagnostic::Range;
+use kcl_error::*;
+use kcl_primitives::IndexMap;
 
 fn ty_str_to_pkgpath(ty_str: &str) -> &str {
     let splits: Vec<&str> = ty_str.rsplitn(2, '.').collect();
@@ -204,7 +204,7 @@ impl<'ctx> Resolver<'_> {
     /// Check the type assignment statement between type annotation and target.
     pub fn check_assignment_type_annotation(
         &mut self,
-        assign_stmt: &kclvm_ast::ast::AssignStmt,
+        assign_stmt: &kcl_ast::ast::AssignStmt,
         value_ty: TypeRef,
     ) {
         if assign_stmt.ty.is_none() {

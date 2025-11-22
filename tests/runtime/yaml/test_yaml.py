@@ -3,11 +3,11 @@
 import typing
 import unittest
 
-import kclvm_runtime
+import tests.runtime.kcl_runtime as kcl_runtime
 
 # https://github.com/python/cpython/blob/main/Lib/test
 
-_Dylib = kclvm_runtime.KclRuntimeDylib()
+_Dylib = kcl_runtime.KclRuntimeDylib()
 
 
 class kclx_Yaml:

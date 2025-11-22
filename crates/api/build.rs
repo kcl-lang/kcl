@@ -2,7 +2,7 @@ use std::{env, path::PathBuf};
 
 use prost_wkt_build::{FileDescriptorSet, Message};
 
-/// According to the file kclvm/spec/gpyrpc/gpyrpc.proto, automatically generate
+/// According to the file spec.proto, automatically generate
 /// the corresponding rust source file to the directory src/model
 fn main() {
     unsafe {
@@ -14,7 +14,7 @@ fn main() {
         }
     }
     let out = PathBuf::from(env::var("OUT_DIR").unwrap());
-    let descriptor_file = out.join("kclvm_service_descriptor.bin");
+    let descriptor_file = out.join("kcl_service_descriptor.bin");
 
     let mut prost_build = prost_build::Config::new();
     prost_build

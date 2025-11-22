@@ -1,11 +1,11 @@
 use std::vec;
 
-use kclvm_error::Position;
-use kclvm_sema::core::{
+use kcl_error::Position;
+use kcl_sema::core::{
     global_state::GlobalState,
     symbol::{KCLSymbol, SymbolKind, SymbolRef},
 };
-use kclvm_sema::ty::TypeKind;
+use kcl_sema::ty::TypeKind;
 use lsp_types::{SemanticToken, SemanticTokenType, SemanticTokens, SemanticTokensResult};
 
 pub const LEGEND_TYPE: &[SemanticTokenType] = &[

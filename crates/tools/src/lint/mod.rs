@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use kclvm_error::{Diagnostic, Handler};
-use kclvm_parser::{LoadProgramOptions, ParseSession, load_program};
-use kclvm_primitives::IndexSet;
-use kclvm_runtime::PanicInfo;
-use kclvm_sema::resolver::resolve_program_with_opts;
+use kcl_error::{Diagnostic, Handler};
+use kcl_parser::{LoadProgramOptions, ParseSession, load_program};
+use kcl_primitives::IndexSet;
+use kcl_runtime::PanicInfo;
+use kcl_sema::resolver::resolve_program_with_opts;
 #[cfg(test)]
 mod tests;
 
@@ -26,7 +26,7 @@ mod tests;
 /// # Examples
 ///
 /// ```no_run
-/// use kclvm_tools::lint::lint_files;
+/// use kcl_tools::lint::lint_files;
 /// let (errors, warnings) = lint_files(&["test.k"], None);
 /// ```
 ///
@@ -84,7 +84,7 @@ pub fn lint_files(
     sess.append_diagnostic(
         resolve_program_with_opts(
             &mut program,
-            kclvm_sema::resolver::Options {
+            kcl_sema::resolver::Options {
                 merge_program: false,
                 ..Default::default()
             },

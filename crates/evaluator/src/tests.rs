@@ -1,8 +1,8 @@
 use crate::Evaluator;
-use kclvm_ast::MAIN_PKG;
-use kclvm_loader::{LoadPackageOptions, load_packages};
-use kclvm_parser::LoadProgramOptions;
-use kclvm_runtime::{Context, ValueRef};
+use kcl_ast::MAIN_PKG;
+use kcl_loader::{LoadPackageOptions, load_packages};
+use kcl_parser::LoadProgramOptions;
+use kcl_runtime::{Context, ValueRef};
 
 #[macro_export]
 macro_rules! evaluator_snapshot {
@@ -591,7 +591,7 @@ fn testing_sum(_: &Context, args: &ValueRef, _: &ValueRef) -> anyhow::Result<Val
 }
 
 fn context_with_plugin() -> Rc<RefCell<Context>> {
-    let mut plugin_functions: kclvm_primitives::IndexMap<String, kclvm_runtime::PluginFunction> =
+    let mut plugin_functions: kcl_primitives::IndexMap<String, kcl_runtime::PluginFunction> =
         Default::default();
     let func = Arc::new(testing_sum);
     plugin_functions.insert("testing.add".to_string(), func);

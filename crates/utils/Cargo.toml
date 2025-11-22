@@ -1,5 +1,5 @@
 [package]
-name = "kclvm-utils"
+name = "kcl-utils"
 version.workspace = true
 edition.workspace = true
 

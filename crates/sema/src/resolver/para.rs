@@ -1,7 +1,7 @@
 use crate::resolver::Resolver;
-use kclvm_ast::ast;
-use kclvm_ast::pos::GetPos;
-use kclvm_error::*;
+use kcl_ast::ast;
+use kcl_ast::pos::GetPos;
+use kcl_error::*;
 
 impl<'ctx> Resolver<'_> {
     /// Do parameter type check.

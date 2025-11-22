@@ -4,13 +4,13 @@ use crate::from_lsp::file_path_from_url;
 use crate::to_lsp::{kcl_diag_to_lsp_diags, url_from_path};
 use crate::util::{filter_kcl_config_file, get_file_name, to_json};
 use crossbeam_channel::{select, unbounded, Receiver, Sender};
-use kclvm_driver::toolchain::{self, Toolchain};
-use kclvm_driver::{
+use kcl_driver::toolchain::{self, Toolchain};
+use kcl_driver::{
     lookup_compile_workspace, lookup_compile_workspaces, CompileUnitOptions, WorkSpaceKind,
 };
-use kclvm_parser::KCLModuleCache;
-use kclvm_sema::core::global_state::GlobalState;
-use kclvm_sema::resolver::scope::KCLScopeCache;
+use kcl_parser::KCLModuleCache;
+use kcl_sema::core::global_state::GlobalState;
+use kcl_sema::resolver::scope::KCLScopeCache;
 use lsp_server::RequestId;
 use lsp_server::{ReqQueue, Request, Response};
 use lsp_types::{

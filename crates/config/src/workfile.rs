@@ -1,6 +1,6 @@
 //! The config for IDE/LSP workspace config file `kcl.work'
 
-use kclvm_utils::path::PathPrefix;
+use kcl_utils::path::PathPrefix;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,

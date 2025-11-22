@@ -1,6 +1,6 @@
 //! Low-level token stream lexer.
 //!
-//! The purpose of `kclvm_lexer` is similar to [`rustc_lexer`] crate,
+//! The purpose of `kcl_lexer` is similar to [`rustc_lexer`] crate,
 //! which separates out pure lexing and language-specific designs.
 //!
 //! The difference with [`rustc_lexer`] is that here we want to define
@@ -28,7 +28,7 @@ mod number;
 #[cfg(test)]
 mod tests;
 
-extern crate kclvm_error;
+extern crate kcl_error;
 
 use cursor::EOF_CHAR;
 

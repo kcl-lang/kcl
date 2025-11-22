@@ -1,8 +1,8 @@
 use std::{collections::HashMap, path::PathBuf};
 
-use kclvm_ast::ast::Module;
-use kclvm_primitives::{DefaultHashBuilder, IndexMap};
-use kclvm_utils::path::PathPrefix;
+use kcl_ast::ast::Module;
+use kcl_primitives::{DefaultHashBuilder, IndexMap};
+use kcl_utils::path::PathPrefix;
 use petgraph::{prelude::StableDiGraph, visit::EdgeRef};
 use std::hash::Hash;
 /// File with package info

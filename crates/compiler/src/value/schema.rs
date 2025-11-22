@@ -1,8 +1,8 @@
 //! Copyright The KCL Authors. All rights reserved.
 
-pub const SCHEMA_NAME: &str = "$kclvm_schema";
-pub const SCHEMA_ATTR_NAME: &str = "$kclvm_schema_attr";
-pub const SCHEMA_CHECK_BLOCK_NAME: &str = "$kclvm_schema_check_block";
+pub const SCHEMA_NAME: &str = "$kcl_schema";
+pub const SCHEMA_ATTR_NAME: &str = "$kcl_schema_attr";
+pub const SCHEMA_CHECK_BLOCK_NAME: &str = "$kcl_schema_check_block";
 pub const SCHEMA_SELF_NAME: &str = "$schema_self";
 pub const SCHEMA_CONFIG_NAME: &str = "$schema_config";
 pub const SCHEMA_CONFIG_META_NAME: &str = "$schema_config_meta";

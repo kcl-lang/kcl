@@ -1,6 +1,6 @@
 use crate::service::capi::*;
 use crate::{call, gpyrpc::*};
-use kclvm_utils::path::PathPrefix;
+use kcl_utils::path::PathPrefix;
 use once_cell::sync::Lazy;
 use prost::Message;
 use serde::de::DeserializeOwned;
@@ -16,7 +16,7 @@ static TEST_MUTEX: Lazy<Mutex<i32>> = Lazy::new(|| Mutex::new(0i32));
 #[test]
 fn test_c_api_call_exec_program() {
     test_c_api::<ExecProgramArgs, ExecProgramResult, _>(
-        "KclvmService.ExecProgram",
+        "KclService.ExecProgram",
         "exec-program.json",
         "exec-program.response.json",
         |_| {},
@@ -26,7 +26,7 @@ fn test_c_api_call_exec_program() {
 #[test]
 fn test_c_api_call_exec_program_with_external_pkg() {
     test_c_api::<ExecProgramArgs, ExecProgramResult, _>(
-        "KclvmService.ExecProgram",
+        "KclService.ExecProgram",
         "exec-program-with-external-pkg.json",
         "exec-program-with-external-pkg.response.json",
         |_| {},
@@ -36,7 +36,7 @@ fn test_c_api_call_exec_program_with_external_pkg() {
 #[test]
 fn test_c_api_call_exec_program_with_include_schema_type_path() {
     test_c_api::<ExecProgramArgs, ExecProgramResult, _>(
-        "KclvmService.ExecProgram",
+        "KclService.ExecProgram",
         "exec-program-with-include-schema-type-path.json",
         "exec-program-with-include-schema-type-path.response.json",
         |_| {},
@@ -46,7 +46,7 @@ fn test_c_api_call_exec_program_with_include_schema_type_path() {
 #[test]
 fn test_c_api_call_exec_program_with_path_selector() {
     test_c_api::<ExecProgramArgs, ExecProgramResult, _>(
-        "KclvmService.ExecProgram",
+        "KclService.ExecProgram",
         "exec-program-with-path-selector.json",
         "exec-program-with-path-selector.response.json",
         |_| {},
@@ -56,7 +56,7 @@ fn test_c_api_call_exec_program_with_path_selector() {
 #[test]
 fn test_c_api_call_exec_program_with_print() {
     test_c_api::<ExecProgramArgs, ExecProgramResult, _>(
-        "KclvmService.ExecProgram",
+        "KclService.ExecProgram",
         "exec-program-with-print.json",
         "exec-program-with-print.response.json",
         |_| {},
@@ -87,7 +87,7 @@ fn test_c_api_call_override_file() {
 
     for (input, output) in &test_cases {
         test_c_api_without_wrapper::<OverrideFileArgs, OverrideFileResult>(
-            "KclvmService.OverrideFile",
+            "KclService.OverrideFile",
             input,
             output,
         );
@@ -97,7 +97,7 @@ fn test_c_api_call_override_file() {
 #[test]
 fn test_c_api_get_schema_type_mapping() {
     test_c_api::<GetSchemaTypeMappingArgs, GetSchemaTypeMappingResult, _>(
-        "KclvmService.GetSchemaTypeMapping",
+        "KclService.GetSchemaTypeMapping",
         "get-schema-type-mapping.json",
         "get-schema-type-mapping.response.json",
         |r| {
@@ -120,7 +120,7 @@ fn test_c_api_get_schema_type_mapping() {
 #[test]
 fn test_c_api_format_code() {
     test_c_api_without_wrapper::<FormatCodeArgs, FormatCodeResult>(
-        "KclvmService.FormatCode",
+        "KclService.FormatCode",
         "format-code.json",
         "format-code.response.json",
     );
@@ -129,7 +129,7 @@ fn test_c_api_format_code() {
 #[test]
 fn test_c_api_format_path() {
     test_c_api_without_wrapper::<FormatPathArgs, FormatPathResult>(
-        "KclvmService.FormatPath",
+        "KclService.FormatPath",
         "format-path.json",
         "format-path.response.json",
     );
@@ -138,7 +138,7 @@ fn test_c_api_format_path() {
 #[test]
 fn test_c_api_lint_path() {
     test_c_api_without_wrapper::<LintPathArgs, LintPathResult>(
-        "KclvmService.LintPath",
+        "KclService.LintPath",
         "lint-path.json",
         "lint-path.response.json",
     );
@@ -147,7 +147,7 @@ fn test_c_api_lint_path() {
 #[test]
 fn test_c_api_call_exec_program_with_compile_only() {
     test_c_api_panic::<ExecProgramArgs>(
-        "KclvmService.ExecProgram",
+        "KclService.ExecProgram",
         "exec-program-with-compile-only.json",
         "exec-program-with-compile-only.response.panic",
     );
@@ -156,7 +156,7 @@ fn test_c_api_call_exec_program_with_compile_only() {
 #[test]
 fn test_c_api_validate_code_with_dep() {
     test_c_api_without_wrapper::<ValidateCodeArgs, ValidateCodeResult>(
-        "KclvmService.ValidateCode",
+        "KclService.ValidateCode",
         "validate-code-file-with-dep.json",
         "validate-code-file-with-dep.response.json",
     );
@@ -165,7 +165,7 @@ fn test_c_api_validate_code_with_dep() {
 #[test]
 fn test_c_api_validate_code() {
     test_c_api_without_wrapper::<ValidateCodeArgs, ValidateCodeResult>(
-        "KclvmService.ValidateCode",
+        "KclService.ValidateCode",
         "validate-code.json",
         "validate-code.response.json",
     );
@@ -174,7 +174,7 @@ fn test_c_api_validate_code() {
 #[test]
 fn test_c_api_validate_code_file() {
     test_c_api_without_wrapper::<ValidateCodeArgs, ValidateCodeResult>(
-        "KclvmService.ValidateCode",
+        "KclService.ValidateCode",
         "validate-code-file.json",
         "validate-code-file.response.json",
     );
@@ -183,7 +183,7 @@ fn test_c_api_validate_code_file() {
 #[test]
 fn test_c_api_load_settings_files() {
     test_c_api_without_wrapper::<LoadSettingsFilesArgs, LoadSettingsFilesResult>(
-        "KclvmService.LoadSettingsFiles",
+        "KclService.LoadSettingsFiles",
         "load-settings-files.json",
         "load-settings-files.response.json",
     );
@@ -198,7 +198,7 @@ fn test_c_api_rename() {
     fs::write(path.clone(), content).unwrap();
 
     test_c_api::<RenameArgs, RenameResult, _>(
-        "KclvmService.Rename",
+        "KclService.Rename",
         "rename.json",
         "rename.response.json",
         |r| {
@@ -223,7 +223,7 @@ fn test_c_api_rename() {
 #[test]
 fn test_c_api_rename_code() {
     test_c_api_without_wrapper::<RenameCodeArgs, RenameCodeResult>(
-        "KclvmService.RenameCode",
+        "KclService.RenameCode",
         "rename-code.json",
         "rename-code.response.json",
     );
@@ -232,7 +232,7 @@ fn test_c_api_rename_code() {
 #[test]
 fn test_c_api_list_options() {
     test_c_api_without_wrapper::<ParseProgramArgs, ListOptionsResult>(
-        "KclvmService.ListOptions",
+        "KclService.ListOptions",
         "list-options.json",
         "list-options.response.json",
     );
@@ -241,7 +241,7 @@ fn test_c_api_list_options() {
 #[test]
 fn test_c_api_list_variables() {
     test_c_api_without_wrapper::<ListVariablesArgs, ListVariablesResult>(
-        "KclvmService.ListVariables",
+        "KclService.ListVariables",
         "list-variables.json",
         "list-variables.response.json",
     );
@@ -250,7 +250,7 @@ fn test_c_api_list_variables() {
 #[test]
 fn test_c_api_parse_file() {
     test_c_api_without_wrapper::<ParseFileArgs, ParseFileResult>(
-        "KclvmService.ParseFile",
+        "KclService.ParseFile",
         "parse-file.json",
         "parse-file.response.json",
     );
@@ -259,7 +259,7 @@ fn test_c_api_parse_file() {
 #[test]
 fn test_c_api_testing() {
     test_c_api::<TestArgs, TestResult, _>(
-        "KclvmService.Test",
+        "KclService.Test",
         "test.json",
         "test.response.json",
         |r| {
@@ -291,7 +291,7 @@ where
     F: Fn(&mut R),
 {
     let _test_lock = TEST_MUTEX.lock().unwrap();
-    let serv = kclvm_service_new(0);
+    let serv = kcl_service_new(0);
 
     let input_path = Path::new(TEST_DATA_PATH).join(input);
     let input = fs::read_to_string(&input_path)
@@ -300,7 +300,7 @@ where
     let args = unsafe { CString::from_vec_unchecked(args_vec.clone()) };
     let call = CString::new(svc_name).unwrap();
     let mut result_len: usize = 0;
-    let src_ptr = kclvm_service_call_with_length(
+    let src_ptr = kcl_service_call_with_length(
         serv,
         call.as_ptr(),
         args.as_ptr(),
@@ -330,8 +330,8 @@ where
     wrapper(&mut except_result);
     assert_eq!(result, except_result, "\nresult json is {result_json}");
     unsafe {
-        kclvm_service_delete(serv);
-        kclvm_service_free_string(src_ptr as *mut c_char);
+        kcl_service_delete(serv);
+        kcl_service_free_string(src_ptr as *mut c_char);
     }
 }
 
@@ -340,7 +340,7 @@ where
     A: Message + DeserializeOwned,
 {
     let _test_lock = TEST_MUTEX.lock().unwrap();
-    let serv = kclvm_service_new(0);
+    let serv = kcl_service_new(0);
     let prev_hook = std::panic::take_hook();
     // disable print panic info
     std::panic::set_hook(Box::new(|_info| {}));
@@ -351,7 +351,7 @@ where
         let args_vec = serde_json::from_str::<A>(&input).unwrap().encode_to_vec();
         let args = unsafe { CString::from_vec_unchecked(args_vec.clone()) };
         let call = CString::new(svc_name).unwrap();
-        kclvm_service_call(serv, call.as_ptr(), args.as_ptr(), args_vec.len())
+        kcl_service_call(serv, call.as_ptr(), args.as_ptr(), args_vec.len())
     });
     std::panic::set_hook(prev_hook);
     match result {
@@ -371,8 +371,8 @@ where
                 result.to_string_lossy()
             );
             unsafe {
-                kclvm_service_delete(serv);
-                kclvm_service_free_string(result_ptr as *mut c_char);
+                kcl_service_delete(serv);
+                kcl_service_free_string(result_ptr as *mut c_char);
             }
         }
         Err(_) => {
@@ -383,7 +383,7 @@ where
 
 #[test]
 fn test_call_exec_program() {
-    let name = b"KclvmService.ExecProgram";
+    let name = b"KclService.ExecProgram";
     let args = b"\x12\x1a./src/testdata/test_call.k";
     let result = call(name, args).unwrap();
     assert!(
@@ -395,7 +395,7 @@ fn test_call_exec_program() {
 
 #[test]
 fn test_call_get_version() {
-    let name = b"KclvmService.GetVersion";
+    let name = b"KclService.GetVersion";
     let args = b"";
     let result = call(name, args).unwrap();
     assert!(!result.starts_with(b"ERROR"))

@@ -7,13 +7,13 @@ pub mod toolchain;
 mod tests;
 
 use anyhow::Result;
-use kclvm_config::{
+use kcl_config::{
     modfile::{KCL_FILE_EXTENSION, KCL_MOD_FILE, KCL_WORK_FILE, get_pkg_root, load_mod_file},
     settings::{DEFAULT_SETTING_FILE, build_settings_pathbuf},
     workfile::load_work_file,
 };
-use kclvm_parser::{LoadProgramOptions, get_kcl_files};
-use kclvm_utils::path::PathPrefix;
+use kcl_parser::{LoadProgramOptions, get_kcl_files};
+use kcl_utils::path::PathPrefix;
 use std::iter;
 use std::{collections::HashMap, env};
 use std::{
@@ -37,7 +37,7 @@ pub fn lookup_compile_workspace(
 ) -> CompileUnitOptions {
     fn default_res(tool: &dyn Toolchain, file: &str, load_pkg: bool) -> CompileUnitOptions {
         let mut default_res: CompileUnitOptions = (vec![], None, None);
-        let mut load_opt = kclvm_parser::LoadProgramOptions::default();
+        let mut load_opt = kcl_parser::LoadProgramOptions::default();
         let metadata = fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt).unwrap_or(None);
         let path = Path::new(file);
         if let Some(ext) = path.extension() {
@@ -82,7 +82,7 @@ pub fn lookup_compile_workspace(
                         .map(|p| p.to_string_lossy().to_string())
                         .unwrap_or_default();
 
-                    let mut load_opt = kclvm_parser::LoadProgramOptions {
+                    let mut load_opt = kcl_parser::LoadProgramOptions {
                         work_dir: work_dir.clone(),
                         ..Default::default()
                     };
@@ -99,7 +99,7 @@ pub fn lookup_compile_workspace(
         }
         Ok(CompileUnitPath::ModFile(dir)) => match load_mod_file(&dir) {
             Ok(mod_file) => {
-                let mut load_opt = kclvm_parser::LoadProgramOptions::default();
+                let mut load_opt = kcl_parser::LoadProgramOptions::default();
                 let metadata =
                     fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt).unwrap_or(None);
                 if let Some(files) = mod_file.get_entries() {
@@ -146,7 +146,7 @@ pub fn lookup_compile_workspaces(
                 }
             }
             WorkSpaceKind::Folder(folder) => {
-                let load_opt = kclvm_parser::LoadProgramOptions::default();
+                let load_opt = kcl_parser::LoadProgramOptions::default();
                 let metadata = None;
 
                 if load_pkg {

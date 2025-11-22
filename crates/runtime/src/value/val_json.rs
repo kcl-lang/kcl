@@ -1,7 +1,7 @@
 //! Copyright The KCL Authors. All rights reserved.
 
 use bstr::ByteSlice;
-use kclvm_primitives::{DefaultHashBuilder, IndexMap};
+use kcl_primitives::{DefaultHashBuilder, IndexMap};
 use serde::{
     Deserialize, Serialize,
     de::{DeserializeSeed, MapAccess, SeqAccess, Visitor},

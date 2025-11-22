@@ -4,11 +4,11 @@ use crate::*;
 
 #[unsafe(no_mangle)]
 
-pub extern "C-unwind" fn kclvm_value_union_all(
-    ctx: *mut kclvm_context_t,
-    args: *const kclvm_value_ref_t,
-    _kwargs: *const kclvm_value_ref_t,
-) -> *const kclvm_value_ref_t {
+pub extern "C-unwind" fn kcl_value_union_all(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    _kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
     let args = ptr_as_ref(args);
     let ctx = mut_ptr_as_ref(ctx);
     if let Some(arg) = args.arg_0() {

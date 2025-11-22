@@ -48,11 +48,11 @@ jobs:
       - name: Read VERSION file
         id: read_version
         run: |
-          VERSION=$(cat VERSION)
+          VERSION=$(cargo pkgid -p kcl-api | cut -d'@' -f2)
           echo "VERSION=v${VERSION}" >> $GITHUB_ENV
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: kcl-${{ env.VERSION }}-linux-musl
           if-no-files-found: error
-          path: _build/kcl-core-${{ env.VERSION }}-linux-amd64.tar.gz
+          path: _build/dist/linux/kcl-core-${{ env.VERSION }}-linux-amd64.tar.gz

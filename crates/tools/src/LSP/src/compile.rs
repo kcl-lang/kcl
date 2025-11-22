@@ -1,13 +1,13 @@
-use kclvm_ast::ast::Program;
-use kclvm_driver::{lookup_compile_workspace, toolchain};
-use kclvm_error::Diagnostic;
-use kclvm_parser::{
+use kcl_ast::ast::Program;
+use kcl_driver::{lookup_compile_workspace, toolchain};
+use kcl_error::Diagnostic;
+use kcl_parser::{
     entry::get_normalized_k_files_from_paths, load_all_files_under_paths, KCLModuleCache,
     LoadProgramOptions, ParseSessionRef,
 };
-use kclvm_primitives::{IndexMap, IndexSet};
-use kclvm_query::query::filter_pkg_schemas;
-use kclvm_sema::{
+use kcl_primitives::{IndexMap, IndexSet};
+use kcl_query::query::filter_pkg_schemas;
+use kcl_sema::{
     advanced_resolver::AdvancedResolver,
     core::global_state::GlobalState,
     namer::Namer,
@@ -118,7 +118,7 @@ pub fn compile(
 
     let prog_scope = resolve_program_with_opts(
         &mut program,
-        kclvm_sema::resolver::Options {
+        kcl_sema::resolver::Options {
             merge_program: false,
             type_erasure: false,
             ..Default::default()
@@ -167,7 +167,7 @@ pub fn compile(
 pub fn compile_with_params(
     params: Params,
 ) -> (
-    IndexSet<kclvm_error::Diagnostic>,
+    IndexSet<kcl_error::Diagnostic>,
     anyhow::Result<(Program, IndexMap<String, Vec<SchemaType>>, GlobalState)>,
 ) {
     let file = PathBuf::from(params.file.clone().unwrap())
