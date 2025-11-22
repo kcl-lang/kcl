@@ -1,0 +1,58 @@
+---
+source: crates/parser/src/tests/ast.rs
+expression: "$crate :: tests :: parsing_file_ast_json(\"hello.k\", r####\"a=123\"####)"
+---
+{
+  "filename": "hello.k",
+  "doc": null,
+  "body": [
+    {
+      "node": {
+        "type": "Assign",
+        "targets": [
+          {
+            "node": {
+              "name": {
+                "node": "a",
+                "filename": "hello.k",
+                "line": 1,
+                "column": 0,
+                "end_line": 1,
+                "end_column": 1
+              },
+              "paths": [],
+              "pkgpath": ""
+            },
+            "filename": "hello.k",
+            "line": 1,
+            "column": 0,
+            "end_line": 1,
+            "end_column": 1
+          }
+        ],
+        "value": {
+          "node": {
+            "type": "NumberLit",
+            "binary_suffix": null,
+            "value": {
+              "type": "Int",
+              "value": 123
+            }
+          },
+          "filename": "hello.k",
+          "line": 1,
+          "column": 2,
+          "end_line": 1,
+          "end_column": 5
+        },
+        "ty": null
+      },
+      "filename": "hello.k",
+      "line": 1,
+      "column": 0,
+      "end_line": 1,
+      "end_column": 5
+    }
+  ],
+  "comments": []
+}

@@ -23,16 +23,16 @@ getSystemInfo
 echo "[info] os: $os"
 echo "[info] arch: $arch"
 echo "[info] version: $version"
-release_file="kclvm-$version-$os-$arch.tar.gz"
-release_path="$topdir/_build"
-package_dir="$topdir/_build/dist/$os"
-install_dir="kclvm"
+release_file="kcl-$version-$os-$arch.tar.gz"
+release_path="_build"
+package_dir="_build/dist/$os"
+install_dir="core"
 
 cd $package_dir
 tar -czvf $release_file $install_dir
-
-mv $package_dir/$release_file $release_path/$release_file
+cd ../../..
+ls -l "$package_dir/$release_file"
 
 # Print the summary.
 echo "================ Summary ================"
-echo "  $release_path/$release_file has been created"
+echo "  $package_dir/$release_file has been created"

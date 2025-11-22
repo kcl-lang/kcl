@@ -1,0 +1,19 @@
+---
+source: crates/tools/src/vet/tests.rs
+expression: got_ast_json_str
+---
+{
+  "column": 0,
+  "end_column": 1,
+  "end_line": 1,
+  "filename": "<workspace>/plain_value.k.json",
+  "line": 1,
+  "node": {
+    "binary_suffix": null,
+    "type": "NumberLit",
+    "value": {
+      "type": "Int",
+      "value": 1
+    }
+  }
+}

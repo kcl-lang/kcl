@@ -1,0 +1,545 @@
+---
+source: crates/loader/src/tests.rs
+expression: "format! (\"{:#?}\", p.symbols.values())"
+---
+[
+    SymbolInfo {
+        ty: Type {
+            kind: Module(
+                ModuleType {
+                    pkgpath: "math",
+                    imported: [
+                        "test.k",
+                    ],
+                    kind: System,
+                },
+            ),
+            is_type_alias: false,
+            flags: MODULE,
+        },
+        name: "math",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    7,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 1,
+                column: Some(
+                    11,
+                ),
+            },
+        ),
+        owner: None,
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 3,
+                    generation: 0,
+                },
+                kind: Package,
+            },
+        ),
+        attrs: [
+            SymbolRef {
+                id: Index {
+                    index: 52,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 53,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 54,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 55,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 56,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 57,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 58,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 59,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 60,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 61,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 62,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 63,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 64,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 65,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 66,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 67,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+        ],
+        is_global: false,
+    },
+    SymbolInfo {
+        ty: Type {
+            kind: Float,
+            is_type_alias: false,
+            flags: FLOAT,
+        },
+        name: "a",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 3,
+                column: Some(
+                    0,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 3,
+                column: Some(
+                    1,
+                ),
+            },
+        ),
+        owner: Some(
+            SymbolRef {
+                id: Index {
+                    index: 16,
+                    generation: 0,
+                },
+                kind: Package,
+            },
+        ),
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 0,
+                    generation: 0,
+                },
+                kind: Value,
+            },
+        ),
+        attrs: [],
+        is_global: true,
+    },
+    SymbolInfo {
+        ty: Type {
+            kind: Module(
+                ModuleType {
+                    pkgpath: "math",
+                    imported: [
+                        "test.k",
+                    ],
+                    kind: System,
+                },
+            ),
+            is_type_alias: false,
+            flags: MODULE,
+        },
+        name: "math",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 3,
+                column: Some(
+                    4,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 3,
+                column: Some(
+                    8,
+                ),
+            },
+        ),
+        owner: None,
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 3,
+                    generation: 0,
+                },
+                kind: Package,
+            },
+        ),
+        attrs: [
+            SymbolRef {
+                id: Index {
+                    index: 52,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 53,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 54,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 55,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 56,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 57,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 58,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 59,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 60,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 61,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 62,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 63,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 64,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 65,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 66,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 67,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+        ],
+        is_global: false,
+    },
+    SymbolInfo {
+        ty: Type {
+            kind: Function(
+                FunctionType {
+                    doc: "Return the logarithm of `x` to the base `e`.",
+                    params: [
+                        Parameter {
+                            name: "x",
+                            ty: Type {
+                                kind: Union(
+                                    [
+                                        Type {
+                                            kind: Int,
+                                            is_type_alias: false,
+                                            flags: INT,
+                                        },
+                                        Type {
+                                            kind: Float,
+                                            is_type_alias: false,
+                                            flags: FLOAT,
+                                        },
+                                    ],
+                                ),
+                                is_type_alias: false,
+                                flags: UNION,
+                            },
+                            has_default: false,
+                            default_value: None,
+                            range: (
+                                Position {
+                                    filename: "",
+                                    line: 1,
+                                    column: None,
+                                },
+                                Position {
+                                    filename: "",
+                                    line: 1,
+                                    column: None,
+                                },
+                            ),
+                        },
+                        Parameter {
+                            name: "e",
+                            ty: Type {
+                                kind: Float,
+                                is_type_alias: false,
+                                flags: FLOAT,
+                            },
+                            has_default: true,
+                            default_value: None,
+                            range: (
+                                Position {
+                                    filename: "",
+                                    line: 1,
+                                    column: None,
+                                },
+                                Position {
+                                    filename: "",
+                                    line: 1,
+                                    column: None,
+                                },
+                            ),
+                        },
+                    ],
+                    self_ty: None,
+                    return_ty: Type {
+                        kind: Float,
+                        is_type_alias: false,
+                        flags: FLOAT,
+                    },
+                    is_variadic: false,
+                    kw_only_index: None,
+                },
+            ),
+            is_type_alias: false,
+            flags: FUNCTION,
+        },
+        name: "log",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 3,
+                column: Some(
+                    9,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 3,
+                column: Some(
+                    12,
+                ),
+            },
+        ),
+        owner: None,
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 62,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+        ),
+        attrs: [],
+        is_global: false,
+    },
+    SymbolInfo {
+        ty: Type {
+            kind: IntLit(
+                10,
+            ),
+            is_type_alias: false,
+            flags: INT | LITERAL,
+        },
+        name: "@NumberLitExpression",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 3,
+                column: Some(
+                    15,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 3,
+                column: Some(
+                    15,
+                ),
+            },
+        ),
+        owner: None,
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 0,
+                    generation: 0,
+                },
+                kind: Expression,
+            },
+        ),
+        attrs: [],
+        is_global: false,
+    },
+    SymbolInfo {
+        ty: Type {
+            kind: Float,
+            is_type_alias: false,
+            flags: FLOAT,
+        },
+        name: "@CallExpression",
+        range: (
+            Position {
+                filename: "test.k",
+                line: 3,
+                column: Some(
+                    16,
+                ),
+            },
+            Position {
+                filename: "test.k",
+                line: 3,
+                column: Some(
+                    16,
+                ),
+            },
+        ),
+        owner: None,
+        def: Some(
+            SymbolRef {
+                id: Index {
+                    index: 1,
+                    generation: 0,
+                },
+                kind: Expression,
+            },
+        ),
+        attrs: [],
+        is_global: false,
+    },
+]

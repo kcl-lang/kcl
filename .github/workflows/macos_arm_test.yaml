@@ -33,7 +33,7 @@ jobs:
       - name: Install rust nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.84.1
+          toolchain: 1.88
           override: true
           components: clippy, rustfmt
       - name: Set up python
@@ -41,27 +41,24 @@ jobs:
         with:
           python-version: '3.11'
       - name: Grammar test
-        working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/darwin/kclvm/bin && make && make test-grammar
-        shell: bash
-      - name: Evaluator Grammar test
-        working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/darwin/kclvm/bin && make test-grammar-evaluator
+        run: export PATH=$PATH:$PWD/_build/dist/darwin/core && make && make test-grammar
         shell: bash
 
       - name: Release
-        run: export PATH=$PATH:$PWD/../_build/dist/darwin/kclvm/bin && make release
+        run: export PATH=$PATH:$PWD/_build/dist/darwin/core && make release
         shell: bash
 
       - name: Read VERSION file
-        id: read_version
         run: |
-          VERSION=$(cat VERSION)
+          VERSION=$(cargo pkgid -p kcl-api | cut -d'@' -f2)
           echo "VERSION=v${VERSION}" >> $GITHUB_ENV
+
+      - name: Rename artifact name with version
+        run: sudo mv -f _build/dist/darwin/kcl-latest-darwin-arm64.tar.gz _build/dist/darwin/kcl-${{ env.VERSION }}-darwin-arm64.tar.gz
 
       - uses: actions/upload-artifact@v4
         if: "contains(matrix.os, 'macos-13-xlarge')"
         with:
           name: kcl-${{ env.VERSION }}-darwin-arm64
           if-no-files-found: error
-          path: _build/kclvm-${{ env.VERSION }}-darwin-arm64.tar.gz
+          path: _build/dist/darwin/kcl-${{ env.VERSION }}-darwin-arm64.tar.gz

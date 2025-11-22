@@ -1,0 +1,41 @@
+---
+source: crates/query/src/tests.rs
+expression: got_json
+---
+{
+  "shb.a.ids": [
+    {
+      "name": "ids",
+      "type_name": "",
+      "op_sym": ":",
+      "value": "[\n    4\n    5\n    6\n]",
+      "list_items": [
+        {
+          "name": "",
+          "type_name": "",
+          "op_sym": "",
+          "value": "4",
+          "list_items": [],
+          "dict_entries": []
+        },
+        {
+          "name": "",
+          "type_name": "",
+          "op_sym": "",
+          "value": "5",
+          "list_items": [],
+          "dict_entries": []
+        },
+        {
+          "name": "",
+          "type_name": "",
+          "op_sym": "",
+          "value": "6",
+          "list_items": [],
+          "dict_entries": []
+        }
+      ],
+      "dict_entries": []
+    }
+  ]
+}

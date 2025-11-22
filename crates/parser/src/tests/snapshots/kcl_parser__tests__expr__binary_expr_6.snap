@@ -1,0 +1,169 @@
+---
+source: crates/parser/src/tests/expr.rs
+expression: "$crate :: tests :: parsing_expr_string(r####\"int(e.value) > 1 and i == 0\"####)"
+---
+Node {
+    node: Binary(
+        BinaryExpr {
+            left: Node {
+                node: Compare(
+                    Compare {
+                        left: Node {
+                            node: Call(
+                                CallExpr {
+                                    func: Node {
+                                        node: Identifier(
+                                            Identifier {
+                                                names: [
+                                                    Node {
+                                                        node: "int",
+                                                        filename: "",
+                                                        line: 1,
+                                                        column: 0,
+                                                        end_line: 1,
+                                                        end_column: 3,
+                                                    },
+                                                ],
+                                                pkgpath: "",
+                                                ctx: Load,
+                                            },
+                                        ),
+                                        filename: "",
+                                        line: 1,
+                                        column: 0,
+                                        end_line: 1,
+                                        end_column: 3,
+                                    },
+                                    args: [
+                                        Node {
+                                            node: Identifier(
+                                                Identifier {
+                                                    names: [
+                                                        Node {
+                                                            node: "e",
+                                                            filename: "",
+                                                            line: 1,
+                                                            column: 4,
+                                                            end_line: 1,
+                                                            end_column: 5,
+                                                        },
+                                                        Node {
+                                                            node: "value",
+                                                            filename: "",
+                                                            line: 1,
+                                                            column: 6,
+                                                            end_line: 1,
+                                                            end_column: 11,
+                                                        },
+                                                    ],
+                                                    pkgpath: "",
+                                                    ctx: Load,
+                                                },
+                                            ),
+                                            filename: "",
+                                            line: 1,
+                                            column: 4,
+                                            end_line: 1,
+                                            end_column: 11,
+                                        },
+                                    ],
+                                    keywords: [],
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 0,
+                            end_line: 1,
+                            end_column: 12,
+                        },
+                        ops: [
+                            Gt,
+                        ],
+                        comparators: [
+                            Node {
+                                node: NumberLit(
+                                    NumberLit {
+                                        binary_suffix: None,
+                                        value: Int(
+                                            1,
+                                        ),
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 15,
+                                end_line: 1,
+                                end_column: 16,
+                            },
+                        ],
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 0,
+                end_line: 1,
+                end_column: 27,
+            },
+            op: And,
+            right: Node {
+                node: Compare(
+                    Compare {
+                        left: Node {
+                            node: Identifier(
+                                Identifier {
+                                    names: [
+                                        Node {
+                                            node: "i",
+                                            filename: "",
+                                            line: 1,
+                                            column: 21,
+                                            end_line: 1,
+                                            end_column: 22,
+                                        },
+                                    ],
+                                    pkgpath: "",
+                                    ctx: Load,
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 21,
+                            end_line: 1,
+                            end_column: 22,
+                        },
+                        ops: [
+                            Eq,
+                        ],
+                        comparators: [
+                            Node {
+                                node: NumberLit(
+                                    NumberLit {
+                                        binary_suffix: None,
+                                        value: Int(
+                                            0,
+                                        ),
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 26,
+                                end_line: 1,
+                                end_column: 27,
+                            },
+                        ],
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 21,
+                end_line: 1,
+                end_column: 27,
+            },
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 27,
+}

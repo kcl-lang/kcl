@@ -1,0 +1,207 @@
+---
+source: crates/parser/src/tests/error_recovery.rs
+expression: "$crate :: tests ::\nparsing_expr_string(r#\"'\\\"false\\\" ${item.kind}: ${item.metadata.name} \\\"true\\\" ${item} '\"#)"
+---
+Node {
+    node: JoinedString(
+        JoinedString {
+            is_long_string: false,
+            values: [
+                Node {
+                    node: StringLit(
+                        StringLit {
+                            is_long_string: false,
+                            raw_value: "\\\"false\\\" ",
+                            value: "\"false\" ",
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 1,
+                },
+                Node {
+                    node: FormattedValue(
+                        FormattedValue {
+                            is_long_string: false,
+                            value: Node {
+                                node: Identifier(
+                                    Identifier {
+                                        names: [
+                                            Node {
+                                                node: "item",
+                                                filename: "",
+                                                line: 1,
+                                                column: 13,
+                                                end_line: 1,
+                                                end_column: 17,
+                                            },
+                                            Node {
+                                                node: "kind",
+                                                filename: "",
+                                                line: 1,
+                                                column: 18,
+                                                end_line: 1,
+                                                end_column: 22,
+                                            },
+                                        ],
+                                        pkgpath: "",
+                                        ctx: Load,
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 13,
+                                end_line: 1,
+                                end_column: 22,
+                            },
+                            format_spec: None,
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 13,
+                    end_line: 1,
+                    end_column: 22,
+                },
+                Node {
+                    node: StringLit(
+                        StringLit {
+                            is_long_string: false,
+                            raw_value: ": ",
+                            value: ": ",
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 1,
+                },
+                Node {
+                    node: FormattedValue(
+                        FormattedValue {
+                            is_long_string: false,
+                            value: Node {
+                                node: Identifier(
+                                    Identifier {
+                                        names: [
+                                            Node {
+                                                node: "item",
+                                                filename: "",
+                                                line: 1,
+                                                column: 27,
+                                                end_line: 1,
+                                                end_column: 31,
+                                            },
+                                            Node {
+                                                node: "metadata",
+                                                filename: "",
+                                                line: 1,
+                                                column: 32,
+                                                end_line: 1,
+                                                end_column: 40,
+                                            },
+                                            Node {
+                                                node: "name",
+                                                filename: "",
+                                                line: 1,
+                                                column: 41,
+                                                end_line: 1,
+                                                end_column: 45,
+                                            },
+                                        ],
+                                        pkgpath: "",
+                                        ctx: Load,
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 27,
+                                end_line: 1,
+                                end_column: 45,
+                            },
+                            format_spec: None,
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 27,
+                    end_line: 1,
+                    end_column: 45,
+                },
+                Node {
+                    node: StringLit(
+                        StringLit {
+                            is_long_string: false,
+                            raw_value: " \\\"true\\\" ",
+                            value: " \"true\" ",
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 1,
+                },
+                Node {
+                    node: FormattedValue(
+                        FormattedValue {
+                            is_long_string: false,
+                            value: Node {
+                                node: Identifier(
+                                    Identifier {
+                                        names: [
+                                            Node {
+                                                node: "item",
+                                                filename: "",
+                                                line: 1,
+                                                column: 58,
+                                                end_line: 1,
+                                                end_column: 62,
+                                            },
+                                        ],
+                                        pkgpath: "",
+                                        ctx: Load,
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 58,
+                                end_line: 1,
+                                end_column: 62,
+                            },
+                            format_spec: None,
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 58,
+                    end_line: 1,
+                    end_column: 62,
+                },
+                Node {
+                    node: StringLit(
+                        StringLit {
+                            is_long_string: false,
+                            raw_value: " ",
+                            value: " ",
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 1,
+                    end_line: 1,
+                    end_column: 1,
+                },
+            ],
+            raw_value: "'\\\"false\\\" ${item.kind}: ${item.metadata.name} \\\"true\\\" ${item} '",
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 65,
+}

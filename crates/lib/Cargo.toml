@@ -1,0 +1,30 @@
+[package]
+name = "kcl-lib"
+version.workspace = true
+edition.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+path = "src/lib.rs"
+name = "kcl"
+
+[dependencies]
+kcl-api.workspace = true
+kcl-cmd.workspace = true
+kcl-ast.workspace = true
+kcl-runner.workspace = true
+kcl-parser.workspace = true
+kcl-compiler.workspace = true
+kcl-config.workspace = true
+kcl-loader.workspace = true
+kcl-runtime.workspace = true
+kcl-sema.workspace = true
+kcl-tools.workspace = true
+kcl-version.workspace = true
+kcl-error.workspace = true
+kcl-evaluator.workspace = true
+kcl-query.workspace = true
+kcl-driver.workspace = true
+kcl-primitives.workspace = true

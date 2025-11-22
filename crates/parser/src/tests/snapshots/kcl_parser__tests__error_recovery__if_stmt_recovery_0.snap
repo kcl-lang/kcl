@@ -1,0 +1,65 @@
+---
+source: crates/parser/src/tests/error_recovery.rs
+expression: "$crate :: tests :: parsing_module_string(r#\"if True a = 1\"#)"
+---
+Module {
+    filename: "",
+    doc: None,
+    body: [
+        Node {
+            node: If(
+                IfStmt {
+                    body: [
+                        Node {
+                            node: Assign(
+                                AssignStmt {
+                                    targets: [],
+                                    value: Node {
+                                        node: NumberLit(
+                                            NumberLit {
+                                                binary_suffix: None,
+                                                value: Int(
+                                                    1,
+                                                ),
+                                            },
+                                        ),
+                                        filename: "",
+                                        line: 1,
+                                        column: 12,
+                                        end_line: 1,
+                                        end_column: 13,
+                                    },
+                                    ty: None,
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 10,
+                            end_line: 1,
+                            end_column: 13,
+                        },
+                    ],
+                    cond: Node {
+                        node: NameConstantLit(
+                            NameConstantLit {
+                                value: True,
+                            },
+                        ),
+                        filename: "",
+                        line: 1,
+                        column: 3,
+                        end_line: 1,
+                        end_column: 7,
+                    },
+                    orelse: [],
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 1,
+            end_column: 13,
+        },
+    ],
+    comments: [],
+}

@@ -1,0 +1,865 @@
+---
+source: crates/parser/src/tests/file.rs
+expression: "$crate :: tests :: parsing_file_string(\"testdata/config_expr-04.k\")"
+---
+{
+  "filename": "config_expr-04.k",
+  "doc": null,
+  "body": [
+    {
+      "node": {
+        "type": "Schema",
+        "doc": null,
+        "name": {
+          "node": "Env",
+          "filename": "config_expr-04.k",
+          "line": 3,
+          "column": 7,
+          "end_line": 3,
+          "end_column": 10
+        },
+        "parent_name": null,
+        "for_host_name": null,
+        "is_mixin": false,
+        "is_protocol": false,
+        "args": null,
+        "mixins": [],
+        "body": [
+          {
+            "node": {
+              "type": "SchemaAttr",
+              "doc": "",
+              "name": {
+                "node": "name",
+                "filename": "config_expr-04.k",
+                "line": 4,
+                "column": 4,
+                "end_line": 4,
+                "end_column": 8
+              },
+              "op": null,
+              "value": null,
+              "is_optional": false,
+              "decorators": [],
+              "ty": {
+                "node": {
+                  "type": "Basic",
+                  "value": "Str"
+                },
+                "filename": "config_expr-04.k",
+                "line": 4,
+                "column": 10,
+                "end_line": 4,
+                "end_column": 13
+              }
+            },
+            "filename": "config_expr-04.k",
+            "line": 4,
+            "column": 4,
+            "end_line": 4,
+            "end_column": 13
+          },
+          {
+            "node": {
+              "type": "SchemaAttr",
+              "doc": "",
+              "name": {
+                "node": "value",
+                "filename": "config_expr-04.k",
+                "line": 5,
+                "column": 4,
+                "end_line": 5,
+                "end_column": 9
+              },
+              "op": null,
+              "value": null,
+              "is_optional": false,
+              "decorators": [],
+              "ty": {
+                "node": {
+                  "type": "Basic",
+                  "value": "Str"
+                },
+                "filename": "config_expr-04.k",
+                "line": 5,
+                "column": 11,
+                "end_line": 5,
+                "end_column": 14
+              }
+            },
+            "filename": "config_expr-04.k",
+            "line": 5,
+            "column": 4,
+            "end_line": 5,
+            "end_column": 14
+          }
+        ],
+        "decorators": [],
+        "checks": [],
+        "index_signature": null
+      },
+      "filename": "config_expr-04.k",
+      "line": 3,
+      "column": 0,
+      "end_line": 7,
+      "end_column": 0
+    },
+    {
+      "node": {
+        "type": "Schema",
+        "doc": null,
+        "name": {
+          "node": "Main",
+          "filename": "config_expr-04.k",
+          "line": 7,
+          "column": 7,
+          "end_line": 7,
+          "end_column": 11
+        },
+        "parent_name": null,
+        "for_host_name": null,
+        "is_mixin": false,
+        "is_protocol": false,
+        "args": null,
+        "mixins": [],
+        "body": [
+          {
+            "node": {
+              "type": "SchemaAttr",
+              "doc": "",
+              "name": {
+                "node": "env",
+                "filename": "config_expr-04.k",
+                "line": 8,
+                "column": 4,
+                "end_line": 8,
+                "end_column": 7
+              },
+              "op": null,
+              "value": null,
+              "is_optional": false,
+              "decorators": [],
+              "ty": {
+                "node": {
+                  "type": "List",
+                  "value": {
+                    "inner_type": {
+                      "node": {
+                        "type": "Named",
+                        "value": {
+                          "names": [
+                            {
+                              "node": "Env",
+                              "filename": "config_expr-04.k",
+                              "line": 8,
+                              "column": 10,
+                              "end_line": 8,
+                              "end_column": 13
+                            }
+                          ],
+                          "pkgpath": "",
+                          "ctx": "Load"
+                        }
+                      },
+                      "filename": "config_expr-04.k",
+                      "line": 8,
+                      "column": 10,
+                      "end_line": 8,
+                      "end_column": 13
+                    }
+                  }
+                },
+                "filename": "config_expr-04.k",
+                "line": 8,
+                "column": 9,
+                "end_line": 8,
+                "end_column": 14
+              }
+            },
+            "filename": "config_expr-04.k",
+            "line": 8,
+            "column": 4,
+            "end_line": 8,
+            "end_column": 14
+          }
+        ],
+        "decorators": [],
+        "checks": [],
+        "index_signature": null
+      },
+      "filename": "config_expr-04.k",
+      "line": 7,
+      "column": 0,
+      "end_line": 10,
+      "end_column": 0
+    },
+    {
+      "node": {
+        "type": "Schema",
+        "doc": null,
+        "name": {
+          "node": "Config",
+          "filename": "config_expr-04.k",
+          "line": 10,
+          "column": 7,
+          "end_line": 10,
+          "end_column": 13
+        },
+        "parent_name": null,
+        "for_host_name": null,
+        "is_mixin": false,
+        "is_protocol": false,
+        "args": null,
+        "mixins": [],
+        "body": [
+          {
+            "node": {
+              "type": "SchemaAttr",
+              "doc": "",
+              "name": {
+                "node": "main",
+                "filename": "config_expr-04.k",
+                "line": 11,
+                "column": 4,
+                "end_line": 11,
+                "end_column": 8
+              },
+              "op": null,
+              "value": null,
+              "is_optional": false,
+              "decorators": [],
+              "ty": {
+                "node": {
+                  "type": "Named",
+                  "value": {
+                    "names": [
+                      {
+                        "node": "Main",
+                        "filename": "config_expr-04.k",
+                        "line": 11,
+                        "column": 10,
+                        "end_line": 11,
+                        "end_column": 14
+                      }
+                    ],
+                    "pkgpath": "",
+                    "ctx": "Load"
+                  }
+                },
+                "filename": "config_expr-04.k",
+                "line": 11,
+                "column": 10,
+                "end_line": 11,
+                "end_column": 14
+              }
+            },
+            "filename": "config_expr-04.k",
+            "line": 11,
+            "column": 4,
+            "end_line": 11,
+            "end_column": 14
+          }
+        ],
+        "decorators": [],
+        "checks": [],
+        "index_signature": null
+      },
+      "filename": "config_expr-04.k",
+      "line": 10,
+      "column": 0,
+      "end_line": 13,
+      "end_column": 0
+    },
+    {
+      "node": {
+        "type": "Assign",
+        "targets": [
+          {
+            "node": {
+              "name": {
+                "node": "_main",
+                "filename": "config_expr-04.k",
+                "line": 13,
+                "column": 0,
+                "end_line": 13,
+                "end_column": 5
+              },
+              "paths": [],
+              "pkgpath": ""
+            },
+            "filename": "config_expr-04.k",
+            "line": 13,
+            "column": 0,
+            "end_line": 13,
+            "end_column": 5
+          }
+        ],
+        "value": {
+          "node": {
+            "type": "Schema",
+            "name": {
+              "node": {
+                "names": [
+                  {
+                    "node": "Main",
+                    "filename": "config_expr-04.k",
+                    "line": 13,
+                    "column": 8,
+                    "end_line": 13,
+                    "end_column": 12
+                  }
+                ],
+                "pkgpath": "",
+                "ctx": "Load"
+              },
+              "filename": "config_expr-04.k",
+              "line": 13,
+              "column": 8,
+              "end_line": 13,
+              "end_column": 12
+            },
+            "args": [],
+            "kwargs": [],
+            "config": {
+              "node": {
+                "type": "Config",
+                "items": [
+                  {
+                    "node": {
+                      "key": {
+                        "node": {
+                          "type": "Identifier",
+                          "names": [
+                            {
+                              "node": "env",
+                              "filename": "config_expr-04.k",
+                              "line": 14,
+                              "column": 4,
+                              "end_line": 14,
+                              "end_column": 7
+                            }
+                          ],
+                          "pkgpath": "",
+                          "ctx": "Load"
+                        },
+                        "filename": "config_expr-04.k",
+                        "line": 14,
+                        "column": 4,
+                        "end_line": 14,
+                        "end_column": 7
+                      },
+                      "value": {
+                        "node": {
+                          "type": "List",
+                          "elts": [
+                            {
+                              "node": {
+                                "type": "Config",
+                                "items": [
+                                  {
+                                    "node": {
+                                      "key": {
+                                        "node": {
+                                          "type": "Identifier",
+                                          "names": [
+                                            {
+                                              "node": "name",
+                                              "filename": "config_expr-04.k",
+                                              "line": 15,
+                                              "column": 9,
+                                              "end_line": 15,
+                                              "end_column": 13
+                                            }
+                                          ],
+                                          "pkgpath": "",
+                                          "ctx": "Load"
+                                        },
+                                        "filename": "config_expr-04.k",
+                                        "line": 15,
+                                        "column": 9,
+                                        "end_line": 15,
+                                        "end_column": 13
+                                      },
+                                      "value": {
+                                        "node": {
+                                          "type": "StringLit",
+                                          "is_long_string": false,
+                                          "raw_value": "\"ENV_1\"",
+                                          "value": "ENV_1"
+                                        },
+                                        "filename": "config_expr-04.k",
+                                        "line": 15,
+                                        "column": 15,
+                                        "end_line": 15,
+                                        "end_column": 22
+                                      },
+                                      "operation": "Union"
+                                    },
+                                    "filename": "config_expr-04.k",
+                                    "line": 15,
+                                    "column": 9,
+                                    "end_line": 15,
+                                    "end_column": 22
+                                  },
+                                  {
+                                    "node": {
+                                      "key": {
+                                        "node": {
+                                          "type": "Identifier",
+                                          "names": [
+                                            {
+                                              "node": "value",
+                                              "filename": "config_expr-04.k",
+                                              "line": 15,
+                                              "column": 24,
+                                              "end_line": 15,
+                                              "end_column": 29
+                                            }
+                                          ],
+                                          "pkgpath": "",
+                                          "ctx": "Load"
+                                        },
+                                        "filename": "config_expr-04.k",
+                                        "line": 15,
+                                        "column": 24,
+                                        "end_line": 15,
+                                        "end_column": 29
+                                      },
+                                      "value": {
+                                        "node": {
+                                          "type": "StringLit",
+                                          "is_long_string": false,
+                                          "raw_value": "\"1\"",
+                                          "value": "1"
+                                        },
+                                        "filename": "config_expr-04.k",
+                                        "line": 15,
+                                        "column": 31,
+                                        "end_line": 15,
+                                        "end_column": 34
+                                      },
+                                      "operation": "Union"
+                                    },
+                                    "filename": "config_expr-04.k",
+                                    "line": 15,
+                                    "column": 24,
+                                    "end_line": 15,
+                                    "end_column": 34
+                                  }
+                                ]
+                              },
+                              "filename": "config_expr-04.k",
+                              "line": 15,
+                              "column": 8,
+                              "end_line": 15,
+                              "end_column": 35
+                            }
+                          ],
+                          "ctx": "Load"
+                        },
+                        "filename": "config_expr-04.k",
+                        "line": 14,
+                        "column": 9,
+                        "end_line": 16,
+                        "end_column": 5
+                      },
+                      "operation": "Union"
+                    },
+                    "filename": "config_expr-04.k",
+                    "line": 14,
+                    "column": 4,
+                    "end_line": 16,
+                    "end_column": 5
+                  }
+                ]
+              },
+              "filename": "config_expr-04.k",
+              "line": 13,
+              "column": 13,
+              "end_line": 17,
+              "end_column": 1
+            }
+          },
+          "filename": "config_expr-04.k",
+          "line": 13,
+          "column": 8,
+          "end_line": 17,
+          "end_column": 1
+        },
+        "ty": null
+      },
+      "filename": "config_expr-04.k",
+      "line": 13,
+      "column": 0,
+      "end_line": 17,
+      "end_column": 1
+    },
+    {
+      "node": {
+        "type": "Assign",
+        "targets": [
+          {
+            "node": {
+              "name": {
+                "node": "config",
+                "filename": "config_expr-04.k",
+                "line": 19,
+                "column": 0,
+                "end_line": 19,
+                "end_column": 6
+              },
+              "paths": [],
+              "pkgpath": ""
+            },
+            "filename": "config_expr-04.k",
+            "line": 19,
+            "column": 0,
+            "end_line": 19,
+            "end_column": 6
+          }
+        ],
+        "value": {
+          "node": {
+            "type": "Schema",
+            "name": {
+              "node": {
+                "names": [
+                  {
+                    "node": "Config",
+                    "filename": "config_expr-04.k",
+                    "line": 19,
+                    "column": 9,
+                    "end_line": 19,
+                    "end_column": 15
+                  }
+                ],
+                "pkgpath": "",
+                "ctx": "Load"
+              },
+              "filename": "config_expr-04.k",
+              "line": 19,
+              "column": 9,
+              "end_line": 19,
+              "end_column": 15
+            },
+            "args": [],
+            "kwargs": [],
+            "config": {
+              "node": {
+                "type": "Config",
+                "items": [
+                  {
+                    "node": {
+                      "key": {
+                        "node": {
+                          "type": "Identifier",
+                          "names": [
+                            {
+                              "node": "main",
+                              "filename": "config_expr-04.k",
+                              "line": 20,
+                              "column": 4,
+                              "end_line": 20,
+                              "end_column": 8
+                            }
+                          ],
+                          "pkgpath": "",
+                          "ctx": "Load"
+                        },
+                        "filename": "config_expr-04.k",
+                        "line": 20,
+                        "column": 4,
+                        "end_line": 20,
+                        "end_column": 8
+                      },
+                      "value": {
+                        "node": {
+                          "type": "Identifier",
+                          "names": [
+                            {
+                              "node": "_main",
+                              "filename": "config_expr-04.k",
+                              "line": 20,
+                              "column": 10,
+                              "end_line": 20,
+                              "end_column": 15
+                            }
+                          ],
+                          "pkgpath": "",
+                          "ctx": "Load"
+                        },
+                        "filename": "config_expr-04.k",
+                        "line": 20,
+                        "column": 10,
+                        "end_line": 20,
+                        "end_column": 15
+                      },
+                      "operation": "Union"
+                    },
+                    "filename": "config_expr-04.k",
+                    "line": 20,
+                    "column": 4,
+                    "end_line": 20,
+                    "end_column": 15
+                  },
+                  {
+                    "node": {
+                      "key": {
+                        "node": {
+                          "type": "Identifier",
+                          "names": [
+                            {
+                              "node": "main",
+                              "filename": "config_expr-04.k",
+                              "line": 21,
+                              "column": 4,
+                              "end_line": 21,
+                              "end_column": 8
+                            }
+                          ],
+                          "pkgpath": "",
+                          "ctx": "Load"
+                        },
+                        "filename": "config_expr-04.k",
+                        "line": 21,
+                        "column": 4,
+                        "end_line": 21,
+                        "end_column": 8
+                      },
+                      "value": {
+                        "node": {
+                          "type": "Schema",
+                          "name": {
+                            "node": {
+                              "names": [
+                                {
+                                  "node": "Main",
+                                  "filename": "config_expr-04.k",
+                                  "line": 21,
+                                  "column": 10,
+                                  "end_line": 21,
+                                  "end_column": 14
+                                }
+                              ],
+                              "pkgpath": "",
+                              "ctx": "Load"
+                            },
+                            "filename": "config_expr-04.k",
+                            "line": 21,
+                            "column": 10,
+                            "end_line": 21,
+                            "end_column": 14
+                          },
+                          "args": [],
+                          "kwargs": [],
+                          "config": {
+                            "node": {
+                              "type": "Config",
+                              "items": [
+                                {
+                                  "node": {
+                                    "key": {
+                                      "node": {
+                                        "type": "Identifier",
+                                        "names": [
+                                          {
+                                            "node": "env",
+                                            "filename": "config_expr-04.k",
+                                            "line": 22,
+                                            "column": 8,
+                                            "end_line": 22,
+                                            "end_column": 11
+                                          }
+                                        ],
+                                        "pkgpath": "",
+                                        "ctx": "Load"
+                                      },
+                                      "filename": "config_expr-04.k",
+                                      "line": 22,
+                                      "column": 8,
+                                      "end_line": 22,
+                                      "end_column": 11
+                                    },
+                                    "value": {
+                                      "node": {
+                                        "type": "List",
+                                        "elts": [
+                                          {
+                                            "node": {
+                                              "type": "Config",
+                                              "items": [
+                                                {
+                                                  "node": {
+                                                    "key": {
+                                                      "node": {
+                                                        "type": "Identifier",
+                                                        "names": [
+                                                          {
+                                                            "node": "name",
+                                                            "filename": "config_expr-04.k",
+                                                            "line": 23,
+                                                            "column": 13,
+                                                            "end_line": 23,
+                                                            "end_column": 17
+                                                          }
+                                                        ],
+                                                        "pkgpath": "",
+                                                        "ctx": "Load"
+                                                      },
+                                                      "filename": "config_expr-04.k",
+                                                      "line": 23,
+                                                      "column": 13,
+                                                      "end_line": 23,
+                                                      "end_column": 17
+                                                    },
+                                                    "value": {
+                                                      "node": {
+                                                        "type": "StringLit",
+                                                        "is_long_string": false,
+                                                        "raw_value": "\"ENV_2\"",
+                                                        "value": "ENV_2"
+                                                      },
+                                                      "filename": "config_expr-04.k",
+                                                      "line": 23,
+                                                      "column": 19,
+                                                      "end_line": 23,
+                                                      "end_column": 26
+                                                    },
+                                                    "operation": "Union"
+                                                  },
+                                                  "filename": "config_expr-04.k",
+                                                  "line": 23,
+                                                  "column": 13,
+                                                  "end_line": 23,
+                                                  "end_column": 26
+                                                },
+                                                {
+                                                  "node": {
+                                                    "key": {
+                                                      "node": {
+                                                        "type": "Identifier",
+                                                        "names": [
+                                                          {
+                                                            "node": "value",
+                                                            "filename": "config_expr-04.k",
+                                                            "line": 23,
+                                                            "column": 28,
+                                                            "end_line": 23,
+                                                            "end_column": 33
+                                                          }
+                                                        ],
+                                                        "pkgpath": "",
+                                                        "ctx": "Load"
+                                                      },
+                                                      "filename": "config_expr-04.k",
+                                                      "line": 23,
+                                                      "column": 28,
+                                                      "end_line": 23,
+                                                      "end_column": 33
+                                                    },
+                                                    "value": {
+                                                      "node": {
+                                                        "type": "StringLit",
+                                                        "is_long_string": false,
+                                                        "raw_value": "\"2\"",
+                                                        "value": "2"
+                                                      },
+                                                      "filename": "config_expr-04.k",
+                                                      "line": 23,
+                                                      "column": 35,
+                                                      "end_line": 23,
+                                                      "end_column": 38
+                                                    },
+                                                    "operation": "Union"
+                                                  },
+                                                  "filename": "config_expr-04.k",
+                                                  "line": 23,
+                                                  "column": 28,
+                                                  "end_line": 23,
+                                                  "end_column": 38
+                                                }
+                                              ]
+                                            },
+                                            "filename": "config_expr-04.k",
+                                            "line": 23,
+                                            "column": 12,
+                                            "end_line": 23,
+                                            "end_column": 39
+                                          }
+                                        ],
+                                        "ctx": "Load"
+                                      },
+                                      "filename": "config_expr-04.k",
+                                      "line": 22,
+                                      "column": 15,
+                                      "end_line": 24,
+                                      "end_column": 9
+                                    },
+                                    "operation": "Insert"
+                                  },
+                                  "filename": "config_expr-04.k",
+                                  "line": 22,
+                                  "column": 8,
+                                  "end_line": 24,
+                                  "end_column": 9
+                                }
+                              ]
+                            },
+                            "filename": "config_expr-04.k",
+                            "line": 21,
+                            "column": 15,
+                            "end_line": 25,
+                            "end_column": 5
+                          }
+                        },
+                        "filename": "config_expr-04.k",
+                        "line": 21,
+                        "column": 10,
+                        "end_line": 25,
+                        "end_column": 5
+                      },
+                      "operation": "Union"
+                    },
+                    "filename": "config_expr-04.k",
+                    "line": 21,
+                    "column": 4,
+                    "end_line": 25,
+                    "end_column": 5
+                  }
+                ]
+              },
+              "filename": "config_expr-04.k",
+              "line": 19,
+              "column": 16,
+              "end_line": 26,
+              "end_column": 1
+            }
+          },
+          "filename": "config_expr-04.k",
+          "line": 19,
+          "column": 9,
+          "end_line": 26,
+          "end_column": 1
+        },
+        "ty": null
+      },
+      "filename": "config_expr-04.k",
+      "line": 19,
+      "column": 0,
+      "end_line": 26,
+      "end_column": 1
+    }
+  ],
+  "comments": [
+    {
+      "node": {
+        "text": "# test/grammar/attr_operator/config_inside/insert/schema_0/main.k"
+      },
+      "filename": "config_expr-04.k",
+      "line": 1,
+      "column": 0,
+      "end_line": 1,
+      "end_column": 65
+    }
+  ]
+}

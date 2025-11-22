@@ -1,0 +1,46 @@
+[workspace]
+members = ["crates/*"]
+default-members = ["crates/lib"]
+resolver = "2"
+
+[workspace.dependencies]
+compiler_base = { path = "crates/compiler_base" }
+
+kcl-api = { path = "crates/api" }
+kcl-ast = { path = "crates/ast" }
+kcl-ast-pretty = { path = "crates/ast_pretty" }
+kcl-cli = { path = "crates/cli" }
+kcl-cmd = { path = "crates/cmd" }
+kcl-compiler = { path = "crates/compiler" }
+kcl-config = { path = "crates/config" }
+kcl-driver = { path = "crates/driver" }
+kcl-error = { path = "crates/error" }
+kcl-evaluator = { path = "crates/evaluator" }
+kcl-lexer = { path = "crates/lexer" }
+kcl-lib = { path = "crates/lib" }
+kcl-loader = { path = "crates/loader" }
+kcl-macros = { path = "crates/macros" }
+kcl-parser = { path = "crates/parser" }
+kcl-primitives = { path = "crates/primitives" }
+kcl-query = { path = "crates/query" }
+kcl-runner = { path = "crates/runner" }
+kcl-runtime = { path = "crates/runtime" }
+kcl-sema = { path = "crates/sema" }
+kcl-span = { path = "crates/span" }
+kcl-tools = { path = "crates/tools" }
+kcl-utils = { path = "crates/utils" }
+kcl-version = { path = "crates/version" }
+
+[workspace.package]
+version = "0.12.0"
+edition = "2024"
+rust-version = "1.83"
+exclude = [".github/"]
+license = "Apache-2.0"
+readme = "README.md"
+
+[profile.release]
+rpath = true
+panic = "unwind"
+opt-level = "z"  # Optimize for size.
+lto = true

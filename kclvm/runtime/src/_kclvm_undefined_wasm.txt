@@ -1,1 +1,0 @@
-kclvm_plugin_invoke_json_wasm

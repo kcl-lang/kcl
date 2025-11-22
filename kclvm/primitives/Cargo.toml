@@ -1,8 +1,0 @@
-[package]
-name = "kclvm-primitives"
-version = "0.11.2"
-edition = "2021"
-
-[dependencies]
-indexmap = "2.9.0"
-rustc-hash = "2.1.1"

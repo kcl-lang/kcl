@@ -1,0 +1,74 @@
+---
+source: crates/parser/src/tests/error_recovery.rs
+expression: "$crate :: tests :: parsing_module_string(r#\"assert True,,, 'msg'\"#)"
+---
+Module {
+    filename: "",
+    doc: None,
+    body: [
+        Node {
+            node: Assert(
+                AssertStmt {
+                    test: Node {
+                        node: NameConstantLit(
+                            NameConstantLit {
+                                value: True,
+                            },
+                        ),
+                        filename: "",
+                        line: 1,
+                        column: 7,
+                        end_line: 1,
+                        end_column: 11,
+                    },
+                    if_cond: None,
+                    msg: Some(
+                        Node {
+                            node: Missing(
+                                MissingExpr,
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 12,
+                            end_line: 1,
+                            end_column: 13,
+                        },
+                    ),
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 1,
+            end_column: 12,
+        },
+        Node {
+            node: Expr(
+                ExprStmt {
+                    exprs: [
+                        Node {
+                            node: StringLit(
+                                StringLit {
+                                    is_long_string: false,
+                                    raw_value: "'msg'",
+                                    value: "msg",
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 15,
+                            end_line: 1,
+                            end_column: 20,
+                        },
+                    ],
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 15,
+            end_line: 1,
+            end_column: 20,
+        },
+    ],
+    comments: [],
+}

@@ -1,0 +1,15 @@
+[package]
+name = "kcl_runtime_internal_macros"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+syn = { version = "1.0", features = ["full"] }
+proc-macro2 = "1.0"
+quote = "1.0"
+
+[lib]
+proc-macro = true
+
+[features]
+default = []

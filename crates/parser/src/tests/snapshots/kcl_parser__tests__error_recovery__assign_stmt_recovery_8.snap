@@ -1,0 +1,73 @@
+---
+source: crates/parser/src/tests/error_recovery.rs
+expression: "$crate :: tests :: parsing_module_string(r#\"a: () = 0\"#)"
+---
+Module {
+    filename: "",
+    doc: None,
+    body: [
+        Node {
+            node: Assign(
+                AssignStmt {
+                    targets: [
+                        Node {
+                            node: Target {
+                                name: Node {
+                                    node: "a",
+                                    filename: "",
+                                    line: 1,
+                                    column: 0,
+                                    end_line: 1,
+                                    end_column: 1,
+                                },
+                                paths: [],
+                                pkgpath: "",
+                            },
+                            filename: "",
+                            line: 1,
+                            column: 0,
+                            end_line: 1,
+                            end_column: 1,
+                        },
+                    ],
+                    value: Node {
+                        node: NumberLit(
+                            NumberLit {
+                                binary_suffix: None,
+                                value: Int(
+                                    0,
+                                ),
+                            },
+                        ),
+                        filename: "",
+                        line: 1,
+                        column: 8,
+                        end_line: 1,
+                        end_column: 9,
+                    },
+                    ty: Some(
+                        Node {
+                            node: Function(
+                                FunctionType {
+                                    params_ty: None,
+                                    ret_ty: None,
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 3,
+                            end_line: 1,
+                            end_column: 5,
+                        },
+                    ),
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 1,
+            end_column: 9,
+        },
+    ],
+    comments: [],
+}

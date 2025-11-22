@@ -1,0 +1,8 @@
+[package]
+name = "kcl-primitives"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+indexmap = "2.9.0"
+rustc-hash = "2.1.1"

@@ -1,0 +1,39 @@
+---
+source: crates/query/src/tests.rs
+expression: got_json
+---
+{
+  "dict1": [
+    {
+      "name": "dict1",
+      "type_name": "",
+      "op_sym": "=",
+      "value": "{\n    \"a\": 1\n    \"b\": 2\n}",
+      "list_items": [],
+      "dict_entries": [
+        {
+          "key": "a",
+          "value": {
+            "name": "a",
+            "type_name": "",
+            "op_sym": ":",
+            "value": "1",
+            "list_items": [],
+            "dict_entries": []
+          }
+        },
+        {
+          "key": "b",
+          "value": {
+            "name": "b",
+            "type_name": "",
+            "op_sym": ":",
+            "value": "2",
+            "list_items": [],
+            "dict_entries": []
+          }
+        }
+      ]
+    }
+  ]
+}

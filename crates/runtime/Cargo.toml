@@ -1,0 +1,45 @@
+[package]
+name = "kcl-runtime"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+kcl-primitives.workspace = true
+kcl_runtime_internal_macros = { path = "./internal_macros" }
+serde_json = "1.0.132"
+serde = { version = "1", features = ["derive"] }
+serde_yaml_ng = "0.10.0"
+lazy_static = "1.4.0"
+generational-arena = "0.2.9"
+base64 = "0.13.0"
+base32 = "0.4.0"
+cidr = "0.3.1"
+libc = "0.2.112"
+itertools = "0.10.3"
+unic-ucd-bidi = "0.9"
+unic-ucd-category = "0.9"
+unicode-casing = "0.1"
+bstr = "0.2.16"
+regex = "1.5.5"
+md5 = "0.7.0"
+sha2 = "0.9.8"
+sha1 = "0.6.0"
+chrono = "0.4.19"
+phf = { version = "0.9", features = ["macros"] }
+fancy-regex = "0.7.1"
+num-integer = "0.1.44"
+glob = "0.3.0"
+uuid = { version = "1.7.0", features = ["serde", "v4"] }
+handlebars = "5.1.2"
+walkdir = "2.5.0"
+anyhow = "1"
+blake3 = "1.5.4"
+encoding_rs = "0.8.35"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+hostname = "0.4.0"
+dns-lookup = "2.0.4"
+
+[[bin]]
+name = "gen-api-spec"
+path = "scripts/gen-api-spec.rs"

@@ -1,9 +1,0 @@
-error[E3M38]: EvaluationError
- --> ${CWD}/main.k:8:1
-  |
-8 | a = uplimit * (100 + epsilon)
-  |  3.4e+40: A 32-bit floating point number overflow
-  |
-note: backtrace:
-	0: kclvm_main
-		at ${CWD}/main.k:8

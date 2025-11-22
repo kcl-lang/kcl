@@ -19,7 +19,7 @@ jobs:
       - name: Install rust nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.84.1
+          toolchain: 1.88
           override: true
           components: clippy, rustfmt
 
@@ -27,22 +27,22 @@ jobs:
       - shell: pwsh
         run: echo "C:\msys64\mingw64\bin" >> $Env:GITHUB_PATH
 
-      - working-directory: ./kclvm
-        run: |
+      - run: |
           rustup target add x86_64-pc-windows-gnu
           cargo build -r --target x86_64-pc-windows-gnu
 
       - name: Read VERSION file
         id: read_version
         run: |
-          $version = Get-Content VERSION
+          $pkgId = cargo pkgid -p kcl-api
+          $version = ($pkgId -split '@')[1]
           echo "VERSION=v$version" >> $env:GITHUB_ENV
 
       - uses: actions/upload-artifact@v4
         with:
-          name: kclvm-${{ env.VERSION }}-windows-mingw
+          name: kcl-${{ env.VERSION }}-windows-mingw
           if-no-files-found: error
           path: |
-            kclvm/target/x86_64-pc-windows-gnu/release/libkclvm_cli_cdylib.a
-            kclvm/target/x86_64-pc-windows-gnu/release/libkclvm_cli_cdylib.dll.a
-            kclvm/target/x86_64-pc-windows-gnu/release/kclvm_cli_cdylib.dll
+            target/x86_64-pc-windows-gnu/release/libkcl.a
+            target/x86_64-pc-windows-gnu/release/libkcl.dll.a
+            target/x86_64-pc-windows-gnu/release/kcl.dll

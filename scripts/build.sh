@@ -19,19 +19,13 @@ getSystemInfo() {
 getSystemInfo
 
 prepare_dirs () {
-    install_dir="$topdir/_build/dist/$os/kclvm"
-    mkdir -p "$install_dir/bin"
+    install_dir="_build/dist/$os/core"
+    mkdir -p "$install_dir"
 }
 
 prepare_dirs
 
 # 1. Build kcl native library
-
-cd $topdir/kclvm
-export PATH=$PATH:/root/.cargo/bin:/usr/lib/llvm-12/bin
-# Enable the llvm feature
-# cargo build --release --features llvm
-# Disable the llvm feature
 cargo build --release
 
 ## Switch dll file extension according to os.
@@ -47,33 +41,26 @@ case $os in
         ;;
 esac
 
-## Copy libkclvm_cli lib to the build folder
-
-if [ -e $topdir/kclvm/target/release/libkclvm_cli_cdylib.$dll_extension ]; then
-    touch $install_dir/bin/libkclvm_cli_cdylib.$dll_extension
-    rm $install_dir/bin/libkclvm_cli_cdylib.$dll_extension
-    cp $topdir/kclvm/target/release/libkclvm_cli_cdylib.$dll_extension $install_dir/bin/libkclvm_cli_cdylib.$dll_extension
+## Copy kcl lib to the build folder
+if [ -e target/release/libkcl.$dll_extension ]; then
+    touch $install_dir/libkcl.$dll_extension
+    rm $install_dir/libkcl.$dll_extension
+    cp target/release/libkcl.$dll_extension $install_dir/libkcl.$dll_extension
 fi
 
 ## 2. Build KCL language server binary
+cargo build --release --manifest-path crates/tools/src/LSP/Cargo.toml
 
-cd $topdir/kclvm/tools/src/LSP
-cargo build --release
-
-touch $install_dir/bin/kcl-language-server
-rm $install_dir/bin/kcl-language-server
-cp $topdir/kclvm/target/release/kcl-language-server $install_dir/bin/kcl-language-server
+touch $install_dir/kcl-language-server
+rm $install_dir/kcl-language-server
+cp target/release/kcl-language-server $install_dir/kcl-language-server
 
 ## 3. Build CLI
+cargo build --release --manifest-path crates/cli/Cargo.toml
 
-cd $topdir/cli
-cargo build --release
-
-touch $install_dir/bin/kclvm_cli
-rm $install_dir/bin/kclvm_cli
-cp ./target/release/kclvm_cli $install_dir/bin/kclvm_cli
-
-cd $topdir
+touch $install_dir/libkcl
+rm $install_dir/libkcl
+cp ./target/release/libkcl $install_dir/libkcl
 
 # Print the summary.
 echo "================ Summary ================"

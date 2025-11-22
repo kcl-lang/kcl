@@ -29,13 +29,12 @@ Ant Group, Youzan, and Huawei are notable production users managing large-scale 
 ### Top-Level Organization
 
 ```
-/kclvm/              Core KCL VM and compiler implementation (main codebase)
+/crates/              Core KCL VM and compiler implementation (main codebase)
 /compiler_base/      Base compiler libraries and utilities (WIP, rustc-derived)
 /cli/                Command-line interface binary wrapper
 /test/               Integration and grammar tests
   /grammar/          Extensive grammar test cases
   /integration/      Integration test suites
-/samples/            Example KCL programs (hello.k, kubernetes.k, fib.k, etc.)
 /docs/               Developer guides and documentation
   /dev_guide/        Development guide (architecture, quick start, etc.)
   /design/           Design documents
@@ -45,8 +44,6 @@ Ant Group, Youzan, and Huawei are notable production users managing large-scale 
 
 ### Key Files
 - `Makefile` - Top-level build orchestration
-- `run.sh` - Build and release automation script
-- `VERSION` - Current version: **0.11.2**
 - `LICENSE` - Apache License 2.0
 - `README.md` - Project documentation
 
@@ -55,8 +52,8 @@ Ant Group, Youzan, and Huawei are notable production users managing large-scale 
 ### Primary Language: Rust
 - 362+ Rust source files
 - ~32,673 lines of Rust code in core modules
-- **Requires Rust 1.84+** for building
-- Rust 2021 edition
+- **Requires Rust 1.88+** for building
+- Rust 2024 edition
 
 ### Secondary Languages
 - **KCL** - The language itself (.k files for examples and tests)
@@ -65,7 +62,6 @@ Ant Group, Youzan, and Huawei are notable production users managing large-scale 
 - **C/C++** - Runtime interop and FFI interfaces
 
 ### Key Dependencies
-- **LLVM 12** - Compiler backend (optional, for high-performance compilation)
 - **Protobuf** - API definitions and RPC communication
 - **WASM** - WebAssembly compilation target support
 - **tokio** - Async runtime (for LSP and server)
@@ -84,55 +80,52 @@ Source Code (.k files)
     ↓
 [Resolver/Sema] → Semantic Analysis & Type Checking
     ↓
-[Compiler] → IR (LLVM IR or AST-based)
-    ↓
 [Evaluator/Runner] → Execution
     ↓
 Output (YAML/JSON)
 ```
 
-### Key Components (/kclvm crates)
+### Key Components (/crates)
 
 **Frontend (Parsing & Analysis):**
-- `kclvm-lexer` - Lexical analysis and tokenization
-- `kclvm-parser` - Parse KCL source into AST
-- `kclvm-ast` - Abstract Syntax Tree definitions and walker
-- `kclvm-ast-pretty` - AST formatting and pretty-printing
-- `kclvm-span` - Source code span/position tracking
-- `kclvm-error` - Error handling and diagnostics
+- `kcl-lexer` - Lexical analysis and tokenization
+- `kcl-parser` - Parse KCL source into AST
+- `kcl-ast` - Abstract Syntax Tree definitions and walker
+- `kcl-ast-pretty` - AST formatting and pretty-printing
+- `kcl-span` - Source code span/position tracking
+- `kcl-error` - Error handling and diagnostics
 
 **Semantic Analysis:**
-- `kclvm-sema` - Semantic analysis, type checking, and validation
-- `kclvm-loader` - Module loading and dependency management
-- `kclvm-query` - Code query and information retrieval
+- `kcl-sema` - Semantic analysis, type checking, and validation
+- `kcl-loader` - Module loading and dependency management
+- `kcl-query` - Code query and information retrieval
 
 **Compilation & Execution:**
-- `kclvm-compiler` - Main compilation logic with optional LLVM backend
-- `kclvm-evaluator` - Expression evaluation engine
-- `kclvm-runner` - Program execution environment
-- `kclvm-driver` - Compilation driver and orchestration
+- `kcl-evaluator` - Expression evaluation engine
+- `kcl-runner` - Program execution environment
+- `kcl-driver` - Compilation driver and orchestration
 
 **Runtime:**
-- `kclvm-runtime` - Runtime support libraries with extensive standard library
+- `kcl-runtime` - Runtime support libraries with extensive standard library
   - Value representation and type system
   - Standard library modules: json, yaml, base64, regex, crypto, datetime, math, net, etc.
   - Template rendering (handlebars)
   - File I/O and manifests
 
 **Tooling:**
-- `kclvm-tools` - Development tools
+- `kcl-tools` - Development tools
   - Format, Lint, Fix, Vet
   - Testing infrastructure
   - **LSP** (Language Server) - Full IDE support with autocomplete, goto-definition, diagnostics
-- `kclvm-api` - Public API layer for multi-language SDKs
-- `kclvm-cmd` - CLI command implementation
+- `kcl-api` - Public API layer for multi-language SDKs
+- `kcl-cmd` - CLI command implementation
 
 **Utilities:**
-- `kclvm-config` - Configuration parsing
-- `kclvm-version` - Version management
-- `kclvm-utils` - Common utilities
-- `kclvm-primitives` - Primitive type definitions
-- `kclvm-macros` - Procedural macros
+- `kcl-config` - Configuration parsing
+- `kcl-version` - Version management
+- `kcl-utils` - Common utilities
+- `kcl-primitives` - Primitive type definitions
+- `kcl-macros` - Procedural macros
 
 ### Language Server Architecture
 - Salsa-based incremental compilation for performance
@@ -140,7 +133,7 @@ Output (YAML/JSON)
 - Thread pool for concurrent request handling
 - Event-driven architecture (Tasks + LSP Messages)
 - Compile unit discovery for projects without explicit config
-- Located at: `/kclvm/tools/src/LSP`
+- Located at: `/crates/tools/src/LSP`
 
 ## Build System
 
@@ -161,13 +154,11 @@ make build-wasm     # WASM target
 
 ### Build Features
 - Workspace with 20+ member crates
-- Optional `llvm` feature flag for high-performance backend
 - Support for multiple targets: native, WASM (wasm32-wasip1), WASM-unknown
 - Cross-platform: Linux (AMD64, ARM64), macOS (AMD64, ARM64), Windows (MinGW)
 - Release profile optimized for size (opt-level = "z", LTO enabled)
 
 ### Major Dependencies
-- **inkwell** - LLVM bindings (optional)
 - **serde/serde_json** - Serialization
 - **serde_yaml_ng** - YAML support (note: migrated from serde_yaml)
 - **prost/protobuf** - Protocol buffers
@@ -185,7 +176,6 @@ make build-wasm     # WASM target
 **1. Unit Tests:**
 - Cargo-based unit tests across all crates
 - Command: `make test` or `cargo test --workspace`
-- Code coverage via `cargo llvm-cov`
 
 **2. Grammar Tests:**
 - Extensive grammar test suite in `/test/grammar`
@@ -195,15 +185,9 @@ make build-wasm     # WASM target
 - Command: `make test-grammar`
 
 **3. Integration Tests:**
-- `/kclvm/tests/integration` - Rust integration tests
-- `/test/integration` - Python integration tests
-- Konfig tests for real-world scenarios
+- `tests/grammar` - Python integration tests
 
-**4. Fuzz Testing:**
-- Parser fuzzing in `/kclvm/tests/fuzz`
-- Command: `make fuzz-parser`
-
-**5. Runtime Tests:**
+**4. Runtime Tests:**
 - Python-based runtime library tests
 - Command: `make test-runtime`
 
@@ -248,10 +232,9 @@ Comprehensive GitHub Actions workflows (11 pipelines) for:
 1. **Spec-driven**: Independent syntax and semantics specification
 2. **Functional**: Low side-effects, no system-level operations (no threads/IO)
 3. **Constraint-based**: Schema + Rule + Lambda for configuration validation
-4. **High Performance**: Rust + LLVM compilation, WASM support
-5. **API-first**: Multi-language SDKs (Rust, Go, Python, .NET, Java, Node.js)
-6. **Cloud-native**: Native support for OpenAPI, K8s CRD, KRM spec
-7. **Type Safety**: Static type system with constraints and validation rules
+4. **API-first**: Multi-language SDKs (Rust, Go, Python, .NET, Java, Node.js)
+5. **Cloud-native**: Native support for OpenAPI, K8s CRD, KRM spec
+6. **Type Safety**: Static type system with constraints and validation rules
 
 ## Development Workflow
 
@@ -262,8 +245,7 @@ Comprehensive GitHub Actions workflows (11 pipelines) for:
 docker pull kcllang/kcl-builder
 
 # Or install dependencies locally
-# - Rust 1.84+
-# - LLVM 12 (optional, for high-performance backend)
+# - Rust 1.88+
 # - Python 3.x (for tests)
 # - Protobuf compiler
 
@@ -294,31 +276,8 @@ make test-grammar
    - Comprehensive tooling (format, lint, test, vet)
    - Extensive test coverage and fuzzing
 5. **Performance Focus:**
-   - Optional LLVM backend for native code compilation
    - WASM compilation target
    - Size-optimized release builds
-
-## Common Development Tasks
-
-### Working with the Compiler
-- Main compiler logic: `/kclvm/compiler/src/`
-- LLVM codegen: `/kclvm/compiler/src/codegen/llvm/`
-- Semantic analysis: `/kclvm/sema/src/`
-
-### Working with the Runtime
-- Runtime implementation: `/kclvm/runtime/src/`
-- Standard library: `/kclvm/runtime/src/_kclvm_main.ll` and various modules
-- Value system: `/kclvm/runtime/src/value/`
-
-### Working with the Language Server
-- LSP implementation: `/kclvm/tools/src/LSP/`
-- Entry point: `/kclvm/tools/src/LSP/src/main.rs`
-- Key components: state management, completion, goto-definition, diagnostics
-
-### Working with Tests
-- Grammar tests: `/test/grammar/` (Python-based)
-- Integration tests: `/kclvm/tests/integration/` (Rust)
-- Add new test cases by following existing patterns
 
 ## Git Workflow
 
@@ -335,8 +294,7 @@ make test-grammar
 4. **Cross-platform support** - Consider multiple platforms when making changes
 5. **Documentation** - Keep docs in sync with code changes
 6. **The codebase uses workspaces** - Changes may affect multiple crates
-7. **LLVM backend is optional** - Code should work with or without it
-8. **Recent migration from serde_yaml to serde_yaml_ng** - Use the new library
+7. **Recent migration from serde_yaml to serde_yaml_ng** - Use the new library
 
 ## Quick Reference
 

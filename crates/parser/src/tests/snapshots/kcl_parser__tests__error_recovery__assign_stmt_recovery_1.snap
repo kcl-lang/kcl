@@ -1,0 +1,39 @@
+---
+source: crates/parser/src/tests/error_recovery.rs
+expression: "$crate :: tests :: parsing_module_string(r#\" = 1\"#)"
+---
+Module {
+    filename: "",
+    doc: None,
+    body: [
+        Node {
+            node: Expr(
+                ExprStmt {
+                    exprs: [
+                        Node {
+                            node: NumberLit(
+                                NumberLit {
+                                    binary_suffix: None,
+                                    value: Int(
+                                        1,
+                                    ),
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 3,
+                            end_line: 1,
+                            end_column: 4,
+                        },
+                    ],
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 3,
+            end_line: 1,
+            end_column: 4,
+        },
+    ],
+    comments: [],
+}

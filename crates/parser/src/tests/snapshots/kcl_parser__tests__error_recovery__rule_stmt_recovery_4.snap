@@ -1,0 +1,58 @@
+---
+source: crates/parser/src/tests/error_recovery.rs
+expression: "$crate :: tests :: parsing_module_string(r#\"rule A:B\"#)"
+---
+Module {
+    filename: "",
+    doc: None,
+    body: [
+        Node {
+            node: Rule(
+                RuleStmt {
+                    doc: None,
+                    name: Node {
+                        node: "A",
+                        filename: "",
+                        line: 1,
+                        column: 5,
+                        end_line: 1,
+                        end_column: 6,
+                    },
+                    parent_rules: [],
+                    decorators: [],
+                    checks: [
+                        Node {
+                            node: CheckExpr {
+                                test: Node {
+                                    node: Missing(
+                                        MissingExpr,
+                                    ),
+                                    filename: "",
+                                    line: 1,
+                                    column: 8,
+                                    end_line: 1,
+                                    end_column: 8,
+                                },
+                                if_cond: None,
+                                msg: None,
+                            },
+                            filename: "",
+                            line: 1,
+                            column: 8,
+                            end_line: 1,
+                            end_column: 8,
+                        },
+                    ],
+                    args: None,
+                    for_host_name: None,
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 1,
+            end_column: 8,
+        },
+    ],
+    comments: [],
+}

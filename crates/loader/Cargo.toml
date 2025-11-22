@@ -1,0 +1,22 @@
+[package]
+name = "kcl-loader"
+version.workspace = true
+edition.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0"
+
+kcl-ast = { path = "../ast" }
+kcl-ast-pretty = { path = "../ast_pretty" }
+kcl-parser = { path = "../parser" }
+kcl-sema = { path = "../sema" }
+kcl-error = { path = "../error" }
+kcl-query = { path = "../query" }
+kcl-utils = { path = "../utils" }
+kcl-primitives = { path = "../primitives" }
+maplit = "1.0.2"
+
+[dev-dependencies]
+insta = "1.8.0"

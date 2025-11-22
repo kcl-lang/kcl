@@ -1,0 +1,111 @@
+---
+source: crates/query/src/tests.rs
+expression: got_json
+---
+{
+  "sha": [
+    {
+      "name": "sha",
+      "type_name": "A",
+      "op_sym": "=",
+      "value": "A {\n    name: \"Hello\"\n    ids: [1, 2, 3]\n    data: {\n        \"a\": {\n            \"b\": {\n                \"c\": 2\n            }\n        }\n    }\n}",
+      "list_items": [],
+      "dict_entries": [
+        {
+          "key": "name",
+          "value": {
+            "name": "name",
+            "type_name": "",
+            "op_sym": ":",
+            "value": "\"Hello\"",
+            "list_items": [],
+            "dict_entries": []
+          }
+        },
+        {
+          "key": "ids",
+          "value": {
+            "name": "ids",
+            "type_name": "",
+            "op_sym": ":",
+            "value": "[\n    1\n    2\n    3\n]",
+            "list_items": [
+              {
+                "name": "",
+                "type_name": "",
+                "op_sym": "",
+                "value": "1",
+                "list_items": [],
+                "dict_entries": []
+              },
+              {
+                "name": "",
+                "type_name": "",
+                "op_sym": "",
+                "value": "2",
+                "list_items": [],
+                "dict_entries": []
+              },
+              {
+                "name": "",
+                "type_name": "",
+                "op_sym": "",
+                "value": "3",
+                "list_items": [],
+                "dict_entries": []
+              }
+            ],
+            "dict_entries": []
+          }
+        },
+        {
+          "key": "data",
+          "value": {
+            "name": "data",
+            "type_name": "",
+            "op_sym": ":",
+            "value": "{\n    \"a\": {\n        \"b\": {\n            \"c\": 2\n        }\n    }\n}",
+            "list_items": [],
+            "dict_entries": [
+              {
+                "key": "a",
+                "value": {
+                  "name": "a",
+                  "type_name": "",
+                  "op_sym": ":",
+                  "value": "{\n    \"b\": {\n        \"c\": 2\n    }\n}",
+                  "list_items": [],
+                  "dict_entries": [
+                    {
+                      "key": "b",
+                      "value": {
+                        "name": "b",
+                        "type_name": "",
+                        "op_sym": ":",
+                        "value": "{\n    \"c\": 2\n}",
+                        "list_items": [],
+                        "dict_entries": [
+                          {
+                            "key": "c",
+                            "value": {
+                              "name": "c",
+                              "type_name": "",
+                              "op_sym": ":",
+                              "value": "2",
+                              "list_items": [],
+                              "dict_entries": []
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

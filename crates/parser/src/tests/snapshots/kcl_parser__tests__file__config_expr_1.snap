@@ -1,0 +1,54 @@
+---
+source: crates/parser/src/tests/file.rs
+expression: "$crate :: tests :: parsing_file_string(\"testdata/config_expr-01.k\")"
+---
+{
+  "filename": "config_expr-01.k",
+  "doc": null,
+  "body": [
+    {
+      "node": {
+        "type": "Assign",
+        "targets": [
+          {
+            "node": {
+              "name": {
+                "node": "config",
+                "filename": "config_expr-01.k",
+                "line": 1,
+                "column": 0,
+                "end_line": 1,
+                "end_column": 6
+              },
+              "paths": [],
+              "pkgpath": ""
+            },
+            "filename": "config_expr-01.k",
+            "line": 1,
+            "column": 0,
+            "end_line": 1,
+            "end_column": 6
+          }
+        ],
+        "value": {
+          "node": {
+            "type": "Config",
+            "items": []
+          },
+          "filename": "config_expr-01.k",
+          "line": 1,
+          "column": 9,
+          "end_line": 2,
+          "end_column": 1
+        },
+        "ty": null
+      },
+      "filename": "config_expr-01.k",
+      "line": 1,
+      "column": 0,
+      "end_line": 2,
+      "end_column": 1
+    }
+  ],
+  "comments": []
+}

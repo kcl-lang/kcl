@@ -1,0 +1,77 @@
+---
+source: crates/parser/src/tests/error_recovery.rs
+expression: "$crate :: tests :: parsing_module_string(r#\"schema A:\n[]: []\"#)"
+---
+Module {
+    filename: "",
+    doc: None,
+    body: [
+        Node {
+            node: Schema(
+                SchemaStmt {
+                    doc: None,
+                    name: Node {
+                        node: "A",
+                        filename: "",
+                        line: 1,
+                        column: 7,
+                        end_line: 1,
+                        end_column: 8,
+                    },
+                    parent_name: None,
+                    for_host_name: None,
+                    is_mixin: false,
+                    is_protocol: false,
+                    args: None,
+                    mixins: [],
+                    body: [],
+                    decorators: [],
+                    checks: [],
+                    index_signature: None,
+                },
+            ),
+            filename: "",
+            line: 1,
+            column: 0,
+            end_line: 2,
+            end_column: 0,
+        },
+        Node {
+            node: Assign(
+                AssignStmt {
+                    targets: [],
+                    value: Node {
+                        node: Missing(
+                            MissingExpr,
+                        ),
+                        filename: "",
+                        line: 2,
+                        column: 6,
+                        end_line: 2,
+                        end_column: 6,
+                    },
+                    ty: Some(
+                        Node {
+                            node: List(
+                                ListType {
+                                    inner_type: None,
+                                },
+                            ),
+                            filename: "",
+                            line: 2,
+                            column: 4,
+                            end_line: 2,
+                            end_column: 6,
+                        },
+                    ),
+                },
+            ),
+            filename: "",
+            line: 2,
+            column: 0,
+            end_line: 2,
+            end_column: 2,
+        },
+    ],
+    comments: [],
+}

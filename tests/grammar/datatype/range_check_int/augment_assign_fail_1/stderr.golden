@@ -1,0 +1,9 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:2:1
+  |
+2 | _a += 1
+  |  9223372036854775808: A 64 bit integer overflow
+  |
+note: backtrace:
+	0: kcl_main
+		at ${CWD}/main.k:2
