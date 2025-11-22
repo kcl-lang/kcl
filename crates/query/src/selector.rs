@@ -17,7 +17,7 @@ use std::{
 use kclvm_ast::path::get_key_path;
 
 use kclvm_ast::walker::MutSelfWalker;
-use kclvm_ast_pretty::{print_ast_node, ASTNode};
+use kclvm_ast_pretty::{ASTNode, print_ast_node};
 use kclvm_parser::load_program;
 
 use kclvm_sema::pre_process::pre_process_program;

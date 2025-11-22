@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use super::*;
 use kclvm_ast::path::get_attr_paths_from_config_expr;
-use kclvm_parser::{load_program, parse_file_force_errors, ParseSession};
+use kclvm_parser::{ParseSession, load_program, parse_file_force_errors};
 use kclvm_primitives::IndexMap;
 
 #[test]

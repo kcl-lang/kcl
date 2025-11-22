@@ -114,7 +114,7 @@ pub trait TypedResultWalker<'ctx>: Sized {
     fn walk_number_lit(&self, number_lit: &'ctx ast::NumberLit) -> Self::Result;
     fn walk_string_lit(&self, string_lit: &'ctx ast::StringLit) -> Self::Result;
     fn walk_name_constant_lit(&self, name_constant_lit: &'ctx ast::NameConstantLit)
-        -> Self::Result;
+    -> Self::Result;
     fn walk_joined_string(&self, joined_string: &'ctx ast::JoinedString) -> Self::Result;
     fn walk_formatted_value(&self, formatted_value: &'ctx ast::FormattedValue) -> Self::Result;
     fn walk_comment(&self, comment: &'ctx ast::Comment) -> Self::Result;

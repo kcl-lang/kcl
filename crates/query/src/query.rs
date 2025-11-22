@@ -1,13 +1,12 @@
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use anyhow::Result;
-use kclvm_parser::{load_all_files_under_paths, load_program, LoadProgramOptions, ParseSession};
+use kclvm_parser::{LoadProgramOptions, ParseSession, load_all_files_under_paths, load_program};
 use kclvm_primitives::{DefaultHashBuilder, IndexMap};
 use kclvm_sema::{
     resolver::{
-        resolve_program_with_opts,
+        Options, resolve_program_with_opts,
         scope::{ProgramScope, Scope},
-        Options,
     },
     ty::SchemaType,
 };

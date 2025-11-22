@@ -26,7 +26,7 @@ mod ty;
 
 use crate::session::ParseSession;
 
-use compiler_base_span::span::{new_byte_pos, BytePos};
+use compiler_base_span::span::{BytePos, new_byte_pos};
 use kclvm_ast::ast::{Comment, NodeRef, PosTuple};
 use kclvm_ast::token::{CommentKind, Token, TokenKind};
 use kclvm_ast::token_stream::{Cursor, TokenStream};

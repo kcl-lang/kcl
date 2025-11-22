@@ -1,13 +1,13 @@
 use std::collections::HashSet;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 
 use compiler_base_macros::bug;
+use kclvm_ast::MAIN_PKG;
 use kclvm_ast::config::try_get_config_expr_mut;
 use kclvm_ast::path::{get_key_parts, get_key_path};
 use kclvm_ast::walk_list_mut;
 use kclvm_ast::walker::MutSelfMutWalker;
-use kclvm_ast::MAIN_PKG;
 use kclvm_ast::{ast, path::get_target_path};
 use kclvm_ast_pretty::print_ast_module;
 use kclvm_parser::parse_expr;

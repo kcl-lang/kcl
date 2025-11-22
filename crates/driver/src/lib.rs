@@ -8,11 +8,11 @@ mod tests;
 
 use anyhow::Result;
 use kclvm_config::{
-    modfile::{get_pkg_root, load_mod_file, KCL_FILE_EXTENSION, KCL_MOD_FILE, KCL_WORK_FILE},
-    settings::{build_settings_pathbuf, DEFAULT_SETTING_FILE},
+    modfile::{KCL_FILE_EXTENSION, KCL_MOD_FILE, KCL_WORK_FILE, get_pkg_root, load_mod_file},
+    settings::{DEFAULT_SETTING_FILE, build_settings_pathbuf},
     workfile::load_work_file,
 };
-use kclvm_parser::{get_kcl_files, LoadProgramOptions};
+use kclvm_parser::{LoadProgramOptions, get_kcl_files};
 use kclvm_utils::path::PathPrefix;
 use std::iter;
 use std::{collections::HashMap, env};
@@ -22,7 +22,7 @@ use std::{
     io::{self, ErrorKind},
     path::{Path, PathBuf},
 };
-use toolchain::{fill_pkg_maps_for_k_file, Metadata, Toolchain};
+use toolchain::{Metadata, Toolchain, fill_pkg_maps_for_k_file};
 use walkdir::WalkDir;
 
 /// Get compile workspace(files and options) from a single file input.

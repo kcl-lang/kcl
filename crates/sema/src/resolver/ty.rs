@@ -4,7 +4,7 @@ use super::node::ResolvedResult;
 use crate::resolver::Resolver;
 use crate::ty::parser::parse_type_str;
 use crate::ty::{
-    assignable_to, is_upper_bound, Attr, DictType, Parameter, SchemaType, Type, TypeKind, TypeRef,
+    Attr, DictType, Parameter, SchemaType, Type, TypeKind, TypeRef, assignable_to, is_upper_bound,
 };
 use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;

@@ -1,5 +1,5 @@
 use crate::resolver::Resolver;
-use crate::ty::{sup, DictType, TypeKind, TypeRef};
+use crate::ty::{DictType, TypeKind, TypeRef, sup};
 use kclvm_ast::ast;
 use kclvm_error::diagnostic::Range;
 

@@ -8,7 +8,7 @@
 //! [kclvm_runner::Artifact], which is regard as a new compilation entry point. Then,
 //! it executes each test case separately and collects information about the test cases,
 //! such as the execution time and whether the test passes or fails.
-pub use crate::testing::suite::{load_test_suites, TestSuite};
+pub use crate::testing::suite::{TestSuite, load_test_suites};
 use anyhow::{Error, Result};
 use kclvm_primitives::IndexMap;
 use kclvm_runner::ExecProgramArgs;

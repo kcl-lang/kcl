@@ -3,11 +3,11 @@
 use bstr::ByteSlice;
 use kclvm_primitives::{DefaultHashBuilder, IndexMap};
 use serde::{
-    de::{DeserializeSeed, MapAccess, SeqAccess, Visitor},
     Deserialize, Serialize,
+    de::{DeserializeSeed, MapAccess, SeqAccess, Visitor},
 };
 
-use crate::{val_plan::KCL_PRIVATE_VAR_PREFIX, ConfigEntryOperationKind, Context, ValueRef};
+use crate::{ConfigEntryOperationKind, Context, ValueRef, val_plan::KCL_PRIVATE_VAR_PREFIX};
 
 macro_rules! tri {
     ($e:expr $(,)?) => {
@@ -449,21 +449,21 @@ impl ValueRef {
             crate::Value::undefined => JsonValue::Null,
             crate::Value::none => JsonValue::Null,
 
-            crate::Value::bool_value(ref v) => JsonValue::Bool(*v),
-            crate::Value::int_value(ref v) => JsonValue::Number(serde_json::Number::from(*v)),
-            crate::Value::float_value(ref v) => match serde_json::Number::from_f64(*v) {
+            crate::Value::bool_value(v) => JsonValue::Bool(*v),
+            crate::Value::int_value(v) => JsonValue::Number(serde_json::Number::from(*v)),
+            crate::Value::float_value(v) => match serde_json::Number::from_f64(*v) {
                 Some(n) => JsonValue::Number(n),
                 None => JsonValue::Null,
             },
             // The number_multiplier is still a number, if we want to get the string form, we can
             // use the `str` function e.g. `str(1Mi)`
-            crate::Value::unit_value(ref v, ..) => match serde_json::Number::from_f64(*v) {
+            crate::Value::unit_value(v, ..) => match serde_json::Number::from_f64(*v) {
                 Some(n) => JsonValue::Number(n),
                 None => JsonValue::Null,
             },
-            crate::Value::str_value(ref v) => JsonValue::String(v.clone()),
+            crate::Value::str_value(v) => JsonValue::String(v.clone()),
 
-            crate::Value::list_value(ref v) => {
+            crate::Value::list_value(v) => {
                 let mut val_array = Vec::new();
                 for x in v.values.iter() {
                     match *x.rc.borrow() {
@@ -485,7 +485,7 @@ impl ValueRef {
                 }
                 JsonValue::Array(val_array)
             }
-            crate::Value::dict_value(ref v) => {
+            crate::Value::dict_value(v) => {
                 let mut val_map = IndexMap::with_hasher(DefaultHashBuilder::default());
                 let mut vals = v.values.clone();
                 if opts.sort_keys {
@@ -515,7 +515,7 @@ impl ValueRef {
                 JsonValue::Object(val_map)
             }
 
-            crate::Value::schema_value(ref v) => {
+            crate::Value::schema_value(v) => {
                 let mut val_map = IndexMap::with_hasher(DefaultHashBuilder::default());
                 let mut vals = v.config.values.clone();
                 if opts.sort_keys {
@@ -544,9 +544,7 @@ impl ValueRef {
                 }
                 JsonValue::Object(val_map)
             }
-            crate::Value::func_value(ref v) => {
-                JsonValue::Number(serde_json::Number::from(v.fn_ptr))
-            }
+            crate::Value::func_value(v) => JsonValue::Number(serde_json::Number::from(v.fn_ptr)),
         }
     }
 }

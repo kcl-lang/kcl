@@ -510,7 +510,7 @@ impl Server {
             recv(self.client.receiver) -> msg => msg.ok(),
             recv(after(timeout)) -> _ => panic!("timed out"),
         };
-        if let Some(ref msg) = msg {
+        if let Some(msg) = msg {
             self.messages.borrow_mut().push(msg.clone());
         }
         msg
@@ -523,7 +523,7 @@ impl Server {
             recv(self.client.receiver) -> msg => msg.ok(),
             recv(after(timeout)) -> _ => return None,
         };
-        if let Some(ref msg) = msg {
+        if let Some(msg) = msg {
             self.messages.borrow_mut().push(msg.clone());
         }
         msg

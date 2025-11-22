@@ -1,13 +1,13 @@
 use kclvm_runtime::{
-    check_type, dereference_type, is_dict_type, is_list_type, is_schema_type, is_type_union,
+    BUILTIN_TYPES, ConfigEntryOperationKind, KCL_TYPE_ANY, PKG_PATH_PREFIX, ValueRef, check_type,
+    dereference_type, is_dict_type, is_list_type, is_schema_type, is_type_union,
     schema_config_meta, schema_runtime_type, separate_kv, split_type_union, val_plan,
-    ConfigEntryOperationKind, ValueRef, BUILTIN_TYPES, KCL_TYPE_ANY, PKG_PATH_PREFIX,
 };
 use scopeguard::defer;
 
 use crate::error as kcl_error;
 use crate::schema::SchemaEvalContext;
-use crate::{proxy::Proxy, Evaluator};
+use crate::{Evaluator, proxy::Proxy};
 
 /// Use the schema instance to build a new schema instance using the schema construct function
 pub fn resolve_schema(s: &Evaluator, schema: &ValueRef, keys: &[String]) -> ValueRef {

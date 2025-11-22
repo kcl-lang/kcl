@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use super::{sup, DictType, Type, TypeFlags, TypeKind, TypeRef};
+use super::{DictType, Type, TypeFlags, TypeKind, TypeRef, sup};
 use kclvm_error::diagnostic::Range;
 use petgraph::algo::kosaraju_scc;
 use petgraph::graph::{DiGraph, NodeIndex};
-use petgraph::visit::{depth_first_search, DfsEvent};
+use petgraph::visit::{DfsEvent, depth_first_search};
 
 /// TypeContext responsible for type generation, calculation,
 /// and equality and subtype judgment between types.

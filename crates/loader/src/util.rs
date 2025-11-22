@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use kclvm_ast::ast;
-use kclvm_ast_pretty::{print_ast_node, ASTNode};
+use kclvm_ast_pretty::{ASTNode, print_ast_node};
 use kclvm_sema::eval::str_literal_eval;
 
 pub(crate) fn get_call_args_bool(

@@ -1,18 +1,18 @@
 use std::{any::Any, mem::transmute_copy, os::raw::c_char};
 
 use std::cell::UnsafeCell;
-use std::panic::catch_unwind;
 use std::panic::AssertUnwindSafe;
 use std::panic::RefUnwindSafe;
 use std::panic::UnwindSafe;
+use std::panic::catch_unwind;
 
 use crate::*;
 
 /// Executes the provided function and catches any potential runtime errors.
 /// Returns undefined if execution is successful, otherwise returns an error
 /// message in case of a runtime panic.
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_runtime_catch(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -113,7 +113,7 @@ impl<T> UnsafeWrapper<T> {
     ///
     /// A mutable reference to the inner value of type T.
     pub unsafe fn get(&self) -> &mut T {
-        &mut *self.value.get()
+        unsafe { &mut *self.value.get() }
     }
 }
 

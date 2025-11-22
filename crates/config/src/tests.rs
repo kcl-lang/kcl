@@ -8,8 +8,8 @@ use std::{
 };
 
 use crate::{
-    cache::{load_pkg_cache, save_pkg_cache, CacheOption},
-    modfile::{get_vendor_home, KCL_PKG_PATH},
+    cache::{CacheOption, load_pkg_cache, save_pkg_cache},
+    modfile::{KCL_PKG_PATH, get_vendor_home},
 };
 
 #[test]

@@ -11,10 +11,10 @@ use std::sync::Arc;
 
 pub use constants::*;
 pub use context::{TypeContext, TypeInferMethods};
-use kclvm_ast::ast;
 use kclvm_ast::MAIN_PKG;
-use kclvm_error::diagnostic::Range;
+use kclvm_ast::ast;
 use kclvm_error::Position;
+use kclvm_error::diagnostic::Range;
 use kclvm_primitives::IndexMap;
 pub use unify::*;
 pub use walker::walk_type;
@@ -275,10 +275,12 @@ impl SchemaType {
             format!("@{}.{}", self.pkgpath, self.name)
         }
     }
+
     /// Get the object type string.
     pub fn full_ty_str(&self) -> String {
         full_ty_str(&self.pkgpath, &self.name)
     }
+
     /// Is `name` a schema member function
     pub fn is_member_functions(&self, name: &str) -> bool {
         !self.is_instance && SCHEMA_MEMBER_FUNCTIONS.contains(&name)

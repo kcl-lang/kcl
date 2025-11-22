@@ -5,8 +5,8 @@ pub const YAML_STREAM_SEP: &str = "\n---\n";
 pub const JSON_STREAM_SEP: &str = "\n";
 
 /// encode(data, sort_keys=False, ignore_private=False, ignore_none=False)
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_yaml_encode(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -26,8 +26,8 @@ pub extern "C-unwind" fn kclvm_yaml_encode(
 }
 
 /// encode_all(data, sort_keys=False, ignore_private=False, ignore_none=False)
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_yaml_encode_all(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -51,8 +51,8 @@ pub extern "C-unwind" fn kclvm_yaml_encode_all(
 }
 
 /// decode(value)
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_yaml_decode(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -72,8 +72,8 @@ pub extern "C-unwind" fn kclvm_yaml_decode(
 }
 
 /// decode_all(value)
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_yaml_decode_all(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -93,8 +93,8 @@ pub extern "C-unwind" fn kclvm_yaml_decode_all(
 }
 
 /// dump_to_file(data, sort_keys=False, ignore_private=False, ignore_none=False)
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_yaml_dump_to_file(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -120,8 +120,8 @@ pub extern "C-unwind" fn kclvm_yaml_dump_to_file(
 }
 
 /// dump_all_to_file(data, sort_keys=False, ignore_private=False, ignore_none=False)
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_yaml_dump_all_to_file(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -155,8 +155,8 @@ pub extern "C-unwind" fn kclvm_yaml_dump_all_to_file(
 }
 
 /// validate(value: str) -> bool
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_yaml_validate(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,

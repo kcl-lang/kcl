@@ -4,11 +4,11 @@ use std::sync::Arc;
 use crate::info::is_private_field;
 use crate::resolver::Resolver;
 use crate::ty::{
-    full_ty_str, is_upper_bound, DecoratorTarget, FunctionType, Parameter, SchemaAttr,
-    SchemaIndexSignature, SchemaType, Type, TypeKind, RESERVED_TYPE_IDENTIFIERS,
+    DecoratorTarget, FunctionType, Parameter, RESERVED_TYPE_IDENTIFIERS, SchemaAttr,
+    SchemaIndexSignature, SchemaType, Type, TypeKind, full_ty_str, is_upper_bound,
 };
 use kclvm_ast::ast;
-use kclvm_ast_pretty::{print_ast_node, print_schema_expr, ASTNode};
+use kclvm_ast_pretty::{ASTNode, print_ast_node, print_schema_expr};
 use kclvm_error::*;
 use kclvm_primitives::IndexMap;
 
@@ -634,8 +634,8 @@ impl<'ctx> Resolver<'_> {
                 }
                 _ => continue,
             };
-            let base_attr_ty = match parent_ty {
-                Some(ref ty) => ty.get_type_of_attr(&name).map_or(self.any_ty(), |ty| ty),
+            let base_attr_ty = match &parent_ty {
+                Some(ty) => ty.get_type_of_attr(&name).map_or(self.any_ty(), |ty| ty),
                 None => self.any_ty(),
             };
             if !attr_obj_map.contains_key(&name) {
@@ -682,7 +682,7 @@ impl<'ctx> Resolver<'_> {
                     stmt.get_span_pos(),
                 );
             }
-            if let Some(ref index_signature_obj) = index_signature {
+            if let Some(index_signature_obj) = &index_signature {
                 if !index_signature_obj.any_other
                     && !is_upper_bound(index_signature_obj.val_ty.clone(), ty.clone())
                 {
@@ -783,7 +783,7 @@ impl<'ctx> Resolver<'_> {
         let schema_full_ty_str = full_ty_str(&self.ctx.pkgpath, name);
 
         if should_add_schema_ref {
-            if let Some(ref parent_ty) = parent_ty {
+            if let Some(parent_ty) = &parent_ty {
                 let parent_full_ty_str = parent_ty.full_ty_str();
                 self.ctx.ty_ctx.add_dependencies(
                     &schema_full_ty_str,

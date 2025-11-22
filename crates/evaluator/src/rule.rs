@@ -9,8 +9,8 @@ use scopeguard::defer;
 
 use crate::error as kcl_error;
 
-use crate::proxy::{call_rule_check, call_schema_body_from_rule};
 use crate::Evaluator;
+use crate::proxy::{call_rule_check, call_schema_body_from_rule};
 
 pub type RuleBodyHandler =
     Arc<dyn Fn(&Evaluator, &RuleEvalContextRef, &ValueRef, &ValueRef) -> ValueRef>;

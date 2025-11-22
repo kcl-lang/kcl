@@ -512,8 +512,8 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
     fn walk_list_comp(&mut self, list_comp: &'ctx ast::ListComp) -> Self::Result {
         self.write_token(TokenKind::OpenDelim(DelimToken::Bracket));
         self.expr(&list_comp.elt);
-        for gen in &list_comp.generators {
-            self.walk_comp_clause(&gen.node);
+        for g in &list_comp.generators {
+            self.walk_comp_clause(&g.node);
         }
         self.write_token(TokenKind::CloseDelim(DelimToken::Bracket));
     }
@@ -577,8 +577,8 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         self.write(dict_comp.entry.operation.symbol());
         self.write_space();
         self.expr(&dict_comp.entry.value);
-        for gen in &dict_comp.generators {
-            self.walk_comp_clause(&gen.node);
+        for g in &dict_comp.generators {
+            self.walk_comp_clause(&g.node);
         }
         self.write_token(TokenKind::CloseDelim(DelimToken::Brace));
     }

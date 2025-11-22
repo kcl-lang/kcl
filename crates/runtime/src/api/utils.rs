@@ -2,7 +2,7 @@
 
 use std::os::raw::c_char;
 
-use crate::{kclvm_size_t, Context, ValueRef};
+use crate::{Context, ValueRef, kclvm_size_t};
 
 /// New a mutable raw pointer.
 /// Safety: The caller must ensure that `ctx` lives longer than the returned pointer

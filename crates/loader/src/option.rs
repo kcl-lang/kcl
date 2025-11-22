@@ -4,7 +4,7 @@ use kclvm_sema::builtin::BUILTIN_FUNCTIONS;
 use kclvm_sema::{builtin::option::OptionHelp, resolver::scope::NodeKey};
 
 use crate::util::{get_call_args_string, get_call_args_strip_string};
-use crate::{load_packages, util::get_call_args_bool, LoadPackageOptions, Packages};
+use crate::{LoadPackageOptions, Packages, load_packages, util::get_call_args_bool};
 
 #[derive(Debug)]
 struct OptionHelpExtractor<'ctx> {

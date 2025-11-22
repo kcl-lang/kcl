@@ -11,45 +11,45 @@ impl ValueRef {
 
     #[inline]
     pub fn as_int(&self) -> i64 {
-        match *self.rc.borrow() {
-            Value::int_value(ref v) => *v,
-            Value::float_value(ref v) => *v as i64,
-            Value::unit_value(ref v, _, _) => *v as i64,
+        match &*self.rc.borrow() {
+            Value::int_value(v) => *v,
+            Value::float_value(v) => *v as i64,
+            Value::unit_value(v, _, _) => *v as i64,
             _ => 0,
         }
     }
 
     #[inline]
     pub fn must_as_strict_int(&self) -> i64 {
-        match *self.rc.borrow() {
-            Value::int_value(ref v) => *v,
+        match &*self.rc.borrow() {
+            Value::int_value(v) => *v,
             _ => panic!("invalid int value"),
         }
     }
 
     #[inline]
     pub fn as_float(&self) -> f64 {
-        match *self.rc.borrow() {
-            Value::int_value(ref v) => *v as f64,
-            Value::float_value(ref v) => *v,
-            Value::unit_value(ref v, _, _) => *v,
+        match &*self.rc.borrow() {
+            Value::int_value(v) => *v as f64,
+            Value::float_value(v) => *v,
+            Value::unit_value(v, _, _) => *v,
             _ => 0.0,
         }
     }
 
     #[inline]
     pub fn as_num(&self) -> f64 {
-        match *self.rc.borrow() {
-            Value::float_value(v) => v,
-            Value::int_value(v) => v as f64,
+        match &*self.rc.borrow() {
+            Value::float_value(v) => *v,
+            Value::int_value(v) => *v as f64,
             _ => return 0.0,
         }
     }
 
     #[inline]
     pub fn as_str(&self) -> String {
-        match *self.rc.borrow() {
-            Value::str_value(ref v) => v.clone(),
+        match &*self.rc.borrow() {
+            Value::str_value(v) => v.clone(),
             _ => "".to_string(),
         }
     }
@@ -57,7 +57,7 @@ impl ValueRef {
     #[inline]
     pub fn as_list_ref(&self) -> Ref<ListValue> {
         Ref::map(self.rc.borrow(), |val| match val {
-            Value::list_value(ref v) => v.as_ref(),
+            Value::list_value(v) => v.as_ref(),
             _ => panic!("invalid list value"),
         })
     }
@@ -65,7 +65,7 @@ impl ValueRef {
     #[inline]
     pub fn as_list_mut_ref(&mut self) -> RefMut<ListValue> {
         RefMut::map(self.rc.borrow_mut(), |val| match val {
-            Value::list_value(ref mut v) => v.as_mut(),
+            Value::list_value(v) => v.as_mut(),
             _ => panic!("invalid list value"),
         })
     }
@@ -73,8 +73,8 @@ impl ValueRef {
     #[inline]
     pub fn as_dict_ref(&self) -> Ref<DictValue> {
         Ref::map(self.rc.borrow(), |val| match val {
-            Value::dict_value(ref v) => v.as_ref(),
-            Value::schema_value(ref v) => v.config.as_ref(),
+            Value::dict_value(v) => v.as_ref(),
+            Value::schema_value(v) => v.config.as_ref(),
             _ => panic!("invalid dict value"),
         })
     }
@@ -82,8 +82,8 @@ impl ValueRef {
     #[inline]
     pub fn as_dict_mut_ref(&mut self) -> RefMut<DictValue> {
         RefMut::map(self.rc.borrow_mut(), |val| match val {
-            Value::dict_value(ref mut v) => v.as_mut(),
-            Value::schema_value(ref mut v) => v.config.as_mut(),
+            Value::dict_value(v) => v.as_mut(),
+            Value::schema_value(v) => v.config.as_mut(),
             _ => panic!("invalid dict value"),
         })
     }
@@ -91,7 +91,7 @@ impl ValueRef {
     #[inline]
     pub fn as_schema(&self) -> Ref<SchemaValue> {
         Ref::map(self.rc.borrow(), |val| match val {
-            Value::schema_value(ref v) => v.as_ref(),
+            Value::schema_value(v) => v.as_ref(),
             _ => panic!("invalid schema value"),
         })
     }
@@ -99,7 +99,7 @@ impl ValueRef {
     #[inline]
     pub fn as_function(&self) -> Ref<FuncValue> {
         Ref::map(self.rc.borrow(), |val| match val {
-            Value::func_value(ref v) => v.as_ref(),
+            Value::func_value(v) => v.as_ref(),
             _ => panic!("invalid func value"),
         })
     }

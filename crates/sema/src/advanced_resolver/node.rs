@@ -4,7 +4,7 @@ use std::sync::Arc;
 use kclvm_ast::ast::{self, Stmt};
 use kclvm_ast::pos::GetPos;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
-use kclvm_error::{diagnostic::Range, Position};
+use kclvm_error::{Position, diagnostic::Range};
 use kclvm_primitives::{DefaultHashBuilder, IndexMap};
 
 use crate::core::symbol::Symbol;
@@ -16,7 +16,7 @@ use crate::{
             SymbolRef, SymbolSemanticInfo, UnresolvedSymbol, ValueSymbol,
         },
     },
-    ty::{Parameter, Type, TypeKind, ANY_TYPE_STR, SCHEMA_MEMBER_FUNCTIONS},
+    ty::{ANY_TYPE_STR, Parameter, SCHEMA_MEMBER_FUNCTIONS, Type, TypeKind},
 };
 
 use super::AdvancedResolver;

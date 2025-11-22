@@ -32,22 +32,22 @@ impl ValueIterator {
         if p.is_empty() {
             return Default::default();
         }
-        match *p.rc.borrow() {
-            Value::str_value(ref s) => ValueIterator {
+        match &*p.rc.borrow() {
+            Value::str_value(s) => ValueIterator {
                 len: s.len(),
                 cur_key: Default::default(),
                 cur_val: Default::default(),
                 keys: Vec::new(),
                 pos: 0,
             },
-            Value::list_value(ref list) => ValueIterator {
+            Value::list_value(list) => ValueIterator {
                 len: list.values.len(),
                 cur_key: Default::default(),
                 cur_val: Default::default(),
                 keys: Vec::new(),
                 pos: 0,
             },
-            Value::dict_value(ref dict) => {
+            Value::dict_value(dict) => {
                 let keys: Vec<String> = dict.values.keys().map(|s| (*s).clone()).collect();
                 ValueIterator {
                     len: dict.values.len(),
@@ -58,7 +58,7 @@ impl ValueIterator {
                 }
             }
 
-            Value::schema_value(ref schema) => {
+            Value::schema_value(schema) => {
                 let keys: Vec<String> = schema.config.values.keys().map(|s| (*s).clone()).collect();
                 ValueIterator {
                     len: schema.config.values.len(),
@@ -111,8 +111,8 @@ impl ValueIterator {
         if self.pos >= host.len() as i32 {
             return None;
         }
-        match *host.rc.borrow() {
-            Value::str_value(ref s) => {
+        match &*host.rc.borrow() {
+            Value::str_value(s) => {
                 if self.pos >= s.chars().count() as i32 {
                     return None;
                 }
@@ -122,20 +122,20 @@ impl ValueIterator {
                 self.pos += 1;
                 Some(&self.cur_val)
             }
-            Value::list_value(ref list) => {
+            Value::list_value(list) => {
                 self.cur_key = ValueRef::int(self.pos as i64);
                 self.cur_val = list.values[self.pos as usize].clone();
                 self.pos += 1;
                 Some(&self.cur_val)
             }
-            Value::dict_value(ref dict) => {
+            Value::dict_value(dict) => {
                 let key = &self.keys[self.pos as usize];
                 self.cur_key = ValueRef::str(key);
                 self.cur_val = dict.values[key].clone();
                 self.pos += 1;
                 Some(&self.cur_key)
             }
-            Value::schema_value(ref schema) => {
+            Value::schema_value(schema) => {
                 let key = &self.keys[self.pos as usize];
                 self.cur_key = ValueRef::str(key);
                 self.cur_val = schema.config.values[key].clone();

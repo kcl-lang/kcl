@@ -101,10 +101,10 @@ impl PartialEq for ValueRef {
 
 impl Ord for ValueRef {
     fn cmp(&self, other: &ValueRef) -> Ordering {
-        let ord = match *self.rc.borrow() {
+        let ord = match &*self.rc.borrow() {
             Value::int_value(a) => match *other.rc.borrow() {
                 Value::int_value(b) => a.partial_cmp(&b),
-                Value::float_value(b) => (a as f64).partial_cmp(&b),
+                Value::float_value(b) => (*a as f64).partial_cmp(&b),
                 _ => None,
             },
             Value::float_value(a) => match *other.rc.borrow() {
@@ -112,8 +112,8 @@ impl Ord for ValueRef {
                 Value::float_value(b) => a.partial_cmp(&b),
                 _ => None,
             },
-            Value::str_value(ref a) => match &*other.rc.borrow() {
-                Value::str_value(ref b) => a.partial_cmp(b),
+            Value::str_value(a) => match &*other.rc.borrow() {
+                Value::str_value(b) => a.partial_cmp(b),
                 _ => None,
             },
             _ => None,
@@ -147,25 +147,25 @@ impl Hash for ValueRef {
             }
             Value::float_value(v) => v.to_bits().hash(state),
             Value::bool_value(v) => v.hash(state),
-            Value::str_value(ref v) => (*v).hash(state),
-            Value::list_value(ref v) => {
+            Value::str_value(v) => (*v).hash(state),
+            Value::list_value(v) => {
                 for i in 0..v.values.len() {
                     v.values[i].hash(state);
                 }
             }
-            Value::dict_value(ref v) => {
+            Value::dict_value(v) => {
                 for (k, v) in v.values.iter() {
                     (*k).hash(state);
                     v.hash(state);
                 }
             }
-            Value::schema_value(ref v) => {
+            Value::schema_value(v) => {
                 for (k, v) in v.config.values.iter() {
                     (*k).hash(state);
                     v.hash(state);
                 }
             }
-            Value::func_value(ref v) => {
+            Value::func_value(v) => {
                 v.fn_ptr.hash(state);
             }
         }

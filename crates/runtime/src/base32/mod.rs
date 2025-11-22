@@ -2,10 +2,10 @@
 
 extern crate base32;
 use crate::*;
-use base32::{decode, encode, Alphabet};
+use base32::{Alphabet, decode, encode};
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_base32_encode(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -21,8 +21,8 @@ pub extern "C-unwind" fn kclvm_base32_encode(
     panic!("encode() missing 1 required positional argument: 'value'");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_base32_decode(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,

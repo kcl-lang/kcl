@@ -34,7 +34,7 @@ use crate::{resolver::scope::Scope, ty::SchemaType};
 use kclvm_ast::ast::Program;
 use kclvm_error::*;
 
-use self::scope::{builtin_scope, KCLScopeCache, NodeTyMap, ProgramScope};
+use self::scope::{KCLScopeCache, NodeTyMap, ProgramScope, builtin_scope};
 
 /// Resolver is responsible for program semantic checking, mainly
 /// including type checking and contract model checking.

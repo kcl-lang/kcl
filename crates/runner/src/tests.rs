@@ -3,8 +3,8 @@ use crate::{execute, runner::ExecProgramArgs};
 use anyhow::Result;
 use kclvm_ast::ast::{Module, Program};
 use kclvm_config::settings::load_file;
-use kclvm_parser::load_program;
 use kclvm_parser::ParseSession;
+use kclvm_parser::load_program;
 use kclvm_utils::path::PathPrefix;
 use serde_json::Value;
 use std::path::{Path, PathBuf};
@@ -41,10 +41,12 @@ fn custom_manifests_data_path() -> String {
 }
 
 fn exec_prog_args_test_case() -> Vec<String> {
-    vec![Path::new("exec_prog_args")
-        .join("default.json")
-        .display()
-        .to_string()]
+    vec![
+        Path::new("exec_prog_args")
+            .join("default.json")
+            .display()
+            .to_string(),
+    ]
 }
 
 fn settings_file_test_case() -> Vec<(String, String)> {

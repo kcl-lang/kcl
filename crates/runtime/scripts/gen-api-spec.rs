@@ -23,7 +23,9 @@ struct ApiSpec {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    std::env::set_var("KCLVM_RUNTIME_GEN_API_SPEC", "1");
+    unsafe {
+        std::env::set_var("KCLVM_RUNTIME_GEN_API_SPEC", "1");
+    }
     let specs = load_all_api_spec(ROOT);
     let src = gen_c_api(&specs);
     fs::write(C_API_FILE, src).unwrap_or_else(|err| {

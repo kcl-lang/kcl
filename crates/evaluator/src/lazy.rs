@@ -7,9 +7,9 @@ use kclvm_ast::ast::AstIndex;
 use kclvm_primitives::IndexMap;
 use kclvm_runtime::ValueRef;
 
+use crate::Evaluator;
 use crate::error as kcl_error;
 use crate::error::INTERNAL_ERROR_MSG;
-use crate::Evaluator;
 pub type LazyEvalScopeRef = Rc<RefCell<LazyEvalScope>>;
 
 #[macro_export]

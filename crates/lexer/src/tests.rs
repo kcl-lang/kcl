@@ -1,5 +1,5 @@
 use super::*;
-use expect_test::{expect, Expect};
+use expect_test::{Expect, expect};
 use std::fmt::Write;
 
 fn check_lexing(src: &str, expect: Expect) {

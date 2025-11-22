@@ -44,7 +44,7 @@ impl ValueRef {
                 true
             }
             (Value::list_value(a), _) => match &*x.rc.borrow() {
-                Value::list_value(ref b) => {
+                Value::list_value(b) => {
                     for x in b.values.iter() {
                         a.values.push(x.clone());
                     }
@@ -147,7 +147,7 @@ impl ValueRef {
                 true
             }
             (Value::list_value(list), _) => match &*x.rc.borrow() {
-                Value::int_value(ref b) => {
+                Value::int_value(b) => {
                     let n = list.values.len();
                     for _ in 1..(*b as usize) {
                         for i in 0..n {

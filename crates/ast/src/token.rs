@@ -10,7 +10,7 @@ pub use LitKind::*;
 pub use TokenKind::*;
 pub use UnaryOpToken::*;
 
-use compiler_base_span::{Span, DUMMY_SP};
+use compiler_base_span::{DUMMY_SP, Span};
 pub use kclvm_span::symbol::{Ident, Symbol};
 pub const VALID_SPACES_LENGTH: usize = 0;
 

@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 
 /// Get field package path and identifier name from the path.
 /// (TODO: Needs to be a package related to the language specification
@@ -25,7 +25,10 @@ pub(crate) fn split_field_path(path: &str) -> Result<(String, String)> {
 /// Get the invalid spec error message.
 #[inline]
 pub(crate) fn invalid_spec_error(spec: &str) -> anyhow::Error {
-    anyhow!("Invalid spec format '{}', expected <field_path>=<filed_value>, <field_path>:<filed_value>, <field_path>+=<filed_value> or <field_path>-", spec)
+    anyhow!(
+        "Invalid spec format '{}', expected <field_path>=<filed_value>, <field_path>:<filed_value>, <field_path>+=<filed_value> or <field_path>-",
+        spec
+    )
 }
 
 /// Get the invalid symbol selector spec error message.

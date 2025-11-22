@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
-use crate::builtin::system_module::{get_system_module_members, UNITS, UNITS_NUMBER_MULTIPLIER};
-use crate::builtin::{get_system_member_function_ty, STRING_MEMBER_FUNCTIONS};
+use crate::builtin::system_module::{UNITS, UNITS_NUMBER_MULTIPLIER, get_system_module_members};
+use crate::builtin::{STRING_MEMBER_FUNCTIONS, get_system_member_function_ty};
 use crate::resolver::Resolver;
 use crate::ty::TypeKind::Schema;
 use crate::ty::{
-    DictType, ModuleKind, Parameter, Type, TypeKind, TypeRef, SCHEMA_MEMBER_FUNCTIONS,
+    DictType, ModuleKind, Parameter, SCHEMA_MEMBER_FUNCTIONS, Type, TypeKind, TypeRef,
 };
 use kclvm_ast::ast;
-use kclvm_error::diagnostic::{dummy_range, Range};
+use kclvm_error::diagnostic::{Range, dummy_range};
 use kclvm_error::*;
 
 use super::node::ResolvedResult;

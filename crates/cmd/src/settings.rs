@@ -1,7 +1,7 @@
 use crate::util::*;
 use anyhow::Result;
 use clap::ArgMatches;
-use kclvm_config::settings::{build_settings_pathbuf, Config, SettingsFile, SettingsPathBuf};
+use kclvm_config::settings::{Config, SettingsFile, SettingsPathBuf, build_settings_pathbuf};
 use kclvm_driver::arguments::parse_key_value_pair;
 use kclvm_error::Handler;
 use kclvm_runtime::PanicInfo;

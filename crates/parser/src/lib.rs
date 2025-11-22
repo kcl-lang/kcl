@@ -16,10 +16,10 @@ pub use crate::session::{ParseSession, ParseSessionRef};
 use compiler_base_macros::bug;
 use compiler_base_session::Session;
 use compiler_base_span::span::new_byte_pos;
-use file_graph::{toposort, Pkg, PkgFile, PkgFileGraph, PkgMap};
+use file_graph::{Pkg, PkgFile, PkgFileGraph, PkgMap, toposort};
 use kclvm_ast::ast::Module;
-use kclvm_ast::{ast, MAIN_PKG};
-use kclvm_config::modfile::{get_vendor_home, KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE};
+use kclvm_ast::{MAIN_PKG, ast};
+use kclvm_config::modfile::{KCL_FILE_EXTENSION, KCL_FILE_SUFFIX, KCL_MOD_FILE, get_vendor_home};
 use kclvm_error::diagnostic::{Errors, Range};
 use kclvm_error::{ErrorKind, Message, Position, Style};
 use kclvm_primitives::IndexMap;
@@ -126,7 +126,7 @@ pub fn parse_single_file(filename: &str, code: Option<String>) -> Result<ParseFi
         Err(e) => {
             return Err(anyhow::anyhow!(
                 "Failed to read KCL file graph. Because '{e}'"
-            ))
+            ));
         }
     };
     let file = PkgFile::new(PathBuf::from(filename), MAIN_PKG.to_string());
@@ -395,7 +395,7 @@ fn fix_rel_import_path_with_file(
 ) {
     for stmt in &mut m.body {
         let pos = stmt.pos().clone();
-        if let ast::Stmt::Import(ref mut import_spec) = &mut stmt.node {
+        if let ast::Stmt::Import(import_spec) = &mut stmt.node {
             let fix_path = kclvm_config::vfs::fix_import_path(
                 pkgroot,
                 &m.filename,
@@ -1136,7 +1136,7 @@ pub fn load_all_files_under_paths(
                                         ))
                                         .clone(),
                                     Err(e) => {
-                                        return Err(anyhow::anyhow!("Parse program failed: {e}"))
+                                        return Err(anyhow::anyhow!("Parse program failed: {e}"));
                                     }
                                 };
 

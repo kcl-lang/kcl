@@ -8,8 +8,8 @@ use crate::*;
 // https://doc.rust-lang.org/std/primitive.f64.html
 // https://github.com/RustPython/RustPython/blob/main/stdlib/src/math.rs
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_math_ceil(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -28,8 +28,8 @@ pub extern "C-unwind" fn kclvm_math_ceil(
     panic!("ceil() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_math_factorial(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -68,8 +68,8 @@ pub extern "C-unwind" fn kclvm_math_factorial(
     panic!("factorial() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_math_floor(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -88,8 +88,8 @@ pub extern "C-unwind" fn kclvm_math_floor(
     panic!("floor() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_math_gcd(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -110,8 +110,8 @@ pub extern "C-unwind" fn kclvm_math_gcd(
     );
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_math_isfinite(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -134,8 +134,8 @@ pub extern "C-unwind" fn kclvm_math_isfinite(
     panic!("isfinite() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_math_isinf(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -161,8 +161,8 @@ pub extern "C-unwind" fn kclvm_math_isinf(
     panic!("isinf() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_math_isnan(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -185,8 +185,8 @@ pub extern "C-unwind" fn kclvm_math_isnan(
     panic!("isnan() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_math_modf(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -217,8 +217,8 @@ pub extern "C-unwind" fn kclvm_math_modf(
     panic!("modf() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_math_exp(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -236,8 +236,8 @@ pub extern "C-unwind" fn kclvm_math_exp(
     panic!("exp() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_math_expm1(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -255,8 +255,8 @@ pub extern "C-unwind" fn kclvm_math_expm1(
     panic!("expm1() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_math_log(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -284,8 +284,8 @@ pub extern "C-unwind" fn kclvm_math_log(
     panic!("log() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_math_log1p(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -303,8 +303,8 @@ pub extern "C-unwind" fn kclvm_math_log1p(
     panic!("log1p() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_math_log2(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -322,8 +322,8 @@ pub extern "C-unwind" fn kclvm_math_log2(
     panic!("log2() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_math_log10(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -341,8 +341,8 @@ pub extern "C-unwind" fn kclvm_math_log10(
     panic!("log10() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_math_pow(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -374,8 +374,8 @@ pub extern "C-unwind" fn kclvm_math_pow(
     panic!("pow() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_math_sqrt(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,

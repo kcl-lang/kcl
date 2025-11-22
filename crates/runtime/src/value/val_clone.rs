@@ -15,7 +15,7 @@ impl ValueRef {
             Value::none => ValueRef {
                 rc: Rc::new(RefCell::new(Value::none)),
             },
-            Value::func_value(ref v) => ValueRef {
+            Value::func_value(v) => ValueRef {
                 rc: Rc::new(RefCell::new(Value::func_value(Box::new(FuncValue {
                     fn_ptr: v.fn_ptr,
                     check_fn_ptr: v.check_fn_ptr,
@@ -32,27 +32,27 @@ impl ValueRef {
                     proxy: v.proxy,
                 })))),
             },
-            Value::bool_value(ref v) => ValueRef {
+            Value::bool_value(v) => ValueRef {
                 rc: Rc::new(RefCell::new(Value::bool_value(*v))),
             },
-            Value::int_value(ref v) => ValueRef {
+            Value::int_value(v) => ValueRef {
                 rc: Rc::new(RefCell::new(Value::int_value(*v))),
             },
-            Value::float_value(ref v) => ValueRef {
+            Value::float_value(v) => ValueRef {
                 rc: Rc::new(RefCell::new(Value::float_value(*v))),
             },
-            Value::unit_value(ref v, ref raw, ref unit) => ValueRef {
+            Value::unit_value(v, raw, unit) => ValueRef {
                 rc: Rc::new(RefCell::new(Value::unit_value(*v, *raw, unit.clone()))),
             },
-            Value::str_value(ref v) => ValueRef {
+            Value::str_value(v) => ValueRef {
                 rc: Rc::new(RefCell::new(Value::str_value(v.to_string()))),
             },
-            Value::list_value(ref v) => ValueRef {
+            Value::list_value(v) => ValueRef {
                 rc: Rc::new(RefCell::new(Value::list_value(Box::new(ListValue {
                     values: v.values.iter().map(|x| x.deep_copy()).collect(),
                 })))),
             },
-            Value::dict_value(ref v) => {
+            Value::dict_value(v) => {
                 let mut dict = ValueRef::from(Value::dict_value(Box::new(DictValue::new(&[]))));
                 for (key, val) in &v.values {
                     let op = v.ops.get(key).unwrap_or(&ConfigEntryOperationKind::Union);
@@ -62,7 +62,7 @@ impl ValueRef {
                 dict.set_potential_schema_type(&v.potential_schema.clone().unwrap_or_default());
                 dict
             }
-            Value::schema_value(ref v) => {
+            Value::schema_value(v) => {
                 let mut dict = ValueRef::from(Value::dict_value(Box::new(DictValue::new(&[]))));
                 dict.set_potential_schema_type(
                     &v.config.potential_schema.clone().unwrap_or_default(),

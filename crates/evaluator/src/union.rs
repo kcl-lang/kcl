@@ -3,7 +3,7 @@
 use crate::*;
 use kclvm_runtime::unification::value_subsume;
 use kclvm_runtime::{
-    must_normalize_index, ConfigEntryOperationKind, DictValue, UnionContext, UnionOptions, Value,
+    ConfigEntryOperationKind, DictValue, UnionContext, UnionOptions, Value, must_normalize_index,
 };
 
 use self::ty::resolve_schema;
@@ -85,10 +85,16 @@ fn do_union(
                                     let index = must_normalize_index(index, origin_value.len());
                                     origin_value.list_set(index, &union_value);
                                 } else {
-                                    panic!("only non-empty list attribute can be union value with the index {}", index);
+                                    panic!(
+                                        "only non-empty list attribute can be union value with the index {}",
+                                        index
+                                    );
                                 }
                             } else {
-                                panic!("only non-empty list attribute can be union value with the index {}", index);
+                                panic!(
+                                    "only non-empty list attribute can be union value with the index {}",
+                                    index
+                                );
                             }
                         }
                         None => {
@@ -123,30 +129,34 @@ fn do_union(
                             }
                         }
                     },
-                    ConfigEntryOperationKind::Override => {
-                        match index {
-                            Some(index) => {
-                                let index = *index;
-                                let origin_value = obj.values.get_mut(k);
-                                if let Some(origin_value) = origin_value {
-                                    if !origin_value.is_list() {
-                                        panic!("only list attribute can be override value with the index {}", index);
-                                    }
-                                    let index = must_normalize_index(index, origin_value.len());
-                                    if v.is_undefined() {
-                                        origin_value.list_remove_at(index as usize);
-                                    } else {
-                                        origin_value.list_must_set(index as usize, v);
-                                    }
-                                } else {
-                                    panic!("only list attribute can be override value with the index {}", index);
+                    ConfigEntryOperationKind::Override => match index {
+                        Some(index) => {
+                            let index = *index;
+                            let origin_value = obj.values.get_mut(k);
+                            if let Some(origin_value) = origin_value {
+                                if !origin_value.is_list() {
+                                    panic!(
+                                        "only list attribute can be override value with the index {}",
+                                        index
+                                    );
                                 }
-                            }
-                            None => {
-                                obj.values.insert(k.clone(), v.clone());
+                                let index = must_normalize_index(index, origin_value.len());
+                                if v.is_undefined() {
+                                    origin_value.list_remove_at(index as usize);
+                                } else {
+                                    origin_value.list_must_set(index as usize, v);
+                                }
+                            } else {
+                                panic!(
+                                    "only list attribute can be override value with the index {}",
+                                    index
+                                );
                             }
                         }
-                    }
+                        None => {
+                            obj.values.insert(k.clone(), v.clone());
+                        }
+                    },
                     ConfigEntryOperationKind::Insert => {
                         let origin_value = obj.values.get_mut(k);
                         if origin_value.is_none() || origin_value.unwrap().is_none_or_undefined() {
@@ -178,7 +188,8 @@ fn do_union(
                             }
                             _ => panic!(
                                 "only list attribute can be inserted value, the origin value type is {} and got value type is {}",
-                                origin_value.type_str(), v.type_str()
+                                origin_value.type_str(),
+                                v.type_str()
                             ),
                         };
                     }
@@ -371,13 +382,9 @@ pub fn union_entry(
             );
         } else {
             panic!(
-                    "conflicting values on the attribute '{}' between :\n    {}\nand\n    {}\nwith union path :\n    {}\ntry operator '=' to override the attribute, like:\n{}",
-                    conflict_key,
-                    union_context.obj_json,
-                    union_context.delta_json,
-                    path_string,
-                    note,
-                );
+                "conflicting values on the attribute '{}' between :\n    {}\nand\n    {}\nwith union path :\n    {}\ntry operator '=' to override the attribute, like:\n{}",
+                conflict_key, union_context.obj_json, union_context.delta_json, path_string, note,
+            );
         }
     }
     ret

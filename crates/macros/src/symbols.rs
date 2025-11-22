@@ -11,7 +11,7 @@ use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use std::collections::HashMap;
 use syn::parse::{Parse, ParseStream, Result};
-use syn::{braced, punctuated::Punctuated, Ident, LitStr, Token};
+use syn::{Ident, LitStr, Token, braced, punctuated::Punctuated};
 
 #[cfg(test)]
 mod tests;

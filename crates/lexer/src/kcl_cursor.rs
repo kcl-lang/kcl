@@ -5,8 +5,6 @@
 //! To do that, we should make IABCCursor as dynamic traits
 //! and enable implemente Cursor structs in different crate.
 
-use crate::cursor::DOLLAR_CHAR;
-use crate::cursor::EOF_CHAR;
 use crate::Cursor;
 use crate::DocStyle;
 use crate::ICommentCursor;
@@ -16,6 +14,8 @@ use crate::Literal;
 use crate::LiteralKind::*;
 use crate::TokenKind;
 use crate::TokenKind::*;
+use crate::cursor::DOLLAR_CHAR;
+use crate::cursor::EOF_CHAR;
 
 impl<'a> ICommentCursor for Cursor<'a> {
     fn try_comment_magic(&self, c: char) -> bool {

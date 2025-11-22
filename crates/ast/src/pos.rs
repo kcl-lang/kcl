@@ -1,4 +1,4 @@
-use kclvm_error::{diagnostic::Range, Position};
+use kclvm_error::{Position, diagnostic::Range};
 
 use crate::ast;
 

@@ -1,6 +1,6 @@
 use crate::Evaluator;
 use kclvm_ast::MAIN_PKG;
-use kclvm_loader::{load_packages, LoadPackageOptions};
+use kclvm_loader::{LoadPackageOptions, load_packages};
 use kclvm_parser::LoadProgramOptions;
 use kclvm_runtime::{Context, ValueRef};
 
@@ -502,7 +502,8 @@ fn test_if_stmt_setters() {
     let p = load_packages(&LoadPackageOptions {
         paths: vec!["test.k".to_string()],
         load_opts: Some(LoadProgramOptions {
-            k_code_list: vec![r#"
+            k_code_list: vec![
+                r#"
             _a = 1
             if True:
                 _a += 1
@@ -510,7 +511,8 @@ fn test_if_stmt_setters() {
                 _a += 1
             a=_a
             "#
-            .to_string()],
+                .to_string(),
+            ],
             ..Default::default()
         }),
         load_builtin: false,

@@ -5,8 +5,8 @@ use crate::*;
 #[allow(non_camel_case_types)]
 type kclvm_value_ref_t = ValueRef;
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_assert(
     ctx: *mut kclvm_context_t,
     value: *const kclvm_value_ref_t,

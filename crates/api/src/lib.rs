@@ -37,7 +37,7 @@ pub use crate::gpyrpc::*;
 use crate::service::capi::{kclvm_service_call_with_length, kclvm_service_new};
 use crate::service::service_impl::KclvmServiceImpl;
 use anyhow::Result;
-use std::ffi::{c_char, CString};
+use std::ffi::{CString, c_char};
 
 pub type API = KclvmServiceImpl;
 
@@ -82,7 +82,7 @@ pub fn call_with_plugin_agent<'a>(
 /// The first two parameters represent the name and length of the calling method, the middle two parameters represent
 /// the Protobuf byte sequence and length of the calling parameter, and the return parameter is the byte sequence and
 /// length of Protobuf.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C-unwind" fn call_native(
     name_ptr: *const u8,
     name_len: usize,

@@ -9,24 +9,24 @@ use generational_arena::Index;
 use kclvm_ast::ast::{self, CallExpr, ConfigEntry, Module, NodeRef};
 use kclvm_ast::walker::TypedResultWalker;
 use kclvm_runtime::{
-    schema_assert, schema_runtime_type, ConfigEntryOperationKind, DecoratorValue, RuntimeErrorType,
-    UnionOptions, ValueRef, PKG_PATH_PREFIX,
+    ConfigEntryOperationKind, DecoratorValue, PKG_PATH_PREFIX, RuntimeErrorType, UnionOptions,
+    ValueRef, schema_assert, schema_runtime_type,
 };
 use kclvm_sema::{builtin, pkgpath_without_prefix, plugin};
 use scopeguard::defer;
 
 use crate::error::INTERNAL_ERROR_MSG;
-use crate::func::{func_body, FunctionCaller, FunctionEvalContext, FunctionEvalThis};
+use crate::func::{FunctionCaller, FunctionEvalContext, FunctionEvalThis, func_body};
 use crate::lazy::Setter;
 use crate::proxy::Proxy;
-use crate::rule::{rule_body, rule_check, RuleCaller, RuleEvalContext};
+use crate::rule::{RuleCaller, RuleEvalContext, rule_body, rule_check};
 use crate::runtime::invoke_function;
-use crate::schema::{schema_body, schema_check, SchemaCaller, SchemaEvalContext};
+use crate::schema::{SchemaCaller, SchemaEvalContext, schema_body, schema_check};
 use crate::ty::type_pack_and_check;
 use crate::union::union_entry;
-use crate::{backtrack_break_here, backtrack_update_break};
-use crate::{error as kcl_error, GLOBAL_LEVEL, INNER_LEVEL};
 use crate::{EvalResult, Evaluator};
+use crate::{GLOBAL_LEVEL, INNER_LEVEL, error as kcl_error};
+use crate::{backtrack_break_here, backtrack_update_break};
 
 /// Impl TypedResultWalker for Evaluator to visit AST nodes to evaluate the result.
 impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {

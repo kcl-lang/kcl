@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::resolver::Resolver;
 use crate::ty::{
-    has_any_type, is_upper_bound, sup, Type, TypeInferMethods, TypeKind, TypeRef, ZERO_LIT_TYPES,
+    Type, TypeInferMethods, TypeKind, TypeRef, ZERO_LIT_TYPES, has_any_type, is_upper_bound, sup,
 };
 use kclvm_ast::ast;
 use kclvm_error::diagnostic::Range;

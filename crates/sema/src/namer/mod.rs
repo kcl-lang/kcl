@@ -40,13 +40,13 @@ use std::path::Path;
 use std::sync::Arc;
 
 use crate::builtin::{
-    get_system_member_function_ty, get_system_module_members, BUILTIN_FUNCTIONS,
-    STANDARD_SYSTEM_MODULES, STRING_MEMBER_FUNCTIONS,
+    BUILTIN_FUNCTIONS, STANDARD_SYSTEM_MODULES, STRING_MEMBER_FUNCTIONS,
+    get_system_member_function_ty, get_system_module_members,
 };
 use crate::core::global_state::GlobalState;
 use crate::core::package::{ModuleInfo, PackageInfo};
 use crate::core::symbol::{
-    FunctionSymbol, PackageSymbol, SymbolRef, BUILTIN_FUNCTION_PACKAGE, BUILTIN_STR_PACKAGE,
+    BUILTIN_FUNCTION_PACKAGE, BUILTIN_STR_PACKAGE, FunctionSymbol, PackageSymbol, SymbolRef,
 };
 use crate::resolver::scope::NodeKey;
 use kclvm_ast::ast::AstIndex;
@@ -295,8 +295,8 @@ mod tests {
     use super::Namer;
     use crate::core::global_state::GlobalState;
     use crate::core::symbol::SymbolKind;
-    use kclvm_parser::load_program;
     use kclvm_parser::ParseSession;
+    use kclvm_parser::load_program;
     use std::sync::Arc;
 
     #[test]
@@ -357,10 +357,12 @@ mod tests {
         ];
 
         for (fqn, kind) in excepts_symbols {
-            assert!(symbols
-                .symbols_info
-                .fully_qualified_name_map
-                .contains_key(fqn));
+            assert!(
+                symbols
+                    .symbols_info
+                    .fully_qualified_name_map
+                    .contains_key(fqn)
+            );
             assert_eq!(
                 symbols
                     .get_symbol_by_fully_qualified_name(fqn)

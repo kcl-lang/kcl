@@ -50,8 +50,8 @@ mod test_loader {
         use crate::util::{
             loader::{DataLoader, Loader, LoaderKind},
             tests::{
-                construct_full_path, FILE_EXTENSIONS, FILE_TEST_CASES, JSON_STR_TEST_CASES,
-                YAML_STR_TEST_CASES,
+                FILE_EXTENSIONS, FILE_TEST_CASES, JSON_STR_TEST_CASES, YAML_STR_TEST_CASES,
+                construct_full_path,
             },
         };
 
@@ -231,7 +231,10 @@ websites:
                     #[cfg(target_os = "windows")]
                     let got_err = format!("{:?}", err).replace("\r\n", "\n");
 
-                    assert_eq!(got_err, "Failed to String 'languages:\n  - Ruby\n  - Perl\n  - Python \nwebsites:\n  YAML: yaml.org \n  Ruby: ruby-lang.org \n  Python: python.org \n  Perl: use.perl.org' to Json\n\nCaused by:\n    expected value at line 1 column 1");
+                    assert_eq!(
+                        got_err,
+                        "Failed to String 'languages:\n  - Ruby\n  - Perl\n  - Python \nwebsites:\n  YAML: yaml.org \n  Ruby: ruby-lang.org \n  Python: python.org \n  Perl: use.perl.org' to Json\n\nCaused by:\n    expected value at line 1 column 1"
+                    );
                 }
             }
 
@@ -249,7 +252,10 @@ websites:
                     #[cfg(target_os = "windows")]
                     let got_err = format!("{:?}", err).replace("\r\n", "\n");
 
-                    assert_eq!(got_err, "Failed to String '\"name\": \"John Doe\",\ninvalid\n' to Yaml\n\nCaused by:\n    did not find expected key at line 1 column 19, while parsing a block mapping");
+                    assert_eq!(
+                        got_err,
+                        "Failed to String '\"name\": \"John Doe\",\ninvalid\n' to Yaml\n\nCaused by:\n    did not find expected key at line 1 column 19, while parsing a block mapping"
+                    );
                 }
             }
         }

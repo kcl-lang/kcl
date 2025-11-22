@@ -8,7 +8,7 @@ use crate::ty::{Decorator, DecoratorTarget, TypeKind, TypeRef};
 use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
-use kclvm_ast_pretty::{print_ast_node, ASTNode};
+use kclvm_ast_pretty::{ASTNode, print_ast_node};
 use kclvm_error::diagnostic::Range;
 use kclvm_error::{ErrorKind, Message, Position, Style};
 

@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use kclvm_evaluator::Evaluator;
 use std::collections::HashMap;
 use std::{cell::RefCell, rc::Rc};

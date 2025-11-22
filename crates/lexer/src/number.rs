@@ -3,10 +3,10 @@
 //! poor reusability and extensibility.
 //! Rust specific literal suffix(e.g. _u8, 2us) is not supported.
 
-use crate::cursor::Cursor;
 use crate::Base;
 use crate::LiteralKind;
 use crate::LiteralKind::*;
+use crate::cursor::Cursor;
 
 impl<'a> Cursor<'a> {
     pub(crate) fn number(&mut self, first_digit: char) -> LiteralKind {
@@ -41,7 +41,7 @@ impl<'a> Cursor<'a> {
                     return Int {
                         base,
                         empty_int: false,
-                    }
+                    };
                 }
             };
             // Base prefix was provided, but there were no digits

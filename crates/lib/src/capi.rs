@@ -1,7 +1,7 @@
 #![allow(clippy::missing_safety_doc)]
 
 use kclvm_runner::runner::KCL_RUNTIME_PANIC_RECORD;
-use std::alloc::{alloc, dealloc, Layout};
+use std::alloc::{Layout, alloc, dealloc};
 use std::ffi::c_char;
 use std::ffi::{CStr, CString};
 use std::{mem, ptr};
@@ -11,14 +11,14 @@ use crate::{intern_fmt, intern_run};
 /// Exposes an allocation function to the WASM host.
 ///
 /// _This implementation is copied from wasm-bindgen_
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_malloc(size: usize) -> *mut u8 {
     let align = mem::align_of::<usize>();
     let layout = Layout::from_size_align(size, align).expect("Invalid layout");
     if layout.size() > 0 {
-        let ptr = alloc(layout);
+        let ptr = unsafe { alloc(layout) };
         if !ptr.is_null() {
-            ptr::write_bytes(ptr, 0, size);
+            unsafe { ptr::write_bytes(ptr, 0, size) };
             ptr
         } else {
             std::alloc::handle_alloc_error(layout);
@@ -31,7 +31,7 @@ pub unsafe extern "C-unwind" fn kcl_malloc(size: usize) -> *mut u8 {
 /// Expose a deallocation function to the WASM host.
 ///
 /// _This implementation is copied from wasm-bindgen_
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_free(ptr: *mut u8, size: usize) {
     // This happens for zero-length slices, and in that case `ptr` is
     // likely bogus so don't actually send this to the system allocator
@@ -39,8 +39,8 @@ pub unsafe extern "C-unwind" fn kcl_free(ptr: *mut u8, size: usize) {
         return;
     }
     let align = mem::align_of::<usize>();
-    let layout = Layout::from_size_align_unchecked(size, align);
-    dealloc(ptr, layout);
+    let layout = unsafe { Layout::from_size_align_unchecked(size, align) };
+    unsafe { dealloc(ptr, layout) };
 }
 
 #[repr(C)]
@@ -52,7 +52,7 @@ pub struct ExecProgramResult {
 }
 
 /// Execute KCL file with arguments and return the JSON/YAML result.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_exec_program(
     filename_ptr: *const c_char,
     src_ptr: *const c_char,
@@ -92,32 +92,32 @@ pub unsafe extern "C-unwind" fn kcl_exec_program(
 }
 
 /// Free memory allocated for the ExecProgramResult.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_free_exec_program_result(result: *const ExecProgramResult) {
     if result.is_null() {
         return;
     }
 
-    let result = Box::from_raw(result as *mut ExecProgramResult);
+    let result = unsafe { Box::from_raw(result as *mut ExecProgramResult) };
 
     if !result.json_result.is_null() {
-        let _ = CString::from_raw(result.json_result as *mut c_char); // Free the C string
+        let _ = unsafe { CString::from_raw(result.json_result as *mut c_char) }; // Free the C string
     }
     if !result.yaml_result.is_null() {
-        let _ = CString::from_raw(result.yaml_result as *mut c_char); // Free the C string
+        let _ = unsafe { CString::from_raw(result.yaml_result as *mut c_char) }; // Free the C string
     }
     if !result.log_message.is_null() {
-        let _ = CString::from_raw(result.log_message as *mut c_char); // Free the C string
+        let _ = unsafe { CString::from_raw(result.log_message as *mut c_char) }; // Free the C string
     }
     if !result.err_message.is_null() {
-        let _ = CString::from_raw(result.err_message as *mut c_char); // Free the C string
+        let _ = unsafe { CString::from_raw(result.err_message as *mut c_char) }; // Free the C string
     }
 
     // Result itself will be freed when going out of scope
 }
 
 /// Get the YAML result from ExecProgramResult.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_result_get_yaml_result(
     result: *const ExecProgramResult,
 ) -> *const c_char {
@@ -125,7 +125,7 @@ pub unsafe extern "C-unwind" fn kcl_result_get_yaml_result(
         return std::ptr::null();
     }
 
-    let result = &*result;
+    let result = unsafe { &*result };
     if result.yaml_result.is_null() {
         return std::ptr::null();
     }
@@ -134,7 +134,7 @@ pub unsafe extern "C-unwind" fn kcl_result_get_yaml_result(
 }
 
 /// Get the JSON result from ExecProgramResult.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_result_get_json_result(
     result: *const ExecProgramResult,
 ) -> *const c_char {
@@ -142,7 +142,7 @@ pub unsafe extern "C-unwind" fn kcl_result_get_json_result(
         return std::ptr::null();
     }
 
-    let result = &*result;
+    let result = unsafe { &*result };
     if result.json_result.is_null() {
         return std::ptr::null();
     }
@@ -151,7 +151,7 @@ pub unsafe extern "C-unwind" fn kcl_result_get_json_result(
 }
 
 /// Get the error message from ExecProgramResult.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_result_get_err_message(
     result: *const ExecProgramResult,
 ) -> *const c_char {
@@ -159,7 +159,7 @@ pub unsafe extern "C-unwind" fn kcl_result_get_err_message(
         return std::ptr::null();
     }
 
-    let result = &*result;
+    let result = unsafe { &*result };
     if result.err_message.is_null() {
         return std::ptr::null();
     }
@@ -168,7 +168,7 @@ pub unsafe extern "C-unwind" fn kcl_result_get_err_message(
 }
 
 /// Get the log message from ExecProgramResult.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_result_get_log_message(
     result: *const ExecProgramResult,
 ) -> *const c_char {
@@ -176,7 +176,7 @@ pub unsafe extern "C-unwind" fn kcl_result_get_log_message(
         return std::ptr::null();
     }
 
-    let result = &*result;
+    let result = unsafe { &*result };
     if result.log_message.is_null() {
         return std::ptr::null();
     }
@@ -185,7 +185,7 @@ pub unsafe extern "C-unwind" fn kcl_result_get_log_message(
 }
 
 /// Exposes a normal kcl run function to the WASM host.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_run(
     filename_ptr: *const c_char,
     src_ptr: *const c_char,
@@ -203,7 +203,7 @@ pub unsafe extern "C-unwind" fn kcl_run(
 }
 
 /// Exposes a normal kcl run function with the log message to the WASM host.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_run_with_log_message(
     filename_ptr: *const c_char,
     src_ptr: *const c_char,
@@ -223,7 +223,7 @@ pub unsafe extern "C-unwind" fn kcl_run_with_log_message(
 }
 
 /// Exposes a normal kcl fmt function to the WASM host.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_fmt(src_ptr: *const c_char) -> *const c_char {
     if src_ptr.is_null() {
         return std::ptr::null();
@@ -237,13 +237,13 @@ pub unsafe extern "C-unwind" fn kcl_fmt(src_ptr: *const c_char) -> *const c_char
 }
 
 /// Exposes a normal kcl version function to the WASM host.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_version() -> *const c_char {
     CString::new(kclvm_version::VERSION).unwrap().into_raw()
 }
 
 /// Exposes a normal kcl runtime error function to the WASM host.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_runtime_err(buffer: *mut u8, length: usize) -> isize {
     KCL_RUNTIME_PANIC_RECORD.with(|e| {
         let message = &e.borrow().message;

@@ -2,14 +2,14 @@
 
 extern crate chrono;
 
-use chrono::{prelude::Local, NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime, prelude::Local};
 
 use crate::*;
 
 /// Return the "%Y-%m-%d %H:%M:%S.%{ticks}" format date.
 /// `today() -> str`
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_datetime_today(
     ctx: *mut kclvm_context_t,
     _args: *const kclvm_value_ref_t,
@@ -24,8 +24,8 @@ pub extern "C-unwind" fn kclvm_datetime_today(
 /// Return the local time format. e.g. 'Sat Jun 06 16:26:11 1998' or format the combined date and time per the specified format string,
 /// and the default date format is "%a %b %d %H:%M:%S %Y".
 /// `now() -> str`
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_datetime_now(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -42,8 +42,8 @@ pub extern "C-unwind" fn kclvm_datetime_now(
 
 /// Return the current time in seconds since the Epoch. Fractions of a second may be present if the system clock provides them.
 /// `ticks() -> float`
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_datetime_ticks(
     ctx: *mut kclvm_context_t,
     _args: *const kclvm_value_ref_t,
@@ -56,8 +56,8 @@ pub extern "C-unwind" fn kclvm_datetime_ticks(
 
 /// Return the %Y-%m-%d %H:%M:%S format date.
 /// `date() -> str`
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_datetime_date(
     ctx: *mut kclvm_context_t,
     _args: *const kclvm_value_ref_t,
@@ -70,8 +70,8 @@ pub extern "C-unwind" fn kclvm_datetime_date(
 
 /// Validates whether the provided date string matches the specified format.
 /// `validate(str, str) -> bool`
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_datetime_validate(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,

@@ -5,12 +5,12 @@ use crate::*;
 impl ValueRef {
     pub fn get_by_key(&self, key: &str) -> Option<Self> {
         match &*self.rc.borrow() {
-            Value::list_value(ref list) => match key.parse::<usize>() {
+            Value::list_value(list) => match key.parse::<usize>() {
                 Ok(i) => list.values.as_slice().get(i).cloned(),
                 Err(_) => None,
             },
-            Value::dict_value(ref dict) => dict.values.get(key).cloned(),
-            Value::schema_value(ref schema) => schema.config.values.get(key).cloned(),
+            Value::dict_value(dict) => dict.values.get(key).cloned(),
+            Value::schema_value(schema) => schema.config.values.get(key).cloned(),
             _ => None,
         }
     }

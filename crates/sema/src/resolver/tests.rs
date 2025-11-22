@@ -7,14 +7,14 @@ use crate::resolver::resolve_program_with_opts;
 use crate::resolver::scope::*;
 use crate::ty::{Type, TypeKind};
 use anyhow::Result;
+use kclvm_ast::MAIN_PKG;
 use kclvm_ast::ast;
 use kclvm_ast::pos::ContainsPos;
-use kclvm_ast::MAIN_PKG;
 use kclvm_error::*;
-use kclvm_parser::load_program;
-use kclvm_parser::parse_file_force_errors;
 use kclvm_parser::LoadProgramOptions;
 use kclvm_parser::ParseSession;
+use kclvm_parser::load_program;
+use kclvm_parser::parse_file_force_errors;
 use kclvm_utils::path::PathPrefix;
 use parking_lot::lock_api::RwLock;
 use std::collections::HashMap;
@@ -601,33 +601,41 @@ fn test_system_package() {
         .clone();
 
     assert!(main_scope.lookup("base64").unwrap().borrow().ty.is_module());
-    assert!(main_scope
-        .lookup("base64_encode")
-        .unwrap()
-        .borrow()
-        .ty
-        .is_func());
-    assert!(main_scope
-        .lookup("base64_decode")
-        .unwrap()
-        .borrow()
-        .ty
-        .is_func());
+    assert!(
+        main_scope
+            .lookup("base64_encode")
+            .unwrap()
+            .borrow()
+            .ty
+            .is_func()
+    );
+    assert!(
+        main_scope
+            .lookup("base64_decode")
+            .unwrap()
+            .borrow()
+            .ty
+            .is_func()
+    );
 
     // Add assertions for base32 module
     assert!(main_scope.lookup("base32").unwrap().borrow().ty.is_module());
-    assert!(main_scope
-        .lookup("base32_encode")
-        .unwrap()
-        .borrow()
-        .ty
-        .is_func());
-    assert!(main_scope
-        .lookup("base32_decode")
-        .unwrap()
-        .borrow()
-        .ty
-        .is_func());
+    assert!(
+        main_scope
+            .lookup("base32_encode")
+            .unwrap()
+            .borrow()
+            .ty
+            .is_func()
+    );
+    assert!(
+        main_scope
+            .lookup("base32_decode")
+            .unwrap()
+            .borrow()
+            .ty
+            .is_func()
+    );
 }
 
 #[test]

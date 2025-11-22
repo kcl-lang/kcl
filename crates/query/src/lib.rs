@@ -13,14 +13,14 @@ pub mod selector;
 mod tests;
 mod util;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use kclvm_ast_pretty::print_ast_module;
 use kclvm_error::diagnostic::Errors;
 use kclvm_parser::parse_single_file;
 
 use kclvm_sema::pre_process::fix_config_expr_nest_attr;
-pub use query::{get_schema_type, GetSchemaOption};
 pub use r#override::{apply_override_on_module, apply_overrides};
+pub use query::{GetSchemaOption, get_schema_type};
 
 /// Override and rewrite a file with override specifications. Please note that this is an external user API,
 /// and it can directly modify the KCL file in place.

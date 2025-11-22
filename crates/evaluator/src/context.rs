@@ -5,13 +5,12 @@ use kclvm_ast::ast;
 use kclvm_runtime::{BacktraceFrame, MAIN_PKG_PATH};
 
 use crate::{
-    error as kcl_error,
+    EvalContext, Evaluator, LambdaOrSchemaEvalContext, error as kcl_error,
     func::{FunctionCaller, FunctionEvalContextRef},
     lazy::{BacktrackMeta, Setter, SetterKind},
     proxy::{Frame, Proxy},
     rule::RuleCaller,
     schema::SchemaCaller,
-    EvalContext, Evaluator, LambdaOrSchemaEvalContext,
 };
 
 impl<'ctx> Evaluator<'ctx> {

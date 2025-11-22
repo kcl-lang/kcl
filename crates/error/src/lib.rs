@@ -12,14 +12,14 @@ use annotate_snippets::{
     snippet::{AnnotationType, Slice, Snippet, SourceAnnotation},
 };
 use anyhow::Result;
-use compiler_base_error::errors::ComponentFormatError;
 use compiler_base_error::StyledBuffer;
+use compiler_base_error::errors::ComponentFormatError;
 use compiler_base_error::{
-    components::{CodeSnippet, Label},
     Component, Diagnostic as DiagnosticTrait, DiagnosticStyle,
+    components::{CodeSnippet, Label},
 };
 use compiler_base_session::{Session, SessionDiagnostic};
-use compiler_base_span::{span::new_byte_pos, Span};
+use compiler_base_span::{Span, span::new_byte_pos};
 use diagnostic::Range;
 use kclvm_primitives::{DefaultHashBuilder, IndexSet};
 use kclvm_runtime::PanicInfo;

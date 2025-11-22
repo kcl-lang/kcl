@@ -61,20 +61,24 @@ fn test_format_source() {
 
 #[test]
 fn test_format_single_file() {
-    assert!(format(
-        "./src/format/test_data/format_path_data/single_file.k",
-        &FormatOptions::default()
-    )
-    .is_ok());
+    assert!(
+        format(
+            "./src/format/test_data/format_path_data/single_file.k",
+            &FormatOptions::default()
+        )
+        .is_ok()
+    );
 }
 
 #[test]
 fn test_format_folder() {
-    assert!(format(
-        "./src/format/test_data/format_path_data/folder",
-        &FormatOptions::default()
-    )
-    .is_ok());
+    assert!(
+        format(
+            "./src/format/test_data/format_path_data/folder",
+            &FormatOptions::default()
+        )
+        .is_ok()
+    );
 }
 
 #[test]

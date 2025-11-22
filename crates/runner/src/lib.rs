@@ -3,15 +3,15 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use kclvm_ast::{
-    ast::{Module, Program},
     MAIN_PKG,
+    ast::{Module, Program},
 };
-use kclvm_parser::{load_program, KCLModuleCache, ParseSessionRef};
+use kclvm_parser::{KCLModuleCache, ParseSessionRef, load_program};
 use kclvm_query::apply_overrides;
 use kclvm_sema::resolver::{
-    resolve_program, resolve_program_with_opts, scope::ProgramScope, Options,
+    Options, resolve_program, resolve_program_with_opts, scope::ProgramScope,
 };
 pub use runner::{ExecProgramArgs, ExecProgramResult, MapErrorResult};
 use runner::{FastRunner, RunnerOptions};

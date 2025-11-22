@@ -234,8 +234,8 @@ fn test_build_assign_stmt() {
     }));
     let assgin_stmt = build_assign_node("test_attr_name", test_expr);
 
-    if let ast::Stmt::Assign(ref assign) = assgin_stmt.node {
-        if let ast::Expr::Identifier(ref iden) = &assign.value.node {
+    if let ast::Stmt::Assign(assign) = assgin_stmt.node {
+        if let ast::Expr::Identifier(iden) = &assign.value.node {
             assert_eq!(iden.names.len(), 2);
             assert_eq!(iden.names[0].node, "name1".to_string());
             assert_eq!(iden.names[1].node, "name2".to_string());

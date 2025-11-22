@@ -5,15 +5,15 @@ use crate::*;
 // cmp
 impl ValueRef {
     pub fn cmp_equal(&self, x: &Self) -> bool {
-        match *self.rc.borrow() {
-            Value::int_value(a) => match *x.rc.borrow() {
+        match &*self.rc.borrow() {
+            Value::int_value(a) => match &*x.rc.borrow() {
                 Value::int_value(b) => a == b,
-                Value::float_value(b) => a as f64 == b,
+                Value::float_value(b) => *a as f64 == *b,
                 _ => false,
             },
-            Value::float_value(a) => match *x.rc.borrow() {
-                Value::int_value(b) => a == b as f64,
-                Value::float_value(b) => a == b,
+            Value::float_value(a) => match &*x.rc.borrow() {
+                Value::int_value(b) => *a == *b as f64,
+                Value::float_value(b) => *a == *b,
                 _ => false,
             },
             _ => match (&*self.rc.borrow(), &*x.rc.borrow()) {

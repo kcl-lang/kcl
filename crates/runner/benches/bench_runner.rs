@@ -2,10 +2,10 @@ use anyhow::Result;
 use std::path::Path;
 use std::sync::Arc;
 
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use walkdir::WalkDir;
 
-use kclvm_parser::{load_program, ParseSession};
+use kclvm_parser::{ParseSession, load_program};
 use kclvm_runner::{execute, runner::ExecProgramArgs};
 
 const EXEC_DATA_PATH: &str = "./src/exec_data/";

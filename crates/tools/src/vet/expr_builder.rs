@@ -9,7 +9,7 @@ use kclvm_ast::{
 use serde_json::json;
 
 use crate::util::loader::{DataLoader, Loader, LoaderKind};
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 
 const FAIL_LOAD_VALIDATED_ERR_MSG: &str = "Failed to load the validated file";
 

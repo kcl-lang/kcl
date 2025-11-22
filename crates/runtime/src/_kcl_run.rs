@@ -82,8 +82,7 @@ fn new_ctx_with_opts(opts: FFIRunOptions, path_selector: &[String]) -> Context {
     ctx
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
 #[allow(clippy::too_many_arguments)]
 pub unsafe extern "C-unwind" fn _kcl_run(
     kclvm_main_ptr: u64, // main.k => kclvm_main
@@ -103,11 +102,11 @@ pub unsafe extern "C-unwind" fn _kcl_run(
 ) -> kclvm_size_t {
     // Init runtime context with options
     let ctx = Box::new(new_ctx_with_opts(opts, &c2str_vec(path_selector))).into_raw();
-    let scope = kclvm_scope_new();
-    let option_keys = std::slice::from_raw_parts(option_keys, option_len as usize);
-    let option_values = std::slice::from_raw_parts(option_values, option_len as usize);
+    let scope = unsafe { kclvm_scope_new() };
+    let option_keys = unsafe { std::slice::from_raw_parts(option_keys, option_len as usize) };
+    let option_values = unsafe { std::slice::from_raw_parts(option_values, option_len as usize) };
     for i in 0..(option_len as usize) {
-        kclvm_builtin_option_init(ctx, option_keys[i], option_values[i]);
+        unsafe { kclvm_builtin_option_init(ctx, option_keys[i], option_values[i]) };
     }
     let prev_hook = std::panic::take_hook();
     std::panic::set_hook(Box::new(|info: &std::panic::PanicHookInfo| {
@@ -131,7 +130,8 @@ pub unsafe extern "C-unwind" fn _kcl_run(
             }
         })
     }));
-    let result = std::panic::catch_unwind(|| _kcl_run_in_closure(ctx, scope, kclvm_main_ptr));
+    let result =
+        unsafe { std::panic::catch_unwind(|| _kcl_run_in_closure(ctx, scope, kclvm_main_ptr)) };
     std::panic::set_hook(prev_hook);
     KCL_RUNTIME_PANIC_RECORD.with(|record| {
         let record = record.borrow();
@@ -159,10 +159,12 @@ pub unsafe extern "C-unwind" fn _kcl_run(
         "".to_string()
     };
     copy_str_to(&json_panic_info, err_buffer, err_buffer_len);
-    // Delete the context
-    kclvm_context_delete(ctx);
-    // Delete the scope
-    kclvm_scope_delete(scope);
+    unsafe {
+        // Delete the context
+        kclvm_context_delete(ctx);
+        // Delete the scope
+        kclvm_scope_delete(scope);
+    }
     result.is_err() as kclvm_size_t
 }
 

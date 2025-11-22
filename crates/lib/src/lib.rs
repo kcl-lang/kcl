@@ -1,10 +1,10 @@
 #![allow(clippy::missing_safety_doc)]
 
-use std::ffi::{c_char, c_int, CStr};
+use std::ffi::{CStr, c_char, c_int};
 use std::process::ExitCode;
 
 use kclvm_api::FormatCodeArgs;
-use kclvm_api::{ExecProgramArgs, API};
+use kclvm_api::{API, ExecProgramArgs};
 
 mod capi;
 pub use capi::*;
@@ -15,7 +15,7 @@ use kclvm_runtime::PanicInfo;
 /// KCL CLI run function CAPI.
 ///
 /// args is a ExecProgramArgs JSON string.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn libkcl_run(
     args: *const c_char,
     plugin_agent: *const c_char,
@@ -66,7 +66,7 @@ fn libkcl_run_unsafe(args: *const c_char, plugin_agent: *const c_char) -> Result
 }
 
 /// KCL CLI main function CAPI.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn libkcl_main(
     argc: c_int,
     argv: *const *const c_char,

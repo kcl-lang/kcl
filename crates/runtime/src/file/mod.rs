@@ -7,8 +7,8 @@ use glob::glob;
 use std::io::Write;
 use std::path::Path;
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_file_read(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -29,8 +29,8 @@ pub extern "C-unwind" fn kclvm_file_read(
     panic!("read() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_file_glob(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -54,8 +54,8 @@ pub extern "C-unwind" fn kclvm_file_glob(
     ValueRef::list_str(matched_paths.as_slice()).into_raw(ctx)
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_file_modpath(
     ctx: *mut kclvm_context_t,
     _args: *const kclvm_value_ref_t,
@@ -66,8 +66,8 @@ pub extern "C-unwind" fn kclvm_file_modpath(
     s.into_raw(ctx)
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_file_workdir(
     ctx: *mut kclvm_context_t,
     _args: *const kclvm_value_ref_t,
@@ -79,8 +79,8 @@ pub extern "C-unwind" fn kclvm_file_workdir(
 }
 
 /// Read the path of the current script or module that is being executed
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_file_current(
     ctx: *mut kclvm_context_t,
     _args: *const kclvm_value_ref_t,
@@ -94,8 +94,8 @@ pub extern "C-unwind" fn kclvm_file_current(
 /// Whether this file path exists. Returns true if the path points at
 /// an existing entity. This function will traverse symbolic links to
 /// query information about the destination file.
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_file_exists(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -115,8 +115,8 @@ pub extern "C-unwind" fn kclvm_file_exists(
 
 /// Returns the canonical, absolute form of the path with all intermediate
 /// components normalized and symbolic links resolved.
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_file_abs(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -137,8 +137,8 @@ pub extern "C-unwind" fn kclvm_file_abs(
     panic!("read() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_file_mkdir(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -163,8 +163,8 @@ pub extern "C-unwind" fn kclvm_file_mkdir(
     panic!("mkdir() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_file_delete(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -194,8 +194,8 @@ pub extern "C-unwind" fn kclvm_file_delete(
     panic!("delete() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_file_cp(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -231,8 +231,8 @@ pub extern "C-unwind" fn kclvm_file_cp(
     }
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_file_mv(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -256,8 +256,8 @@ pub extern "C-unwind" fn kclvm_file_mv(
     }
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_file_size(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -284,8 +284,8 @@ pub extern "C-unwind" fn kclvm_file_size(
     panic!("size() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_file_write(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -314,8 +314,8 @@ pub extern "C-unwind" fn kclvm_file_write(
     }
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_file_append(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -347,8 +347,8 @@ pub extern "C-unwind" fn kclvm_file_append(
     }
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_file_read_env(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,

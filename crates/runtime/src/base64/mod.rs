@@ -5,8 +5,8 @@ use base64::{decode, encode};
 
 use crate::*;
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_base64_encode(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -22,8 +22,8 @@ pub extern "C-unwind" fn kclvm_base64_encode(
     panic!("encode() missing 1 required positional argument: 'value'");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_base64_decode(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,

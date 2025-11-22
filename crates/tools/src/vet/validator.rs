@@ -75,7 +75,7 @@ use kclvm_ast::{
     node_ref,
 };
 use kclvm_parser::{LoadProgramOptions, ParseSessionRef};
-use kclvm_runner::{execute, ExecProgramArgs, MapErrorResult};
+use kclvm_runner::{ExecProgramArgs, MapErrorResult, execute};
 
 const TMP_FILE: &str = "validationTempKCLCode.k";
 

@@ -7,10 +7,10 @@ use kclvm_primitives::IndexMap;
 use kclvm_runtime::ValueRef;
 use scopeguard::defer;
 
+use crate::Evaluator;
 use crate::proxy::Proxy;
 use crate::ty::type_pack_and_check;
-use crate::Evaluator;
-use crate::{error as kcl_error, EvalContext};
+use crate::{EvalContext, error as kcl_error};
 
 pub type FunctionHandler =
     Arc<dyn Fn(&Evaluator, &FunctionEvalContext, &ValueRef, &ValueRef) -> ValueRef>;

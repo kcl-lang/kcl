@@ -1,6 +1,6 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use kclvm_query::override_file;
-use kclvm_tools::format::{format, FormatOptions};
+use kclvm_tools::format::{FormatOptions, format};
 use std::{
     fmt,
     time::{Duration, Instant},

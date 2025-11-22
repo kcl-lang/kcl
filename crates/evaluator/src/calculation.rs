@@ -3,9 +3,9 @@
 use kclvm_ast::ast;
 use kclvm_runtime::{ConfigEntryOperationKind, DictValue, UnionOptions, Value, ValueRef};
 
+use crate::Evaluator;
 use crate::ty::{resolve_schema, type_pack_and_check};
 use crate::union::union_entry;
-use crate::Evaluator;
 
 impl<'ctx> Evaluator<'ctx> {
     /// lhs + rhs

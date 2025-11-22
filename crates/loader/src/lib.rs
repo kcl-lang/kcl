@@ -6,8 +6,8 @@ pub mod util;
 
 use anyhow::Result;
 use kclvm_ast::ast::Program;
-use kclvm_error::{diagnostic::Range, Diagnostic};
-use kclvm_parser::{load_program, KCLModuleCache, LoadProgramOptions, ParseSessionRef};
+use kclvm_error::{Diagnostic, diagnostic::Range};
+use kclvm_parser::{KCLModuleCache, LoadProgramOptions, ParseSessionRef, load_program};
 use kclvm_primitives::{IndexMap, IndexSet};
 use kclvm_sema::{
     advanced_resolver::AdvancedResolver,

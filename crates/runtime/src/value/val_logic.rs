@@ -5,18 +5,18 @@ use crate::*;
 impl ValueRef {
     #[inline]
     pub fn is_truthy(&self) -> bool {
-        match *self.rc.borrow() {
+        match &*self.rc.borrow() {
             Value::undefined => false,
             Value::none => false,
-            Value::bool_value(ref v) => *v,
-            Value::int_value(ref v) => *v != 0,
-            Value::float_value(ref v) => *v != 0.0,
-            Value::str_value(ref v) => !v.is_empty(),
-            Value::list_value(ref v) => !v.values.is_empty(),
-            Value::dict_value(ref v) => !v.values.is_empty(),
-            Value::schema_value(ref v) => !v.config.values.is_empty(),
+            Value::bool_value(v) => *v,
+            Value::int_value(v) => *v != 0,
+            Value::float_value(v) => *v != 0.0,
+            Value::str_value(v) => !v.is_empty(),
+            Value::list_value(v) => !v.values.is_empty(),
+            Value::dict_value(v) => !v.values.is_empty(),
+            Value::schema_value(v) => !v.config.values.is_empty(),
             Value::func_value(_) => true,
-            Value::unit_value(ref v, _, _) => *v != 0.0,
+            Value::unit_value(v, _, _) => *v != 0.0,
         }
     }
 

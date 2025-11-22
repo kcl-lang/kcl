@@ -1,8 +1,8 @@
 mod replace;
 #[cfg(test)]
 mod tests;
-use anyhow::{ensure, Error};
-use kclvm_error::{diagnostic::Range as KCLRange, Diagnostic};
+use anyhow::{Error, ensure};
+use kclvm_error::{Diagnostic, diagnostic::Range as KCLRange};
 use std::collections::HashMap;
 use std::fs;
 use std::ops::Range;

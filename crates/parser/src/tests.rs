@@ -6,7 +6,7 @@ use std::{
 
 use compiler_base_span::{FilePathMapping, SourceMap};
 use entry::expand_input_files;
-use kclvm_config::modfile::{get_vendor_home, KCL_PKG_PATH};
+use kclvm_config::modfile::{KCL_PKG_PATH, get_vendor_home};
 
 use crate::*;
 
@@ -445,7 +445,7 @@ fn test_import_vendor_with_same_internal_pkg() {
         Ok(_) => {
             let errors = sess.classification().0;
             let msgs = [
-                "the `same_vendor` is found multiple times in the current package and vendor package"
+                "the `same_vendor` is found multiple times in the current package and vendor package",
             ];
             assert_eq!(errors.len(), msgs.len());
             for (diag, m) in errors.iter().zip(msgs.iter()) {
@@ -465,7 +465,7 @@ fn test_import_vendor_with_same_internal_pkg() {
         Ok(_) => {
             let errors = sess.classification().0;
             let msgs = [
-                "the `same_vendor` is found multiple times in the current package and vendor package"
+                "the `same_vendor` is found multiple times in the current package and vendor package",
             ];
             assert_eq!(errors.len(), msgs.len());
             for (diag, m) in errors.iter().zip(msgs.iter()) {
@@ -491,9 +491,8 @@ fn test_import_vendor_without_kclmod_and_same_name() {
     match load_program(sess.clone(), &[&test_case_path], None, None) {
         Ok(_) => {
             let errors = sess.classification().0;
-            let msgs = [
-                "the `assign` is found multiple times in the current package and vendor package",
-            ];
+            let msgs =
+                ["the `assign` is found multiple times in the current package and vendor package"];
             assert_eq!(errors.len(), msgs.len());
             for (diag, m) in errors.iter().zip(msgs.iter()) {
                 assert_eq!(diag.messages[0].message, m.to_string());
@@ -512,9 +511,8 @@ fn test_import_vendor_without_kclmod_and_same_name() {
     ) {
         Ok(_) => {
             let errors = sess.classification().0;
-            let msgs = [
-                "the `assign` is found multiple times in the current package and vendor package",
-            ];
+            let msgs =
+                ["the `assign` is found multiple times in the current package and vendor package"];
             assert_eq!(errors.len(), msgs.len());
             for (diag, m) in errors.iter().zip(msgs.iter()) {
                 assert_eq!(diag.messages[0].message, m.to_string());

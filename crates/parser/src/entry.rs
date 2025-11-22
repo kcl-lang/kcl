@@ -1,7 +1,7 @@
 use anyhow::Result;
 use glob::glob;
-use kclvm_config::modfile::get_pkg_root;
 use kclvm_config::modfile::KCL_FILE_SUFFIX;
+use kclvm_config::modfile::get_pkg_root;
 use kclvm_config::path::ModRelativePath;
 use kclvm_utils::path::PathPrefix;
 use kclvm_utils::path::{is_absolute, is_dir, path_exist};

@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use kclvm_ast::pos::ContainsPos;
-use kclvm_error::{diagnostic::Range, Position};
+use kclvm_error::{Position, diagnostic::Range};
 use kclvm_primitives::{IndexMap, IndexSet};
 use serde::Serialize;
 

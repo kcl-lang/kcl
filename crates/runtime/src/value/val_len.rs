@@ -4,11 +4,11 @@ use crate::*;
 
 impl ValueRef {
     pub fn len(&self) -> usize {
-        match *self.rc.borrow() {
-            Value::str_value(ref s) => s.len(),
-            Value::list_value(ref v) => v.values.len(),
-            Value::dict_value(ref v) => v.values.len(),
-            Value::schema_value(ref v) => v.config.values.len(),
+        match &*self.rc.borrow() {
+            Value::str_value(s) => s.len(),
+            Value::list_value(v) => v.values.len(),
+            Value::dict_value(v) => v.values.len(),
+            Value::schema_value(v) => v.config.values.len(),
             _ => panic!("object of type '{}' has no len()", self.type_str()),
         }
     }

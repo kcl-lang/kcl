@@ -1,14 +1,14 @@
 //! The `kclvm` command-line interface.
 
 use std::{
-    ffi::{c_char, c_int, CString},
+    ffi::{CString, c_char, c_int},
     process::ExitCode,
 };
 
 #[link(name = "kcl")]
 #[allow(improper_ctypes)]
-extern "C-unwind" {
-    fn libkcl_main(argc: c_int, argv: *const *const c_char) -> *mut ExitCode;
+unsafe extern "C-unwind" {
+    unsafe fn libkcl_main(argc: c_int, argv: *const *const c_char) -> *mut ExitCode;
 }
 
 fn main() -> ExitCode {

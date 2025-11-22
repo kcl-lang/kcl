@@ -2,8 +2,8 @@
 
 use crate::*;
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_value_union_all(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,

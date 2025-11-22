@@ -6,7 +6,7 @@ use std::{
 use generational_arena::Arena;
 use kclvm_primitives::{IndexMap, IndexSet};
 
-use kclvm_error::{diagnostic::Range, Position};
+use kclvm_error::{Position, diagnostic::Range};
 use serde::Serialize;
 
 use super::package::ModuleInfo;

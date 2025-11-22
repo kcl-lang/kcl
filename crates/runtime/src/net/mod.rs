@@ -12,8 +12,8 @@ use std::str::FromStr;
 
 // split_host_port(ip_end_point: str) -> List[str]
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_split_host_port(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -99,8 +99,8 @@ pub extern "C-unwind" fn kclvm_net_split_host_port(
 
 // join_host_port(host, port) -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_join_host_port(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -124,8 +124,8 @@ pub extern "C-unwind" fn kclvm_net_join_host_port(
 // fqdn(name: str = '') -> str
 
 #[cfg(not(target_arch = "wasm32"))]
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_fqdn(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -161,8 +161,8 @@ pub extern "C-unwind" fn kclvm_net_fqdn(
 }
 
 #[cfg(target_arch = "wasm32")]
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_fqdn(
     _ctx: *mut kclvm_context_t,
     _args: *const kclvm_value_ref_t,
@@ -173,8 +173,8 @@ pub extern "C-unwind" fn kclvm_net_fqdn(
 
 // parse_IP(ip) -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_parse_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -185,8 +185,8 @@ pub extern "C-unwind" fn kclvm_net_parse_IP(
 
 // to_IP4(ip) -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_to_IP4(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -222,8 +222,8 @@ pub extern "C-unwind" fn kclvm_net_to_IP4(
 
 // to_IP6(ip) -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_to_IP6(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -259,8 +259,8 @@ pub extern "C-unwind" fn kclvm_net_to_IP6(
 
 // IP_string(ip: str) -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_IP_string(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -287,8 +287,8 @@ pub extern "C-unwind" fn kclvm_net_IP_string(
 
 // is_IPv4(ip: str) -> bool
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_is_IPv4(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -313,8 +313,8 @@ pub extern "C-unwind" fn kclvm_net_is_IPv4(
 
 // is_IP(ip: str) -> bool
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_is_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -336,8 +336,8 @@ pub extern "C-unwind" fn kclvm_net_is_IP(
 
 // is_loopback_IP(ip: str) -> bool
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_is_loopback_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -364,8 +364,8 @@ pub extern "C-unwind" fn kclvm_net_is_loopback_IP(
 
 // is_multicast_IP(ip: str) -> bool
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_is_multicast_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -392,8 +392,8 @@ pub extern "C-unwind" fn kclvm_net_is_multicast_IP(
 
 // is_interface_local_multicast_IP(ip: str) -> bool
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_is_interface_local_multicast_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -415,8 +415,8 @@ pub extern "C-unwind" fn kclvm_net_is_interface_local_multicast_IP(
 
 // is_link_local_multicast_IP(ip: str) -> bool
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_is_link_local_multicast_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -447,8 +447,8 @@ pub extern "C-unwind" fn kclvm_net_is_link_local_multicast_IP(
 
 // is_link_local_unicast_IP(ip: str) -> bool
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_is_link_local_unicast_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -508,8 +508,8 @@ pub const fn Ipv6Addr_is_unicast_link_local(_self: &Ipv6Addr) -> bool {
 
 // is_global_unicast_IP(ip: str) -> bool
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_is_global_unicast_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -533,8 +533,8 @@ pub extern "C-unwind" fn kclvm_net_is_global_unicast_IP(
     panic!("is_global_unicast_IP() missing 1 required positional argument: 'ip'");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_parse_CIDR(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -556,8 +556,8 @@ pub extern "C-unwind" fn kclvm_net_parse_CIDR(
     panic!("parse_CIDR() missing 1 required positional argument: 'cidr'");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_is_IP_in_CIDR(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -640,8 +640,8 @@ const fn Ipv4Addr_is_benchmarking(_self: &std::net::Ipv4Addr) -> bool {
 
 // is_unspecified_IP(ip: str) -> bool
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_is_unspecified_IP(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -664,8 +664,8 @@ pub extern "C-unwind" fn kclvm_net_is_unspecified_IP(
 
 // CIDR_subnet(cidr: str, additional_bits: int, net_num: int) -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_CIDR_subnet(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -677,7 +677,9 @@ pub extern "C-unwind" fn kclvm_net_CIDR_subnet(
 
     let cidr = match get_call_arg(args, kwargs, 0, Some("cidr")) {
         None => {
-            panic!("CIDR_subnet() missing 3 required positional arguments: 'cidr', 'additional_bits', and 'net_num'");
+            panic!(
+                "CIDR_subnet() missing 3 required positional arguments: 'cidr', 'additional_bits', and 'net_num'"
+            );
         }
         Some(cidr) => match IpCidr::from_str(&cidr.as_str()) {
             Err(err) => {
@@ -689,7 +691,9 @@ pub extern "C-unwind" fn kclvm_net_CIDR_subnet(
 
     let additional_bits = match get_call_arg(args, kwargs, 1, Some("additional_bits")) {
         None => {
-            panic!("CIDR_subnet() missing 3 required positional arguments: 'cidr', 'additional_bits', and 'net_num'");
+            panic!(
+                "CIDR_subnet() missing 3 required positional arguments: 'cidr', 'additional_bits', and 'net_num'"
+            );
         }
         Some(additional_bits) => additional_bits.must_as_strict_int(),
     };
@@ -699,7 +703,9 @@ pub extern "C-unwind" fn kclvm_net_CIDR_subnet(
 
     let net_num = match get_call_arg(args, kwargs, 2, Some("net_num")) {
         None => {
-            panic!("CIDR_subnet() missing 3 required positional arguments: 'cidr', 'additional_bits', and 'net_num'");
+            panic!(
+                "CIDR_subnet() missing 3 required positional arguments: 'cidr', 'additional_bits', and 'net_num'"
+            );
         }
         Some(net_num) => net_num.must_as_strict_int(),
     };
@@ -719,7 +725,10 @@ fn CIDR_allocate(cidr: IpCidr, additional_bits: i64, net_num: i64) -> Result<Val
     let new_cidr = match cidr.first_address() {
         V4(ipv4) => {
             if len > 32 {
-                return Err(format!("invalid additional_bits: would extend network length to {} bits, which is too long for IPv4", len));
+                return Err(format!(
+                    "invalid additional_bits: would extend network length to {} bits, which is too long for IPv4",
+                    len
+                ));
             }
             if net_num >= (1 << additional_bits) {
                 return Err(format!(
@@ -737,7 +746,10 @@ fn CIDR_allocate(cidr: IpCidr, additional_bits: i64, net_num: i64) -> Result<Val
         }
         V6(ipv6) => {
             if len > 128 {
-                return Err(format!("invalid additional_bits: would extend network length to {} bits, which is too long for IPv6", len));
+                return Err(format!(
+                    "invalid additional_bits: would extend network length to {} bits, which is too long for IPv6",
+                    len
+                ));
             }
             if additional_bits < 64 && net_num as u64 >= (1u64 << additional_bits) {
                 return Err(format!(
@@ -762,8 +774,8 @@ fn CIDR_allocate(cidr: IpCidr, additional_bits: i64, net_num: i64) -> Result<Val
 
 // CIDR_subnets(cidr: str, additional_bits: [int]) -> [str]
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_CIDR_subnets(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -775,7 +787,9 @@ pub extern "C-unwind" fn kclvm_net_CIDR_subnets(
 
     let cidr = match get_call_arg(args, kwargs, 0, Some("cidr")) {
         None => {
-            panic!("CIDR_subnets() missing 2 required positional arguments: 'cidr' and 'additional_bits'");
+            panic!(
+                "CIDR_subnets() missing 2 required positional arguments: 'cidr' and 'additional_bits'"
+            );
         }
         Some(cidr) => match IpCidr::from_str(&cidr.as_str()) {
             Err(err) => {
@@ -787,7 +801,9 @@ pub extern "C-unwind" fn kclvm_net_CIDR_subnets(
 
     let additional_bits_valueref = match get_call_arg(args, kwargs, 1, Some("additional_bits")) {
         None => {
-            panic!("CIDR_subnets() missing 2 required positional arguments: 'cidr' and 'additional_bits'");
+            panic!(
+                "CIDR_subnets() missing 2 required positional arguments: 'cidr' and 'additional_bits'"
+            );
         }
         Some(additional_bits) => additional_bits,
     };
@@ -803,14 +819,20 @@ pub extern "C-unwind" fn kclvm_net_CIDR_subnets(
         }
         let new_bits = cidr.network_length() as i64 + bits;
         if cidr.is_ipv4() && new_bits > 32 {
-            panic!("CIDR_subnets() invalid additional_bits: would extend network length to {} bits, which is too long for IPv4", new_bits);
+            panic!(
+                "CIDR_subnets() invalid additional_bits: would extend network length to {} bits, which is too long for IPv4",
+                new_bits
+            );
         }
         if cidr.is_ipv6() {
             if bits > 63 {
                 panic!("CIDR_subnets() invalid additional_bits: cannot extend more than 63 bits")
             }
             if new_bits > 128 {
-                panic!("CIDR_subnets() invalid additional_bits: would extend network length to {} bits, which is too long for IPv6", new_bits);
+                panic!(
+                    "CIDR_subnets() invalid additional_bits: would extend network length to {} bits, which is too long for IPv6",
+                    new_bits
+                );
             }
         }
 
@@ -841,7 +863,11 @@ pub extern "C-unwind" fn kclvm_net_CIDR_subnets(
         if *num as u64 >= (1u64 << additional.must_as_strict_int()) {
             match subnets.pop() {
                 None => unreachable!(),
-                Some(last) => panic!("CIDR_subnets() not enough remaining address space for a subnet with a prefix of {} bits after {}", cidr.network_length() as i64 + additional.must_as_strict_int(), last)
+                Some(last) => panic!(
+                    "CIDR_subnets() not enough remaining address space for a subnet with a prefix of {} bits after {}",
+                    cidr.network_length() as i64 + additional.must_as_strict_int(),
+                    last
+                ),
             }
         }
         let subnet = match CIDR_allocate(cidr, additional.must_as_strict_int(), *num) {
@@ -855,8 +881,8 @@ pub extern "C-unwind" fn kclvm_net_CIDR_subnets(
 
 // CIDR_host(cidr: str, host_num: int) -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_CIDR_host(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -926,8 +952,8 @@ pub extern "C-unwind" fn kclvm_net_CIDR_host(
 
 // CIDR_netmask(cidr: str) -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_net_CIDR_netmask(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -971,13 +997,13 @@ mod test_net {
                 "can not both parse ::FFFF:192.168.x.10 to ipv6 and ipv4,err:invalid IPv6 address syntax",
             ),
             ("::FFFF:10.0.0.1", "10.0.0.1"),
-            ("::FFFF:172.16.0.1", "172.16.0.1"), 
+            ("::FFFF:172.16.0.1", "172.16.0.1"),
             ("::FFFF:127.0.0.1", "127.0.0.1"),
             ("0000:0000:0000:0000:0000:FFFF:0A00:0001", "10.0.0.1"),
             ("::FFFF:224.0.0.1", "224.0.0.1"),
             (
                 "::FFFF:invalid.ip",
-                "can not both parse ::FFFF:invalid.ip to ipv6 and ipv4,err:invalid IPv6 address syntax"  
+                "can not both parse ::FFFF:invalid.ip to ipv6 and ipv4,err:invalid IPv6 address syntax",
             ),
             // IPv4-mapped IPv6 addresses
             ("::FFFF:0A00:0001", "10.0.0.1"),
@@ -1530,21 +1556,81 @@ mod test_net {
             },
         );
         let cases = [
-            ("10.0.0/8", "10.0.0.1", "is_IP_in_CIDR() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
-            ("10.0.0.0/33", "10.0.0.1", "is_IP_in_CIDR() invalid cidr: invalid length for network: Network length 33 is too long for Ipv4 (maximum: 32)"),
-            ("2001:db8:1:2:3:4:5:7/129", "2001:db8::", "is_IP_in_CIDR() invalid cidr: invalid length for network: Network length 129 is too long for Ipv6 (maximum: 128)"),
-            ("0.0.0.0/256", "10.0.0.1", "is_IP_in_CIDR() invalid cidr: couldn't parse length in network: number too large to fit in target type"),
-            ("::/256", "2001:db8::", "is_IP_in_CIDR() invalid cidr: couldn't parse length in network: number too large to fit in target type"),
-            ("10.0.0.0/8/8", "10.0.0.1", "is_IP_in_CIDR() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
-            ("2001:db8::/56/56", "2001:db8::", "is_IP_in_CIDR() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
-            ("0.0.0.0/-1", "10.0.0.1", "is_IP_in_CIDR() invalid cidr: couldn't parse length in network: invalid digit found in string"),
-            ("::/-1", "2001:db8::", "is_IP_in_CIDR() invalid cidr: couldn't parse length in network: invalid digit found in string"),
-            ("10.128.0.0/8", "10.0.0.1", "is_IP_in_CIDR() invalid cidr: host part of address was not zero"),
-            ("2001:db8::/16", "2001:db8::", "is_IP_in_CIDR() invalid cidr: host part of address was not zero"),
-            ("10.1.2.3/31", "10.0.0.1", "is_IP_in_CIDR() invalid cidr: host part of address was not zero"),
-            ("2001:db8:1:2:3:4:5:7/127", "2001:db8::", "is_IP_in_CIDR() invalid cidr: host part of address was not zero"),
-            ("10.0.0.0/8", "10.0.0", "is_IP_in_CIDR() invalid ip: invalid IP address syntax"),
-            ("2001:db8::/56", "2001:db8:::", "is_IP_in_CIDR() invalid ip: invalid IP address syntax"),
+            (
+                "10.0.0/8",
+                "10.0.0.1",
+                "is_IP_in_CIDR() invalid cidr: couldn't parse address in network: invalid IP address syntax",
+            ),
+            (
+                "10.0.0.0/33",
+                "10.0.0.1",
+                "is_IP_in_CIDR() invalid cidr: invalid length for network: Network length 33 is too long for Ipv4 (maximum: 32)",
+            ),
+            (
+                "2001:db8:1:2:3:4:5:7/129",
+                "2001:db8::",
+                "is_IP_in_CIDR() invalid cidr: invalid length for network: Network length 129 is too long for Ipv6 (maximum: 128)",
+            ),
+            (
+                "0.0.0.0/256",
+                "10.0.0.1",
+                "is_IP_in_CIDR() invalid cidr: couldn't parse length in network: number too large to fit in target type",
+            ),
+            (
+                "::/256",
+                "2001:db8::",
+                "is_IP_in_CIDR() invalid cidr: couldn't parse length in network: number too large to fit in target type",
+            ),
+            (
+                "10.0.0.0/8/8",
+                "10.0.0.1",
+                "is_IP_in_CIDR() invalid cidr: couldn't parse address in network: invalid IP address syntax",
+            ),
+            (
+                "2001:db8::/56/56",
+                "2001:db8::",
+                "is_IP_in_CIDR() invalid cidr: couldn't parse address in network: invalid IP address syntax",
+            ),
+            (
+                "0.0.0.0/-1",
+                "10.0.0.1",
+                "is_IP_in_CIDR() invalid cidr: couldn't parse length in network: invalid digit found in string",
+            ),
+            (
+                "::/-1",
+                "2001:db8::",
+                "is_IP_in_CIDR() invalid cidr: couldn't parse length in network: invalid digit found in string",
+            ),
+            (
+                "10.128.0.0/8",
+                "10.0.0.1",
+                "is_IP_in_CIDR() invalid cidr: host part of address was not zero",
+            ),
+            (
+                "2001:db8::/16",
+                "2001:db8::",
+                "is_IP_in_CIDR() invalid cidr: host part of address was not zero",
+            ),
+            (
+                "10.1.2.3/31",
+                "10.0.0.1",
+                "is_IP_in_CIDR() invalid cidr: host part of address was not zero",
+            ),
+            (
+                "2001:db8:1:2:3:4:5:7/127",
+                "2001:db8::",
+                "is_IP_in_CIDR() invalid cidr: host part of address was not zero",
+            ),
+            (
+                "10.0.0.0/8",
+                "10.0.0",
+                "is_IP_in_CIDR() invalid ip: invalid IP address syntax",
+            ),
+            (
+                "2001:db8::/56",
+                "2001:db8:::",
+                "is_IP_in_CIDR() invalid ip: invalid IP address syntax",
+            ),
         ];
         for (cidr, ip, expect_error) in cases.iter() {
             assert_panic(expect_error, || {
@@ -1655,7 +1741,8 @@ mod test_net {
             "CIDR_subnet() missing 3 required positional arguments: 'cidr', 'additional_bits', and 'net_num'",
             || {
                 let mut ctx = Context::new();
-                let args = ValueRef::list(Some(&[&ValueRef::str("10.1.2.3"), &ValueRef::int(1)])).into_raw(&mut ctx);
+                let args = ValueRef::list(Some(&[&ValueRef::str("10.1.2.3"), &ValueRef::int(1)]))
+                    .into_raw(&mut ctx);
                 let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
                 kclvm_net_CIDR_subnet(ctx.into_raw(), args, kwargs);
             },
@@ -1665,8 +1752,11 @@ mod test_net {
             || {
                 let mut ctx = Context::new();
                 let args = ValueRef::list(None).into_raw(&mut ctx);
-                let kwargs =
-                    ValueRef::dict(Some(&[("cidr", &ValueRef::str("10.1.2.3")),("additional_bits", &ValueRef::int(1))])).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(Some(&[
+                    ("cidr", &ValueRef::str("10.1.2.3")),
+                    ("additional_bits", &ValueRef::int(1)),
+                ]))
+                .into_raw(&mut ctx);
                 kclvm_net_CIDR_subnet(ctx.into_raw(), args, kwargs);
             },
         );
@@ -1675,8 +1765,11 @@ mod test_net {
             || {
                 let mut ctx = Context::new();
                 let args = ValueRef::list(None).into_raw(&mut ctx);
-                let kwargs =
-                    ValueRef::dict(Some(&[("cidr", &ValueRef::str("10.1.2.3")),("net_num", &ValueRef::int(1))])).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(Some(&[
+                    ("cidr", &ValueRef::str("10.1.2.3")),
+                    ("net_num", &ValueRef::int(1)),
+                ]))
+                .into_raw(&mut ctx);
                 kclvm_net_CIDR_subnet(ctx.into_raw(), args, kwargs);
             },
         );
@@ -1685,31 +1778,129 @@ mod test_net {
             || {
                 let mut ctx = Context::new();
                 let args = ValueRef::list(None).into_raw(&mut ctx);
-                let kwargs =
-                    ValueRef::dict(Some(&[("additional_bits", &ValueRef::int(1)),("net_num", &ValueRef::int(1))])).into_raw(&mut ctx);
+                let kwargs = ValueRef::dict(Some(&[
+                    ("additional_bits", &ValueRef::int(1)),
+                    ("net_num", &ValueRef::int(1)),
+                ]))
+                .into_raw(&mut ctx);
                 kclvm_net_CIDR_subnet(ctx.into_raw(), args, kwargs);
             },
         );
         let cases = [
-            ("10.0.0/8", 1i64, 0i64, "CIDR_subnet() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
-            ("10.0.0.0/33", 1, 0, "CIDR_subnet() invalid cidr: invalid length for network: Network length 33 is too long for Ipv4 (maximum: 32)"),
-            ("2001:db8:1:2:3:4:5:7/129", 1, 0, "CIDR_subnet() invalid cidr: invalid length for network: Network length 129 is too long for Ipv6 (maximum: 128)"),
-            ("0.0.0.0/256", 1, 0, "CIDR_subnet() invalid cidr: couldn't parse length in network: number too large to fit in target type"),
-            ("::/256", 1, 0, "CIDR_subnet() invalid cidr: couldn't parse length in network: number too large to fit in target type"),
-            ("10.0.0.0/8/8", 1, 0, "CIDR_subnet() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
-            ("2001:db8::/56/56", 1, 0, "CIDR_subnet() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
-            ("0.0.0.0/-1", 1, 0, "CIDR_subnet() invalid cidr: couldn't parse length in network: invalid digit found in string"),
-            ("::/-1", 1, 0, "CIDR_subnet() invalid cidr: couldn't parse length in network: invalid digit found in string"),
-            ("10.128.0.0/8", 1, 0, "CIDR_subnet() invalid cidr: host part of address was not zero"),
-            ("2001:db8::/16", 1, 0, "CIDR_subnet() invalid cidr: host part of address was not zero"),
-            ("10.1.2.3/31", 1, 0, "CIDR_subnet() invalid cidr: host part of address was not zero"),
-            ("2001:db8:1:2:3:4:5:7/127", 1, 0, "CIDR_subnet() invalid cidr: host part of address was not zero"),
-            ("10.0.0.0/8", -1, 0, "CIDR_subnet() invalid additional_bits: cannot be negative"),
-            ("2001:db8::/64", 1, -1, "CIDR_subnet() invalid net_num: cannot be negative"),
-            ("10.0.0.0/8", 25, 0, "CIDR_subnet() invalid additional_bits: would extend network length to 33 bits, which is too long for IPv4"),
-            ("2001:db8::/65", 64, 0, "CIDR_subnet() invalid additional_bits: would extend network length to 129 bits, which is too long for IPv6"),
-            ("10.0.0.0/8", 8, 256, "CIDR_subnet() additional_bits of 8 does not accommodate a net_num of 256"),
-            ("2001:db8::/64", 8, 256, "CIDR_subnet() additional_bits of 8 does not accommodate a net_num of 256"),
+            (
+                "10.0.0/8",
+                1i64,
+                0i64,
+                "CIDR_subnet() invalid cidr: couldn't parse address in network: invalid IP address syntax",
+            ),
+            (
+                "10.0.0.0/33",
+                1,
+                0,
+                "CIDR_subnet() invalid cidr: invalid length for network: Network length 33 is too long for Ipv4 (maximum: 32)",
+            ),
+            (
+                "2001:db8:1:2:3:4:5:7/129",
+                1,
+                0,
+                "CIDR_subnet() invalid cidr: invalid length for network: Network length 129 is too long for Ipv6 (maximum: 128)",
+            ),
+            (
+                "0.0.0.0/256",
+                1,
+                0,
+                "CIDR_subnet() invalid cidr: couldn't parse length in network: number too large to fit in target type",
+            ),
+            (
+                "::/256",
+                1,
+                0,
+                "CIDR_subnet() invalid cidr: couldn't parse length in network: number too large to fit in target type",
+            ),
+            (
+                "10.0.0.0/8/8",
+                1,
+                0,
+                "CIDR_subnet() invalid cidr: couldn't parse address in network: invalid IP address syntax",
+            ),
+            (
+                "2001:db8::/56/56",
+                1,
+                0,
+                "CIDR_subnet() invalid cidr: couldn't parse address in network: invalid IP address syntax",
+            ),
+            (
+                "0.0.0.0/-1",
+                1,
+                0,
+                "CIDR_subnet() invalid cidr: couldn't parse length in network: invalid digit found in string",
+            ),
+            (
+                "::/-1",
+                1,
+                0,
+                "CIDR_subnet() invalid cidr: couldn't parse length in network: invalid digit found in string",
+            ),
+            (
+                "10.128.0.0/8",
+                1,
+                0,
+                "CIDR_subnet() invalid cidr: host part of address was not zero",
+            ),
+            (
+                "2001:db8::/16",
+                1,
+                0,
+                "CIDR_subnet() invalid cidr: host part of address was not zero",
+            ),
+            (
+                "10.1.2.3/31",
+                1,
+                0,
+                "CIDR_subnet() invalid cidr: host part of address was not zero",
+            ),
+            (
+                "2001:db8:1:2:3:4:5:7/127",
+                1,
+                0,
+                "CIDR_subnet() invalid cidr: host part of address was not zero",
+            ),
+            (
+                "10.0.0.0/8",
+                -1,
+                0,
+                "CIDR_subnet() invalid additional_bits: cannot be negative",
+            ),
+            (
+                "2001:db8::/64",
+                1,
+                -1,
+                "CIDR_subnet() invalid net_num: cannot be negative",
+            ),
+            (
+                "10.0.0.0/8",
+                25,
+                0,
+                "CIDR_subnet() invalid additional_bits: would extend network length to 33 bits, which is too long for IPv4",
+            ),
+            (
+                "2001:db8::/65",
+                64,
+                0,
+                "CIDR_subnet() invalid additional_bits: would extend network length to 129 bits, which is too long for IPv6",
+            ),
+            (
+                "10.0.0.0/8",
+                8,
+                256,
+                "CIDR_subnet() additional_bits of 8 does not accommodate a net_num of 256",
+            ),
+            (
+                "2001:db8::/64",
+                8,
+                256,
+                "CIDR_subnet() additional_bits of 8 does not accommodate a net_num of 256",
+            ),
         ];
         for (cidr, additional_bits, net_num, expect_error) in cases.iter() {
             assert_panic(expect_error, || {
@@ -1913,25 +2104,101 @@ mod test_net {
             },
         );
         let cases = [
-            ("10.0.0/8", vec![1i64], "CIDR_subnets() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
-            ("10.0.0.0/33", vec![1], "CIDR_subnets() invalid cidr: invalid length for network: Network length 33 is too long for Ipv4 (maximum: 32)"),
-            ("2001:db8:1:2:3:4:5:7/129", vec![1], "CIDR_subnets() invalid cidr: invalid length for network: Network length 129 is too long for Ipv6 (maximum: 128)"),
-            ("0.0.0.0/256", vec![1], "CIDR_subnets() invalid cidr: couldn't parse length in network: number too large to fit in target type"),
-            ("::/256", vec![1], "CIDR_subnets() invalid cidr: couldn't parse length in network: number too large to fit in target type"),
-            ("10.0.0.0/8/8", vec![1], "CIDR_subnets() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
-            ("2001:db8::/56/56", vec![1], "CIDR_subnets() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
-            ("0.0.0.0/-1", vec![1], "CIDR_subnets() invalid cidr: couldn't parse length in network: invalid digit found in string"),
-            ("::/-1", vec![1], "CIDR_subnets() invalid cidr: couldn't parse length in network: invalid digit found in string"),
-            ("10.128.0.0/8", vec![1], "CIDR_subnets() invalid cidr: host part of address was not zero"),
-            ("2001:db8::/16", vec![1], "CIDR_subnets() invalid cidr: host part of address was not zero"),
-            ("10.1.2.3/31", vec![1], "CIDR_subnets() invalid cidr: host part of address was not zero"),
-            ("2001:db8:1:2:3:4:5:7/127", vec![1], "CIDR_subnets() invalid cidr: host part of address was not zero"),
-            ("10.0.0.0/8", vec![3, 2, -1], "CIDR_subnets() invalid additional_bits: cannot be negative"),
-            ("10.0.0.0/8", vec![3, 2, 25], "CIDR_subnets() invalid additional_bits: would extend network length to 33 bits, which is too long for IPv4"),
-            ("2001:db8::/32", vec![3, 2, 64], "CIDR_subnets() invalid additional_bits: cannot extend more than 63 bits"),
-            ("2001:db8::/66", vec![3, 2, 63], "CIDR_subnets() invalid additional_bits: would extend network length to 129 bits, which is too long for IPv6"),
-            ("10.0.0.0/8", vec![1, 1, 1], "CIDR_subnets() not enough remaining address space for a subnet with a prefix of 9 bits after 10.128.0.0/9"),
-            ("2001:db8::/126", vec![1, 1, 1], "CIDR_subnets() not enough remaining address space for a subnet with a prefix of 127 bits after 2001:db8::2/127"),
+            (
+                "10.0.0/8",
+                vec![1i64],
+                "CIDR_subnets() invalid cidr: couldn't parse address in network: invalid IP address syntax",
+            ),
+            (
+                "10.0.0.0/33",
+                vec![1],
+                "CIDR_subnets() invalid cidr: invalid length for network: Network length 33 is too long for Ipv4 (maximum: 32)",
+            ),
+            (
+                "2001:db8:1:2:3:4:5:7/129",
+                vec![1],
+                "CIDR_subnets() invalid cidr: invalid length for network: Network length 129 is too long for Ipv6 (maximum: 128)",
+            ),
+            (
+                "0.0.0.0/256",
+                vec![1],
+                "CIDR_subnets() invalid cidr: couldn't parse length in network: number too large to fit in target type",
+            ),
+            (
+                "::/256",
+                vec![1],
+                "CIDR_subnets() invalid cidr: couldn't parse length in network: number too large to fit in target type",
+            ),
+            (
+                "10.0.0.0/8/8",
+                vec![1],
+                "CIDR_subnets() invalid cidr: couldn't parse address in network: invalid IP address syntax",
+            ),
+            (
+                "2001:db8::/56/56",
+                vec![1],
+                "CIDR_subnets() invalid cidr: couldn't parse address in network: invalid IP address syntax",
+            ),
+            (
+                "0.0.0.0/-1",
+                vec![1],
+                "CIDR_subnets() invalid cidr: couldn't parse length in network: invalid digit found in string",
+            ),
+            (
+                "::/-1",
+                vec![1],
+                "CIDR_subnets() invalid cidr: couldn't parse length in network: invalid digit found in string",
+            ),
+            (
+                "10.128.0.0/8",
+                vec![1],
+                "CIDR_subnets() invalid cidr: host part of address was not zero",
+            ),
+            (
+                "2001:db8::/16",
+                vec![1],
+                "CIDR_subnets() invalid cidr: host part of address was not zero",
+            ),
+            (
+                "10.1.2.3/31",
+                vec![1],
+                "CIDR_subnets() invalid cidr: host part of address was not zero",
+            ),
+            (
+                "2001:db8:1:2:3:4:5:7/127",
+                vec![1],
+                "CIDR_subnets() invalid cidr: host part of address was not zero",
+            ),
+            (
+                "10.0.0.0/8",
+                vec![3, 2, -1],
+                "CIDR_subnets() invalid additional_bits: cannot be negative",
+            ),
+            (
+                "10.0.0.0/8",
+                vec![3, 2, 25],
+                "CIDR_subnets() invalid additional_bits: would extend network length to 33 bits, which is too long for IPv4",
+            ),
+            (
+                "2001:db8::/32",
+                vec![3, 2, 64],
+                "CIDR_subnets() invalid additional_bits: cannot extend more than 63 bits",
+            ),
+            (
+                "2001:db8::/66",
+                vec![3, 2, 63],
+                "CIDR_subnets() invalid additional_bits: would extend network length to 129 bits, which is too long for IPv6",
+            ),
+            (
+                "10.0.0.0/8",
+                vec![1, 1, 1],
+                "CIDR_subnets() not enough remaining address space for a subnet with a prefix of 9 bits after 10.128.0.0/9",
+            ),
+            (
+                "2001:db8::/126",
+                vec![1, 1, 1],
+                "CIDR_subnets() not enough remaining address space for a subnet with a prefix of 127 bits after 2001:db8::2/127",
+            ),
         ];
         for (cidr, additional_bits, expect_error) in cases.iter() {
             assert_panic(expect_error, || {
@@ -2080,29 +2347,121 @@ mod test_net {
             },
         );
         let cases = [
-            ("10.0.0/8", 0i64, "CIDR_host() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
-            ("10.0.0.0/33", 0, "CIDR_host() invalid cidr: invalid length for network: Network length 33 is too long for Ipv4 (maximum: 32)"),
-            ("2001:db8:1:2:3:4:5:7/129", 0, "CIDR_host() invalid cidr: invalid length for network: Network length 129 is too long for Ipv6 (maximum: 128)"),
-            ("0.0.0.0/256", 0, "CIDR_host() invalid cidr: couldn't parse length in network: number too large to fit in target type"),
-            ("::/256", 0, "CIDR_host() invalid cidr: couldn't parse length in network: number too large to fit in target type"),
-            ("10.0.0.0/8/8", 0, "CIDR_host() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
-            ("2001:db8::/56/56", 0, "CIDR_host() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
-            ("0.0.0.0/-1", 0, "CIDR_host() invalid cidr: couldn't parse length in network: invalid digit found in string"),
-            ("::/-1", 0, "CIDR_host() invalid cidr: couldn't parse length in network: invalid digit found in string"),
-            ("10.128.0.0/8", 0, "CIDR_host() invalid cidr: host part of address was not zero"),
-            ("2001:db8::/16", 0, "CIDR_host() invalid cidr: host part of address was not zero"),
-            ("10.1.2.3/31", 0, "CIDR_host() invalid cidr: host part of address was not zero"),
-            ("2001:db8:1:2:3:4:5:7/127", 0, "CIDR_host() invalid cidr: host part of address was not zero"),
-            ("10.0.0.0/24", 256, "CIDR_host() prefix of 24 does not accommodate a host numbered 256"),
-            ("10.0.0.0/24", -257, "CIDR_host() prefix of 24 does not accommodate a host numbered -257"),
-            ("10.0.0.0/32", 1, "CIDR_host() prefix of 32 does not accommodate a host numbered 1"),
-            ("10.0.0.0/32", -2, "CIDR_host() prefix of 32 does not accommodate a host numbered -2"),
-            ("0.0.0.0/0", 4294967296, "CIDR_host() prefix of 0 does not accommodate a host numbered 4294967296"),
-            ("0.0.0.0/0", -4294967297, "CIDR_host() prefix of 0 does not accommodate a host numbered -4294967297"),
-            ("2001:db8::/120", 256, "CIDR_host() prefix of 120 does not accommodate a host numbered 256"),
-            ("2001:db8::/120", -257, "CIDR_host() prefix of 120 does not accommodate a host numbered -257"),
-            ("2001:db8::/66", 9223372036854775807, "CIDR_host() prefix of 66 does not accommodate a host numbered 9223372036854775807"),
-            ("2001:db8::/66", -9223372036854775808, "CIDR_host() prefix of 66 does not accommodate a host numbered -9223372036854775808"),
+            (
+                "10.0.0/8",
+                0i64,
+                "CIDR_host() invalid cidr: couldn't parse address in network: invalid IP address syntax",
+            ),
+            (
+                "10.0.0.0/33",
+                0,
+                "CIDR_host() invalid cidr: invalid length for network: Network length 33 is too long for Ipv4 (maximum: 32)",
+            ),
+            (
+                "2001:db8:1:2:3:4:5:7/129",
+                0,
+                "CIDR_host() invalid cidr: invalid length for network: Network length 129 is too long for Ipv6 (maximum: 128)",
+            ),
+            (
+                "0.0.0.0/256",
+                0,
+                "CIDR_host() invalid cidr: couldn't parse length in network: number too large to fit in target type",
+            ),
+            (
+                "::/256",
+                0,
+                "CIDR_host() invalid cidr: couldn't parse length in network: number too large to fit in target type",
+            ),
+            (
+                "10.0.0.0/8/8",
+                0,
+                "CIDR_host() invalid cidr: couldn't parse address in network: invalid IP address syntax",
+            ),
+            (
+                "2001:db8::/56/56",
+                0,
+                "CIDR_host() invalid cidr: couldn't parse address in network: invalid IP address syntax",
+            ),
+            (
+                "0.0.0.0/-1",
+                0,
+                "CIDR_host() invalid cidr: couldn't parse length in network: invalid digit found in string",
+            ),
+            (
+                "::/-1",
+                0,
+                "CIDR_host() invalid cidr: couldn't parse length in network: invalid digit found in string",
+            ),
+            (
+                "10.128.0.0/8",
+                0,
+                "CIDR_host() invalid cidr: host part of address was not zero",
+            ),
+            (
+                "2001:db8::/16",
+                0,
+                "CIDR_host() invalid cidr: host part of address was not zero",
+            ),
+            (
+                "10.1.2.3/31",
+                0,
+                "CIDR_host() invalid cidr: host part of address was not zero",
+            ),
+            (
+                "2001:db8:1:2:3:4:5:7/127",
+                0,
+                "CIDR_host() invalid cidr: host part of address was not zero",
+            ),
+            (
+                "10.0.0.0/24",
+                256,
+                "CIDR_host() prefix of 24 does not accommodate a host numbered 256",
+            ),
+            (
+                "10.0.0.0/24",
+                -257,
+                "CIDR_host() prefix of 24 does not accommodate a host numbered -257",
+            ),
+            (
+                "10.0.0.0/32",
+                1,
+                "CIDR_host() prefix of 32 does not accommodate a host numbered 1",
+            ),
+            (
+                "10.0.0.0/32",
+                -2,
+                "CIDR_host() prefix of 32 does not accommodate a host numbered -2",
+            ),
+            (
+                "0.0.0.0/0",
+                4294967296,
+                "CIDR_host() prefix of 0 does not accommodate a host numbered 4294967296",
+            ),
+            (
+                "0.0.0.0/0",
+                -4294967297,
+                "CIDR_host() prefix of 0 does not accommodate a host numbered -4294967297",
+            ),
+            (
+                "2001:db8::/120",
+                256,
+                "CIDR_host() prefix of 120 does not accommodate a host numbered 256",
+            ),
+            (
+                "2001:db8::/120",
+                -257,
+                "CIDR_host() prefix of 120 does not accommodate a host numbered -257",
+            ),
+            (
+                "2001:db8::/66",
+                9223372036854775807,
+                "CIDR_host() prefix of 66 does not accommodate a host numbered 9223372036854775807",
+            ),
+            (
+                "2001:db8::/66",
+                -9223372036854775808,
+                "CIDR_host() prefix of 66 does not accommodate a host numbered -9223372036854775808",
+            ),
         ];
         for (cidr, host_num, expect_error) in cases.iter() {
             assert_panic(expect_error, || {
@@ -2155,14 +2514,38 @@ mod test_net {
         // Disable print panic info in stderr.
         std::panic::set_hook(Box::new(|_| {}));
         let cases = [
-            ("10.0.0/8", "CIDR_netmask() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
-            ("10.0.0.0/33", "CIDR_netmask() invalid cidr: invalid length for network: Network length 33 is too long for Ipv4 (maximum: 32)"),
-            ("0.0.0.0/256", "CIDR_netmask() invalid cidr: couldn't parse length in network: number too large to fit in target type"),
-            ("10.0.0.0/8/8", "CIDR_netmask() invalid cidr: couldn't parse address in network: invalid IP address syntax"),
-            ("0.0.0.0/-1", "CIDR_netmask() invalid cidr: couldn't parse length in network: invalid digit found in string"),
-            ("10.128.0.0/8", "CIDR_netmask() invalid cidr: host part of address was not zero"),
-            ("10.1.2.3/31", "CIDR_netmask() invalid cidr: host part of address was not zero"),
-            ("2001:db8::/64", "CIDR_netmask() IPv6 addresses cannot have a netmask"),
+            (
+                "10.0.0/8",
+                "CIDR_netmask() invalid cidr: couldn't parse address in network: invalid IP address syntax",
+            ),
+            (
+                "10.0.0.0/33",
+                "CIDR_netmask() invalid cidr: invalid length for network: Network length 33 is too long for Ipv4 (maximum: 32)",
+            ),
+            (
+                "0.0.0.0/256",
+                "CIDR_netmask() invalid cidr: couldn't parse length in network: number too large to fit in target type",
+            ),
+            (
+                "10.0.0.0/8/8",
+                "CIDR_netmask() invalid cidr: couldn't parse address in network: invalid IP address syntax",
+            ),
+            (
+                "0.0.0.0/-1",
+                "CIDR_netmask() invalid cidr: couldn't parse length in network: invalid digit found in string",
+            ),
+            (
+                "10.128.0.0/8",
+                "CIDR_netmask() invalid cidr: host part of address was not zero",
+            ),
+            (
+                "10.1.2.3/31",
+                "CIDR_netmask() invalid cidr: host part of address was not zero",
+            ),
+            (
+                "2001:db8::/64",
+                "CIDR_netmask() IPv6 addresses cannot have a netmask",
+            ),
         ];
         for (cidr, expect_error) in cases.iter() {
             assert_panic(expect_error, || {

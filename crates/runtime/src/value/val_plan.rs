@@ -272,7 +272,7 @@ impl ValueRef {
                         None => {
                             return Err(format!(
                                 "invalid path select operand {path}, value not found"
-                            ))
+                            ));
                         }
                     };
                     values.list_append(&value);
@@ -287,7 +287,7 @@ impl ValueRef {
 
 #[cfg(test)]
 mod test_value_plan {
-    use crate::{schema_runtime_type, val_plan::PlanOptions, Context, ValueRef, MAIN_PKG_PATH};
+    use crate::{Context, MAIN_PKG_PATH, ValueRef, schema_runtime_type, val_plan::PlanOptions};
 
     use super::filter_results;
 
@@ -432,7 +432,10 @@ mod test_value_plan {
 
         config.dict_update_key_value("data_with_pkg", get_test_schema_value_with_pkg());
         let (json_string, yaml_string) = config.plan(&ctx);
-        assert_eq!(json_string, "{\"_hidden\": 1, \"data\": {\"_type\": \"Data\"}, \"data_with_pkg\": {\"_type\": \"pkg.Data\"}}");
+        assert_eq!(
+            json_string,
+            "{\"_hidden\": 1, \"data\": {\"_type\": \"Data\"}, \"data_with_pkg\": {\"_type\": \"pkg.Data\"}}"
+        );
         assert_eq!(
             yaml_string,
             "_hidden: 1\ndata:\n  _type: Data\ndata_with_pkg:\n  _type: pkg.Data"

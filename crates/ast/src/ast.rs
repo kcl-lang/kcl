@@ -34,7 +34,7 @@
 //! :copyright: Copyright The KCL Authors. All rights reserved.
 
 use kclvm_utils::path::PathPrefix;
-use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize, Serializer, ser::SerializeStruct};
 use std::{
     collections::HashMap,
     sync::{RwLock, RwLockReadGuard, RwLockWriteGuard},
@@ -47,7 +47,7 @@ use uuid;
 
 use super::token;
 use crate::{node_ref, pos::ContainsPos};
-use kclvm_error::{diagnostic::Range, Position};
+use kclvm_error::{Position, diagnostic::Range};
 use std::cell::RefCell;
 
 thread_local! {

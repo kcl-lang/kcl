@@ -130,10 +130,16 @@ impl ValueRef {
                                         let index = must_normalize_index(index, origin_value.len());
                                         origin_value.list_set(index, &union_value);
                                     } else {
-                                        panic!("only non-empty list attribute can be union value with the index {}", index);
+                                        panic!(
+                                            "only non-empty list attribute can be union value with the index {}",
+                                            index
+                                        );
                                     }
                                 } else {
-                                    panic!("only non-empty list attribute can be union value with the index {}", index);
+                                    panic!(
+                                        "only non-empty list attribute can be union value with the index {}",
+                                        index
+                                    );
                                 }
                             }
                             None => {
@@ -175,7 +181,10 @@ impl ValueRef {
                                 let origin_value = obj.values.get_mut(k);
                                 if let Some(origin_value) = origin_value {
                                     if !origin_value.is_list() {
-                                        panic!("only list attribute can be override value with the index {}", index);
+                                        panic!(
+                                            "only list attribute can be override value with the index {}",
+                                            index
+                                        );
                                     }
                                     let index = must_normalize_index(index, origin_value.len());
                                     if v.is_undefined() {
@@ -184,7 +193,10 @@ impl ValueRef {
                                         origin_value.list_must_set(index as usize, v);
                                     }
                                 } else {
-                                    panic!("only list attribute can be override value with the index {}", index);
+                                    panic!(
+                                        "only list attribute can be override value with the index {}",
+                                        index
+                                    );
                                 }
                             }
                             None => {
@@ -208,8 +220,10 @@ impl ValueRef {
                                     match index {
                                         Some(index) => {
                                             let index = *index;
-                                            let mut insert_index =
-                                                must_normalize_index(index, origin_value.values.len());
+                                            let mut insert_index = must_normalize_index(
+                                                index,
+                                                origin_value.values.len(),
+                                            );
                                             for v in &value.values {
                                                 origin_value.values.insert(insert_index, v.clone());
                                                 insert_index += 1;
@@ -224,7 +238,8 @@ impl ValueRef {
                                 }
                                 _ => panic!(
                                     "only list attribute can be inserted value, the origin value type is {} and got value type is {}",
-                                    origin_value.type_str(), v.type_str()
+                                    origin_value.type_str(),
+                                    v.type_str()
                                 ),
                             };
                         }

@@ -7,7 +7,7 @@ use std::{
 
 use kclvm_config::modfile::KCL_PKG_PATH;
 use kclvm_parser::ParseSession;
-use kclvm_runner::{exec_program, MapErrorResult};
+use kclvm_runner::{MapErrorResult, exec_program};
 
 use crate::{
     app,

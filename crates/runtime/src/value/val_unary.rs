@@ -6,8 +6,8 @@ impl ValueRef {
     // +x
     pub fn unary_plus(&self) -> Self {
         match &*self.rc.borrow() {
-            Value::int_value(ref a) => Self::int(*a),
-            Value::float_value(ref a) => Self::float(*a),
+            Value::int_value(a) => Self::int(*a),
+            Value::float_value(a) => Self::float(*a),
             _ => panic!("bad operand type for unary +: '{}'", self.type_str()),
         }
     }
@@ -15,8 +15,8 @@ impl ValueRef {
     // -x
     pub fn unary_minus(&self) -> Self {
         match &*self.rc.borrow() {
-            Value::int_value(ref a) => Self::int(0 - *a),
-            Value::float_value(ref a) => Self::float(0.0 - *a),
+            Value::int_value(a) => Self::int(0 - *a),
+            Value::float_value(a) => Self::float(0.0 - *a),
             _ => panic!("bad operand type for unary -: '{}'", self.type_str()),
         }
     }

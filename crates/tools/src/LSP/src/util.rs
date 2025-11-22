@@ -571,8 +571,8 @@ pub(crate) fn is_in_docstring(
 ) -> Option<(NodeRef<String>, SchemaStmt)> {
     match program.pos_to_stmt(pos) {
         Some(node) => match node.node.clone() {
-            Stmt::Schema(schema) => match schema.doc {
-                Some(ref doc) => {
+            Stmt::Schema(schema) => match &schema.doc {
+                Some(doc) => {
                     if doc.contains_pos(pos) {
                         Some((doc.clone(), schema))
                     } else {

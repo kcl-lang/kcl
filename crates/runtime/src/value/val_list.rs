@@ -69,7 +69,7 @@ impl ValueRef {
 
     pub fn list_get(&self, i: isize) -> Option<Self> {
         match &*self.rc.borrow() {
-            Value::list_value(ref list) => {
+            Value::list_value(list) => {
                 let index = if i < 0 {
                     (i + list.values.len() as isize) as usize
                 } else {
@@ -87,7 +87,7 @@ impl ValueRef {
 
     pub fn list_get_option(&self, i: isize) -> Option<Self> {
         match &*self.rc.borrow() {
-            Value::list_value(ref list) => {
+            Value::list_value(list) => {
                 let index = if i < 0 {
                     (i + list.values.len() as isize) as usize
                 } else {
@@ -164,25 +164,27 @@ impl ValueRef {
     }
 
     pub fn list_append_unpack(&mut self, x_or_list: &Self) {
-        match &mut*self.rc.borrow_mut() {
+        match &mut *self.rc.borrow_mut() {
             Value::list_value(list) => match &*x_or_list.rc.borrow() {
-                Value::list_value(ref list_b) => {
+                Value::list_value(list_b) => {
                     for x in list_b.values.iter() {
                         list.values.push(x.clone());
                     }
                 }
-                Value::dict_value(ref dict_b) => {
+                Value::dict_value(dict_b) => {
                     for (x, _) in dict_b.values.iter() {
                         list.values.push(Self::str(x.as_str()));
                     }
                 }
-                Value::schema_value(ref schema_b) => {
+                Value::schema_value(schema_b) => {
                     for (x, _) in schema_b.config.values.iter() {
                         list.values.push(Self::str(x.as_str()));
                     }
                 }
                 Value::none | Value::undefined => { /*Do nothing on unpacking None/Undefined*/ }
-                _ => panic!("only list, dict and schema object can be used with unpack operators * and **, got {x_or_list}"),
+                _ => panic!(
+                    "only list, dict and schema object can be used with unpack operators * and **, got {x_or_list}"
+                ),
             },
             _ => panic!("Invalid list object in list_append_unpack"),
         }
@@ -191,17 +193,17 @@ impl ValueRef {
     pub fn list_append_unpack_first(&mut self, x_or_list: &Self) {
         match &mut *self.rc.borrow_mut() {
             Value::list_value(list) => match &*x_or_list.rc.borrow() {
-                Value::list_value(ref list_b) => {
+                Value::list_value(list_b) => {
                     for (i, x) in list_b.values.iter().enumerate() {
                         list.values.insert(i, x.clone());
                     }
                 }
-                Value::dict_value(ref dict_b) => {
+                Value::dict_value(dict_b) => {
                     for (i, x) in dict_b.values.iter().enumerate() {
                         list.values.insert(i, Self::str(x.0.as_str()));
                     }
                 }
-                Value::schema_value(ref schema_b) => {
+                Value::schema_value(schema_b) => {
                     for (i, x) in schema_b.config.values.iter().enumerate() {
                         list.values.insert(i, Self::str(x.0.as_str()));
                     }
@@ -219,7 +221,7 @@ impl ValueRef {
     pub fn list_count(&self, item: &Self) -> usize {
         let mut count: usize = 0;
         match &*self.rc.borrow() {
-            Value::list_value(ref list) => {
+            Value::list_value(list) => {
                 for v in &list.values {
                     if v == item {
                         count += 1;
@@ -233,7 +235,7 @@ impl ValueRef {
 
     pub fn list_find(&self, item: &Self) -> isize {
         match &*self.rc.borrow() {
-            Value::list_value(ref list) => {
+            Value::list_value(list) => {
                 for (i, v) in list.values.iter().enumerate() {
                     if v == item {
                         return i as isize;
@@ -285,7 +287,7 @@ impl ValueRef {
         let step_val;
         let stop_val;
         match &*step.rc.borrow() {
-            Value::int_value(ref step) => {
+            Value::int_value(step) => {
                 step_val = *step;
                 if step_val == 0 {
                     panic!("slice step cannot be zero");
@@ -296,7 +298,7 @@ impl ValueRef {
             }
         }
         match &*start.rc.borrow() {
-            Value::int_value(ref start) => start_val = *start,
+            Value::int_value(start) => start_val = *start,
             _ => {
                 if step_val < 0 {
                     start_val = i64::MAX;
@@ -306,7 +308,7 @@ impl ValueRef {
             }
         }
         match &*stop.rc.borrow() {
-            Value::int_value(ref stop) => stop_val = *stop,
+            Value::int_value(stop) => stop_val = *stop,
             _ => {
                 if step_val < 0 {
                     stop_val = i64::MIN;
@@ -373,7 +375,7 @@ impl ValueRef {
 
     pub fn list_slice(&self, start: &ValueRef, stop: &ValueRef, step: &ValueRef) -> ValueRef {
         match &*self.rc.borrow() {
-            Value::list_value(ref list) => {
+            Value::list_value(list) => {
                 let (start, stop, step) = ValueRef::slice_unpack(start, stop, step);
                 let (start, _stop, slice_len) =
                     ValueRef::slice_adjust_indices(list.values.len() as i64, start, stop, step);
@@ -385,7 +387,7 @@ impl ValueRef {
                 }
                 slice
             }
-            Value::str_value(ref str) => {
+            Value::str_value(str) => {
                 let (start, stop, step) = ValueRef::slice_unpack(start, stop, step);
                 let (start, _stop, slice_len) =
                     ValueRef::slice_adjust_indices(str.chars().count() as i64, start, stop, step);

@@ -37,7 +37,7 @@ impl<'ctx> Resolver<'_> {
                         return vec![scope_ty.map_or(self.any_ty(), |ty| ty)];
                     }
                     // If it is a schema attribute, return the attribute type.
-                    if let Some(ref ty) = ty {
+                    if let Some(ty) = &ty {
                         if !ty.is_any() {
                             return vec![ty.clone()];
                         }

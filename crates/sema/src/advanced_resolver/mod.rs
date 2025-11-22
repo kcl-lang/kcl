@@ -309,8 +309,8 @@ mod tests {
 
     use kclvm_ast::MAIN_PKG;
     use kclvm_error::Position;
-    use kclvm_parser::load_program;
     use kclvm_parser::ParseSession;
+    use kclvm_parser::load_program;
     use std::path::Path;
     use std::sync::Arc;
 
@@ -342,7 +342,10 @@ mod tests {
                 .to_str()
                 .unwrap()
                 .to_string();
-            println!("    (\n        \"{}\".to_string().replace(\"/\", &std::path::MAIN_SEPARATOR.to_string()),", key_path);
+            println!(
+                "    (\n        \"{}\".to_string().replace(\"/\", &std::path::MAIN_SEPARATOR.to_string()),",
+                key_path
+            );
             println!("        vec![");
             for symbol_ref in val.symbols.iter() {
                 let symbol = symbols.get_symbol(*symbol_ref).unwrap();

@@ -328,7 +328,9 @@ impl SchemaDoc {
             })
             .collect::<Vec<String>>()
             .join("\n");
-        format!("{summary}\n\nAttributes\n----------\n{attrs_string}\n\nExamples\n--------{examples_string}\n")
+        format!(
+            "{summary}\n\nAttributes\n----------\n{attrs_string}\n\nExamples\n--------{examples_string}\n"
+        )
     }
 }
 
@@ -387,8 +389,8 @@ pub fn extract_doc_from_body(stmts: &[Box<ast::Node<ast::Stmt>>]) -> Option<Stri
 
 #[cfg(test)]
 mod tests {
-    use super::{clean_doc, is_at_section, read_to_next_section, strip_quotes, Reader};
-    use crate::resolver::doc::{parse_schema_doc_string, Example};
+    use super::{Reader, clean_doc, is_at_section, read_to_next_section, strip_quotes};
+    use crate::resolver::doc::{Example, parse_schema_doc_string};
     use std::fs::File;
     use std::io::prelude::*;
     use std::path::PathBuf;

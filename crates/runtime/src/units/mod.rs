@@ -21,7 +21,7 @@ enum to_unit_suffix {
     Pi,
 }
 
-use phf::{phf_map, Map};
+use phf::{Map, phf_map};
 
 pub const IEC_SUFFIX: &str = "i";
 pub const EXPONENTS: Map<&str, i8> = phf_map! {
@@ -39,8 +39,8 @@ pub const INVALID_UNITS: [&str; 4] = ["ni", "ui", "mi", "ki"];
 
 // to_n(num: int) -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_units_to_n(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -60,8 +60,8 @@ pub extern "C-unwind" fn kclvm_units_to_n(
 
 // to_u(num: int) -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_units_to_u(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -81,8 +81,8 @@ pub extern "C-unwind" fn kclvm_units_to_u(
 
 // to_m(num: int) -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_units_to_m(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -102,8 +102,8 @@ pub extern "C-unwind" fn kclvm_units_to_m(
 
 // to_K(num: int) -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_units_to_K(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -122,8 +122,8 @@ pub extern "C-unwind" fn kclvm_units_to_K(
 
 // to_M(num: int) -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_units_to_M(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -142,8 +142,8 @@ pub extern "C-unwind" fn kclvm_units_to_M(
 
 // to_G(num: int) -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_units_to_G(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -162,8 +162,8 @@ pub extern "C-unwind" fn kclvm_units_to_G(
 
 // to_T(num: int) -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_units_to_T(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -182,8 +182,8 @@ pub extern "C-unwind" fn kclvm_units_to_T(
 
 // to_P(num: int) -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_units_to_P(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -202,8 +202,8 @@ pub extern "C-unwind" fn kclvm_units_to_P(
 
 // to_Ki(num: int) -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_units_to_Ki(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -222,8 +222,8 @@ pub extern "C-unwind" fn kclvm_units_to_Ki(
 
 // to_Mi(num: int) -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_units_to_Mi(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -242,8 +242,8 @@ pub extern "C-unwind" fn kclvm_units_to_Mi(
 
 // to_Gi(num: int) -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_units_to_Gi(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -262,8 +262,8 @@ pub extern "C-unwind" fn kclvm_units_to_Gi(
 
 // to_Ti(num: int) -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_units_to_Ti(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -282,8 +282,8 @@ pub extern "C-unwind" fn kclvm_units_to_Ti(
 
 // to_Pi(num: int) -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_units_to_Pi(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,

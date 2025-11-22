@@ -1,7 +1,7 @@
 use std::{fs, path::PathBuf};
 
-use anyhow::{bail, Context, Result};
-use compiler_base_span::{span::new_byte_pos, BytePos, FilePathMapping, SourceMap};
+use anyhow::{Context, Result, bail};
+use compiler_base_span::{BytePos, FilePathMapping, SourceMap, span::new_byte_pos};
 use json_spanned_value::{self as jsv, spanned};
 use kclvm_ast::ast::PosTuple;
 use located_yaml::YamlLoader;

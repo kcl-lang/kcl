@@ -94,7 +94,7 @@ impl ValueRef {
 
     pub fn schema_to_dict(&self) -> Self {
         match &*self.rc.borrow() {
-            Value::schema_value(ref schema) => {
+            Value::schema_value(schema) => {
                 Self::from(Value::dict_value(Box::new(schema.config.as_ref().clone())))
             }
             Value::dict_value(_) => self.clone(),
@@ -211,7 +211,7 @@ impl ValueRef {
 
     /// Set the schema instance value with arguments and keyword arguments.
     pub fn set_schema_args(&mut self, args: &ValueRef, kwargs: &ValueRef) {
-        if let Value::schema_value(ref mut schema) = &mut *self.rc.borrow_mut() {
+        if let Value::schema_value(schema) = &mut *self.rc.borrow_mut() {
             schema.args = args.clone();
             schema.kwargs = kwargs.clone();
         }
@@ -219,8 +219,8 @@ impl ValueRef {
 
     pub fn get_potential_schema_type(&self) -> Option<String> {
         match &*self.rc.borrow() {
-            Value::dict_value(ref dict) => dict.potential_schema.clone(),
-            Value::schema_value(ref schema) => schema.config.potential_schema.clone(),
+            Value::dict_value(dict) => dict.potential_schema.clone(),
+            Value::schema_value(schema) => schema.config.potential_schema.clone(),
             _ => None,
         }
     }
@@ -228,10 +228,8 @@ impl ValueRef {
     pub fn set_potential_schema_type(&mut self, runtime_type: &str) {
         if !runtime_type.is_empty() {
             match &mut *self.rc.borrow_mut() {
-                Value::dict_value(ref mut dict) => {
-                    dict.potential_schema = Some(runtime_type.to_string())
-                }
-                Value::schema_value(ref mut schema) => {
+                Value::dict_value(dict) => dict.potential_schema = Some(runtime_type.to_string()),
+                Value::schema_value(schema) => {
                     schema.config.potential_schema = Some(runtime_type.to_string())
                 }
                 _ => {}
@@ -241,8 +239,8 @@ impl ValueRef {
 
     pub fn has_potential_schema_type(&self) -> bool {
         match &*self.rc.borrow() {
-            Value::dict_value(ref dict) => dict.potential_schema.is_some(),
-            Value::schema_value(ref schema) => schema.config.potential_schema.is_some(),
+            Value::dict_value(dict) => dict.potential_schema.is_some(),
+            Value::schema_value(schema) => schema.config.potential_schema.is_some(),
             _ => false,
         }
     }

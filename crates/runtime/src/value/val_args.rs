@@ -22,22 +22,22 @@ impl ValueRef {
     }
 
     pub fn arg_last(&self) -> Option<Self> {
-        match *self.rc.borrow() {
-            Value::list_value(ref list) => Some(list.values[list.values.len() - 1].clone()),
+        match &*self.rc.borrow() {
+            Value::list_value(list) => Some(list.values[list.values.len() - 1].clone()),
             _ => None,
         }
     }
 
     pub fn pop_arg_last(&self) -> Option<Self> {
-        match *self.rc.borrow_mut() {
-            Value::list_value(ref mut list) => list.values.pop(),
+        match &mut *self.rc.borrow_mut() {
+            Value::list_value(list) => list.values.pop(),
             _ => None,
         }
     }
 
     pub fn pop_arg_first(&self) -> Option<Self> {
-        match *self.rc.borrow_mut() {
-            Value::list_value(ref mut list) => {
+        match &mut *self.rc.borrow_mut() {
+            Value::list_value(list) => {
                 if !list.values.is_empty() {
                     Some(list.values.remove(0))
                 } else {
@@ -49,15 +49,15 @@ impl ValueRef {
     }
 
     pub fn args_len(&self) -> usize {
-        match *self.rc.borrow() {
-            Value::list_value(ref list) => list.values.len(),
+        match &*self.rc.borrow() {
+            Value::list_value(list) => list.values.len(),
             _ => 1,
         }
     }
 
     pub fn arg_i(&self, i: usize) -> Option<Self> {
-        match *self.rc.borrow() {
-            Value::list_value(ref list) => {
+        match &*self.rc.borrow() {
+            Value::list_value(list) => {
                 if i < list.values.len() {
                     return Some(list.values[i].clone());
                 }
@@ -150,8 +150,8 @@ impl ValueRef {
     }
 
     pub fn kwarg(&self, name: &str) -> Option<Self> {
-        match *self.rc.borrow() {
-            Value::dict_value(ref dict) => dict.values.get(&name.to_string()).cloned(),
+        match &*self.rc.borrow() {
+            Value::dict_value(dict) => dict.values.get(&name.to_string()).cloned(),
             _ => None,
         }
     }

@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
 use crate::*;
-use handlebars::{html_escape, Handlebars};
+use handlebars::{Handlebars, html_escape};
 
 /// Applies a parsed template to the specified data object and
 /// returns the string output.
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_template_execute(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -37,8 +37,8 @@ pub extern "C-unwind" fn kclvm_template_execute(
 }
 
 /// Replaces the characters `&"<>` with the equivalent html / xml entities.
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_template_html_escape(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,

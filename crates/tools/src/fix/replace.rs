@@ -5,7 +5,7 @@
 //! replacement of parts of its content, with the ability to prevent changing
 //! the same parts multiple times.
 
-use anyhow::{anyhow, ensure, Error};
+use anyhow::{Error, anyhow, ensure};
 use std::rc::Rc;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -57,9 +57,9 @@ impl Data {
         }
 
         self.parts.iter().fold(Vec::new(), |mut acc, d| {
-            match d.data {
+            match &d.data {
                 State::Initial => acc.extend_from_slice(&self.original[d.start..=d.end]),
-                State::Replaced(ref d) | State::Inserted(ref d) => acc.extend_from_slice(d),
+                State::Replaced(d) | State::Inserted(d) => acc.extend_from_slice(&d),
             };
             acc
         })
@@ -124,7 +124,7 @@ impl Data {
             // can replace the exact same range with the exact same content
             // multiple times and we'll process and allow it.
             if part_to_split.start == from && part_to_split.end == up_to_and_including {
-                if let State::Replaced(ref replacement) = part_to_split.data {
+                if let State::Replaced(replacement) = &part_to_split.data {
                     if &**replacement == data {
                         return Ok(());
                     }

@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    kclvm_context_t, kclvm_eval_scope_t, kclvm_value_ref_t, mut_ptr_as_ref, Context, ValueRef,
+    Context, ValueRef, kclvm_context_t, kclvm_eval_scope_t, kclvm_value_ref_t, mut_ptr_as_ref,
 };
 use kclvm_primitives::IndexMap;
 

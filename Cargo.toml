@@ -33,7 +33,7 @@ kclvm-version = { path = "crates/version" }
 
 [workspace.package]
 version = "0.12.0"
-edition = "2021"
+edition = "2024"
 rust-version = "1.83"
 exclude = [".github/"]
 license = "Apache-2.0"

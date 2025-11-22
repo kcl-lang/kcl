@@ -882,7 +882,9 @@ impl FormatString {
                         }
                         FieldType::Index(index) => {
                             if auto_argument_index != 0 {
-                                panic!("cannot switch from automatic field numbering to manual field specification");
+                                panic!(
+                                    "cannot switch from automatic field numbering to manual field specification"
+                                );
                             }
                             args.arg_i(index)
                                 .expect("argument tuple index out of range")
@@ -977,15 +979,15 @@ impl fmt::Display for ValueRef {
         match &*self.rc.borrow() {
             Value::undefined => write!(f, "Undefined"),
             Value::none => write!(f, "None"),
-            Value::bool_value(ref v) => {
+            Value::bool_value(v) => {
                 if *v {
                     write!(f, "True")
                 } else {
                     write!(f, "False")
                 }
             }
-            Value::int_value(ref v) => write!(f, "{v}"),
-            Value::float_value(ref v) => {
+            Value::int_value(v) => write!(f, "{v}"),
+            Value::float_value(v) => {
                 let mut float_str = v.to_string();
                 if !float_str.contains('.') {
                     float_str.push_str(".0");
@@ -995,12 +997,12 @@ impl fmt::Display for ValueRef {
             Value::unit_value(_, raw, unit) => {
                 write!(f, "{raw}{unit}")
             }
-            Value::str_value(ref v) => write!(f, "{v}"),
-            Value::list_value(ref v) => {
+            Value::str_value(v) => write!(f, "{v}"),
+            Value::list_value(v) => {
                 let values: Vec<String> = v.values.iter().map(|v| v.to_string()).collect();
                 write!(f, "[{}]", values.join(", "))
             }
-            Value::dict_value(ref v) => {
+            Value::dict_value(v) => {
                 let values: Vec<String> = v
                     .values
                     .iter()
@@ -1008,7 +1010,7 @@ impl fmt::Display for ValueRef {
                     .collect();
                 write!(f, "{{{}}}", values.join(", "))
             }
-            Value::schema_value(ref v) => {
+            Value::schema_value(v) => {
                 let values: Vec<String> = v
                     .config
                     .values
@@ -1026,13 +1028,13 @@ impl ValueRef {
     /// to_string_with_spec e.g., "{:.0f}".format(1.0)
     pub fn to_string_with_spec(&self, spec: &str) -> String {
         match &*self.rc.borrow() {
-            Value::int_value(ref v) => {
+            Value::int_value(v) => {
                 match FormatSpec::parse(spec).and_then(|format_spec| format_spec.format_int(v)) {
                     Ok(string) => string,
                     Err(err) => panic!("{}", err),
                 }
             }
-            Value::float_value(ref v) => {
+            Value::float_value(v) => {
                 match FormatSpec::parse(spec).and_then(|format_spec| format_spec.format_float(*v)) {
                     Ok(string) => string,
                     Err(err) => panic!("{}", err),

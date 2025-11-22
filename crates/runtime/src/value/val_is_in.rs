@@ -120,12 +120,12 @@ impl ValueRef {
     pub fn r#in(&self, x: &Self) -> bool {
         match &*x.rc.borrow() {
             // "a" in "abc"
-            Value::str_value(ref b) => match &*self.rc.borrow() {
-                Value::str_value(ref a) => b.contains(a),
+            Value::str_value(b) => match &*self.rc.borrow() {
+                Value::str_value(a) => b.contains(a),
                 _ => false,
             },
             // x in [1, 2, 3]
-            Value::list_value(ref list) => {
+            Value::list_value(list) => {
                 for v in list.values.as_slice().iter() {
                     if self.cmp_equal(v) {
                         return true;
@@ -134,12 +134,12 @@ impl ValueRef {
                 false
             }
             // k in {k:v}
-            Value::dict_value(ref dict) => {
+            Value::dict_value(dict) => {
                 let key = self.as_str();
                 dict.values.contains_key(&key)
             }
             // k in schema{}
-            Value::schema_value(ref schema) => {
+            Value::schema_value(schema) => {
                 let key = self.as_str();
                 schema.config.values.contains_key(&key)
             }
@@ -161,8 +161,8 @@ impl ValueRef {
 impl ValueRef {
     pub fn has_key(&self, key: &str) -> bool {
         match &*self.rc.borrow() {
-            Value::dict_value(ref dict) => dict.values.contains_key(key),
-            Value::schema_value(ref schema) => schema.config.values.contains_key(key),
+            Value::dict_value(dict) => dict.values.contains_key(key),
+            Value::schema_value(schema) => schema.config.values.contains_key(key),
             _ => false,
         }
     }

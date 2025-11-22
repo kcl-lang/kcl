@@ -1,4 +1,4 @@
-use compiler_base_span::{Span, DUMMY_SP};
+use compiler_base_span::{DUMMY_SP, Span};
 use std::{
     fmt,
     hash::{Hash, Hasher},

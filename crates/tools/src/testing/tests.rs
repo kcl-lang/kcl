@@ -3,7 +3,7 @@ use kclvm_runner::ExecProgramArgs;
 
 use crate::testing::TestRun;
 
-use super::{load_test_suites, TestOptions};
+use super::{TestOptions, load_test_suites};
 use std::path::Path;
 
 #[test]
@@ -35,12 +35,14 @@ fn test_load_test_suites_and_run() {
     let test_result = suites[0].run(&opts).unwrap();
     assert_eq!(test_result.info.len(), 3);
     assert!(test_result.info[0].error.is_none());
-    assert!(test_result.info[1]
-        .error
-        .as_ref()
-        .unwrap()
-        .to_string()
-        .contains("Error"),);
+    assert!(
+        test_result.info[1]
+            .error
+            .as_ref()
+            .unwrap()
+            .to_string()
+            .contains("Error"),
+    );
     assert!(
         test_result.info[2].error.is_none(),
         "{:?}",

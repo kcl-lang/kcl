@@ -40,19 +40,19 @@ type kclvm_float_t = f64;
 // new/delete
 // ----------------------------------------------------------------------------
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_context_new() -> *mut kclvm_context_t {
     Box::into_raw(Box::new(Context::new()))
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_context_delete(p: *mut kclvm_context_t) {
     let ctx = mut_ptr_as_ref(p);
     for o in &ctx.objects {
         let ptr = (*o) as *mut kclvm_value_ref_t;
-        kclvm_value_delete(ptr);
+        unsafe { kclvm_value_delete(ptr) };
     }
     free_mut_ptr(p);
 }
@@ -61,8 +61,8 @@ pub unsafe extern "C-unwind" fn kclvm_context_delete(p: *mut kclvm_context_t) {
 // panic_info
 // ----------------------------------------------------------------------------
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_context_set_kcl_location(
     p: *mut kclvm_context_t,
     filename: *const c_char,
@@ -77,8 +77,8 @@ pub unsafe extern "C-unwind" fn kclvm_context_set_kcl_location(
     }
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_context_set_kcl_pkgpath(
     p: *mut kclvm_context_t,
     pkgpath: *const c_char,
@@ -89,8 +89,8 @@ pub unsafe extern "C-unwind" fn kclvm_context_set_kcl_pkgpath(
     }
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_context_set_kcl_modpath(
     p: *mut kclvm_context_t,
     module_path: *const c_char,
@@ -101,8 +101,8 @@ pub unsafe extern "C-unwind" fn kclvm_context_set_kcl_modpath(
     }
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_context_set_kcl_workdir(
     p: *mut kclvm_context_t,
     workdir: *const c_char,
@@ -113,8 +113,8 @@ pub unsafe extern "C-unwind" fn kclvm_context_set_kcl_workdir(
     }
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_context_set_kcl_filename(
     ctx: *mut kclvm_context_t,
     filename: *const c_char,
@@ -125,8 +125,8 @@ pub unsafe extern "C-unwind" fn kclvm_context_set_kcl_filename(
     }
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_context_set_kcl_line_col(
     ctx: *mut kclvm_context_t,
     line: i32,
@@ -140,20 +140,20 @@ pub unsafe extern "C-unwind" fn kclvm_context_set_kcl_line_col(
 // Global values and evaluation scope.
 // ----------------------------------------------------------------------------
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_scope_new() -> *mut kclvm_eval_scope_t {
     Box::into_raw(Box::default())
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_scope_delete(scope: *mut kclvm_eval_scope_t) {
-    drop(Box::from_raw(scope));
+    drop(unsafe { Box::from_raw(scope) });
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_scope_add_setter(
     _ctx: *mut kclvm_context_t,
     scope: *mut kclvm_eval_scope_t,
@@ -173,8 +173,8 @@ pub unsafe extern "C-unwind" fn kclvm_scope_add_setter(
     }
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_scope_set(
     _ctx: *mut kclvm_context_t,
     scope: *mut kclvm_eval_scope_t,
@@ -190,8 +190,8 @@ pub unsafe extern "C-unwind" fn kclvm_scope_set(
     scope.set_value(&key, value);
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_scope_get(
     ctx: *mut kclvm_context_t,
     scope: *mut kclvm_eval_scope_t,
@@ -218,8 +218,8 @@ pub unsafe extern "C-unwind" fn kclvm_scope_get(
 // CLI config
 // ----------------------------------------------------------------------------
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_context_set_debug_mode(
     p: *mut kclvm_context_t,
     v: kclvm_bool_t,
@@ -228,8 +228,8 @@ pub unsafe extern "C-unwind" fn kclvm_context_set_debug_mode(
     p.cfg.debug_mode = v != 0;
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_context_set_strict_range_check(
     p: *mut kclvm_context_t,
     v: kclvm_bool_t,
@@ -238,8 +238,8 @@ pub unsafe extern "C-unwind" fn kclvm_context_set_strict_range_check(
     p.cfg.strict_range_check = v != 0;
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_context_set_disable_none(
     p: *mut kclvm_context_t,
     v: kclvm_bool_t,
@@ -248,8 +248,8 @@ pub unsafe extern "C-unwind" fn kclvm_context_set_disable_none(
     p.plan_opts.disable_none = v != 0;
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_context_set_disable_schema_check(
     p: *mut kclvm_context_t,
     v: kclvm_bool_t,
@@ -262,8 +262,8 @@ pub unsafe extern "C-unwind" fn kclvm_context_set_disable_schema_check(
 // invoke
 // ----------------------------------------------------------------------------
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_context_invoke(
     p: *mut kclvm_context_t,
     method: *const c_char,
@@ -273,16 +273,16 @@ pub unsafe extern "C-unwind" fn kclvm_context_invoke(
     let p = mut_ptr_as_ref(p);
     let method = c2str(method);
 
-    let args = kclvm_value_from_json(p, args);
-    let kwargs = kclvm_value_from_json(p, kwargs);
-    let result = _kclvm_context_invoke(p, method, args, kwargs);
+    let args = unsafe { kclvm_value_from_json(p, args) };
+    let kwargs = unsafe { kclvm_value_from_json(p, kwargs) };
+    let result = unsafe { _kclvm_context_invoke(p, method, args, kwargs) };
 
     p.buffer.kclvm_context_invoke_result = ptr_as_ref(result).to_json_string_with_null();
     let result_json = p.buffer.kclvm_context_invoke_result.as_ptr() as *const c_char;
 
-    kclvm_value_delete(args);
-    kclvm_value_delete(kwargs);
-    kclvm_value_delete(result);
+    unsafe { kclvm_value_delete(args) };
+    unsafe { kclvm_value_delete(kwargs) };
+    unsafe { kclvm_value_delete(result) };
 
     result_json
 }
@@ -310,8 +310,8 @@ unsafe fn _kclvm_context_invoke(
     unsafe { (*ptr)(ctx, args, kwargs) }
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_context_pkgpath_is_imported(
     ctx: *mut kclvm_context_t,
     pkgpath: *const kclvm_char_t,

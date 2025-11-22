@@ -3,8 +3,8 @@ use crate::lexer::str_content_eval;
 use crate::session::ParseSession;
 use compiler_base_error::diagnostic_handler::DiagnosticHandler;
 use compiler_base_session::Session;
-use compiler_base_span::{span::new_byte_pos, FilePathMapping, SourceMap};
-use expect_test::{expect, Expect};
+use compiler_base_span::{FilePathMapping, SourceMap, span::new_byte_pos};
+use expect_test::{Expect, expect};
 use kclvm_error::Handler;
 use kclvm_span::create_session_globals_then;
 use parking_lot::RwLock;
@@ -530,7 +530,7 @@ fn test_peek() {
         let peek = cursor.peek();
         assert_eq!(
             format!("{peek:?}"),
-           "Some(Token { kind: Ident(Symbol(SymbolIndex { idx: 42 })), span: Span { base_or_index: 1, len_or_tag: 1 } })"
+            "Some(Token { kind: Ident(Symbol(SymbolIndex { idx: 42 })), span: Span { base_or_index: 1, len_or_tag: 1 } })"
         );
     });
 }

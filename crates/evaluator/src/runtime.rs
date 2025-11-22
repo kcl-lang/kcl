@@ -1,12 +1,12 @@
 use std::os::raw::c_char;
 use std::{
     mem::transmute_copy,
-    panic::{catch_unwind, AssertUnwindSafe},
+    panic::{AssertUnwindSafe, catch_unwind},
 };
 
 use kclvm_runtime::{
-    get_call_arg, is_runtime_catch_function, kclvm_plugin_invoke, ptr_as_ref, Context,
-    SchemaTypeFunc, UnsafeWrapper, ValueRef,
+    Context, SchemaTypeFunc, UnsafeWrapper, ValueRef, get_call_arg, is_runtime_catch_function,
+    kclvm_plugin_invoke, ptr_as_ref,
 };
 
 use crate::Evaluator;

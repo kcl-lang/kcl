@@ -1,14 +1,14 @@
 use std::{fs::remove_file, path::Path};
 
 use crate::testing::{TestCaseInfo, TestOptions, TestResult, TestRun};
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use kclvm_ast::ast;
 use kclvm_driver::get_pkg_list;
 use kclvm_parser::get_kcl_files;
-use kclvm_parser::{parse_file_force_errors, ParseSessionRef};
+use kclvm_parser::{ParseSessionRef, parse_file_force_errors};
 use kclvm_primitives::{DefaultHashBuilder, IndexMap};
-use kclvm_runner::exec_program;
 use kclvm_runner::ExecProgramArgs;
+use kclvm_runner::exec_program;
 use std::time::Instant;
 
 /// File suffix for test files.

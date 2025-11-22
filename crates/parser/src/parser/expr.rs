@@ -4,8 +4,8 @@ extern crate enquote;
 
 use std::vec;
 
-use super::int::bytes_to_int;
 use super::Parser;
+use super::int::bytes_to_int;
 
 use anyhow::bail;
 use either::{self, Either};
@@ -2472,7 +2472,10 @@ impl<'a> Parser<'a> {
             Expr::Identifier(identifier) => Ok(self.identifier_as_assign_target_paths(identifier)),
             Expr::Selector(selector) => {
                 if selector.has_question {
-                    bail!("'{}' is an illegal expression for assignment, because the left-hand side of an assignment expression may not be an optional attribute access.", expr.node.get_expr_name());
+                    bail!(
+                        "'{}' is an illegal expression for assignment, because the left-hand side of an assignment expression may not be an optional attribute access.",
+                        expr.node.get_expr_name()
+                    );
                 } else {
                     let mut value_paths = self.expr_as_assign_target_paths(&selector.value)?;
                     let mut attr_values =
@@ -2483,14 +2486,20 @@ impl<'a> Parser<'a> {
             }
             Expr::Subscript(subscript) => {
                 if subscript.has_question {
-                    bail!("'{}' is an illegal expression for assignment, because the left-hand side of an assignment expression may not be an optional subscript access.", expr.node.get_expr_name());
+                    bail!(
+                        "'{}' is an illegal expression for assignment, because the left-hand side of an assignment expression may not be an optional subscript access.",
+                        expr.node.get_expr_name()
+                    );
                 } else {
                     let mut value_paths = self.expr_as_assign_target_paths(&subscript.value)?;
                     if let Some(index) = &subscript.index {
                         value_paths.push(MemberOrIndex::Index(index.clone()));
                         Ok(value_paths)
                     } else {
-                        bail!("'{}' is an illegal expression for assignment, because the left-hand side of an assignment expression may not be a slice access.", expr.node.get_expr_name());
+                        bail!(
+                            "'{}' is an illegal expression for assignment, because the left-hand side of an assignment expression may not be a slice access.",
+                            expr.node.get_expr_name()
+                        );
                     }
                 }
             }

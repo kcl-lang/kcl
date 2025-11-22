@@ -1,22 +1,22 @@
 use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
 use kclvm_ast::walker::MutSelfTypedResultWalker;
-use kclvm_ast_pretty::{print_ast_node, ASTNode};
+use kclvm_ast_pretty::{ASTNode, print_ast_node};
 use kclvm_error::*;
 use kclvm_primitives::IndexMap;
 use std::sync::Arc;
 
 use crate::info::is_private_field;
 use crate::ty::{
-    sup, DictType, FunctionType, Parameter, Type, TypeInferMethods, TypeKind, TypeRef,
-    RESERVED_TYPE_IDENTIFIERS,
+    DictType, FunctionType, Parameter, RESERVED_TYPE_IDENTIFIERS, Type, TypeInferMethods, TypeKind,
+    TypeRef, sup,
 };
 
+use super::Resolver;
 use super::doc::extract_doc_from_body;
 use super::format::VALID_FORMAT_SPEC_SET;
 use super::scope::{ScopeKind, ScopeObject, ScopeObjectKind};
 use super::ty::ty_str_replace_pkgpath;
-use super::Resolver;
 /// ResolvedResult denotes the result, when the result is error,
 /// put the message string into the diagnostic vector.
 pub type ResolvedResult = TypeRef;

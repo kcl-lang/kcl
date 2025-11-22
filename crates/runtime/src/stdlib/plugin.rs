@@ -23,8 +23,8 @@ lazy_static! {
 /// KCL plugin module prefix
 pub const PLUGIN_MODULE_PREFIX: &str = "kcl_plugin.";
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_plugin_init(
     fn_ptr: extern "C-unwind" fn(
         method: *const c_char,
@@ -41,8 +41,8 @@ pub extern "C-unwind" fn kclvm_plugin_init(
 //
 // => return kclvm_plugin_invoke("kcl_plugin.hello.say_hello", args, kwargs)
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_plugin_invoke(
     ctx: *mut kclvm_context_t,
     method: *const c_char,
@@ -61,11 +61,11 @@ pub unsafe extern "C-unwind" fn kclvm_plugin_invoke(
         let result = func(ctx_ref, args, kwargs);
         return result.unwrap().into_raw(ctx_ref);
     }
-    let args_s = kclvm_value_to_json_value_with_null(ctx, args);
-    let kwargs_s = kclvm_value_to_json_value_with_null(ctx, kwargs);
+    let args_s = unsafe { kclvm_value_to_json_value_with_null(ctx, args) };
+    let kwargs_s = unsafe { kclvm_value_to_json_value_with_null(ctx, kwargs) };
 
-    let args_json = kclvm_value_Str_ptr(args_s);
-    let kwargs_json = kclvm_value_Str_ptr(kwargs_s);
+    let args_json = unsafe { kclvm_value_Str_ptr(args_s) };
+    let kwargs_json = unsafe { kclvm_value_Str_ptr(kwargs_s) };
 
     let result_json = kclvm_plugin_invoke_json(method, args_json, kwargs_json);
 
@@ -73,7 +73,7 @@ pub unsafe extern "C-unwind" fn kclvm_plugin_invoke(
     // kclvm_value_delete(args_s);
     // kclvm_value_delete(kwargs_s);
 
-    let ptr = kclvm_value_from_json(ctx, result_json);
+    let ptr = unsafe { kclvm_value_from_json(ctx, result_json) };
     {
         if let Some(msg) = ptr_as_ref(ptr).dict_get_value("__kcl_PanicInfo__") {
             let ctx = mut_ptr_as_ref(ctx);
@@ -87,8 +87,8 @@ pub unsafe extern "C-unwind" fn kclvm_plugin_invoke(
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_plugin_invoke_json(
     method: *const c_char,
     args: *const c_char,
@@ -103,8 +103,8 @@ pub extern "C-unwind" fn kclvm_plugin_invoke_json(
 }
 
 #[cfg(target_arch = "wasm32")]
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_plugin_invoke_json(
     method: *const c_char,
     args: *const c_char,
@@ -116,7 +116,7 @@ pub extern "C-unwind" fn kclvm_plugin_invoke_json(
 }
 
 #[cfg(target_arch = "wasm32")]
-extern "C-unwind" {
+unsafe extern "C-unwind" {
     pub fn kclvm_plugin_invoke_json_wasm(
         method: *const c_char,
         args: *const c_char,

@@ -1,6 +1,6 @@
 use crate::plugin::PLUGIN_MODULE_PREFIX;
-use crate::resolver::scope::Module;
 use crate::resolver::Resolver;
+use crate::resolver::scope::Module;
 use crate::ty::ModuleKind;
 use crate::{
     builtin::system_module::STANDARD_SYSTEM_MODULES,
@@ -178,14 +178,14 @@ impl<'ctx> Resolver<'ctx> {
                                     Some(scope_obj) => {
                                         let mut obj = scope_obj.borrow_mut();
                                         match &mut obj.kind {
-                                                ScopeObjectKind::Module(m) => {
-                                                    m.import_stmts.push((stmt.clone(), false))
-                                                },
-                                                _ => bug!(
-                                                    "invalid module type in the import check function {}",
-                                                    scope_obj.borrow().ty.ty_str()
-                                                )
+                                            ScopeObjectKind::Module(m) => {
+                                                m.import_stmts.push((stmt.clone(), false))
                                             }
+                                            _ => bug!(
+                                                "invalid module type in the import check function {}",
+                                                scope_obj.borrow().ty.ty_str()
+                                            ),
+                                        }
                                         match &obj.ty.kind {
                                             TypeKind::Module(module_ty) => {
                                                 let mut module_ty = module_ty.clone();
@@ -200,9 +200,9 @@ impl<'ctx> Resolver<'ctx> {
                                                 matches!(module_ty.kind, ModuleKind::User)
                                             }
                                             _ => bug!(
-                                            "invalid module type in the import check function {}",
-                                            scope_obj.borrow().ty.ty_str()
-                                        ),
+                                                "invalid module type in the import check function {}",
+                                                scope_obj.borrow().ty.ty_str()
+                                            ),
                                         }
                                     }
                                     None => {

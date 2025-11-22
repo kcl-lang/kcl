@@ -6,8 +6,8 @@ use crate::*;
 
 // match(string: str, pattern: str) -> bool:
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_regex_match(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -37,8 +37,8 @@ pub extern "C-unwind" fn kclvm_regex_match(
 
 // replace(string: str, pattern: str, replace: str, count: int = 0):
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_regex_replace(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -64,8 +64,8 @@ pub extern "C-unwind" fn kclvm_regex_replace(
 
 // compile(pattern: str) -> bool:
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_regex_compile(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -85,8 +85,8 @@ pub extern "C-unwind" fn kclvm_regex_compile(
 
 // findall(string: str, pattern: str) -> [str]:
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_regex_findall(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -125,8 +125,8 @@ pub extern "C-unwind" fn kclvm_regex_findall(
 
 // search(string: str, pattern: str):
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_regex_search(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -151,8 +151,8 @@ pub extern "C-unwind" fn kclvm_regex_search(
 
 // split(string: str, pattern: str, maxsplit: int = 0):
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_regex_split(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,

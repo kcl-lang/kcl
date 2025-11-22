@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use kclvm_error::{Diagnostic, Handler};
-use kclvm_parser::{load_program, LoadProgramOptions, ParseSession};
+use kclvm_parser::{LoadProgramOptions, ParseSession, load_program};
 use kclvm_primitives::IndexSet;
 use kclvm_runtime::PanicInfo;
 use kclvm_sema::resolver::resolve_program_with_opts;

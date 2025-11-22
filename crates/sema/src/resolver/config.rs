@@ -1,15 +1,15 @@
 use std::{collections::HashSet, sync::Arc};
 
 use super::{
-    scope::{ScopeKind, ScopeObject, ScopeObjectKind},
     Resolver,
+    scope::{ScopeKind, ScopeObject, ScopeObjectKind},
 };
-use crate::ty::{sup, DictType, TypeInferMethods, TypeRef};
 use crate::ty::{Attr, SchemaType};
+use crate::ty::{DictType, TypeInferMethods, TypeRef, sup};
 use crate::ty::{Type, TypeKind};
 use kclvm_ast::ast;
 use kclvm_ast::pos::GetPos;
-use kclvm_error::{diagnostic::Range, ErrorKind, Message, Position, Style};
+use kclvm_error::{ErrorKind, Message, Position, Style, diagnostic::Range};
 use kclvm_primitives::IndexMap;
 
 /// Config Expr type check state.

@@ -186,7 +186,7 @@ impl ValueRef {
         let strict_range_check_64 = ctx.cfg.debug_mode || !ctx.cfg.strict_range_check;
 
         match (&*self.rc.borrow(), &*x.rc.borrow()) {
-            (Value::int_value(ref a), Value::int_value(b)) => {
+            (Value::int_value(a), Value::int_value(b)) => {
                 if strict_range_check_32 && is_i32_overflow_pow(*a, *b) {
                     panic_i32_overflow!(ctx, (*a as i128).pow(*b as u32));
                 }

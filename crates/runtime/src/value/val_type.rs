@@ -58,7 +58,7 @@ impl ValueRef {
             Value::str_value(..) => String::from(BUILTIN_TYPE_STR),
             Value::list_value(..) => String::from(KCL_TYPE_LIST),
             Value::dict_value(..) => String::from(KCL_TYPE_DICT),
-            Value::schema_value(ref v) => v.name.clone(),
+            Value::schema_value(v) => v.name.clone(),
             Value::func_value(func) => {
                 if func.runtime_type.is_empty() {
                     String::from(KCL_TYPE_FUNCTION)

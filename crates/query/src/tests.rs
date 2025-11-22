@@ -2,7 +2,7 @@ use std::{fs, path::PathBuf};
 
 use super::{r#override::apply_override_on_module, *};
 use crate::{
-    path::parse_attribute_path, r#override::parse_override_spec, selector::list_variables,
+    r#override::parse_override_spec, path::parse_attribute_path, selector::list_variables,
 };
 use kclvm_error::{DiagnosticId, ErrorKind, Level};
 use kclvm_parser::parse_file_force_errors;
@@ -913,7 +913,10 @@ fn test_list_variables_with_file_noexist() {
     let result = list_variables(vec![file.clone()], specs, None);
     assert!(result.is_err());
     let err = result.err().unwrap();
-    assert_eq!(err.to_string(), "Cannot find the kcl file, please check the file path ./src/test_data/test_list_variables/noexist.k");
+    assert_eq!(
+        err.to_string(),
+        "Cannot find the kcl file, please check the file path ./src/test_data/test_list_variables/noexist.k"
+    );
 }
 
 #[test]
@@ -928,7 +931,10 @@ fn test_override_file_with_invalid_spec() {
     let result = override_file(&file, &specs, &import_paths);
     assert!(result.is_err());
     let err = result.err().unwrap();
-    assert_eq!(err.to_string(), "Invalid spec format '....', expected <field_path>=<filed_value>, <field_path>:<filed_value>, <field_path>+=<filed_value> or <field_path>-");
+    assert_eq!(
+        err.to_string(),
+        "Invalid spec format '....', expected <field_path>=<filed_value>, <field_path>:<filed_value>, <field_path>+=<filed_value> or <field_path>-"
+    );
 }
 
 #[test]

@@ -1,5 +1,5 @@
 use crate::{kcl, lookup_the_nearest_file_dir};
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use kclvm_config::modfile::KCL_MOD_FILE;
 use kclvm_parser::LoadProgramOptions;
 use kclvm_utils::pkgpath::rm_external_pkg_name;

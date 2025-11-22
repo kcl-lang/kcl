@@ -40,8 +40,8 @@ const FILE_EXTENSIONS: &[&str] = &["json", "yaml", "ast.json", "ast.yaml", "k"];
 const LOADER_KIND: [&LoaderKind; 2] = [&LoaderKind::JSON, &LoaderKind::YAML];
 
 const INVALID_FILE_RESULT: &[&str] = &[
-"Failed to Load JSON\n\nCaused by:\n    0: Failed to String 'languages:\n         - Ruby\n       ' to Json\n    1: expected value at line 1 column 1", 
-"Failed to Load YAML\n\nCaused by:\n    0: Failed to String '{\n           \"name\": \"John Doe\",\n               \"city\": \"London\"\n       invalid\n       \n       ' to Yaml\n    1: while parsing a flow mapping, did not find expected ',' or '}' at line 4 column 1"
+    "Failed to Load JSON\n\nCaused by:\n    0: Failed to String 'languages:\n         - Ruby\n       ' to Json\n    1: expected value at line 1 column 1",
+    "Failed to Load YAML\n\nCaused by:\n    0: Failed to String '{\n           \"name\": \"John Doe\",\n               \"city\": \"London\"\n       invalid\n       \n       ' to Yaml\n    1: while parsing a flow mapping, did not find expected ',' or '}' at line 4 column 1",
 ];
 
 fn construct_full_path(path: &str) -> Result<String> {
@@ -62,8 +62,8 @@ mod test_expr_builder {
         vet::{
             expr_builder::ExprBuilder,
             tests::{
-                construct_full_path, deal_windows_filepath, FILE_EXTENSIONS, INVALID_FILE_RESULT,
-                LOADER_KIND, SCHEMA_NAMES, TEST_CASES,
+                FILE_EXTENSIONS, INVALID_FILE_RESULT, LOADER_KIND, SCHEMA_NAMES, TEST_CASES,
+                construct_full_path, deal_windows_filepath,
             },
         },
     };
@@ -244,11 +244,13 @@ mod test_expr_builder {
                     panic!("This test case should be failed.")
                 }
                 Err(err) => {
-                    assert!(Regex::new(
-                        r"^Failed to Load '.*'\n\nCaused by:\n    0: Failed to Load '.*'\n .*"
+                    assert!(
+                        Regex::new(
+                            r"^Failed to Load '.*'\n\nCaused by:\n    0: Failed to Load '.*'\n .*"
+                        )
+                        .unwrap()
+                        .is_match(&format!("{:?}", err))
                     )
-                    .unwrap()
-                    .is_match(&format!("{:?}", err)))
                 }
             };
         }
@@ -288,7 +290,10 @@ mod test_expr_builder {
                 panic!("unreachable")
             }
             Err(err) => {
-                assert_eq!(format!("{:?}", err), "Failed to Load JSON\n\nCaused by:\n    0: Failed to load the validated file\n    1: Failed to load the validated file, Unsupported Unsigned 64");
+                assert_eq!(
+                    format!("{:?}", err),
+                    "Failed to Load JSON\n\nCaused by:\n    0: Failed to load the validated file\n    1: Failed to load the validated file, Unsupported Unsigned 64"
+                );
             }
         };
     }
@@ -303,7 +308,10 @@ mod test_expr_builder {
                 panic!("unreachable")
             }
             Err(err) => {
-                assert_eq!(format!("{:?}", err), "Failed to Load YAML\n\nCaused by:\n    0: Failed to load the validated file\n    1: Failed to load the validated file, Unsupported Number Type");
+                assert_eq!(
+                    format!("{:?}", err),
+                    "Failed to Load YAML\n\nCaused by:\n    0: Failed to load the validated file\n    1: Failed to load the validated file, Unsupported Number Type"
+                );
             }
         };
     }
@@ -319,11 +327,11 @@ mod test_validater {
         util::loader::LoaderKind,
         vet::{
             tests::deal_windows_filepath,
-            validator::{validate, ValidateOption},
+            validator::{ValidateOption, validate},
         },
     };
 
-    use super::{construct_full_path, LOADER_KIND};
+    use super::{LOADER_KIND, construct_full_path};
 
     const KCL_TEST_CASES: &[&str] = &[
         "test.k",

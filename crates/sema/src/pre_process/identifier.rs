@@ -88,8 +88,8 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
         self.scope_level -= 1;
     }
     fn walk_list_comp(&mut self, list_comp: &'ctx mut ast::ListComp) {
-        for gen in &mut list_comp.generators {
-            for target in &gen.node.targets {
+        for g in &mut list_comp.generators {
+            for target in &g.node.targets {
                 if !target.node.names.is_empty() {
                     self.local_vars
                         .insert(target.node.names[0].node.to_string());
@@ -101,8 +101,8 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
         self.local_vars.clear();
     }
     fn walk_dict_comp(&mut self, dict_comp: &'ctx mut ast::DictComp) {
-        for gen in &dict_comp.generators {
-            for target in &gen.node.targets {
+        for g in &dict_comp.generators {
+            for target in &g.node.targets {
                 if !target.node.names.is_empty() {
                     self.local_vars
                         .insert(target.node.names[0].node.to_string());

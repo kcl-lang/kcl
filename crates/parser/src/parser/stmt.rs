@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 #![allow(unused_macros)]
 
-use compiler_base_span::{span::new_byte_pos, BytePos, Span};
+use compiler_base_span::{BytePos, Span, span::new_byte_pos};
 use kclvm_ast::token::VALID_SPACES_LENGTH;
 use kclvm_ast::token::{CommentKind, DelimToken, LitKind, Token, TokenKind};
 use kclvm_ast::{ast::*, expr_as, node_ref};
@@ -209,7 +209,7 @@ impl<'a> Parser<'a> {
                 self.token.kind,
                 TokenKind::OpenDelim(DelimToken::Brace) | TokenKind::OpenDelim(DelimToken::Paren)
             ) {
-                if let Type::Named(ref identifier) = typ.node {
+                if let Type::Named(identifier) = &typ.node {
                     let identifier = node_ref!(Expr::Identifier(identifier.clone()), typ.pos());
                     let schema_expr =
                         if matches!(self.token.kind, TokenKind::OpenDelim(DelimToken::Paren)) {

@@ -1,6 +1,6 @@
 //! This file primarily offers utils for working with kcl package paths.
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 
 /// Remove the external package name prefix from the current import absolute path.
 ///

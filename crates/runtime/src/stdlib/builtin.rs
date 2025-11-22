@@ -22,7 +22,7 @@ impl Context {
 impl ValueRef {
     pub fn any_true(&self) -> bool {
         match &*self.rc.borrow() {
-            Value::list_value(ref list) => {
+            Value::list_value(list) => {
                 for x in list.values.iter() {
                     if x.is_truthy() {
                         return true;
@@ -30,7 +30,7 @@ impl ValueRef {
                 }
                 false
             }
-            Value::dict_value(ref dict) => {
+            Value::dict_value(dict) => {
                 for (_k, x) in dict.values.iter() {
                     if x.is_truthy() {
                         return true;
@@ -38,7 +38,7 @@ impl ValueRef {
                 }
                 false
             }
-            Value::schema_value(ref schema) => {
+            Value::schema_value(schema) => {
                 for (_k, x) in schema.config.values.iter() {
                     if x.is_truthy() {
                         return true;
@@ -52,7 +52,7 @@ impl ValueRef {
 
     pub fn all_true(&self) -> bool {
         match &*self.rc.borrow() {
-            Value::list_value(ref list) => {
+            Value::list_value(list) => {
                 for x in list.values.iter() {
                     if !x.is_truthy() {
                         return false;
@@ -60,7 +60,7 @@ impl ValueRef {
                 }
                 true
             }
-            Value::dict_value(ref dict) => {
+            Value::dict_value(dict) => {
                 for (_k, x) in dict.values.iter() {
                     if !x.is_truthy() {
                         return false;
@@ -68,7 +68,7 @@ impl ValueRef {
                 }
                 true
             }
-            Value::schema_value(ref schema) => {
+            Value::schema_value(schema) => {
                 for (_k, x) in schema.config.values.iter() {
                     if x.is_truthy() {
                         return false;
@@ -82,7 +82,7 @@ impl ValueRef {
 
     pub fn isunique(&self) -> bool {
         match &*self.rc.borrow() {
-            Value::list_value(ref list) => {
+            Value::list_value(list) => {
                 let mut set: HashSet<&ValueRef> = HashSet::new();
                 for x in list.values.iter() {
                     if set.contains(x) {
@@ -153,9 +153,9 @@ impl ValueRef {
         let strict_range_check_i64 = ctx.cfg.debug_mode || !ctx.cfg.strict_range_check;
 
         match &*self.rc.borrow() {
-            Value::int_value(ref v) => ValueRef::int(*v),
-            Value::float_value(ref v) => ValueRef::int(*v as i64),
-            Value::unit_value(ref v, raw, unit) => {
+            Value::int_value(v) => ValueRef::int(*v),
+            Value::float_value(v) => ValueRef::int(*v as i64),
+            Value::unit_value(v, raw, unit) => {
                 let v_i128 = crate::real_uint_value(*raw, unit);
                 let int_32_overflow = strict_range_check_i32 && v_i128 != ((v_i128 as i32) as i128);
                 let int_64_overflow = strict_range_check_i64 && v_i128 != ((v_i128 as i64) as i128);
@@ -175,8 +175,8 @@ impl ValueRef {
 
                 ValueRef::int(*v as i64)
             }
-            Value::bool_value(ref v) => ValueRef::int(*v as i64),
-            Value::str_value(ref v) => {
+            Value::bool_value(v) => ValueRef::int(*v as i64),
+            Value::str_value(v) => {
                 let base = if let Some(v) = base { v.as_int() } else { 10 };
                 let number_str = to_quantity(v.as_str()).to_string();
                 let v: i64 =
@@ -197,8 +197,8 @@ impl ValueRef {
         let strict_range_check_i64 = ctx.cfg.debug_mode || !ctx.cfg.strict_range_check;
 
         match &*self.rc.borrow() {
-            Value::int_value(ref v) => ValueRef::float(*v as f64),
-            Value::float_value(ref v) => {
+            Value::int_value(v) => ValueRef::float(*v as f64),
+            Value::float_value(v) => {
                 let float32_overflow = strict_range_check_i32 && (*v as f32).is_infinite();
                 let float64_overflow = strict_range_check_i64 && (*v).is_infinite();
 
@@ -214,9 +214,9 @@ impl ValueRef {
                 }
                 ValueRef::float(*v)
             }
-            Value::unit_value(ref v, _, _) => ValueRef::float(*v),
-            Value::bool_value(ref v) => ValueRef::float((*v as i64) as f64),
-            Value::str_value(ref v) => {
+            Value::unit_value(v, _, _) => ValueRef::float(*v),
+            Value::bool_value(v) => ValueRef::float((*v as i64) as f64),
+            Value::str_value(v) => {
                 let v: f64 = v.parse().unwrap_or_else(|_| {
                     panic!("invalid literal for float() with base 10: '{self}'")
                 });
@@ -248,7 +248,7 @@ impl ValueRef {
 
     pub fn filter(&self, filter: fn(&ValueRef, &ValueRef) -> bool) -> ValueRef {
         match &*self.rc.borrow() {
-            Value::str_value(ref s) => {
+            Value::str_value(s) => {
                 if s.is_empty() {
                     panic!("arg is an empty str");
                 }
@@ -263,7 +263,7 @@ impl ValueRef {
                 }
                 ValueRef::str(&result.to_string())
             }
-            Value::list_value(ref list) => {
+            Value::list_value(list) => {
                 if list.values.is_empty() {
                     panic!("arg is an empty list");
                 }
@@ -275,7 +275,7 @@ impl ValueRef {
                 }
                 result.clone()
             }
-            Value::dict_value(ref dict) => {
+            Value::dict_value(dict) => {
                 if dict.values.is_empty() {
                     panic!("arg is an empty dict");
                 }
@@ -288,7 +288,7 @@ impl ValueRef {
                 }
                 ValueRef::str(result)
             }
-            Value::schema_value(ref schema) => {
+            Value::schema_value(schema) => {
                 if schema.config.values.is_empty() {
                     panic!("arg is an empty dict");
                 }
@@ -458,7 +458,11 @@ pub fn dict(ctx: &mut Context, iterable: Option<&ValueRef>) -> ValueRef {
                     _ => {
                         let mut elem_iter = elem.iter();
                         if elem_iter.len != 2 {
-                            panic!("dictionary update sequence element #{} has length {}; 2 is required",iter.pos-1,elem_iter.len);
+                            panic!(
+                                "dictionary update sequence element #{} has length {}; 2 is required",
+                                iter.pos - 1,
+                                elem_iter.len
+                            );
                         }
                         let k = elem_iter.next(val).unwrap().to_string();
                         let v = elem_iter.next(val).unwrap();
@@ -782,10 +786,14 @@ mod test_builtin {
 
     #[test]
     fn test_multiplyof() {
-        assert!(builtin::multiplyof(&ValueRef::int(25), &ValueRef::int(5))
-            .cmp_equal(&ValueRef::bool(true)));
-        assert!(builtin::multiplyof(&ValueRef::int(25), &ValueRef::int(7))
-            .cmp_equal(&ValueRef::bool(false)));
+        assert!(
+            builtin::multiplyof(&ValueRef::int(25), &ValueRef::int(5))
+                .cmp_equal(&ValueRef::bool(true))
+        );
+        assert!(
+            builtin::multiplyof(&ValueRef::int(25), &ValueRef::int(7))
+                .cmp_equal(&ValueRef::bool(false))
+        );
     }
 
     #[test]

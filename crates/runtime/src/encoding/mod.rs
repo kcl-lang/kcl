@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use encoding_rs::Encoding;
 
 /// Encoding string value to bytes with specific encoding format.

@@ -4,8 +4,8 @@ use crate::*;
 
 // data, sort_keys=False, indent=None, ignore_private=False, ignore_none=False
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_json_encode(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -25,8 +25,8 @@ pub extern "C-unwind" fn kclvm_json_encode(
     panic!("encode() missing 1 required positional argument: 'value'")
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_json_decode(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -45,8 +45,8 @@ pub extern "C-unwind" fn kclvm_json_decode(
     panic!("decode() missing 1 required positional argument: 'value'")
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_json_validate(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -65,8 +65,8 @@ pub extern "C-unwind" fn kclvm_json_validate(
     panic!("validate() missing 1 required positional argument: 'value'")
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_json_dump_to_file(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,

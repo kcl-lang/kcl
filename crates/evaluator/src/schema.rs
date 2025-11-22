@@ -6,15 +6,15 @@ use generational_arena::Index;
 use kclvm_ast::ast;
 use kclvm_ast::walker::TypedResultWalker;
 use kclvm_primitives::{DefaultHashBuilder, IndexMap};
-use kclvm_runtime::{schema_runtime_type, ConfigEntryOperationKind, ValueRef};
+use kclvm_runtime::{ConfigEntryOperationKind, ValueRef, schema_runtime_type};
 use scopeguard::defer;
 
-use crate::lazy::{merge_variables_and_setters, LazyEvalScope, LazyEvalScopeRef};
+use crate::lazy::{LazyEvalScope, LazyEvalScopeRef, merge_variables_and_setters};
 use crate::proxy::{call_schema_body, call_schema_check};
 use crate::rule::RuleEvalContext;
 use crate::ty::type_pack_and_check;
-use crate::{error as kcl_error, Proxy};
 use crate::{Evaluator, INNER_LEVEL};
+use crate::{Proxy, error as kcl_error};
 
 pub type SchemaBodyHandler =
     Arc<dyn Fn(&Evaluator, &SchemaEvalContextRef, &ValueRef, &ValueRef) -> ValueRef>;

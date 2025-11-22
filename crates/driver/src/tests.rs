@@ -8,7 +8,7 @@ use walkdir::WalkDir;
 
 use crate::arguments::parse_key_value_pair;
 use crate::toolchain::Toolchain;
-use crate::toolchain::{fill_pkg_maps_for_k_file, CommandToolchain, NativeToolchain};
+use crate::toolchain::{CommandToolchain, NativeToolchain, fill_pkg_maps_for_k_file};
 use crate::{get_pkg_list, lookup_the_nearest_file_dir, toolchain};
 
 #[test]

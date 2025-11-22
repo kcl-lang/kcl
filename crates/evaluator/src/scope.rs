@@ -8,7 +8,7 @@ use crate::{
 use kclvm_ast::ast;
 use kclvm_ast::walker::TypedResultWalker;
 use kclvm_primitives::{DefaultHashBuilder, IndexMap, IndexSet};
-use kclvm_runtime::{ValueRef, _kclvm_get_fn_ptr_by_name, MAIN_PKG_PATH};
+use kclvm_runtime::{_kclvm_get_fn_ptr_by_name, MAIN_PKG_PATH, ValueRef};
 use kclvm_sema::{builtin, plugin};
 
 use crate::{EvalResult, Evaluator, GLOBAL_LEVEL, INNER_LEVEL};

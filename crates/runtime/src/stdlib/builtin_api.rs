@@ -8,8 +8,8 @@ use crate::*;
 #[allow(non_camel_case_types)]
 type kclvm_value_ref_t = ValueRef;
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_option_init(
     ctx: *mut kclvm_context_t,
     key: *const c_char,
@@ -19,8 +19,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_option_init(
     ctx.builtin_option_init(c2str(key), c2str(value));
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_option_reset(
     ctx: *mut kclvm_context_t,
     _args: *const kclvm_value_ref_t,
@@ -34,8 +34,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_option_reset(
 
 // def kcl_option(name: str, *, type="", required=False, default=None, help="", file="", line=0) -> typing.Any:
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_option(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -50,17 +50,17 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_option(
             return this.clone();
         }
         if typ == "bool" {
-            match *this.rc.borrow() {
-                Value::bool_value(ref v) => {
+            match &*this.rc.borrow() {
+                Value::bool_value(v) => {
                     return ValueRef::bool(*v);
                 }
-                Value::int_value(ref v) => {
+                Value::int_value(v) => {
                     return ValueRef::bool(*v != 0);
                 }
-                Value::float_value(ref v) => {
+                Value::float_value(v) => {
                     return ValueRef::bool(*v != 0.0);
                 }
-                Value::str_value(ref v) => {
+                Value::str_value(v) => {
                     return ValueRef::bool(v == "True" || v == "true");
                 }
                 _ => {
@@ -69,21 +69,21 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_option(
             }
         }
         if typ == "int" {
-            match *this.rc.borrow() {
-                Value::bool_value(ref v) => {
+            match &*this.rc.borrow() {
+                Value::bool_value(v) => {
                     if *v {
                         return ValueRef::int(1);
                     } else {
                         return ValueRef::int(0);
                     }
                 }
-                Value::int_value(ref v) => {
+                Value::int_value(v) => {
                     return ValueRef::int(*v);
                 }
-                Value::float_value(ref v) => {
+                Value::float_value(v) => {
                     return ValueRef::int(*v as i64);
                 }
-                Value::str_value(ref v) => {
+                Value::str_value(v) => {
                     match v.parse::<i64>() {
                         Ok(n) => return ValueRef::int(n),
                         _ => panic!("cannot use '{v}' as type '{typ}'"),
@@ -96,21 +96,21 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_option(
             }
         }
         if typ == "float" {
-            match *this.rc.borrow() {
-                Value::bool_value(ref v) => {
+            match &*this.rc.borrow() {
+                Value::bool_value(v) => {
                     if *v {
                         return ValueRef::float(1.0);
                     } else {
                         return ValueRef::float(0.0);
                     }
                 }
-                Value::int_value(ref v) => {
+                Value::int_value(v) => {
                     return ValueRef::float(*v as f64);
                 }
-                Value::float_value(ref v) => {
+                Value::float_value(v) => {
                     return ValueRef::float(*v);
                 }
-                Value::str_value(ref v) => {
+                Value::str_value(v) => {
                     match v.parse::<f64>() {
                         Ok(n) => return ValueRef::float(n),
                         _ => return ValueRef::float(0.0),
@@ -123,20 +123,20 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_option(
             }
         }
         if typ == "str" {
-            match *this.rc.borrow() {
-                Value::bool_value(ref v) => {
-                    let s = format!("{}", *v);
+            match &*this.rc.borrow() {
+                Value::bool_value(v) => {
+                    let s = format!("{}", v);
                     return ValueRef::str(s.as_ref());
                 }
-                Value::int_value(ref v) => {
-                    let s = format!("{}", *v);
+                Value::int_value(v) => {
+                    let s = format!("{}", v);
                     return ValueRef::str(s.as_ref());
                 }
-                Value::float_value(ref v) => {
-                    let s = format!("{}", *v);
+                Value::float_value(v) => {
+                    let s = format!("{}", v);
                     return ValueRef::str(s.as_ref());
                 }
-                Value::str_value(ref v) => {
+                Value::str_value(v) => {
                     return ValueRef::str(v.as_ref());
                 }
                 _ => {
@@ -146,7 +146,7 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_option(
             }
         }
         if typ == "list" {
-            match *this.rc.borrow() {
+            match &*this.rc.borrow() {
                 Value::list_value(_) => {
                     return this.clone();
                 }
@@ -157,7 +157,7 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_option(
             }
         }
         if typ == "dict" {
-            match *this.rc.borrow() {
+            match &*this.rc.borrow() {
                 Value::dict_value(_) => {
                     return this.clone();
                 }
@@ -193,8 +193,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_option(
     ValueRef::none().into_raw(ctx)
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_print(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -217,8 +217,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_print(
     kclvm_value_None(ctx)
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_len(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -233,8 +233,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_len(
     panic!("len() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_any_true(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -249,8 +249,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_any_true(
     kclvm_value_Bool(ctx, 0)
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_isunique(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -265,8 +265,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_isunique(
     kclvm_value_Bool(ctx, 0)
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_sorted(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -283,8 +283,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_sorted(
     panic!("sorted() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_int(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -301,8 +301,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_int(
     panic!("int() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_float(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -318,8 +318,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_float(
     panic!("float() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_bool(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -335,8 +335,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_bool(
     panic!("bool() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_str(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -352,8 +352,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_str(
     ValueRef::str("").into_raw(ctx)
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_max(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -370,8 +370,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_max(
     panic!("max() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_min(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -388,8 +388,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_min(
     panic!("min() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_multiplyof(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -411,8 +411,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_multiplyof(
     );
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_abs(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -428,8 +428,7 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_abs(
     panic!("abs() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kclvm_builtin_all_true(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -444,8 +443,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_all_true(
     kclvm_value_Bool(ctx, 0)
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_hex(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -461,8 +460,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_hex(
     panic!("hex() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_sum(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -481,8 +480,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_sum(
     }
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_pow(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -504,8 +503,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_pow(
     }
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_round(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -524,8 +523,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_round(
     }
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_zip(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -536,8 +535,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_zip(
     args.zip().into_raw(ctx)
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_list(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -557,8 +556,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_list(
     }
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_dict(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -577,8 +576,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_dict(
     dict.into_raw(ctx)
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_typeof(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -598,8 +597,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_typeof(
     panic!("typeof() missing 1 required positional argument: 'x'");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_bin(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -615,8 +614,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_bin(
     panic!("bin() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_oct(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -632,8 +631,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_oct(
     panic!("oct() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_ord(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -649,8 +648,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_ord(
     panic!("ord() takes exactly one argument (0 given)");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_range(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -673,8 +672,8 @@ pub unsafe extern "C-unwind" fn kclvm_builtin_range(
 }
 
 /// Return `True` if the input value is `None` or `Undefined`, and `False` otherwise.
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub unsafe extern "C-unwind" fn kclvm_builtin_isnullish(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,

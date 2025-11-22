@@ -21,7 +21,7 @@ mod string;
 mod tests;
 
 use compiler_base_macros::bug;
-use compiler_base_span::{self, span::new_byte_pos, BytePos, Span};
+use compiler_base_span::{self, BytePos, Span, span::new_byte_pos};
 use kclvm_ast::ast::NumberBinarySuffix;
 use kclvm_ast::token::VALID_SPACES_LENGTH;
 use kclvm_ast::token::{self, BinOpToken, CommentKind, Token, TokenKind};
@@ -514,11 +514,7 @@ impl<'a> Lexer<'a> {
                 }
                 // Cut offset before validation.
                 let offset: u32 = if triple_quoted {
-                    if is_raw {
-                        4
-                    } else {
-                        3
-                    }
+                    if is_raw { 4 } else { 3 }
                 } else if is_raw {
                     2
                 } else {

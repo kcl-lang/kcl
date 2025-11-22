@@ -1,5 +1,5 @@
 use crate::option::list_options;
-use crate::{load_packages, LoadPackageOptions};
+use crate::{LoadPackageOptions, load_packages};
 use kclvm_parser::LoadProgramOptions;
 
 #[macro_export]

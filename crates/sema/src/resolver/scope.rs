@@ -3,7 +3,7 @@ use compiler_base_session::Session;
 use kclvm_ast::ast::NodeRef;
 use kclvm_ast::ast::Stmt;
 use kclvm_ast::ast::Stmt::Import;
-use kclvm_ast::{ast, MAIN_PKG};
+use kclvm_ast::{MAIN_PKG, ast};
 use kclvm_error::diagnostic::Range;
 use kclvm_error::{Handler, Level};
 use kclvm_primitives::DefaultHashBuilder;

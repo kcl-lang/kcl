@@ -13,19 +13,19 @@ impl DictValue {
 
     pub fn get(&self, key: &ValueRef) -> Option<ValueRef> {
         match &*key.rc.borrow() {
-            Value::str_value(ref s) => self.values.get(s).cloned(),
+            Value::str_value(s) => self.values.get(s).cloned(),
             _ => None,
         }
     }
 
     pub fn insert(&mut self, key: &ValueRef, value: &ValueRef) {
-        if let Value::str_value(ref s) = &*key.rc.borrow() {
+        if let Value::str_value(s) = &*key.rc.borrow() {
             self.values.insert(s.to_string(), value.clone());
         }
     }
 
     pub fn insert_unpack(&mut self, v: &ValueRef) {
-        if let Value::dict_value(ref b) = &*v.rc.borrow() {
+        if let Value::dict_value(b) = &*v.rc.borrow() {
             for (k, v) in b.values.iter() {
                 self.values.insert(k.clone(), v.clone());
             }
@@ -36,8 +36,8 @@ impl DictValue {
 impl ValueRef {
     fn dict_config(&self) -> Ref<DictValue> {
         Ref::map(self.rc.borrow(), |val| match val {
-            Value::dict_value(ref dict) => dict.as_ref(),
-            Value::schema_value(ref schema) => schema.config.as_ref(),
+            Value::dict_value(dict) => dict.as_ref(),
+            Value::schema_value(schema) => schema.config.as_ref(),
             _ => panic!("invalid dict config value type {}", self.type_str()),
         })
     }
@@ -101,8 +101,8 @@ impl ValueRef {
     /// Dict get e.g., {k1: v1, k2, v2}.get(ValueRef::str(k1)) == v1
     pub fn dict_get(&self, key: &ValueRef) -> Option<ValueRef> {
         match &*self.rc.borrow() {
-            Value::dict_value(ref dict) => dict.get(key),
-            Value::schema_value(ref schema) => schema.config.get(key),
+            Value::dict_value(dict) => dict.get(key),
+            Value::schema_value(schema) => schema.config.get(key),
             _ => panic!("invalid config value in dict_get"),
         }
     }
@@ -110,8 +110,8 @@ impl ValueRef {
     /// Dict get value e.g., {k1: v1, k2, v2}.get_value(k1) == v1
     pub fn dict_get_value(&self, key: &str) -> Option<ValueRef> {
         match &*self.rc.borrow() {
-            Value::dict_value(ref dict) => dict.values.get(key).cloned(),
-            Value::schema_value(ref schema) => schema.config.values.get(key).cloned(),
+            Value::dict_value(dict) => dict.values.get(key).cloned(),
+            Value::schema_value(schema) => schema.config.values.get(key).cloned(),
             _ => None,
         }
     }
@@ -119,8 +119,8 @@ impl ValueRef {
     /// Dict get value e.g., {k1 = v1, k2 = v2}.get_attr_operator(k1) == Some(ConfigEntryOperationKind::Override)
     pub fn dict_get_attr_operator(&self, key: &str) -> Option<ConfigEntryOperationKind> {
         match &*self.rc.borrow() {
-            Value::dict_value(ref dict) => dict.ops.get(key).cloned(),
-            Value::schema_value(ref schema) => schema.config.ops.get(key).cloned(),
+            Value::dict_value(dict) => dict.ops.get(key).cloned(),
+            Value::schema_value(schema) => schema.config.ops.get(key).cloned(),
             _ => None,
         }
     }
@@ -128,8 +128,8 @@ impl ValueRef {
     /// Dict get value e.g., {k1 = v1, k2 = v2}.get_attr_operator(k1) == Some(ConfigEntryOperationKind::Override)
     pub fn dict_get_insert_index(&self, key: &str) -> Option<i32> {
         match &*self.rc.borrow() {
-            Value::dict_value(ref dict) => dict.insert_indexs.get(key).cloned(),
-            Value::schema_value(ref schema) => schema.config.insert_indexs.get(key).cloned(),
+            Value::dict_value(dict) => dict.insert_indexs.get(key).cloned(),
+            Value::schema_value(schema) => schema.config.insert_indexs.get(key).cloned(),
             _ => None,
         }
     }
@@ -137,7 +137,7 @@ impl ValueRef {
     /// Dict get entry e.g., {k1: v1, k2, v2}.get_entry(k1) == {k1: v1}
     pub fn dict_get_entry(&self, key: &str) -> Option<ValueRef> {
         match &*self.rc.borrow() {
-            Value::dict_value(ref dict) => {
+            Value::dict_value(dict) => {
                 if dict.values.contains_key(key) {
                     let mut d = ValueRef::dict(None);
                     let value = dict.values.get(key).unwrap();
@@ -154,7 +154,7 @@ impl ValueRef {
                     None
                 }
             }
-            Value::schema_value(ref schema) => {
+            Value::schema_value(schema) => {
                 if schema.config.values.contains_key(key) {
                     let mut d = ValueRef::dict(None);
                     let value = schema.config.values.get(key).unwrap();
@@ -181,7 +181,7 @@ impl ValueRef {
     /// Dict get entries e.g., {k1: v1, k2, v2}.get_entries([k1, k2]) == {k1: v1, k1: v2}
     pub fn dict_get_entries(&self, keys: Vec<&str>) -> ValueRef {
         match &*self.rc.borrow() {
-            Value::dict_value(ref dict) => {
+            Value::dict_value(dict) => {
                 let mut d = ValueRef::dict(None);
                 for key in keys {
                     if dict.values.contains_key(key) {
@@ -197,7 +197,7 @@ impl ValueRef {
                 d.set_potential_schema_type(&dict.potential_schema.clone().unwrap_or_default());
                 d
             }
-            Value::schema_value(ref schema) => {
+            Value::schema_value(schema) => {
                 let mut d = ValueRef::dict(None);
                 for key in keys {
                     if schema.config.values.contains_key(key) {
@@ -233,7 +233,7 @@ impl ValueRef {
         op: &ConfigEntryOperationKind,
     ) -> ValueRef {
         match &*self.rc.borrow() {
-            Value::dict_value(ref dict) => {
+            Value::dict_value(dict) => {
                 let mut d = ValueRef::dict(None);
                 for key in keys {
                     if dict.values.contains_key(key) {
@@ -245,7 +245,7 @@ impl ValueRef {
                 d.set_potential_schema_type(&dict.potential_schema.clone().unwrap_or_default());
                 d
             }
-            Value::schema_value(ref schema) => {
+            Value::schema_value(schema) => {
                 let mut d = ValueRef::dict(None);
                 for key in keys {
                     if schema.config.values.contains_key(key) {
@@ -360,7 +360,7 @@ impl ValueRef {
         idempotent_check: bool,
     ) {
         if ctx.cfg.debug_mode {
-            if let Value::int_value(ref x) = *v.rc.borrow() {
+            if let Value::int_value(x) = &*v.rc.borrow() {
                 let strict_range_check_i32 = ctx.cfg.strict_range_check;
                 let strict_range_check_i64 = ctx.cfg.debug_mode || !ctx.cfg.strict_range_check;
                 let v_i128 = *x as i128;
@@ -415,7 +415,9 @@ impl ValueRef {
             }
             (Value::dict_value(_) | Value::schema_value(_), Value::undefined) => { /*Do nothing on unpacking None/Undefined*/
             }
-            _ => panic!("only list, dict and schema object can be used with unpack operators * and **, got {v}"),
+            _ => panic!(
+                "only list, dict and schema object can be used with unpack operators * and **, got {v}"
+            ),
         }
         if union {
             self.bin_aug_bit_or(ctx, &v.schema_to_dict().deep_copy());

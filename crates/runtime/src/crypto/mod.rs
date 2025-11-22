@@ -19,8 +19,8 @@ type kclvm_value_ref_t = ValueRef;
 
 // md5(value: str, encoding: str = "utf-8") -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_crypto_md5(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -41,8 +41,8 @@ pub extern "C-unwind" fn kclvm_crypto_md5(
 
 // sha1(value: str, encoding: str = "utf-8") -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_crypto_sha1(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -63,8 +63,8 @@ pub extern "C-unwind" fn kclvm_crypto_sha1(
 
 // sha224(value: str, encoding: str = "utf-8") -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_crypto_sha224(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -95,8 +95,8 @@ pub extern "C-unwind" fn kclvm_crypto_sha224(
 
 // sha256(value: str, encoding: str = "utf-8") -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_crypto_sha256(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -127,8 +127,8 @@ pub extern "C-unwind" fn kclvm_crypto_sha256(
 
 // sha384(value: str, encoding: str = "utf-8") -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_crypto_sha384(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -159,8 +159,8 @@ pub extern "C-unwind" fn kclvm_crypto_sha384(
 
 // sha512(value: str, encoding: str = "utf-8") -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_crypto_sha512(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -191,8 +191,8 @@ pub extern "C-unwind" fn kclvm_crypto_sha512(
 
 // blake3(value: str, encoding: str = "utf-8") -> str
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_crypto_blake3(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -219,8 +219,8 @@ pub extern "C-unwind" fn kclvm_crypto_blake3(
     panic!("blake3() missing 1 required positional argument: 'value'");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_crypto_uuid(
     ctx: *mut kclvm_context_t,
     _args: *const kclvm_value_ref_t,
@@ -230,8 +230,8 @@ pub extern "C-unwind" fn kclvm_crypto_uuid(
     return ValueRef::str(Uuid::new_v4().to_string().as_ref()).into_raw(ctx);
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_crypto_filesha256(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -270,8 +270,8 @@ pub extern "C-unwind" fn kclvm_crypto_filesha256(
     panic!("filesha256() missing 1 required positional argument: 'filepath'");
 }
 
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_crypto_filesha512(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
@@ -308,8 +308,8 @@ pub extern "C-unwind" fn kclvm_crypto_filesha512(
 }
 
 // fileblake3
-#[no_mangle]
-#[runtime_fn]
+#[unsafe(no_mangle)]
+
 pub extern "C-unwind" fn kclvm_crypto_fileblake3(
     ctx: *mut kclvm_context_t,
     args: *const kclvm_value_ref_t,
