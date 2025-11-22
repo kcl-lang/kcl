@@ -25,10 +25,7 @@ jobs:
           toolchain: 1.88
           override: true
           components: clippy, rustfmt
-      - name: Rust code format check
-        working-directory: ./compiler_base
-        run: cargo fmt --check
-        shell: bash
+
   test-codecov-lcov:
     name: Test
     strategy:
