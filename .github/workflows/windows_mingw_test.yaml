@@ -40,7 +40,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: kcl-core-${{ env.VERSION }}-windows-mingw
+          name: kcl-${{ env.VERSION }}-windows-mingw
           if-no-files-found: error
           path: |
             target/x86_64-pc-windows-gnu/release/libkcl.a

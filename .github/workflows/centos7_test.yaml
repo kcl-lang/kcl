@@ -44,10 +44,11 @@ jobs:
         run: |
           VERSION=$(cargo pkgid -p kcl-api | cut -d'@' -f2)
           echo "VERSION=v${VERSION}" >> $GITHUB_ENV
+          mv _build/dist/linux/kcl-latest-linux-amd64.tar.gz _build/dist/linux/kcl-${{ env.VERSION }}-linux-amd64.tar.gz
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: kcl-${{ env.VERSION }}-linux-amd64
           if-no-files-found: error
-          path: _build/dist/linux/kcl-core-${{ env.VERSION }}-linux-amd64.tar.gz
+          path: _build/dist/linux/kcl-${{ env.VERSION }}-linux-amd64.tar.gz

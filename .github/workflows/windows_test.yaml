@@ -46,7 +46,7 @@ jobs:
       - run: .\scripts\build.ps1
 
       # Set KCL Lib CLI into PATH
-      - run: echo ";$(pwd)\scripts\_output\kcl-core" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - run: echo ";$(pwd)\scripts\_output\core" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       # Rust unit test
       - run: cargo test --workspace -r -- --nocapture
@@ -58,13 +58,13 @@ jobs:
           $version = ($pkgId -split '@')[1]
           echo "VERSION=v$version" >> $env:GITHUB_ENV
 
-      - name: Rename kcl-core folder
+      - name: Rename core folder
         run: |
           $version = "${{ env.VERSION }}"
-          Rename-Item -Path ".\scripts\windows\_output\kcl-core" -NewName "kcl-core-$version-windows"
+          Rename-Item -Path ".\scripts\windows\_output\core" -NewName "kcl-$version-windows"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: kcl-core-${{ env.VERSION }}-windows
+          name: kcl-${{ env.VERSION }}-windows
           if-no-files-found: error
-          path: scripts/windows/_output/kcl-core-${{ env.VERSION }}-windows
+          path: scripts/windows/_output/kcl-${{ env.VERSION }}-windows

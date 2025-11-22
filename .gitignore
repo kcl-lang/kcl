@@ -20,7 +20,7 @@ _site-packages
 __kcl_test_main.k
 
 # kcl bundles
-/kcl-core-*.zip
+/kcl-*.zip
 /kcl-go*
 /_build_dist
 .kusion

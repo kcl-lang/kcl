@@ -23,7 +23,7 @@ getSystemInfo
 echo "[info] os: $os"
 echo "[info] arch: $arch"
 echo "[info] version: $version"
-release_file="kcl-core-$version-$os-$arch.tar.gz"
+release_file="kcl-$version-$os-$arch.tar.gz"
 release_path="_build"
 package_dir="_build/dist/$os"
 install_dir="core"
