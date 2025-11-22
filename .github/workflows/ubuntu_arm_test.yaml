@@ -70,7 +70,7 @@ jobs:
           echo "VERSION=v${VERSION}" >> $GITHUB_ENV
 
       - name: Rename artifact name with version
-        run: mv _build/dist/linux/kcl-latest-linux-arm64.tar.gz _build/dist/linux/kcl-${{ env.VERSION }}-linux-arm64.tar.gz
+        run: sudo mv -f _build/dist/linux/kcl-latest-linux-arm64.tar.gz _build/dist/linux/kcl-${{ env.VERSION }}-linux-arm64.tar.gz
 
       - uses: actions/upload-artifact@v4
         with:
