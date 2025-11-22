@@ -61,10 +61,10 @@ jobs:
       - name: Rename core folder
         run: |
           $version = "${{ env.VERSION }}"
-          Rename-Item -Path ".\scripts\windows\_output\core" -NewName "kcl-$version-windows"
+          Rename-Item -Path ".\scripts\_output\core" -NewName "kcl-$version-windows"
 
       - uses: actions/upload-artifact@v4
         with:
           name: kcl-${{ env.VERSION }}-windows
           if-no-files-found: error
-          path: scripts/windows/_output/kcl-${{ env.VERSION }}-windows
+          path: scripts/_output/kcl-${{ env.VERSION }}-windows

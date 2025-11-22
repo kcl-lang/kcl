@@ -8,7 +8,6 @@ Set-Location $PSScriptRoot
 
 New-Item -ErrorAction Ignore -Path ".\_output" -ItemType "directory"
 New-Item -ErrorAction Ignore -Path ".\_output\core" -ItemType "directory"
-New-Item -ErrorAction Ignore -Path ".\_output\core" -ItemType "directory"
 
 Copy-Item -Path "..\target\release\kcl.dll" -Destination ".\_output\core\kcl.dll" -Force
 Copy-Item -Path "..\target\release\kcl.dll.lib" -Destination ".\_output\core\kcl.lib" -Force
