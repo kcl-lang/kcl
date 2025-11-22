@@ -1,14 +1,14 @@
 # Copyright The KCL Authors. All rights reserved.
 
-import typing
 import unittest
 import sys
 import os
 
+import kcl_runtime as kcl_runtime
+
 # Add the parent directory to the path to import kcl_runtime
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
-import tests.runtime.kcl_runtime as kcl_runtime
 
 # https://github.com/python/cpython/blob/main/Lib/test/test_base64.py
 

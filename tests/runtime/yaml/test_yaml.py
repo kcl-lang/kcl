@@ -1,9 +1,8 @@
 # Copyright The KCL Authors. All rights reserved.
 
-import typing
 import unittest
 
-import tests.runtime.kcl_runtime as kcl_runtime
+import kcl_runtime as kcl_runtime
 
 # https://github.com/python/cpython/blob/main/Lib/test
 

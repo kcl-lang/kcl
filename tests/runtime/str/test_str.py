@@ -3,7 +3,7 @@
 import sys
 import unittest
 
-import tests.runtime.kcl_runtime as kcl_runtime
+import kcl_runtime as kcl_runtime
 
 dylib = kcl_runtime.KclRuntimeDylib()
 
@@ -532,8 +532,8 @@ class BaseTest(unittest.TestCase):
         self.checkequal(" ", " aa ", "removeprefix", " aa")
         self.checkequal("", " aa ", "removeprefix", " aa ")
 
-        s = 'foobarfoo'
-        s_ref='foobarfoo'
+        s = "foobarfoo"
+        s_ref = "foobarfoo"
 
         self.checkequal(s_ref[1:], s, "removeprefix", "f")
         self.checkequal(s_ref[2:], s, "removeprefix", "fo")
@@ -547,8 +547,8 @@ class BaseTest(unittest.TestCase):
         self.checkequal(s_ref, s, "removeprefix", "afoo")
         self.checkequal(s_ref, s, "removeprefix", "*foo")
 
-        s_uc = '😱foobarfoo🖖'
-        s_ref_uc = '😱foobarfoo🖖'
+        s_uc = "😱foobarfoo🖖"
+        s_ref_uc = "😱foobarfoo🖖"
 
         self.checkequal(s_ref_uc[1:], s_uc, "removeprefix", "😱")
         self.checkequal(s_ref_uc[3:], s_uc, "removeprefix", "😱fo")
@@ -567,8 +567,8 @@ class BaseTest(unittest.TestCase):
         self.checkequal(" ", " aa ", "removesuffix", "aa ")
         self.checkequal("", " aa ", "removesuffix", " aa ")
 
-        s = 'foobarfoo'
-        s_ref='foobarfoo'
+        s = "foobarfoo"
+        s_ref = "foobarfoo"
 
         self.checkequal(s_ref[:-1], s, "removesuffix", "o")
         self.checkequal(s_ref[:-2], s, "removesuffix", "oo")
@@ -582,8 +582,8 @@ class BaseTest(unittest.TestCase):
         self.checkequal(s_ref, s, "removesuffix", "afoo")
         self.checkequal(s_ref, s, "removesuffix", "*foo")
 
-        s_uc = '😱foobarfoo🖖'
-        s_ref_uc = '😱foobarfoo🖖'
+        s_uc = "😱foobarfoo🖖"
+        s_ref_uc = "😱foobarfoo🖖"
 
         self.checkequal(s_ref_uc[:-1], s_uc, "removesuffix", "🖖")
         self.checkequal(s_ref_uc[:-3], s_uc, "removesuffix", "oo🖖")

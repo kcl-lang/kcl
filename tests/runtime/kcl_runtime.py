@@ -88,7 +88,9 @@ class KclRuntimeDylib:
                 method = f'kcl_builtin_{method.replace(".", "_")}'
             elif "." in method:
                 # regex.match => kcl_regex_match
-                method = f'kcl_{method.replace(".", "_")}'  # json.encode => kcl_json_encode
+                method = (
+                    f'kcl_{method.replace(".", "_")}'  # json.encode => kcl_json_encode
+                )
             else:
                 method = f"kcl_builtin_{method}"  # print => kcl_builtin_print
 
@@ -100,4 +102,3 @@ class KclRuntimeDylib:
 if __name__ == "__main__":
     dylib = KclRuntimeDylib()
     dylib.Invoke(f"print", "hello kcl")
-

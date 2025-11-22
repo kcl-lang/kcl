@@ -6,7 +6,7 @@ import unittest
 import math as pymath
 import struct
 
-import tests.runtime.kcl_runtime as kcl_runtime
+import kcl_runtime as kcl_runtime
 
 # https://github.com/python/cpython/blob/main/Lib/test/test_math.py
 
@@ -89,7 +89,7 @@ def to_ulps(x):
     """
     n = struct.unpack("<q", struct.pack("<d", x))[0]
     if n < 0:
-        n = ~(n + 2 ** 63)
+        n = ~(n + 2**63)
     return n
 
 
@@ -501,8 +501,8 @@ class BaseTest(unittest.TestCase):
         self.assertTrue(math.isfinite(-0.0))
         self.assertTrue(math.isfinite(1.0))
         self.assertTrue(math.isfinite(-1.0))
-        #self.assertFalse(math.isfinite(float("nan")))
-        #self.assertFalse(math.isfinite(float("inf")))
+        # self.assertFalse(math.isfinite(float("nan")))
+        # self.assertFalse(math.isfinite(float("inf")))
         # self.assertFalse(math.isfinite(float("-inf")))
 
     def testIsnan(self):
@@ -518,7 +518,7 @@ class BaseTest(unittest.TestCase):
         # self.assertTrue(math.isinf(float("-inf")))
         # self.assertTrue(math.isinf(1e400))
         # self.assertTrue(math.isinf(-1e400))
-        #self.assertFalse(math.isinf(float("nan")))
+        # self.assertFalse(math.isinf(float("nan")))
         self.assertFalse(math.isinf(0.0))
         self.assertFalse(math.isinf(1.0))
 
