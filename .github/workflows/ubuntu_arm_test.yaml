@@ -68,7 +68,9 @@ jobs:
         run: |
           VERSION=$(cargo pkgid -p kcl-api | cut -d'@' -f2)
           echo "VERSION=v${VERSION}" >> $GITHUB_ENV
-          mv _build/dist/linux/kcl-latest-linux-arm64.tar.gz _build/dist/linux/kcl-$VERSION-linux-arm64.tar.gz
+
+      - name: Rename artifact name with version
+        run: mv _build/dist/linux/kcl-latest-linux-arm64.tar.gz _build/dist/linux/kcl-${{ env.VERSION }}-linux-arm64.tar.gz
 
       - uses: actions/upload-artifact@v4
         with:

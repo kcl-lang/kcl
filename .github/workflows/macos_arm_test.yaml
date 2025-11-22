@@ -49,11 +49,12 @@ jobs:
         shell: bash
 
       - name: Read VERSION file
-        id: read_version
         run: |
           VERSION=$(cargo pkgid -p kcl-api | cut -d'@' -f2)
           echo "VERSION=v${VERSION}" >> $GITHUB_ENV
-          mv _build/dist/darwin/kcl-latest-darwin-arm64.tar.gz _build/dist/darwin/kcl-$VERSION-darwin-arm64.tar.gz
+
+      - name: Rename artifact name with version
+        run: mv _build/dist/darwin/kcl-latest-darwin-arm64.tar.gz _build/dist/darwin/kcl-${{ env.VERSION }}-darwin-arm64.tar.gz
 
       - uses: actions/upload-artifact@v4
         if: "contains(matrix.os, 'macos-13-xlarge')"
