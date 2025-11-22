@@ -1,3 +1,0 @@
-[submodule "test/integration/konfig"]
-	path = test/integration/konfig
-	url = https://github.com/KusionStack/konfig.git

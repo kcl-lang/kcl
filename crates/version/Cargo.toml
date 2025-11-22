@@ -1,0 +1,11 @@
+[package]
+name = "kclvm-version"
+version.workspace = true
+edition.workspace = true
+
+[build-dependencies]
+vergen-gitcl = { version = "1.0.0", features = ["rustc"] }
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]

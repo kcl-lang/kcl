@@ -1,7 +1,0 @@
-[dependencies]
-  [dependencies.flask_manifests]
-    name = "flask_manifests"
-    full_name = "flask_manifests_0.0.1"
-    version = "0.0.1"
-    url = "https://github.com/kcl-lang/flask-demo-kcl-manifests.git"
-    commit = "ade147b"

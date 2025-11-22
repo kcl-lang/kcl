@@ -47,39 +47,24 @@ jobs:
       - name: Install rust nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.84.1
+          toolchain: 1.88
           override: true
           components: clippy, rustfmt
       - name: Code format check
-        working-directory: ./kclvm
         run: cargo fmt --check
         shell: bash
       - name: Grammar test
-        working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/darwin/kclvm/bin && make && make test-grammar
-        shell: bash
-      - name: Evaluator Grammar test
-        working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/darwin/kclvm/bin && make test-grammar-evaluator
+        run: export PATH=$PATH:$PWD/_build/dist/darwin/core && make && make test-grammar
         shell: bash
       - name: Runtime test
-        working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/darwin/kclvm/bin && make test-runtime
+        run: export PATH=$PATH:$PWD/_build/dist/darwin/core && make test-runtime
         shell: bash
-
       - name: Unit test
-        working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/darwin/kclvm/bin && make codecov-lcov
+        run: export PATH=$PATH:$PWD/_build/dist/darwin/core && make test
         shell: bash
-
-      - name: Coveralls upload
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ./kclvm/.kclvm_cov/lcov.info
 
       - name: Release
-        run: export PATH=$PATH:$PWD/../_build/dist/darwin/kclvm/bin && make release
+        run: export PATH=$PATH:$PWD/../_build/dist/darwin/core && make release
         shell: bash
 
       - name: Read VERSION file
@@ -92,4 +77,4 @@ jobs:
         with:
           name: kcl-${{ env.VERSION }}-darwin-amd64
           if-no-files-found: error
-          path: _build/kclvm-${{ env.VERSION }}-darwin-amd64.tar.gz
+          path: _build/dist/darwin/kcl-core-${{ env.VERSION }}-darwin-amd64.tar.gz

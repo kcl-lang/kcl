@@ -1,0 +1,8 @@
+[package]
+name = "kclvm_cli"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+path = "src/main.rs"
+name = "libkcl"

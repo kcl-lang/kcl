@@ -44,7 +44,7 @@ jobs:
               git config --global user.email 'action@github.com' && \
               make && \
               make release && \
-              _build/dist/linux/kclvm/bin/kclvm_cli version"
+              _build/dist/linux/core/libkcl version"
       - name: Read VERSION file
         id: read_version
         run: |
@@ -55,4 +55,4 @@ jobs:
         with:
           name: kcl-${{ env.VERSION }}-linux-musl
           if-no-files-found: error
-          path: _build/kclvm-${{ env.VERSION }}-linux-amd64.tar.gz
+          path: _build/kcl-core-${{ env.VERSION }}-linux-amd64.tar.gz

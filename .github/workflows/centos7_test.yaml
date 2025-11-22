@@ -34,10 +34,10 @@ jobs:
           docker run --rm \
             -v ${{ github.workspace }}:/workspace -w /workspace \
             kcllang/kcl-builder:centos7 \
-            /bin/bash -c "export KCL_BUILD_GIT_SHA=$(git rev-parse HEAD) && source ~/.bash_profile && export PATH=$PATH:/opt/build/bin/ && sed -i 's/llvm12/llvm7/g' kclvm/compiler/Cargo.toml && git config --global --add safe.directory /workspace && git config --global user.name 'GitHub Action' && git config --global user.email 'action@github.com' && git add . && git commit -m 'chore: bump llvm version to 7.0' && make && make release"
+            /bin/bash -c "export KCL_BUILD_GIT_SHA=$(git rev-parse HEAD) && source ~/.bash_profile && export PATH=$PATH:/opt/build/bin/ && git config --global --add safe.directory /workspace && git config --global user.name 'GitHub Action' && git config --global user.email 'action@github.com' && git add . && git commit -m 'chore: bump llvm version to 7.0' && make && make release"
 
       - name: Show Artifact Version
-        run: _build/dist/linux/kclvm/bin/kclvm_cli version
+        run: _build/dist/linux/core/libkcl version
 
       - name: Read VERSION file
         id: read_version
@@ -50,4 +50,4 @@ jobs:
         with:
           name: kcl-${{ env.VERSION }}-linux-amd64
           if-no-files-found: error
-          path: _build/kclvm-${{ env.VERSION }}-linux-amd64.tar.gz
+          path: _build/dist/linux/kcl-core-${{ env.VERSION }}-linux-amd64.tar.gz

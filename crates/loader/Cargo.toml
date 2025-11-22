@@ -1,0 +1,22 @@
+[package]
+name = "kclvm-loader"
+version.workspace = true
+edition.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0"
+
+kclvm-ast = { path = "../ast" }
+kclvm-ast-pretty = { path = "../ast_pretty" }
+kclvm-parser = { path = "../parser" }
+kclvm-sema = { path = "../sema" }
+kclvm-error = { path = "../error" }
+kclvm-query = { path = "../query" }
+kclvm-utils = { path = "../utils" }
+kclvm-primitives = { path = "../primitives" }
+maplit = "1.0.2"
+
+[dev-dependencies]
+insta = "1.8.0"

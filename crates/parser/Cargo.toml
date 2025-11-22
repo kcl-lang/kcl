@@ -1,0 +1,40 @@
+[package]
+name = "kclvm-parser"
+version.workspace = true
+edition.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+compiler_base_span = "0.1.2"
+compiler_base_session = "0.1.3"
+compiler_base_error = "0.1.6"
+compiler_base_macros = "0.1.1"
+tracing = "0.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1.0"
+rustc_lexer = "0.1.0"
+either = "1.1.0"
+enquote = "1.1.0"
+unicode_names2 = "0.4"
+bstr = "0.2.16"
+petgraph = "0.6.0"
+num-bigint = "0.4"
+regex = "1.7.0"
+anyhow = "1.0"
+parking_lot = "0.12.3"
+glob = "0.3.1"
+
+kclvm-lexer = { path = "../lexer" }
+kclvm-ast = { path = "../ast" }
+kclvm-span = { path = "../span" }
+kclvm-error = { path = "../error" }
+kclvm-config = { path = "../config" }
+kclvm-sema = { path = "../sema" }
+kclvm-utils = { path = "../utils" }
+kclvm-primitives = { path = "../primitives" }
+walkdir = "2"
+
+[dev-dependencies]
+expect-test = "1.0"
+insta = "1.8.0"

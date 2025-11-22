@@ -10,9 +10,6 @@ jobs:
   build-and-test:
     name: build and test on windows
     runs-on: windows-latest
-    env:
-      LLVM_SYS_120_PREFIX: "C:/LLVM"
-      KCLVM_CLANG: "C:/LLVM/bin/clang.exe"
     steps:
       - name: Git checkout
         uses: actions/checkout@v2
@@ -22,7 +19,7 @@ jobs:
       - name: Install rust nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.84.1
+          toolchain: 1.88
           override: true
           components: clippy, rustfmt
 
@@ -45,24 +42,14 @@ jobs:
       - run: clang --version
       - run: cargo --version
 
-      # Install LLVM-12
-      - run: Invoke-WebRequest -Uri https://github.com/kcl-lang/llvm-package-windows/releases/download/v12.0.1/LLVM-12.0.1-win64.7z -OutFile C:/LLVM-12.0.1-win64.7z
-      - run: Get-FileHash -Algorithm MD5 C:/LLVM-12.0.1-win64.7z # md5: 3fcf77f82c6c3ee650711439b20aebe5
-      - run: 7z x -y C:/LLVM-12.0.1-win64.7z -o"C:/LLVM"
-      - run: Remove-Item C:/LLVM-12.0.1-win64.7z
+      # Build
+      - run: .\scripts\build.ps1
 
-      - run: echo "C:/LLVM/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-
-      # Build kclvm CLI
-      - run: .\scripts\build-windows\build.ps1
-
-      # Set kclvm CLI into PATH
-      - run: echo ";$(pwd)\scripts\build-windows\_output\kclvm-windows\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-        working-directory: .
+      # Set KCL Lib CLI into PATH
+      - run: echo ";$(pwd)\scripts\_output\kcl-core" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       # Rust unit test
       - run: cargo test --workspace -r -- --nocapture
-        working-directory: ./kclvm
 
       - name: Read VERSION file
         id: read_version
@@ -70,13 +57,13 @@ jobs:
           $version = Get-Content VERSION
           echo "VERSION=v$version" >> $env:GITHUB_ENV
 
-      - name: Rename kclvm-windows folder
+      - name: Rename kcl-core-windows folder
         run: |
           $version = "${{ env.VERSION }}"
-          Rename-Item -Path ".\scripts\build-windows\_output\kclvm-windows" -NewName "kclvm-$version-windows"
+          Rename-Item -Path ".\scripts\windows\_output\kcl-core-windows" -NewName "kcl-core-$version-windows"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: kclvm-${{ env.VERSION }}-windows
+          name: kcl-core-${{ env.VERSION }}-windows
           if-no-files-found: error
-          path: scripts/build-windows/_output/kclvm-${{ env.VERSION }}-windows
+          path: scripts/windows/_output/kcl-core-${{ env.VERSION }}-windows

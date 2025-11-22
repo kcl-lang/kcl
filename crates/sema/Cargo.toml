@@ -1,0 +1,43 @@
+[package]
+name = "kclvm-sema"
+version.workspace = true
+edition.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1", features = ["derive"] }
+generational-arena = "0.2.9"
+phf = { version = "0.9", features = ["macros"] }
+bit-set = "0.5.0"
+bitflags = "1.2.1"
+once_cell = "1.5.2"
+fancy-regex = "0.7.1"
+unicode_names2 = "0.4"
+petgraph = "0.6.0"
+anyhow = "1.0"
+regex = "1.7.0"
+lazy_static = "1.4.0"
+
+kclvm-primitives = { path = "../primitives" }
+kclvm-ast = { path = "../ast" }
+kclvm-ast-pretty = { path = "../ast_pretty" }
+kclvm-runtime = { path = "../runtime" }
+kclvm-error = { path = "../error" }
+kclvm-span = { path = "../span" }
+kclvm-utils = { path = "../utils" }
+compiler_base_span = "0.1.2"
+compiler_base_session = "0.1.3"
+compiler_base_macros = "0.1.1"
+compiler_base_error = "0.1.6"
+suggestions = "0.1.1"
+parking_lot = { version = "0.12.0", default-features = false }
+
+[dev-dependencies]
+kclvm-parser = { path = "../parser" }
+criterion = "0.5"
+
+[[bench]]
+name = "my_benchmark"
+harness = false

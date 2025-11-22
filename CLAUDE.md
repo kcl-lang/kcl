@@ -29,13 +29,12 @@ Ant Group, Youzan, and Huawei are notable production users managing large-scale 
 ### Top-Level Organization
 
 ```
-/kclvm/              Core KCL VM and compiler implementation (main codebase)
+/crates/              Core KCL VM and compiler implementation (main codebase)
 /compiler_base/      Base compiler libraries and utilities (WIP, rustc-derived)
 /cli/                Command-line interface binary wrapper
 /test/               Integration and grammar tests
   /grammar/          Extensive grammar test cases
   /integration/      Integration test suites
-/samples/            Example KCL programs (hello.k, kubernetes.k, fib.k, etc.)
 /docs/               Developer guides and documentation
   /dev_guide/        Development guide (architecture, quick start, etc.)
   /design/           Design documents
@@ -55,7 +54,7 @@ Ant Group, Youzan, and Huawei are notable production users managing large-scale 
 ### Primary Language: Rust
 - 362+ Rust source files
 - ~32,673 lines of Rust code in core modules
-- **Requires Rust 1.84+** for building
+- **Requires Rust 1.88+** for building
 - Rust 2021 edition
 
 ### Secondary Languages
@@ -91,7 +90,7 @@ Source Code (.k files)
 Output (YAML/JSON)
 ```
 
-### Key Components (/kclvm crates)
+### Key Components (/crates)
 
 **Frontend (Parsing & Analysis):**
 - `kclvm-lexer` - Lexical analysis and tokenization
@@ -140,7 +139,7 @@ Output (YAML/JSON)
 - Thread pool for concurrent request handling
 - Event-driven architecture (Tasks + LSP Messages)
 - Compile unit discovery for projects without explicit config
-- Located at: `/kclvm/tools/src/LSP`
+- Located at: `/crates/tools/src/LSP`
 
 ## Build System
 
@@ -195,15 +194,9 @@ make build-wasm     # WASM target
 - Command: `make test-grammar`
 
 **3. Integration Tests:**
-- `/kclvm/tests/integration` - Rust integration tests
-- `/test/integration` - Python integration tests
-- Konfig tests for real-world scenarios
+- `tests/grammar` - Python integration tests
 
-**4. Fuzz Testing:**
-- Parser fuzzing in `/kclvm/tests/fuzz`
-- Command: `make fuzz-parser`
-
-**5. Runtime Tests:**
+**4. Runtime Tests:**
 - Python-based runtime library tests
 - Command: `make test-runtime`
 
@@ -262,7 +255,7 @@ Comprehensive GitHub Actions workflows (11 pipelines) for:
 docker pull kcllang/kcl-builder
 
 # Or install dependencies locally
-# - Rust 1.84+
+# - Rust 1.88+
 # - LLVM 12 (optional, for high-performance backend)
 # - Python 3.x (for tests)
 # - Protobuf compiler
@@ -297,28 +290,6 @@ make test-grammar
    - Optional LLVM backend for native code compilation
    - WASM compilation target
    - Size-optimized release builds
-
-## Common Development Tasks
-
-### Working with the Compiler
-- Main compiler logic: `/kclvm/compiler/src/`
-- LLVM codegen: `/kclvm/compiler/src/codegen/llvm/`
-- Semantic analysis: `/kclvm/sema/src/`
-
-### Working with the Runtime
-- Runtime implementation: `/kclvm/runtime/src/`
-- Standard library: `/kclvm/runtime/src/_kclvm_main.ll` and various modules
-- Value system: `/kclvm/runtime/src/value/`
-
-### Working with the Language Server
-- LSP implementation: `/kclvm/tools/src/LSP/`
-- Entry point: `/kclvm/tools/src/LSP/src/main.rs`
-- Key components: state management, completion, goto-definition, diagnostics
-
-### Working with Tests
-- Grammar tests: `/test/grammar/` (Python-based)
-- Integration tests: `/kclvm/tests/integration/` (Rust)
-- Add new test cases by following existing patterns
 
 ## Git Workflow
 

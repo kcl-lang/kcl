@@ -1,0 +1,14 @@
+[package]
+name = "kclvm-utils"
+version.workspace = true
+edition.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1"
+regex = "1.3"
+
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+fslock = "0.2.1"

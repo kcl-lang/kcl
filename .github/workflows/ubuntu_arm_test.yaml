@@ -32,31 +32,23 @@ jobs:
       - name: Install rust nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.84.1
+          toolchain: 1.88
           override: true
           components: clippy, rustfmt
       - name: Code format check
-        working-directory: ./kclvm
         run: cargo fmt --check
         shell: bash
       - name: chmod
         run: |
-          chmod -R 777 kclvm
+          chmod -R 777 crates
       - name: Code clippy check
-        working-directory: ./kclvm
         run: cargo clippy --no-deps -r
         shell: bash
       - name: Grammar test
-        working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/linux/kclvm/bin && make && make test-grammar
-        shell: bash
-      - name: Evaluator Grammar test
-        working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/linux/kclvm/bin && make test-grammar-evaluator
+        run: export PATH=$PATH:$PWD/_build/dist/linux/core && make && make test-grammar
         shell: bash
       - name: Runtime test
-        working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/linux/kclvm/bin && make test-runtime
+        run: export PATH=$PATH:$PWD/_build/dist/linux/core && make test-runtime
         shell: bash
       - name: Install KCL CLI
         run: |
@@ -64,12 +56,11 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
           echo "${{ github.workspace }}/go/bin" >> $GITHUB_PATH
       - name: Unit test
-        working-directory: ./kclvm
-        run: export PATH=$PATH:$PWD/../_build/dist/linux/kclvm/bin && make test
+        run: export PATH=$PATH:$PWD/_build/dist/linux/core && make test
         shell: bash
       
       - name: Release
-        run: export PATH=$PATH:$PWD/../_build/dist/linux/kclvm/bin && make release
+        run: export PATH=$PATH:$PWD/_build/dist/linux/core && make release
         shell: bash
 
       - name: Read VERSION file
@@ -82,5 +73,4 @@ jobs:
         with:
           name: kcl-${{ env.VERSION }}-linux-arm64
           if-no-files-found: error
-          path: _build/kclvm-${{ env.VERSION }}-linux-arm64.tar.gz
-
+          path: _build/dist/linux/kcl-core-${{ env.VERSION }}-linux-arm64.tar.gz

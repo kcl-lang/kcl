@@ -1,5 +1,0 @@
-[dependencies]
-  [dependencies.dep-with-line]
-    name = "dep-with-line"
-    full_name = "dep-with-line_0.0.1"
-    version = "0.0.1"

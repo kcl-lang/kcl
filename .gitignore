@@ -9,7 +9,6 @@ __pycache__
 __kclcache__/
 build-result/
 dist/
-kclvm.egg-info/
 .eggs/
 
 # Mac OS X files
@@ -20,8 +19,8 @@ _site-packages
 
 __kcl_test_main.k
 
-# kclvm bundles
-/kclvm-*.zip
+# kcl bundles
+/kcl-core-*.zip
 /kcl-go*
 /_build_dist
 .kusion
@@ -38,7 +37,6 @@ __kcl_test_main.k
 /result
 
 coverage.xml
-TEST-kclvm.xml
 
 /go-test-coverprofile.*
 
@@ -69,11 +67,6 @@ lark_parser.pickle
 /*/*/target
 /**/target
 
-/kclvm/vendor
-/scripts/docker/kclvm-builder/vendor*
-/scripts/docker/kclvm-builder/crates.io-index
-/scripts/docker/kclvm-builder-centos7/crates.io-index
-/scripts/docker/kclvm-builder-ubuntu/crates.io-index
 *.tar.gz
 
 # KCL cache and temp output

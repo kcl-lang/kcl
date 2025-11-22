@@ -1,0 +1,38 @@
+[package]
+name = "kclvm-lib"
+version.workspace = true
+edition.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+path = "src/lib.rs"
+name = "kcl"
+
+[dependencies]
+kclvm-api.workspace = true
+kclvm-cmd.workspace = true
+kclvm-ast.workspace = true
+kclvm-runner.workspace = true
+kclvm-parser.workspace = true
+kclvm-compiler.workspace = true
+kclvm-config.workspace = true
+kclvm-loader.workspace = true
+kclvm-runtime.workspace = true
+kclvm-sema.workspace = true
+kclvm-tools.workspace = true
+kclvm-version.workspace = true
+kclvm-error.workspace = true
+kclvm-evaluator.workspace = true
+kclvm-query.workspace = true
+kclvm-driver.workspace = true
+kclvm-primitives.workspace = true
+
+[features]
+llvm = [
+    "kclvm-compiler/llvm",
+    "kclvm-runner/llvm",
+    "kclvm-tools/llvm",
+    "kclvm-api/llvm",
+]
