@@ -174,10 +174,12 @@ fn test_fill_pkg_maps_for_k_file() {
         .join("test_data")
         .join("test_vendor");
 
-    env::set_var(
-        "KCL_PKG_PATH",
-        vendor_path.canonicalize().unwrap().display().to_string(),
-    );
+    unsafe {
+        env::set_var(
+            "KCL_PKG_PATH",
+            vendor_path.canonicalize().unwrap().display().to_string(),
+        )
+    };
 
     let mut opts = LoadProgramOptions::default();
     assert_eq!(format!("{:?}", opts.package_maps), "{}");
@@ -265,10 +267,12 @@ fn test_tool_fetch_metadata(tool: impl Toolchain) {
         .join("test_data")
         .join("test_vendor");
 
-    env::set_var(
-        "KCL_PKG_PATH",
-        vendor_path.canonicalize().unwrap().display().to_string(),
-    );
+    unsafe {
+        env::set_var(
+            "KCL_PKG_PATH",
+            vendor_path.canonicalize().unwrap().display().to_string(),
+        )
+    };
     let vendor_home = get_vendor_home();
     let metadata = tool.fetch_metadata(path.clone());
     let pkgs = metadata.unwrap().packages.clone();

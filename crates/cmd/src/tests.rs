@@ -253,7 +253,7 @@ fn test_load_cache_with_different_pkg() {
 /// but it only works on unix systems.
 /// After [`gag`] can better support windows in the future, it may be considered to test the `println!`.
 fn check_run_command_with_env(test_case_path: PathBuf, kcl_pkg_path_env: String) {
-    env::set_var(KCL_PKG_PATH, kcl_pkg_path_env);
+    unsafe { env::set_var(KCL_PKG_PATH, kcl_pkg_path_env) };
 
     let test_case_expect_file = test_case_path.join("stdout").display().to_string();
     let expect = fs::read_to_string(test_case_expect_file).expect("Unable to read file");

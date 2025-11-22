@@ -23,7 +23,7 @@ fn smoke_test() {
             Token { kind: Space, len: 1 }
             Token { kind: Ident, len: 7 }
             Token { kind: OpenParen, len: 1 }
-            Token { kind: Literal { kind: Str { terminated: true, triple_quoted: false }, suffix_start: 7 }, len: 7 }
+            Token { kind: Literal { kind: Str { terminated: true, triple_quoted: false }, suffix_start: 5 }, len: 5 }
             Token { kind: CloseParen, len: 1 }
             Token { kind: Semi, len: 1 }
             Token { kind: Space, len: 1 }

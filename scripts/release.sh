@@ -30,7 +30,9 @@ install_dir="core"
 
 cd $package_dir
 tar -czvf $release_file $install_dir
+cd ../../..
+ls -l "$package_dir/$release_file"
 
 # Print the summary.
 echo "================ Summary ================"
-echo "  $release_path/$release_file has been created"
+echo "  $package_dir/$release_file has been created"

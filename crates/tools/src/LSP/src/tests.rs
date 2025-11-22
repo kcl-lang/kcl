@@ -43,7 +43,6 @@ use lsp_types::WorkDoneProgressParams;
 use lsp_types::WorkspaceEdit;
 use lsp_types::WorkspaceFolder;
 use lsp_types::notification::Exit;
-use lsp_types::request::GotoTypeDefinitionResponse;
 
 use parking_lot::lock_api::RwLock;
 use serde::Serialize;
@@ -52,7 +51,6 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::env;
-use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -510,7 +508,7 @@ impl Server {
             recv(self.client.receiver) -> msg => msg.ok(),
             recv(after(timeout)) -> _ => panic!("timed out"),
         };
-        if let Some(msg) = msg {
+        if let Some(msg) = &msg {
             self.messages.borrow_mut().push(msg.clone());
         }
         msg
@@ -523,7 +521,7 @@ impl Server {
             recv(self.client.receiver) -> msg => msg.ok(),
             recv(after(timeout)) -> _ => return None,
         };
-        if let Some(msg) = msg {
+        if let Some(msg) = &msg {
             self.messages.borrow_mut().push(msg.clone());
         }
         msg
