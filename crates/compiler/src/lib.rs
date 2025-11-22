@@ -5,5 +5,3 @@ pub mod value;
 
 #[macro_use]
 mod macros;
-
-extern crate kclvm_error;

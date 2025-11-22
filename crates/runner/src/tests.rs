@@ -1,30 +1,12 @@
-#[cfg(feature = "llvm")]
-use crate::assembler::clean_path;
-#[cfg(feature = "llvm")]
-use crate::assembler::KclvmAssembler;
-#[cfg(feature = "llvm")]
-use crate::assembler::KclvmLibAssembler;
-#[cfg(feature = "llvm")]
-use crate::assembler::LibAssembler;
 use crate::exec_program;
-#[cfg(feature = "llvm")]
-use crate::temp_file;
 use crate::{execute, runner::ExecProgramArgs};
-#[cfg(feature = "llvm")]
-use anyhow::Context;
 use anyhow::Result;
 use kclvm_ast::ast::{Module, Program};
-#[cfg(feature = "llvm")]
-use kclvm_compiler::codegen::OBJECT_FILE_SUFFIX;
 use kclvm_config::settings::load_file;
 use kclvm_parser::load_program;
 use kclvm_parser::ParseSession;
-#[cfg(feature = "llvm")]
-use kclvm_sema::resolver::resolve_program;
 use kclvm_utils::path::PathPrefix;
 use serde_json::Value;
-#[cfg(feature = "llvm")]
-use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::RwLock;
@@ -32,19 +14,8 @@ use std::{
     collections::HashMap,
     fs::{self, File},
 };
-#[cfg(feature = "llvm")]
-use tempfile::tempdir;
 use uuid::Uuid;
 use walkdir::WalkDir;
-
-#[cfg(feature = "llvm")]
-const MULTI_FILE_TEST_CASES: &[&str; 5] = &[
-    "no_kcl_mod_file",
-    "relative_import",
-    "relative_import_as",
-    "import_regular_module",
-    "import_regular_module_as",
-];
 
 const TEST_CASES: &[&str; 5] = &[
     "init_check_order_0",
@@ -67,44 +38,6 @@ fn custom_manifests_data_path() -> String {
         .join("custom_manifests_data")
         .display()
         .to_string()
-}
-
-#[cfg(feature = "llvm")]
-fn multi_file_test_cases() -> Vec<String> {
-    let mut test_cases: Vec<String> = MULTI_FILE_TEST_CASES
-        .iter()
-        .map(|case| {
-            Path::new("multi_file_compilation")
-                .join(case)
-                .display()
-                .to_string()
-        })
-        .collect();
-
-    test_cases.push(
-        Path::new("multi_file_compilation")
-            .join("import_abs_path")
-            .join("app-main")
-            .display()
-            .to_string(),
-    );
-    test_cases.push(
-        Path::new("..")
-            .join("..")
-            .join("..")
-            .join("..")
-            .join("test")
-            .join("integration")
-            .join("konfig")
-            .join("base")
-            .join("examples")
-            .join("job-example")
-            .join("dev")
-            .display()
-            .to_string(),
-    );
-
-    test_cases
 }
 
 fn exec_prog_args_test_case() -> Vec<String> {
@@ -135,8 +68,6 @@ fn test_case_path() -> String {
 
 const KCL_FILE_NAME: &str = "main.k";
 const MAIN_PKG_NAME: &str = "__main__";
-#[cfg(feature = "llvm")]
-const CARGO_PATH: &str = env!("CARGO_MANIFEST_DIR");
 
 #[derive(serde::Deserialize, serde::Serialize)]
 struct SimplePanicInfo {
@@ -145,34 +76,10 @@ struct SimplePanicInfo {
     message: String,
 }
 
-#[cfg(feature = "llvm")]
-fn gen_full_path(rel_path: String) -> Result<String> {
-    let mut cargo_file_path = PathBuf::from(CARGO_PATH);
-    cargo_file_path.push(&rel_path);
-    let full_path = cargo_file_path
-        .to_str()
-        .with_context(|| format!("No such file or directory '{}'", rel_path))?;
-    Ok(full_path.to_string())
-}
-
 /// Load test kcl file to ast.Program
 fn load_test_program(filename: String) -> Program {
     let module = kclvm_parser::parse_file_force_errors(&filename, None).unwrap();
     construct_program(module)
-}
-
-#[cfg(feature = "llvm")]
-fn parse_program(test_kcl_case_path: &str) -> Program {
-    let args = ExecProgramArgs::default();
-    let opts = args.get_load_program_options();
-    load_program(
-        Arc::new(ParseSession::default()),
-        &[test_kcl_case_path],
-        Some(opts),
-        None,
-    )
-    .unwrap()
-    .program
 }
 
 /// Construct ast.Program by ast.Module and default configuration.
@@ -191,25 +98,6 @@ fn construct_program(module: Module) -> Program {
         pkgs_not_imported: HashMap::new(),
         modules_not_imported: HashMap::new(),
     }
-}
-
-#[cfg(feature = "llvm")]
-fn construct_pkg_lib_path(
-    prog: &Program,
-    assembler: &KclvmAssembler,
-    main_path: &str,
-    suffix: String,
-) -> Vec<PathBuf> {
-    let cache_dir = assembler.construct_cache_dir(&prog.root);
-    let mut result = vec![];
-    for (pkgpath, _) in &prog.pkgs {
-        if pkgpath == "__main__" {
-            result.push(PathBuf::from(format!("{}{}", main_path, suffix)));
-        } else {
-            result.push(cache_dir.join(format!("{}{}", pkgpath.clone(), suffix)));
-        }
-    }
-    result
 }
 
 /// Load the expect result from stdout.golden.json
@@ -235,81 +123,6 @@ fn execute_for_test(kcl_path: &String) -> String {
         .json_result
 }
 
-#[cfg(feature = "llvm")]
-fn gen_assembler(entry_file: &str, test_kcl_case_path: &str) -> KclvmAssembler {
-    let mut prog = parse_program(test_kcl_case_path);
-    let scope = resolve_program(&mut prog);
-    KclvmAssembler::new(
-        prog.clone(),
-        scope,
-        entry_file.to_string(),
-        KclvmLibAssembler::LLVM,
-        HashMap::new(),
-    )
-}
-
-#[cfg(feature = "llvm")]
-fn gen_libs_for_test(entry_file: &str, test_kcl_case_path: &str) {
-    let assembler = gen_assembler(entry_file, test_kcl_case_path);
-
-    let expected_pkg_paths = construct_pkg_lib_path(
-        &parse_program(test_kcl_case_path),
-        &assembler,
-        PathBuf::from(entry_file).to_str().unwrap(),
-        OBJECT_FILE_SUFFIX.to_string(),
-    );
-
-    let lib_paths = assembler.gen_libs(&ExecProgramArgs::default()).unwrap();
-
-    assert_eq!(lib_paths.len(), expected_pkg_paths.len());
-
-    for pkg_path in &expected_pkg_paths {
-        assert_eq!(pkg_path.exists(), true);
-    }
-
-    let tmp_main_lib_path =
-        fs::canonicalize(format!("{}{}", entry_file, OBJECT_FILE_SUFFIX)).unwrap();
-    assert_eq!(tmp_main_lib_path.exists(), true);
-
-    clean_path(tmp_main_lib_path.to_str().unwrap()).unwrap();
-    assert_eq!(tmp_main_lib_path.exists(), false);
-}
-
-#[cfg(feature = "llvm")]
-fn assemble_lib_for_test(
-    entry_file: &str,
-    test_kcl_case_path: &str,
-    assembler: &KclvmLibAssembler,
-) -> String {
-    // default args and configuration
-    let mut args = ExecProgramArgs::default();
-
-    args.k_filename_list.push(test_kcl_case_path.to_string());
-    let files = args.get_files();
-    let opts = args.get_load_program_options();
-    let sess = Arc::new(ParseSession::default());
-    // parse and resolve kcl
-    let mut program = load_program(sess, &files, Some(opts), None)
-        .unwrap()
-        .program;
-
-    let scope = resolve_program(&mut program);
-
-    // tmp file
-    let temp_entry_file_path = &format!("{}{}", entry_file, OBJECT_FILE_SUFFIX);
-
-    // Assemble object files
-    assembler
-        .assemble(
-            &program,
-            scope.import_names,
-            entry_file,
-            temp_entry_file_path,
-            &ExecProgramArgs::default(),
-        )
-        .unwrap()
-}
-
 fn test_kclvm_runner_execute() {
     for case in TEST_CASES {
         let kcl_path = &Path::new(&test_case_path())
@@ -326,111 +139,6 @@ fn test_kclvm_runner_execute() {
         let expected_result = load_expect_file(expected_path.to_string());
         assert_eq!(expected_result, format_str_by_json(result));
     }
-}
-
-#[test]
-#[cfg(feature = "llvm")]
-fn test_assemble_lib_llvm() {
-    for case in TEST_CASES {
-        let temp_dir = tempdir().unwrap();
-        let temp_dir_path = temp_dir.path().to_str().unwrap();
-        let temp_entry_file = temp_file(temp_dir_path).unwrap();
-        let kcl_path = &Path::new(&test_case_path())
-            .join(case)
-            .join(KCL_FILE_NAME)
-            .display()
-            .to_string();
-        let assembler = &KclvmLibAssembler::LLVM;
-
-        let lib_file = assemble_lib_for_test(
-            &format!("{}{}", temp_entry_file, "4assemble_lib"),
-            kcl_path,
-            assembler,
-        );
-
-        let lib_path = std::path::Path::new(&lib_file);
-        assert_eq!(lib_path.exists(), true);
-        clean_path(&lib_file).unwrap();
-        assert_eq!(lib_path.exists(), false);
-    }
-}
-
-#[test]
-#[cfg(feature = "llvm")]
-fn test_gen_libs() {
-    for case in multi_file_test_cases() {
-        let temp_dir = tempdir().unwrap();
-        let temp_dir_path = temp_dir.path().to_str().unwrap();
-        let temp_entry_file = temp_file(temp_dir_path).unwrap();
-
-        let kcl_path = gen_full_path(
-            Path::new(&test_case_path())
-                .join(case)
-                .join(KCL_FILE_NAME)
-                .display()
-                .to_string(),
-        )
-        .unwrap();
-        gen_libs_for_test(&format!("{}{}", temp_entry_file, "4gen_libs"), &kcl_path);
-    }
-}
-
-#[test]
-#[cfg(feature = "llvm")]
-fn test_clean_path_for_genlibs() {
-    let mut prog = parse_program(
-        &Path::new(".")
-            .join("src")
-            .join("test_datas")
-            .join("multi_file_compilation")
-            .join("import_abs_path")
-            .join("app-main")
-            .join("main.k")
-            .display()
-            .to_string(),
-    );
-    let scope = resolve_program(&mut prog);
-    let assembler = KclvmAssembler::new(
-        prog,
-        scope,
-        String::new(),
-        KclvmLibAssembler::LLVM,
-        HashMap::new(),
-    );
-
-    let temp_dir = tempdir().unwrap();
-    let temp_dir_path = temp_dir.path().to_str().unwrap();
-    let tmp_file_path = &temp_file(temp_dir_path).unwrap();
-
-    create_dir_all(tmp_file_path).unwrap();
-
-    let file_name = &Path::new(tmp_file_path).join("test").display().to_string();
-    let file_suffix = ".o";
-
-    File::create(file_name).unwrap();
-    let path = std::path::Path::new(file_name);
-    assert_eq!(path.exists(), true);
-
-    assembler
-        .clean_path_for_genlibs(file_name, file_suffix)
-        .unwrap();
-    assert_eq!(path.exists(), false);
-
-    let test1 = &format!("{}{}", file_name, ".test1.o");
-    let test2 = &format!("{}{}", file_name, ".test2.o");
-    File::create(test1).unwrap();
-    File::create(test2).unwrap();
-    let path1 = std::path::Path::new(test1);
-
-    let path2 = std::path::Path::new(test2);
-    assert_eq!(path1.exists(), true);
-    assert_eq!(path2.exists(), true);
-
-    assembler
-        .clean_path_for_genlibs(file_name, file_suffix)
-        .unwrap();
-    assert_eq!(path1.exists(), false);
-    assert_eq!(path2.exists(), false);
 }
 
 #[test]

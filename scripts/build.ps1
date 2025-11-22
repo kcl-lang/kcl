@@ -3,7 +3,6 @@
 Set-Location $PSScriptRoot
 # 1. Install kcl.dll
 Set-Location "..\"
-# cargo build --release --features llvm
 cargo build --release
 Set-Location $PSScriptRoot
 

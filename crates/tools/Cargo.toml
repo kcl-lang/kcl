@@ -41,6 +41,3 @@ insta = "1.8.0"
 [[bench]]
 name = "benchmark"
 harness = false
-
-[features]
-llvm = ["kclvm-runner/llvm"]

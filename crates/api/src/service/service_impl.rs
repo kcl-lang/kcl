@@ -22,8 +22,6 @@ use kclvm_query::query::{get_full_schema_type, get_full_schema_type_under_path};
 use kclvm_query::selector::{list_variables, ListOptions};
 use kclvm_query::GetSchemaOption;
 use kclvm_runner::exec_program;
-#[cfg(feature = "llvm")]
-use kclvm_runner::{build_program, exec_artifact};
 use kclvm_sema::core::global_state::GlobalState;
 use kclvm_sema::resolver::scope::KCLScopeCache;
 use kclvm_sema::resolver::Options;
@@ -436,8 +434,6 @@ impl KclvmServiceImpl {
 
     /// Execute KCL file with arguments and return the JSON/YAML result.
     ///
-    /// **Note that it is not thread safe when the llvm feature is enabled.**
-    ///
     /// # Examples
     ///
     /// ```
@@ -484,81 +480,6 @@ impl KclvmServiceImpl {
         let sess = ParseSessionRef::default();
         let result = exec_program(sess, &exec_args)?;
 
-        Ok(ExecProgramResult {
-            json_result: result.json_result,
-            yaml_result: result.yaml_result,
-            log_message: result.log_message,
-            err_message: result.err_message,
-        })
-    }
-
-    /// Build the KCL program to an artifact.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
-    /// use std::path::Path;
-    /// // File case
-    /// let serv = KclvmServiceImpl::default();
-    /// let exec_args = ExecProgramArgs {
-    ///     work_dir: Path::new(".").join("src").join("testdata").canonicalize().unwrap().display().to_string(),
-    ///     k_filename_list: vec!["test.k".to_string()],
-    ///     ..Default::default()
-    /// };
-    /// let artifact = serv.build_program(&BuildProgramArgs {
-    ///     exec_args: Some(exec_args),
-    ///     output: "".to_string(),
-    /// }).unwrap();
-    /// assert!(!artifact.path.is_empty());
-    /// ```
-    #[cfg(feature = "llvm")]
-    pub fn build_program(&self, args: &BuildProgramArgs) -> anyhow::Result<BuildProgramResult> {
-        let exec_args = transform_exec_para(&args.exec_args, self.plugin_agent)?;
-        let artifact = build_program(
-            ParseSessionRef::default(),
-            &exec_args,
-            transform_str_para(&args.output),
-        )?;
-        Ok(BuildProgramResult {
-            path: artifact.get_path().to_string(),
-        })
-    }
-
-    /// Execute the KCL artifact with arguments and return the JSON/YAML result.
-    ///
-    /// ***Note that it is not thread safe when the llvm feature is enabled.*
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use kclvm_api::service::service_impl::KclvmServiceImpl;
-    /// use kclvm_api::gpyrpc::*;
-    /// use std::path::Path;
-    /// // File case
-    /// let serv = KclvmServiceImpl::default();
-    /// let exec_args = ExecProgramArgs {
-    ///     work_dir: Path::new(".").join("src").join("testdata").canonicalize().unwrap().display().to_string(),
-    ///     k_filename_list: vec!["test.k".to_string()],
-    ///     ..Default::default()
-    /// };
-    /// let artifact = serv.build_program(&BuildProgramArgs {
-    ///     exec_args: Some(exec_args.clone()),
-    ///     output: "./lib".to_string(),
-    /// }).unwrap();
-    /// assert!(!artifact.path.is_empty());
-    /// let exec_result = serv.exec_artifact(&ExecArtifactArgs {
-    ///     exec_args: Some(exec_args),
-    ///     path: artifact.path,
-    /// }).unwrap();
-    /// assert_eq!(exec_result.err_message, "");
-    /// assert_eq!(exec_result.yaml_result, "alice:\n  age: 18");
-    /// ```
-    #[cfg(feature = "llvm")]
-    pub fn exec_artifact(&self, args: &ExecArtifactArgs) -> anyhow::Result<ExecProgramResult> {
-        let exec_args = transform_exec_para(&args.exec_args, self.plugin_agent)?;
-        let result = exec_artifact(&args.path, &exec_args)?;
         Ok(ExecProgramResult {
             json_result: result.json_result,
             yaml_result: result.yaml_result,

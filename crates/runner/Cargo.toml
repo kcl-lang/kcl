@@ -46,6 +46,3 @@ criterion = "0.5"
 [[bench]]
 name = "bench_runner"
 harness = false
-
-[features]
-llvm = ["kclvm-compiler/llvm"]

@@ -1,12 +1,7 @@
 //! Copyright The KCL Authors. All rights reserved.
 
-use kclvm_ast::ast;
-use kclvm_primitives::IndexMap;
-
 mod abi;
 pub mod error;
-#[cfg(feature = "llvm")]
-pub mod llvm;
 mod traits;
 
 /// The kclvm runner main function name.
@@ -57,26 +52,4 @@ pub fn emit_code_with(
     opt: &EmitOptions,
 ) -> Result<(), Box<dyn std::error::Error>> {
     ctx.emit(opt)
-}
-
-/// Generate LLVM IR of KCL ast module.
-#[inline]
-pub fn emit_code(
-    program: &ast::Program,
-    workdir: String,
-    import_names: IndexMap<String, IndexMap<String, String>>,
-    opts: &EmitOptions,
-) -> Result<(), Box<dyn std::error::Error>> {
-    #[cfg(feature = "llvm")]
-    {
-        llvm::emit_code(program, workdir, import_names, opts)
-    }
-    #[cfg(not(feature = "llvm"))]
-    {
-        let _ = program;
-        let _ = workdir;
-        let _ = import_names;
-        let _ = opts;
-        Err("error: llvm feature is not enabled. Note: Set KCL_FAST_EVAL=1 or rebuild the crate with the llvm feature.".to_string().into())
-    }
 }

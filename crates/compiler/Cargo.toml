@@ -6,7 +6,6 @@ edition.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", optional = true }
 time = "0.2.23"
 phf = { version = "0.9", features = ["macros"] }
 bit-set = "0.5.0"
@@ -19,6 +18,3 @@ kclvm-sema = { path = "../sema" }
 kclvm-runtime = { path = "../runtime" }
 kclvm-error = { path = "../error" }
 kclvm-primitives = { path = "../primitives" }
-
-[features]
-llvm = ["inkwell/target-webassembly", "inkwell/llvm12-0"]

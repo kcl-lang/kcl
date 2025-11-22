@@ -7,12 +7,8 @@ use kclvm_driver::get_pkg_list;
 use kclvm_parser::get_kcl_files;
 use kclvm_parser::{parse_file_force_errors, ParseSessionRef};
 use kclvm_primitives::{DefaultHashBuilder, IndexMap};
-#[cfg(feature = "llvm")]
-use kclvm_runner::build_program;
 use kclvm_runner::exec_program;
-#[cfg(feature = "llvm")]
-use kclvm_runner::runner::ProgramRunner;
-use kclvm_runner::{Artifact, ExecProgramArgs, KCL_FAST_EVAL_ENV_VAR};
+use kclvm_runner::ExecProgramArgs;
 use std::time::Instant;
 
 /// File suffix for test files.
@@ -62,21 +58,6 @@ impl TestRun for TestSuite {
             disable_yaml_result: true,
             ..opts.exec_args.clone()
         };
-        let is_fast_eval_mode = std::env::var(KCL_FAST_EVAL_ENV_VAR).is_ok();
-        // Build the program
-        let artifact: Option<Artifact> = if is_fast_eval_mode {
-            None
-        } else {
-            #[cfg(feature = "llvm")]
-            let artifact = Some(build_program::<String>(
-                ParseSessionRef::default(),
-                &args,
-                None,
-            )?);
-            #[cfg(not(feature = "llvm"))]
-            let artifact = None;
-            artifact
-        };
         // Save the user argument options.
         let user_args = args.args;
         // Test every case in the suite.
@@ -88,16 +69,7 @@ impl TestRun for TestSuite {
             args.args.append(&mut user_args.clone());
             let start = Instant::now();
             // Check if is the fast eval mode.
-            let exec_result = if let Some(_artifact) = &artifact {
-                #[cfg(feature = "llvm")]
-                let exec_result = _artifact.run(&args)?;
-                #[cfg(not(feature = "llvm"))]
-                let exec_result = exec_program(ParseSessionRef::default(), &args)?;
-                exec_result
-            } else {
-                args.fast_eval = true;
-                exec_program(ParseSessionRef::default(), &args)?
-            };
+            let exec_result = exec_program(ParseSessionRef::default(), &args)?;
             // Check if there was an error.
             let error = if exec_result.err_message.is_empty() {
                 None

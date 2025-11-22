@@ -165,10 +165,6 @@ pub(crate) fn kclvm_get_service_fn_ptr_by_name(name: &str) -> u64 {
         "KclvmService.ListOptions" => list_options as *const () as u64,
         "KclvmService.ListVariables" => list_variables as *const () as u64,
         "KclvmService.ExecProgram" => exec_program as *const () as u64,
-        #[cfg(feature = "llvm")]
-        "KclvmService.BuildProgram" => build_program as *const () as u64,
-        #[cfg(feature = "llvm")]
-        "KclvmService.ExecArtifact" => exec_artifact as *const () as u64,
         "KclvmService.OverrideFile" => override_file as *const () as u64,
         "KclvmService.GetSchemaTypeMapping" => get_schema_type_mapping as *const () as u64,
         "KclvmService.GetSchemaTypeMappingUnderPath" => {
@@ -401,72 +397,6 @@ pub(crate) fn exec_program(
         result_len,
         ExecProgramArgs,
         exec_program
-    )
-}
-
-/// build_program provides users with the ability to build the KCL program to an artifact.
-///
-/// # Parameters
-///
-/// `serv`: [*mut kclvm_service]
-///     The pointer of &\[[KclvmServiceImpl]]
-///
-///
-/// `args`: [*const c_char]
-///     the items and compile parameters selected by the user in the KCL CLI
-///     serialized as protobuf byte sequence
-///
-/// # Returns
-///
-/// result: [*const c_char]
-///     Result of the call serialized as protobuf byte sequence
-#[cfg(feature = "llvm")]
-pub(crate) fn build_program(
-    serv: *mut kclvm_service,
-    args: *const c_char,
-    args_len: usize,
-    result_len: *mut usize,
-) -> *const c_char {
-    call!(
-        serv,
-        args,
-        args_len,
-        result_len,
-        BuildProgramArgs,
-        build_program
-    )
-}
-
-/// build_program provides users with the ability to execute the KCL artifact.
-///
-/// # Parameters
-///
-/// `serv`: [*mut kclvm_service]
-///     The pointer of &\[[KclvmServiceImpl]]
-///
-///
-/// `args`: [*const c_char]
-///     the items and compile parameters selected by the user in the KCL CLI
-///     serialized as protobuf byte sequence
-///
-/// # Returns
-///
-/// result: [*const c_char]
-///     Result of the call serialized as protobuf byte sequence
-#[cfg(feature = "llvm")]
-pub(crate) fn exec_artifact(
-    serv: *mut kclvm_service,
-    args: *const c_char,
-    args_len: usize,
-    result_len: *mut usize,
-) -> *const c_char {
-    call!(
-        serv,
-        args,
-        args_len,
-        result_len,
-        ExecArtifactArgs,
-        exec_artifact
     )
 }
 

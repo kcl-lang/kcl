@@ -28,11 +28,3 @@ kclvm-evaluator.workspace = true
 kclvm-query.workspace = true
 kclvm-driver.workspace = true
 kclvm-primitives.workspace = true
-
-[features]
-llvm = [
-    "kclvm-compiler/llvm",
-    "kclvm-runner/llvm",
-    "kclvm-tools/llvm",
-    "kclvm-api/llvm",
-]

@@ -64,7 +64,6 @@ Ant Group, Youzan, and Huawei are notable production users managing large-scale 
 - **C/C++** - Runtime interop and FFI interfaces
 
 ### Key Dependencies
-- **LLVM 12** - Compiler backend (optional, for high-performance compilation)
 - **Protobuf** - API definitions and RPC communication
 - **WASM** - WebAssembly compilation target support
 - **tokio** - Async runtime (for LSP and server)
@@ -82,8 +81,6 @@ Source Code (.k files)
 [Parser] → AST
     ↓
 [Resolver/Sema] → Semantic Analysis & Type Checking
-    ↓
-[Compiler] → IR (LLVM IR or AST-based)
     ↓
 [Evaluator/Runner] → Execution
     ↓
@@ -106,7 +103,6 @@ Output (YAML/JSON)
 - `kclvm-query` - Code query and information retrieval
 
 **Compilation & Execution:**
-- `kclvm-compiler` - Main compilation logic with optional LLVM backend
 - `kclvm-evaluator` - Expression evaluation engine
 - `kclvm-runner` - Program execution environment
 - `kclvm-driver` - Compilation driver and orchestration
@@ -160,13 +156,11 @@ make build-wasm     # WASM target
 
 ### Build Features
 - Workspace with 20+ member crates
-- Optional `llvm` feature flag for high-performance backend
 - Support for multiple targets: native, WASM (wasm32-wasip1), WASM-unknown
 - Cross-platform: Linux (AMD64, ARM64), macOS (AMD64, ARM64), Windows (MinGW)
 - Release profile optimized for size (opt-level = "z", LTO enabled)
 
 ### Major Dependencies
-- **inkwell** - LLVM bindings (optional)
 - **serde/serde_json** - Serialization
 - **serde_yaml_ng** - YAML support (note: migrated from serde_yaml)
 - **prost/protobuf** - Protocol buffers
@@ -184,7 +178,6 @@ make build-wasm     # WASM target
 **1. Unit Tests:**
 - Cargo-based unit tests across all crates
 - Command: `make test` or `cargo test --workspace`
-- Code coverage via `cargo llvm-cov`
 
 **2. Grammar Tests:**
 - Extensive grammar test suite in `/test/grammar`
@@ -241,10 +234,9 @@ Comprehensive GitHub Actions workflows (11 pipelines) for:
 1. **Spec-driven**: Independent syntax and semantics specification
 2. **Functional**: Low side-effects, no system-level operations (no threads/IO)
 3. **Constraint-based**: Schema + Rule + Lambda for configuration validation
-4. **High Performance**: Rust + LLVM compilation, WASM support
-5. **API-first**: Multi-language SDKs (Rust, Go, Python, .NET, Java, Node.js)
-6. **Cloud-native**: Native support for OpenAPI, K8s CRD, KRM spec
-7. **Type Safety**: Static type system with constraints and validation rules
+4. **API-first**: Multi-language SDKs (Rust, Go, Python, .NET, Java, Node.js)
+5. **Cloud-native**: Native support for OpenAPI, K8s CRD, KRM spec
+6. **Type Safety**: Static type system with constraints and validation rules
 
 ## Development Workflow
 
@@ -256,7 +248,6 @@ docker pull kcllang/kcl-builder
 
 # Or install dependencies locally
 # - Rust 1.88+
-# - LLVM 12 (optional, for high-performance backend)
 # - Python 3.x (for tests)
 # - Protobuf compiler
 
@@ -287,7 +278,6 @@ make test-grammar
    - Comprehensive tooling (format, lint, test, vet)
    - Extensive test coverage and fuzzing
 5. **Performance Focus:**
-   - Optional LLVM backend for native code compilation
    - WASM compilation target
    - Size-optimized release builds
 
@@ -306,8 +296,7 @@ make test-grammar
 4. **Cross-platform support** - Consider multiple platforms when making changes
 5. **Documentation** - Keep docs in sync with code changes
 6. **The codebase uses workspaces** - Changes may affect multiple crates
-7. **LLVM backend is optional** - Code should work with or without it
-8. **Recent migration from serde_yaml to serde_yaml_ng** - Use the new library
+7. **Recent migration from serde_yaml to serde_yaml_ng** - Use the new library
 
 ## Quick Reference
 

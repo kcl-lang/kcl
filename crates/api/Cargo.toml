@@ -46,6 +46,3 @@ criterion = "0.5"
 protoc-bin-vendored = "3.2.0"
 prost-build = "0.14.1"
 prost-wkt-build = "0.7.0"
-
-[features]
-llvm = ["kclvm-runner/llvm"]
