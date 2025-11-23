@@ -55,3 +55,27 @@ jobs:
       - name: Unit test
         run: export PATH=$PATH:$PWD/_build/dist/linux/core && make test
         shell: bash
+
+      - name: KCL Lib GLIBC 2.17 Build and Release
+        shell: bash
+        run: |
+          pip3 install ziglang
+          cargo install --locked cargo-zigbuild
+          cargo clean
+          cargo zigbuild --target x86_64-unknown-linux-gnu.2.17 -r -p kcl-lib
+          cp -f target/x86_64-unknown-linux-gnu/release/libkcl.so _build/dist/linux
+          make release
+
+      - name: Read VERSION file
+        run: |
+          VERSION=$(cargo pkgid -p kcl-api | cut -d'@' -f2)
+          echo "VERSION=v${VERSION}" >> $GITHUB_ENV
+
+      - name: Rename artifact name with version
+        run: sudo mv -f _build/dist/linux/kcl-latest-linux-amd64.tar.gz _build/dist/linux/kcl-${{ env.VERSION }}-linux-amd64.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kcl-${{ env.VERSION }}-linux-amd64
+          if-no-files-found: error
+          path: _build/dist/linux/kcl-${{ env.VERSION }}-linux-amd64.tar.gz
