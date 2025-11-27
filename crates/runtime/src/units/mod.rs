@@ -40,7 +40,6 @@ pub const INVALID_UNITS: [&str; 4] = ["ni", "ui", "mi", "ki"];
 // to_n(num: int) -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_units_to_n(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -61,7 +60,6 @@ pub extern "C-unwind" fn kcl_units_to_n(
 // to_u(num: int) -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_units_to_u(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -82,7 +80,6 @@ pub extern "C-unwind" fn kcl_units_to_u(
 // to_m(num: int) -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_units_to_m(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -103,7 +100,6 @@ pub extern "C-unwind" fn kcl_units_to_m(
 // to_K(num: int) -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_units_to_K(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -123,7 +119,6 @@ pub extern "C-unwind" fn kcl_units_to_K(
 // to_M(num: int) -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_units_to_M(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -143,7 +138,6 @@ pub extern "C-unwind" fn kcl_units_to_M(
 // to_G(num: int) -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_units_to_G(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -163,7 +157,6 @@ pub extern "C-unwind" fn kcl_units_to_G(
 // to_T(num: int) -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_units_to_T(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -183,7 +176,6 @@ pub extern "C-unwind" fn kcl_units_to_T(
 // to_P(num: int) -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_units_to_P(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -203,7 +195,6 @@ pub extern "C-unwind" fn kcl_units_to_P(
 // to_Ki(num: int) -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_units_to_Ki(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -223,7 +214,6 @@ pub extern "C-unwind" fn kcl_units_to_Ki(
 // to_Mi(num: int) -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_units_to_Mi(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -243,7 +233,6 @@ pub extern "C-unwind" fn kcl_units_to_Mi(
 // to_Gi(num: int) -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_units_to_Gi(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -263,7 +252,6 @@ pub extern "C-unwind" fn kcl_units_to_Gi(
 // to_Ti(num: int) -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_units_to_Ti(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -283,7 +271,6 @@ pub extern "C-unwind" fn kcl_units_to_Ti(
 // to_Pi(num: int) -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_units_to_Pi(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,

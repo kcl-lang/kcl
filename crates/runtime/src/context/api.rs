@@ -41,13 +41,11 @@ type kcl_float_t = f64;
 // ----------------------------------------------------------------------------
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_context_new() -> *mut kcl_context_t {
     Box::into_raw(Box::new(Context::new()))
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_context_delete(p: *mut kcl_context_t) {
     let ctx = mut_ptr_as_ref(p);
     for o in &ctx.objects {
@@ -62,7 +60,6 @@ pub unsafe extern "C-unwind" fn kcl_context_delete(p: *mut kcl_context_t) {
 // ----------------------------------------------------------------------------
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_context_set_kcl_location(
     p: *mut kcl_context_t,
     filename: *const c_char,
@@ -78,7 +75,6 @@ pub unsafe extern "C-unwind" fn kcl_context_set_kcl_location(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_context_set_kcl_pkgpath(
     p: *mut kcl_context_t,
     pkgpath: *const c_char,
@@ -90,7 +86,6 @@ pub unsafe extern "C-unwind" fn kcl_context_set_kcl_pkgpath(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_context_set_kcl_modpath(
     p: *mut kcl_context_t,
     module_path: *const c_char,
@@ -102,7 +97,6 @@ pub unsafe extern "C-unwind" fn kcl_context_set_kcl_modpath(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_context_set_kcl_workdir(
     p: *mut kcl_context_t,
     workdir: *const c_char,
@@ -114,7 +108,6 @@ pub unsafe extern "C-unwind" fn kcl_context_set_kcl_workdir(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_context_set_kcl_filename(
     ctx: *mut kcl_context_t,
     filename: *const c_char,
@@ -126,7 +119,6 @@ pub unsafe extern "C-unwind" fn kcl_context_set_kcl_filename(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_context_set_kcl_line_col(
     ctx: *mut kcl_context_t,
     line: i32,
@@ -141,19 +133,16 @@ pub unsafe extern "C-unwind" fn kcl_context_set_kcl_line_col(
 // ----------------------------------------------------------------------------
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_scope_new() -> *mut kcl_eval_scope_t {
     Box::into_raw(Box::default())
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_scope_delete(scope: *mut kcl_eval_scope_t) {
     drop(unsafe { Box::from_raw(scope) });
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_scope_add_setter(
     _ctx: *mut kcl_context_t,
     scope: *mut kcl_eval_scope_t,
@@ -174,7 +163,6 @@ pub unsafe extern "C-unwind" fn kcl_scope_add_setter(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_scope_set(
     _ctx: *mut kcl_context_t,
     scope: *mut kcl_eval_scope_t,
@@ -191,7 +179,6 @@ pub unsafe extern "C-unwind" fn kcl_scope_set(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_scope_get(
     ctx: *mut kcl_context_t,
     scope: *mut kcl_eval_scope_t,
@@ -219,14 +206,12 @@ pub unsafe extern "C-unwind" fn kcl_scope_get(
 // ----------------------------------------------------------------------------
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_context_set_debug_mode(p: *mut kcl_context_t, v: kcl_bool_t) {
     let p = mut_ptr_as_ref(p);
     p.cfg.debug_mode = v != 0;
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_context_set_strict_range_check(
     p: *mut kcl_context_t,
     v: kcl_bool_t,
@@ -236,14 +221,12 @@ pub unsafe extern "C-unwind" fn kcl_context_set_strict_range_check(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_context_set_disable_none(p: *mut kcl_context_t, v: kcl_bool_t) {
     let p = mut_ptr_as_ref(p);
     p.plan_opts.disable_none = v != 0;
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_context_set_disable_schema_check(
     p: *mut kcl_context_t,
     v: kcl_bool_t,
@@ -257,7 +240,6 @@ pub unsafe extern "C-unwind" fn kcl_context_set_disable_schema_check(
 // ----------------------------------------------------------------------------
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_context_invoke(
     p: *mut kcl_context_t,
     method: *const c_char,
@@ -269,7 +251,7 @@ pub unsafe extern "C-unwind" fn kcl_context_invoke(
 
     let args = unsafe { kcl_value_from_json(p, args) };
     let kwargs = unsafe { kcl_value_from_json(p, kwargs) };
-    let result = unsafe { _kcl_context_invoke(p, method, args, kwargs) };
+    let result = unsafe { kcl_context_invoke_inner(p, method, args, kwargs) };
 
     p.buffer.kcl_context_invoke_result = ptr_as_ref(result).to_json_string_with_null();
     let result_json = p.buffer.kcl_context_invoke_result.as_ptr() as *const c_char;
@@ -281,7 +263,7 @@ pub unsafe extern "C-unwind" fn kcl_context_invoke(
     result_json
 }
 
-unsafe fn _kcl_context_invoke(
+unsafe fn kcl_context_invoke_inner(
     ctx: *mut kcl_context_t,
     method: &str,
     args: *const kcl_value_ref_t,
@@ -289,7 +271,7 @@ unsafe fn _kcl_context_invoke(
 ) -> *mut kcl_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
 
-    let fn_addr = _kcl_get_fn_ptr_by_name(method);
+    let fn_addr = kcl_get_fn_ptr_by_name(method);
     if fn_addr == 0 {
         panic!("null fn ptr");
     }
@@ -305,7 +287,6 @@ unsafe fn _kcl_context_invoke(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_context_pkgpath_is_imported(
     ctx: *mut kcl_context_t,
     pkgpath: *const kcl_char_t,

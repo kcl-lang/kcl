@@ -13,7 +13,6 @@ use std::str::FromStr;
 // split_host_port(ip_end_point: str) -> List[str]
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_split_host_port(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -100,7 +99,6 @@ pub extern "C-unwind" fn kcl_net_split_host_port(
 // join_host_port(host, port) -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_join_host_port(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -125,7 +123,6 @@ pub extern "C-unwind" fn kcl_net_join_host_port(
 
 #[cfg(not(target_arch = "wasm32"))]
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_fqdn(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -162,7 +159,6 @@ pub extern "C-unwind" fn kcl_net_fqdn(
 
 #[cfg(target_arch = "wasm32")]
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_fqdn(
     _ctx: *mut kcl_context_t,
     _args: *const kcl_value_ref_t,
@@ -174,7 +170,6 @@ pub extern "C-unwind" fn kcl_net_fqdn(
 // parse_IP(ip) -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_parse_IP(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -186,7 +181,6 @@ pub extern "C-unwind" fn kcl_net_parse_IP(
 // to_IP4(ip) -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_to_IP4(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -223,7 +217,6 @@ pub extern "C-unwind" fn kcl_net_to_IP4(
 // to_IP6(ip) -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_to_IP6(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -260,7 +253,6 @@ pub extern "C-unwind" fn kcl_net_to_IP6(
 // IP_string(ip: str) -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_IP_string(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -288,7 +280,6 @@ pub extern "C-unwind" fn kcl_net_IP_string(
 // is_IPv4(ip: str) -> bool
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_is_IPv4(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -314,7 +305,6 @@ pub extern "C-unwind" fn kcl_net_is_IPv4(
 // is_IP(ip: str) -> bool
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_is_IP(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -337,7 +327,6 @@ pub extern "C-unwind" fn kcl_net_is_IP(
 // is_loopback_IP(ip: str) -> bool
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_is_loopback_IP(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -365,7 +354,6 @@ pub extern "C-unwind" fn kcl_net_is_loopback_IP(
 // is_multicast_IP(ip: str) -> bool
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_is_multicast_IP(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -393,7 +381,6 @@ pub extern "C-unwind" fn kcl_net_is_multicast_IP(
 // is_interface_local_multicast_IP(ip: str) -> bool
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_is_interface_local_multicast_IP(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -416,7 +403,6 @@ pub extern "C-unwind" fn kcl_net_is_interface_local_multicast_IP(
 // is_link_local_multicast_IP(ip: str) -> bool
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_is_link_local_multicast_IP(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -448,7 +434,6 @@ pub extern "C-unwind" fn kcl_net_is_link_local_multicast_IP(
 // is_link_local_unicast_IP(ip: str) -> bool
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_is_link_local_unicast_IP(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -509,7 +494,6 @@ pub const fn Ipv6Addr_is_unicast_link_local(_self: &Ipv6Addr) -> bool {
 // is_global_unicast_IP(ip: str) -> bool
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_is_global_unicast_IP(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -534,7 +518,6 @@ pub extern "C-unwind" fn kcl_net_is_global_unicast_IP(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_parse_CIDR(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -557,7 +540,6 @@ pub extern "C-unwind" fn kcl_net_parse_CIDR(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_is_IP_in_CIDR(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -638,7 +620,6 @@ const fn Ipv4Addr_is_benchmarking(_self: &std::net::Ipv4Addr) -> bool {
 // is_unspecified_IP(ip: str) -> bool
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_is_unspecified_IP(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -662,7 +643,6 @@ pub extern "C-unwind" fn kcl_net_is_unspecified_IP(
 // CIDR_subnet(cidr: str, additional_bits: int, net_num: int) -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_CIDR_subnet(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -772,7 +752,6 @@ fn CIDR_allocate(cidr: IpCidr, additional_bits: i64, net_num: i64) -> Result<Val
 // CIDR_subnets(cidr: str, additional_bits: [int]) -> [str]
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_CIDR_subnets(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -879,7 +858,6 @@ pub extern "C-unwind" fn kcl_net_CIDR_subnets(
 // CIDR_host(cidr: str, host_num: int) -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_CIDR_host(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -950,7 +928,6 @@ pub extern "C-unwind" fn kcl_net_CIDR_host(
 // CIDR_netmask(cidr: str) -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_net_CIDR_netmask(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,

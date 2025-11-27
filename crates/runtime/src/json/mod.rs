@@ -5,7 +5,6 @@ use crate::*;
 // data, sort_keys=False, indent=None, ignore_private=False, ignore_none=False
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_json_encode(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -26,7 +25,6 @@ pub extern "C-unwind" fn kcl_json_encode(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_json_decode(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -46,7 +44,6 @@ pub extern "C-unwind" fn kcl_json_decode(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_json_validate(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -66,7 +63,6 @@ pub extern "C-unwind" fn kcl_json_validate(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_json_dump_to_file(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,

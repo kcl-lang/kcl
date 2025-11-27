@@ -8,7 +8,6 @@ use std::io::Write;
 use std::path::Path;
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_file_read(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -30,7 +29,6 @@ pub extern "C-unwind" fn kcl_file_read(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_file_glob(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -55,7 +53,6 @@ pub extern "C-unwind" fn kcl_file_glob(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_file_modpath(
     ctx: *mut kcl_context_t,
     _args: *const kcl_value_ref_t,
@@ -67,7 +64,6 @@ pub extern "C-unwind" fn kcl_file_modpath(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_file_workdir(
     ctx: *mut kcl_context_t,
     _args: *const kcl_value_ref_t,
@@ -80,7 +76,6 @@ pub extern "C-unwind" fn kcl_file_workdir(
 
 /// Read the path of the current script or module that is being executed
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_file_current(
     ctx: *mut kcl_context_t,
     _args: *const kcl_value_ref_t,
@@ -95,7 +90,6 @@ pub extern "C-unwind" fn kcl_file_current(
 /// an existing entity. This function will traverse symbolic links to
 /// query information about the destination file.
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_file_exists(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -116,7 +110,6 @@ pub extern "C-unwind" fn kcl_file_exists(
 /// Returns the canonical, absolute form of the path with all intermediate
 /// components normalized and symbolic links resolved.
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_file_abs(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -138,7 +131,6 @@ pub extern "C-unwind" fn kcl_file_abs(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_file_mkdir(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -164,7 +156,6 @@ pub extern "C-unwind" fn kcl_file_mkdir(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_file_delete(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -195,7 +186,6 @@ pub extern "C-unwind" fn kcl_file_delete(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_file_cp(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -232,7 +222,6 @@ pub extern "C-unwind" fn kcl_file_cp(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_file_mv(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -257,7 +246,6 @@ pub extern "C-unwind" fn kcl_file_mv(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_file_size(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -285,7 +273,6 @@ pub extern "C-unwind" fn kcl_file_size(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_file_write(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -315,7 +302,6 @@ pub extern "C-unwind" fn kcl_file_write(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_file_append(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -348,7 +334,6 @@ pub extern "C-unwind" fn kcl_file_append(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_file_read_env(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,

@@ -9,7 +9,6 @@ use crate::*;
 /// Return the "%Y-%m-%d %H:%M:%S.%{ticks}" format date.
 /// `today() -> str`
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_datetime_today(
     ctx: *mut kcl_context_t,
     _args: *const kcl_value_ref_t,
@@ -25,7 +24,6 @@ pub extern "C-unwind" fn kcl_datetime_today(
 /// and the default date format is "%a %b %d %H:%M:%S %Y".
 /// `now() -> str`
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_datetime_now(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -43,7 +41,6 @@ pub extern "C-unwind" fn kcl_datetime_now(
 /// Return the current time in seconds since the Epoch. Fractions of a second may be present if the system clock provides them.
 /// `ticks() -> float`
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_datetime_ticks(
     ctx: *mut kcl_context_t,
     _args: *const kcl_value_ref_t,
@@ -57,7 +54,6 @@ pub extern "C-unwind" fn kcl_datetime_ticks(
 /// Return the %Y-%m-%d %H:%M:%S format date.
 /// `date() -> str`
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_datetime_date(
     ctx: *mut kcl_context_t,
     _args: *const kcl_value_ref_t,
@@ -71,7 +67,6 @@ pub extern "C-unwind" fn kcl_datetime_date(
 /// Validates whether the provided date string matches the specified format.
 /// `validate(str, str) -> bool`
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_datetime_validate(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,

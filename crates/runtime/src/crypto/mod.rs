@@ -20,7 +20,6 @@ type kcl_value_ref_t = ValueRef;
 // md5(value: str, encoding: str = "utf-8") -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_crypto_md5(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -42,7 +41,6 @@ pub extern "C-unwind" fn kcl_crypto_md5(
 // sha1(value: str, encoding: str = "utf-8") -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_crypto_sha1(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -64,7 +62,6 @@ pub extern "C-unwind" fn kcl_crypto_sha1(
 // sha224(value: str, encoding: str = "utf-8") -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_crypto_sha224(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -96,7 +93,6 @@ pub extern "C-unwind" fn kcl_crypto_sha224(
 // sha256(value: str, encoding: str = "utf-8") -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_crypto_sha256(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -128,7 +124,6 @@ pub extern "C-unwind" fn kcl_crypto_sha256(
 // sha384(value: str, encoding: str = "utf-8") -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_crypto_sha384(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -160,7 +155,6 @@ pub extern "C-unwind" fn kcl_crypto_sha384(
 // sha512(value: str, encoding: str = "utf-8") -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_crypto_sha512(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -192,7 +186,6 @@ pub extern "C-unwind" fn kcl_crypto_sha512(
 // blake3(value: str, encoding: str = "utf-8") -> str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_crypto_blake3(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -220,7 +213,6 @@ pub extern "C-unwind" fn kcl_crypto_blake3(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_crypto_uuid(
     ctx: *mut kcl_context_t,
     _args: *const kcl_value_ref_t,
@@ -231,7 +223,6 @@ pub extern "C-unwind" fn kcl_crypto_uuid(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_crypto_filesha256(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -271,7 +262,6 @@ pub extern "C-unwind" fn kcl_crypto_filesha256(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_crypto_filesha512(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -309,7 +299,6 @@ pub extern "C-unwind" fn kcl_crypto_filesha512(
 
 // fileblake3
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_crypto_fileblake3(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,

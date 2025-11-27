@@ -46,7 +46,6 @@ pub type kcl_int_t = i64;
 pub type kcl_float_t = f64;
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_context_set_import_names(
     p: *mut kcl_context_t,
     import_names: *const kcl_value_ref_t,
@@ -70,14 +69,12 @@ pub unsafe extern "C-unwind" fn kcl_context_set_import_names(
 // ----------------------------------------------------------------------------
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_value_Undefined(ctx: *mut kcl_context_t) -> *mut kcl_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     new_mut_ptr(ctx, ValueRef::undefined())
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_value_None(ctx: *mut kcl_context_t) -> *mut kcl_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     new_mut_ptr(ctx, ValueRef::none())
@@ -86,21 +83,18 @@ pub extern "C-unwind" fn kcl_value_None(ctx: *mut kcl_context_t) -> *mut kcl_val
 // bool/int/float/str
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_value_True(ctx: *mut kcl_context_t) -> *mut kcl_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     kcl_value_Bool(ctx, 1)
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_value_False(ctx: *mut kcl_context_t) -> *mut kcl_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     kcl_value_Bool(ctx, 0)
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_value_Bool(
     ctx: *mut kcl_context_t,
     v: kcl_bool_t,
@@ -114,7 +108,6 @@ pub extern "C-unwind" fn kcl_value_Bool(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_value_Int(
     ctx: *mut kcl_context_t,
     v: kcl_int_t,
@@ -124,7 +117,6 @@ pub extern "C-unwind" fn kcl_value_Int(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_value_Float(
     ctx: *mut kcl_context_t,
     v: kcl_float_t,
@@ -134,7 +126,6 @@ pub extern "C-unwind" fn kcl_value_Float(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_value_Unit(
     ctx: *mut kcl_context_t,
     v: kcl_float_t,
@@ -147,7 +138,6 @@ pub extern "C-unwind" fn kcl_value_Unit(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_Str(
     ctx: *mut kcl_context_t,
     v: *const kcl_char_t,
@@ -164,14 +154,12 @@ pub unsafe extern "C-unwind" fn kcl_value_Str(
 // list/dict/schema
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_value_List(ctx: *mut kcl_context_t) -> *mut kcl_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     new_mut_ptr(ctx, ValueRef::list(None))
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_value_List6(
     ctx: *mut kcl_context_t,
     v1: *const kcl_value_ref_t,
@@ -190,7 +178,6 @@ pub extern "C-unwind" fn kcl_value_List6(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_value_List10(
     ctx: *mut kcl_context_t,
     v1: *const kcl_value_ref_t,
@@ -213,21 +200,18 @@ pub extern "C-unwind" fn kcl_value_List10(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_value_Dict(ctx: *mut kcl_context_t) -> *mut kcl_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     new_mut_ptr(ctx, ValueRef::dict(None))
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_value_Schema(ctx: *mut kcl_context_t) -> *mut kcl_value_ref_t {
     let ctx = mut_ptr_as_ref(ctx);
     new_mut_ptr(ctx, ValueRef::schema())
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_schema_with_config(
     ctx: *mut kcl_context_t,
     schema_dict: *const kcl_value_ref_t,
@@ -292,7 +276,6 @@ pub unsafe extern "C-unwind" fn kcl_value_schema_with_config(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_Function(
     ctx: *mut kcl_context_t,
     fn_ptr: *const u64,
@@ -317,7 +300,6 @@ pub unsafe extern "C-unwind" fn kcl_value_Function(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_Function_using_ptr(
     ctx: *mut kcl_context_t,
     fn_ptr: *const u64,
@@ -332,7 +314,6 @@ pub unsafe extern "C-unwind" fn kcl_value_Function_using_ptr(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_schema_function(
     ctx: *mut kcl_context_t,
     fn_ptr: *const u64,
@@ -397,7 +378,6 @@ pub unsafe extern "C-unwind" fn kcl_value_schema_function(
 // ----------------------------------------------------------------------------
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_from_json(
     ctx: *mut kcl_context_t,
     s: *const kcl_char_t,
@@ -413,7 +393,6 @@ pub unsafe extern "C-unwind" fn kcl_value_from_json(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_to_json_value(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
@@ -429,7 +408,6 @@ pub unsafe extern "C-unwind" fn kcl_value_to_json_value(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_to_json_value_with_null(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
@@ -445,7 +423,6 @@ pub unsafe extern "C-unwind" fn kcl_value_to_json_value_with_null(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_plan_to_json(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
@@ -463,7 +440,6 @@ pub unsafe extern "C-unwind" fn kcl_value_plan_to_json(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_plan_to_yaml(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
@@ -481,7 +457,6 @@ pub unsafe extern "C-unwind" fn kcl_value_plan_to_yaml(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_to_yaml_value(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
@@ -497,7 +472,6 @@ pub unsafe extern "C-unwind" fn kcl_value_to_yaml_value(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_to_str_value(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
@@ -518,7 +492,6 @@ pub unsafe extern "C-unwind" fn kcl_value_to_str_value(
 // ----------------------------------------------------------------------------
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_Str_ptr(p: *const kcl_value_ref_t) -> *const kcl_char_t {
     let p = ptr_as_ref(p);
     match &*p.rc.borrow() {
@@ -528,7 +501,6 @@ pub unsafe extern "C-unwind" fn kcl_value_Str_ptr(p: *const kcl_value_ref_t) -> 
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_function_ptr(p: *const kcl_value_ref_t) -> *const u64 {
     let p = ptr_as_ref(p);
     match &*p.rc.borrow() {
@@ -538,7 +510,6 @@ pub unsafe extern "C-unwind" fn kcl_value_function_ptr(p: *const kcl_value_ref_t
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_check_function_ptr(
     p: *const kcl_value_ref_t,
 ) -> *const u64 {
@@ -637,7 +608,6 @@ pub unsafe fn kcl_value_function_invoke(
 // clone
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_deep_copy(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
@@ -650,7 +620,6 @@ pub unsafe extern "C-unwind" fn kcl_value_deep_copy(
 // delete
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_delete(p: *mut kcl_value_ref_t) {
     if p.is_null() {
         return;
@@ -665,7 +634,6 @@ pub unsafe extern "C-unwind" fn kcl_value_delete(p: *mut kcl_value_ref_t) {
 // ----------------------------------------------------------------------------
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_iter(p: *const kcl_value_ref_t) -> *mut kcl_iterator_t {
     let p = ptr_as_ref(p);
     let iter = ValueIterator::from_value(p);
@@ -673,20 +641,17 @@ pub unsafe extern "C-unwind" fn kcl_value_iter(p: *const kcl_value_ref_t) -> *mu
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_iterator_delete(p: *mut kcl_iterator_t) {
     free_mut_ptr(p);
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_iterator_is_end(p: *mut kcl_iterator_t) -> kcl_bool_t {
     let p = ptr_as_ref(p);
     p.is_end() as kcl_bool_t
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_iterator_cur_key(
     p: *mut kcl_iterator_t,
 ) -> *const kcl_value_ref_t {
@@ -698,7 +663,6 @@ pub unsafe extern "C-unwind" fn kcl_iterator_cur_key(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_iterator_cur_value(
     p: *mut kcl_iterator_t,
 ) -> *const kcl_value_ref_t {
@@ -710,7 +674,6 @@ pub unsafe extern "C-unwind" fn kcl_iterator_cur_value(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_iterator_next_value(
     p: *mut kcl_iterator_t,
     host: *const kcl_value_ref_t,
@@ -729,21 +692,18 @@ pub unsafe extern "C-unwind" fn kcl_iterator_next_value(
 // ----------------------------------------------------------------------------
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_list_len(p: *const kcl_value_ref_t) -> kcl_size_t {
     let p = ptr_as_ref(p);
     p.len() as kcl_size_t
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_list_resize(p: *mut kcl_value_ref_t, newsize: kcl_size_t) {
     let p = mut_ptr_as_ref(p);
     p.list_resize(newsize as usize);
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_list_clear(p: *mut kcl_value_ref_t) {
     let p = mut_ptr_as_ref(p);
     p.list_clear();
@@ -751,7 +711,6 @@ pub unsafe extern "C-unwind" fn kcl_list_clear(p: *mut kcl_value_ref_t) {
 
 /// Return number of occurrences of the list value.
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_list_count(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
@@ -767,7 +726,6 @@ pub unsafe extern "C-unwind" fn kcl_list_count(
 
 /// Return first index of the list value. Panic if the value is not present.
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_list_find(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
@@ -783,7 +741,6 @@ pub unsafe extern "C-unwind" fn kcl_list_find(
 
 /// Insert object before index of the list value.
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_list_insert(
     p: *mut kcl_value_ref_t,
     index: *const kcl_value_ref_t,
@@ -796,7 +753,6 @@ pub unsafe extern "C-unwind" fn kcl_list_insert(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_list_get(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
@@ -811,7 +767,6 @@ pub unsafe extern "C-unwind" fn kcl_list_get(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_list_get_option(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
@@ -826,7 +781,6 @@ pub unsafe extern "C-unwind" fn kcl_list_get_option(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_list_set(
     p: *mut kcl_value_ref_t,
     i: kcl_size_t,
@@ -838,7 +792,6 @@ pub unsafe extern "C-unwind" fn kcl_list_set(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_list_pop(
     ctx: *mut kcl_context_t,
     p: *mut kcl_value_ref_t,
@@ -852,7 +805,6 @@ pub unsafe extern "C-unwind" fn kcl_list_pop(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_list_pop_first(
     ctx: *mut kcl_context_t,
     p: *mut kcl_value_ref_t,
@@ -865,7 +817,6 @@ pub unsafe extern "C-unwind" fn kcl_list_pop_first(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_list_append(
     p: *mut kcl_value_ref_t,
     v: *const kcl_value_ref_t,
@@ -876,35 +827,30 @@ pub unsafe extern "C-unwind" fn kcl_list_append(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_list_append_bool(p: *mut kcl_value_ref_t, v: kcl_bool_t) {
     let p = mut_ptr_as_ref(p);
     p.list_append(&ValueRef::bool(v != 0));
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_list_append_int(p: *mut kcl_value_ref_t, v: kcl_int_t) {
     let p = mut_ptr_as_ref(p);
     p.list_append(&ValueRef::int(v));
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_list_append_float(p: *mut kcl_value_ref_t, v: kcl_float_t) {
     let p = mut_ptr_as_ref(p);
     p.list_append(&ValueRef::float(v));
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_list_append_str(p: *mut kcl_value_ref_t, v: *const kcl_char_t) {
     let p = mut_ptr_as_ref(p);
     p.list_append(&ValueRef::str(c2str(v)));
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_list_append_unpack(
     p: *mut kcl_value_ref_t,
     v: *const kcl_value_ref_t,
@@ -918,7 +864,6 @@ pub unsafe extern "C-unwind" fn kcl_list_append_unpack(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_list_remove_at(p: *mut kcl_value_ref_t, i: kcl_size_t) {
     let p = mut_ptr_as_ref(p);
     p.list_remove_at(i as usize);
@@ -929,7 +874,6 @@ pub unsafe extern "C-unwind" fn kcl_list_remove_at(p: *mut kcl_value_ref_t, i: k
 // ----------------------------------------------------------------------------
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_dict_len(p: *const kcl_value_ref_t) -> kcl_size_t {
     let p = ptr_as_ref(p);
     match &*p.rc.borrow() {
@@ -939,14 +883,12 @@ pub unsafe extern "C-unwind" fn kcl_dict_len(p: *const kcl_value_ref_t) -> kcl_s
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_dict_clear(p: *mut kcl_value_ref_t) {
     let p = mut_ptr_as_ref(p);
     p.dict_clear();
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_dict_is_override_attr(
     p: *const kcl_value_ref_t,
     key: *const kcl_char_t,
@@ -962,7 +904,6 @@ pub unsafe extern "C-unwind" fn kcl_dict_is_override_attr(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_dict_get(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
@@ -978,7 +919,6 @@ pub unsafe extern "C-unwind" fn kcl_dict_get(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_dict_has_value(
     p: *const kcl_value_ref_t,
     key: *const kcl_char_t,
@@ -992,7 +932,6 @@ pub unsafe extern "C-unwind" fn kcl_dict_has_value(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_dict_get_value(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
@@ -1007,7 +946,6 @@ pub unsafe extern "C-unwind" fn kcl_dict_get_value(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_dict_get_entry(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
@@ -1022,7 +960,6 @@ pub unsafe extern "C-unwind" fn kcl_dict_get_entry(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_dict_get_value_by_path(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
@@ -1037,7 +974,6 @@ pub unsafe extern "C-unwind" fn kcl_dict_get_value_by_path(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_dict_set_value(
     ctx: *mut kcl_context_t,
     p: *mut kcl_value_ref_t,
@@ -1093,7 +1029,6 @@ pub unsafe extern "C-unwind" fn kcl_dict_values(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_dict_insert(
     ctx: *mut kcl_context_t,
     p: *mut kcl_value_ref_t,
@@ -1119,7 +1054,6 @@ pub unsafe extern "C-unwind" fn kcl_dict_insert(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_dict_merge(
     ctx: *mut kcl_context_t,
     p: *mut kcl_value_ref_t,
@@ -1169,7 +1103,6 @@ pub unsafe extern "C-unwind" fn kcl_dict_merge(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_dict_insert_value(
     ctx: *mut kcl_context_t,
     p: *mut kcl_value_ref_t,
@@ -1197,7 +1130,6 @@ pub unsafe extern "C-unwind" fn kcl_dict_insert_value(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_dict_update_key_value(
     p: *mut kcl_value_ref_t,
     key: *const kcl_value_ref_t,
@@ -1211,7 +1143,6 @@ pub unsafe extern "C-unwind" fn kcl_dict_update_key_value(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_dict_safe_insert(
     ctx: *mut kcl_context_t,
     p: *mut kcl_value_ref_t,
@@ -1228,7 +1159,6 @@ pub unsafe extern "C-unwind" fn kcl_dict_safe_insert(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_dict_insert_unpack(
     ctx: *mut kcl_context_t,
     p: *mut kcl_value_ref_t,
@@ -1241,7 +1171,6 @@ pub unsafe extern "C-unwind" fn kcl_dict_insert_unpack(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_default_collection_insert_int_pointer(
     p: *mut kcl_value_ref_t,
     key: *const kcl_char_t,
@@ -1265,7 +1194,6 @@ pub unsafe extern "C-unwind" fn kcl_default_collection_insert_int_pointer(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_default_collection_insert_value(
     p: *mut kcl_value_ref_t,
     key: *const kcl_char_t,
@@ -1288,14 +1216,12 @@ pub unsafe extern "C-unwind" fn kcl_default_collection_insert_value(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_dict_remove(p: *mut kcl_value_ref_t, key: *const kcl_char_t) {
     let p = mut_ptr_as_ref(p);
     p.dict_remove(c2str(key));
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_dict_update(
     p: *mut kcl_value_ref_t,
     v: *const kcl_value_ref_t,
@@ -1312,7 +1238,6 @@ pub unsafe extern "C-unwind" fn kcl_dict_update(
 // is true
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_is_truthy(p: *const kcl_value_ref_t) -> kcl_bool_t {
     let p = ptr_as_ref(p);
     p.is_truthy() as kcl_bool_t
@@ -1321,7 +1246,6 @@ pub unsafe extern "C-unwind" fn kcl_value_is_truthy(p: *const kcl_value_ref_t) -
 // len
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_len(p: *const kcl_value_ref_t) -> kcl_size_t {
     let p = ptr_as_ref(p);
     p.len() as kcl_size_t
@@ -1330,7 +1254,6 @@ pub unsafe extern "C-unwind" fn kcl_value_len(p: *const kcl_value_ref_t) -> kcl_
 // compare
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_cmp_equal_to(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1345,7 +1268,6 @@ pub unsafe extern "C-unwind" fn kcl_value_cmp_equal_to(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_cmp_not_equal_to(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1360,7 +1282,6 @@ pub unsafe extern "C-unwind" fn kcl_value_cmp_not_equal_to(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_cmp_less_than(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1375,7 +1296,6 @@ pub unsafe extern "C-unwind" fn kcl_value_cmp_less_than(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_cmp_less_than_or_equal(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1387,7 +1307,6 @@ pub unsafe extern "C-unwind" fn kcl_value_cmp_less_than_or_equal(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_cmp_greater_than(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1402,7 +1321,6 @@ pub unsafe extern "C-unwind" fn kcl_value_cmp_greater_than(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_cmp_greater_than_or_equal(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1416,7 +1334,6 @@ pub unsafe extern "C-unwind" fn kcl_value_cmp_greater_than_or_equal(
 // is/in
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_is(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1431,7 +1348,6 @@ pub unsafe extern "C-unwind" fn kcl_value_is(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_is_not(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1446,7 +1362,6 @@ pub unsafe extern "C-unwind" fn kcl_value_is_not(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_in(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1458,7 +1373,6 @@ pub unsafe extern "C-unwind" fn kcl_value_in(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_not_in(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1470,7 +1384,6 @@ pub unsafe extern "C-unwind" fn kcl_value_not_in(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_as(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1487,7 +1400,6 @@ pub unsafe extern "C-unwind" fn kcl_value_as(
 // unary-xxx
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_unary_plus(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1497,7 +1409,6 @@ pub unsafe extern "C-unwind" fn kcl_value_unary_plus(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_unary_minus(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1507,7 +1418,6 @@ pub unsafe extern "C-unwind" fn kcl_value_unary_minus(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_unary_not(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1517,7 +1427,6 @@ pub unsafe extern "C-unwind" fn kcl_value_unary_not(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_unary_l_not(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1529,7 +1438,6 @@ pub unsafe extern "C-unwind" fn kcl_value_unary_l_not(
 // op-xxx
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_add(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1542,7 +1450,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_add(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_sub(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1555,7 +1462,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_sub(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_mul(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1568,7 +1474,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_mul(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_div(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1580,7 +1485,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_div(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_mod(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1592,7 +1496,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_mod(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_pow(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1605,7 +1508,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_pow(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_floor_div(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1617,7 +1519,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_floor_div(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_bit_lshift(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1630,7 +1531,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_bit_lshift(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_bit_rshift(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1643,7 +1543,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_bit_rshift(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_bit_and(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1655,7 +1554,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_bit_and(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_bit_xor(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1667,7 +1565,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_bit_xor(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_bit_or(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1682,7 +1579,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_bit_or(
 // op-aug-xxx
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_aug_add(
     ctx: *mut kcl_context_t,
     a: *mut kcl_value_ref_t,
@@ -1695,7 +1591,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_add(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_aug_sub(
     ctx: *mut kcl_context_t,
     a: *mut kcl_value_ref_t,
@@ -1708,7 +1603,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_sub(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_aug_mul(
     ctx: *mut kcl_context_t,
     a: *mut kcl_value_ref_t,
@@ -1721,7 +1615,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_mul(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_aug_div(
     _ctx: *mut kcl_context_t,
     a: *mut kcl_value_ref_t,
@@ -1733,7 +1626,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_div(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_aug_mod(
     _ctx: *mut kcl_context_t,
     a: *mut kcl_value_ref_t,
@@ -1745,7 +1637,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_mod(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_aug_pow(
     ctx: *mut kcl_context_t,
     a: *mut kcl_value_ref_t,
@@ -1758,7 +1649,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_pow(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_aug_floor_div(
     _ctx: *mut kcl_context_t,
     a: *mut kcl_value_ref_t,
@@ -1770,7 +1660,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_floor_div(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_aug_bit_lshift(
     ctx: *mut kcl_context_t,
     a: *mut kcl_value_ref_t,
@@ -1783,7 +1672,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_bit_lshift(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_aug_bit_rshift(
     ctx: *mut kcl_context_t,
     a: *mut kcl_value_ref_t,
@@ -1796,7 +1684,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_bit_rshift(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_aug_bit_and(
     _ctx: *mut kcl_context_t,
     a: *mut kcl_value_ref_t,
@@ -1808,7 +1695,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_bit_and(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_aug_bit_xor(
     _ctx: *mut kcl_context_t,
     a: *mut kcl_value_ref_t,
@@ -1820,7 +1706,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_bit_xor(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_op_aug_bit_or(
     ctx: *mut kcl_context_t,
     a: *mut kcl_value_ref_t,
@@ -1833,7 +1718,6 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_bit_or(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_union(
     ctx: *mut kcl_context_t,
     schema: *mut kcl_value_ref_t,
@@ -1872,7 +1756,6 @@ pub unsafe extern "C-unwind" fn kcl_value_union(
 // logic: && ||
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_logic_and(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1884,7 +1767,6 @@ pub unsafe extern "C-unwind" fn kcl_value_logic_and(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_logic_or(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1896,7 +1778,6 @@ pub unsafe extern "C-unwind" fn kcl_value_logic_or(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_subscr(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1908,7 +1789,6 @@ pub unsafe extern "C-unwind" fn kcl_value_subscr(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_subscr_set(
     ctx: *mut kcl_context_t,
     p: *mut kcl_value_ref_t,
@@ -1923,7 +1803,6 @@ pub unsafe extern "C-unwind" fn kcl_value_subscr_set(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_subscr_option(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
@@ -1935,7 +1814,6 @@ pub unsafe extern "C-unwind" fn kcl_value_subscr_option(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_load_attr(
     ctx: *mut kcl_context_t,
     obj: *const kcl_value_ref_t,
@@ -1948,7 +1826,6 @@ pub unsafe extern "C-unwind" fn kcl_value_load_attr(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_load_attr_option(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
@@ -1963,7 +1840,6 @@ pub unsafe extern "C-unwind" fn kcl_value_load_attr_option(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_remove_item(
     a: *mut kcl_value_ref_t,
     b: *const kcl_value_ref_t,
@@ -1980,7 +1856,6 @@ pub unsafe extern "C-unwind" fn kcl_value_remove_item(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_slice(
     ctx: *mut kcl_context_t,
     x: *const kcl_value_ref_t,
@@ -1996,7 +1871,6 @@ pub unsafe extern "C-unwind" fn kcl_value_slice(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_slice_option(
     ctx: *mut kcl_context_t,
     x: *const kcl_value_ref_t,
@@ -2017,7 +1891,6 @@ pub unsafe extern "C-unwind" fn kcl_value_slice_option(
 // ----------------------------------------------------------------------------
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_schema_backtrack_cache(
     ctx: *mut kcl_context_t,
     schema: *const kcl_value_ref_t,
@@ -2058,7 +1931,6 @@ pub unsafe extern "C-unwind" fn kcl_schema_backtrack_cache(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_schema_instances(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2127,7 +1999,6 @@ fn collect_schema_instances(list: &mut ValueRef, v_list: &[ValueRef], runtime_ty
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_schema_value_check(
     ctx: *mut kcl_context_t,
     schema_value: *mut kcl_value_ref_t,
@@ -2190,7 +2061,6 @@ pub unsafe extern "C-unwind" fn kcl_schema_value_check(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_schema_do_check_with_index_sign_attr(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2233,7 +2103,6 @@ pub unsafe extern "C-unwind" fn kcl_schema_do_check_with_index_sign_attr(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_schema_optional_check(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
@@ -2246,7 +2115,6 @@ pub unsafe extern "C-unwind" fn kcl_schema_optional_check(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_schema_default_settings(
     schema_value: *mut kcl_value_ref_t,
     _config_value: *const kcl_value_ref_t,
@@ -2263,7 +2131,6 @@ pub unsafe extern "C-unwind" fn kcl_schema_default_settings(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_schema_assert(
     ctx: *mut kcl_context_t,
     value: *const kcl_value_ref_t,
@@ -2302,7 +2169,6 @@ pub unsafe extern "C-unwind" fn kcl_schema_assert(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_schema_value_new(
     ctx: *mut kcl_context_t,
     args: *mut kcl_value_ref_t,
@@ -2403,7 +2269,6 @@ pub unsafe extern "C-unwind" fn kcl_schema_value_new(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_convert_collection_value(
     ctx: *mut kcl_context_t,
     value: *const kcl_value_ref_t,
@@ -2427,7 +2292,6 @@ pub unsafe extern "C-unwind" fn kcl_convert_collection_value(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_schema_get_value(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
@@ -2521,7 +2385,6 @@ pub unsafe extern "C-unwind" fn kcl_schema_get_value(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_config_attr_map(
     value: *mut kcl_value_ref_t,
     name: *const kcl_char_t,
@@ -2538,7 +2401,6 @@ pub unsafe extern "C-unwind" fn kcl_config_attr_map(
 // ----------------------------------------------------------------------------
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_value_Decorator(
     ctx: *mut kcl_context_t,
     name: *const kcl_char_t,
@@ -2572,7 +2434,6 @@ pub unsafe extern "C-unwind" fn kcl_value_Decorator(
 // ----------------------------------------------------------------------------
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_lower(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2587,7 +2448,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_lower(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_upper(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2602,7 +2462,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_upper(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_capitalize(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2617,7 +2476,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_capitalize(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_chars(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2632,7 +2490,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_chars(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_count(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2654,7 +2511,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_count(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_endswith(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2676,7 +2532,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_endswith(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_find(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2698,7 +2553,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_find(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_format(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2714,7 +2568,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_format(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_index(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2736,7 +2589,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_index(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_isalnum(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2751,7 +2603,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_isalnum(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_isalpha(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2766,7 +2617,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_isalpha(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_isdigit(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2781,7 +2631,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_isdigit(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_islower(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2796,7 +2645,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_islower(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_isspace(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2811,7 +2659,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_isspace(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_istitle(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2826,7 +2673,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_istitle(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_isupper(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2841,7 +2687,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_isupper(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_join(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2857,7 +2702,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_join(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_lstrip(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2873,7 +2717,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_lstrip(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_rstrip(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2889,7 +2732,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_rstrip(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_replace(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2910,7 +2752,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_replace(
 /// If the string starts with the prefix string, return string[len(prefix):].
 /// Otherwise, return a copy of the original string.
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_removeprefix(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2928,7 +2769,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_removeprefix(
 /// If the string ends with the suffix string and that suffix is not empty, return string[:-len(suffix)].
 /// Otherwise, return a copy of the original string.
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_removesuffix(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2944,7 +2784,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_removesuffix(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_rfind(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2966,7 +2805,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_rfind(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_rindex(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -2988,7 +2826,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_rindex(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_rsplit(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -3015,7 +2852,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_rsplit(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_split(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -3042,7 +2878,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_split(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_splitlines(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -3066,7 +2901,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_splitlines(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_startswith(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -3088,7 +2922,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_startswith(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_strip(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -3104,7 +2937,6 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_strip(
 }
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_builtin_str_title(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,

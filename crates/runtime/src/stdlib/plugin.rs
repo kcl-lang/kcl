@@ -24,7 +24,6 @@ lazy_static! {
 pub const PLUGIN_MODULE_PREFIX: &str = "kcl_plugin.";
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_plugin_init(
     fn_ptr: extern "C-unwind" fn(
         method: *const c_char,
@@ -42,7 +41,6 @@ pub extern "C-unwind" fn kcl_plugin_init(
 // => return kcl_plugin_invoke("kcl_plugin.hello.say_hello", args, kwargs)
 
 #[unsafe(no_mangle)]
-
 pub unsafe extern "C-unwind" fn kcl_plugin_invoke(
     ctx: *mut kcl_context_t,
     method: *const c_char,
@@ -88,7 +86,6 @@ pub unsafe extern "C-unwind" fn kcl_plugin_invoke(
 
 #[cfg(not(target_arch = "wasm32"))]
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_plugin_invoke_json(
     method: *const c_char,
     args: *const c_char,
@@ -104,7 +101,6 @@ pub extern "C-unwind" fn kcl_plugin_invoke_json(
 
 #[cfg(target_arch = "wasm32")]
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_plugin_invoke_json(
     method: *const c_char,
     args: *const c_char,

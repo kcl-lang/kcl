@@ -12,7 +12,6 @@ use crate::*;
 /// Returns undefined if execution is successful, otherwise returns an error
 /// message in case of a runtime panic.
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_runtime_catch(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,

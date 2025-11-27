@@ -55,7 +55,7 @@ impl ValueRef {
     }
 
     #[inline]
-    pub fn as_list_ref(&self) -> Ref<ListValue> {
+    pub fn as_list_ref(&self) -> Ref<'_, ListValue> {
         Ref::map(self.rc.borrow(), |val| match val {
             Value::list_value(v) => v.as_ref(),
             _ => panic!("invalid list value"),
@@ -63,7 +63,7 @@ impl ValueRef {
     }
 
     #[inline]
-    pub fn as_list_mut_ref(&mut self) -> RefMut<ListValue> {
+    pub fn as_list_mut_ref(&mut self) -> RefMut<'_, ListValue> {
         RefMut::map(self.rc.borrow_mut(), |val| match val {
             Value::list_value(v) => v.as_mut(),
             _ => panic!("invalid list value"),
@@ -71,7 +71,7 @@ impl ValueRef {
     }
 
     #[inline]
-    pub fn as_dict_ref(&self) -> Ref<DictValue> {
+    pub fn as_dict_ref(&self) -> Ref<'_, DictValue> {
         Ref::map(self.rc.borrow(), |val| match val {
             Value::dict_value(v) => v.as_ref(),
             Value::schema_value(v) => v.config.as_ref(),
@@ -80,7 +80,7 @@ impl ValueRef {
     }
 
     #[inline]
-    pub fn as_dict_mut_ref(&mut self) -> RefMut<DictValue> {
+    pub fn as_dict_mut_ref(&mut self) -> RefMut<'_, DictValue> {
         RefMut::map(self.rc.borrow_mut(), |val| match val {
             Value::dict_value(v) => v.as_mut(),
             Value::schema_value(v) => v.config.as_mut(),
@@ -89,7 +89,7 @@ impl ValueRef {
     }
 
     #[inline]
-    pub fn as_schema(&self) -> Ref<SchemaValue> {
+    pub fn as_schema(&self) -> Ref<'_, SchemaValue> {
         Ref::map(self.rc.borrow(), |val| match val {
             Value::schema_value(v) => v.as_ref(),
             _ => panic!("invalid schema value"),
@@ -97,7 +97,7 @@ impl ValueRef {
     }
 
     #[inline]
-    pub fn as_function(&self) -> Ref<FuncValue> {
+    pub fn as_function(&self) -> Ref<'_, FuncValue> {
         Ref::map(self.rc.borrow(), |val| match val {
             Value::func_value(v) => v.as_ref(),
             _ => panic!("invalid func value"),
