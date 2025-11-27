@@ -5,7 +5,6 @@ use crate::*;
 use base32::{Alphabet, decode, encode};
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_base32_encode(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -22,7 +21,6 @@ pub extern "C-unwind" fn kcl_base32_encode(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_base32_decode(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,

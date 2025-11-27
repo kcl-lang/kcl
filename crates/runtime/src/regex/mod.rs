@@ -7,7 +7,6 @@ use crate::*;
 // match(string: str, pattern: str) -> bool:
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_regex_match(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -38,7 +37,6 @@ pub extern "C-unwind" fn kcl_regex_match(
 // replace(string: str, pattern: str, replace: str, count: int = 0):
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_regex_replace(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -65,7 +63,6 @@ pub extern "C-unwind" fn kcl_regex_replace(
 // compile(pattern: str) -> bool:
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_regex_compile(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -86,7 +83,6 @@ pub extern "C-unwind" fn kcl_regex_compile(
 // findall(string: str, pattern: str) -> [str]:
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_regex_findall(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -126,7 +122,6 @@ pub extern "C-unwind" fn kcl_regex_findall(
 // search(string: str, pattern: str):
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_regex_search(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -152,7 +147,6 @@ pub extern "C-unwind" fn kcl_regex_search(
 // split(string: str, pattern: str, maxsplit: int = 0):
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_regex_split(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,

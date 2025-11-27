@@ -9,7 +9,6 @@ use crate::*;
 // https://github.com/RustPython/RustPython/blob/main/stdlib/src/math.rs
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_math_ceil(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -29,7 +28,6 @@ pub extern "C-unwind" fn kcl_math_ceil(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_math_factorial(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -69,7 +67,6 @@ pub extern "C-unwind" fn kcl_math_factorial(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_math_floor(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -89,7 +86,6 @@ pub extern "C-unwind" fn kcl_math_floor(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_math_gcd(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -111,7 +107,6 @@ pub extern "C-unwind" fn kcl_math_gcd(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_math_isfinite(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -135,7 +130,6 @@ pub extern "C-unwind" fn kcl_math_isfinite(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_math_isinf(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -162,7 +156,6 @@ pub extern "C-unwind" fn kcl_math_isinf(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_math_isnan(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -186,7 +179,6 @@ pub extern "C-unwind" fn kcl_math_isnan(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_math_modf(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -218,7 +210,6 @@ pub extern "C-unwind" fn kcl_math_modf(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_math_exp(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -237,7 +228,6 @@ pub extern "C-unwind" fn kcl_math_exp(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_math_expm1(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -256,7 +246,6 @@ pub extern "C-unwind" fn kcl_math_expm1(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_math_log(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -285,7 +274,6 @@ pub extern "C-unwind" fn kcl_math_log(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_math_log1p(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -304,7 +292,6 @@ pub extern "C-unwind" fn kcl_math_log1p(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_math_log2(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -323,7 +310,6 @@ pub extern "C-unwind" fn kcl_math_log2(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_math_log10(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -342,7 +328,6 @@ pub extern "C-unwind" fn kcl_math_log10(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_math_pow(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -375,7 +360,6 @@ pub extern "C-unwind" fn kcl_math_pow(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_math_sqrt(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,

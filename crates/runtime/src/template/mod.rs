@@ -6,7 +6,6 @@ use handlebars::{Handlebars, html_escape};
 /// Applies a parsed template to the specified data object and
 /// returns the string output.
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_template_execute(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -38,7 +37,6 @@ pub extern "C-unwind" fn kcl_template_execute(
 
 /// Replaces the characters `&"<>` with the equivalent html / xml entities.
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_template_html_escape(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,

@@ -6,7 +6,6 @@ use crate::*;
 type kcl_value_ref_t = ValueRef;
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_assert(
     ctx: *mut kcl_context_t,
     value: *const kcl_value_ref_t,

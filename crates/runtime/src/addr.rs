@@ -3,7 +3,7 @@
 // Auto generated, DONOT EDIT!!!
 
 #[allow(dead_code)]
-pub fn _kcl_get_fn_ptr_by_name(name: &str) -> u64 {
+pub fn kcl_get_fn_ptr_by_name(name: &str) -> u64 {
     match name {
         "kcl_assert" => crate::kcl_assert as *const () as u64,
         "kcl_base32_decode" => crate::kcl_base32_decode as *const () as u64,

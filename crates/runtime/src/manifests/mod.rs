@@ -50,7 +50,6 @@ type kcl_value_ref_t = ValueRef;
 /// ```
 /// TODO: more options on the function `yaml_stream`.
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_manifests_yaml_stream(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,

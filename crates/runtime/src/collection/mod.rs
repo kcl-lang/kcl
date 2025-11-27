@@ -3,7 +3,6 @@
 use crate::*;
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_value_union_all(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,

@@ -6,7 +6,6 @@ use base64::{decode, encode};
 use crate::*;
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_base64_encode(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
@@ -23,7 +22,6 @@ pub extern "C-unwind" fn kcl_base64_encode(
 }
 
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_base64_decode(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,

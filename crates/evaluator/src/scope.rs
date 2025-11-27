@@ -8,7 +8,7 @@ use crate::{
 use kcl_ast::ast;
 use kcl_ast::walker::TypedResultWalker;
 use kcl_primitives::{DefaultHashBuilder, IndexMap, IndexSet};
-use kcl_runtime::{_kcl_get_fn_ptr_by_name, MAIN_PKG_PATH, ValueRef};
+use kcl_runtime::{MAIN_PKG_PATH, ValueRef, kcl_get_fn_ptr_by_name};
 use kcl_sema::{builtin, plugin};
 
 use crate::{EvalResult, Evaluator, GLOBAL_LEVEL, INNER_LEVEL};
@@ -68,7 +68,7 @@ impl<'ctx> Evaluator<'ctx> {
         for symbol in builtin::BUILTIN_FUNCTION_NAMES {
             let function_name =
                 format!("{}_{}", builtin::KCL_BUILTIN_FUNCTION_MANGLE_PREFIX, symbol);
-            let function_ptr = _kcl_get_fn_ptr_by_name(&function_name);
+            let function_ptr = kcl_get_fn_ptr_by_name(&function_name);
             self.add_variable(symbol, self.function_value_with_ptr(function_ptr));
         }
         // Init lazy scopes.
@@ -403,7 +403,7 @@ impl<'ctx> Evaluator<'ctx> {
                     pkgpath,
                     name
                 );
-                let function_ptr = _kcl_get_fn_ptr_by_name(&func_name);
+                let function_ptr = kcl_get_fn_ptr_by_name(&func_name);
                 self.function_value_with_ptr(function_ptr)
             }
         }
@@ -489,7 +489,7 @@ impl<'ctx> Evaluator<'ctx> {
                     pkgpath,
                     name
                 );
-                let function_ptr = _kcl_get_fn_ptr_by_name(&func_name);
+                let function_ptr = kcl_get_fn_ptr_by_name(&func_name);
                 self.function_value_with_ptr(function_ptr)
             }
         }
