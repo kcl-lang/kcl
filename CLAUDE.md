@@ -52,7 +52,7 @@ Ant Group, Youzan, and Huawei are notable production users managing large-scale 
 ### Primary Language: Rust
 - 362+ Rust source files
 - ~32,673 lines of Rust code in core modules
-- **Requires Rust 1.88+** for building
+- **Requires Rust 1.91+** for building
 - Rust 2024 edition
 
 ### Secondary Languages
@@ -245,7 +245,7 @@ Comprehensive GitHub Actions workflows (11 pipelines) for:
 docker pull kcllang/kcl-builder
 
 # Or install dependencies locally
-# - Rust 1.88+
+# - Rust 1.91+
 # - Python 3.x (for tests)
 # - Protobuf compiler
 

@@ -9,7 +9,7 @@
 
 pub mod span;
 pub use rustc_span::fatal_error;
-pub use span::{BytePos, Span, SpanData, DUMMY_SP};
+pub use span::{BytePos, DUMMY_SP, Span, SpanData};
 
 pub type SourceMap = rustc_span::SourceMap;
 pub type SourceFile = rustc_span::SourceFile;

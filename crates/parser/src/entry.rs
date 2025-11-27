@@ -71,7 +71,7 @@ impl Entries {
     }
 
     /// [`iter`] will return an iterator of [`Entry`] in [`Entries`].
-    pub fn iter(&self) -> std::collections::vec_deque::Iter<Entry> {
+    pub fn iter(&self) -> std::collections::vec_deque::Iter<'_, Entry> {
         self.entries.iter()
     }
 

@@ -1,5 +1,7 @@
+#![allow(clippy::arc_with_non_send_sync)]
+
 use anyhow::{Context, Result};
-use compiler_base_error::{diagnostic_handler::DiagnosticHandler, Diagnostic, DiagnosticStyle};
+use compiler_base_error::{Diagnostic, DiagnosticStyle, diagnostic_handler::DiagnosticHandler};
 use compiler_base_span::{FilePathMapping, SourceMap};
 use std::{
     path::{Path, PathBuf},
@@ -93,7 +95,7 @@ impl Session {
                 sm.new_source_file(PathBuf::from(filename).into(), c.to_string());
             }
             None => {
-                sm.load_file(&Path::new(&filename))
+                sm.load_file(Path::new(&filename))
                     .with_context(|| "Failed to load source file")?;
             }
         }

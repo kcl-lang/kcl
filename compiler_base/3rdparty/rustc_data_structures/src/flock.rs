@@ -38,7 +38,7 @@ cfg_if! {
                     .read(true)
                     .write(true)
                     .create(create)
-                    .mode(libc::S_IRWXU as u32)
+                    .mode(libc::S_IRWXU)
                     .open(p)?;
 
                 let mut operation = if exclusive {

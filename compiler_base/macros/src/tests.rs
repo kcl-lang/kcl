@@ -39,7 +39,10 @@ mod test_bug {
                 } else {
                     panic!("test bug!() failed")
                 };
-                assert_eq!(err_message, "Internal error, please report a bug to us. The error message is: an error msg with string format msg");
+                assert_eq!(
+                    err_message,
+                    "Internal error, please report a bug to us. The error message is: an error msg with string format msg"
+                );
             }
         }
     }

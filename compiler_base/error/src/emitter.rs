@@ -11,14 +11,14 @@
 //! For more information about how to define your customized `Emitter`, see the doc above `Emitter` trait.
 
 use crate::{
+    DiagnosticStyle,
     diagnostic::{Component, Diagnostic},
     errors::ComponentError,
-    DiagnosticStyle,
 };
 use anyhow::Result;
 use rustc_errors::{
-    styled_buffer::{StyledBuffer, StyledString},
     Style,
+    styled_buffer::{StyledBuffer, StyledString},
 };
 use std::fmt::Debug;
 use std::io::{self, Write};
@@ -322,18 +322,18 @@ impl<'a> Write for Destination<'a> {
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        match *self {
-            Self::Terminal(ref mut t) => t.flush(),
-            Self::Buffered(_, ref mut buf) => buf.flush(),
-            Self::UnColoredRaw(ref mut w) => w.flush(),
-            Self::ColoredRaw(ref mut w) => w.flush(),
+        match self {
+            Self::Terminal(t) => t.flush(),
+            Self::Buffered(_, buf) => buf.flush(),
+            Self::UnColoredRaw(w) => w.flush(),
+            Self::ColoredRaw(w) => w.flush(),
         }
     }
 }
 
 impl<'a> Drop for Destination<'a> {
     fn drop(&mut self) {
-        if let Destination::Buffered(ref mut dst, ref mut buf) = self {
+        if let Destination::Buffered(dst, buf) = &self {
             drop(dst.print(buf));
         }
     }

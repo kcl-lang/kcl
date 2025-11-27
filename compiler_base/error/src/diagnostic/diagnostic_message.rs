@@ -1,10 +1,12 @@
+#![allow(clippy::arc_with_non_send_sync)]
+
 //! The crate provides `TemplateLoader` to load the diagnositc message displayed in diagnostics from "*.ftl" files,
 //! `TemplateLoader` relies on 'fluent0.16.0' to support loading diagnositc message from "*.ftl" files.
 //!
 //! 'fluent0.16.0' is used to support diagnostic text template.
 //! For more information about 'fluent0.16.0', see https://projectfluent.org/.
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use fluent::{FluentBundle, FluentResource};
 use std::{fs, sync::Arc};
 use unic_langid::langid;

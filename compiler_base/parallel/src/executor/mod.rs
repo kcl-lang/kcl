@@ -1,10 +1,10 @@
 //! This file provides everything to define a [`Executor`] that can execute [`crate::task::Task`].
 use std::{
-    sync::{mpsc::Sender, Arc, Mutex},
+    sync::{Arc, Mutex, mpsc::Sender},
     thread::{self, JoinHandle},
 };
 
-use super::task::{event::TaskEvent, FinishedTask, Task};
+use super::task::{FinishedTask, Task, event::TaskEvent};
 use anyhow::Result;
 
 pub mod timeout;

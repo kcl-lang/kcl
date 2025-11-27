@@ -2,8 +2,8 @@ mod test_diagnostic_handler {
     use std::panic;
 
     use crate::{
-        diagnostic_handler::{DiagnosticHandler, MessageArgs},
         Diagnostic, DiagnosticStyle,
+        diagnostic_handler::{DiagnosticHandler, MessageArgs},
     };
 
     #[test]
@@ -133,7 +133,10 @@ mod test_errors {
                 match err.downcast_ref::<ComponentError>() {
                     Some(ce) => {
                         let err_msg = format!("{:?}", ce);
-                        assert_eq!(err_msg, "ComponentFormatErrors([ComponentFormatError { name: \"ComponentGenError\", message: \"This is an error for testing\" }])")
+                        assert_eq!(
+                            err_msg,
+                            "ComponentFormatErrors([ComponentFormatError { name: \"ComponentGenError\", message: \"This is an error for testing\" }])"
+                        )
                     }
                     None => {
                         panic!("Error Type Error")
@@ -146,9 +149,8 @@ mod test_errors {
 
 mod test_emitter {
     use crate::{
-        components::Label, diagnostic_handler::DiagnosticHandler,
-        emit_diagnostic_to_uncolored_text, emitter::Destination, Diagnostic, Emitter,
-        EmitterWriter,
+        Diagnostic, Emitter, EmitterWriter, components::Label, emit_diagnostic_to_uncolored_text,
+        emitter::Destination,
     };
     use std::io::{self, Write};
     use termcolor::Ansi;

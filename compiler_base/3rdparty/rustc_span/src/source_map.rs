@@ -1,3 +1,6 @@
+#![allow(clippy::arc_with_non_send_sync)]
+#![allow(clippy::too_many_arguments)]
+
 //! Types for tracking pieces of source code within a crate.
 //!
 //! The [`SourceMap`] tracks all the source code used within a single crate, mapping
@@ -27,11 +30,10 @@ use std::io;
 use tracing::{debug, trace};
 
 use super::{
-    BytePos, DistinctSources, FileLinesResult, FileName, FileNameDisplay,
+    BytePos, DUMMY_SP, DistinctSources, FileLinesResult, FileName, FileNameDisplay,
     FileNameDisplayPreference, Loc, MalformedSourceMapPositions, MultiByteChar, NonNarrowChar,
     NormalizedPos, OffsetOverflowError, RealFileName, SourceFile, SourceFileAndBytePos,
     SourceFileAndLine, SourceFileHash, SourceFileHashAlgorithm, SpanLinesError, SpanSnippetError,
-    DUMMY_SP,
 };
 use crate::span_encoding::Span;
 
@@ -748,10 +750,10 @@ impl SourceMap {
     /// Given a `Span`, tries to get a shorter span ending just after the first occurrence of `char`
     /// `c`.
     pub fn span_through_char(&self, sp: Span, c: char) -> Span {
-        if let Ok(snippet) = self.span_to_snippet(sp) {
-            if let Some(offset) = snippet.find(c) {
-                return sp.with_hi(BytePos(sp.lo().0 + (offset + c.len_utf8()) as u32));
-            }
+        if let Ok(snippet) = self.span_to_snippet(sp)
+            && let Some(offset) = snippet.find(c)
+        {
+            return sp.with_hi(BytePos(sp.lo().0 + (offset + c.len_utf8()) as u32));
         }
         sp
     }
@@ -887,50 +889,50 @@ impl SourceMap {
     pub fn generate_local_type_param_snippet(&self, span: Span) -> Option<(Span, String)> {
         // Try to extend the span to the previous "fn" keyword to retrieve the function
         // signature.
-        if let Some(sugg_span) = self.span_extend_to_prev_str(span, "fn", false, true) {
-            if let Ok(snippet) = self.span_to_snippet(sugg_span) {
-                // Consume the function name.
-                let mut offset = snippet
-                    .find(|c: char| !c.is_alphanumeric() && c != '_')
-                    .expect("no label after fn");
+        if let Some(sugg_span) = self.span_extend_to_prev_str(span, "fn", false, true)
+            && let Ok(snippet) = self.span_to_snippet(sugg_span)
+        {
+            // Consume the function name.
+            let mut offset = snippet
+                .find(|c: char| !c.is_alphanumeric() && c != '_')
+                .expect("no label after fn");
 
-                // Consume the generics part of the function signature.
-                let mut bracket_counter = 0;
-                let mut last_char = None;
-                for c in snippet[offset..].chars() {
-                    match c {
-                        '<' => bracket_counter += 1,
-                        '>' => bracket_counter -= 1,
-                        '(' => {
-                            if bracket_counter == 0 {
-                                break;
-                            }
+            // Consume the generics part of the function signature.
+            let mut bracket_counter = 0;
+            let mut last_char = None;
+            for c in snippet[offset..].chars() {
+                match c {
+                    '<' => bracket_counter += 1,
+                    '>' => bracket_counter -= 1,
+                    '(' => {
+                        if bracket_counter == 0 {
+                            break;
                         }
-                        _ => {}
                     }
-                    offset += c.len_utf8();
-                    last_char = Some(c);
+                    _ => {}
                 }
-
-                // Adjust the suggestion span to encompass the function name with its generics.
-                let sugg_span = sugg_span.with_hi(BytePos(sugg_span.lo().0 + offset as u32));
-
-                // Prepare the new suggested snippet to append the type parameter that triggered
-                // the error in the generics of the function signature.
-                let mut new_snippet = if last_char == Some('>') {
-                    format!("{}, ", &snippet[..(offset - '>'.len_utf8())])
-                } else {
-                    format!("{}<", &snippet[..offset])
-                };
-                new_snippet.push_str(
-                    &self
-                        .span_to_snippet(span)
-                        .unwrap_or_else(|_| "T".to_string()),
-                );
-                new_snippet.push('>');
-
-                return Some((sugg_span, new_snippet));
+                offset += c.len_utf8();
+                last_char = Some(c);
             }
+
+            // Adjust the suggestion span to encompass the function name with its generics.
+            let sugg_span = sugg_span.with_hi(BytePos(sugg_span.lo().0 + offset as u32));
+
+            // Prepare the new suggested snippet to append the type parameter that triggered
+            // the error in the generics of the function signature.
+            let mut new_snippet = if last_char == Some('>') {
+                format!("{}, ", &snippet[..(offset - '>'.len_utf8())])
+            } else {
+                format!("{}<", &snippet[..offset])
+            };
+            new_snippet.push_str(
+                &self
+                    .span_to_snippet(span)
+                    .unwrap_or_else(|_| "T".to_string()),
+            );
+            new_snippet.push('>');
+
+            return Some((sugg_span, new_snippet));
         }
 
         None
@@ -991,7 +993,7 @@ impl FilePathMapping {
         // NOTE: We are iterating over the mapping entries from last to first
         //       because entries specified later on the command line should
         //       take precedence.
-        for &(ref from, ref to) in self.mapping.iter().rev() {
+        for (from, to) in self.mapping.iter().rev() {
             if let Ok(rest) = path.strip_prefix(from) {
                 return (to.join(rest), true);
             }

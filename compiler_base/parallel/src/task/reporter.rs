@@ -2,13 +2,13 @@
 use std::sync::Once;
 
 use crate::task::{
-    event::{TaskEvent, TaskEventType},
     TaskStatus,
+    event::{TaskEvent, TaskEventType},
 };
 use anyhow::Result;
 use fern::{
-    colors::{Color, ColoredLevelConfig},
     Dispatch,
+    colors::{Color, ColoredLevelConfig},
 };
 use log::{error, info, warn};
 
@@ -20,12 +20,12 @@ pub struct ReporterConfig {
     file_path: Option<String>,
 }
 
-impl ReporterConfig {
+impl Default for ReporterConfig {
     /// New a default [`ReporterConfig`].
     ///
     /// Note: Since the default [`ReporterConfig`] does not define the level and destination of the log,
     /// it will display nothing if you only use the default configuration.
-    pub fn default() -> Self {
+    fn default() -> Self {
         ReporterConfig {
             level_filter: log::LevelFilter::Off,
             stdout: false,
@@ -33,7 +33,9 @@ impl ReporterConfig {
             file_path: None,
         }
     }
+}
 
+impl ReporterConfig {
     /// Set the [`log::LevelFilter`] for the log.
     pub fn filter(mut self, level_filter: log::LevelFilter) -> Self {
         self.level_filter = level_filter;
@@ -64,7 +66,7 @@ impl ReporterConfig {
     }
 }
 
-static TIME_PATTERN: &'static str = "[%Y-%m-%d][%H:%M:%S]";
+static TIME_PATTERN: &str = "[%Y-%m-%d][%H:%M:%S]";
 
 /// Set the color config for the log in stdout/stderr.
 fn set_reporter_color() -> ColoredLevelConfig {
@@ -122,10 +124,10 @@ fn set_reporter_conf(conf: &ReporterConfig) -> Result<Dispatch> {
 /// # Errors:
 ///
 /// 1. This function will return an error if a global logger has already been
-/// set to a previous logger.
+///    set to a previous logger.
 ///
 /// 2. This function will return an error if the path to the file in [`ReporterConfig`]
-/// used for logging does not exist.
+///    used for logging does not exist.
 fn init_reporter(conf: &ReporterConfig) -> Result<()> {
     set_reporter_conf(conf)?.apply()?;
     Ok(())
@@ -158,7 +160,7 @@ pub fn file_reporter_init(log_file: &str) -> Result<()> {
         .filter(log::LevelFilter::Debug)
         .stdout(true)
         .stderr(true)
-        .file(&log_file);
+        .file(log_file);
     init_reporter_once(&conf)
 }
 
@@ -292,7 +294,7 @@ mod test {
 
     use crate::task::{
         event::TaskEvent,
-        reporter::{report_event_short_message, ReporterConfig},
+        reporter::{ReporterConfig, report_event_short_message},
     };
 
     use super::{init_reporter_once, report_event_details, set_reporter_conf};
@@ -318,13 +320,13 @@ mod test {
         format!(
             "{}{}",
             chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
-            fs::read_to_string(&expect_path.display().to_string())
+            fs::read_to_string(expect_path.display().to_string())
                 .expect("Something went wrong reading the file")
         )
     }
 
     const EVENT_PATH: &str = "./src/task/test_datas/test_event_reporter";
-    const EVENTS: [&'static str; 7] = [
+    const EVENTS: [&str; 7] = [
         "start_event",
         "wait_event",
         "timeout_event",
@@ -339,7 +341,7 @@ mod test {
         F: Fn(TaskEvent) -> Result<()>,
     {
         let event_path = Path::new(EVENT_PATH);
-        let output_path = event_path.join(got.to_string());
+        let output_path = event_path.join(&got);
         let file = File::create(output_path.clone()).expect("Failed to create file");
         file.set_len(0).expect("Failed to clear file");
 
@@ -351,13 +353,10 @@ mod test {
         let mut expected_result = String::new();
         for event in EVENTS {
             report_event_file(event, &report_func);
-            expected_result.push_str(&format!(
-                "{}",
-                expect_event_report(event, &expect_short_msg)
-            ));
+            expected_result.push_str(&expect_event_report(event, &expect_short_msg).to_string());
         }
-        expected_result.push_str("\n");
-        let got_result = fs::read_to_string(&output_path.display().to_string())
+        expected_result.push('\n');
+        let got_result = fs::read_to_string(output_path.display().to_string())
             .expect("Something went wrong reading the file");
 
         assert_eq!(got_result, expected_result);

@@ -179,16 +179,16 @@ impl std::fmt::Display for TaskStatus {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             TaskStatus::Finished => {
-                write!(f, "{}", "finished")
+                write!(f, "finished")
             }
             TaskStatus::Waiting => {
-                write!(f, "{}", "waiting")
+                write!(f, "waiting")
             }
             TaskStatus::Failed(reason) => {
-                write!(f, "{}:{}", "failed", reason)
+                write!(f, "failed:{}", reason)
             }
             TaskStatus::Bug(reason) => {
-                write!(f, "{}:{}", "bug", reason)
+                write!(f, "bug:{}", reason)
             }
         }
     }
@@ -292,13 +292,13 @@ impl RunningTask {
         if let Some(join_handle) = self.join_handle {
             // If [`Task`] returns [`TaskStatus::Finished`], that means [`Task`] is running correctly,
             // but the thread executing the [`Task`] returns an error, that means there's a bug.
-            if join_handle.join().is_err() {
-                if let TaskStatus::Finished = task.status() {
-                    task.find_bug(format!(
-                        "Exception occurs after task '{}' reporting success",
-                        task.tinfo()
-                    ));
-                }
+            if join_handle.join().is_err()
+                && let TaskStatus::Finished = task.status()
+            {
+                task.find_bug(format!(
+                    "Exception occurs after task '{}' reporting success",
+                    task.tinfo()
+                ));
             }
         }
     }
@@ -307,7 +307,7 @@ impl RunningTask {
 #[allow(unused)]
 mod test {
     use std::{
-        sync::mpsc::{channel, Sender},
+        sync::mpsc::{Sender, channel},
         thread,
     };
 

@@ -1,9 +1,9 @@
 //! 'components.rs' defines all components with style `DiagnosticStyle` that builtin in compiler_base_error.
 use std::{cmp::Ordering, sync::Arc};
 
-use super::{style::DiagnosticStyle, Component};
+use super::{Component, style::DiagnosticStyle};
 use crate::errors::ComponentFormatError;
-use compiler_base_span::{span_to_filename_string, SourceFile, SourceMap, Span};
+use compiler_base_span::{SourceFile, SourceMap, Span, span_to_filename_string};
 use rustc_errors::styled_buffer::{StyledBuffer, StyledString};
 use rustc_span::LineInfo;
 

@@ -1,3 +1,5 @@
+#![allow(clippy::arc_with_non_send_sync)]
+
 //! This crate provides `DiagnosticHandler` supports diagnostic messages to terminal stderr.
 //!
 //! `DiagnosticHandler` mainly consists of 4 parts：
@@ -10,10 +12,10 @@
 //! For more information about template loader, see doc in "compiler_base/error/src/diagnostic/diagnostic_message.rs".
 
 use crate::{
-    diagnostic::diagnostic_message::TemplateLoader, emit_diagnostic_to_uncolored_text, Diagnostic,
-    DiagnosticStyle, Emitter, EmitterWriter,
+    Diagnostic, DiagnosticStyle, Emitter, EmitterWriter,
+    diagnostic::diagnostic_message::TemplateLoader, emit_diagnostic_to_uncolored_text,
 };
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use compiler_base_span::fatal_error::FatalError;
 use fluent::FluentArgs;
 use std::{
@@ -40,7 +42,7 @@ const DIAGNOSTIC_MESSAGES_ROOT: &str = env!("CARGO_MANIFEST_DIR");
 /// - In line 2, `sub_index` must start with a point `.` and it is optional and can be more than one.
 /// - In line 2, `Expected one of `{$expected_items}`` is the `Message String` to `.expected`. It is an interpolated string.
 /// - In line 2, `{$expected_items}` is a `MessageArgs` of the `Expected one of `{$expected_items}``
-/// and `MessageArgs` can be recognized as a Key-Value entry, it is optional.
+///   and `MessageArgs` can be recognized as a Key-Value entry, it is optional.
 ///
 /// The pattern of above '*.ftl' file looks like:
 /// ``` ignore
@@ -106,15 +108,17 @@ impl Debug for DiagnosticHandler {
     }
 }
 
-impl DiagnosticHandler {
+impl Default for DiagnosticHandler {
     /// Create a `DiagnosticHandler` with no (*.ftl) template files.
     /// Use this method if the diagnostic message does not need to be loaded from the template file (*.ftl).
-    pub fn default() -> Self {
+    fn default() -> Self {
         Self {
             handler_inner: Mutex::new(DiagnosticHandlerInner::default()),
         }
     }
+}
 
+impl DiagnosticHandler {
     /// Load all (*.ftl) template files under default directory.
     ///
     /// Default directory "./src/diagnostic/locales/en-US/"
@@ -332,7 +336,7 @@ impl DiagnosticHandler {
             Ok(mut inner) => {
                 inner
                     .emit_error_diagnostic(diag)
-                    .with_context(|| ("Emit Error Diagnostics Failed."))?;
+                    .with_context(|| "Emit Error Diagnostics Failed.")?;
                 Ok(self)
             }
             Err(_) => bail!("Emit Error Diagnostics Failed."),
@@ -359,7 +363,7 @@ impl DiagnosticHandler {
             Ok(mut inner) => {
                 inner
                     .emit_warn_diagnostic(diag)
-                    .with_context(|| ("Emit Warn Diagnostics Failed."))?;
+                    .with_context(|| "Emit Warn Diagnostics Failed.")?;
                 Ok(self)
             }
             Err(_) => bail!("Emit Warn Diagnostics Failed."),
@@ -388,7 +392,7 @@ impl DiagnosticHandler {
             Ok(mut inner) => {
                 inner
                     .emit_stashed_diagnostics()
-                    .with_context(|| ("Emit Stashed Diagnostics Failed."))?;
+                    .with_context(|| "Emit Stashed Diagnostics Failed.")?;
                 Ok(self)
             }
             Err(_) => bail!("Emit Stashed Diagnostics Failed."),
@@ -466,7 +470,7 @@ impl DiagnosticHandler {
             Ok(mut inner) => {
                 inner
                     .abort_if_errors()
-                    .with_context(|| ("Abort If Errors Failed."))?;
+                    .with_context(|| "Abort If Errors Failed.")?;
                 Ok(self)
             }
             Err(_) => bail!("Abort If Errors Failed."),
@@ -647,7 +651,7 @@ impl DiagnosticHandlerInner {
     pub(crate) fn emit_all_diags_into_string(&self) -> Vec<Result<String>> {
         self.diagnostics
             .iter()
-            .map(|d| Ok(emit_diagnostic_to_uncolored_text(d)?))
+            .map(emit_diagnostic_to_uncolored_text)
             .collect()
     }
 
@@ -655,7 +659,7 @@ impl DiagnosticHandlerInner {
     pub(crate) fn emit_nth_diag_into_string(&self, index: usize) -> Option<Result<String>> {
         self.diagnostics
             .get(index)
-            .map(|d| emit_diagnostic_to_uncolored_text(d))
+            .map(emit_diagnostic_to_uncolored_text)
     }
 
     /// Emit the diagnostic messages generated from error to to terminal stderr.

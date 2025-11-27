@@ -5,7 +5,7 @@ mod test_timeout_executor {
         io,
         io::Write,
         panic,
-        sync::{mpsc::channel, Arc, Mutex},
+        sync::{Arc, Mutex, mpsc::channel},
         thread,
         time::{Duration, Instant},
     };
@@ -14,14 +14,14 @@ mod test_timeout_executor {
     use rand::Rng;
 
     use crate::{
-        executor::{timeout::TimeoutExecutor, Executor},
+        executor::{Executor, timeout::TimeoutExecutor},
         task::{
+            FinishedTask, Task, TaskInfo, TaskStatus,
             event::TaskEvent,
             reporter::{
                 file_reporter_init, report_event, report_event_details, report_event_short_message,
                 std_reporter_init,
             },
-            FinishedTask, Task, TaskInfo, TaskStatus,
         },
     };
 
@@ -246,11 +246,10 @@ mod test_timeout_executor {
                 panic!("unreachable code");
             }
             Err(_) => {
-                assert_eq!(events_collector
-                            .lock()
-                            .unwrap()
-                            .events_str,
-                        "tname:PanicTask tid:0 event:waiting\ntname:PanicTask tid:0 event:timeout 59s\n");
+                assert_eq!(
+                    events_collector.lock().unwrap().events_str,
+                    "tname:PanicTask tid:0 event:waiting\ntname:PanicTask tid:0 event:timeout 59s\n"
+                );
                 handle.thread().unpark();
             }
         }

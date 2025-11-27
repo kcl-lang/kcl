@@ -37,8 +37,8 @@ pub mod flock;
 
 pub mod macros;
 pub use ena::snapshot_vec;
-#[macro_use]
 
+#[macro_use]
 pub mod sync;
 pub mod frozen;
 

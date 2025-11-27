@@ -4,10 +4,10 @@ mod test_session {
     use crate::{Session, SessionDiagnostic};
     use anyhow::Result;
     use compiler_base_error::{
-        components::{CodeSnippet, Label},
         Diagnostic, DiagnosticStyle,
+        components::{CodeSnippet, Label},
     };
-    use compiler_base_span::{span::new_byte_pos, Span};
+    use compiler_base_span::{Span, span::new_byte_pos};
 
     const CARGO_ROOT: &str = env!("CARGO_MANIFEST_DIR");
     #[test]
