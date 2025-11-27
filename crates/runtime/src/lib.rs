@@ -122,11 +122,27 @@ pub use self::template::*;
 pub mod panic;
 pub use self::panic::*;
 
-pub mod _kcl_run;
-pub use self::_kcl_run::*;
+pub mod addr;
+pub use self::addr::*;
 
-pub mod _kcl;
-pub use self::_kcl::*;
+#[derive(Debug, Default, Clone)]
+pub struct RuntimePanicRecord {
+    pub kcl_panic_info: bool,
+    pub message: String,
+    pub rust_file: String,
+    pub rust_line: i32,
+    pub rust_col: i32,
+}
 
-pub mod _kcl_addr;
-pub use self::_kcl_addr::*;
+#[derive(Debug, Default, Clone, Copy)]
+#[repr(C)]
+pub struct FFIRunOptions {
+    pub strict_range_check: i32,
+    pub disable_none: i32,
+    pub disable_schema_check: i32,
+    pub debug_mode: i32,
+    pub show_hidden: i32,
+    pub sort_keys: i32,
+    pub include_schema_type_path: i32,
+    pub disable_empty_list: i32,
+}

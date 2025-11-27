@@ -16,7 +16,6 @@ use kcl_sema::resolver::{
 pub use runner::{ExecProgramArgs, ExecProgramResult, MapErrorResult};
 use runner::{FastRunner, RunnerOptions};
 
-pub mod linker;
 pub mod runner;
 
 #[cfg(test)]

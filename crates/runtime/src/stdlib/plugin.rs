@@ -104,7 +104,6 @@ pub extern "C-unwind" fn kcl_plugin_invoke_json(
 
 #[cfg(target_arch = "wasm32")]
 #[unsafe(no_mangle)]
-
 pub extern "C-unwind" fn kcl_plugin_invoke_json(
     method: *const c_char,
     args: *const c_char,
