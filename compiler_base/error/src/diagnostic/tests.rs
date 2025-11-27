@@ -1,5 +1,7 @@
+#![allow(clippy::arc_with_non_send_sync)]
+
 mod test_diagnostic {
-    use crate::diagnostic::{components::Label, style::DiagnosticStyle, Component, Diagnostic};
+    use crate::diagnostic::{Component, Diagnostic, components::Label, style::DiagnosticStyle};
     use rustc_errors::styled_buffer::StyledBuffer;
 
     #[test]
@@ -19,23 +21,23 @@ mod test_diagnostic {
         let result = sb.render();
 
         assert_eq!(result.len(), 1);
-        assert_eq!(result.get(0).unwrap().len(), 3);
-        assert_eq!(result.get(0).unwrap().get(0).unwrap().text, "error");
-        assert_eq!(result.get(0).unwrap().get(1).unwrap().text, "[E3033]");
+        assert_eq!(result.first().unwrap().len(), 3);
+        assert_eq!(result.first().unwrap().first().unwrap().text, "error");
+        assert_eq!(result.first().unwrap().get(1).unwrap().text, "[E3033]");
         assert_eq!(
-            result.get(0).unwrap().get(2).unwrap().text,
+            result.first().unwrap().get(2).unwrap().text,
             ": this is an error!"
         );
 
         assert_eq!(
-            result.get(0).unwrap().get(0).unwrap().style,
+            result.first().unwrap().first().unwrap().style,
             Some(DiagnosticStyle::NeedFix)
         );
         assert_eq!(
-            result.get(0).unwrap().get(1).unwrap().style,
+            result.first().unwrap().get(1).unwrap().style,
             Some(DiagnosticStyle::Helpful)
         );
-        assert_eq!(result.get(0).unwrap().get(2).unwrap().style, None);
+        assert_eq!(result.first().unwrap().get(2).unwrap().style, None);
     }
 
     #[test]
@@ -44,7 +46,10 @@ mod test_diagnostic {
         let err_label_1 = Box::new(Label::Error("E3033".to_string()));
         diag_1.append_component(err_label_1);
 
-        assert_eq!(format!("{:?}", diag_1), "[[StyledString { text: \"error\", style: Some(NeedFix) }, StyledString { text: \"[E3033]\", style: Some(Helpful) }]]\n");
+        assert_eq!(
+            format!("{:?}", diag_1),
+            "[[StyledString { text: \"error\", style: Some(NeedFix) }, StyledString { text: \"[E3033]\", style: Some(Helpful) }]]\n"
+        );
     }
 
     #[test]
@@ -80,11 +85,12 @@ mod test_components {
     use std::{fs, path::PathBuf, sync::Arc};
 
     use crate::{
+        Diagnostic,
         components::CodeSnippet,
-        diagnostic::{components::Label, style::DiagnosticStyle, Component},
-        emit_diagnostic_to_uncolored_text, Diagnostic,
+        diagnostic::{Component, components::Label, style::DiagnosticStyle},
+        emit_diagnostic_to_uncolored_text,
     };
-    use compiler_base_span::{span::new_byte_pos, FilePathMapping, SourceMap, Span, SpanData};
+    use compiler_base_span::{FilePathMapping, SourceMap, Span, SpanData, span::new_byte_pos};
     use pretty_assertions::assert_eq;
     use rustc_errors::styled_buffer::{StyledBuffer, StyledString};
 
@@ -99,13 +105,13 @@ mod test_components {
         let result = sb.render();
         assert_eq!(errs.len(), 0);
         assert_eq!(result.len(), 1);
-        assert_eq!(result.get(0).unwrap().len(), 6);
-        assert_eq!(result.get(0).unwrap().get(0).unwrap().text, "error");
-        assert_eq!(result.get(0).unwrap().get(1).unwrap().text, "[E3030]");
-        assert_eq!(result.get(0).unwrap().get(2).unwrap().text, "warning");
-        assert_eq!(result.get(0).unwrap().get(3).unwrap().text, "[W3030]");
-        assert_eq!(result.get(0).unwrap().get(4).unwrap().text, "note");
-        assert_eq!(result.get(0).unwrap().get(5).unwrap().text, "help");
+        assert_eq!(result.first().unwrap().len(), 6);
+        assert_eq!(result.first().unwrap().first().unwrap().text, "error");
+        assert_eq!(result.first().unwrap().get(1).unwrap().text, "[E3030]");
+        assert_eq!(result.first().unwrap().get(2).unwrap().text, "warning");
+        assert_eq!(result.first().unwrap().get(3).unwrap().text, "[W3030]");
+        assert_eq!(result.first().unwrap().get(4).unwrap().text, "note");
+        assert_eq!(result.first().unwrap().get(5).unwrap().text, "help");
     }
 
     #[test]
@@ -118,12 +124,12 @@ mod test_components {
         let result = sb.render();
         assert_eq!(errs.len(), 0);
         assert_eq!(result.len(), 1);
-        assert_eq!(result.get(0).unwrap().len(), 1);
+        assert_eq!(result.first().unwrap().len(), 1);
         assert_eq!(
-            result.get(0).unwrap().get(0).unwrap().text,
+            result.first().unwrap().first().unwrap().text,
             "this is a component string"
         );
-        assert_eq!(result.get(0).unwrap().get(0).unwrap().style, None);
+        assert_eq!(result.first().unwrap().first().unwrap().style, None);
     }
 
     #[test]
@@ -138,13 +144,13 @@ mod test_components {
         let result = sb.render();
         assert_eq!(errs.len(), 0);
         assert_eq!(result.len(), 1);
-        assert_eq!(result.get(0).unwrap().len(), 1);
+        assert_eq!(result.first().unwrap().len(), 1);
         assert_eq!(
-            result.get(0).unwrap().get(0).unwrap().text,
+            result.first().unwrap().first().unwrap().text,
             "This is a string with NeedFix style"
         );
         assert_eq!(
-            result.get(0).unwrap().get(0).unwrap().style.unwrap(),
+            result.first().unwrap().first().unwrap().style.unwrap(),
             DiagnosticStyle::NeedFix
         );
 
@@ -153,16 +159,16 @@ mod test_components {
         let result = sb.render();
         assert_eq!(errs.len(), 0);
         assert_eq!(result.len(), 1);
-        assert_eq!(result.get(0).unwrap().len(), 2);
+        assert_eq!(result.first().unwrap().len(), 2);
         assert_eq!(
-            result.get(0).unwrap().get(1).unwrap().text,
+            result.first().unwrap().get(1).unwrap().text,
             "This is a string with no style"
         );
-        assert_eq!(result.get(0).unwrap().get(1).unwrap().style, None);
+        assert_eq!(result.first().unwrap().get(1).unwrap().style, None);
     }
 
     fn gen_diag_with_code_snippet(filename: String, sp: Span) -> Diagnostic<DiagnosticStyle> {
-        let filename = fs::canonicalize(&PathBuf::from(filename))
+        let filename = fs::canonicalize(PathBuf::from(filename))
             .unwrap()
             .display()
             .to_string();
@@ -194,11 +200,7 @@ mod test_components {
 1 | Line 1 Code Snippet.
   | ^^^^^
 "#,
-            PathBuf::from(filename)
-                .canonicalize()
-                .unwrap()
-                .display()
-                .to_string()
+            PathBuf::from(filename).canonicalize().unwrap().display()
         );
         assert_eq!(
             format!("\n{}\n", emit_diagnostic_to_uncolored_text(&diag).unwrap()),
@@ -223,11 +225,7 @@ mod test_components {
 11 | Line 11 Code Snippet.
    |      ^^^^
 "#,
-            PathBuf::from(filename)
-                .canonicalize()
-                .unwrap()
-                .display()
-                .to_string()
+            PathBuf::from(filename).canonicalize().unwrap().display()
         );
 
         assert_eq!(
@@ -255,35 +253,31 @@ mod test_components {
 
         assert_eq!(errs.len(), 0);
         assert_eq!(result.len(), 1);
-        assert_eq!(result.get(0).unwrap().len(), 4);
+        assert_eq!(result.first().unwrap().len(), 4);
         let expected_path = format!(
             " --> {}:1:1\n  | \n1 | ",
-            PathBuf::from(filename)
-                .canonicalize()
-                .unwrap()
-                .display()
-                .to_string()
+            PathBuf::from(filename).canonicalize().unwrap().display()
         );
         assert_eq!(
-            result.get(0).unwrap().get(0).unwrap().style.unwrap(),
+            result.first().unwrap().first().unwrap().style.unwrap(),
             DiagnosticStyle::Url
         );
-        assert_eq!(result.get(0).unwrap().get(0).unwrap().text, expected_path);
-        assert_eq!(result.get(0).unwrap().get(1).unwrap().style, None);
+        assert_eq!(result.first().unwrap().first().unwrap().text, expected_path);
+        assert_eq!(result.first().unwrap().get(1).unwrap().style, None);
         assert_eq!(
-            result.get(0).unwrap().get(1).unwrap().text,
+            result.first().unwrap().get(1).unwrap().text,
             "Line 1 Code Snippet.\n"
         );
         assert_eq!(
-            result.get(0).unwrap().get(2).unwrap().style.unwrap(),
+            result.first().unwrap().get(2).unwrap().style.unwrap(),
             DiagnosticStyle::Url
         );
-        assert_eq!(result.get(0).unwrap().get(2).unwrap().text, "  | ");
+        assert_eq!(result.first().unwrap().get(2).unwrap().text, "  | ");
         assert_eq!(
-            result.get(0).unwrap().get(3).unwrap().style.unwrap(),
+            result.first().unwrap().get(3).unwrap().style.unwrap(),
             DiagnosticStyle::NeedFix
         );
-        assert_eq!(result.get(0).unwrap().get(3).unwrap().text, "^^^^^");
+        assert_eq!(result.first().unwrap().get(3).unwrap().text, "^^^^^");
     }
 
     #[test]
@@ -362,9 +356,9 @@ mod test_error_message {
 
 mod test_diag_handler {
     use crate::{
+        Diagnostic, DiagnosticStyle,
         components::Label,
         diagnostic_handler::{DiagnosticHandler, MessageArgs},
-        Diagnostic, DiagnosticStyle,
     };
     use anyhow::{Context, Result};
     #[test]
@@ -397,7 +391,10 @@ mod test_diag_handler {
         let err_label_1 = Box::new(Label::Error("E3033".to_string()));
         diag.append_component(err_label_1);
         diag_handler.add_err_diagnostic(diag).unwrap();
-        assert_eq!(format!("{:?}", diag_handler), "[[StyledString { text: \"error\", style: Some(NeedFix) }, StyledString { text: \"[E3033]\", style: Some(Helpful) }]]\n");
+        assert_eq!(
+            format!("{:?}", diag_handler),
+            "[[StyledString { text: \"error\", style: Some(NeedFix) }, StyledString { text: \"[E3033]\", style: Some(Helpful) }]]\n"
+        );
     }
 
     #[test]

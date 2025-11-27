@@ -21,7 +21,7 @@ use rustc_data_structures::sync::Lrc;
 pub use source_map::SourceMap;
 
 mod span_encoding;
-pub use span_encoding::{Span, DUMMY_SP};
+pub use span_encoding::{DUMMY_SP, Span};
 
 mod analyze_source_file;
 
@@ -35,8 +35,6 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::str::FromStr;
 
-use blake3;
-use blake3::Hash as Blake3;
 use md5::Digest;
 use md5::Md5;
 use sha1::Sha1;
@@ -109,7 +107,7 @@ impl RealFileName {
             | RealFileName::Remapped {
                 local_path: _,
                 virtual_name: p,
-            } => &p,
+            } => p,
         }
     }
 
@@ -203,8 +201,8 @@ impl fmt::Display for FileNameDisplay<'_> {
 
 impl FileNameDisplay<'_> {
     pub fn to_string_lossy(&self) -> Cow<'_, str> {
-        match self.inner {
-            FileName::Real(ref inner) => inner.to_string_lossy(self.display_pref),
+        match &self.inner {
+            FileName::Real(inner) => inner.to_string_lossy(self.display_pref),
             _ => Cow::from(format!("{}", self)),
         }
     }
@@ -314,7 +312,7 @@ impl SpanData {
 
 impl PartialOrd for Span {
     fn partial_cmp(&self, rhs: &Self) -> Option<Ordering> {
-        PartialOrd::partial_cmp(&self.data(), &rhs.data())
+        Some(self.cmp(rhs))
     }
 }
 impl Ord for Span {
@@ -369,11 +367,7 @@ impl Span {
 
     /// Returns `self` if `self` is not the dummy span, and `other` otherwise.
     pub fn substitute_dummy(self, other: Span) -> Span {
-        if self.is_dummy() {
-            other
-        } else {
-            self
-        }
+        if self.is_dummy() { other } else { self }
     }
 
     /// Returns `true` if `self` fully encloses `other`.
@@ -586,9 +580,9 @@ pub enum ExternalSourceKind {
 
 impl ExternalSource {
     pub fn get_source(&self) -> Option<&Rc<String>> {
-        match self {
+        match &self {
             ExternalSource::Foreign {
-                kind: ExternalSourceKind::Present(ref src),
+                kind: ExternalSourceKind::Present(src),
                 ..
             } => Some(src),
             _ => None,
@@ -770,11 +764,9 @@ impl SourceFile {
             begin.to_usize()
         };
 
-        if let Some(ref src) = self.src {
-            Some(Cow::from(get_until_newline(src, begin)))
-        } else {
-            None
-        }
+        self.src
+            .as_ref()
+            .map(|src| Cow::from(get_until_newline(src, begin)))
     }
 
     pub fn is_real_file(&self) -> bool {
@@ -836,8 +828,13 @@ impl SourceFile {
         // is recorded.
         let diff = match self.normalized_pos.binary_search_by(|np| np.pos.cmp(&pos)) {
             Ok(i) => self.normalized_pos[i].diff,
-            Err(i) if i == 0 => 0,
-            Err(i) => self.normalized_pos[i - 1].diff,
+            Err(i) => {
+                if i == 0 {
+                    0
+                } else {
+                    self.normalized_pos[i - 1].diff
+                }
+            }
         };
 
         BytePos::from_u32(pos.0 - self.start_pos.0 + diff)
@@ -972,7 +969,7 @@ fn normalize_newlines(src: &mut String, normalized_pos: &mut Vec<NormalizedPos>)
     // directly, let's rather steal the contents of `src`. This makes the code
     // safe even if a panic occurs.
 
-    let mut buf = std::mem::replace(src, String::new()).into_bytes();
+    let mut buf = std::mem::take(src).into_bytes();
     let mut gap_len = 0;
     let mut tail = buf.as_mut_slice();
     let mut cursor = 0;

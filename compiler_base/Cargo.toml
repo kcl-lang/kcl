@@ -1,20 +1,3 @@
-[package]
-name = "compiler_base"
-version = "0.1.4"
-edition = "2021"
-authors = ["zongzhe1024@163.com"]
-license = "Apache-2.0 OR MIT"
-description = "A common domain programming language framework."
-readme = "README.md"
-homepage = "https://github.com/kcl-lang/kcl"
-repository = "https://github.com/kcl-lang/kcl"
-keywords = ["compiler"]
-categories = ["command-line-utilities"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-
 [workspace]
 members = [
     "session",
@@ -26,3 +9,18 @@ members = [
     "3rdparty/rustc_data_structures",
     "3rdparty/rustc_span",
 ]
+resolver = "2"
+
+[workspace.package]
+version = "0.2.0"
+edition = "2024"
+rust-version = "1.83"
+authors = ["zongzhe1024@163.com"]
+exclude = [".github/"]
+license = "Apache-2.0"
+readme = "README.md"
+description = "A common domain programming language framework."
+homepage = "https://github.com/kcl-lang/kcl"
+repository = "https://github.com/kcl-lang/kcl"
+keywords = ["compiler"]
+categories = ["command-line-utilities"]

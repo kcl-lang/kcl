@@ -68,6 +68,15 @@ where
     }
 }
 
+impl<T> Default for StyledBuffer<T>
+where
+    T: Clone + PartialEq + Eq + Style,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T> StyledBuffer<T>
 where
     T: Clone + PartialEq + Eq + Style,
@@ -146,10 +155,8 @@ where
     /// It will add an new empty line after all the buffer lines for the `string`.
     pub fn pushs(&mut self, string: &str, style: Option<T>) {
         let line = self.num_lines();
-        let mut col = 0;
-        for c in string.chars() {
+        for (col, c) in string.chars().enumerate() {
             self.putc(line, col, c, style.clone());
-            col += 1;
         }
     }
 

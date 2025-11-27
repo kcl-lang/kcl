@@ -16,7 +16,7 @@ impl Drop for MaybeTempDir {
         // occur.
         let dir = unsafe { ManuallyDrop::take(&mut self.dir) };
         if self.keep {
-            let _ = dir.into_path();
+            let _ = dir.keep();
         }
     }
 }

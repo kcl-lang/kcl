@@ -52,8 +52,8 @@ pub trait Style {
 #[cfg(test)]
 mod test_styled_buffer {
     use crate::{
-        styled_buffer::{StyledBuffer, StyledString},
         Style,
+        styled_buffer::{StyledBuffer, StyledString},
     };
     use termcolor::{Color, ColorSpec};
 
@@ -113,25 +113,31 @@ mod test_styled_buffer {
 
     fn require_hello_world(styled_strings: Vec<Vec<StyledString<DummyStyle>>>) {
         assert_eq!(styled_strings.len(), 1);
-        assert_eq!(styled_strings.get(0).unwrap().len(), 2);
+        assert_eq!(styled_strings.first().unwrap().len(), 2);
 
-        assert_eq!(styled_strings.get(0).unwrap().get(0).unwrap().text, "Hello");
+        assert_eq!(
+            styled_strings.first().unwrap().first().unwrap().text,
+            "Hello"
+        );
         assert!(
             DummyStyle::NoStyle
                 == *styled_strings
-                    .get(0)
+                    .first()
                     .unwrap()
-                    .get(0)
+                    .first()
                     .unwrap()
                     .style
                     .as_ref()
                     .unwrap()
         );
-        assert_eq!(styled_strings.get(0).unwrap().get(1).unwrap().text, "World");
+        assert_eq!(
+            styled_strings.first().unwrap().get(1).unwrap().text,
+            "World"
+        );
         assert!(
             DummyStyle::Dummy
                 == *styled_strings
-                    .get(0)
+                    .first()
                     .unwrap()
                     .get(1)
                     .unwrap()
@@ -156,13 +162,16 @@ mod test_styled_buffer {
         sb.putc(0, 3, 'L', Some(DummyStyle::NoStyle));
         sb.putc(0, 4, 'O', Some(DummyStyle::NoStyle));
         let styled_strings = sb.render();
-        assert_eq!(styled_strings.get(0).unwrap().get(0).unwrap().text, "HELLO");
+        assert_eq!(
+            styled_strings.first().unwrap().first().unwrap().text,
+            "HELLO"
+        );
         assert!(
             DummyStyle::NoStyle
                 == *styled_strings
-                    .get(0)
+                    .first()
                     .unwrap()
-                    .get(0)
+                    .first()
                     .unwrap()
                     .style
                     .as_ref()
@@ -180,16 +189,16 @@ mod test_styled_buffer {
         sb.putc(2, 0, 'A', Some(DummyStyle::Dummy));
         let styled_strings = sb.render();
         assert_eq!(styled_strings.len(), 3);
-        assert_eq!(styled_strings.get(0).unwrap().len(), 2);
+        assert_eq!(styled_strings.first().unwrap().len(), 2);
         assert_eq!(styled_strings.get(1).unwrap().len(), 0);
         assert_eq!(styled_strings.get(2).unwrap().len(), 1);
-        assert_eq!(styled_strings.get(2).unwrap().get(0).unwrap().text, "A");
+        assert_eq!(styled_strings.get(2).unwrap().first().unwrap().text, "A");
         assert!(
             DummyStyle::Dummy
                 == *styled_strings
                     .get(2)
                     .unwrap()
-                    .get(0)
+                    .first()
                     .unwrap()
                     .style
                     .as_ref()
@@ -215,16 +224,16 @@ mod test_styled_buffer {
         sb.puts(2, 0, "A", Some(DummyStyle::Dummy));
         let styled_strings = sb.render();
         assert_eq!(styled_strings.len(), 3);
-        assert_eq!(styled_strings.get(0).unwrap().len(), 2);
+        assert_eq!(styled_strings.first().unwrap().len(), 2);
         assert_eq!(styled_strings.get(1).unwrap().len(), 0);
         assert_eq!(styled_strings.get(2).unwrap().len(), 1);
-        assert_eq!(styled_strings.get(2).unwrap().get(0).unwrap().text, "A");
+        assert_eq!(styled_strings.get(2).unwrap().first().unwrap().text, "A");
         assert!(
             DummyStyle::Dummy
                 == *styled_strings
                     .get(2)
                     .unwrap()
-                    .get(0)
+                    .first()
                     .unwrap()
                     .style
                     .as_ref()
@@ -240,15 +249,18 @@ mod test_styled_buffer {
         pushs_hello_world(&mut sb);
         let styled_strings = sb.render();
         assert_eq!(styled_strings.len(), 2);
-        assert_eq!(styled_strings.get(0).unwrap().len(), 1);
+        assert_eq!(styled_strings.first().unwrap().len(), 1);
 
-        assert_eq!(styled_strings.get(0).unwrap().get(0).unwrap().text, "Hello");
+        assert_eq!(
+            styled_strings.first().unwrap().first().unwrap().text,
+            "Hello"
+        );
         assert!(
             DummyStyle::NoStyle
                 == *styled_strings
-                    .get(0)
+                    .first()
                     .unwrap()
-                    .get(0)
+                    .first()
                     .unwrap()
                     .style
                     .as_ref()
@@ -257,13 +269,16 @@ mod test_styled_buffer {
             DummyStyle::NoStyle
         );
 
-        assert_eq!(styled_strings.get(1).unwrap().get(0).unwrap().text, "World");
+        assert_eq!(
+            styled_strings.get(1).unwrap().first().unwrap().text,
+            "World"
+        );
         assert!(
             DummyStyle::Dummy
                 == *styled_strings
                     .get(1)
                     .unwrap()
-                    .get(0)
+                    .first()
                     .unwrap()
                     .style
                     .as_ref()

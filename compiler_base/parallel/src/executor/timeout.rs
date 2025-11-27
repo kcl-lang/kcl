@@ -2,16 +2,16 @@
 //! [`TimeoutExecutor`] is a [`Executor`] with a timeout queue that can monitor the timeout situation of [`Task`]s.
 use std::{
     collections::{HashMap, VecDeque},
-    sync::mpsc::{channel, RecvTimeoutError},
+    sync::mpsc::{RecvTimeoutError, channel},
     time::{Duration, Instant},
 };
 
 use crate::task::{
-    event::TaskEvent, FinishedTask, RunningTask, Task, TaskId, TaskInfo, TaskStatus,
+    FinishedTask, RunningTask, Task, TaskId, TaskInfo, TaskStatus, event::TaskEvent,
 };
 
-use super::{start_task, Executor};
-use anyhow::{bail, Result};
+use super::{Executor, start_task};
+use anyhow::{Result, bail};
 
 /// [`TimeoutSituation`] is an internal structure for the timeout situation of a [`Task`].
 pub(crate) struct TimeoutSituation {

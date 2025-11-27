@@ -34,7 +34,7 @@ impl DictValue {
 }
 
 impl ValueRef {
-    fn dict_config(&self) -> Ref<DictValue> {
+    fn dict_config(&self) -> Ref<'_, DictValue> {
         Ref::map(self.rc.borrow(), |val| match val {
             Value::dict_value(dict) => dict.as_ref(),
             Value::schema_value(schema) => schema.config.as_ref(),
