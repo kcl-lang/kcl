@@ -38,7 +38,6 @@ jobs:
                 rust \
                 cargo \
                 && \
-              rustup default stable && \
               export KCL_BUILD_GIT_SHA=$(git rev-parse HEAD) && \
               git config --global --add safe.directory /workspace && \
               git config --global user.name 'GitHub Action' && \
