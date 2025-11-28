@@ -111,22 +111,22 @@ impl<'ctx> Resolver<'_> {
                     .map(|p| (p.ty.clone(), p.range.clone()))
                     .collect();
 
-                if let Some((expected_ty, def_range)) = expected_types_and_ranges.first() {
-                    if let Some(value) = &kw.node.value {
-                        let arg_value_type = self.upgrade_type_for_expr(
-                            expected_ty.clone(),
-                            value,
-                            value.get_span_pos(),
-                            Some(def_range.clone()),
-                        );
-                        self.node_ty_map
-                            .borrow_mut()
-                            .insert(self.get_node_key(kw.id.clone()), arg_value_type.clone());
-                    }
+                if let Some((expected_ty, def_range)) = expected_types_and_ranges.first()
+                    && let Some(value) = &kw.node.value
+                {
+                    let arg_value_type = self.upgrade_type_for_expr(
+                        expected_ty.clone(),
+                        value,
+                        value.get_span_pos(),
+                        Some(def_range.clone()),
+                    );
+                    self.node_ty_map
+                        .borrow_mut()
+                        .insert(self.get_node_key(kw.id.clone()), arg_value_type.clone());
                 }
             } else {
                 self.handler
-                    .add_compile_error(&format!("missing argument"), kw.get_span_pos());
+                    .add_compile_error(&"missing argument".to_string(), kw.get_span_pos());
             }
             prev_kw_pos = Some(kw.get_end_pos());
         }
@@ -168,7 +168,7 @@ impl<'ctx> Resolver<'_> {
             .iter()
             .map(|param| param.name.as_str())
             .collect();
-        let suggs = suggestions::provide_suggestions(arg_name, valid_params.into_iter());
+        let suggs = suggestions::provide_suggestions(arg_name, valid_params);
         let suggestion = if !suggs.is_empty() {
             format!(", did you mean '{}'?", suggs.join(" or "))
         } else {

@@ -249,13 +249,11 @@ impl<'p> Printer<'p> {
                     match self.comments.pop_front() {
                         Some(comment) => {
                             self.writeln(&comment.node.text);
-                            match self.comments.front() {
-                                Some(next_comment) => {
-                                    if next_comment.line >= comment.line + 2 && count > 0 {
-                                        self.write_newline();
-                                    }
-                                }
-                                None => {}
+                            if let Some(next_comment) = self.comments.front()
+                                && next_comment.line >= comment.line + 2
+                                && count > 0
+                            {
+                                self.write_newline();
                             }
                         }
                         None => break,
@@ -289,10 +287,11 @@ impl<'p> Printer<'p> {
             self.write_newline_without_fill();
 
             // Add extra newline if next comment is 2+ lines away
-            if let Some(next) = self.comments.front() {
-                if next.line >= comment.line + 2 && next.line <= line {
-                    self.write_newline_without_fill();
-                }
+            if let Some(next) = self.comments.front()
+                && next.line >= comment.line + 2
+                && next.line <= line
+            {
+                self.write_newline_without_fill();
             }
 
             self.last_ast_line = self.last_ast_line.max(comment.line);

@@ -154,7 +154,7 @@ impl<'ctx> Resolver<'_> {
 
                                 Some(self.new_config_expr_context_item(
                                     key_name,
-                                    crate::ty::sup(&possible_types).into(),
+                                    crate::ty::sup(&possible_types),
                                     obj.start.clone(),
                                     obj.end.clone(),
                                 ))
@@ -257,10 +257,7 @@ impl<'ctx> Resolver<'_> {
     ///     the item popped from stack.
     #[inline]
     pub(crate) fn restore_config_expr_context(&mut self) -> Option<ScopeObject> {
-        match self.ctx.config_expr_context.pop() {
-            Some(obj) => obj,
-            None => None,
-        }
+        self.ctx.config_expr_context.pop().unwrap_or_default()
     }
 
     /// Pop all method for the 'config_expr_context' stack
@@ -308,11 +305,11 @@ impl<'ctx> Resolver<'_> {
         name: &str,
         key: &'ctx ast::NodeRef<ast::Expr>,
     ) {
-        if !name.is_empty() {
-            if let Some(Some(obj)) = self.ctx.config_expr_context.last() {
-                let ty = obj.ty.clone();
-                self.must_check_config_attr(name, &ty, &key.get_span_pos(), None);
-            }
+        if !name.is_empty()
+            && let Some(Some(obj)) = self.ctx.config_expr_context.last()
+        {
+            let ty = obj.ty.clone();
+            self.must_check_config_attr(name, &ty, &key.get_span_pos(), None);
         }
     }
 
@@ -324,12 +321,12 @@ impl<'ctx> Resolver<'_> {
                 attrs,
             }) => {
                 for (key, attr) in attrs {
-                    self.check_attr_recursively(&key, &attr.ty, &attr.range, value_span);
+                    self.check_attr_recursively(key, &attr.ty, &attr.range, value_span);
                 }
             }
             TypeKind::Schema(schema_ty) => {
                 for (key, attr) in &schema_ty.attrs {
-                    self.check_attr_recursively(&key, &attr.ty, &attr.range, value_span);
+                    self.check_attr_recursively(key, &attr.ty, &attr.range, value_span);
                 }
             }
             _ => {}
@@ -461,7 +458,7 @@ impl<'ctx> Resolver<'_> {
         let mut suggestion = String::new();
         // Calculate the closest miss attributes.
         let suggs = suggestions::provide_suggestions(attr, keys);
-        if suggs.len() > 0 {
+        if !suggs.is_empty() {
             suggestion = format!(", did you mean '{:?}'?", suggs);
         }
         (suggs, suggestion)
@@ -581,7 +578,7 @@ impl<'ctx> Resolver<'_> {
                 match &index_signature.key_ty.kind {
                     TypeKind::StrLit(name) => {
                         if name != attr {
-                            let (suggs, msg) = self.get_config_attr_err_suggestion(attr, &[name]);
+                            let (suggs, msg) = self.get_config_attr_err_suggestion(attr, [name]);
                             self.add_config_attr_error(
                                 attr, schema_ty, range, attr_range, suggs, msg,
                             );

@@ -73,6 +73,7 @@ impl Debug for FunctionCaller {
 
 impl FunctionCaller {
     #[inline]
+    #[allow(clippy::arc_with_non_send_sync)]
     pub fn new(ctx: FunctionEvalContext, proxy: FunctionHandler) -> Self {
         Self {
             ctx: Arc::new(ctx),
@@ -106,7 +107,8 @@ impl<'ctx> Evaluator<'ctx> {
             // Recover the package path scope.
             self.pop_pkgpath();
         }
-        let value = match &frame.proxy {
+
+        match &frame.proxy {
             // Call a function and return the value
             Proxy::Lambda(lambda) => {
                 // Push the current lambda scope level in the lambda stack.
@@ -131,8 +133,7 @@ impl<'ctx> Evaluator<'ctx> {
             Proxy::Rule(rule) => (rule.body)(self, &rule.ctx, args, kwargs),
             // The built-in lazy eval semantics prevent invoking
             Proxy::Global(_) => self.undefined_value(),
-        };
-        value
+        }
     }
 }
 

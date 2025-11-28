@@ -1,8 +1,4 @@
-// Copyright The KCL Authors. All rights reserved.
-
-// Auto generated, DONOT EDIT!!!
-
-#[allow(dead_code)]
+/// Get the function pointer address by its name.
 pub fn kcl_get_fn_ptr_by_name(name: &str) -> u64 {
     match name {
         "kcl_assert" => crate::kcl_assert as *const () as u64,

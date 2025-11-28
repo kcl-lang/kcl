@@ -84,6 +84,12 @@ macro_rules! declare_combined_lint_pass {
             $($passes: $passes,)*
         }
 
+        impl Default for $name {
+            fn default() -> Self {
+                Self::new()
+            }
+        }
+
         impl $name {
             $v fn new() -> Self {
                 Self {

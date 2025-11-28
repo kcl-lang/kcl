@@ -168,7 +168,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
             return Ok(());
         }
         self.ctx.current_pkgpath = Some(name.clone());
-        if let Some(_) = self.gs.get_packages().get_package_info(name) {
+        if self.gs.get_packages().get_package_info(name).is_some() {
             if modules.is_empty() {
                 return Ok(());
             }
@@ -256,7 +256,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
         let pkg_path = self.ctx.current_pkgpath.clone().unwrap();
         let fqn_name = format!("{pkg_path}.{filepath}.{name}");
         let scope_ref = match self.gs.get_scopes().schema_scope_map.get(&fqn_name) {
-            Some(scope_ref) => scope_ref.clone(),
+            Some(scope_ref) => *scope_ref,
             None => {
                 let scope_ref = self.gs.get_scopes_mut().alloc_local_scope(local_scope);
                 self.gs

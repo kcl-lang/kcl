@@ -51,7 +51,7 @@ use kcl_error::{Position, diagnostic::Range};
 use std::cell::RefCell;
 
 thread_local! {
-    static SHOULD_SERIALIZE_ID: RefCell<bool> = RefCell::new(false);
+    static SHOULD_SERIALIZE_ID: RefCell<bool> = const { RefCell::new(false) };
 }
 
 /// PosTuple denotes the tuple `(filename, line, column, end_line, end_column)`.
@@ -115,9 +115,9 @@ impl Default for AstIndex {
     }
 }
 
-impl ToString for AstIndex {
-    fn to_string(&self) -> String {
-        self.0.to_string()
+impl std::fmt::Display for AstIndex {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -209,7 +209,7 @@ impl<T> Node<T> {
         }
     }
 
-    pub fn node(node: T, (lo, hi): (Loc, Loc)) -> Self {
+    pub fn new_with_loc(node: T, (lo, hi): (Loc, Loc)) -> Self {
         let filename = kcl_utils::path::convert_windows_drive_letter(&format!(
             "{}",
             lo.file.name.prefer_remapped()
@@ -226,7 +226,7 @@ impl<T> Node<T> {
         }
     }
 
-    pub fn node_with_pos_and_id(node: T, pos: PosTuple, id: AstIndex) -> Self {
+    pub fn new_with_pos_and_id(node: T, pos: PosTuple, id: AstIndex) -> Self {
         Self {
             id,
             node,
@@ -238,7 +238,7 @@ impl<T> Node<T> {
         }
     }
 
-    pub fn node_with_pos(node: T, pos: PosTuple) -> Self {
+    pub fn new_with_pos(node: T, pos: PosTuple) -> Self {
         Self {
             id: AstIndex::default(),
             node,
@@ -383,11 +383,11 @@ pub struct SerializeProgram {
     pub pkgs: HashMap<String, Vec<Module>>,
 }
 
-impl Into<SerializeProgram> for Program {
-    fn into(self) -> SerializeProgram {
+impl From<Program> for SerializeProgram {
+    fn from(val: Program) -> Self {
         SerializeProgram {
-            root: self.root.clone(),
-            pkgs: self
+            root: val.root.clone(),
+            pkgs: val
                 .pkgs
                 .iter()
                 .map(|(name, modules)| {
@@ -396,9 +396,11 @@ impl Into<SerializeProgram> for Program {
                         modules
                             .iter()
                             .map(|m| {
-                                self.get_module(m)
+                                val.get_module(m)
                                     .expect("Failed to acquire module lock")
-                                    .expect(&format!("module {:?} not found in program", m))
+                                    .unwrap_or_else(|| {
+                                        panic!("module {:?} not found in program", m)
+                                    })
                                     .clone()
                             })
                             .collect(),
@@ -430,7 +432,7 @@ impl Program {
     pub fn get_main_package_first_module(&self) -> Option<RwLockReadGuard<'_, Module>> {
         match self.pkgs.get(crate::MAIN_PKG) {
             Some(modules) => match modules.first() {
-                Some(first_module_path) => self.get_module(&first_module_path).unwrap_or(None),
+                Some(first_module_path) => self.get_module(first_module_path).unwrap_or(None),
                 None => None,
             },
             None => None,
@@ -438,7 +440,7 @@ impl Program {
     }
     /// Get stmt on position
     pub fn pos_to_stmt(&self, pos: &Position) -> Option<Node<Stmt>> {
-        for (_, v) in &self.pkgs {
+        for v in self.pkgs.values() {
             for m in v {
                 if let Ok(m) = self.get_module(m) {
                     let m = m?;
@@ -665,10 +667,10 @@ pub struct ImportStmt {
     /// `pkg_name` means the name of the package that the current import statement indexs to.
     ///
     /// 1. If the current import statement indexs to the kcl plugins, kcl builtin methods or the internal kcl packages,
-    /// `pkg_name` is `__main__`
+    ///    `pkg_name` is `__main__`
     ///
     /// 2. If the current import statement indexs to the external kcl packages, `pkg_name` is the name of the package.
-    /// if `import k8s.example.apps`, `k8s` is another kcl package, `pkg_name` is `k8s`.
+    ///    if `import k8s.example.apps`, `k8s` is another kcl package, `pkg_name` is `k8s`.
     pub pkg_name: String,
 }
 
@@ -1330,12 +1332,8 @@ impl Arguments {
     }
 
     pub fn get_arg_type_node(&self, i: usize) -> Option<&Node<Type>> {
-        if let Some(ty) = self.ty_list.get(i) {
-            if let Some(ty) = ty {
-                Some(ty.as_ref())
-            } else {
-                None
-            }
+        if let Some(Some(ty)) = self.ty_list.get(i) {
+            Some(ty.as_ref())
         } else {
             None
         }
@@ -1445,8 +1443,8 @@ pub struct NumberLit {
     pub value: NumberLitValue,
 }
 
-impl ToString for NumberLit {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for NumberLit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut result = match self.value {
             NumberLitValue::Int(v) => v.to_string(),
             NumberLitValue::Float(v) => v.to_string(),
@@ -1454,7 +1452,7 @@ impl ToString for NumberLit {
         if let Some(suffix) = &self.binary_suffix {
             result.push_str(&suffix.value());
         }
-        result
+        write!(f, "{}", result)
     }
 }
 
@@ -1878,8 +1876,8 @@ pub struct IntLiteralType {
     pub suffix: Option<NumberBinarySuffix>,
 }
 
-impl ToString for Type {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for Type {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         fn to_str(typ: &Type, w: &mut String) {
             match typ {
                 Type::Any => w.push_str("any"),
@@ -1972,7 +1970,7 @@ impl ToString for Type {
 
         let mut result = "".to_string();
         to_str(self, &mut result);
-        result
+        write!(f, "{}", result)
     }
 }
 

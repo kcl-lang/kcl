@@ -72,7 +72,7 @@ const KCL_FILE_NAME: &str = "main.k";
 const MAIN_PKG_NAME: &str = "__main__";
 
 #[derive(serde::Deserialize, serde::Serialize)]
-struct SimplePanicInfo {
+pub struct SimplePanicInfo {
     line: i32,
     col: i32,
     message: String,

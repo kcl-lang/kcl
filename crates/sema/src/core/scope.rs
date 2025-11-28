@@ -75,7 +75,7 @@ impl Serialize for ScopeRef {
         let data = SerializableScopeRef {
             i: index as u64,
             g: generation,
-            kind: self.kind.clone(),
+            kind: self.kind,
         };
         data.serialize(serializer)
     }
@@ -362,7 +362,7 @@ impl Scope for RootSymbolScope {
         output.push_str("\"refs\": [\n");
         for (index, symbol) in self.refs.iter().enumerate() {
             let symbol = symbol_data.get_symbol(*symbol)?;
-            output.push_str(&format!("{}", symbol.full_dump(symbol_data)?));
+            output.push_str(&(symbol.full_dump(symbol_data)?).to_string());
             if index + 1 < self.refs.len() {
                 output.push_str(",\n")
             }
@@ -373,7 +373,7 @@ impl Scope for RootSymbolScope {
             output.push_str(&format!("\"{}\": [\n", key));
             for (index, scope) in scopes.iter().enumerate() {
                 let scope = scope_data.get_scope(scope)?;
-                output.push_str(&format!("{}", scope.dump(scope_data, symbol_data)?));
+                output.push_str(&(scope.dump(scope_data, symbol_data)?).to_string());
                 if index + 1 < scopes.len() {
                     output.push_str(",\n");
                 }
@@ -386,7 +386,7 @@ impl Scope for RootSymbolScope {
         output.push_str("\n}\n}");
 
         let val: serde_json::Value = serde_json::from_str(&output).unwrap();
-        Some(serde_json::to_string_pretty(&val).ok()?)
+        serde_json::to_string_pretty(&val).ok()
     }
 
     fn get_range(&self) -> Option<(Position, Position)> {
@@ -479,7 +479,7 @@ impl Scope for LocalSymbolScope {
     }
 
     fn get_owner(&self) -> Option<SymbolRef> {
-        self.owner.clone()
+        self.owner
     }
 
     fn look_up_def(
@@ -492,21 +492,19 @@ impl Scope for LocalSymbolScope {
         get_def_from_owner: bool,
     ) -> Option<SymbolRef> {
         match self.defs.get(name) {
-            Some(symbol_ref) => return Some(*symbol_ref),
+            Some(symbol_ref) => Some(*symbol_ref),
             None => {
                 // Try to get the attributes in the schema's protocol and mixin, and get the schema attr by `get_def_from_owner`
-                if let LocalSymbolScopeKind::SchemaDef = self.kind {
-                    if let Some(owner) = self.owner.as_ref() {
-                        if let Some(owner_schema) = symbol_data.get_schema_symbol(*owner) {
-                            let attrs =
-                                owner_schema.get_protocol_and_mixin_attrs(symbol_data, module_info);
-                            for attr in attrs {
-                                if let Some(symbol) = symbol_data.get_symbol(attr) {
-                                    if symbol.get_name() == name {
-                                        return Some(attr);
-                                    }
-                                }
-                            }
+                if let LocalSymbolScopeKind::SchemaDef = self.kind
+                    && let Some(owner) = self.owner.as_ref()
+                    && let Some(owner_schema) = symbol_data.get_schema_symbol(*owner)
+                {
+                    let attrs = owner_schema.get_protocol_and_mixin_attrs(symbol_data, module_info);
+                    for attr in attrs {
+                        if let Some(symbol) = symbol_data.get_symbol(attr)
+                            && symbol.get_name() == name
+                        {
+                            return Some(attr);
                         }
                     }
                 }
@@ -538,26 +536,26 @@ impl Scope for LocalSymbolScope {
                         };
 
                         let parent = scope_data.get_scope(&self.parent)?;
-                        return parent.look_up_def(
+                        parent.look_up_def(
                             name,
                             scope_data,
                             symbol_data,
                             module_info,
                             local,
                             get_def_from_owner,
-                        );
+                        )
                     }
                     // Search in the current and parent scope
                     (false, false) => {
                         let parent = scope_data.get_scope(&self.parent)?;
-                        return parent.look_up_def(
+                        parent.look_up_def(
                             name,
                             scope_data,
                             symbol_data,
                             module_info,
                             local,
                             get_def_from_owner,
-                        );
+                        )
                     }
                 }
             }
@@ -573,17 +571,14 @@ impl Scope for LocalSymbolScope {
         owner: bool,
     ) -> HashMap<String, SymbolRef> {
         let mut all_defs_map = HashMap::new();
-        if owner {
-            if let Some(owner) = self.owner {
-                if let Some(owner) = symbol_data.get_symbol(owner) {
-                    for def_ref in owner.get_all_attributes(symbol_data, module_info) {
-                        if let Some(def) = symbol_data.get_symbol(def_ref) {
-                            let name = def.get_name();
-                            if !all_defs_map.contains_key(&name) {
-                                all_defs_map.insert(name, def_ref);
-                            }
-                        }
-                    }
+        if owner
+            && let Some(owner) = self.owner
+            && let Some(owner) = symbol_data.get_symbol(owner)
+        {
+            for def_ref in owner.get_all_attributes(symbol_data, module_info) {
+                if let Some(def) = symbol_data.get_symbol(def_ref) {
+                    let name = def.get_name();
+                    all_defs_map.entry(name).or_insert(def_ref);
                 }
             }
         }
@@ -611,9 +606,7 @@ impl Scope for LocalSymbolScope {
             for (name, def_ref) in
                 parent.get_all_defs(scope_data, symbol_data, module_info, false, owner)
             {
-                if !all_defs_map.contains_key(&name) {
-                    all_defs_map.insert(name, def_ref);
-                }
+                all_defs_map.entry(name).or_insert(def_ref);
             }
         }
         all_defs_map
@@ -654,7 +647,7 @@ impl Scope for LocalSymbolScope {
         output.push_str("\"refs\": [\n");
         for (index, symbol) in self.refs.iter().enumerate() {
             let symbol = symbol_data.get_symbol(*symbol)?;
-            output.push_str(&format!("{}", symbol.full_dump(symbol_data)?));
+            output.push_str(&(symbol.full_dump(symbol_data)?).to_string());
             if index + 1 < self.refs.len() {
                 output.push_str(",\n")
             }
@@ -663,7 +656,7 @@ impl Scope for LocalSymbolScope {
         output.push_str("\n\"children\": [\n");
         for (index, scope) in self.children.iter().enumerate() {
             let scope = scope_data.get_scope(scope)?;
-            output.push_str(&format!("{}", scope.dump(scope_data, symbol_data)?));
+            output.push_str(&(scope.dump(scope_data, symbol_data)?).to_string());
             if index + 1 < self.children.len() {
                 output.push_str(",\n")
             }
@@ -685,17 +678,14 @@ impl Scope for LocalSymbolScope {
         owner: bool,
     ) -> HashMap<String, SymbolRef> {
         let mut all_defs_map = HashMap::new();
-        if owner {
-            if let Some(owner) = self.owner {
-                if let Some(owner) = symbol_data.get_symbol(owner) {
-                    for def_ref in owner.get_all_attributes(symbol_data, module_info) {
-                        if let Some(def) = symbol_data.get_symbol(def_ref) {
-                            let name = def.get_name();
-                            if !all_defs_map.contains_key(&name) {
-                                all_defs_map.insert(name, def_ref);
-                            }
-                        }
-                    }
+        if owner
+            && let Some(owner) = self.owner
+            && let Some(owner) = symbol_data.get_symbol(owner)
+        {
+            for def_ref in owner.get_all_attributes(symbol_data, module_info) {
+                if let Some(def) = symbol_data.get_symbol(def_ref) {
+                    let name = def.get_name();
+                    all_defs_map.entry(name).or_insert(def_ref);
                 }
             }
         }

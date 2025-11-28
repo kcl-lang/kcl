@@ -199,8 +199,9 @@ impl ValueRef {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Default)]
 pub enum Value {
+    #[default]
     undefined,
     none,
     bool_value(bool),
@@ -212,12 +213,6 @@ pub enum Value {
     schema_value(Box<SchemaValue>),
     func_value(Box<FuncValue>),
     unit_value(f64, i64, String), // (Real value, raw value, unit string)
-}
-
-impl Default for Value {
-    fn default() -> Self {
-        Self::undefined
-    }
 }
 
 #[derive(PartialEq, Eq, Clone, Default, Debug)]

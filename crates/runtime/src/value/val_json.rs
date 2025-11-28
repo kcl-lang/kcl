@@ -391,7 +391,7 @@ impl ValueRef {
                     Self::int(val.as_i64().unwrap())
                 } else if val.is_u64() {
                     let n = val.as_u64().unwrap();
-                    if n <= i64::max_value() as u64 {
+                    if n <= i64::MAX as u64 {
                         Self::int(n as i64)
                     } else {
                         Self::float(n as f64)

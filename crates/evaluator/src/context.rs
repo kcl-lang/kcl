@@ -30,7 +30,7 @@ impl<'ctx> Evaluator<'ctx> {
         let len = self.pkgpath_stack.borrow().len();
         self.pkgpath_stack
             .borrow()
-            .get(if len > 2 { len - 2 } else { 2 - len })
+            .get(len.abs_diff(2))
             .unwrap_or(&MAIN_PKG_PATH.to_string())
             .to_string()
     }
@@ -267,12 +267,12 @@ impl<'ctx> Evaluator<'ctx> {
 
     pub(crate) fn pop_backtrace(&self) {
         let ctx = &mut self.runtime_ctx.borrow_mut();
-        if ctx.cfg.debug_mode {
-            if let Some(backtrace_frame) = ctx.backtrace.pop() {
-                ctx.panic_info.kcl_func = backtrace_frame.func;
-                ctx.panic_info.kcl_line = backtrace_frame.line;
-                ctx.panic_info.kcl_file = backtrace_frame.file;
-            }
+        if ctx.cfg.debug_mode
+            && let Some(backtrace_frame) = ctx.backtrace.pop()
+        {
+            ctx.panic_info.kcl_func = backtrace_frame.func;
+            ctx.panic_info.kcl_line = backtrace_frame.line;
+            ctx.panic_info.kcl_file = backtrace_frame.file;
         }
     }
 
@@ -295,19 +295,17 @@ impl<'ctx> Evaluator<'ctx> {
     #[inline]
     pub(crate) fn is_backtrack_only_if(&self) -> bool {
         let meta = &mut self.backtrack_meta.borrow_mut();
-        match meta.last().map(|m| matches!(m.kind, SetterKind::If)) {
-            Some(r) => r,
-            None => false,
-        }
+        meta.last()
+            .map(|m| matches!(m.kind, SetterKind::If))
+            .unwrap_or_default()
     }
 
     #[inline]
     pub(crate) fn is_backtrack_only_or_else(&self) -> bool {
         let meta = &mut self.backtrack_meta.borrow_mut();
-        match meta.last().map(|m| matches!(m.kind, SetterKind::OrElse)) {
-            Some(r) => r,
-            None => false,
-        }
+        meta.last()
+            .map(|m| matches!(m.kind, SetterKind::OrElse))
+            .unwrap_or_default()
     }
 
     pub(crate) fn push_scope_cover(&self, start: usize, stop: usize) {

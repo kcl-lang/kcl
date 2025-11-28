@@ -19,7 +19,7 @@ macro_rules! node_ref {
         NodeRef::new(Node::dummy_node($node))
     };
     ($node: expr, $pos:expr) => {
-        NodeRef::new(Node::node_with_pos($node, $pos))
+        NodeRef::new(Node::new_with_pos($node, $pos))
     };
 }
 

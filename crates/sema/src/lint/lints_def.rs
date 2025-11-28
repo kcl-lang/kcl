@@ -49,23 +49,22 @@ impl LintPass for ImportPosition {
             }
         }
         for stmt in &module.body {
-            if let ast::Stmt::Import(_import_stmt) = &stmt.node {
-                if stmt.line > first_non_importstmt {
-                    handler.add_warning(
-                        WarningKind::ImportPositionWarning,
-                        &[Message {
-                            range: stmt.get_span_pos(),
-                            style: Style::Line,
-                            message: format!(
-                                "The import stmt should be placed at the top of the module"
-                            ),
-                            note: Some(
-                                "Consider moving tihs statement to the top of the file".to_string(),
-                            ),
-                            suggested_replacement: None,
-                        }],
-                    );
-                }
+            if let ast::Stmt::Import(_import_stmt) = &stmt.node
+                && stmt.line > first_non_importstmt
+            {
+                handler.add_warning(
+                    WarningKind::ImportPositionWarning,
+                    &[Message {
+                        range: stmt.get_span_pos(),
+                        style: Style::Line,
+                        message: "The import stmt should be placed at the top of the module"
+                            .to_string(),
+                        note: Some(
+                            "Consider moving tihs statement to the top of the file".to_string(),
+                        ),
+                        suggested_replacement: None,
+                    }],
+                );
             }
         }
     }

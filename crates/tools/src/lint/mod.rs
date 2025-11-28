@@ -65,6 +65,7 @@ mod tests;
 ///     }
 /// ]
 /// ```
+#[allow(clippy::arc_with_non_send_sync)]
 pub fn lint_files(
     files: &[&str],
     opts: Option<LoadProgramOptions>,

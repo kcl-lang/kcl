@@ -40,7 +40,7 @@ impl<'ctx> Resolver<'_> {
                         .program
                         .get_module(module)
                         .expect("Failed to acquire module lock")
-                        .expect(&format!("module {:?} not found in program", module));
+                        .unwrap_or_else(|| panic!("module {:?} not found in program", module));
                     let pkgpath = &self.ctx.pkgpath.clone();
                     let filename = &module.filename;
                     self.change_package_context(pkgpath, filename);
@@ -136,7 +136,7 @@ impl<'ctx> Resolver<'_> {
                             .program
                             .get_module(module)
                             .expect("Failed to acquire module lock")
-                            .expect(&format!("module {:?} not found in program", module));
+                            .unwrap_or_else(|| panic!("module {:?} not found in program", module));
                         let pkgpath = &self.ctx.pkgpath.clone();
                         let filename = &module.filename;
                         self.change_package_context(pkgpath, filename);
@@ -195,7 +195,7 @@ impl<'ctx> Resolver<'_> {
                         .program
                         .get_module(module)
                         .expect("Failed to acquire module lock")
-                        .expect(&format!("module {:?} not found in program", module));
+                        .unwrap_or_else(|| panic!("module {:?} not found in program", module));
                     self.ctx.filename = module.filename.to_string();
                     for stmt in &module.body {
                         if matches!(stmt.node, ast::Stmt::TypeAlias(_)) {
@@ -292,7 +292,7 @@ impl<'ctx> Resolver<'_> {
             }
             let ty = if let Some(ty_annotation) = &assign_stmt.ty {
                 let ty =
-                    self.parse_ty_with_scope(Some(&ty_annotation), ty_annotation.get_span_pos());
+                    self.parse_ty_with_scope(Some(ty_annotation), ty_annotation.get_span_pos());
                 if let Some(obj) = self.scope.borrow().elems.get(name) {
                     let obj = obj.borrow();
                     if !is_upper_bound(obj.ty.clone(), ty.clone()) {
@@ -367,7 +367,7 @@ impl<'ctx> Resolver<'_> {
         rule_stmt: &'ctx ast::RuleStmt,
     ) -> Option<Box<SchemaType>> {
         if let Some(host_name) = &rule_stmt.for_host_name {
-            let ty = self.walk_identifier_expr(&host_name);
+            let ty = self.walk_identifier_expr(host_name);
             match &ty.kind {
                 TypeKind::Schema(schema_ty) if schema_ty.is_protocol && !schema_ty.is_instance => {
                     Some(Box::new(schema_ty.clone()))
@@ -413,7 +413,7 @@ impl<'ctx> Resolver<'_> {
                 return None;
             }
             // Mixin type check with protocol
-            let ty = self.walk_identifier_expr(&host_name);
+            let ty = self.walk_identifier_expr(host_name);
             match &ty.kind {
                 TypeKind::Schema(schema_ty) if schema_ty.is_protocol && !schema_ty.is_instance => {
                     Some(Box::new(schema_ty.clone()))
@@ -445,7 +445,7 @@ impl<'ctx> Resolver<'_> {
         schema_stmt: &'ctx ast::SchemaStmt,
     ) -> Option<Box<SchemaType>> {
         if let Some(parent_name) = &schema_stmt.parent_name {
-            let ty = self.walk_identifier_expr(&parent_name);
+            let ty = self.walk_identifier_expr(parent_name);
             match &ty.kind {
                 TypeKind::Schema(schema_ty)
                     if !schema_ty.is_protocol && !schema_ty.is_mixin && !schema_ty.is_instance =>
@@ -529,9 +529,10 @@ impl<'ctx> Resolver<'_> {
             .map(|attr| attr.2.clone())
             .collect();
         let index_signature = if let Some(index_signature) = &schema_stmt.index_signature {
-            if let Some(index_sign_name) = &index_signature.node.key_name {
-                if schema_attr_names.contains(&index_sign_name.node) {
-                    self.handler.add_error(
+            if let Some(index_sign_name) = &index_signature.node.key_name
+                && schema_attr_names.contains(&index_sign_name.node)
+            {
+                self.handler.add_error(
                         ErrorKind::IndexSignatureError,
                         &[Message {
                             range: index_signature.get_span_pos(),
@@ -541,7 +542,6 @@ impl<'ctx> Resolver<'_> {
                             suggested_replacement: None,
                         }],
                     );
-                }
             }
             let key_ty = self.parse_ty_str_with_scope(
                 &index_signature.node.key_ty.node.to_string(),
@@ -682,11 +682,11 @@ impl<'ctx> Resolver<'_> {
                     stmt.get_span_pos(),
                 );
             }
-            if let Some(index_signature_obj) = &index_signature {
-                if !index_signature_obj.any_other
-                    && !is_upper_bound(index_signature_obj.val_ty.clone(), ty.clone())
-                {
-                    self.handler.add_error(
+            if let Some(index_signature_obj) = &index_signature
+                && !index_signature_obj.any_other
+                && !is_upper_bound(index_signature_obj.val_ty.clone(), ty.clone())
+            {
+                self.handler.add_error(
                         ErrorKind::IndexSignatureError,
                         &[Message {
                             range: stmt.get_span_pos(),
@@ -696,7 +696,6 @@ impl<'ctx> Resolver<'_> {
                             suggested_replacement: None,
                         }],
                     );
-                }
             }
         }
         // Mixin types
@@ -718,7 +717,7 @@ impl<'ctx> Resolver<'_> {
                     }],
                 );
             }
-            let ty = self.walk_identifier_expr(&mixin);
+            let ty = self.walk_identifier_expr(mixin);
             let mixin_ty = match &ty.kind {
                 TypeKind::Schema(schema_ty)
                     if !schema_ty.is_protocol && schema_ty.is_mixin && !schema_ty.is_instance =>
@@ -771,9 +770,9 @@ impl<'ctx> Resolver<'_> {
                 params.push(Parameter {
                     name,
                     ty: ty.clone(),
-                    has_default: args.node.defaults.get(i).map_or(false, |arg| arg.is_some()),
+                    has_default: args.node.defaults.get(i).is_some_and(|arg| arg.is_some()),
                     default_value: args.node.defaults.get(i).map_or(None, |arg| {
-                        arg.as_ref().map(|v| print_ast_node(ASTNode::Expr(&v)))
+                        arg.as_ref().map(|v| print_ast_node(ASTNode::Expr(v)))
                     }),
                     range: args.node.args[i].get_span_pos(),
                 });
@@ -782,39 +781,37 @@ impl<'ctx> Resolver<'_> {
 
         let schema_full_ty_str = full_ty_str(&self.ctx.pkgpath, name);
 
-        if should_add_schema_ref {
-            if let Some(parent_ty) = &parent_ty {
-                let parent_full_ty_str = parent_ty.full_ty_str();
-                self.ctx.ty_ctx.add_dependencies(
-                    &schema_full_ty_str,
-                    &parent_full_ty_str,
-                    schema_stmt.name.get_span_pos(),
-                );
+        if should_add_schema_ref && let Some(parent_ty) = &parent_ty {
+            let parent_full_ty_str = parent_ty.full_ty_str();
+            self.ctx.ty_ctx.add_dependencies(
+                &schema_full_ty_str,
+                &parent_full_ty_str,
+                schema_stmt.name.get_span_pos(),
+            );
 
-                if self.ctx.ty_ctx.is_cyclic_from_node(&schema_full_ty_str) {
-                    let cycles = self.ctx.ty_ctx.find_cycle_nodes(&schema_full_ty_str);
-                    for cycle in cycles {
-                        let node_names: Vec<String> = cycle
-                            .iter()
-                            .map(|idx| {
-                                if let Some(name) = self.ctx.ty_ctx.dep_graph.node_weight(*idx) {
-                                    name.clone()
-                                } else {
-                                    "".to_string()
-                                }
-                            })
-                            .filter(|name| !name.is_empty())
-                            .collect();
-                        for node in &cycle {
-                            if let Some(range) = self.ctx.ty_ctx.get_node_range(node) {
-                                self.handler.add_compile_error(
-                                    &format!(
-                                        "There is a circular reference between schemas {}",
-                                        node_names.join(", "),
-                                    ),
-                                    range,
-                                );
+            if self.ctx.ty_ctx.is_cyclic_from_node(&schema_full_ty_str) {
+                let cycles = self.ctx.ty_ctx.find_cycle_nodes(&schema_full_ty_str);
+                for cycle in cycles {
+                    let node_names: Vec<String> = cycle
+                        .iter()
+                        .map(|idx| {
+                            if let Some(name) = self.ctx.ty_ctx.dep_graph.node_weight(*idx) {
+                                name.clone()
+                            } else {
+                                "".to_string()
                             }
+                        })
+                        .filter(|name| !name.is_empty())
+                        .collect();
+                    for node in &cycle {
+                        if let Some(range) = self.ctx.ty_ctx.get_node_range(node) {
+                            self.handler.add_compile_error(
+                                &format!(
+                                    "There is a circular reference between schemas {}",
+                                    node_names.join(", "),
+                                ),
+                                range,
+                            );
                         }
                     }
                 }
@@ -876,7 +873,7 @@ impl<'ctx> Resolver<'_> {
         // Parent types
         let mut parent_types: Vec<SchemaType> = vec![];
         for rule in &rule_stmt.parent_rules {
-            let ty = self.walk_identifier_expr(&rule);
+            let ty = self.walk_identifier_expr(rule);
             let parent_ty = match &ty.kind {
                 TypeKind::Schema(schema_ty) if schema_ty.is_rule && !schema_ty.is_instance => {
                     Some(schema_ty.clone())
@@ -911,14 +908,14 @@ impl<'ctx> Resolver<'_> {
                     ty: ty.clone(),
                     has_default: args.node.defaults.get(i).is_some(),
                     default_value: args.node.defaults.get(i).map_or(None, |arg| {
-                        arg.as_ref().map(|v| print_ast_node(ASTNode::Expr(&v)))
+                        arg.as_ref().map(|v| print_ast_node(ASTNode::Expr(v)))
                     }),
                     range: args.node.args[i].get_span_pos(),
                 });
             }
         }
         if should_add_schema_ref {
-            let schema_full_ty_str = full_ty_str(&self.ctx.pkgpath, &name);
+            let schema_full_ty_str = full_ty_str(&self.ctx.pkgpath, name);
 
             for parent_ty in &parent_types {
                 let parent_full_ty_str = parent_ty.full_ty_str();

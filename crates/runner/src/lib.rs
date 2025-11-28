@@ -159,10 +159,10 @@ pub fn execute(
     let scope = resolve_program(&mut program);
     // Emit parse and resolve errors if exists.
     emit_compile_diag_to_string(sess, &scope, false)?;
-    Ok(FastRunner::new(Some(RunnerOptions {
+    FastRunner::new(Some(RunnerOptions {
         plugin_agent_ptr: args.plugin_agent,
     }))
-    .run(&program, args)?)
+    .run(&program, args)
 }
 
 /// `execute_module` can directly execute the ast `Module`.

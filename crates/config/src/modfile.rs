@@ -117,30 +117,26 @@ pub struct LockDependency {
 
 impl LockDependency {
     pub fn gen_filename(&self) -> String {
-        if let Some(git_url) = &self.url {
-            if let Ok(parsed_url) = Url::parse(git_url) {
-                if let Some(last_segment) = parsed_url
-                    .path_segments()
-                    .and_then(|segments| segments.last())
-                {
-                    let trimmed_segment = last_segment.trim_end_matches(".git");
-                    return trimmed_segment.to_string();
-                }
-            }
+        if let Some(git_url) = &self.url
+            && let Ok(parsed_url) = Url::parse(git_url)
+            && let Some(last_segment) = parsed_url
+                .path_segments()
+                .and_then(|mut segments| segments.next_back())
+        {
+            let trimmed_segment = last_segment.trim_end_matches(".git");
+            return trimmed_segment.to_string();
         }
 
-        if let Some(oci_repo) = &self.repo {
-            if let Ok(parsed_url) = Url::parse(oci_repo) {
-                if let Some(last_segment) = parsed_url
-                    .path_segments()
-                    .and_then(|segments| segments.last())
-                {
-                    return last_segment.to_string();
-                }
-            }
+        if let Some(oci_repo) = &self.repo
+            && let Ok(parsed_url) = Url::parse(oci_repo)
+            && let Some(last_segment) = parsed_url
+                .path_segments()
+                .and_then(|mut segments| segments.next_back())
+        {
+            return last_segment.to_string();
         }
 
-        return self.name.replace('-', "_");
+        self.name.replace('-', "_")
     }
 }
 
@@ -177,7 +173,7 @@ pub struct LocalSource {
 impl ModFile {
     #[inline]
     pub fn get_entries(&self) -> Option<Vec<String>> {
-        self.profile.as_ref().map(|p| p.entries.clone()).flatten()
+        self.profile.as_ref().and_then(|p| p.entries.clone())
     }
 }
 
@@ -234,7 +230,7 @@ pub fn create_default_vendor_home() -> Option<String> {
         .join(DEFAULT_KCL_HOME)
         .join(DEFAULT_KPM_SUBDIR);
     match kpm_home.canonicalize() {
-        Ok(path) => return Some(path.display().to_string()),
+        Ok(path) => Some(path.display().to_string()),
         Err(_) => match fs::create_dir_all(kpm_home.clone()) {
             Ok(_) => match kpm_home.canonicalize() {
                 Ok(p) => Some(p.display().to_string()),
@@ -270,9 +266,9 @@ pub fn get_pkg_root_from_paths(file_paths: &[String], workdir: String) -> Result
     if m.len() == 1 {
         Ok(last_root)
     } else if !workdir.is_empty() {
-        return Ok(workdir);
+        Ok(workdir)
     } else {
-        return Ok("".to_string());
+        Ok("".to_string())
     }
 }
 
@@ -296,12 +292,11 @@ pub fn get_pkg_root(k_file_path: &str) -> Option<String> {
             }
         }
     }
-    if k_file_path.ends_with(KCL_FILE_SUFFIX) {
-        if let Ok(path) = std::path::Path::new(k_file_path).canonicalize() {
-            if let Some(path) = path.parent() {
-                return Some(path.adjust_canonicalization());
-            }
-        }
+    if k_file_path.ends_with(KCL_FILE_SUFFIX)
+        && let Ok(path) = std::path::Path::new(k_file_path).canonicalize()
+        && let Some(path) = path.parent()
+    {
+        return Some(path.adjust_canonicalization());
     }
     None
 }

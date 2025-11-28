@@ -4,15 +4,17 @@ use crate::*;
 
 // data, sort_keys=False, indent=None, ignore_private=False, ignore_none=False
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_json_encode(
+pub unsafe extern "C-unwind" fn kcl_json_encode(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let ctx = mut_ptr_as_ref(ctx);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("data")) {
         let s = ValueRef::str(
@@ -24,15 +26,17 @@ pub extern "C-unwind" fn kcl_json_encode(
     panic!("encode() missing 1 required positional argument: 'value'")
 }
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_json_decode(
+pub unsafe extern "C-unwind" fn kcl_json_decode(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let ctx = mut_ptr_as_ref(ctx);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("value")) {
         match ValueRef::from_json(ctx, arg0.as_str().as_ref()) {
@@ -43,33 +47,37 @@ pub extern "C-unwind" fn kcl_json_decode(
     panic!("decode() missing 1 required positional argument: 'value'")
 }
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_json_validate(
+pub unsafe extern "C-unwind" fn kcl_json_validate(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let ctx = mut_ptr_as_ref(ctx);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("value")) {
         match ValueRef::from_json(ctx, arg0.as_str().as_ref()) {
-            Ok(_) => return kcl_value_True(ctx),
-            Err(_) => return kcl_value_False(ctx),
+            Ok(_) => return unsafe { kcl_value_True(ctx) },
+            Err(_) => return unsafe { kcl_value_False(ctx) },
         }
     }
     panic!("validate() missing 1 required positional argument: 'value'")
 }
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_json_dump_to_file(
+pub unsafe extern "C-unwind" fn kcl_json_dump_to_file(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
     let data = args.arg_i(0).or(kwargs.get_by_key("data"));
     let filename = args.arg_i(1).or(kwargs.get_by_key("filename"));
     match (data, filename) {
@@ -78,7 +86,7 @@ pub extern "C-unwind" fn kcl_json_dump_to_file(
             let json = data.to_json_string_with_options(&args_to_opts(args, kwargs, 2));
             std::fs::write(&filename, json)
                 .unwrap_or_else(|e| panic!("Unable to write file '{}': {}", filename, e));
-            kcl_value_Undefined(ctx)
+            unsafe { kcl_value_Undefined(ctx) }
         }
         _ => {
             panic!("dump_to_file() missing 2 required positional arguments: 'data' and 'filename'")

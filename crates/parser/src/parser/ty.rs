@@ -38,7 +38,7 @@ impl<'a> Parser<'a> {
                 union_type.type_elements.push(v.clone());
             }
 
-            Box::new(Node::node(
+            Box::new(Node::new_with_loc(
                 Type::Union(union_type.clone()),
                 self.sess.struct_token_loc(token, self.prev_token),
             ))
@@ -54,7 +54,7 @@ impl<'a> Parser<'a> {
         if self.token.is_keyword(kw::Any) {
             let t = Type::Any;
             self.bump_keyword(kw::Any);
-            return Box::new(Node::node(
+            return Box::new(Node::new_with_loc(
                 t,
                 self.sess.struct_token_loc(token, self.prev_token),
             ));
@@ -62,13 +62,13 @@ impl<'a> Parser<'a> {
         // lit: true/false
         else if self.token.is_keyword(kw::True) {
             self.bump_keyword(kw::True);
-            return Box::new(Node::node(
+            return Box::new(Node::new_with_loc(
                 Type::Literal(ast::LiteralType::Bool(true)),
                 self.sess.struct_token_loc(token, self.prev_token),
             ));
         } else if self.token.is_keyword(kw::False) {
             self.bump_keyword(kw::False);
-            return Box::new(Node::node(
+            return Box::new(Node::new_with_loc(
                 Type::Literal(ast::LiteralType::Bool(false)),
                 self.sess.struct_token_loc(token, self.prev_token),
             ));
@@ -77,28 +77,28 @@ impl<'a> Parser<'a> {
         else if self.token.is_keyword(sym::bool) {
             let t = Type::Basic(ast::BasicType::Bool);
             self.bump_keyword(sym::bool);
-            return Box::new(Node::node(
+            return Box::new(Node::new_with_loc(
                 t,
                 self.sess.struct_token_loc(token, self.prev_token),
             ));
         } else if self.token.is_keyword(sym::int) {
             let t = Type::Basic(ast::BasicType::Int);
             self.bump_keyword(sym::int);
-            return Box::new(Node::node(
+            return Box::new(Node::new_with_loc(
                 t,
                 self.sess.struct_token_loc(token, self.prev_token),
             ));
         } else if self.token.is_keyword(sym::float) {
             let t = Type::Basic(ast::BasicType::Float);
             self.bump_keyword(sym::float);
-            return Box::new(Node::node(
+            return Box::new(Node::new_with_loc(
                 t,
                 self.sess.struct_token_loc(token, self.prev_token),
             ));
         } else if self.token.is_keyword(sym::str) {
             let t = Type::Basic(ast::BasicType::Str);
             self.bump_keyword(sym::str);
-            return Box::new(Node::node(
+            return Box::new(Node::new_with_loc(
                 t,
                 self.sess.struct_token_loc(token, self.prev_token),
             ));
@@ -109,7 +109,7 @@ impl<'a> Parser<'a> {
             let ident = self.parse_identifier_expr();
             let ident = expr_as!(ident, Expr::Identifier).unwrap();
             let t = Type::Named(ident);
-            return Box::new(Node::node(
+            return Box::new(Node::new_with_loc(
                 t,
                 self.sess.struct_token_loc(token, self.prev_token),
             ));
@@ -165,7 +165,7 @@ impl<'a> Parser<'a> {
 
             self.bump();
 
-            return Box::new(Node::node(
+            return Box::new(Node::new_with_loc(
                 t,
                 self.sess.struct_token_loc(token, self.prev_token),
             ));
@@ -178,7 +178,7 @@ impl<'a> Parser<'a> {
                 self.bump();
                 let t = Type::List(ast::ListType { inner_type: None });
 
-                return Box::new(Node::node(
+                return Box::new(Node::new_with_loc(
                     t,
                     self.sess.struct_token_loc(token, self.prev_token),
                 ));
@@ -190,7 +190,7 @@ impl<'a> Parser<'a> {
 
                 self.bump_token(TokenKind::CloseDelim(DelimToken::Bracket));
 
-                return Box::new(Node::node(
+                return Box::new(Node::new_with_loc(
                     t,
                     self.sess.struct_token_loc(token, self.prev_token),
                 ));
@@ -221,7 +221,7 @@ impl<'a> Parser<'a> {
 
             self.bump_token(TokenKind::CloseDelim(DelimToken::Brace));
 
-            return Box::new(Node::node(
+            return Box::new(Node::new_with_loc(
                 t,
                 self.sess.struct_token_loc(token, self.prev_token),
             ));
@@ -259,7 +259,7 @@ impl<'a> Parser<'a> {
 
             let t = Type::Function(ast::FunctionType { params_ty, ret_ty });
 
-            return Box::new(Node::node(
+            return Box::new(Node::new_with_loc(
                 t,
                 self.sess.struct_token_loc(token, self.prev_token),
             ));
@@ -283,7 +283,7 @@ impl<'a> Parser<'a> {
             self.token,
         );
         self.bump();
-        Box::new(Node::node(
+        Box::new(Node::new_with_loc(
             Type::Any,
             self.sess.struct_token_loc(token, self.prev_token),
         ))

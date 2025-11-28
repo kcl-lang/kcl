@@ -52,7 +52,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'_> {
         unification_stmt: &'ctx ast::UnificationStmt,
     ) -> Self::Result {
         let (start_pos, end_pos): Range = unification_stmt.target.get_span_pos();
-        let owner = self.ctx.owner_symbols.last().unwrap().clone();
+        let owner = *self.ctx.owner_symbols.last().unwrap();
         if unification_stmt.target.node.names.len() == 1 {
             let owner_fully_qualified_name = self
                 .gs
@@ -103,7 +103,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'_> {
 
     fn walk_type_alias_stmt(&mut self, type_alias_stmt: &'ctx ast::TypeAliasStmt) -> Self::Result {
         let (start_pos, end_pos): Range = type_alias_stmt.type_name.get_span_pos();
-        let owner = self.ctx.owner_symbols.last().unwrap().clone();
+        let owner = *self.ctx.owner_symbols.last().unwrap();
         let type_alias_ref = self.gs.get_symbols_mut().alloc_type_alias_symbol(
             TypeAliasSymbol::new(
                 type_alias_stmt.type_name.node.get_name(),
@@ -125,7 +125,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'_> {
         let mut value_symbols = vec![];
         for target in assign_stmt.targets.iter() {
             let (start_pos, end_pos): Range = target.get_span_pos();
-            let owner = self.ctx.owner_symbols.last().unwrap().clone();
+            let owner = *self.ctx.owner_symbols.last().unwrap();
             if target.node.paths.is_empty() {
                 let owner_fully_qualified_name = self
                     .gs
@@ -133,7 +133,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'_> {
                     .get_fully_qualified_name(owner)
                     .unwrap();
                 let value_name = target.node.get_name();
-                let value_fully_qualified_name = owner_fully_qualified_name + "." + &value_name;
+                let value_fully_qualified_name = owner_fully_qualified_name + "." + value_name;
                 if !self
                     .ctx
                     .value_fully_qualified_name_set
@@ -251,7 +251,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'_> {
 
     fn walk_rule_stmt(&mut self, rule_stmt: &'ctx ast::RuleStmt) -> Self::Result {
         let (start_pos, end_pos): Range = rule_stmt.name.get_span_pos();
-        let owner = self.ctx.owner_symbols.last().unwrap().clone();
+        let owner = *self.ctx.owner_symbols.last().unwrap();
         let rule_ref = self.gs.get_symbols_mut().alloc_rule_symbol(
             RuleSymbol::new(rule_stmt.name.node.clone(), start_pos, end_pos, owner),
             self.ctx.get_node_key(&rule_stmt.name.id),
@@ -270,7 +270,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'_> {
 
     fn walk_schema_attr(&mut self, schema_attr: &'ctx ast::SchemaAttr) -> Self::Result {
         let (start_pos, end_pos): Range = schema_attr.name.get_span_pos();
-        let owner = self.ctx.owner_symbols.last().unwrap().clone();
+        let owner = *self.ctx.owner_symbols.last().unwrap();
         let default_value = schema_attr
             .value
             .as_ref()

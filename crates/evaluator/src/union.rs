@@ -142,9 +142,9 @@ fn do_union(
                                 }
                                 let index = must_normalize_index(index, origin_value.len());
                                 if v.is_undefined() {
-                                    origin_value.list_remove_at(index as usize);
+                                    origin_value.list_remove_at(index);
                                 } else {
-                                    origin_value.list_must_set(index as usize, v);
+                                    origin_value.list_must_set(index, v);
                                 }
                             } else {
                                 panic!(

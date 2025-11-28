@@ -68,7 +68,7 @@ pub fn build_expr_from_string(value: &str) -> Option<ast::NodeRef<ast::Expr>> {
         Some(e) => match &e.node {
             // fix attr=value to attr="value"
             ast::Expr::Unary(_) | ast::Expr::Binary(_) => {
-                Some(ast::NodeRef::new(ast::Node::node_with_pos(
+                Some(ast::NodeRef::new(ast::Node::new_with_pos(
                     ast::Expr::StringLit(ast::StringLit {
                         is_long_string: false,
                         raw_value: format!("{value:?}"),

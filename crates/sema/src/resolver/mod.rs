@@ -85,13 +85,13 @@ impl<'ctx> Resolver<'ctx> {
                         .program
                         .get_module(module)
                         .expect("Failed to acquire module lock")
-                        .expect(&format!("module {:?} not found in program", module));
+                        .unwrap_or_else(|| panic!("module {:?} not found in program", module));
                     self.ctx.filename = module.filename.to_string();
                     if let scope::ScopeKind::Package(files) = &mut self.scope.borrow_mut().kind {
                         files.insert(module.filename.to_string());
                     }
                     for stmt in &module.body {
-                        self.stmt(&stmt);
+                        self.stmt(stmt);
                     }
                     if self.options.lint_check {
                         self.lint_check_module(&module);
@@ -120,14 +120,14 @@ impl<'ctx> Resolver<'ctx> {
         for invalid_pkg_scope in &self.ctx.invalid_pkg_scope {
             scope_map.swap_remove(invalid_pkg_scope);
         }
-        let scope = ProgramScope {
+
+        ProgramScope {
             scope_map,
             import_names: self.ctx.import_names.clone(),
             node_ty_map: self.node_ty_map.clone(),
             handler,
             schema_mapping: self.ctx.schema_mapping.clone(),
-        };
-        scope
+        }
     }
 }
 
@@ -203,44 +203,44 @@ pub fn resolve_program_with_opts(
     pre_process_program(program, &opts);
     let mut resolver = Resolver::new(program, opts.clone());
     resolver.resolve_import();
-    if let Some(cached_scope) = cached_scope.as_ref() {
-        if let Some(mut cached_scope) = cached_scope.try_write() {
-            cached_scope.invalidate_pkgs.clear();
-            cached_scope.update(program);
-            resolver.scope_map = cached_scope.scope_map.clone();
-            resolver.ctx.schema_mapping = cached_scope.schema_mapping.clone();
-            cached_scope
-                .invalidate_pkgs
-                .insert(kcl_ast::MAIN_PKG.to_string());
-            for pkg in &cached_scope.invalidate_pkgs {
-                resolver.scope_map.swap_remove(pkg);
-            }
-            let mut nodes = vec![];
-            for node in cached_scope.node_ty_map.keys() {
-                if cached_scope.invalidate_pkgs.contains(&node.pkgpath) {
-                    nodes.push(node.clone());
-                }
-            }
-            for node in nodes {
-                cached_scope.node_ty_map.swap_remove(&node);
-            }
-            resolver.node_ty_map = Rc::new(RefCell::new(cached_scope.node_ty_map.clone()));
+    if let Some(cached_scope) = cached_scope.as_ref()
+        && let Some(mut cached_scope) = cached_scope.try_write()
+    {
+        cached_scope.invalidate_pkgs.clear();
+        cached_scope.update(program);
+        resolver.scope_map = cached_scope.scope_map.clone();
+        resolver.ctx.schema_mapping = cached_scope.schema_mapping.clone();
+        cached_scope
+            .invalidate_pkgs
+            .insert(kcl_ast::MAIN_PKG.to_string());
+        for pkg in &cached_scope.invalidate_pkgs {
+            resolver.scope_map.swap_remove(pkg);
         }
+        let mut nodes = vec![];
+        for node in cached_scope.node_ty_map.keys() {
+            if cached_scope.invalidate_pkgs.contains(&node.pkgpath) {
+                nodes.push(node.clone());
+            }
+        }
+        for node in nodes {
+            cached_scope.node_ty_map.swap_remove(&node);
+        }
+        resolver.node_ty_map = Rc::new(RefCell::new(cached_scope.node_ty_map.clone()));
     }
     let scope = resolver.check_and_lint_all_pkgs();
 
-    if let Some(cached_scope) = cached_scope.as_ref() {
-        if let Some(mut cached_scope) = cached_scope.try_write() {
-            cached_scope.update(program);
-            cached_scope.scope_map = scope.scope_map.clone();
-            cached_scope.node_ty_map = scope.node_ty_map.borrow().clone();
-            cached_scope.scope_map.swap_remove(kcl_ast::MAIN_PKG);
-            cached_scope.schema_mapping = resolver.ctx.schema_mapping;
-            cached_scope
-                .invalidate_pkgs
-                .insert(kcl_ast::MAIN_PKG.to_string());
-            cached_scope.invalidate_pkg_modules = None;
-        }
+    if let Some(cached_scope) = cached_scope.as_ref()
+        && let Some(mut cached_scope) = cached_scope.try_write()
+    {
+        cached_scope.update(program);
+        cached_scope.scope_map = scope.scope_map.clone();
+        cached_scope.node_ty_map = scope.node_ty_map.borrow().clone();
+        cached_scope.scope_map.swap_remove(kcl_ast::MAIN_PKG);
+        cached_scope.schema_mapping = resolver.ctx.schema_mapping;
+        cached_scope
+            .invalidate_pkgs
+            .insert(kcl_ast::MAIN_PKG.to_string());
+        cached_scope.invalidate_pkg_modules = None;
     }
     if opts.type_erasure {
         let type_alias_mapping = resolver.ctx.type_alias_mapping.clone();

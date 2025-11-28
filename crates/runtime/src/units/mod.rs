@@ -39,15 +39,17 @@ pub const INVALID_UNITS: [&str; 4] = ["ni", "ui", "mi", "ki"];
 
 // to_n(num: int) -> str
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_units_to_n(
+pub unsafe extern "C-unwind" fn kcl_units_to_n(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(num) = get_call_arg(args, kwargs, 0, Some("num")) {
         let num = num.convert_to_float(ctx).as_float();
@@ -59,15 +61,17 @@ pub extern "C-unwind" fn kcl_units_to_n(
 
 // to_u(num: int) -> str
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_units_to_u(
+pub unsafe extern "C-unwind" fn kcl_units_to_u(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(num) = get_call_arg(args, kwargs, 0, Some("num")) {
         let num = num.convert_to_float(ctx).as_float();
@@ -79,15 +83,17 @@ pub extern "C-unwind" fn kcl_units_to_u(
 
 // to_m(num: int) -> str
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_units_to_m(
+pub unsafe extern "C-unwind" fn kcl_units_to_m(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(num) = get_call_arg(args, kwargs, 0, Some("num")) {
         let num = num.convert_to_float(ctx).as_float();
@@ -99,15 +105,17 @@ pub extern "C-unwind" fn kcl_units_to_m(
 
 // to_K(num: int) -> str
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_units_to_K(
+pub unsafe extern "C-unwind" fn kcl_units_to_K(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(num) = get_call_arg_num(args, kwargs, 0, Some("num")) {
         let s = to_unit(num, to_unit_suffix::K);
@@ -118,15 +126,17 @@ pub extern "C-unwind" fn kcl_units_to_K(
 
 // to_M(num: int) -> str
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_units_to_M(
+pub unsafe extern "C-unwind" fn kcl_units_to_M(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(num) = get_call_arg_num(args, kwargs, 0, Some("num")) {
         let s = to_unit(num, to_unit_suffix::M);
@@ -137,15 +147,17 @@ pub extern "C-unwind" fn kcl_units_to_M(
 
 // to_G(num: int) -> str
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_units_to_G(
+pub unsafe extern "C-unwind" fn kcl_units_to_G(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(num) = get_call_arg_num(args, kwargs, 0, Some("num")) {
         let s = to_unit(num, to_unit_suffix::G);
@@ -156,15 +168,17 @@ pub extern "C-unwind" fn kcl_units_to_G(
 
 // to_T(num: int) -> str
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_units_to_T(
+pub unsafe extern "C-unwind" fn kcl_units_to_T(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(num) = get_call_arg_num(args, kwargs, 0, Some("num")) {
         let s = to_unit(num, to_unit_suffix::T);
@@ -175,15 +189,17 @@ pub extern "C-unwind" fn kcl_units_to_T(
 
 // to_P(num: int) -> str
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_units_to_P(
+pub unsafe extern "C-unwind" fn kcl_units_to_P(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(num) = get_call_arg_num(args, kwargs, 0, Some("num")) {
         let s = to_unit(num, to_unit_suffix::P);
@@ -194,15 +210,17 @@ pub extern "C-unwind" fn kcl_units_to_P(
 
 // to_Ki(num: int) -> str
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_units_to_Ki(
+pub unsafe extern "C-unwind" fn kcl_units_to_Ki(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(num) = get_call_arg_num(args, kwargs, 0, Some("num")) {
         let s = to_unit(num, to_unit_suffix::Ki);
@@ -213,15 +231,17 @@ pub extern "C-unwind" fn kcl_units_to_Ki(
 
 // to_Mi(num: int) -> str
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_units_to_Mi(
+pub unsafe extern "C-unwind" fn kcl_units_to_Mi(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(num) = get_call_arg_num(args, kwargs, 0, Some("num")) {
         let s = to_unit(num, to_unit_suffix::Mi);
@@ -233,14 +253,16 @@ pub extern "C-unwind" fn kcl_units_to_Mi(
 // to_Gi(num: int) -> str
 
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_units_to_Gi(
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
+pub unsafe extern "C-unwind" fn kcl_units_to_Gi(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(num) = get_call_arg_num(args, kwargs, 0, Some("num")) {
         let s = to_unit(num, to_unit_suffix::Gi);
@@ -252,14 +274,16 @@ pub extern "C-unwind" fn kcl_units_to_Gi(
 // to_Ti(num: int) -> str
 
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_units_to_Ti(
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
+pub unsafe extern "C-unwind" fn kcl_units_to_Ti(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(num) = get_call_arg_num(args, kwargs, 0, Some("num")) {
         let s = to_unit(num, to_unit_suffix::Ti);
@@ -270,15 +294,17 @@ pub extern "C-unwind" fn kcl_units_to_Ti(
 
 // to_Pi(num: int) -> str
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_units_to_Pi(
+pub unsafe extern "C-unwind" fn kcl_units_to_Pi(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(num) = get_call_arg_num(args, kwargs, 0, Some("num")) {
         let s = to_unit(num, to_unit_suffix::Pi);

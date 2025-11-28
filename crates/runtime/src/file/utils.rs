@@ -2,7 +2,7 @@ use std::{fs, path::Path};
 
 pub(crate) fn copy_directory(src: &Path, dst: &Path) -> std::io::Result<()> {
     if !dst.exists() {
-        fs::create_dir_all(&dst)?;
+        fs::create_dir_all(dst)?;
     }
     for entry in fs::read_dir(src)? {
         let entry = entry?;

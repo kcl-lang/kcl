@@ -123,9 +123,10 @@ impl<'ctx> Evaluator<'ctx> {
         let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
         let msg = format!("pkgpath {} is not found", current_pkgpath);
         let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
-        let mut scope = Scope::default();
-        scope.is_schema = is_schema;
-        scopes.push(scope);
+        scopes.push(Scope {
+            is_schema,
+            ..Default::default()
+        });
     }
 
     /// Enter scope
@@ -334,14 +335,12 @@ impl<'ctx> Evaluator<'ctx> {
                 existed = true;
             }
         }
-        if !existed {
-            if let Some(last) = scopes.last_mut() {
-                let variables = &mut last.variables;
-                if !variables.contains_key(name) {
-                    variables.insert(name.to_string(), value.clone());
-                    if save_lazy_scope {
-                        self.set_value_to_lazy_scope(&current_pkgpath, name, &value)
-                    }
+        if !existed && let Some(last) = scopes.last_mut() {
+            let variables = &mut last.variables;
+            if !variables.contains_key(name) {
+                variables.insert(name.to_string(), value.clone());
+                if save_lazy_scope {
+                    self.set_value_to_lazy_scope(&current_pkgpath, name, &value)
                 }
             }
         }
@@ -362,11 +361,11 @@ impl<'ctx> Evaluator<'ctx> {
                 .get_value(self, name, &pkgpath, &self.get_target_var());
         } else if let Some(rule_ctx) = self.get_rule_eval_context() {
             let rule_value: ValueRef = rule_ctx.borrow().value.clone();
-            return if let Some(value) = rule_value.dict_get_value(name) {
+            if let Some(value) = rule_value.dict_get_value(name) {
                 value
             } else {
                 self.get_variable_in_pkgpath(name, &pkgpath)
-            };
+            }
         } else {
             self.get_variable_in_pkgpath(name, &pkgpath)
         }
@@ -734,11 +733,11 @@ impl<'ctx> Evaluator<'ctx> {
         match path {
             ast::MemberOrIndex::Member(member) => {
                 let attr = &member.node;
-                self.dict_set_value(value, attr, &right_value);
+                self.dict_set_value(value, attr, right_value);
             }
             ast::MemberOrIndex::Index(index) => {
                 let index = self.walk_expr(index)?;
-                value.bin_subscr_set(&mut self.runtime_ctx.borrow_mut(), &index, &right_value);
+                value.bin_subscr_set(&mut self.runtime_ctx.borrow_mut(), &index, right_value);
             }
         }
         self.ok_result()

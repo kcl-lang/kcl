@@ -73,7 +73,7 @@ impl ModRelativePath {
     pub fn is_relative_path(&self) -> Result<bool> {
         Ok(Regex::new(RELATIVE_PATH_PREFFIX)?
             .find(&self.path)
-            .map_or(false, |mat| mat.start() == 0))
+            .is_some_and(|mat| mat.start() == 0))
     }
 
     /// [`get_root_pkg_name`] returns the name of the root package.
@@ -131,12 +131,11 @@ impl ModRelativePath {
                     // Can not use the replace method directly
                     // by 'replace(std::str::from_utf8(caps.get(0).unwrap().as_bytes()).unwrap(), root_path)'.
                     let sub_path = self.get_path().replace(caps.get(0).unwrap().as_str(), "");
-                    let res = PathBuf::from(root_path)
+
+                    PathBuf::from(root_path)
                         .join(sub_path)
                         .display()
-                        .to_string();
-
-                    res
+                        .to_string()
                 },
             ))
     }

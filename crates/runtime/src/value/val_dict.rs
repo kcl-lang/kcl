@@ -359,23 +359,23 @@ impl ValueRef {
         insert_index: Option<i32>,
         idempotent_check: bool,
     ) {
-        if ctx.cfg.debug_mode {
-            if let Value::int_value(x) = &*v.rc.borrow() {
-                let strict_range_check_i32 = ctx.cfg.strict_range_check;
-                let strict_range_check_i64 = ctx.cfg.debug_mode || !ctx.cfg.strict_range_check;
-                let v_i128 = *x as i128;
+        if ctx.cfg.debug_mode
+            && let Value::int_value(x) = &*v.rc.borrow()
+        {
+            let strict_range_check_i32 = ctx.cfg.strict_range_check;
+            let strict_range_check_i64 = ctx.cfg.debug_mode || !ctx.cfg.strict_range_check;
+            let v_i128 = *x as i128;
 
-                if strict_range_check_i32 {
-                    if v_i128 != ((v_i128 as i32) as i128) {
-                        ctx.set_err_type(&RuntimeErrorType::IntOverflow);
-
-                        panic!("{v_i128}: A 32 bit integer overflow");
-                    }
-                } else if strict_range_check_i64 && v_i128 != ((v_i128 as i64) as i128) {
+            if strict_range_check_i32 {
+                if v_i128 != ((v_i128 as i32) as i128) {
                     ctx.set_err_type(&RuntimeErrorType::IntOverflow);
 
-                    panic!("{v_i128}: A 64 bit integer overflow");
+                    panic!("{v_i128}: A 32 bit integer overflow");
                 }
+            } else if strict_range_check_i64 && v_i128 != ((v_i128 as i64) as i128) {
+                ctx.set_err_type(&RuntimeErrorType::IntOverflow);
+
+                panic!("{v_i128}: A 64 bit integer overflow");
             }
         }
 

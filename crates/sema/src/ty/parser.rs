@@ -43,7 +43,7 @@ pub fn is_literal_type_str(ty_str: &str) -> bool {
     if ty_str.starts_with('\'') {
         return ty_str.ends_with('\'');
     }
-    matches!(ty_str.parse::<f64>(), Ok(_))
+    ty_str.parse::<f64>().is_ok()
 }
 
 /// is_dict_type returns the type string whether is a dict type
@@ -107,10 +107,7 @@ pub fn is_union_type_str(ty: &str) -> bool {
 /// is number multiplier literal type
 fn is_number_multiplier_literal_type_str(ty_str: &str) -> bool {
     let re = fancy_regex::Regex::new(NUMBER_MULTIPLIER_REGEX).unwrap();
-    match re.is_match(ty_str) {
-        Ok(ok) => ok,
-        _ => false,
-    }
+    re.is_match(ty_str).unwrap_or_default()
 }
 
 /// separate_kv split the union type and do not split '|' in dict and list
@@ -219,7 +216,7 @@ pub fn parse_named_type_str(ty_str: &str) -> TypeRef {
 /// e.g., "str:str" -> ("str", "str")
 pub fn separate_kv(expected_type: &str) -> (String, String) {
     let mut stack = String::new();
-    for (n, c) in expected_type.chars().enumerate() {
+    for (n, c) in expected_type.char_indices() {
         if c == '[' || c == '{' {
             stack.push(c)
         } else if c == ']' {

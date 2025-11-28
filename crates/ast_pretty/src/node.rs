@@ -76,11 +76,11 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
     fn walk_assign_stmt(&mut self, assign_stmt: &'ctx ast::AssignStmt) -> Self::Result {
         for (i, target) in assign_stmt.targets.iter().enumerate() {
             self.walk_target(&target.node);
-            if i == 0 {
-                if let Some(ty) = &assign_stmt.ty {
-                    self.write(": ");
-                    self.write(&ty.node.to_string());
-                }
+            if i == 0
+                && let Some(ty) = &assign_stmt.ty
+            {
+                self.write(": ");
+                self.write(&ty.node.to_string());
             }
             self.write(" = ");
         }
@@ -164,7 +164,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         interleave!(
             || self.write_newline(),
             |expr: &ast::NodeRef<CallExpr>| {
-                self.write_comments_before_node(&expr);
+                self.write_comments_before_node(expr);
                 self.write("@");
                 self.walk_call_expr(&expr.node);
             },
@@ -215,7 +215,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
                     self.write_newline();
                 },
                 |mixin_name: &ast::NodeRef<ast::Identifier>| {
-                    self.write_comments_before_node(&mixin_name);
+                    self.write_comments_before_node(mixin_name);
                     self.walk_identifier(&mixin_name.node);
                 },
                 schema_stmt.mixins
@@ -255,7 +255,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             interleave!(
                 || self.write_newline(),
                 |check_expr: &ast::NodeRef<ast::CheckExpr>| {
-                    self.write_comments_before_node(&check_expr);
+                    self.write_comments_before_node(check_expr);
                     self.walk_check_expr(&check_expr.node);
                 },
                 schema_stmt.checks
@@ -312,7 +312,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             interleave!(
                 || self.write_newline(),
                 |check_expr: &ast::NodeRef<ast::CheckExpr>| {
-                    self.write_comments_before_node(&check_expr);
+                    self.write_comments_before_node(check_expr);
                     self.walk_check_expr(&check_expr.node);
                 },
                 rule_stmt.checks
@@ -354,7 +354,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         interleave!(
             || self.write_newline(),
             |expr: &ast::NodeRef<CallExpr>| {
-                self.write_comments_before_node(&expr);
+                self.write_comments_before_node(expr);
                 self.write("@");
                 self.walk_call_expr(&expr.node)
             },
@@ -472,17 +472,13 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         }
         // There are comments in the configuration block.
         let has_comment = !list_expr.elts.is_empty()
-            && list_expr
-                .elts
-                .iter()
-                .map(|e| self.has_comments_on_node(e))
-                .all(|r| r);
+            && list_expr.elts.iter().all(|e| self.has_comments_on_node(e));
         // When there are comments in the configuration block, print them as multiline configurations.
         let mut in_one_line = line_set.len() <= 1 && !has_comment;
-        if let Some(elt) = list_expr.elts.first() {
-            if let ast::Expr::ListIfItem(_) = &elt.node {
-                in_one_line = false;
-            }
+        if let Some(elt) = list_expr.elts.first()
+            && let ast::Expr::ListIfItem(_) = &elt.node
+        {
+            in_one_line = false;
         }
         self.write_token(TokenKind::OpenDelim(DelimToken::Bracket));
         if !in_one_line {
@@ -660,20 +656,19 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             && config_expr
                 .items
                 .iter()
-                .map(|item| self.has_comments_on_node(item))
-                .all(|r| r);
+                .all(|item| self.has_comments_on_node(item));
         // When there are comments in the configuration block, print them as multiline configurations.
         let mut in_one_line = line_set.len() <= 1 && !has_comment;
         // When there are complex configuration blocks in the configuration block, print them as multiline configurations.
-        if config_expr.items.len() == 1 && in_one_line {
-            if let Some(item) = config_expr.items.first() {
-                if matches!(
-                    &item.node.value.node,
-                    ast::Expr::ConfigIfEntry(_) | ast::Expr::Config(_) | ast::Expr::Schema(_)
-                ) {
-                    in_one_line = false;
-                }
-            }
+        if config_expr.items.len() == 1
+            && in_one_line
+            && let Some(item) = config_expr.items.first()
+            && matches!(
+                &item.node.value.node,
+                ast::Expr::ConfigIfEntry(_) | ast::Expr::Config(_) | ast::Expr::Schema(_)
+            )
+        {
+            in_one_line = false;
         }
         self.write_token(TokenKind::OpenDelim(DelimToken::Brace));
         if !config_expr.items.is_empty() {
@@ -908,7 +903,7 @@ impl<'p> Printer<'p> {
                 self.write(&"}".repeat(print_right_brace_count));
             }
             None => {
-                self.write_comments_before_node(&item);
+                self.write_comments_before_node(item);
                 if !matches!(&item.node.value.node, ast::Expr::ConfigIfEntry(_)) {
                     self.write("**");
                 }

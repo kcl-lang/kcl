@@ -222,10 +222,10 @@ pub fn get_call_arg(
     index: usize,
     key: Option<&str>,
 ) -> Option<ValueRef> {
-    if let Some(key) = key {
-        if let Some(val) = kwargs.get_by_key(key) {
-            return Some(val);
-        }
+    if let Some(key) = key
+        && let Some(val) = kwargs.get_by_key(key)
+    {
+        return Some(val);
     }
     if index < args.len() {
         return Some(args.list_get(index as isize).unwrap());

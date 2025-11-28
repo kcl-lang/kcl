@@ -42,15 +42,13 @@ pub fn lookup_compile_workspace(
         let path = Path::new(file);
         if let Some(ext) = path.extension() {
             if load_pkg {
-                if let Some(parent) = path.parent() {
-                    if let Ok(files) = get_kcl_files(parent, false) {
-                        default_res = (files, Some(load_opt), metadata);
-                    }
+                if let Some(parent) = path.parent()
+                    && let Ok(files) = get_kcl_files(parent, false)
+                {
+                    default_res = (files, Some(load_opt), metadata);
                 }
-            } else {
-                if ext == KCL_FILE_EXTENSION && path.is_file() {
-                    default_res = (vec![file.to_string()], Some(load_opt), metadata);
-                }
+            } else if ext == KCL_FILE_EXTENSION && path.is_file() {
+                default_res = (vec![file.to_string()], Some(load_opt), metadata);
             }
         }
         default_res
@@ -60,11 +58,7 @@ pub fn lookup_compile_workspace(
         Ok(CompileUnitPath::SettingFile(dir)) => {
             let settings_files = lookup_setting_files(&dir);
             let files = if settings_files.is_empty() {
-                default_res(tool, file, load_pkg)
-                    .0
-                    .iter()
-                    .map(|s| s.clone())
-                    .collect()
+                default_res(tool, file, load_pkg).0.to_vec()
             } else {
                 vec![]
             };
@@ -125,21 +119,18 @@ pub fn lookup_compile_workspaces(
     Option<HashMap<String, String>>,
 ) {
     let mut workspaces = HashMap::new();
-    match lookup_workspace(path) {
-        Ok(workspace) => match &workspace {
+    if let Ok(workspace) = lookup_workspace(path) {
+        match &workspace {
             WorkSpaceKind::WorkFile(work_file_path) => {
                 if let Ok(mut workfile) = load_work_file(work_file_path) {
                     let root = work_file_path.parent().unwrap();
                     workfile.canonicalize(root.to_path_buf());
                     for work in workfile.workspaces {
-                        match lookup_workspace(&work.abs_path) {
-                            Ok(workspace) => {
-                                workspaces.insert(
-                                    workspace.clone(),
-                                    lookup_compile_workspace(tool, &work.abs_path, load_pkg),
-                                );
-                            }
-                            Err(_) => {}
+                        if let Ok(workspace) = lookup_workspace(&work.abs_path) {
+                            workspaces.insert(
+                                workspace.clone(),
+                                lookup_compile_workspace(tool, &work.abs_path, load_pkg),
+                            );
                         }
                     }
                     return (workspaces, Some(workfile.failed.clone()));
@@ -149,26 +140,25 @@ pub fn lookup_compile_workspaces(
                 let load_opt = kcl_parser::LoadProgramOptions::default();
                 let metadata = None;
 
-                if load_pkg {
-                    if folder.is_dir() {
-                        if let Ok(files) = get_kcl_files(folder.clone(), false) {
-                            match lookup_the_nearest_file_dir(folder.to_path_buf(), KCL_MOD_FILE) {
-                                Some(dir) => {
-                                    let nearest_mod = dir.join(KCL_MOD_FILE);
-                                    let (_, opt, metadata) = lookup_compile_workspace(
-                                        tool,
-                                        &nearest_mod.adjust_canonicalization(),
-                                        load_pkg,
-                                    );
-                                    workspaces.insert(workspace, (files, opt, metadata));
-                                }
-                                None => {
-                                    workspaces.insert(workspace, (files, Some(load_opt), metadata));
-                                }
-                            }
-                            return (workspaces, None);
+                if load_pkg
+                    && folder.is_dir()
+                    && let Ok(files) = get_kcl_files(folder.clone(), false)
+                {
+                    match lookup_the_nearest_file_dir(folder.to_path_buf(), KCL_MOD_FILE) {
+                        Some(dir) => {
+                            let nearest_mod = dir.join(KCL_MOD_FILE);
+                            let (_, opt, metadata) = lookup_compile_workspace(
+                                tool,
+                                &nearest_mod.adjust_canonicalization(),
+                                load_pkg,
+                            );
+                            workspaces.insert(workspace, (files, opt, metadata));
+                        }
+                        None => {
+                            workspaces.insert(workspace, (files, Some(load_opt), metadata));
                         }
                     }
+                    return (workspaces, None);
                 }
                 workspaces.insert(
                     workspace,
@@ -202,8 +192,7 @@ pub fn lookup_compile_workspaces(
                     workspaces.insert(workspace, lookup_compile_workspace(tool, path, load_pkg));
                 }
             }
-        },
-        Err(_) => {}
+        }
     }
 
     (workspaces, None)
@@ -323,12 +312,11 @@ pub fn lookup_workspace(path: &str) -> io::Result<WorkSpaceKind> {
 
         return Ok(WorkSpaceKind::Folder(PathBuf::from(path)));
     }
-    if path.is_file() {
-        if let Some(ext) = path.extension() {
-            if ext.to_str().unwrap() == KCL_FILE_EXTENSION {
-                return Ok(WorkSpaceKind::File(PathBuf::from(path)));
-            }
-        }
+    if path.is_file()
+        && let Some(ext) = path.extension()
+        && ext.to_str().unwrap() == KCL_FILE_EXTENSION
+    {
+        return Ok(WorkSpaceKind::File(PathBuf::from(path)));
     }
     Ok(WorkSpaceKind::NotFound)
 }
@@ -398,13 +386,11 @@ pub fn get_pkg_list(pkgpath: &str) -> Result<Vec<String>> {
                 .file_name()
                 .map(|name| name.to_string_lossy().starts_with('_'))
                 .unwrap_or(false)
+            && let Some(dir) = path.parent().map(|p| p.to_string_lossy().to_string())
+            && !dir_map.contains(&dir)
         {
-            if let Some(dir) = path.parent().map(|p| p.to_string_lossy().to_string()) {
-                if !dir_map.contains(&dir) {
-                    dir_list.push(dir.clone());
-                    dir_map.insert(dir);
-                }
-            }
+            dir_list.push(dir.clone());
+            dir_map.insert(dir);
         }
     }
 

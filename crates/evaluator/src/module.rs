@@ -64,7 +64,7 @@ impl<'ctx> Evaluator<'_> {
                 ast::Stmt::Assign(assign_stmt) => {
                     for target in &assign_stmt.targets {
                         self.add_or_update_global_variable(
-                            &target.node.get_name(),
+                            target.node.get_name(),
                             self.undefined_value(),
                             false,
                         );

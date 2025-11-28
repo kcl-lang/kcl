@@ -84,7 +84,7 @@ impl Ord for CachedLocation {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         match self.line.cmp(&other.line) {
             core::cmp::Ordering::Equal => self.column.cmp(&other.column),
-            ord => return ord,
+            ord => ord,
         }
     }
 }
@@ -93,7 +93,7 @@ impl PartialOrd for CachedLocation {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         match self.line.partial_cmp(&other.line) {
             Some(core::cmp::Ordering::Equal) => self.column.partial_cmp(&other.column),
-            ord => return ord,
+            ord => ord,
         }
     }
 }

@@ -2,14 +2,16 @@
 
 use crate::*;
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_value_union_all(
+pub unsafe extern "C-unwind" fn kcl_value_union_all(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let ctx = mut_ptr_as_ref(ctx);
+    let args = unsafe { ptr_as_ref(args) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     if let Some(arg) = args.arg_0() {
         if !arg.is_truthy() || !arg.is_list() {
             return ValueRef::dict(None).into_raw(ctx);

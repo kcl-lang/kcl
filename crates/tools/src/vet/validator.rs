@@ -12,7 +12,7 @@
 //! For example.
 //!
 //! 1. If the json file to be verified is as follows:
-//! (kcl/tools/src/vet/test_datas/validate_cases/test.json)
+//!    (kcl/tools/src/vet/test_datas/validate_cases/test.json)
 //!
 //! ```ignore
 //! {
@@ -23,7 +23,7 @@
 //! ```
 //!
 //! 2. You can define KCL like below and define validation rules in check block.
-//! (kcl/tools/src/vet/test_datas/validate_cases/test.k)
+//!    (kcl/tools/src/vet/test_datas/validate_cases/test.k)
 //!
 //! ```ignore
 //! schema User:
@@ -91,7 +91,7 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 /// # Examples
 ///
 /// 1. If you want to verify the following json file.
-/// (kcl/tools/src/vet/test_datas/validate_cases/test.json)
+///    (kcl/tools/src/vet/test_datas/validate_cases/test.json)
 /// ```ignore
 /// {
 ///     "name": "Alice",
@@ -101,7 +101,7 @@ const TMP_FILE: &str = "validationTempKCLCode.k";
 /// ```
 ///
 /// 2. First, you can create a KCL schema and write validation rules.
-/// (kcl/tools/src/vet/test_datas/validate_cases/test.k)
+///    (kcl/tools/src/vet/test_datas/validate_cases/test.k)
 /// ```ignore
 /// schema User:
 ///     name: str
@@ -216,7 +216,7 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool> {
                     .program
                     .get_module_mut(module)
                     .expect("Failed to acquire module lock")
-                    .expect(&format!("module {:?} not found in program", module));
+                    .unwrap_or_else(|| panic!("module {:?} not found in program", module));
                 m.body.insert(0, assign_stmt);
             } else {
                 return Err(anyhow::anyhow!("No main module found"));
@@ -255,7 +255,7 @@ fn filter_schema_stmt_from_prog(prog: &Program) -> Vec<SchemaStmt> {
             continue;
         }
         for module in modules {
-            let module = prog.get_module(&module).unwrap().unwrap();
+            let module = prog.get_module(module).unwrap().unwrap();
             for stmt in &module.body {
                 if let Stmt::Schema(s) = &stmt.node {
                     result.push(s.clone());

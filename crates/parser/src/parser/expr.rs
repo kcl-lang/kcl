@@ -49,17 +49,17 @@ impl<'a> Parser<'a> {
 
     /// validate_dedent will check the number of spaces in indent and dedent tokens.
     pub(crate) fn validate_dedent(&mut self) {
-        if let TokenKind::Dedent(n) = self.token.kind {
-            if n != 0 {
-                self.sess.struct_span_error(
+        if let TokenKind::Dedent(n) = self.token.kind
+            && n != 0
+        {
+            self.sess.struct_span_error(
                     &format!(
                         "invalid indentation with {}, try to align indents by adding or removing spaces",
                         UnitUsize(n, "space".to_string()).into_string_with_unit(),
                     ),
                     self.token.span,
                 );
-                self.bump();
-            }
+            self.bump();
         }
     }
 
@@ -118,7 +118,7 @@ impl<'a> Parser<'a> {
     /// identifier: NAME (DOT NAME)*
     pub(crate) fn parse_identifier_expr(&mut self) -> NodeRef<Expr> {
         let token = self.token;
-        Box::new(Node::node(
+        Box::new(Node::new_with_loc(
             Expr::Identifier(self.parse_identifier().node),
             self.sess.struct_token_loc(token, self.prev_token),
         ))
@@ -157,7 +157,7 @@ impl<'a> Parser<'a> {
 
             if oprec <= prec1 {
                 if !cmp_expr.ops.is_empty() {
-                    return Box::new(Node::node(
+                    return Box::new(Node::new_with_loc(
                         Expr::Compare(cmp_expr),
                         self.sess.struct_token_loc(token, self.prev_token),
                     ));
@@ -224,7 +224,7 @@ impl<'a> Parser<'a> {
                 // binary a + b
                 BinOrCmpOp::Bin(bin_op) => {
                     if !cmp_expr.ops.is_empty() {
-                        x = Box::new(Node::node(
+                        x = Box::new(Node::new_with_loc(
                             Expr::Compare(cmp_expr.clone()),
                             self.sess.struct_token_loc(token, self.prev_token),
                         ));
@@ -232,7 +232,7 @@ impl<'a> Parser<'a> {
                         cmp_expr.comparators = Vec::new();
                     }
 
-                    x = Box::new(Node::node(
+                    x = Box::new(Node::new_with_loc(
                         Expr::Binary(BinaryExpr {
                             left: x,
                             op: bin_op,
@@ -261,13 +261,13 @@ impl<'a> Parser<'a> {
             if self.token.is_keyword(kw::Else) {
                 self.bump();
                 let orelse = self.parse_expr();
-                Box::new(Node::node(
+                Box::new(Node::new_with_loc(
                     Expr::If(IfExpr { body, cond, orelse }),
                     self.sess.struct_token_loc(token, self.prev_token),
                 ))
             } else {
                 self.sess.struct_token_error(&[kw::Else.into()], self.token);
-                Box::new(Node::node(
+                Box::new(Node::new_with_loc(
                     Expr::If(IfExpr {
                         body,
                         cond,
@@ -344,7 +344,7 @@ impl<'a> Parser<'a> {
         self.bump();
         let operand = self.parse_primary_expr();
 
-        Box::new(Node::node(
+        Box::new(Node::new_with_loc(
             Expr::Unary(UnaryExpr { op, operand }),
             self.sess.struct_token_loc(token, self.prev_token),
         ))
@@ -365,7 +365,7 @@ impl<'a> Parser<'a> {
         match self.token.ident() {
             Some(_) => {
                 let attr = self.parse_identifier();
-                Box::new(Node::node(
+                Box::new(Node::new_with_loc(
                     Expr::Selector(SelectorExpr {
                         value,
                         attr,
@@ -378,9 +378,9 @@ impl<'a> Parser<'a> {
             _ => {
                 self.sess
                     .struct_token_error(&[TokenKind::ident_value()], self.token);
-                let attr = Box::new(Node::node(
+                let attr = Box::new(Node::new_with_loc(
                     Identifier {
-                        names: vec![Node::node(
+                        names: vec![Node::new_with_loc(
                             "".to_string(),
                             (
                                 self.sess.lookup_char_pos(self.token.span.lo()),
@@ -395,7 +395,7 @@ impl<'a> Parser<'a> {
                         self.sess.lookup_char_pos(self.token.span.lo()),
                     ),
                 ));
-                Box::new(Node::node(
+                Box::new(Node::new_with_loc(
                     Expr::Selector(SelectorExpr {
                         value,
                         attr,
@@ -415,7 +415,7 @@ impl<'a> Parser<'a> {
     /// call_suffix: LEFT_PARENTHESES [arguments [COMMA]] RIGHT_PARENTHESES
     fn parse_call_expr(&mut self, func: NodeRef<Expr>, lo: token::Token) -> NodeRef<Expr> {
         let call_expr = self.parse_call(func);
-        Box::new(Node::node(
+        Box::new(Node::new_with_loc(
             Expr::Call(call_expr),
             self.sess.struct_token_loc(lo, self.prev_token),
         ))
@@ -498,7 +498,7 @@ impl<'a> Parser<'a> {
         let mut round = 0;
         let mut is_slice = false;
         let mut colon_counter = 0;
-        let mut exprs = vec![None, None, None];
+        let mut exprs = [None, None, None];
         let mut expr_index = 0;
         let mut exprs_consecutive = 0;
 
@@ -556,7 +556,7 @@ impl<'a> Parser<'a> {
         }
 
         if is_slice {
-            Box::new(Node::node(
+            Box::new(Node::new_with_loc(
                 Expr::Subscript(Subscript {
                     value,
                     index: None,
@@ -580,7 +580,7 @@ impl<'a> Parser<'a> {
                 self.sess
                     .struct_span_error("a list should have only one expr", self.token.span)
             }
-            Box::new(Node::node(
+            Box::new(Node::new_with_loc(
                 Expr::Subscript(Subscript {
                     value,
                     index: exprs[0].clone(),
@@ -611,11 +611,11 @@ impl<'a> Parser<'a> {
                 }
                 // Undefined
                 else if self.token.is_keyword(kw::Undefined) {
-                    return self.parse_constant_expr(token::Undefined);
+                    self.parse_constant_expr(token::Undefined)
                 }
                 // Bool: True/False
                 else if self.token.is_keyword(kw::True) || self.token.is_keyword(kw::False) {
-                    return self.parse_constant_expr(token::Bool);
+                    self.parse_constant_expr(token::Bool)
                 }
                 // lambda expression
                 else if self.token.is_keyword(kw::Lambda) {
@@ -645,7 +645,7 @@ impl<'a> Parser<'a> {
                                 operand = self.parse_schema_expr_with_args(call, token)
                             } else {
                                 // identifier call_suffix
-                                return Box::new(Node::node(
+                                return Box::new(Node::new_with_loc(
                                     Expr::Call(call),
                                     self.sess.struct_token_loc(token, self.prev_token),
                                 ));
@@ -848,7 +848,7 @@ impl<'a> Parser<'a> {
             ),
         }
 
-        Box::new(Node::node(
+        Box::new(Node::new_with_loc(
             Expr::Quant(QuantExpr {
                 target,
                 variables,
@@ -958,7 +958,7 @@ impl<'a> Parser<'a> {
         if let TokenKind::CloseDelim(DelimToken::Bracket) = self.token.kind {
             self.bump();
 
-            return Box::new(Node::node(
+            return Box::new(Node::new_with_loc(
                 Expr::List(ListExpr {
                     elts: vec![],
                     ctx: ExprContext::Load,
@@ -973,7 +973,7 @@ impl<'a> Parser<'a> {
             if self.token.kind == TokenKind::CloseDelim(DelimToken::Bracket) {
                 // bump bracket close delim token `]`
                 self.bump();
-                return Box::new(Node::node(
+                return Box::new(Node::new_with_loc(
                     Expr::List(ListExpr {
                         elts: vec![],
                         ctx: ExprContext::Load,
@@ -1014,7 +1014,7 @@ impl<'a> Parser<'a> {
                     ),
                     item_start_token.span,
                 );
-                Box::new(Node::node(
+                Box::new(Node::new_with_loc(
                     Expr::ListComp(ListComp {
                         elt: items[0].clone(),
                         generators,
@@ -1022,7 +1022,7 @@ impl<'a> Parser<'a> {
                     self.sess.struct_token_loc(token, self.prev_token),
                 ))
             } else if items.len() == 1 {
-                Box::new(Node::node(
+                Box::new(Node::new_with_loc(
                     Expr::ListComp(ListComp {
                         elt: items[0].clone(),
                         generators,
@@ -1034,7 +1034,7 @@ impl<'a> Parser<'a> {
                     "missing list comp clause expression",
                     item_start_token.span,
                 );
-                Box::new(Node::node(
+                Box::new(Node::new_with_loc(
                     Expr::List(ListExpr {
                         elts: items,
                         ctx: ExprContext::Load,
@@ -1043,7 +1043,7 @@ impl<'a> Parser<'a> {
                 ))
             }
         } else {
-            Box::new(Node::node(
+            Box::new(Node::new_with_loc(
                 Expr::List(ListExpr {
                     elts: items,
                     ctx: ExprContext::Load,
@@ -1189,7 +1189,7 @@ impl<'a> Parser<'a> {
                 orelse: None,
             };
 
-            elif_list.push(Box::new(Node::node(
+            elif_list.push(Box::new(Node::new_with_loc(
                 x,
                 self.sess.struct_token_loc(token, self.prev_token),
             )));
@@ -1213,7 +1213,7 @@ impl<'a> Parser<'a> {
 
             let else_body = self.parse_if_item_exec_block(need_skip_newlines);
 
-            let t = Box::new(Node::node(
+            let t = Box::new(Node::new_with_loc(
                 Expr::List(ListExpr {
                     elts: else_body,
                     ctx: ExprContext::Load,
@@ -1241,7 +1241,7 @@ impl<'a> Parser<'a> {
             if_item.orelse = Some(Box::new(t));
         }
 
-        Box::new(Node::node(
+        Box::new(Node::new_with_loc(
             Expr::ListIfItem(if_item),
             self.sess.struct_token_loc(token, self.prev_token),
         ))
@@ -1297,7 +1297,7 @@ impl<'a> Parser<'a> {
         if let TokenKind::CloseDelim(DelimToken::Brace) = self.token.kind {
             self.bump();
 
-            return Box::new(Node::node(
+            return Box::new(Node::new_with_loc(
                 Expr::Config(ConfigExpr { items: vec![] }),
                 self.sess.struct_token_loc(token, self.prev_token),
             ));
@@ -1308,7 +1308,7 @@ impl<'a> Parser<'a> {
             self.clean_all_indentations();
             if self.token.kind == TokenKind::CloseDelim(DelimToken::Brace) {
                 self.bump();
-                return Box::new(Node::node(
+                return Box::new(Node::new_with_loc(
                     Expr::Config(ConfigExpr { items: vec![] }),
                     self.sess.struct_token_loc(token, self.prev_token),
                 ));
@@ -1346,7 +1346,7 @@ impl<'a> Parser<'a> {
                     ),
                     item_start_token.span,
                 );
-                Box::new(Node::node(
+                Box::new(Node::new_with_loc(
                     Expr::DictComp(DictComp {
                         entry: items[0].node.clone(),
                         generators,
@@ -1354,7 +1354,7 @@ impl<'a> Parser<'a> {
                     self.sess.struct_token_loc(token, self.prev_token),
                 ))
             } else if items.len() == 1 {
-                Box::new(Node::node(
+                Box::new(Node::new_with_loc(
                     Expr::DictComp(DictComp {
                         entry: items[0].node.clone(),
                         generators,
@@ -1366,13 +1366,13 @@ impl<'a> Parser<'a> {
                     "missing config comp clause expression",
                     item_start_token.span,
                 );
-                Box::new(Node::node(
+                Box::new(Node::new_with_loc(
                     Expr::Config(ConfigExpr { items }),
                     self.sess.struct_token_loc(token, self.prev_token),
                 ))
             }
         } else {
-            Box::new(Node::node(
+            Box::new(Node::new_with_loc(
                 Expr::Config(ConfigExpr { items }),
                 self.sess.struct_token_loc(token, self.prev_token),
             ))
@@ -1476,7 +1476,7 @@ impl<'a> Parser<'a> {
             }
         }
 
-        Box::new(Node::node(
+        Box::new(Node::new_with_loc(
             ConfigEntry {
                 key,
                 value,
@@ -1549,7 +1549,7 @@ impl<'a> Parser<'a> {
             }
         }
 
-        Box::new(Node::node(
+        Box::new(Node::new_with_loc(
             CompClause { targets, iter, ifs },
             self.sess.struct_token_loc(token, self.prev_token),
         ))
@@ -1610,7 +1610,7 @@ impl<'a> Parser<'a> {
                 orelse: None,
             };
 
-            elif_list.push(Box::new(Node::node(
+            elif_list.push(Box::new(Node::new_with_loc(
                 x,
                 self.sess.struct_token_loc(token, self.prev_token),
             )));
@@ -1641,7 +1641,7 @@ impl<'a> Parser<'a> {
                 orelse.items.push(item);
             }
 
-            let t = Box::new(Node::node(
+            let t = Box::new(Node::new_with_loc(
                 Expr::Config(orelse),
                 self.sess.struct_token_loc(token, self.prev_token),
             ));
@@ -1674,7 +1674,7 @@ impl<'a> Parser<'a> {
             if_entry.node.orelse = Some(Box::new(t));
         }
 
-        Box::new(Node::node(
+        Box::new(Node::new_with_loc(
             Expr::ConfigIfEntry(if_entry.node),
             self.sess.struct_token_loc(token, last_token),
         ))
@@ -1737,12 +1737,12 @@ impl<'a> Parser<'a> {
 
         return if need_skip_newlines {
             self.skip_newlines();
-            Box::new(Node::node(
+            Box::new(Node::new_with_loc(
                 body,
                 self.sess.struct_token_loc(token, self.prev_token),
             ))
         } else {
-            Box::new(Node::node(
+            Box::new(Node::new_with_loc(
                 body,
                 self.sess.struct_token_loc(token, self.prev_token),
             ))
@@ -1897,7 +1897,7 @@ impl<'a> Parser<'a> {
 
         // config_expr
         let config = self.parse_config_expr();
-        Box::new(Node::node(
+        Box::new(Node::new_with_loc(
             Expr::Schema(SchemaExpr {
                 name: Box::new(name),
                 args: Vec::new(),
@@ -1928,7 +1928,7 @@ impl<'a> Parser<'a> {
 
         // config_expr
         let config = self.parse_config_expr();
-        Box::new(Node::node(
+        Box::new(Node::new_with_loc(
             Expr::Schema(SchemaExpr {
                 name: Box::new(name),
                 args: call.args,
@@ -2006,7 +2006,7 @@ impl<'a> Parser<'a> {
 
         self.bump_token(TokenKind::CloseDelim(DelimToken::Brace));
 
-        Box::new(Node::node(
+        Box::new(Node::new_with_loc(
             Expr::Lambda(LambdaExpr {
                 args,
                 return_ty,
@@ -2034,7 +2034,7 @@ impl<'a> Parser<'a> {
             ),
         }
 
-        Box::new(Node::node(
+        Box::new(Node::new_with_loc(
             Expr::Paren(ParenExpr { expr }),
             self.sess.struct_token_loc(token, self.prev_token),
         ))
@@ -2123,9 +2123,12 @@ impl<'a> Parser<'a> {
                 // expr
                 let value = self.parse_expr();
 
-                either::Right(Node::node(
+                either::Right(Node::new_with_loc(
                     Keyword {
-                        arg: Box::new(Node::node(arg, self.sess.struct_token_loc(arg_lo, arg_hi))),
+                        arg: Box::new(Node::new_with_loc(
+                            arg,
+                            self.sess.struct_token_loc(arg_lo, arg_hi),
+                        )),
                         value: Some(value),
                     },
                     self.sess.struct_token_loc(token, self.prev_token),
@@ -2150,7 +2153,7 @@ impl<'a> Parser<'a> {
 
                 self.parse_call_expr(func, token)
             }
-            _ => Box::new(Node::node(
+            _ => Box::new(Node::new_with_loc(
                 Expr::Call(CallExpr {
                     func,
                     args: Vec::new(),
@@ -2185,7 +2188,7 @@ impl<'a> Parser<'a> {
             None
         };
 
-        Box::new(Node::node(
+        Box::new(Node::new_with_loc(
             Expr::Check(CheckExpr { test, if_cond, msg }),
             self.sess.struct_token_loc(token, self.prev_token),
         ))
@@ -2199,7 +2202,7 @@ impl<'a> Parser<'a> {
         let ident = self.token.ident();
         match ident {
             Some(id) => {
-                names.push(Node::node(
+                names.push(Node::new_with_loc(
                     id.as_str(),
                     self.sess.struct_token_loc(self.token, self.token),
                 ));
@@ -2209,14 +2212,14 @@ impl<'a> Parser<'a> {
                 {
                     self.sess
                         .struct_token_error(&[TokenKind::ident_value()], self.token);
-                    names.push(Node::node(
+                    names.push(Node::new_with_loc(
                         "".to_string(),
                         (
                             self.sess.lookup_char_pos(self.token.span.lo()),
                             self.sess.lookup_char_pos(self.token.span.lo()),
                         ),
                     ));
-                    return Box::new(Node::node(
+                    return Box::new(Node::new_with_loc(
                         Identifier {
                             names,
                             pkgpath: "".to_string(),
@@ -2239,7 +2242,7 @@ impl<'a> Parser<'a> {
                     let ident = self.token.ident();
                     match ident {
                         Some(id) => {
-                            names.push(Node::node(
+                            names.push(Node::new_with_loc(
                                 id.as_str(),
                                 self.sess.struct_token_loc(self.token, self.token),
                             ));
@@ -2248,7 +2251,7 @@ impl<'a> Parser<'a> {
                         None => {
                             self.sess
                                 .struct_token_error(&[TokenKind::ident_value()], self.token);
-                            names.push(Node::node(
+                            names.push(Node::new_with_loc(
                                 "".to_string(),
                                 (
                                     self.sess.lookup_char_pos(self.token.span.lo()),
@@ -2262,7 +2265,7 @@ impl<'a> Parser<'a> {
             }
         }
 
-        Box::new(Node::node(
+        Box::new(Node::new_with_loc(
             Identifier {
                 names,
                 pkgpath: "".to_string(),
@@ -2321,7 +2324,7 @@ impl<'a> Parser<'a> {
 
         self.bump();
 
-        Box::new(Node::node(
+        Box::new(Node::new_with_loc(
             Expr::NumberLit(NumberLit {
                 binary_suffix,
                 value,
@@ -2364,12 +2367,12 @@ impl<'a> Parser<'a> {
         };
 
         if let Some(joined_str) = self.parse_joined_string(&lit, token.span.lo()) {
-            Box::new(Node::node(
+            Box::new(Node::new_with_loc(
                 Expr::JoinedString(joined_str),
                 self.sess.struct_token_loc(token, self.prev_token),
             ))
         } else {
-            Box::new(Node::node(Expr::StringLit(lit), loc))
+            Box::new(Node::new_with_loc(Expr::StringLit(lit), loc))
         }
     }
 
@@ -2407,7 +2410,7 @@ impl<'a> Parser<'a> {
 
         self.bump();
 
-        Box::new(Node::node(
+        Box::new(Node::new_with_loc(
             Expr::NameConstantLit(NameConstantLit { value }),
             self.sess.struct_token_loc(token, self.prev_token),
         ))
@@ -2415,7 +2418,7 @@ impl<'a> Parser<'a> {
 
     #[inline]
     pub(crate) fn missing_expr(&self) -> NodeRef<Expr> {
-        Box::new(Node::node(
+        Box::new(Node::new_with_loc(
             Expr::Missing(MissingExpr),
             // The text range of missing expression is zero.
             self.sess.struct_token_loc(self.token, self.token),
@@ -2442,7 +2445,7 @@ impl<'a> Parser<'a> {
     /// Cast an expression into an assign target.
     pub(crate) fn expr_as_assign_target(&self, expr: &NodeRef<Expr>) -> Result<Target> {
         let mut paths = self.expr_as_assign_target_paths(expr)?;
-        if paths.len() >= 1 {
+        if !paths.is_empty() {
             let first = paths.remove(0);
             match first {
                 MemberOrIndex::Member(member) => Ok(Target {

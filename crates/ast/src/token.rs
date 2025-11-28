@@ -344,13 +344,7 @@ impl Token {
     #[inline]
     pub fn is_string_lit(&self) -> bool {
         match self.kind {
-            TokenKind::Literal(lit) => {
-                if let LitKind::Str { .. } = lit.kind {
-                    true
-                } else {
-                    false
-                }
-            }
+            TokenKind::Literal(lit) => matches!(lit.kind, LitKind::Str { .. }),
             _ => false,
         }
     }

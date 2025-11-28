@@ -7,11 +7,10 @@ const FUNCTION: &str = "function";
 
 impl<'ctx> MutSelfMutWalker<'ctx> for TypeErasureTransformer {
     fn walk_schema_stmt(&mut self, schema_stmt: &'ctx mut ast::SchemaStmt) {
-        if let Some(schema_index_signature) = schema_stmt.index_signature.as_deref_mut() {
-            if let kcl_ast::ast::Type::Function(_) = &mut schema_index_signature.node.value_ty.node
-            {
-                schema_index_signature.node.value_ty.node = FUNCTION.to_string().into();
-            }
+        if let Some(schema_index_signature) = schema_stmt.index_signature.as_deref_mut()
+            && let kcl_ast::ast::Type::Function(_) = &mut schema_index_signature.node.value_ty.node
+        {
+            schema_index_signature.node.value_ty.node = FUNCTION.to_string().into();
         }
         walk_if_mut!(self, walk_arguments, schema_stmt.args);
         walk_list_mut!(self, walk_call_expr, schema_stmt.decorators);
@@ -26,12 +25,11 @@ impl<'ctx> MutSelfMutWalker<'ctx> for TypeErasureTransformer {
         }
     }
     fn walk_assign_stmt(&mut self, assign_stmt: &'ctx mut ast::AssignStmt) {
-        if let Some(ty) = &mut assign_stmt.ty {
-            if let kcl_ast::ast::Type::Function(_) = ty.as_ref().node {
-                if let Some(ty_anno) = &mut assign_stmt.ty {
-                    ty_anno.node = FUNCTION.to_string().into();
-                }
-            }
+        if let Some(ty) = &mut assign_stmt.ty
+            && let kcl_ast::ast::Type::Function(_) = ty.as_ref().node
+            && let Some(ty_anno) = &mut assign_stmt.ty
+        {
+            ty_anno.node = FUNCTION.to_string().into();
         }
         self.walk_expr(&mut assign_stmt.value.node);
     }
@@ -55,23 +53,23 @@ impl<'ctx> MutSelfMutWalker<'ctx> for TypeErasureTransformer {
     fn walk_lambda_expr(&mut self, lambda_expr: &'ctx mut ast::LambdaExpr) {
         walk_if_mut!(self, walk_arguments, lambda_expr.args);
         walk_list_mut!(self, walk_stmt, lambda_expr.body);
-        if let Some(ty) = lambda_expr.return_ty.as_mut() {
-            if let kcl_ast::ast::Type::Function(_) = ty.as_ref().node {
-                ty.node = FUNCTION.to_string().into();
-            }
+        if let Some(ty) = lambda_expr.return_ty.as_mut()
+            && let kcl_ast::ast::Type::Function(_) = ty.as_ref().node
+        {
+            ty.node = FUNCTION.to_string().into();
         }
     }
 }
 
 /// Run a pass on AST and change the function type to the `Named("function")` type
-pub fn type_func_erasure_pass<'ctx>(program: &'ctx mut ast::Program) {
+pub fn type_func_erasure_pass(program: &mut ast::Program) {
     for (_, modules) in program.pkgs.iter() {
         for module in modules.iter() {
             let mut module = program
                 .get_module_mut(module)
                 .expect("Failed to acquire module lock")
-                .expect(&format!("module {:?} not found in program", module));
-            TypeErasureTransformer::default().walk_module(&mut module);
+                .unwrap_or_else(|| panic!("module {:?} not found in program", module));
+            TypeErasureTransformer.walk_module(&mut module);
         }
     }
 }

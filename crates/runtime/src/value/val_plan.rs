@@ -109,10 +109,10 @@ fn filter_results(ctx: &Context, key_values: &ValueRef) -> Vec<ValueRef> {
                     } else if !v.is_undefined() {
                         let list_dict = ValueRef::dict(Some(&[(LIST_DICT_TEMP_KEY, v)]));
                         let filtered = filter_results(ctx, &list_dict);
-                        if !filtered.is_empty() {
-                            if let Some(v) = filtered[0].get_by_key(LIST_DICT_TEMP_KEY) {
-                                filtered_list.push(v.clone());
-                            }
+                        if !filtered.is_empty()
+                            && let Some(v) = filtered[0].get_by_key(LIST_DICT_TEMP_KEY)
+                        {
+                            filtered_list.push(v.clone());
                         }
                         if filtered.len() > 1 {
                             for v in &filtered[1..] {
@@ -153,15 +153,14 @@ fn handle_schema(ctx: &Context, value: &ValueRef) -> Vec<ValueRef> {
     }
     // Deal schema type meta attribute and add the attribute with the type string value
     // into the planned object.
-    if ctx.plan_opts.include_schema_type_path {
-        if let Some(v) = filtered.get_mut(0) {
-            if v.is_config() {
-                v.dict_update_key_value(
-                    SCHEMA_TYPE_META_ATTR,
-                    ValueRef::str(&value_type_path(value, true)),
-                );
-            }
-        }
+    if ctx.plan_opts.include_schema_type_path
+        && let Some(v) = filtered.get_mut(0)
+        && v.is_config()
+    {
+        v.dict_update_key_value(
+            SCHEMA_TYPE_META_ATTR,
+            ValueRef::str(&value_type_path(value, true)),
+        );
     }
     filtered
 }

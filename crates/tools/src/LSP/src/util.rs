@@ -131,7 +131,7 @@ macro_rules! walk_if_contains_with_new_expr {
     ($expr: expr, $pos: expr, $schema_def: expr, $kind: expr) => {
         if $expr.contains_pos($pos) {
             walk_if_contains!(
-                Node::node_with_pos(
+                Node::new_with_pos(
                     $kind($expr.node.clone()),
                     (
                         $expr.filename.clone(),
@@ -171,7 +171,7 @@ fn transfer_ident_names(names: Vec<String>, pos: &PosTuple) -> Vec<Node<String>>
         let mut name_pos = pos.clone();
         name_pos.2 = col;
         name_pos.4 = col + name.len() as u64;
-        new_names.push(Node::node_with_pos(name.clone(), name_pos));
+        new_names.push(Node::new_with_pos(name.clone(), name_pos));
         col = col + name.len() as u64 + ".".len() as u64;
     }
     new_names
@@ -250,7 +250,7 @@ pub(crate) fn inner_most_expr_in_stmt(
         }
         Stmt::Schema(schema_stmt) => {
             walk_if_contains!(
-                Node::node_with_pos(
+                Node::new_with_pos(
                     Expr::Identifier(Identifier {
                         names: transfer_ident_names(
                             vec![schema_stmt.name.node.clone()],
@@ -300,7 +300,7 @@ pub(crate) fn inner_most_expr_in_stmt(
         }
         Stmt::SchemaAttr(schema_attr_expr) => {
             walk_if_contains!(
-                Node::node_with_pos(
+                Node::new_with_pos(
                     Expr::Identifier(Identifier {
                         names: vec![*schema_attr_expr.name.clone()],
                         pkgpath: "".to_string(),
@@ -589,7 +589,7 @@ pub(crate) fn is_in_docstring(
 
 /// Build a temp identifier expr with string
 fn build_identifier_from_string(s: &NodeRef<String>) -> Node<Expr> {
-    Node::node_with_pos(
+    Node::new_with_pos(
         Expr::Identifier(Identifier {
             names: transfer_ident_names(
                 vec![s.node.clone()],
@@ -621,7 +621,7 @@ fn build_identifier_from_ty_string(ty: &NodeRef<Type>, pos: &KCLPos) -> Option<N
     }
     match &ty.node {
         Type::Any => None,
-        Type::Named(id) => Some(Node::node_with_pos(
+        Type::Named(id) => Some(Node::new_with_pos(
             Expr::Identifier(id.clone()),
             (
                 ty.filename.clone(),

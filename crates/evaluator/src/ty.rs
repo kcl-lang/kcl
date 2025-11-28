@@ -43,13 +43,13 @@ pub fn resolve_schema(s: &Evaluator, schema: &ValueRef, keys: &[String]) -> Valu
                 s.pop_backtrace();
                 s.pop_pkgpath();
             }
-            let value = (caller.body)(
+
+            (caller.body)(
                 s,
                 &caller.ctx.borrow().snapshot(config_value, config_meta),
                 &schema_value.args,
                 &schema_value.kwargs,
-            );
-            value
+            )
         } else {
             schema.clone()
         };
@@ -109,31 +109,29 @@ pub fn type_pack_and_check(
                             .expect(kcl_error::INTERNAL_ERROR_MSG)
                             .clone()
                     };
-                    if let Proxy::Schema(caller) = &frame.proxy {
-                        if value.is_config() {
-                            let config = value.as_dict_ref();
-                            for (key, _) in &config.values {
-                                let no_such_attr =
-                                    !SchemaEvalContext::has_attr(s, &caller.ctx, key)
-                                        && !key.starts_with('_');
-                                let has_index_signature =
-                                    SchemaEvalContext::has_index_signature(s, &caller.ctx);
-                                if !has_index_signature && no_such_attr {
-                                    error_msgs.push(format!(
-                                        "Schema {} does not contain attribute {}",
-                                        tpe, key
-                                    ));
-                                }
+                    if let Proxy::Schema(caller) = &frame.proxy
+                        && value.is_config()
+                    {
+                        let config = value.as_dict_ref();
+                        for (key, _) in &config.values {
+                            let no_such_attr = !SchemaEvalContext::has_attr(s, &caller.ctx, key)
+                                && !key.starts_with('_');
+                            let has_index_signature =
+                                SchemaEvalContext::has_index_signature(s, &caller.ctx);
+                            if !has_index_signature && no_such_attr {
+                                error_msgs.push(format!(
+                                    "Schema {} does not contain attribute {}",
+                                    tpe, key
+                                ));
                             }
+                        }
 
-                            for (attr, is_optional) in SchemaEvalContext::get_attrs(s, &caller.ctx)
-                            {
-                                if !config.values.contains_key(&attr) && !is_optional {
-                                    error_msgs.push(format!(
-                                        "Schema {}'s attribute {} is missing",
-                                        tpe, attr
-                                    ));
-                                }
+                        for (attr, is_optional) in SchemaEvalContext::get_attrs(s, &caller.ctx) {
+                            if !config.values.contains_key(&attr) && !is_optional {
+                                error_msgs.push(format!(
+                                    "Schema {}'s attribute {} is missing",
+                                    tpe, attr
+                                ));
                             }
                         }
                     }

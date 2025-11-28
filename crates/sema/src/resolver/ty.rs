@@ -193,9 +193,9 @@ impl<'ctx> Resolver<'_> {
                     .filter(|ty| {
                         self.upgrade_dict_to_schema_attr_check(dict_ty, &ty.into_schema_type())
                     })
-                    .map(|ty| ty.clone())
+                    .cloned()
                     .collect();
-                crate::ty::sup(&types).into()
+                crate::ty::sup(&types)
             }
             _ => ty,
         }
@@ -216,7 +216,7 @@ impl<'ctx> Resolver<'_> {
 
             if let Some(ty_annotation) = &assign_stmt.ty {
                 let annotation_ty =
-                    self.parse_ty_with_scope(Some(&ty_annotation), ty_annotation.get_span_pos());
+                    self.parse_ty_with_scope(Some(ty_annotation), ty_annotation.get_span_pos());
                 // If the target defined in the scope, check the type of value and the type annotation of target
                 let target_ty = if let Some(obj) = self.scope.borrow().elems.get(name) {
                     let obj = obj.borrow();
@@ -338,13 +338,14 @@ impl<'ctx> Resolver<'_> {
                 (TypeKind::Union(key_tys), TypeKind::Union(val_tys)) => {
                     let mut index_signature_val_tys: Vec<TypeRef> = vec![];
                     for (i, key_ty) in key_tys.iter().enumerate() {
-                        if let TypeKind::StrLit(s) = &key_ty.kind {
-                            if schema_ty.attrs.get(s).is_none() && val_tys.get(i).is_some() {
-                                index_signature_val_tys.push(val_tys.get(i).unwrap().clone());
-                            }
+                        if let TypeKind::StrLit(s) = &key_ty.kind
+                            && schema_ty.attrs.get(s).is_none()
+                            && val_tys.get(i).is_some()
+                        {
+                            index_signature_val_tys.push(val_tys.get(i).unwrap().clone());
                         }
                     }
-                    crate::ty::sup(&index_signature_val_tys).into()
+                    crate::ty::sup(&index_signature_val_tys)
                 }
                 _ => val_ty,
             };
@@ -391,18 +392,18 @@ impl<'ctx> Resolver<'_> {
         } else {
             // When assigning a dict type to an instance of a schema type,
             // check whether the type of key value pair in dict matches the attribute type in the schema.
-            if let TypeKind::StrLit(key_name) = &key_ty.kind {
-                if let Some(attr_obj) = schema_ty.attrs.get(key_name) {
-                    if let Some(attr) = dict_ty.attrs.get(key_name) {
-                        self.must_assignable_to(
-                            attr.ty.clone(),
-                            attr_obj.ty.clone(),
-                            range.clone(),
-                            Some(attr_obj.range.clone()),
-                        );
-                    }
-                    return true;
+            if let TypeKind::StrLit(key_name) = &key_ty.kind
+                && let Some(attr_obj) = schema_ty.attrs.get(key_name)
+            {
+                if let Some(attr) = dict_ty.attrs.get(key_name) {
+                    self.must_assignable_to(
+                        attr.ty.clone(),
+                        attr_obj.ty.clone(),
+                        range.clone(),
+                        Some(attr_obj.range.clone()),
+                    );
                 }
+                return true;
             }
             true
         }
@@ -422,7 +423,7 @@ impl<'ctx> Resolver<'_> {
             // empty dict {}
             TypeKind::Any => true,
             // single key: {key1: value1}
-            TypeKind::StrLit(s) => schema_ty.attrs.len() >= 1 && schema_ty.attrs.contains_key(s),
+            TypeKind::StrLit(s) => !schema_ty.attrs.is_empty() && schema_ty.attrs.contains_key(s),
             // multi key: {
             // key1: value1
             // key2: value2
@@ -445,7 +446,7 @@ impl<'ctx> Resolver<'_> {
     }
 
     fn get_schema_attrs(schema_ty: &SchemaType) -> (Vec<String>, bool) {
-        let mut attrs: Vec<String> = schema_ty.attrs.keys().map(|attr| attr.clone()).collect();
+        let mut attrs: Vec<String> = schema_ty.attrs.keys().cloned().collect();
         let mut has_index_signature = schema_ty.index_signature.is_some();
         if let Some(base) = &schema_ty.base {
             let (base_attrs, index_signature) = Self::get_schema_attrs(base);
@@ -464,10 +465,10 @@ impl<'ctx> Resolver<'_> {
         match &ty.kind {
             TypeKind::List(item_ty) => {
                 let mut inner_node = None;
-                if let Some(ty_node) = ty_node {
-                    if let ast::Type::List(list_type) = &ty_node.node {
-                        inner_node = list_type.inner_type.as_ref().map(|ty| ty.as_ref())
-                    }
+                if let Some(ty_node) = ty_node
+                    && let ast::Type::List(list_type) = &ty_node.node
+                {
+                    inner_node = list_type.inner_type.as_ref().map(|ty| ty.as_ref())
                 };
                 Type::list_ref(self.upgrade_named_ty_with_scope(item_ty.clone(), range, inner_node))
             }
@@ -478,11 +479,11 @@ impl<'ctx> Resolver<'_> {
             }) => {
                 let mut key_node = None;
                 let mut value_node = None;
-                if let Some(ty_node) = ty_node {
-                    if let ast::Type::Dict(dict_type) = &ty_node.node {
-                        key_node = dict_type.key_type.as_ref().map(|ty| ty.as_ref());
-                        value_node = dict_type.value_type.as_ref().map(|ty| ty.as_ref());
-                    }
+                if let Some(ty_node) = ty_node
+                    && let ast::Type::Dict(dict_type) = &ty_node.node
+                {
+                    key_node = dict_type.key_type.as_ref().map(|ty| ty.as_ref());
+                    value_node = dict_type.value_type.as_ref().map(|ty| ty.as_ref());
                 };
                 Type::dict_ref_with_attrs(
                     self.upgrade_named_ty_with_scope(key_ty.clone(), range, key_node),
@@ -511,11 +512,10 @@ impl<'ctx> Resolver<'_> {
                     .enumerate()
                     .map(|(index, ty)| {
                         let mut elem_node = None;
-                        if let Some(ty_node) = ty_node {
-                            if let ast::Type::Union(union_type) = &ty_node.node {
-                                elem_node =
-                                    union_type.type_elements.get(index).map(|ty| ty.as_ref())
-                            }
+                        if let Some(ty_node) = ty_node
+                            && let ast::Type::Union(union_type) = &ty_node.node
+                        {
+                            elem_node = union_type.type_elements.get(index).map(|ty| ty.as_ref())
                         };
                         self.upgrade_named_ty_with_scope(ty.clone(), range, elem_node)
                     })
@@ -536,12 +536,13 @@ impl<'ctx> Resolver<'_> {
                 }
                 let mut pkgpath = "".to_string();
                 let name = names[0];
-                if names.len() > 1 && !self.ctx.local_vars.contains(&name.to_string()) {
-                    if let Some(mapping) = self.ctx.import_names.get(&self.ctx.filename) {
-                        pkgpath = mapping
-                            .get(name)
-                            .map_or("".to_string(), |pkgpath| pkgpath.to_string());
-                    }
+                if names.len() > 1
+                    && !self.ctx.local_vars.contains(&name.to_string())
+                    && let Some(mapping) = self.ctx.import_names.get(&self.ctx.filename)
+                {
+                    pkgpath = mapping
+                        .get(name)
+                        .map_or("".to_string(), |pkgpath| pkgpath.to_string());
                 }
                 self.ctx.l_value = false;
                 let tys = self.resolve_var(
@@ -550,18 +551,18 @@ impl<'ctx> Resolver<'_> {
                     range.clone(),
                 );
 
-                if let Some(ty_node) = ty_node {
-                    if let ast::Type::Named(identifier) = &ty_node.node {
-                        for (index, name) in identifier.names.iter().enumerate() {
-                            self.node_ty_map
-                                .borrow_mut()
-                                .insert(self.get_node_key(name.id.clone()), tys[index].clone());
-                        }
-                        let ident_ty = tys.last().unwrap().clone();
+                if let Some(ty_node) = ty_node
+                    && let ast::Type::Named(identifier) = &ty_node.node
+                {
+                    for (index, name) in identifier.names.iter().enumerate() {
                         self.node_ty_map
                             .borrow_mut()
-                            .insert(self.get_node_key(ty_node.id.clone()), ident_ty.clone());
+                            .insert(self.get_node_key(name.id.clone()), tys[index].clone());
                     }
+                    let ident_ty = tys.last().unwrap().clone();
+                    self.node_ty_map
+                        .borrow_mut()
+                        .insert(self.get_node_key(ty_node.id.clone()), ident_ty.clone());
                 };
                 tys.last().unwrap().clone()
             }
@@ -569,34 +570,34 @@ impl<'ctx> Resolver<'_> {
                 // Replace the type 'Named' to the real type in function params and return type
                 let mut params_ty = vec![];
                 let mut ret_ty = Type::any_ref();
-                if let Some(ty_node) = ty_node {
-                    if let ast::Type::Function(fn_ast_type) = &ty_node.node {
-                        if let Some(params_ast_ty) = fn_ast_type.params_ty.as_ref() {
-                            for (ast_ty, ty) in params_ast_ty.iter().zip(fn_ty.params.iter()) {
-                                params_ty.push(Parameter {
-                                    name: ty.name.clone(),
-                                    ty: self.upgrade_named_ty_with_scope(
-                                        ty.ty.clone(),
-                                        range,
-                                        Some(ast_ty.as_ref()),
-                                    ),
-                                    has_default: ty.has_default,
-                                    default_value: ty.default_value.clone(),
-                                    range: ty_node.get_span_pos(),
-                                });
-                            }
+                if let Some(ty_node) = ty_node
+                    && let ast::Type::Function(fn_ast_type) = &ty_node.node
+                {
+                    if let Some(params_ast_ty) = fn_ast_type.params_ty.as_ref() {
+                        for (ast_ty, ty) in params_ast_ty.iter().zip(fn_ty.params.iter()) {
+                            params_ty.push(Parameter {
+                                name: ty.name.clone(),
+                                ty: self.upgrade_named_ty_with_scope(
+                                    ty.ty.clone(),
+                                    range,
+                                    Some(ast_ty.as_ref()),
+                                ),
+                                has_default: ty.has_default,
+                                default_value: ty.default_value.clone(),
+                                range: ty_node.get_span_pos(),
+                            });
                         }
-
-                        ret_ty = if let Some(ret_ast_ty) = fn_ast_type.ret_ty.as_ref() {
-                            self.upgrade_named_ty_with_scope(
-                                fn_ty.return_ty.clone(),
-                                range,
-                                Some(ret_ast_ty.as_ref()),
-                            )
-                        } else {
-                            Type::any_ref()
-                        };
                     }
+
+                    ret_ty = if let Some(ret_ast_ty) = fn_ast_type.ret_ty.as_ref() {
+                        self.upgrade_named_ty_with_scope(
+                            fn_ty.return_ty.clone(),
+                            range,
+                            Some(ret_ast_ty.as_ref()),
+                        )
+                    } else {
+                        Type::any_ref()
+                    };
                 };
 
                 Arc::new(Type::function(

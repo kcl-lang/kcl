@@ -225,7 +225,7 @@ impl<'ctx> Resolver<'_> {
                                 &decorator.node.func,
                                 &decorator.node.args,
                                 &decorator.node.keywords,
-                                &func_ty,
+                                func_ty,
                             );
                             let (arguments, keywords) = self.arguments_to_string(
                                 &decorator.node.args,

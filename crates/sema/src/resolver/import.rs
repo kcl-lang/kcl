@@ -27,7 +27,7 @@ impl<'ctx> Resolver<'ctx> {
                     .program
                     .get_module(module)
                     .expect("Failed to acquire module lock")
-                    .expect(&format!("module {:?} not found in program", module));
+                    .unwrap_or_else(|| panic!("module {:?} not found in program", module));
                 for stmt in &module.body {
                     if let ast::Stmt::Import(import_stmt) = &stmt.node {
                         let pkgpath = &import_stmt.path.node;
@@ -131,7 +131,7 @@ impl<'ctx> Resolver<'ctx> {
                         .program
                         .get_module(module)
                         .expect("Failed to acquire module lock")
-                        .expect(&format!("module {:?} not found in program", module));
+                        .unwrap_or_else(|| panic!("module {:?} not found in program", module));
                     self.ctx.filename = module.filename.clone();
                     for stmt in &module.body {
                         if let ast::Stmt::Import(import_stmt) = &stmt.node {

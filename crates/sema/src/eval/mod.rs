@@ -4,10 +4,7 @@ use std::str::Chars;
 pub fn str_literal_eval(string_lit: &str, is_bytes: bool, is_raw: bool) -> Option<String> {
     let mut chars: std::iter::Peekable<Chars> = string_lit.chars().peekable();
 
-    let quote_char = match chars.next() {
-        Some(c) => c,
-        None => return None,
-    };
+    let quote_char = chars.next()?;
     let mut string_content = String::new();
     // If the next two characters are also the quote character, then we have a triple-quoted
     // string; consume those two characters and ensure that we require a triple-quote to close

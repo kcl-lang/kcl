@@ -33,19 +33,19 @@ impl<'ctx> Resolver<'ctx> {
                         self.set_infer_type_to_scope(
                             &first_var_name.unwrap().node,
                             first_var_ty.clone(),
-                            &first_var_name.unwrap(),
+                            first_var_name.unwrap(),
                         );
                         self.set_infer_type_to_scope(
                             &second_var_name.unwrap().node,
                             second_var_ty.clone(),
-                            &second_var_name.unwrap(),
+                            second_var_name.unwrap(),
                         );
                     } else {
                         first_var_ty = sup(&[item_ty.clone(), first_var_ty.clone()]);
                         self.set_infer_type_to_scope(
                             &first_var_name.unwrap().node,
                             first_var_ty.clone(),
-                            &first_var_name.unwrap(),
+                            first_var_name.unwrap(),
                         );
                     }
                 }
@@ -54,14 +54,14 @@ impl<'ctx> Resolver<'ctx> {
                     self.set_infer_type_to_scope(
                         &first_var_name.unwrap().node,
                         first_var_ty.clone(),
-                        &first_var_name.unwrap(),
+                        first_var_name.unwrap(),
                     );
                     if second_var_name.is_some() {
                         second_var_ty = sup(&[val_ty.clone(), second_var_ty.clone()]);
                         self.set_infer_type_to_scope(
                             &second_var_name.unwrap().node,
                             second_var_ty.clone(),
-                            &second_var_name.unwrap(),
+                            second_var_name.unwrap(),
                         );
                     }
                 }
@@ -71,14 +71,14 @@ impl<'ctx> Resolver<'ctx> {
                     self.set_infer_type_to_scope(
                         &first_var_name.unwrap().node,
                         first_var_ty.clone(),
-                        &first_var_name.unwrap(),
+                        first_var_name.unwrap(),
                     );
                     if second_var_name.is_some() {
                         second_var_ty = sup(&[val_ty, second_var_ty.clone()]);
                         self.set_infer_type_to_scope(
                             &second_var_name.unwrap().node,
                             second_var_ty.clone(),
-                            &second_var_name.unwrap(),
+                            second_var_name.unwrap(),
                         );
                     }
                 }
@@ -89,19 +89,19 @@ impl<'ctx> Resolver<'ctx> {
                         self.set_infer_type_to_scope(
                             &first_var_name.unwrap().node,
                             first_var_ty.clone(),
-                            &first_var_name.unwrap(),
+                            first_var_name.unwrap(),
                         );
                         self.set_infer_type_to_scope(
                             &second_var_name.unwrap().node,
                             second_var_ty.clone(),
-                            &second_var_name.unwrap(),
+                            second_var_name.unwrap(),
                         );
                     } else {
                         first_var_ty = sup(&[self.str_ty(), first_var_ty.clone()]);
                         self.set_infer_type_to_scope(
                             &first_var_name.unwrap().node,
                             first_var_ty.clone(),
-                            &first_var_name.unwrap(),
+                            first_var_name.unwrap(),
                         );
                     }
                 }

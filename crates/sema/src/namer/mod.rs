@@ -141,7 +141,7 @@ impl<'ctx> Namer<'ctx> {
             }
             self.ctx.value_fully_qualified_name_set.clear();
             let mut real_path = Path::new(&self.ctx.program.root)
-                .join(name.replace('.', &std::path::MAIN_SEPARATOR.to_string()))
+                .join(name.replace('.', std::path::MAIN_SEPARATOR_STR))
                 .to_str()
                 .unwrap()
                 .to_string();
@@ -224,7 +224,7 @@ impl<'ctx> Namer<'ctx> {
                 system_pkg_name.to_string(),
             );
             for func_name in get_system_module_members(system_pkg_name) {
-                let func_ty = get_system_member_function_ty(*system_pkg_name, func_name);
+                let func_ty = get_system_member_function_ty(system_pkg_name, func_name);
                 let mut func_symbol = FunctionSymbol::new(
                     func_name.to_string(),
                     Position::dummy_pos(),

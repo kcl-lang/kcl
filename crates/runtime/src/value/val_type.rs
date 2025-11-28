@@ -414,15 +414,13 @@ pub fn check_type(value: &ValueRef, pkgpath: &str, tpe: &str, strict: bool) -> b
         return check_type_list(value, pkgpath, tpe);
     } else if !value.is_none_or_undefined() {
         // if value type is a built-in type e.g. str, int, float, bool
-        if match_builtin_type(value, tpe) {
-            return true;
-        } else if match_function_type(value, tpe) {
+        if match_builtin_type(value, tpe) || match_function_type(value, tpe) {
             return true;
         }
         if value.is_schema() {
             if strict {
                 let value_ty = crate::val_plan::value_type_path(value, true);
-                let tpe = if pkgpath != "" && pkgpath != MAIN_PKG_PATH && !tpe.contains(".") {
+                let tpe = if !pkgpath.is_empty() && pkgpath != MAIN_PKG_PATH && !tpe.contains(".") {
                     format!("{pkgpath}.{tpe}")
                 } else {
                     tpe.to_string()
@@ -642,10 +640,7 @@ pub fn is_type_union(tpe: &str) -> bool {
 /// is number multiplier literal type
 fn is_number_multiplier_literal_type(tpe: &str) -> bool {
     let re = fancy_regex::Regex::new(NUMBER_MULTIPLIER_REGEX).unwrap();
-    match re.is_match(tpe) {
-        Ok(ok) => ok,
-        _ => false,
-    }
+    re.is_match(tpe).unwrap_or_default()
 }
 
 #[inline]
@@ -703,7 +698,7 @@ pub fn split_type_union(tpe: &str) -> Vec<&str> {
 /// e.g., "str:str" -> ("str", "str")
 pub fn separate_kv(expected_type: &str) -> (String, String) {
     let mut stack = String::new();
-    for (n, c) in expected_type.chars().enumerate() {
+    for (n, c) in expected_type.char_indices() {
         if c == '[' || c == '{' {
             stack.push(c)
         } else if c == ']' {

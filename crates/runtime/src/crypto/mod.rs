@@ -14,20 +14,19 @@ use sha2::{Digest, Sha224, Sha256, Sha384, Sha512};
 use crate::*;
 use uuid::Uuid;
 
-#[allow(non_camel_case_types)]
-type kcl_value_ref_t = ValueRef;
-
 // md5(value: str, encoding: str = "utf-8") -> str
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_crypto_md5(
+pub unsafe extern "C-unwind" fn kcl_crypto_md5(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let ctx = mut_ptr_as_ref(ctx);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(s) = get_call_arg_str(args, kwargs, 0, Some("value")) {
         let encoding = get_call_arg_str(args, kwargs, 1, Some("encoding"));
@@ -40,15 +39,17 @@ pub extern "C-unwind" fn kcl_crypto_md5(
 
 // sha1(value: str, encoding: str = "utf-8") -> str
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_crypto_sha1(
+pub unsafe extern "C-unwind" fn kcl_crypto_sha1(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let ctx = mut_ptr_as_ref(ctx);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(s) = get_call_arg_str(args, kwargs, 0, Some("value")) {
         let encoding = get_call_arg_str(args, kwargs, 1, Some("encoding"));
@@ -61,15 +62,17 @@ pub extern "C-unwind" fn kcl_crypto_sha1(
 
 // sha224(value: str, encoding: str = "utf-8") -> str
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_crypto_sha224(
+pub unsafe extern "C-unwind" fn kcl_crypto_sha224(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let ctx = mut_ptr_as_ref(ctx);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(s) = get_call_arg_str(args, kwargs, 0, Some("value")) {
         let encoding = get_call_arg_str(args, kwargs, 1, Some("encoding"));
@@ -92,15 +95,17 @@ pub extern "C-unwind" fn kcl_crypto_sha224(
 
 // sha256(value: str, encoding: str = "utf-8") -> str
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_crypto_sha256(
+pub unsafe extern "C-unwind" fn kcl_crypto_sha256(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let ctx = mut_ptr_as_ref(ctx);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(s) = get_call_arg_str(args, kwargs, 0, Some("value")) {
         let encoding = get_call_arg_str(args, kwargs, 1, Some("encoding"));
@@ -123,15 +128,17 @@ pub extern "C-unwind" fn kcl_crypto_sha256(
 
 // sha384(value: str, encoding: str = "utf-8") -> str
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_crypto_sha384(
+pub unsafe extern "C-unwind" fn kcl_crypto_sha384(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let ctx = mut_ptr_as_ref(ctx);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(s) = get_call_arg_str(args, kwargs, 0, Some("value")) {
         let encoding = get_call_arg_str(args, kwargs, 1, Some("encoding"));
@@ -154,15 +161,17 @@ pub extern "C-unwind" fn kcl_crypto_sha384(
 
 // sha512(value: str, encoding: str = "utf-8") -> str
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_crypto_sha512(
+pub unsafe extern "C-unwind" fn kcl_crypto_sha512(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let ctx = mut_ptr_as_ref(ctx);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(s) = get_call_arg_str(args, kwargs, 0, Some("value")) {
         let encoding = get_call_arg_str(args, kwargs, 1, Some("encoding"));
@@ -185,15 +194,17 @@ pub extern "C-unwind" fn kcl_crypto_sha512(
 
 // blake3(value: str, encoding: str = "utf-8") -> str
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_crypto_blake3(
+pub unsafe extern "C-unwind" fn kcl_crypto_blake3(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let ctx = mut_ptr_as_ref(ctx);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(s) = get_call_arg_str(args, kwargs, 0, Some("value")) {
         let encoding = get_call_arg_str(args, kwargs, 1, Some("encoding"));
@@ -212,25 +223,29 @@ pub extern "C-unwind" fn kcl_crypto_blake3(
     panic!("blake3() missing 1 required positional argument: 'value'");
 }
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_crypto_uuid(
+pub unsafe extern "C-unwind" fn kcl_crypto_uuid(
     ctx: *mut kcl_context_t,
     _args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    return ValueRef::str(Uuid::new_v4().to_string().as_ref()).into_raw(ctx);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    ValueRef::str(Uuid::new_v4().to_string().as_ref()).into_raw(ctx)
 }
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_crypto_filesha256(
+pub unsafe extern "C-unwind" fn kcl_crypto_filesha256(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let ctx = mut_ptr_as_ref(ctx);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(filepath) = get_call_arg_str(args, kwargs, 0, Some("filepath")) {
         // Open the file
@@ -261,15 +276,17 @@ pub extern "C-unwind" fn kcl_crypto_filesha256(
     panic!("filesha256() missing 1 required positional argument: 'filepath'");
 }
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_crypto_filesha512(
+pub unsafe extern "C-unwind" fn kcl_crypto_filesha512(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let ctx = mut_ptr_as_ref(ctx);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(filepath) = get_call_arg_str(args, kwargs, 0, Some("filepath")) {
         let mut file = File::open(&filepath)
@@ -298,15 +315,17 @@ pub extern "C-unwind" fn kcl_crypto_filesha512(
 }
 
 // fileblake3
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_crypto_fileblake3(
+pub unsafe extern "C-unwind" fn kcl_crypto_fileblake3(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let ctx = mut_ptr_as_ref(ctx);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(filepath) = get_call_arg_str(args, kwargs, 0, Some("filepath")) {
         let mut file = File::open(&filepath)

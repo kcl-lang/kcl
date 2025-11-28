@@ -103,6 +103,12 @@ impl LintContext {
     }
 }
 
+impl Default for Linter<CombinedLintPass> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Linter<CombinedLintPass> {
     pub fn new() -> Self {
         Linter::<CombinedLintPass> {
@@ -380,11 +386,9 @@ impl MutSelfWalker for Linter<CombinedLintPass> {
     }
     fn walk_arguments(&mut self, arguments: &ast::Arguments) {
         walk_set_list!(self, walk_identifier, arguments.args);
-        for default in &arguments.defaults {
-            if let Some(d) = default {
-                set_pos!(self, d);
-                self.walk_expr(&d.node)
-            }
+        for d in arguments.defaults.iter().flatten() {
+            set_pos!(self, d);
+            self.walk_expr(&d.node)
         }
     }
     fn walk_compare(&mut self, compare: &ast::Compare) {

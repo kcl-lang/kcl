@@ -63,8 +63,8 @@ pub(crate) fn call_schema_body(
             {
                 schema.ctx.borrow_mut().set_info_with_schema(&ctx.borrow())
             }
-            let value = (schema.body)(s, &schema.ctx, args, kwargs);
-            value
+
+            (schema.body)(s, &schema.ctx, args, kwargs)
         } else {
             ctx.borrow().value.clone()
         }
@@ -99,8 +99,8 @@ pub(crate) fn call_schema_body_from_rule(
             {
                 schema.ctx.borrow_mut().set_info_with_rule(&ctx.borrow())
             }
-            let value = (schema.body)(s, &schema.ctx, args, kwargs);
-            value
+
+            (schema.body)(s, &schema.ctx, args, kwargs)
         } else {
             ctx.borrow().value.clone()
         }

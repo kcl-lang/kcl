@@ -15,28 +15,28 @@ struct OptionHelpExtractor<'ctx> {
 
 impl<'ctx> MutSelfWalker for OptionHelpExtractor<'ctx> {
     fn walk_call_expr(&mut self, call_expr: &ast::CallExpr) {
-        if let ast::Expr::Identifier(identifier) = &call_expr.func.node {
-            if identifier.names.len() == 1 {
-                let node_key = NodeKey {
-                    pkgpath: self.pkgpath.clone(),
-                    id: identifier.names[0].id.clone(),
-                };
-                let symbol_ref = self.packages.node_symbol_map.get(&node_key).unwrap();
-                let symbol = self.packages.symbols.get(symbol_ref).unwrap();
-                let binding = BUILTIN_FUNCTIONS;
-                let builtin_option_type = binding.get("option").unwrap();
-                if !symbol.is_global
-                    && symbol.ty.is_func()
-                    && symbol.ty.ty_str() == builtin_option_type.ty_str()
-                {
-                    self.options.push(OptionHelp {
-                        name: get_call_args_strip_string(call_expr, 0, Some("key")),
-                        ty: get_call_args_strip_string(call_expr, 1, Some("type")),
-                        required: get_call_args_bool(call_expr, 2, Some("required")),
-                        default_value: get_call_args_string(call_expr, 3, Some("default")),
-                        help: get_call_args_strip_string(call_expr, 3, Some("help")),
-                    })
-                }
+        if let ast::Expr::Identifier(identifier) = &call_expr.func.node
+            && identifier.names.len() == 1
+        {
+            let node_key = NodeKey {
+                pkgpath: self.pkgpath.clone(),
+                id: identifier.names[0].id.clone(),
+            };
+            let symbol_ref = self.packages.node_symbol_map.get(&node_key).unwrap();
+            let symbol = self.packages.symbols.get(symbol_ref).unwrap();
+            let binding = BUILTIN_FUNCTIONS;
+            let builtin_option_type = binding.get("option").unwrap();
+            if !symbol.is_global
+                && symbol.ty.is_func()
+                && symbol.ty.ty_str() == builtin_option_type.ty_str()
+            {
+                self.options.push(OptionHelp {
+                    name: get_call_args_strip_string(call_expr, 0, Some("key")),
+                    ty: get_call_args_strip_string(call_expr, 1, Some("type")),
+                    required: get_call_args_bool(call_expr, 2, Some("required")),
+                    default_value: get_call_args_string(call_expr, 3, Some("default")),
+                    help: get_call_args_strip_string(call_expr, 3, Some("help")),
+                })
             }
         }
     }
@@ -59,7 +59,7 @@ pub fn list_options(opts: &LoadPackageOptions) -> Result<Vec<OptionHelp>> {
                 .program
                 .get_module(module)
                 .expect("Failed to acquire module lock")
-                .expect(&format!("module {:?} not found in program", module));
+                .unwrap_or_else(|| panic!("module {:?} not found in program", module));
             extractor.walk_module(&module)
         }
     }

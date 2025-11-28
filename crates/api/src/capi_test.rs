@@ -291,7 +291,7 @@ where
     F: Fn(&mut R),
 {
     let _test_lock = TEST_MUTEX.lock().unwrap();
-    let serv = kcl_service_new(0);
+    let serv = unsafe { kcl_service_new(0) };
 
     let input_path = Path::new(TEST_DATA_PATH).join(input);
     let input = fs::read_to_string(&input_path)
@@ -300,13 +300,15 @@ where
     let args = unsafe { CString::from_vec_unchecked(args_vec.clone()) };
     let call = CString::new(svc_name).unwrap();
     let mut result_len: usize = 0;
-    let src_ptr = kcl_service_call_with_length(
-        serv,
-        call.as_ptr(),
-        args.as_ptr(),
-        args_vec.len(),
-        &mut result_len,
-    );
+    let src_ptr = unsafe {
+        kcl_service_call_with_length(
+            serv,
+            call.as_ptr(),
+            args.as_ptr(),
+            args_vec.len(),
+            &mut result_len,
+        )
+    };
 
     let mut dest_data: Vec<u8> = Vec::with_capacity(result_len);
     unsafe {
@@ -340,7 +342,7 @@ where
     A: Message + DeserializeOwned,
 {
     let _test_lock = TEST_MUTEX.lock().unwrap();
-    let serv = kcl_service_new(0);
+    let serv = unsafe { kcl_service_new(0) };
     let prev_hook = std::panic::take_hook();
     // disable print panic info
     std::panic::set_hook(Box::new(|_info| {}));
@@ -351,7 +353,7 @@ where
         let args_vec = serde_json::from_str::<A>(&input).unwrap().encode_to_vec();
         let args = unsafe { CString::from_vec_unchecked(args_vec.clone()) };
         let call = CString::new(svc_name).unwrap();
-        kcl_service_call(serv, call.as_ptr(), args.as_ptr(), args_vec.len())
+        unsafe { kcl_service_call(serv, call.as_ptr(), args.as_ptr(), args_vec.len()) }
     });
     std::panic::set_hook(prev_hook);
     match result {

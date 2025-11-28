@@ -11,15 +11,17 @@ use crate::*;
 /// Executes the provided function and catches any potential runtime errors.
 /// Returns undefined if execution is successful, otherwise returns an error
 /// message in case of a runtime panic.
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers.
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_runtime_catch(
+pub unsafe extern "C-unwind" fn kcl_runtime_catch(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let ctx = mut_ptr_as_ref(ctx);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(func) = get_call_arg(args, kwargs, 0, Some("func")) {
         let func = func.as_function();
@@ -111,6 +113,7 @@ impl<T> UnsafeWrapper<T> {
     /// # Returns
     ///
     /// A mutable reference to the inner value of type T.
+    #[allow(clippy::mut_from_ref)]
     pub unsafe fn get(&self) -> &mut T {
         unsafe { &mut *self.value.get() }
     }

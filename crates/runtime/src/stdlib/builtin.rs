@@ -80,6 +80,7 @@ impl ValueRef {
         }
     }
 
+    #[allow(clippy::mutable_key_type)]
     pub fn isunique(&self) -> bool {
         match &*self.rc.borrow() {
             Value::list_value(list) => {
@@ -629,7 +630,7 @@ pub fn type_of(x: &ValueRef, full_name: &ValueRef) -> ValueRef {
     } else if x.is_none() {
         return ValueRef::str("None");
     }
-    return ValueRef::str(x.type_str().as_str());
+    ValueRef::str(x.type_str().as_str())
 }
 
 #[cfg(test)]

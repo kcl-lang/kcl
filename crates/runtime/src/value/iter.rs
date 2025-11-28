@@ -3,25 +3,13 @@
 use crate::*;
 
 #[repr(C)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ValueIterator {
     pub len: usize,
     pub cur_key: ValueRef,
     pub cur_val: ValueRef,
     pub keys: Vec<String>,
     pub pos: i32,
-}
-
-impl Default for ValueIterator {
-    fn default() -> Self {
-        Self {
-            len: 0,
-            cur_key: Default::default(),
-            cur_val: Default::default(),
-            keys: Vec::new(),
-            pos: 0,
-        }
-    }
 }
 
 impl ValueIterator {

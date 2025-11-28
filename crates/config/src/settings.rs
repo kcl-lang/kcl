@@ -451,10 +451,10 @@ pub fn build_settings_pathbuf(
     } else {
         settings
     };
-    if let Some(config) = &mut settings.kcl_cli_configs {
-        if !files.is_empty() {
-            config.files = Some(files.iter().map(|f| f.to_string()).collect());
-        }
+    if let Some(config) = &mut settings.kcl_cli_configs
+        && !files.is_empty()
+    {
+        config.files = Some(files.iter().map(|f| f.to_string()).collect());
     }
     Ok(SettingsPathBuf::new(path, settings))
 }

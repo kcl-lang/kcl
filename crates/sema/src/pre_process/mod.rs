@@ -25,7 +25,7 @@ pub fn pre_process_program(program: &mut ast::Program, opts: &Options) {
                 let module = program
                     .get_module(module)
                     .expect("Failed to acquire module lock")
-                    .expect(&format!("module {:?} not found in program", module));
+                    .unwrap_or_else(|| panic!("module {:?} not found in program", module));
                 for stmt in &module.body {
                     if let ast::Stmt::Import(import_stmt) = &stmt.node {
                         import_names
@@ -38,7 +38,7 @@ pub fn pre_process_program(program: &mut ast::Program, opts: &Options) {
             let mut module = program
                 .get_module_mut(module)
                 .expect("Failed to acquire module lock")
-                .expect(&format!("module {:?} not found in program", module));
+                .unwrap_or_else(|| panic!("module {:?} not found in program", module));
             if pkgpath != kcl_ast::MAIN_PKG {
                 import_names.clear();
             }

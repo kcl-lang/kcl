@@ -10,79 +10,79 @@ struct ConfigNestAttrTransformer;
 
 impl ConfigNestAttrTransformer {
     pub fn walk_config_entry(&mut self, config_entry: &mut Box<ast::Node<ast::ConfigEntry>>) {
-        if let Some(key) = config_entry.node.key.as_mut() {
-            if let ast::Expr::Identifier(identifier) = &mut key.node {
-                // desuger config expr, e.g., desuger
-                // ```
-                // foo = Foo {
-                //     bar.baz : xxx
-                // }
-                // ```
-                // to:
-                // ```
-                // foo = Foo {
-                //     bar : Bar {
-                //         baz : xxx
-                //     }
-                // }
-                // ```
-                if identifier.names.len() > 1 {
-                    let mut names = identifier.names.clone();
-                    let names = &mut names[1..];
-                    names.reverse();
-                    identifier.names = vec![identifier.names[0].clone()];
-                    key.filename = identifier.names[0].filename.clone();
-                    key.line = identifier.names[0].line;
-                    key.column = identifier.names[0].column;
-                    key.end_line = identifier.names[0].end_line;
-                    key.end_column = identifier.names[0].end_column;
+        if let Some(key) = config_entry.node.key.as_mut()
+            && let ast::Expr::Identifier(identifier) = &mut key.node
+        {
+            // desuger config expr, e.g., desuger
+            // ```
+            // foo = Foo {
+            //     bar.baz : xxx
+            // }
+            // ```
+            // to:
+            // ```
+            // foo = Foo {
+            //     bar : Bar {
+            //         baz : xxx
+            //     }
+            // }
+            // ```
+            if identifier.names.len() > 1 {
+                let mut names = identifier.names.clone();
+                let names = &mut names[1..];
+                names.reverse();
+                identifier.names = vec![identifier.names[0].clone()];
+                key.filename = identifier.names[0].filename.clone();
+                key.line = identifier.names[0].line;
+                key.column = identifier.names[0].column;
+                key.end_line = identifier.names[0].end_line;
+                key.end_column = identifier.names[0].end_column;
 
-                    let mut value = config_entry.node.value.clone();
-                    for (i, name) in names.iter().enumerate() {
-                        let is_last_item = i == 0;
-                        let name_node = ast::Identifier {
-                            names: vec![name.clone()],
-                            pkgpath: "".to_string(),
-                            ctx: ast::ExprContext::Load,
-                        };
-                        let entry_value = ast::ConfigEntry {
-                            key: Some(Box::new(ast::Node::new(
-                                ast::Expr::Identifier(name_node),
-                                name.filename.clone(),
-                                name.line,
-                                name.column,
-                                name.end_line,
-                                name.end_column,
-                            ))),
-                            value: value.clone(),
-                            operation: if is_last_item {
-                                config_entry.node.operation.clone()
-                            } else {
-                                ast::ConfigEntryOperation::Union
-                            },
-                        };
-                        let config_expr = ast::ConfigExpr {
-                            items: vec![Box::new(ast::Node::new(
-                                entry_value,
-                                config_entry.filename.clone(),
-                                name.line,
-                                name.column,
-                                config_entry.end_line,
-                                config_entry.end_column,
-                            ))],
-                        };
-                        value = Box::new(ast::Node::new(
-                            ast::Expr::Config(config_expr),
-                            value.filename.clone(),
+                let mut value = config_entry.node.value.clone();
+                for (i, name) in names.iter().enumerate() {
+                    let is_last_item = i == 0;
+                    let name_node = ast::Identifier {
+                        names: vec![name.clone()],
+                        pkgpath: "".to_string(),
+                        ctx: ast::ExprContext::Load,
+                    };
+                    let entry_value = ast::ConfigEntry {
+                        key: Some(Box::new(ast::Node::new(
+                            ast::Expr::Identifier(name_node),
+                            name.filename.clone(),
                             name.line,
                             name.column,
-                            value.end_line,
-                            value.end_column,
-                        ))
-                    }
-                    config_entry.node.value = value;
-                    config_entry.node.operation = ast::ConfigEntryOperation::Union;
+                            name.end_line,
+                            name.end_column,
+                        ))),
+                        value: value.clone(),
+                        operation: if is_last_item {
+                            config_entry.node.operation.clone()
+                        } else {
+                            ast::ConfigEntryOperation::Union
+                        },
+                    };
+                    let config_expr = ast::ConfigExpr {
+                        items: vec![Box::new(ast::Node::new(
+                            entry_value,
+                            config_entry.filename.clone(),
+                            name.line,
+                            name.column,
+                            config_entry.end_line,
+                            config_entry.end_column,
+                        ))],
+                    };
+                    value = Box::new(ast::Node::new(
+                        ast::Expr::Config(config_expr),
+                        value.filename.clone(),
+                        name.line,
+                        name.column,
+                        value.end_line,
+                        value.end_column,
+                    ))
                 }
+                config_entry.node.value = value;
+                config_entry.node.operation = ast::ConfigEntryOperation::Union;
             }
         }
     }
@@ -216,13 +216,11 @@ impl ConfigMergeTransformer {
                                 {
                                     if let ast::Expr::Schema(schema_expr) =
                                         &mut assign_stmt.value.node
-                                    {
-                                        if let ast::Expr::Config(config_expr) =
+                                        && let ast::Expr::Config(config_expr) =
                                             &mut schema_expr.config.node
-                                        {
-                                            let mut config_items = config_expr.items.clone();
-                                            items.append(&mut config_items);
-                                        }
+                                    {
+                                        let mut config_items = config_expr.items.clone();
+                                        items.append(&mut config_items);
                                     }
                                 }
                                 _ => {
@@ -251,12 +249,10 @@ impl ConfigMergeTransformer {
                                 {
                                     if let ast::Expr::Schema(schema_expr) =
                                         &mut assign_stmt.value.node
-                                    {
-                                        if let ast::Expr::Config(config_expr) =
+                                        && let ast::Expr::Config(config_expr) =
                                             &mut schema_expr.config.node
-                                        {
-                                            config_expr.items = unify_config_entries(&items);
-                                        }
+                                    {
+                                        config_expr.items = unify_config_entries(&items);
                                     }
                                 }
                                 _ => bug!(
@@ -362,5 +358,5 @@ pub fn merge_program(program: &mut ast::Program) {
 /// --------
 /// {a.b.c = 1} -> {a: {b: {c = 1}}}
 pub fn fix_config_expr_nest_attr(module: &mut ast::Module) {
-    ConfigNestAttrTransformer::default().walk_module(module);
+    ConfigNestAttrTransformer.walk_module(module);
 }

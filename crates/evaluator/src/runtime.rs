@@ -23,24 +23,21 @@ pub fn invoke_function(
         let fn_ptr = func.fn_ptr;
         let closure = &func.closure;
         if is_runtime_catch_function(fn_ptr) {
-            let value = runtime_catch(s, args, kwargs);
-            return value;
+            runtime_catch(s, args, kwargs)
         } else {
             let ctx: &mut Context = &mut s.runtime_ctx.borrow_mut();
-            unsafe {
-                // Call schema constructor twice
-                let value = if func.is_external {
-                    let name = format!("{}\0", func.name);
-                    kcl_plugin_invoke(ctx, name.as_ptr() as *const c_char, args, kwargs)
-                } else {
-                    let call_fn: SchemaTypeFunc = transmute_copy(&fn_ptr);
-                    args.list_append_unpack_first(closure);
-                    let args = args.clone().into_raw(ctx);
-                    call_fn(ctx, args, kwargs)
-                };
-                let value = ptr_as_ref(value);
-                value.clone()
-            }
+            // Call schema constructor twice
+            let value = if func.is_external {
+                let name = format!("{}\0", func.name);
+                unsafe { kcl_plugin_invoke(ctx, name.as_ptr() as *const c_char, args, kwargs) }
+            } else {
+                let call_fn: SchemaTypeFunc = unsafe { transmute_copy(&fn_ptr) };
+                args.list_append_unpack_first(closure);
+                let args = args.clone().into_raw(ctx);
+                unsafe { call_fn(ctx, args, kwargs) }
+            };
+            let value = unsafe { ptr_as_ref(value) };
+            value.clone()
         }
     } else {
         ValueRef::undefined()

@@ -80,7 +80,7 @@ pub fn get_target_path(key: &ast::Target) -> String {
                 match &index.node {
                     ast::Expr::Unary(unary_expr) => match &unary_expr.operand.node {
                         ast::Expr::NumberLit(number) => {
-                            result.push_str(&unary_expr.op.symbol());
+                            result.push_str(unary_expr.op.symbol());
                             result.push_str(&number.to_string());
                         }
                         _ => {

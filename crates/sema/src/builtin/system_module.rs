@@ -2482,7 +2482,5 @@ pub fn get_system_member_function_ty(name: &str, func: &str) -> TypeRef {
         }
         _ => None,
     };
-    optional_ty
-        .map(|ty| Arc::new(ty))
-        .unwrap_or(Type::any_ref())
+    optional_ty.map(Arc::new).unwrap_or(Type::any_ref())
 }

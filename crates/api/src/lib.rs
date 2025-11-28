@@ -55,17 +55,19 @@ pub fn call_with_plugin_agent<'a>(
 ) -> Result<Vec<u8>> {
     let mut result_len: usize = 0;
     let result_ptr = {
-        let serv = kcl_service_new(plugin_agent);
+        let serv = unsafe { kcl_service_new(plugin_agent) };
         let args_len = args.len();
         let name = unsafe { CString::from_vec_unchecked(name.to_vec()) };
         let args = unsafe { CString::from_vec_unchecked(args.to_vec()) };
-        kcl_service_call_with_length(
-            serv,
-            name.as_ptr(),
-            args.as_ptr() as *const c_char,
-            args_len,
-            &mut result_len,
-        )
+        unsafe {
+            kcl_service_call_with_length(
+                serv,
+                name.as_ptr(),
+                args.as_ptr() as *const c_char,
+                args_len,
+                &mut result_len,
+            )
+        }
     };
     let result = unsafe {
         let mut dest_data: Vec<u8> = Vec::with_capacity(result_len);
@@ -82,8 +84,10 @@ pub fn call_with_plugin_agent<'a>(
 /// The first two parameters represent the name and length of the calling method, the middle two parameters represent
 /// the Protobuf byte sequence and length of the calling parameter, and the return parameter is the byte sequence and
 /// length of Protobuf.
+/// # Safety
+/// The caller must ensure that `name_ptr`, `args_ptr`, and `result_ptr`
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn call_native(
+pub unsafe extern "C-unwind" fn call_native(
     name_ptr: *const u8,
     name_len: usize,
     args_ptr: *const u8,

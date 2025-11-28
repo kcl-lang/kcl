@@ -530,7 +530,7 @@ fn find_packages(
 /// It returns the parent directory of kcl.mod if present, or none if not.
 fn pkg_exists(pkgroots: &[String], pkgpath: &str) -> Option<String> {
     pkgroots
-        .into_iter()
+        .iter()
         .find(|root| pkg_exists_in_path(root, pkgpath))
         .cloned()
 }
@@ -658,7 +658,7 @@ fn is_external_pkg(pkg_path: &str, opts: &LoadProgramOptions) -> Result<Option<P
     };
 
     if external_pkg_root.exists() {
-        return Ok(Some(match external_pkg_root.parent() {
+        Ok(Some(match external_pkg_root.parent() {
             Some(root) => {
                 let abs_root: String = match root.canonicalize() {
                     Ok(p) => p.to_str().unwrap().to_string(),
@@ -673,7 +673,7 @@ fn is_external_pkg(pkg_path: &str, opts: &LoadProgramOptions) -> Result<Option<P
                 )
             }
             None => return Ok(None),
-        }));
+        }))
     } else {
         Ok(None)
     }
@@ -702,7 +702,7 @@ pub fn parse_file(
     };
     let m = parse_file_with_session(sess.clone(), file.get_path().to_str().unwrap(), src)?;
     let deps = get_deps(&file, &m, pkgs, pkgmap, opts, sess)?;
-    let dep_files = deps.keys().map(|f| f.clone()).collect();
+    let dep_files = deps.keys().cloned().collect();
     pkgmap.extend(deps.clone());
     match &mut module_cache.write() {
         Ok(module_cache) => {
@@ -773,7 +773,7 @@ pub fn get_deps(
                         file.clone(),
                         file_graph::Pkg {
                             pkg_name: pkg_info.pkg_name.clone(),
-                            pkg_root: pkg_info.pkg_root.clone().into(),
+                            pkg_root: pkg_info.pkg_root.clone(),
                         },
                     );
                 });
@@ -874,7 +874,7 @@ pub fn parse_entry(
                         get_deps(&file, &m.read().unwrap(), pkgs, pkgmap, opts, sess.clone())
                             .unwrap()
                     });
-                    let dep_files: Vec<PkgFile> = deps.keys().map(|f| f.clone()).collect();
+                    let dep_files: Vec<PkgFile> = deps.keys().cloned().collect();
                     pkgmap.extend(deps.clone());
 
                     match &mut file_graph.write() {
@@ -903,7 +903,7 @@ pub fn parse_entry(
                         pkgs,
                         pkgmap,
                         file_graph.clone(),
-                        &opts,
+                        opts,
                     )?;
                     for dep in deps {
                         if parsed_file.insert(dep.clone()) {
@@ -927,7 +927,7 @@ pub fn parse_program(
     parsed_file: &mut HashSet<PkgFile>,
     opts: &LoadProgramOptions,
 ) -> Result<LoadProgramResult> {
-    let compile_entries = get_compile_entries_from_paths(&paths, &opts)?;
+    let compile_entries = get_compile_entries_from_paths(&paths, opts)?;
     let workdir = compile_entries
         .get_root_path()
         .to_string()
@@ -942,7 +942,7 @@ pub fn parse_program(
             &mut pkgs,
             pkgmap,
             file_graph.clone(),
-            &opts,
+            opts,
             parsed_file,
         )?);
     }
@@ -987,17 +987,14 @@ pub fn parse_program(
             Ok(module_cache) => module_cache
                 .ast_cache
                 .get(file.get_path())
-                .expect(&format!(
-                    "Module not found in module: {:?}",
-                    file.get_path()
-                ))
+                .unwrap_or_else(|| panic!("Module not found in module: {:?}", file.get_path()))
                 .clone(),
             Err(e) => return Err(anyhow::anyhow!("Parse program failed: {e}")),
         };
         if new_files.contains(file) {
             let pkg = pkgmap.get(file).expect("file not in pkgmap");
             let mut m = m_ref.write().unwrap();
-            fix_rel_import_path_with_file(&pkg.pkg_root, &mut m, file, &pkgmap, opts, sess.clone());
+            fix_rel_import_path_with_file(&pkg.pkg_root, &mut m, file, pkgmap, opts, sess.clone());
         }
         modules.insert(filename.clone(), m_ref);
         match pkgs.get_mut(&file.pkg_path) {
@@ -1089,14 +1086,13 @@ pub fn load_all_files_under_paths(
                         if !k_files_from_import.contains(p) {
                             let pkgfile = PkgFile::new(p.clone(), pkg.clone());
                             let module_cache_read = module_cache.read();
-                            match &module_cache_read {
-                                Ok(m_cache) => match m_cache.ast_cache.get(pkgfile.get_path()) {
+                            if let Ok(m_cache) = &module_cache_read {
+                                match m_cache.ast_cache.get(pkgfile.get_path()) {
                                     Some(_) => continue,
                                     None => {
                                         unparsed_file.push_back(pkgfile);
                                     }
-                                },
-                                _ => {}
+                                }
                             }
                         }
                     }
@@ -1130,10 +1126,12 @@ pub fn load_all_files_under_paths(
                                     Ok(module_cache) => module_cache
                                         .ast_cache
                                         .get(file.get_path())
-                                        .expect(&format!(
-                                            "Module not found in module: {:?}",
-                                            file.get_path()
-                                        ))
+                                        .unwrap_or_else(|| {
+                                            panic!(
+                                                "Module not found in module: {:?}",
+                                                file.get_path()
+                                            )
+                                        })
                                         .clone(),
                                     Err(e) => {
                                         return Err(anyhow::anyhow!("Parse program failed: {e}"));
@@ -1170,10 +1168,9 @@ pub fn load_all_files_under_paths(
                         Ok(module_cache) => module_cache
                             .ast_cache
                             .get(file.get_path())
-                            .expect(&format!(
-                                "Module not found in module: {:?}",
-                                file.get_path()
-                            ))
+                            .unwrap_or_else(|| {
+                                panic!("Module not found in module: {:?}", file.get_path())
+                            })
                             .clone(),
                         Err(e) => return Err(anyhow::anyhow!("Parse program failed: {e}")),
                     };
@@ -1188,9 +1185,9 @@ pub fn load_all_files_under_paths(
                     }
                 }
                 sess.1.write().diagnostics = diag;
-                return Ok(res);
+                Ok(res)
             }
-            e => return e,
+            e => e,
         }
     })
 }

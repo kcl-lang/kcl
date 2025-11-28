@@ -82,20 +82,18 @@ impl LazyEvalScope {
     pub fn is_last_setter_ast_index(&mut self, key: &str, id: &AstIndex) -> bool {
         if self.is_backtracking(key) {
             false
-        } else {
-            if let Some(setters) = self.setters.get(key) {
-                if let Some(s) = setters.last() {
-                    if let Some(stopped) = &s.stopped {
-                        stopped == id
-                    } else {
-                        &s.stmt_id == id
-                    }
+        } else if let Some(setters) = self.setters.get(key) {
+            if let Some(s) = setters.last() {
+                if let Some(stopped) = &s.stopped {
+                    stopped == id
                 } else {
-                    false
+                    &s.stmt_id == id
                 }
             } else {
                 false
             }
+        } else {
+            false
         }
     }
 }
@@ -197,6 +195,7 @@ impl<'ctx> Evaluator<'ctx> {
     }
 
     /// Emit setter functions for the AST body.
+    #[allow(clippy::only_used_in_recursion)]
     pub(crate) fn emit_setters_with(
         &self,
         body: &'ctx [Box<ast::Node<ast::Stmt>>],
