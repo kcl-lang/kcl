@@ -1,4 +1,4 @@
-name: Build and Test on Linux AMD64
+name: Build and Test on Linux MUSL AMD64
 on:
   pull_request:
     branches:
