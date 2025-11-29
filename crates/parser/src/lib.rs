@@ -1,4 +1,5 @@
 #![allow(clippy::arc_with_non_send_sync)]
+#![allow(clippy::type_complexity)]
 //! Copyright The KCL Authors. All rights reserved.
 
 pub mod entry;
@@ -683,6 +684,7 @@ fn is_external_pkg(pkg_path: &str, opts: &LoadProgramOptions) -> Result<Option<P
 pub type ASTCache = Arc<RwLock<IndexMap<PathBuf, Arc<ast::Module>>>>;
 pub type FileGraphCache = Arc<RwLock<PkgFileGraph>>;
 
+#[allow(clippy::too_many_arguments)]
 pub fn parse_file(
     sess: ParseSessionRef,
     file: PkgFile,
@@ -810,6 +812,7 @@ pub fn parse_pkg(
     Ok(dependent)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn parse_entry(
     sess: ParseSessionRef,
     entry: &entry::Entry,

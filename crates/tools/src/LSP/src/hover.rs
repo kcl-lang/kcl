@@ -83,8 +83,8 @@ pub fn hover(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Hover> {
                         if !schema_ty.examples.is_empty() {
                             let examples = schema_ty
                                 .examples
-                                .iter()
-                                .map(|(_, example)| format!("{}\n", example.value))
+                                .values()
+                                .map(|example| format!("{}\n", example.value))
                                 .collect::<Vec<String>>()
                                 .join("\n");
                             docs.push((examples, MarkedStringType::LanguageString));

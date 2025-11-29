@@ -146,7 +146,7 @@ impl Reader {
 
     fn read_to_next_unindented_line(&mut self) -> Vec<String> {
         fn is_unindented(line: &str) -> bool {
-            return !line.trim().is_empty() && line.trim_start().len() == line.len();
+            !line.trim().is_empty() && line.trim_start().len() == line.len()
         }
 
         self.read_to_condition(&is_unindented)
@@ -160,9 +160,9 @@ impl Reader {
                 "".to_string()
             }
         } else if self.l >= n {
-            return self.data[self.l - n].clone();
+            self.data[self.l - n].clone()
         } else {
-            return "".to_string();
+            "".to_string()
         }
     }
 }

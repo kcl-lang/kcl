@@ -126,7 +126,7 @@ impl<'ctx> Resolver<'_> {
                 }
             } else {
                 self.handler
-                    .add_compile_error(&"missing argument".to_string(), kw.get_span_pos());
+                    .add_compile_error("missing argument", kw.get_span_pos());
             }
             prev_kw_pos = Some(kw.get_end_pos());
         }

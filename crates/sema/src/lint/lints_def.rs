@@ -1,5 +1,5 @@
-use crate::lint::lint::{Lint, LintArray, LintContext};
 use crate::lint::lintpass::LintPass;
+use crate::lint::types::{Lint, LintArray, LintContext};
 use crate::resolver::scope::Scope;
 use crate::{declare_lint_pass, resolver::scope::ScopeObjectKind};
 use kcl_ast::ast;
@@ -37,7 +37,7 @@ impl LintPass for ImportPosition {
         _ctx: &mut LintContext,
         module: &ast::Module,
     ) {
-        let mut first_non_importstmt = std::u64::MAX;
+        let mut first_non_importstmt = u64::MAX;
         for stmt in &module.body {
             match &stmt.node {
                 ast::Stmt::Import(_import_stmt) => {}

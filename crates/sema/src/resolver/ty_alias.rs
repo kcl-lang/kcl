@@ -130,12 +130,12 @@ impl<'ctx> MutSelfMutWalker<'ctx> for TypeAliasTransformer {
 
 /// Replace type alias.
 fn fix_type_alias_identifier(
-    pkg: &String,
+    pkg: &str,
     module: &mut ast::Module,
     type_alias_mapping: IndexMap<String, String>,
 ) {
     let mut type_alias_transformer = TypeAliasTransformer {
-        pkgpath: pkg.clone(),
+        pkgpath: pkg.to_string(),
         type_alias_mapping,
     };
     type_alias_transformer.walk_module(module);

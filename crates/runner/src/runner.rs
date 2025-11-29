@@ -138,7 +138,7 @@ impl MapErrorResult for Result<ExecProgramResult> {
 
 impl ExecProgramArgs {
     /// Deserialize an instance of type [ExecProgramArgs] from a string of JSON text.
-    pub fn from_str(s: &str) -> Self {
+    pub fn from_json(s: &str) -> Self {
         if s.trim().is_empty() {
             return Default::default();
         }

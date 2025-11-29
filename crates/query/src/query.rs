@@ -12,20 +12,15 @@ use kcl_sema::{
 };
 
 /// Get schema type kind.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum GetSchemaOption {
     /// Get schema instances.
     Instances,
     /// Get schema definitions.
     Definitions,
     /// Get schema instances and definitions
+    #[default]
     All,
-}
-
-impl Default for GetSchemaOption {
-    fn default() -> Self {
-        GetSchemaOption::All
-    }
 }
 
 /// Get schema types from a kcl file or code.
@@ -247,6 +242,7 @@ fn get_full_schema_type_recursive(schema_ty: SchemaType) -> Result<SchemaType> {
     Ok(result)
 }
 
+#[allow(clippy::arc_with_non_send_sync)]
 fn resolve_file(opts: &CompilationOptions) -> Result<Rc<RefCell<Scope>>> {
     let sess = Arc::new(ParseSession::default());
     let mut program = match load_program(
@@ -267,6 +263,7 @@ fn resolve_file(opts: &CompilationOptions) -> Result<Rc<RefCell<Scope>>> {
     }
 }
 
+#[allow(clippy::arc_with_non_send_sync)]
 fn resolve_paths(opts: &CompilationOptions) -> Result<ProgramScope> {
     let sess = Arc::new(ParseSession::default());
     let mut program = load_all_files_under_paths(

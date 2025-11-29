@@ -124,7 +124,7 @@ impl<'ctx> Namer<'ctx> {
         namer.define_symbols();
     }
 
-    fn walk_pkg(&mut self, name: &String, modules: &Vec<String>) {
+    fn walk_pkg(&mut self, name: &str, modules: &[String]) {
         // new pkgs or invalidate pkg
         if self.gs.get_packages().get_package_info(name).is_some()
             && !self.gs.new_or_invalidate_pkgs.contains(name)
@@ -133,7 +133,7 @@ impl<'ctx> Namer<'ctx> {
         }
 
         // add new pkgs to invalidate pkgs
-        self.gs.new_or_invalidate_pkgs.insert(name.clone());
+        self.gs.new_or_invalidate_pkgs.insert(name.to_string());
 
         {
             if modules.is_empty() {
@@ -154,7 +154,7 @@ impl<'ctx> Namer<'ctx> {
                 column: None,
             };
 
-            let pkg_symbol = PackageSymbol::new(name.clone(), pkg_pos.clone(), pkg_pos);
+            let pkg_symbol = PackageSymbol::new(name.to_string(), pkg_pos.clone(), pkg_pos);
             let symbol_ref = self
                 .gs
                 .get_symbols_mut()

@@ -55,7 +55,7 @@
 //!    ```
 //!
 //! 5. Add the new lintpass to the macro `default_lint_passes` in lintpass.rs , noting that `:` is preceded and followed by
-//! the name of the lintpass. e.g.,
+//!    the name of the lintpass. e.g.,
 //!
 //!    ```ignore
 //!    macro_rules! default_lint_passes {
@@ -71,20 +71,20 @@
 //!    ```
 //!
 //! 6. If new `check_*` method was added in step 4, it needs to override the walk_* method in Linter.
-//! In addition to calling the self.pass.check_* function, the original walk method in MutSelfWalker
-//! should be copied here so that it can continue to traverse the child nodes.
+//!    In addition to calling the self.pass.check_* function, the original walk method in MutSelfWalker
+//!    should be copied here so that it can continue to traverse the child nodes.
 
 use crate::resolver::{Resolver, scope::Scope};
 use kcl_ast::pos::GetPos;
 use kcl_error::{Handler, Position};
 mod combinedlintpass;
-mod lint;
 mod lintpass;
 mod lints_def;
+mod types;
 use kcl_ast::ast;
 use kcl_ast::walker::MutSelfWalker;
 
-pub use self::{combinedlintpass::CombinedLintPass, lint::LintContext, lintpass::LintPass};
+pub use self::{combinedlintpass::CombinedLintPass, lintpass::LintPass, types::LintContext};
 
 /// The struct `Linter` is used to traverse the AST and call the `check_*` method defined in `CombinedLintPass`.
 pub struct Linter<T: LintPass> {

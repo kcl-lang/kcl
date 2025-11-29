@@ -91,9 +91,6 @@ impl Ord for CachedLocation {
 
 impl PartialOrd for CachedLocation {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        match self.line.partial_cmp(&other.line) {
-            Some(core::cmp::Ordering::Equal) => self.column.partial_cmp(&other.column),
-            ord => ord,
-        }
+        Some(self.cmp(other))
     }
 }

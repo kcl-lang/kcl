@@ -133,11 +133,11 @@ impl<'ctx> AdvancedResolver<'ctx> {
         Ok(())
     }
 
-    fn scan_schemas(&mut self, name: &String, modules: &Vec<String>) -> anyhow::Result<()> {
+    fn scan_schemas(&mut self, name: &str, modules: &[String]) -> anyhow::Result<()> {
         if !self.gs.new_or_invalidate_pkgs.contains(name) {
             return Ok(());
         }
-        self.ctx.current_pkgpath = Some(name.clone());
+        self.ctx.current_pkgpath = Some(name.to_string());
         if let Some(pkg_info) = self.gs.get_packages().get_package_info(name) {
             if modules.is_empty() {
                 return Ok(());
@@ -147,7 +147,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
             }
 
             self.enter_root_scope(
-                name.clone(),
+                name.to_string(),
                 pkg_info.pkg_filepath.clone(),
                 pkg_info.kfile_paths.clone(),
             );
@@ -163,11 +163,11 @@ impl<'ctx> AdvancedResolver<'ctx> {
         Ok(())
     }
 
-    fn walk_pkg(&mut self, name: &String, modules: &Vec<String>) -> anyhow::Result<()> {
+    fn walk_pkg(&mut self, name: &str, modules: &[String]) -> anyhow::Result<()> {
         if !self.gs.new_or_invalidate_pkgs.contains(name) {
             return Ok(());
         }
-        self.ctx.current_pkgpath = Some(name.clone());
+        self.ctx.current_pkgpath = Some(name.to_string());
         if self.gs.get_packages().get_package_info(name).is_some() {
             if modules.is_empty() {
                 return Ok(());

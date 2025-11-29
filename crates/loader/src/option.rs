@@ -24,7 +24,7 @@ impl<'ctx> MutSelfWalker for OptionHelpExtractor<'ctx> {
             };
             let symbol_ref = self.packages.node_symbol_map.get(&node_key).unwrap();
             let symbol = self.packages.symbols.get(symbol_ref).unwrap();
-            let binding = BUILTIN_FUNCTIONS;
+            let binding = &BUILTIN_FUNCTIONS;
             let builtin_option_type = binding.get("option").unwrap();
             if !symbol.is_global
                 && symbol.ty.is_func()

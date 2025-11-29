@@ -385,7 +385,7 @@ impl GlobalState {
                 scope.contains_pos(&symbol.get_range().0)
                     && scope.contains_pos(&symbol.get_range().1)
             })
-            .map(|s| *s)
+            .copied()
             .collect();
         Some(symbols)
     }

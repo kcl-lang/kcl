@@ -431,33 +431,24 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
                 self.expr(value)
             };
             match &schema_attr.op {
-                Some(bin_or_aug) => match bin_or_aug {
-                    // Union
-                    ast::AugOp::BitOr => {
-                        let op = ast::BinOp::BitOr;
-                        let value_ty = self.binary(
-                            value_ty,
-                            expected_ty.clone(),
-                            &op,
-                            schema_attr.name.get_span_pos(),
-                        );
-                        self.must_assignable_to(
-                            value_ty,
-                            expected_ty,
-                            schema_attr.name.get_span_pos(),
-                            None,
-                        );
-                    }
-                    // Assign
-                    _ => self.must_assignable_to(
+                // Union operator
+                Some(ast::AugOp::BitOr) => {
+                    let op = ast::BinOp::BitOr;
+                    let value_ty = self.binary(
+                        value_ty,
+                        expected_ty.clone(),
+                        &op,
+                        schema_attr.name.get_span_pos(),
+                    );
+                    self.must_assignable_to(
                         value_ty,
                         expected_ty,
                         schema_attr.name.get_span_pos(),
                         None,
-                    ),
-                },
+                    );
+                }
                 // Default is Assign
-                None => self.must_assignable_to(
+                _ => self.must_assignable_to(
                     value_ty,
                     expected_ty,
                     schema_attr.name.get_span_pos(),

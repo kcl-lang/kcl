@@ -36,7 +36,7 @@ jobs:
           override: true
           components: clippy, rustfmt
 
-      - name: KCL Lib GLIBC 2.17 Build and Release
+      - name: KCL Lib MUSL Build and Release
         shell: bash
         run: |
           pip3 install ziglang
@@ -44,7 +44,7 @@ jobs:
           rustup target add x86_64-unknown-linux-musl
           cargo zigbuild --target x86_64-unknown-linux-musl -r -p kcl-lib
           mkdir -p _build/dist/linux
-          cp -f target/x86_64-unknown-linux-musl/release/libkcl.so _build/dist/linux
+          cp -f target/x86_64-unknown-linux-musl/release/libkcl.a _build/dist/linux
           make release
 
       - name: Read VERSION file

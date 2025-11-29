@@ -1133,11 +1133,11 @@ impl<'ctx> AdvancedResolver<'_> {
             let module_info = self.get_current_module_info().unwrap();
 
             let import_info = module_info.get_import_info(&first_name.node);
-            if import_info.is_some() && !maybe_def {
+            if let Some(import_info) = import_info && !maybe_def {
                 first_symbol = self
                     .gs
                     .get_symbols()
-                    .get_symbol_by_fully_qualified_name(&import_info.unwrap().fully_qualified_name);
+                    .get_symbol_by_fully_qualified_name(&import_info.fully_qualified_name);
             }
 
             if let Some(first_symbol) = first_symbol
@@ -1188,31 +1188,24 @@ impl<'ctx> AdvancedResolver<'_> {
                     self.ctx.current_pkgpath.clone().unwrap(),
                 );
 
-                match cur_scope.get_kind() {
-                    crate::core::scope::ScopeKind::Local => {
-                        let local_scope = self
-                            .gs
-                            .get_scopes()
-                            .try_get_local_scope(&cur_scope)
-                            .unwrap();
-                        match local_scope.get_kind() {
-                            LocalSymbolScopeKind::Config => {
-                                if let crate::core::symbol::SymbolKind::Attribute =
-                                    symbol_ref.get_kind()
-                                    && maybe_def
-                                {
-                                    self.gs.get_scopes_mut().add_def_to_scope(
-                                        cur_scope,
-                                        name,
-                                        first_unresolved_ref,
-                                    );
-                                    ret_symbol = first_unresolved_ref;
-                                }
-                            }
-                            _ => {}
+                if cur_scope.get_kind() == crate::core::scope::ScopeKind::Local {
+                    let local_scope = self
+                        .gs
+                        .get_scopes()
+                        .try_get_local_scope(&cur_scope)
+                        .unwrap();
+                    if local_scope.get_kind() == &LocalSymbolScopeKind::Config
+                        && let crate::core::symbol::SymbolKind::Attribute =
+                            symbol_ref.get_kind()
+                            && maybe_def
+                        {
+                            self.gs.get_scopes_mut().add_def_to_scope(
+                                cur_scope,
+                                name,
+                                first_unresolved_ref,
+                            );
+                            ret_symbol = first_unresolved_ref;
                         }
-                    }
-                    _ => {}
                 }
 
                 if def_start_pos != start_pos || def_end_pos != end_pos {
@@ -1609,8 +1602,7 @@ impl<'ctx> AdvancedResolver<'_> {
             .get_symbols()
             .symbols_info
             .node_symbol_map
-            .get(&self.ctx.get_node_key(&target.id))
-            .map(|symbol_ref| *symbol_ref)
+            .get(&self.ctx.get_node_key(&target.id)).copied()
         {
             let symbols = self.gs.get_symbols_mut();
 
@@ -1631,10 +1623,10 @@ impl<'ctx> AdvancedResolver<'_> {
                     ty: ty.clone(),
                     doc: None,
                 };
-                if with_hint & ty.is_some() {
+                if with_hint && let Some(ty) = ty {
                     symbols.alloc_hint(
                         SymbolHint {
-                            kind: SymbolHintKind::TypeHint(ty.unwrap().ty_hint()),
+                            kind: SymbolHintKind::TypeHint(ty.ty_hint()),
                             pos: target.get_end_pos(),
                         },
                         self.ctx.current_pkgpath.clone().unwrap(),
@@ -1683,7 +1675,7 @@ impl<'ctx> AdvancedResolver<'_> {
             .symbols_info
             .node_symbol_map
             .get(&self.ctx.get_node_key(&identifier.id))
-            .map(|symbol_ref| *symbol_ref)
+            .copied()
         {
             let symbols = self.gs.get_symbols_mut();
 
@@ -1698,16 +1690,16 @@ impl<'ctx> AdvancedResolver<'_> {
                     .node_ty_map
                     .borrow()
                     .get(&self.ctx.get_node_key(id))
-                    .map(|ty| ty.clone());
+                    .cloned();
 
                 symbol.sema_info = SymbolSemanticInfo {
                     ty: ty.clone(),
                     doc: None,
                 };
-                if with_hint & ty.is_some() {
+                if with_hint && let Some(ty) = ty {
                     symbols.alloc_hint(
                         SymbolHint {
-                            kind: SymbolHintKind::TypeHint(ty.unwrap().ty_hint()),
+                            kind: SymbolHintKind::TypeHint(ty.ty_hint()),
                             pos: identifier.get_end_pos(),
                         },
                         self.ctx.current_pkgpath.clone().unwrap(),
@@ -1788,24 +1780,23 @@ impl<'ctx> AdvancedResolver<'_> {
             }
         }
 
-        if let Some(ty_node) = ty_node {
-            if let Some(ty) = self
+        if let Some(ty_node) = ty_node
+            && let Some(ty) = self
                 .ctx
                 .node_ty_map
                 .borrow()
                 .get(&self.ctx.get_node_key(&ty_node.id))
-            {
-                let (_, end) = ty_node.get_span_pos();
-                let mut expr_symbol =
-                    ExpressionSymbol::new(format!("@{}", ty.ty_hint()), end.clone(), end, None);
+        {
+            let (_, end) = ty_node.get_span_pos();
+            let mut expr_symbol =
+                ExpressionSymbol::new(format!("@{}", ty.ty_hint()), end.clone(), end, None);
 
-                expr_symbol.sema_info.ty = Some(ty.clone());
-                self.gs.get_symbols_mut().alloc_expression_symbol(
-                    expr_symbol,
-                    self.ctx.get_node_key(&ty_node.id),
-                    self.ctx.current_pkgpath.clone().unwrap(),
-                );
-            }
+            expr_symbol.sema_info.ty = Some(ty.clone());
+            self.gs.get_symbols_mut().alloc_expression_symbol(
+                expr_symbol,
+                self.ctx.get_node_key(&ty_node.id),
+                self.ctx.current_pkgpath.clone().unwrap(),
+            );
         }
         self.ctx.is_type_expr = false;
         Ok(None)

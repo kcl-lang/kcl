@@ -164,7 +164,7 @@ fn test_from_str_program_arg() {
             .display()
             .to_string();
         let expected_json_str = fs::read_to_string(test_case_json_file).unwrap();
-        let exec_prog_args = ExecProgramArgs::from_str(&expected_json_str);
+        let exec_prog_args = ExecProgramArgs::from_json(&expected_json_str);
         assert_eq!(expected_json_str.trim(), exec_prog_args.to_json().trim());
     }
 }

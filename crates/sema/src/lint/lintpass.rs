@@ -1,4 +1,4 @@
-use crate::lint::lint::LintContext;
+use crate::lint::types::LintContext;
 use crate::resolver::scope::Scope;
 use kcl_ast::ast;
 use kcl_error::Handler;

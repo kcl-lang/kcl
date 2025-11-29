@@ -223,12 +223,14 @@ impl<'ctx> Resolver<'ctx> {
 
     /// Unary operator calculation table
     ///
+    /// ```no_check
     /// + number        unary positive          (int, float)
     /// - number        unary negation          (int, float)
     /// ~ number        unary bitwise inversion (int)
     /// not x           logical negation        (any type)
+    /// ```
     pub fn unary(&mut self, ty: TypeRef, op: &ast::UnaryOp, range: Range) -> TypeRef {
-        if has_any_type(&[ty.clone()]) {
+        if has_any_type(std::slice::from_ref(&ty)) {
             return self.any_ty();
         }
         let var_ty = self

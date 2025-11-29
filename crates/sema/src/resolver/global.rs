@@ -1,3 +1,4 @@
+#![allow(clippy::arc_with_non_send_sync)]
 use std::cell::RefCell;
 use std::sync::Arc;
 
@@ -27,14 +28,109 @@ impl<'ctx> Resolver<'_> {
     pub(crate) fn init_global_types(&mut self) {
         // 1. Scan all schema and rule type symbols
         let pkgpath = &self.ctx.pkgpath;
-        match self
+        if let Some(modules) = self
             .program
             .pkgs
             .get(pkgpath)
             .or(self.program.pkgs_not_imported.get(pkgpath))
         {
-            Some(modules) => {
-                // 1. Scan all schema and rule type symbol
+            // 1. Scan all schema and rule type symbol
+            for module in modules {
+                let module = self
+                    .program
+                    .get_module(module)
+                    .expect("Failed to acquire module lock")
+                    .unwrap_or_else(|| panic!("module {:?} not found in program", module));
+                let pkgpath = &self.ctx.pkgpath.clone();
+                let filename = &module.filename;
+                self.change_package_context(pkgpath, filename);
+                for stmt in &module.body {
+                    let (start, end) = stmt.get_span_pos();
+                    let (name, doc, is_mixin, is_protocol, is_rule) = match &stmt.node {
+                        ast::Stmt::Schema(schema_stmt) => (
+                            &schema_stmt.name.node,
+                            {
+                                if let Some(doc) = &schema_stmt.doc {
+                                    doc.node.clone()
+                                } else {
+                                    "".to_string()
+                                }
+                            },
+                            schema_stmt.is_mixin,
+                            schema_stmt.is_protocol,
+                            false,
+                        ),
+                        ast::Stmt::Rule(rule_stmt) => (
+                            &rule_stmt.name.node,
+                            {
+                                if let Some(doc) = &rule_stmt.doc {
+                                    doc.node.clone()
+                                } else {
+                                    "".to_string()
+                                }
+                            },
+                            false,
+                            false,
+                            true,
+                        ),
+                        _ => continue,
+                    };
+                    if self.contains_object(name) {
+                        self.handler.add_error(
+                            ErrorKind::UniqueKeyError,
+                            &[Message {
+                                range: stmt.get_span_pos(),
+                                style: Style::LineAndColumn,
+                                message: format!("Unique key error name '{}'", name),
+                                note: None,
+                                suggested_replacement: None,
+                            }],
+                        );
+                        continue;
+                    }
+                    let parsed_doc = parse_schema_doc_string(&doc);
+                    let schema_ty = SchemaType {
+                        name: name.to_string(),
+                        pkgpath: self.ctx.pkgpath.clone(),
+                        filename: self.ctx.filename.clone(),
+                        doc: parsed_doc.summary.clone(),
+                        examples: parsed_doc.examples,
+                        is_instance: false,
+                        is_mixin,
+                        is_protocol,
+                        is_rule,
+                        base: None,
+                        protocol: None,
+                        mixins: vec![],
+                        attrs: IndexMap::default(),
+                        func: Box::new(FunctionType {
+                            doc: parsed_doc.summary.clone(),
+                            params: vec![],
+                            self_ty: None,
+                            return_ty: Arc::new(Type::VOID),
+                            is_variadic: false,
+                            kw_only_index: None,
+                        }),
+                        index_signature: None,
+                        decorators: vec![],
+                    };
+                    self.insert_object(
+                        name,
+                        ScopeObject {
+                            name: name.to_string(),
+                            start,
+                            end,
+                            ty: Arc::new(Type::schema(schema_ty.clone())),
+                            kind: ScopeObjectKind::Definition,
+                            doc: Some(parsed_doc.summary.clone()),
+                        },
+                    )
+                }
+            }
+            // 2. Scan all variable type symbol
+            self.init_global_var_types(true);
+            // 3. Build all schema types
+            for i in 0..MAX_SCOPE_SCAN_COUNT {
                 for module in modules {
                     let module = self
                         .program
@@ -46,142 +142,44 @@ impl<'ctx> Resolver<'_> {
                     self.change_package_context(pkgpath, filename);
                     for stmt in &module.body {
                         let (start, end) = stmt.get_span_pos();
-                        let (name, doc, is_mixin, is_protocol, is_rule) = match &stmt.node {
-                            ast::Stmt::Schema(schema_stmt) => (
-                                &schema_stmt.name.node,
-                                {
-                                    if let Some(doc) = &schema_stmt.doc {
-                                        doc.node.clone()
-                                    } else {
-                                        "".to_string()
-                                    }
-                                },
-                                schema_stmt.is_mixin,
-                                schema_stmt.is_protocol,
-                                false,
-                            ),
-                            ast::Stmt::Rule(rule_stmt) => (
-                                &rule_stmt.name.node,
-                                {
-                                    if let Some(doc) = &rule_stmt.doc {
-                                        doc.node.clone()
-                                    } else {
-                                        "".to_string()
-                                    }
-                                },
-                                false,
-                                false,
-                                true,
-                            ),
+                        let schema_ty = match &stmt.node {
+                            ast::Stmt::Schema(schema_stmt) => {
+                                let parent_ty = self.build_schema_parent_type(schema_stmt);
+                                let protocol_ty = self.build_schema_protocol_type(schema_stmt);
+                                self.build_schema_type(
+                                    schema_stmt,
+                                    parent_ty,
+                                    protocol_ty,
+                                    i == MAX_SCOPE_SCAN_COUNT - 1,
+                                )
+                            }
+                            ast::Stmt::Rule(rule_stmt) => {
+                                let protocol_ty = self.build_rule_protocol_type(rule_stmt);
+                                self.build_rule_type(
+                                    rule_stmt,
+                                    protocol_ty,
+                                    i == MAX_SCOPE_SCAN_COUNT - 1,
+                                )
+                            }
                             _ => continue,
                         };
-                        if self.contains_object(name) {
-                            self.handler.add_error(
-                                ErrorKind::UniqueKeyError,
-                                &[Message {
-                                    range: stmt.get_span_pos(),
-                                    style: Style::LineAndColumn,
-                                    message: format!("Unique key error name '{}'", name),
-                                    note: None,
-                                    suggested_replacement: None,
-                                }],
-                            );
-                            continue;
-                        }
-                        let parsed_doc = parse_schema_doc_string(&doc);
-                        let schema_ty = SchemaType {
-                            name: name.to_string(),
-                            pkgpath: self.ctx.pkgpath.clone(),
-                            filename: self.ctx.filename.clone(),
-                            doc: parsed_doc.summary.clone(),
-                            examples: parsed_doc.examples,
-                            is_instance: false,
-                            is_mixin,
-                            is_protocol,
-                            is_rule,
-                            base: None,
-                            protocol: None,
-                            mixins: vec![],
-                            attrs: IndexMap::default(),
-                            func: Box::new(FunctionType {
-                                doc: parsed_doc.summary.clone(),
-                                params: vec![],
-                                self_ty: None,
-                                return_ty: Arc::new(Type::VOID),
-                                is_variadic: false,
-                                kw_only_index: None,
-                            }),
-                            index_signature: None,
-                            decorators: vec![],
-                        };
                         self.insert_object(
-                            name,
+                            &schema_ty.name.clone(),
                             ScopeObject {
-                                name: name.to_string(),
+                                name: schema_ty.name.to_string(),
                                 start,
                                 end,
                                 ty: Arc::new(Type::schema(schema_ty.clone())),
                                 kind: ScopeObjectKind::Definition,
-                                doc: Some(parsed_doc.summary.clone()),
+                                doc: Some(schema_ty.doc),
                             },
                         )
                     }
                 }
-                // 2. Scan all variable type symbol
-                self.init_global_var_types(true);
-                // 3. Build all schema types
-                for i in 0..MAX_SCOPE_SCAN_COUNT {
-                    for module in modules {
-                        let module = self
-                            .program
-                            .get_module(module)
-                            .expect("Failed to acquire module lock")
-                            .unwrap_or_else(|| panic!("module {:?} not found in program", module));
-                        let pkgpath = &self.ctx.pkgpath.clone();
-                        let filename = &module.filename;
-                        self.change_package_context(pkgpath, filename);
-                        for stmt in &module.body {
-                            let (start, end) = stmt.get_span_pos();
-                            let schema_ty = match &stmt.node {
-                                ast::Stmt::Schema(schema_stmt) => {
-                                    let parent_ty = self.build_schema_parent_type(schema_stmt);
-                                    let protocol_ty = self.build_schema_protocol_type(schema_stmt);
-                                    self.build_schema_type(
-                                        schema_stmt,
-                                        parent_ty,
-                                        protocol_ty,
-                                        i == MAX_SCOPE_SCAN_COUNT - 1,
-                                    )
-                                }
-                                ast::Stmt::Rule(rule_stmt) => {
-                                    let protocol_ty = self.build_rule_protocol_type(rule_stmt);
-                                    self.build_rule_type(
-                                        rule_stmt,
-                                        protocol_ty,
-                                        i == MAX_SCOPE_SCAN_COUNT - 1,
-                                    )
-                                }
-                                _ => continue,
-                            };
-                            self.insert_object(
-                                &schema_ty.name.clone(),
-                                ScopeObject {
-                                    name: schema_ty.name.to_string(),
-                                    start,
-                                    end,
-                                    ty: Arc::new(Type::schema(schema_ty.clone())),
-                                    kind: ScopeObjectKind::Definition,
-                                    doc: Some(schema_ty.doc),
-                                },
-                            )
-                        }
-                    }
-                }
-                // 2.  Build all variable types
-                self.init_global_var_types(false);
             }
-            None => {}
-        };
+            // 2.  Build all variable types
+            self.init_global_var_types(false);
+        }
     }
 
     /// Init global var types.
@@ -771,9 +769,11 @@ impl<'ctx> Resolver<'_> {
                     name,
                     ty: ty.clone(),
                     has_default: args.node.defaults.get(i).is_some_and(|arg| arg.is_some()),
-                    default_value: args.node.defaults.get(i).map_or(None, |arg| {
-                        arg.as_ref().map(|v| print_ast_node(ASTNode::Expr(v)))
-                    }),
+                    default_value: args
+                        .node
+                        .defaults
+                        .get(i)
+                        .and_then(|arg| arg.as_ref().map(|v| print_ast_node(ASTNode::Expr(v)))),
                     range: args.node.args[i].get_span_pos(),
                 });
             }
@@ -907,9 +907,11 @@ impl<'ctx> Resolver<'_> {
                     name,
                     ty: ty.clone(),
                     has_default: args.node.defaults.get(i).is_some(),
-                    default_value: args.node.defaults.get(i).map_or(None, |arg| {
-                        arg.as_ref().map(|v| print_ast_node(ASTNode::Expr(v)))
-                    }),
+                    default_value: args
+                        .node
+                        .defaults
+                        .get(i)
+                        .and_then(|arg| arg.as_ref().map(|v| print_ast_node(ASTNode::Expr(v)))),
                     range: args.node.args[i].get_span_pos(),
                 });
             }

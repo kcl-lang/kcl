@@ -78,18 +78,21 @@ impl Entries {
         self.entries.len()
     }
 
+    /// Returns true if the entries is empty.
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+
     /// [`get_nth_entry`] will return the nth [`Entry`] in [`Entries`].
     #[allow(dead_code)]
     pub fn get_nth_entry(&self, n: usize) -> Option<&Entry> {
         if n >= self.len() {
             return None;
         }
-        let mut count = 0;
-        for entry in self.entries.iter() {
+        for (count, entry) in self.entries.iter().enumerate() {
             if count == n {
                 return Some(entry);
             }
-            count += 1;
         }
         None
     }

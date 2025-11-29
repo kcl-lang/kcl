@@ -26,7 +26,6 @@ use kcl_span::symbol::kw;
 /// TODO: operand design is quite complex, can be simplified later.
 impl<'a> Parser<'a> {
     /// ~~~ Entrances
-
     /// [`clean_all_indentations`] will bump all indent and dedent tokens.
     pub(crate) fn clean_all_indentations(&mut self) {
         self.clean_all_indent();
@@ -246,7 +245,6 @@ impl<'a> Parser<'a> {
     }
 
     /// ~~~ Sub Expressions
-
     /// Syntax:
     /// if_expr: simple_expr IF simple_expr ELSE test
     /// test: if_expr | simple_expr
@@ -596,7 +594,6 @@ impl<'a> Parser<'a> {
     }
 
     /// ~~~ Operand
-
     /// Syntax:
     /// operand: identifier | number | string | constant | quant_expr | list_expr | list_comp | config_expr | dict_comp | identifier call_suffix | schema_expr | lambda_expr | paren_expr
     fn parse_operand_expr(&mut self) -> NodeRef<Expr> {
@@ -2139,7 +2136,6 @@ impl<'a> Parser<'a> {
     }
 
     /// ~~~ Schema
-
     /// Syntax:
     /// decorator_expr: identifier [call_suffix]
     fn parse_decorator_expr(&mut self) -> NodeRef<Expr> {
@@ -2195,7 +2191,6 @@ impl<'a> Parser<'a> {
     }
 
     /// ~~~ Id
-
     pub(crate) fn parse_identifier(&mut self) -> NodeRef<Identifier> {
         let token = self.token;
         let mut names: Vec<Node<String>> = Vec::new();
@@ -2276,7 +2271,6 @@ impl<'a> Parser<'a> {
     }
 
     /// ~~~ Lit
-
     /// Syntax:
     /// number: DEC_NUMBER [multiplier] | HEX_NUMBER | BIN_NUMBER | OCT_NUMBER | FLOAT_NUMBER
     fn parse_num_expr(&mut self, lk: token::Lit) -> NodeRef<Expr> {

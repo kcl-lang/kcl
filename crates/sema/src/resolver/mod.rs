@@ -73,32 +73,29 @@ impl<'ctx> Resolver<'ctx> {
     pub(crate) fn check(&mut self, pkgpath: &str) {
         self.check_import(pkgpath);
         self.init_global_types();
-        match self
+        if let Some(modules) = self
             .program
             .pkgs
             .get(pkgpath)
             .or(self.program.pkgs_not_imported.get(pkgpath))
         {
-            Some(modules) => {
-                for module in modules {
-                    let module = self
-                        .program
-                        .get_module(module)
-                        .expect("Failed to acquire module lock")
-                        .unwrap_or_else(|| panic!("module {:?} not found in program", module));
-                    self.ctx.filename = module.filename.to_string();
-                    if let scope::ScopeKind::Package(files) = &mut self.scope.borrow_mut().kind {
-                        files.insert(module.filename.to_string());
-                    }
-                    for stmt in &module.body {
-                        self.stmt(stmt);
-                    }
-                    if self.options.lint_check {
-                        self.lint_check_module(&module);
-                    }
+            for module in modules {
+                let module = self
+                    .program
+                    .get_module(module)
+                    .expect("Failed to acquire module lock")
+                    .unwrap_or_else(|| panic!("module {:?} not found in program", module));
+                self.ctx.filename = module.filename.to_string();
+                if let scope::ScopeKind::Package(files) = &mut self.scope.borrow_mut().kind {
+                    files.insert(module.filename.to_string());
+                }
+                for stmt in &module.body {
+                    self.stmt(stmt);
+                }
+                if self.options.lint_check {
+                    self.lint_check_module(&module);
                 }
             }
-            None => {}
         }
     }
 

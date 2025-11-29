@@ -148,8 +148,10 @@ pub fn execute(
 ) -> Result<ExecProgramResult> {
     // If the user only wants to compile the kcl program, the following code will only resolve ast.
     if args.compile_only {
-        let mut resolve_opts = Options::default();
-        resolve_opts.merge_program = false;
+        let resolve_opts = Options {
+            merge_program: false,
+            ..Default::default()
+        };
         // Resolve ast
         let scope = resolve_program_with_opts(&mut program, resolve_opts, None);
         emit_compile_diag_to_string(sess, &scope, args.compile_only)?;
@@ -208,8 +210,9 @@ fn emit_compile_diag_to_string(
         res_str.push_str(err);
     }
 
-    res_str
-        .is_empty()
-        .then(|| Ok(()))
-        .unwrap_or_else(|| bail!(res_str))
+    if res_str.is_empty() {
+        Ok(())
+    } else {
+        bail!(res_str)
+    }
 }

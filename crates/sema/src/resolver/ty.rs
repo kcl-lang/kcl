@@ -186,10 +186,7 @@ impl<'ctx> Resolver<'_> {
             (TypeKind::Dict(dict_ty), TypeKind::Union(expected_union_type)) => {
                 let types: Vec<Arc<Type>> = expected_union_type
                     .iter()
-                    .filter(|ty| match ty.kind {
-                        TypeKind::Schema(_) => true,
-                        _ => false,
-                    })
+                    .filter(|ty| matches!(ty.kind, TypeKind::Schema(_)))
                     .filter(|ty| {
                         self.upgrade_dict_to_schema_attr_check(dict_ty, &ty.into_schema_type())
                     })
@@ -259,11 +256,7 @@ impl<'ctx> Resolver<'_> {
                 // Check if this is a list assignment with schema type annotation
                 let is_list_with_schema_elements = match (&target_ty.kind, &value_ty.kind) {
                     (TypeKind::List(expected_item_ty), TypeKind::List(_)) => {
-                        // Check if the expected type is a Schema
-                        match &expected_item_ty.kind {
-                            TypeKind::Schema(_) => true,
-                            _ => false,
-                        }
+                        matches!(&expected_item_ty.kind, TypeKind::Schema(_))
                     }
                     _ => false,
                 };

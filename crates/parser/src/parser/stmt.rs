@@ -308,7 +308,7 @@ impl<'a> Parser<'a> {
             let targets = targets
                 .iter()
                 .enumerate()
-                .map(|(i, expr)| match self.expr_as_assign_target(expr) {
+                .filter_map(|(i, expr)| match self.expr_as_assign_target(expr) {
                     Ok(target) => Some(Box::new(Node::new_with_pos(target, expr.pos()))),
                     Err(err) => {
                         self.sess
@@ -316,8 +316,6 @@ impl<'a> Parser<'a> {
                         None
                     }
                 })
-                // Drop error assign target nodes.
-                .flatten()
                 .collect();
 
             self.skip_newlines();
@@ -374,7 +372,7 @@ impl<'a> Parser<'a> {
                     let targets = targets
                         .iter()
                         .enumerate()
-                        .map(|(i, expr)| match self.expr_as_assign_target(expr) {
+                        .filter_map(|(i, expr)| match self.expr_as_assign_target(expr) {
                             Ok(target) => Some(Box::new(Node::new_with_pos(target, expr.pos()))),
                             Err(err) => {
                                 self.sess
@@ -382,8 +380,6 @@ impl<'a> Parser<'a> {
                                 None
                             }
                         })
-                        // Drop error assign target nodes.
-                        .flatten()
                         .collect();
                     Some(Box::new(Node::new_with_pos(
                         Stmt::Assign(AssignStmt {
