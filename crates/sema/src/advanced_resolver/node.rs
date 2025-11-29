@@ -1133,7 +1133,9 @@ impl<'ctx> AdvancedResolver<'_> {
             let module_info = self.get_current_module_info().unwrap();
 
             let import_info = module_info.get_import_info(&first_name.node);
-            if let Some(import_info) = import_info && !maybe_def {
+            if let Some(import_info) = import_info
+                && !maybe_def
+            {
                 first_symbol = self
                     .gs
                     .get_symbols()
@@ -1195,17 +1197,16 @@ impl<'ctx> AdvancedResolver<'_> {
                         .try_get_local_scope(&cur_scope)
                         .unwrap();
                     if local_scope.get_kind() == &LocalSymbolScopeKind::Config
-                        && let crate::core::symbol::SymbolKind::Attribute =
-                            symbol_ref.get_kind()
-                            && maybe_def
-                        {
-                            self.gs.get_scopes_mut().add_def_to_scope(
-                                cur_scope,
-                                name,
-                                first_unresolved_ref,
-                            );
-                            ret_symbol = first_unresolved_ref;
-                        }
+                        && let crate::core::symbol::SymbolKind::Attribute = symbol_ref.get_kind()
+                        && maybe_def
+                    {
+                        self.gs.get_scopes_mut().add_def_to_scope(
+                            cur_scope,
+                            name,
+                            first_unresolved_ref,
+                        );
+                        ret_symbol = first_unresolved_ref;
+                    }
                 }
 
                 if def_start_pos != start_pos || def_end_pos != end_pos {
@@ -1602,7 +1603,8 @@ impl<'ctx> AdvancedResolver<'_> {
             .get_symbols()
             .symbols_info
             .node_symbol_map
-            .get(&self.ctx.get_node_key(&target.id)).copied()
+            .get(&self.ctx.get_node_key(&target.id))
+            .copied()
         {
             let symbols = self.gs.get_symbols_mut();
 
