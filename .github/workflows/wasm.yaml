@@ -9,7 +9,7 @@ on:
 jobs:
   build-and-test:
     # Ref: https://github.com/actions/runner-images/tree/main/images/linux
-    name: Test
+    name: build and test on WASM WASI
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -27,7 +27,6 @@ jobs:
       - name: Build WASM
         run: |
           rustup target add wasm32-wasip1 && make build-wasm
-          mv target/wasm32-wasip1/release/kcl.wasm target/wasm32-wasip1/release/kcl.wasm
         shell: bash
 
       - uses: actions/upload-artifact@v4

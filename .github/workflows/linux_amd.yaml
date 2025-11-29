@@ -9,7 +9,7 @@ on:
 jobs:
   build-and-test:
     # Ref: https://github.com/actions/runner-images/tree/main/images/linux
-    name: Test
+    name: build and test on Linux AMD64
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -19,7 +19,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.23
+          go-version: 1.24
 
       # Prerequisite
 
