@@ -24,14 +24,14 @@ jobs:
           override: true
           components: clippy, rustfmt
 
-      # - name: Build WASM
-      #   run: |
-      #     rustup target add wasm32-wasip1 && make build-wasm
-      #     mv target/wasm32-wasip1/release/kcl.wasm target/wasm32-wasip1/release/kcl.wasm
-      #   shell: bash
+      - name: Build WASM
+        run: |
+          rustup target add wasm32-wasip1 && make build-wasm
+          mv target/wasm32-wasip1/release/kcl.wasm target/wasm32-wasip1/release/kcl.wasm
+        shell: bash
 
-      # - uses: actions/upload-artifact@v4
-      #   with:
-      #     name: kcl-wasm
-      #     if-no-files-found: error
-      #     path: target/wasm32-wasip1/release/kcl.wasm
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kcl-wasm
+          if-no-files-found: error
+          path: target/wasm32-wasip1/release/kcl.wasm
