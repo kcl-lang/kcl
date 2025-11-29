@@ -1,8 +1,4 @@
-// Copyright The KCL Authors. All rights reserved.
-
-// Auto generated, DONOT EDIT!!!
-
-#[allow(dead_code)]
+/// Get the function pointer address by its name.
 pub fn kcl_get_fn_ptr_by_name(name: &str) -> u64 {
     match name {
         "kcl_assert" => crate::kcl_assert as *const () as u64,
@@ -295,7 +291,6 @@ pub fn kcl_get_fn_ptr_by_name(name: &str) -> u64 {
         "kcl_value_deep_copy" => crate::kcl_value_deep_copy as *const () as u64,
         "kcl_value_delete" => crate::kcl_value_delete as *const () as u64,
         "kcl_value_from_json" => crate::kcl_value_from_json as *const () as u64,
-        "kcl_value_function_invoke" => crate::kcl_value_function_invoke as *const () as u64,
         "kcl_value_function_ptr" => crate::kcl_value_function_ptr as *const () as u64,
         "kcl_value_in" => crate::kcl_value_in as *const () as u64,
         "kcl_value_is" => crate::kcl_value_is as *const () as u64,

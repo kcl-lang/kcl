@@ -129,13 +129,13 @@ impl GlobalState {
     pub fn look_up_scope(&self, pos: &Position) -> Option<ScopeRef> {
         let scopes = &self.scopes;
         for root_ref in scopes.root_map.values() {
-            if let Some(root) = scopes.get_scope(root_ref) {
-                if root.contains_pos(pos) {
-                    if let Some(inner_ref) = self.look_up_into_scope(*root_ref, pos) {
-                        return Some(inner_ref);
-                    } else {
-                        return Some(*root_ref);
-                    }
+            if let Some(root) = scopes.get_scope(root_ref)
+                && root.contains_pos(pos)
+            {
+                if let Some(inner_ref) = self.look_up_into_scope(*root_ref, pos) {
+                    return Some(inner_ref);
+                } else {
+                    return Some(*root_ref);
                 }
             }
         }
@@ -150,7 +150,7 @@ impl GlobalState {
         };
         let children = match parent.kind {
             ScopeKind::Local => &self.scopes.locals.get(parent.id)?.children,
-            ScopeKind::Root => &self
+            ScopeKind::Root => self
                 .scopes
                 .roots
                 .get(parent.id)?
@@ -220,7 +220,6 @@ impl GlobalState {
                 get_def_from_owner,
             )
             .values()
-            .into_iter()
             .cloned()
             .collect();
         Some(all_defs)
@@ -269,7 +268,6 @@ impl GlobalState {
                 get_def_from_owner,
             )
             .values()
-            .into_iter()
             .cloned()
             .collect();
         Some(all_defs)
@@ -387,7 +385,7 @@ impl GlobalState {
                 scope.contains_pos(&symbol.get_range().0)
                     && scope.contains_pos(&symbol.get_range().1)
             })
-            .map(|s| s.clone())
+            .copied()
             .collect();
         Some(symbols)
     }
@@ -627,7 +625,7 @@ impl GlobalState {
             );
         }
 
-        for (_, hints) in &self.symbols.hints {
+        for hints in self.symbols.hints.values() {
             for hint in hints {
                 if file_sema_map_cache.contains_key(&hint.pos.filename) {
                     continue;
@@ -717,7 +715,7 @@ impl GlobalState {
 
         self.build_sema_db_with_symbols(&mut file_sema_map_cache);
         self.build_sema_db_with_scopes(&mut file_sema_map_cache);
-        self.sort_local_scopes(&mut file_sema_map_cache);
+        self.sort_local_scopes(&file_sema_map_cache);
 
         self.sema_db.file_sema_map = file_sema_map_cache;
     }

@@ -661,7 +661,7 @@ impl ValueRef {
                     let (end_len, i_diff) = match *ch {
                         b'\n' => (keep, 1),
                         b'\r' => {
-                            let is_rn = enumerated.peek().map_or(false, |(_, ch)| **ch == b'\n');
+                            let is_rn = enumerated.peek().is_some_and(|(_, ch)| **ch == b'\n');
                             if is_rn {
                                 let _ = enumerated.next();
                                 (keep + keep, 2)

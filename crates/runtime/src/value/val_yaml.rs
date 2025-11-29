@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 /// YAML encode options.
 /// - sort_keys: Sort the encode result by keys (defaults to false).
 /// - ignore_private: Whether to ignore the attribute whose name starts with
-///     a character `_` (defaults to false).
+///   a character `_` (defaults to false).
 /// - ignore_none: Whether to ignore the attribute whose value is `None` (defaults to false).
 /// - sep: Which separator to use between YAML documents (defaults to "---").
 ///

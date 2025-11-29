@@ -2,12 +2,12 @@
 
 #[cfg(unix)]
 pub fn open_lock_file(path: &str) -> Result<fslock::LockFile, fslock::Error> {
-    return fslock::LockFile::open(path);
+    fslock::LockFile::open(path)
 }
 
 #[cfg(windows)]
 pub fn open_lock_file(path: &str) -> Result<fslock::LockFile, fslock::Error> {
-    return fslock::LockFile::open(path);
+    fslock::LockFile::open(path)
 }
 
 #[cfg(target_arch = "wasm32")]

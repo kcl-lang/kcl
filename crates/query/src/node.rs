@@ -51,12 +51,9 @@ impl<'ctx> MutSelfMutWalker<'ctx> for AstNodeMover {
         assign_stmt.value.line += self.line_offset as u64;
         assign_stmt.value.end_line += self.line_offset as u64;
 
-        match assign_stmt.ty.as_deref_mut() {
-            Some(v) => {
-                v.line += self.line_offset as u64;
-                v.end_line += self.line_offset as u64;
-            }
-            None => (),
+        if let Some(v) = assign_stmt.ty.as_deref_mut() {
+            v.line += self.line_offset as u64;
+            v.end_line += self.line_offset as u64;
         }
 
         for target in assign_stmt.targets.iter_mut() {
@@ -79,20 +76,14 @@ impl<'ctx> MutSelfMutWalker<'ctx> for AstNodeMover {
         assert_stmt.test.line += self.line_offset as u64;
         assert_stmt.test.end_line += self.line_offset as u64;
 
-        match assert_stmt.if_cond.as_deref_mut() {
-            Some(v) => {
-                v.line += self.line_offset as u64;
-                v.end_line += self.line_offset as u64;
-            }
-            None => (),
+        if let Some(v) = assert_stmt.if_cond.as_deref_mut() {
+            v.line += self.line_offset as u64;
+            v.end_line += self.line_offset as u64;
         }
 
-        match assert_stmt.msg.as_deref_mut() {
-            Some(v) => {
-                v.line += self.line_offset as u64;
-                v.end_line += self.line_offset as u64;
-            }
-            None => (),
+        if let Some(v) = assert_stmt.msg.as_deref_mut() {
+            v.line += self.line_offset as u64;
+            v.end_line += self.line_offset as u64;
         }
 
         self.walk_expr(&mut assert_stmt.test.node);
@@ -124,12 +115,9 @@ impl<'ctx> MutSelfMutWalker<'ctx> for AstNodeMover {
         schema_attr.name.line += self.line_offset as u64;
         schema_attr.name.end_line += self.line_offset as u64;
 
-        match schema_attr.value.as_deref_mut() {
-            Some(v) => {
-                v.line += self.line_offset as u64;
-                v.end_line += self.line_offset as u64;
-            }
-            None => (),
+        if let Some(v) = schema_attr.value.as_deref_mut() {
+            v.line += self.line_offset as u64;
+            v.end_line += self.line_offset as u64;
         }
 
         schema_attr.decorators.iter_mut().for_each(|d| {
@@ -181,20 +169,14 @@ impl<'ctx> MutSelfMutWalker<'ctx> for AstNodeMover {
         schema_stmt.name.line += self.line_offset as u64;
         schema_stmt.name.end_line += self.line_offset as u64;
 
-        match schema_stmt.parent_name.as_deref_mut() {
-            Some(v) => {
-                v.line += self.line_offset as u64;
-                v.end_line += self.line_offset as u64;
-            }
-            None => (),
+        if let Some(v) = schema_stmt.parent_name.as_deref_mut() {
+            v.line += self.line_offset as u64;
+            v.end_line += self.line_offset as u64;
         }
 
-        match schema_stmt.for_host_name.as_deref_mut() {
-            Some(v) => {
-                v.line += self.line_offset as u64;
-                v.end_line += self.line_offset as u64;
-            }
-            None => (),
+        if let Some(v) = schema_stmt.for_host_name.as_deref_mut() {
+            v.line += self.line_offset as u64;
+            v.end_line += self.line_offset as u64;
         }
 
         for arg in schema_stmt.args.iter_mut() {
@@ -204,12 +186,9 @@ impl<'ctx> MutSelfMutWalker<'ctx> for AstNodeMover {
 
         if let Some(schema_index_signature) = schema_stmt.index_signature.as_deref_mut() {
             let value = &mut schema_index_signature.node.value;
-            match value.as_deref_mut() {
-                Some(v) => {
-                    v.line += self.line_offset as u64;
-                    v.end_line += self.line_offset as u64;
-                }
-                None => (),
+            if let Some(v) = value.as_deref_mut() {
+                v.line += self.line_offset as u64;
+                v.end_line += self.line_offset as u64;
             }
         }
 
@@ -269,12 +248,9 @@ impl<'ctx> MutSelfMutWalker<'ctx> for AstNodeMover {
             a.end_line += self.line_offset as u64;
         });
 
-        match rule_stmt.for_host_name.as_deref_mut() {
-            Some(v) => {
-                v.line += self.line_offset as u64;
-                v.end_line += self.line_offset as u64;
-            }
-            None => (),
+        if let Some(v) = rule_stmt.for_host_name.as_deref_mut() {
+            v.line += self.line_offset as u64;
+            v.end_line += self.line_offset as u64;
         }
 
         walk_list_mut!(self, walk_identifier, rule_stmt.parent_rules);
@@ -295,12 +271,9 @@ impl<'ctx> MutSelfMutWalker<'ctx> for AstNodeMover {
         quant_expr.test.line += self.line_offset as u64;
         quant_expr.test.end_line += self.line_offset as u64;
 
-        match quant_expr.if_cond.as_deref_mut() {
-            Some(v) => {
-                v.line += self.line_offset as u64;
-                v.end_line += self.line_offset as u64;
-            }
-            None => (),
+        if let Some(v) = quant_expr.if_cond.as_deref_mut() {
+            v.line += self.line_offset as u64;
+            v.end_line += self.line_offset as u64;
         }
 
         self.walk_expr(&mut quant_expr.target.node);
@@ -364,36 +337,24 @@ impl<'ctx> MutSelfMutWalker<'ctx> for AstNodeMover {
         subscript.value.line += self.line_offset as u64;
         subscript.value.end_line += self.line_offset as u64;
 
-        match subscript.index.as_deref_mut() {
-            Some(v) => {
-                v.line += self.line_offset as u64;
-                v.end_line += self.line_offset as u64;
-            }
-            None => (),
+        if let Some(v) = subscript.index.as_deref_mut() {
+            v.line += self.line_offset as u64;
+            v.end_line += self.line_offset as u64;
         }
 
-        match subscript.lower.as_deref_mut() {
-            Some(v) => {
-                v.line += self.line_offset as u64;
-                v.end_line += self.line_offset as u64;
-            }
-            None => (),
+        if let Some(v) = subscript.lower.as_deref_mut() {
+            v.line += self.line_offset as u64;
+            v.end_line += self.line_offset as u64;
         }
 
-        match subscript.upper.as_deref_mut() {
-            Some(v) => {
-                v.line += self.line_offset as u64;
-                v.end_line += self.line_offset as u64;
-            }
-            None => (),
+        if let Some(v) = subscript.upper.as_deref_mut() {
+            v.line += self.line_offset as u64;
+            v.end_line += self.line_offset as u64;
         }
 
-        match subscript.step.as_deref_mut() {
-            Some(v) => {
-                v.line += self.line_offset as u64;
-                v.end_line += self.line_offset as u64;
-            }
-            None => (),
+        if let Some(v) = subscript.step.as_deref_mut() {
+            v.line += self.line_offset as u64;
+            v.end_line += self.line_offset as u64;
         }
 
         self.walk_expr(&mut subscript.value.node);
@@ -436,12 +397,9 @@ impl<'ctx> MutSelfMutWalker<'ctx> for AstNodeMover {
             e.end_line += self.line_offset as u64;
         });
 
-        match list_if_item_expr.orelse.as_deref_mut() {
-            Some(v) => {
-                v.line += self.line_offset as u64;
-                v.end_line += self.line_offset as u64;
-            }
-            None => (),
+        if let Some(v) = list_if_item_expr.orelse.as_deref_mut() {
+            v.line += self.line_offset as u64;
+            v.end_line += self.line_offset as u64;
         }
 
         self.walk_expr(&mut list_if_item_expr.if_cond.node);
@@ -481,23 +439,17 @@ impl<'ctx> MutSelfMutWalker<'ctx> for AstNodeMover {
         config_if_entry_expr.if_cond.end_line += self.line_offset as u64;
 
         for config_entry in config_if_entry_expr.items.iter_mut() {
-            match config_entry.node.key.as_deref_mut() {
-                Some(k) => {
-                    k.line += self.line_offset as u64;
-                    k.end_line += self.line_offset as u64;
-                }
-                None => (),
+            if let Some(k) = config_entry.node.key.as_deref_mut() {
+                k.line += self.line_offset as u64;
+                k.end_line += self.line_offset as u64;
             }
 
             config_entry.node.value.line += self.line_offset as u64;
         }
 
-        match config_if_entry_expr.orelse.as_deref_mut() {
-            Some(v) => {
-                v.line += self.line_offset as u64;
-                v.end_line += self.line_offset as u64;
-            }
-            None => (),
+        if let Some(v) = config_if_entry_expr.orelse.as_deref_mut() {
+            v.line += self.line_offset as u64;
+            v.end_line += self.line_offset as u64;
         }
 
         self.walk_expr(&mut config_if_entry_expr.if_cond.node);
@@ -549,12 +501,9 @@ impl<'ctx> MutSelfMutWalker<'ctx> for AstNodeMover {
     }
     fn walk_config_expr(&mut self, config_expr: &'ctx mut ast::ConfigExpr) {
         for config_entry in config_expr.items.iter_mut() {
-            match config_entry.node.key.as_deref_mut() {
-                Some(k) => {
-                    k.line += self.line_offset as u64;
-                    k.end_line += self.line_offset as u64;
-                }
-                None => (),
+            if let Some(k) = config_entry.node.key.as_deref_mut() {
+                k.line += self.line_offset as u64;
+                k.end_line += self.line_offset as u64;
             }
 
             config_entry.node.value.line += self.line_offset as u64;
@@ -569,20 +518,14 @@ impl<'ctx> MutSelfMutWalker<'ctx> for AstNodeMover {
         check_expr.test.line += self.line_offset as u64;
         check_expr.test.end_line += self.line_offset as u64;
 
-        match check_expr.if_cond.as_deref_mut() {
-            Some(v) => {
-                v.line += self.line_offset as u64;
-                v.end_line += self.line_offset as u64;
-            }
-            None => (),
+        if let Some(v) = check_expr.if_cond.as_deref_mut() {
+            v.line += self.line_offset as u64;
+            v.end_line += self.line_offset as u64;
         }
 
-        match check_expr.msg.as_deref_mut() {
-            Some(v) => {
-                v.line += self.line_offset as u64;
-                v.end_line += self.line_offset as u64;
-            }
-            None => (),
+        if let Some(v) = check_expr.msg.as_deref_mut() {
+            v.line += self.line_offset as u64;
+            v.end_line += self.line_offset as u64;
         }
 
         self.walk_expr(&mut check_expr.test.node);
@@ -590,12 +533,9 @@ impl<'ctx> MutSelfMutWalker<'ctx> for AstNodeMover {
         walk_if_mut!(self, walk_expr, check_expr.msg);
     }
     fn walk_lambda_expr(&mut self, lambda_expr: &'ctx mut ast::LambdaExpr) {
-        match lambda_expr.args.as_deref_mut() {
-            Some(v) => {
-                v.line += self.line_offset as u64;
-                v.end_line += self.line_offset as u64;
-            }
-            None => (),
+        if let Some(v) = lambda_expr.args.as_deref_mut() {
+            v.line += self.line_offset as u64;
+            v.end_line += self.line_offset as u64;
         }
 
         for stmt in lambda_expr.body.iter_mut() {
@@ -603,12 +543,9 @@ impl<'ctx> MutSelfMutWalker<'ctx> for AstNodeMover {
             stmt.end_line += self.line_offset as u64;
         }
 
-        match lambda_expr.return_ty.as_deref_mut() {
-            Some(v) => {
-                v.line += self.line_offset as u64;
-                v.end_line += self.line_offset as u64;
-            }
-            None => (),
+        if let Some(v) = lambda_expr.return_ty.as_deref_mut() {
+            v.line += self.line_offset as u64;
+            v.end_line += self.line_offset as u64;
         }
 
         walk_if_mut!(self, walk_arguments, lambda_expr.args);

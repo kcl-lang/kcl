@@ -19,109 +19,107 @@ pub fn hover(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Hover> {
     let mut docs: Vec<(String, MarkedStringType)> = vec![];
 
     let def = find_def(kcl_pos, gs, true);
-    match def {
-        Some(def_ref) => match gs.get_symbols().get_symbol(def_ref) {
-            Some(obj) => match def_ref.get_kind() {
-                kcl_sema::core::symbol::SymbolKind::Schema => match &obj.get_sema_info().ty {
-                    Some(ty) => {
-                        // Build hover content for schema definition
-                        // Schema Definition hover
-                        // ```
-                        // pkg
-                        // ----------------
-                        // schema Foo(Base)[param: type]:
-                        //     attr1: type
-                        //     attr2? type = defalut_value
-                        // -----------------
-                        // doc
-                        // ```
-                        let schema_ty = ty.into_schema_type();
-                        let (pkgpath, rest_sign) = schema_ty.schema_ty_signature_str();
-                        if !pkgpath.is_empty() {
-                            docs.push((pkgpath.clone(), MarkedStringType::String));
-                        }
+    if let Some(def_ref) = def
+        && let Some(obj) = gs.get_symbols().get_symbol(def_ref)
+    {
+        match def_ref.get_kind() {
+            kcl_sema::core::symbol::SymbolKind::Schema => {
+                if let Some(ty) = &obj.get_sema_info().ty {
+                    // Build hover content for schema definition
+                    // Schema Definition hover
+                    // ```
+                    // pkg
+                    // ----------------
+                    // schema Foo(Base)[param: type]:
+                    //     attr1: type
+                    //     attr2? type = defalut_value
+                    // -----------------
+                    // doc
+                    // ```
+                    let schema_ty = ty.into_schema_type();
+                    let (pkgpath, rest_sign) = schema_ty.schema_ty_signature_str();
+                    if !pkgpath.is_empty() {
+                        docs.push((pkgpath.clone(), MarkedStringType::String));
+                    }
 
-                        // The attr of schema_ty does not contain the attrs from inherited base schema.
-                        // Use the api provided by GlobalState to get all attrs
-                        let module_info = gs.get_packages().get_module_info(&kcl_pos.filename);
-                        let schema_attrs = obj.get_all_attributes(gs.get_symbols(), module_info);
-                        let mut attrs: Vec<String> = vec![];
-                        for schema_attr in schema_attrs {
-                            if let kcl_sema::core::symbol::SymbolKind::Attribute =
-                                schema_attr.get_kind()
-                            {
-                                let attr = gs.get_symbols().get_symbol(schema_attr).unwrap();
-                                let name = attr.get_name();
-                                let attr_symbol =
-                                    gs.get_symbols().get_attr_symbol(schema_attr).unwrap();
-                                let default_value_content = match attr_symbol.get_default_value() {
-                                    Some(s) => format!(" = {}", s),
-                                    None => "".to_string(),
-                                };
-                                let attr_ty_str = match &attr.get_sema_info().ty {
-                                    Some(ty) => ty_hover_content(ty),
-                                    None => ANY_TYPE_STR.to_string(),
-                                };
-                                attrs.push(format!(
-                                    "    {}{}: {}{}",
-                                    name,
-                                    if attr_symbol.is_optional() { "?" } else { "" },
-                                    attr_ty_str,
-                                    default_value_content
-                                ));
-                            }
-                        }
-
-                        let merged_doc = format!("{}\n{}", rest_sign.clone(), attrs.join("\n"));
-                        docs.push((merged_doc, MarkedStringType::LanguageString));
-
-                        if !schema_ty.doc.is_empty() {
-                            docs.push((schema_ty.doc.clone(), MarkedStringType::String));
-
-                            // Add examples to the hover content
-                            if !schema_ty.examples.is_empty() {
-                                let examples = schema_ty
-                                    .examples
-                                    .iter()
-                                    .map(|(_, example)| format!("{}\n", example.value))
-                                    .collect::<Vec<String>>()
-                                    .join("\n");
-                                docs.push((examples, MarkedStringType::LanguageString));
-                            }
+                    // The attr of schema_ty does not contain the attrs from inherited base schema.
+                    // Use the api provided by GlobalState to get all attrs
+                    let module_info = gs.get_packages().get_module_info(&kcl_pos.filename);
+                    let schema_attrs = obj.get_all_attributes(gs.get_symbols(), module_info);
+                    let mut attrs: Vec<String> = vec![];
+                    for schema_attr in schema_attrs {
+                        if let kcl_sema::core::symbol::SymbolKind::Attribute =
+                            schema_attr.get_kind()
+                        {
+                            let attr = gs.get_symbols().get_symbol(schema_attr).unwrap();
+                            let name = attr.get_name();
+                            let attr_symbol =
+                                gs.get_symbols().get_attr_symbol(schema_attr).unwrap();
+                            let default_value_content = match attr_symbol.get_default_value() {
+                                Some(s) => format!(" = {}", s),
+                                None => "".to_string(),
+                            };
+                            let attr_ty_str = match &attr.get_sema_info().ty {
+                                Some(ty) => ty_hover_content(ty),
+                                None => ANY_TYPE_STR.to_string(),
+                            };
+                            attrs.push(format!(
+                                "    {}{}: {}{}",
+                                name,
+                                if attr_symbol.is_optional() { "?" } else { "" },
+                                attr_ty_str,
+                                default_value_content
+                            ));
                         }
                     }
-                    _ => {}
-                },
-                kcl_sema::core::symbol::SymbolKind::Attribute => {
-                    let sema_info = obj.get_sema_info();
-                    let attr_symbol = gs.get_symbols().get_attr_symbol(def_ref).unwrap();
-                    let default_value_content = match attr_symbol.get_default_value() {
-                        Some(s) => format!(" = {}", s),
-                        None => "".to_string(),
-                    };
-                    match &sema_info.ty {
-                        Some(ty) => {
-                            docs.push((
-                                format!(
-                                    "{}: {}{}",
-                                    &obj.get_name(),
-                                    ty.ty_hint(),
-                                    default_value_content
-                                ),
-                                MarkedStringType::LanguageString,
-                            ));
-                            if let Some(doc) = &sema_info.doc {
-                                if !doc.is_empty() {
-                                    docs.push((doc.clone(), MarkedStringType::String));
-                                }
-                            }
+
+                    let merged_doc = format!("{}\n{}", rest_sign.clone(), attrs.join("\n"));
+                    docs.push((merged_doc, MarkedStringType::LanguageString));
+
+                    if !schema_ty.doc.is_empty() {
+                        docs.push((schema_ty.doc.clone(), MarkedStringType::String));
+
+                        // Add examples to the hover content
+                        if !schema_ty.examples.is_empty() {
+                            let examples = schema_ty
+                                .examples
+                                .values()
+                                .map(|example| format!("{}\n", example.value))
+                                .collect::<Vec<String>>()
+                                .join("\n");
+                            docs.push((examples, MarkedStringType::LanguageString));
                         }
-                        _ => {}
                     }
                 }
-                kcl_sema::core::symbol::SymbolKind::Value
-                | kcl_sema::core::symbol::SymbolKind::Function => match &obj.get_sema_info().ty {
-                    Some(ty) => match &ty.kind {
+            }
+            kcl_sema::core::symbol::SymbolKind::Attribute => {
+                let sema_info = obj.get_sema_info();
+                let attr_symbol = gs.get_symbols().get_attr_symbol(def_ref).unwrap();
+                let default_value_content = match attr_symbol.get_default_value() {
+                    Some(s) => format!(" = {}", s),
+                    None => "".to_string(),
+                };
+                if let Some(ty) = &sema_info.ty {
+                    docs.push((
+                        format!(
+                            "{}: {}{}",
+                            &obj.get_name(),
+                            ty.ty_hint(),
+                            default_value_content
+                        ),
+                        MarkedStringType::LanguageString,
+                    ));
+                    if let Some(doc) = &sema_info.doc
+                        && !doc.is_empty()
+                    {
+                        docs.push((doc.clone(), MarkedStringType::String));
+                    }
+                }
+            }
+            kcl_sema::core::symbol::SymbolKind::Value
+            | kcl_sema::core::symbol::SymbolKind::Function => {
+                if let Some(ty) = &obj.get_sema_info().ty {
+                    match &ty.kind {
                         kcl_sema::ty::TypeKind::Function(func_ty) => {
                             docs.append(&mut build_func_hover_content(
                                 func_ty.clone(),
@@ -134,38 +132,33 @@ pub fn hover(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::Hover> {
                                 MarkedStringType::LanguageString,
                             ));
                         }
-                    },
-                    _ => {}
-                },
-                kcl_sema::core::symbol::SymbolKind::Expression => return None,
-                kcl_sema::core::symbol::SymbolKind::Comment => return None,
-                kcl_sema::core::symbol::SymbolKind::Decorator => {
-                    match BUILTIN_DECORATORS.get(&obj.get_name()) {
-                        Some(ty) => {
-                            let mut hover_content = build_func_hover_content(
-                                ty.into_func_type(),
-                                obj.get_name().clone(),
-                            );
-
-                            docs.append(&mut hover_content);
-                        }
-                        None => todo!(),
                     }
                 }
-                _ => {
-                    let ty_str = match &obj.get_sema_info().ty {
-                        Some(ty) => ty.ty_str(),
-                        None => "".to_string(),
-                    };
-                    docs.push((
-                        format!("{}: {}", &obj.get_name(), ty_str),
-                        MarkedStringType::LanguageString,
-                    ));
+            }
+            kcl_sema::core::symbol::SymbolKind::Expression => return None,
+            kcl_sema::core::symbol::SymbolKind::Comment => return None,
+            kcl_sema::core::symbol::SymbolKind::Decorator => {
+                match BUILTIN_DECORATORS.get(&obj.get_name()) {
+                    Some(ty) => {
+                        let mut hover_content =
+                            build_func_hover_content(ty.into_func_type(), obj.get_name().clone());
+
+                        docs.append(&mut hover_content);
+                    }
+                    None => todo!(),
                 }
-            },
-            None => {}
-        },
-        None => {}
+            }
+            _ => {
+                let ty_str = match &obj.get_sema_info().ty {
+                    Some(ty) => ty.ty_str(),
+                    None => "".to_string(),
+                };
+                docs.push((
+                    format!("{}: {}", &obj.get_name(), ty_str),
+                    MarkedStringType::LanguageString,
+                ));
+            }
+        }
     }
     docs_to_hover(docs)
 }
@@ -811,7 +804,7 @@ mod tests {
         };
         let got = hover(&pos, &gs).unwrap();
 
-        let expect_content = vec![
+        let expect_content = [
             lsp_types::MarkedString::String("__main__".to_string()),
             lsp_types::MarkedString::LanguageString(lsp_types::LanguageString {
                 language: "KCL".to_string(),

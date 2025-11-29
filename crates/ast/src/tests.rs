@@ -156,7 +156,7 @@ fn test_mut_walker() {
 
 #[test]
 fn test_try_from_for_stringlit() {
-    let str_lit = ast::StringLit::try_from("test_str".to_string()).unwrap();
+    let str_lit = ast::StringLit::from("test_str".to_string());
     let json_str = serde_json::to_string(&str_lit).unwrap();
 
     let str_expected =
@@ -214,9 +214,9 @@ fn test_filter_schema_with_mult_schema() {
     ast_mod.body.append(&mut gen_schema_stmts);
     let schema_stmts = ast_mod.filter_schema_stmt_from_module();
     assert_eq!(schema_stmts.len(), 10);
-    for i in 0..10 {
+    for (i, item) in schema_stmts.iter().enumerate().take(10) {
         assert_eq!(
-            schema_stmts[i].node.name.node,
+            item.node.name.node,
             "schema_stmt_".to_string() + &i.to_string()
         )
     }
@@ -243,14 +243,14 @@ fn test_build_assign_stmt() {
             match iden.ctx {
                 ast::ExprContext::Load => {}
                 _ => {
-                    assert!(false);
+                    unreachable!()
                 }
             }
         } else {
-            assert!(false);
+            unreachable!()
         }
     } else {
-        assert!(false);
+        unreachable!()
     }
 }
 

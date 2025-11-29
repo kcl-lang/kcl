@@ -381,9 +381,9 @@ impl SchemaType {
         let params_str = if !params.is_empty() && !base.is_empty() {
             format!("\\{}{}", params, base)
         } else if !params.is_empty() {
-            format!("{}", params)
+            params.to_string()
         } else if !base.is_empty() {
-            format!("{}", base)
+            base.to_string()
         } else {
             "".to_string()
         };

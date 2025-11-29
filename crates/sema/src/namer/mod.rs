@@ -1,3 +1,5 @@
+#![allow(clippy::arc_with_non_send_sync)]
+
 /*
   ┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
   │                                              namer                                              │
@@ -124,7 +126,7 @@ impl<'ctx> Namer<'ctx> {
         namer.define_symbols();
     }
 
-    fn walk_pkg(&mut self, name: &String, modules: &Vec<String>) {
+    fn walk_pkg(&mut self, name: &str, modules: &[String]) {
         // new pkgs or invalidate pkg
         if self.gs.get_packages().get_package_info(name).is_some()
             && !self.gs.new_or_invalidate_pkgs.contains(name)
@@ -133,7 +135,7 @@ impl<'ctx> Namer<'ctx> {
         }
 
         // add new pkgs to invalidate pkgs
-        self.gs.new_or_invalidate_pkgs.insert(name.clone());
+        self.gs.new_or_invalidate_pkgs.insert(name.to_string());
 
         {
             if modules.is_empty() {
@@ -141,7 +143,7 @@ impl<'ctx> Namer<'ctx> {
             }
             self.ctx.value_fully_qualified_name_set.clear();
             let mut real_path = Path::new(&self.ctx.program.root)
-                .join(name.replace('.', &std::path::MAIN_SEPARATOR.to_string()))
+                .join(name.replace('.', std::path::MAIN_SEPARATOR_STR))
                 .to_str()
                 .unwrap()
                 .to_string();
@@ -154,7 +156,7 @@ impl<'ctx> Namer<'ctx> {
                 column: None,
             };
 
-            let pkg_symbol = PackageSymbol::new(name.clone(), pkg_pos.clone(), pkg_pos);
+            let pkg_symbol = PackageSymbol::new(name.to_string(), pkg_pos.clone(), pkg_pos);
             let symbol_ref = self
                 .gs
                 .get_symbols_mut()
@@ -224,7 +226,7 @@ impl<'ctx> Namer<'ctx> {
                 system_pkg_name.to_string(),
             );
             for func_name in get_system_module_members(system_pkg_name) {
-                let func_ty = get_system_member_function_ty(*system_pkg_name, func_name);
+                let func_ty = get_system_member_function_ty(system_pkg_name, func_name);
                 let mut func_symbol = FunctionSymbol::new(
                     func_name.to_string(),
                     Position::dummy_pos(),

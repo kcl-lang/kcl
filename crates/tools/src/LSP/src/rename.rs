@@ -78,10 +78,10 @@ fn package_path_to_file_path(pkg_path: &str, vfs: KCLVfs) -> Vec<String> {
     // first search as directory(KCL package in the strict sense)
     result.extend(vfs_read.iter().filter_map(|(_, vfs_path)| {
         let path = PathBuf::from(vfs_path.to_string());
-        if let Some(parent) = path.parent() {
-            if parent == pkg {
-                return Some(vfs_path.to_string());
-            }
+        if let Some(parent) = path.parent()
+            && parent == pkg
+        {
+            return Some(vfs_path.to_string());
         }
         None
     }));
@@ -128,23 +128,21 @@ where
         file_paths,
         vfs.clone(),
         trans_vfs_path,
-    ) {
-        if let Some(symbol_ref) = gs
-            .get_symbols()
-            .get_symbol_by_fully_qualified_name(kcl_ast::MAIN_PKG)
-        {
-            let mut owner_ref = symbol_ref;
-            let mut target = None;
-            for field in &fields {
-                let owner = gs.get_symbols().get_symbol(owner_ref).unwrap();
-                target = owner.get_attribute(field, gs.get_symbols(), None);
-                if let Some(target) = target {
-                    owner_ref = target;
-                }
+    ) && let Some(symbol_ref) = gs
+        .get_symbols()
+        .get_symbol_by_fully_qualified_name(kcl_ast::MAIN_PKG)
+    {
+        let mut owner_ref = symbol_ref;
+        let mut target = None;
+        for field in &fields {
+            let owner = gs.get_symbols().get_symbol(owner_ref).unwrap();
+            target = owner.get_attribute(field, gs.get_symbols(), None);
+            if let Some(target) = target {
+                owner_ref = target;
             }
-            let target_symbol = gs.get_symbols().get_symbol(target?)?;
-            return Some((target_symbol.get_name(), target_symbol.get_range().clone()));
         }
+        let target_symbol = gs.get_symbols().get_symbol(target?)?;
+        return Some((target_symbol.get_name(), target_symbol.get_range().clone()));
     }
     None
 }
@@ -250,6 +248,7 @@ fn apply_rename_changes(
                 let updated_end_line = apply_text_edit(&end_line_edit, end_line_text);
                 updated_lines[start_line] = format!("{}{}", updated_start_line, updated_end_line);
 
+                #[allow(clippy::needless_range_loop)]
                 for line_num in (start_line + 1)..end_line + 1 {
                     // todo, record lines to be deleted, instead of update to empty string
                     // from start+1 to end
@@ -352,12 +351,11 @@ where
                     ) {
                         for loc in locs {
                             let kcl_pos = kcl_pos(fp, loc.range.start);
-                            if let Some(symbol_ref) = find_def(&kcl_pos, &gs, true) {
-                                if let Some(symbol_def) = gs.get_symbols().get_symbol(symbol_ref) {
-                                    if symbol_def.get_range() == range {
-                                        refs.push(loc)
-                                    }
-                                }
+                            if let Some(symbol_ref) = find_def(&kcl_pos, &gs, true)
+                                && let Some(symbol_def) = gs.get_symbols().get_symbol(symbol_ref)
+                                && symbol_def.get_range() == range
+                            {
+                                refs.push(loc)
                             }
                         }
                     };

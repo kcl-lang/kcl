@@ -66,7 +66,7 @@ impl SelectorInner {
                 return None;
             }
         }
-        return selector;
+        selector
     }
 
     fn init(&mut self) {
@@ -112,7 +112,7 @@ impl Selector {
             _ => {}
         }
 
-        return self.inner.has_err;
+        self.inner.has_err
     }
 
     fn switch_top_variable(&mut self, variable: Variable) {
@@ -144,7 +144,7 @@ impl Selector {
         if let Some(popped) = self.inner.var_store.front() {
             self.select_result
                 .entry(key.clone())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(popped.clone());
         }
     }
@@ -165,7 +165,7 @@ impl Selector {
             .collect::<VecDeque<String>>();
 
         res.insert(spec.to_string(), self.find_variables(variable.clone()));
-        return res;
+        res
     }
 
     fn find_variables(&mut self, variable: Variable) -> Vec<Variable> {
@@ -173,30 +173,28 @@ impl Selector {
         let mut variables = Vec::new();
         if self.inner.current_spec_items.is_empty() {
             variables.push(variable.clone());
-        } else {
-            if let Some(selector) = self.inner.pop_front() {
-                if variable.name == selector {
-                    if self.inner.current_spec_items.is_empty() {
-                        variables.push(variable.clone());
-                    } else {
-                        if variable.is_dict() {
-                            for entry in &variable.dict_entries {
-                                variables.append(&mut self.find_variables(entry.value.clone()));
-                            }
-                        }
+        } else if let Some(selector) = self.inner.pop_front()
+            && variable.name == selector
+        {
+            if self.inner.current_spec_items.is_empty() {
+                variables.push(variable.clone());
+            } else {
+                if variable.is_dict() {
+                    for entry in &variable.dict_entries {
+                        variables.append(&mut self.find_variables(entry.value.clone()));
+                    }
+                }
 
-                        if variable.is_list() {
-                            for item in &variable.list_items {
-                                variables.append(&mut self.find_variables(item.clone()));
-                            }
-                        }
+                if variable.is_list() {
+                    for item in &variable.list_items {
+                        variables.append(&mut self.find_variables(item.clone()));
                     }
                 }
             }
         }
 
         self.inner.restore();
-        return variables;
+        variables
     }
 
     // The value of Variable includes the three types: String, List, Dict.
@@ -223,9 +221,11 @@ impl Selector {
                 for item in &dict.items {
                     let key = get_key_path(&item.node.key);
 
-                    let mut variable = Variable::default();
-                    variable.name = key.to_string();
-                    variable.op_sym = item.node.operation.symbol().to_string();
+                    let mut variable = Variable {
+                        name: key.to_string(),
+                        op_sym: item.node.operation.symbol().to_string(),
+                        ..Default::default()
+                    };
                     self.fill_variable_value(&mut variable, &item.node.value.node);
                     variables.push(DictEntry {
                         key,
@@ -240,9 +240,11 @@ impl Selector {
                     for item in &config_expr.items {
                         let key = get_key_path(&item.node.key);
 
-                        let mut variable = Variable::default();
-                        variable.name = key.to_string();
-                        variable.op_sym = item.node.operation.symbol().to_string();
+                        let mut variable = Variable {
+                            name: key.to_string(),
+                            op_sym: item.node.operation.symbol().to_string(),
+                            ..Default::default()
+                        };
                         self.fill_variable_value(&mut variable, &item.node.value.node);
                         variables.push(DictEntry {
                             key,
@@ -252,12 +254,12 @@ impl Selector {
                     variable.dict_entries = variables;
                 }
             }
-            _ => return,
+            _ => (),
         }
     }
 }
 
-impl<'ctx> MutSelfWalker for Selector {
+impl MutSelfWalker for Selector {
     fn walk_module(&mut self, module: &ast::Module) {
         let select_paths = self.select_specs.clone();
         // If there is no select path, walk the entire module
@@ -292,7 +294,7 @@ impl<'ctx> MutSelfWalker for Selector {
         let target = &Some(Box::new(ast::Node::dummy_node(ast::Expr::Identifier(
             target.node.clone(),
         ))));
-        let target = get_key_path(&target);
+        let target = get_key_path(target);
         let mut variable = Variable::default();
         // If the spec is empty, all the top level variables are returned.
         if self.inner.current_spec.is_empty() {
@@ -310,27 +312,27 @@ impl<'ctx> MutSelfWalker for Selector {
         } else {
             // if length of spec is largr or equal to target
             let selector = self.inner.pop_front();
-            if let Some(selector) = selector {
-                if selector == target.to_string() {
-                    variable.name = target.to_string();
-                    variable.type_name = unification_stmt.value.node.name.node.get_name();
-                    variable.op_sym = ast::ConfigEntryOperation::Union.symbol().to_string();
-                    if self.inner.current_spec_items.is_empty() {
-                        self.fill_variable_value(
-                            &mut variable,
-                            &ast::Expr::Schema(unification_stmt.value.node.clone()),
-                        );
-                        self.switch_top_variable(variable.clone());
-                        self.push_variable(variable);
-                        stack_size += 1;
-                        self.store_variable(target.to_string());
-                    } else {
-                        self.switch_top_variable(variable.clone());
-                        self.push_variable(variable);
-                        stack_size += 1;
-                        // walk ahead
-                        self.walk_schema_expr(&unification_stmt.value.node);
-                    }
+            if let Some(selector) = selector
+                && selector == target
+            {
+                variable.name = target.to_string();
+                variable.type_name = unification_stmt.value.node.name.node.get_name();
+                variable.op_sym = ast::ConfigEntryOperation::Union.symbol().to_string();
+                if self.inner.current_spec_items.is_empty() {
+                    self.fill_variable_value(
+                        &mut variable,
+                        &ast::Expr::Schema(unification_stmt.value.node.clone()),
+                    );
+                    self.switch_top_variable(variable.clone());
+                    self.push_variable(variable);
+                    stack_size += 1;
+                    self.store_variable(target.to_string());
+                } else {
+                    self.switch_top_variable(variable.clone());
+                    self.push_variable(variable);
+                    stack_size += 1;
+                    // walk ahead
+                    self.walk_schema_expr(&unification_stmt.value.node);
                 }
             }
         }
@@ -375,37 +377,37 @@ impl<'ctx> MutSelfWalker for Selector {
             for target in &assign_stmt.targets {
                 let target = get_target_path(&target.node);
                 let selector = self.inner.pop_front();
-                if let Some(selector) = selector {
-                    if selector == target {
-                        let type_name = if let ast::Expr::Schema(schema) = &assign_stmt.value.node {
-                            schema.name.node.get_name()
-                        } else {
-                            "".to_string()
-                        };
-                        let mut variable = variable.clone();
-                        variable.name = selector.to_string();
-                        variable.type_name = type_name;
-                        variable.op_sym = ast::ConfigEntryOperation::Override.symbol().to_string();
-                        if self.inner.current_spec_items.is_empty() {
-                            // matched
-                            self.fill_variable_value(&mut variable, &assign_stmt.value.node);
+                if let Some(selector) = selector
+                    && selector == target
+                {
+                    let type_name = if let ast::Expr::Schema(schema) = &assign_stmt.value.node {
+                        schema.name.node.get_name()
+                    } else {
+                        "".to_string()
+                    };
+                    let mut variable = variable.clone();
+                    variable.name = selector.to_string();
+                    variable.type_name = type_name;
+                    variable.op_sym = ast::ConfigEntryOperation::Override.symbol().to_string();
+                    if self.inner.current_spec_items.is_empty() {
+                        // matched
+                        self.fill_variable_value(&mut variable, &assign_stmt.value.node);
 
-                            self.switch_top_variable(variable.clone());
-                            self.push_variable(variable);
-                            stack_size += 1;
-                            // check the value of the assign statement is supported
-                            if self.check_node_supported(&assign_stmt.value.node) {
-                                self.inner.restore();
-                                return;
-                            }
-                            self.store_variable(target.to_string());
-                        } else {
-                            self.switch_top_variable(variable.clone());
-                            self.push_variable(variable);
-                            stack_size += 1;
-                            // walk ahead
-                            self.walk_expr(&assign_stmt.value.node)
+                        self.switch_top_variable(variable.clone());
+                        self.push_variable(variable);
+                        stack_size += 1;
+                        // check the value of the assign statement is supported
+                        if self.check_node_supported(&assign_stmt.value.node) {
+                            self.inner.restore();
+                            return;
                         }
+                        self.store_variable(target.to_string());
+                    } else {
+                        self.switch_top_variable(variable.clone());
+                        self.push_variable(variable);
+                        stack_size += 1;
+                        // walk ahead
+                        self.walk_expr(&assign_stmt.value.node)
                     }
                 }
             }
@@ -466,71 +468,70 @@ impl<'ctx> MutSelfWalker for Selector {
     }
 
     fn walk_if_expr(&mut self, if_expr: &ast::IfExpr) {
-        self.unsupported.push(UnsupportedSelectee::default());
-        let mut un_supported_selectee = UnsupportedSelectee::default();
-        un_supported_selectee.code = print_ast_node(ASTNode::Expr(&Box::new(
-            ast::Node::dummy_node(ast::Expr::If(if_expr.clone())),
-        )));
-        self.unsupported.push(un_supported_selectee);
+        self.unsupported.push(UnsupportedSelectee {
+            code: print_ast_node(ASTNode::Expr(&Box::new(ast::Node::dummy_node(
+                ast::Expr::If(if_expr.clone()),
+            )))),
+        });
         self.inner.has_err = true;
     }
 
     fn walk_list_if_item_expr(&mut self, list_if_item_expr: &ast::ListIfItemExpr) {
-        let mut un_supported_selectee = UnsupportedSelectee::default();
-        un_supported_selectee.code = print_ast_node(ASTNode::Expr(&Box::new(
-            ast::Node::dummy_node(ast::Expr::ListIfItem(list_if_item_expr.clone())),
-        )));
-        self.unsupported.push(un_supported_selectee);
+        self.unsupported.push(UnsupportedSelectee {
+            code: print_ast_node(ASTNode::Expr(&Box::new(ast::Node::dummy_node(
+                ast::Expr::ListIfItem(list_if_item_expr.clone()),
+            )))),
+        });
 
         self.inner.has_err = true;
     }
 
     fn walk_list_comp(&mut self, list_comp: &ast::ListComp) {
-        let mut un_supported_selectee = UnsupportedSelectee::default();
-        un_supported_selectee.code = print_ast_node(ASTNode::Expr(&Box::new(
-            ast::Node::dummy_node(ast::Expr::ListComp(list_comp.clone())),
-        )));
-        self.unsupported.push(un_supported_selectee);
+        self.unsupported.push(UnsupportedSelectee {
+            code: print_ast_node(ASTNode::Expr(&Box::new(ast::Node::dummy_node(
+                ast::Expr::ListComp(list_comp.clone()),
+            )))),
+        });
 
         self.inner.has_err = true;
     }
 
     fn walk_dict_comp(&mut self, dict_comp: &ast::DictComp) {
-        let mut un_supported_selectee = UnsupportedSelectee::default();
-        un_supported_selectee.code = print_ast_node(ASTNode::Expr(&Box::new(
-            ast::Node::dummy_node(ast::Expr::DictComp(dict_comp.clone())),
-        )));
-        self.unsupported.push(un_supported_selectee);
+        self.unsupported.push(UnsupportedSelectee {
+            code: print_ast_node(ASTNode::Expr(&Box::new(ast::Node::dummy_node(
+                ast::Expr::DictComp(dict_comp.clone()),
+            )))),
+        });
 
         self.inner.has_err = true;
     }
 
     fn walk_config_if_entry_expr(&mut self, config_if_entry_expr: &ast::ConfigIfEntryExpr) {
-        let mut un_supported_selectee = UnsupportedSelectee::default();
-        un_supported_selectee.code = print_ast_node(ASTNode::Expr(&Box::new(
-            ast::Node::dummy_node(ast::Expr::ConfigIfEntry(config_if_entry_expr.clone())),
-        )));
-        self.unsupported.push(un_supported_selectee);
+        self.unsupported.push(UnsupportedSelectee {
+            code: print_ast_node(ASTNode::Expr(&Box::new(ast::Node::dummy_node(
+                ast::Expr::ConfigIfEntry(config_if_entry_expr.clone()),
+            )))),
+        });
 
         self.inner.has_err = true;
     }
 
     fn walk_comp_clause(&mut self, comp_clause: &ast::CompClause) {
-        let mut un_supported_selectee = UnsupportedSelectee::default();
-        un_supported_selectee.code = print_ast_node(ASTNode::Expr(&Box::new(
-            ast::Node::dummy_node(ast::Expr::CompClause(comp_clause.clone())),
-        )));
-        self.unsupported.push(un_supported_selectee);
+        self.unsupported.push(UnsupportedSelectee {
+            code: print_ast_node(ASTNode::Expr(&Box::new(ast::Node::dummy_node(
+                ast::Expr::CompClause(comp_clause.clone()),
+            )))),
+        });
 
         self.inner.has_err = true;
     }
 
     fn walk_lambda_expr(&mut self, lambda_expr: &ast::LambdaExpr) {
-        let mut un_supported_selectee = UnsupportedSelectee::default();
-        un_supported_selectee.code = print_ast_node(ASTNode::Expr(&Box::new(
-            ast::Node::dummy_node(ast::Expr::Lambda(lambda_expr.clone())),
-        )));
-        self.unsupported.push(un_supported_selectee);
+        self.unsupported.push(UnsupportedSelectee {
+            code: print_ast_node(ASTNode::Expr(&Box::new(ast::Node::dummy_node(
+                ast::Expr::Lambda(lambda_expr.clone()),
+            )))),
+        });
         self.inner.has_err = true;
     }
 }
@@ -608,11 +609,11 @@ impl Variable {
     }
 
     pub fn is_union(&self) -> bool {
-        self.op_sym == ast::ConfigEntryOperation::Union.symbol().to_string()
+        self.op_sym == ast::ConfigEntryOperation::Union.symbol()
     }
 
     pub fn is_override(&self) -> bool {
-        self.op_sym == ast::ConfigEntryOperation::Override.symbol().to_string()
+        self.op_sym == ast::ConfigEntryOperation::Override.symbol()
     }
 
     pub fn is_dict(&self) -> bool {
@@ -632,43 +633,41 @@ impl Variable {
 
         if var.is_union() {
             // For int, float, str and bool types, when their values are different, they are considered as conflicts.
-            if self.is_base_type() && self.is_base_type() && self.value == self.value {
+            if self.is_base_type() && var.is_base_type() && self.value == var.value {
                 return self;
-            } else {
-                if self.is_dict() && var.is_dict() {
-                    let mut dict = BTreeMap::new();
-                    for entry in self.dict_entries.iter() {
+            } else if self.is_dict() && var.is_dict() {
+                let mut dict = BTreeMap::new();
+                for entry in self.dict_entries.iter() {
+                    dict.insert(entry.key.clone(), entry.value.clone());
+                }
+
+                for entry in var.dict_entries.iter() {
+                    if let Some(v) = dict.get_mut(&entry.key) {
+                        v.merge(&entry.value);
+                    } else {
                         dict.insert(entry.key.clone(), entry.value.clone());
                     }
+                }
 
-                    for entry in var.dict_entries.iter() {
-                        if let Some(v) = dict.get_mut(&entry.key) {
-                            v.merge(&entry.value);
-                        } else {
-                            dict.insert(entry.key.clone(), entry.value.clone());
-                        }
-                    }
+                self.dict_entries = dict
+                    .iter()
+                    .map(|(k, v)| DictEntry {
+                        key: k.clone(),
+                        value: v.clone(),
+                    })
+                    .collect();
 
-                    self.dict_entries = dict
-                        .iter()
-                        .map(|(k, v)| DictEntry {
-                            key: k.clone(),
-                            value: v.clone(),
-                        })
-                        .collect();
-
-                    let expr: Option<Box<ast::Node<ast::Expr>>> =
-                        build_expr_from_string(&self.to_string());
-                    if let Some(expr) = expr {
-                        self.value = print_ast_node(ASTNode::Expr(&expr));
-                    } else {
-                        self.value = self.to_string();
-                    }
+                let expr: Option<Box<ast::Node<ast::Expr>>> =
+                    build_expr_from_string(&self.to_string());
+                if let Some(expr) = expr {
+                    self.value = print_ast_node(ASTNode::Expr(&expr));
+                } else {
+                    self.value = self.to_string();
                 }
             }
         }
 
-        return self;
+        self
     }
 }
 
@@ -678,6 +677,7 @@ pub struct ListOptions {
 
 /// list_options provides users with the ability to parse kcl program and get all option
 /// calling information.
+#[allow(clippy::arc_with_non_send_sync)]
 pub fn list_variables(
     files: Vec<String>,
     specs: Vec<String>,
@@ -691,8 +691,10 @@ pub fn list_variables(
         None,
     )?;
 
-    let mut opts = Options::default();
-    opts.merge_program = true;
+    let opts = Options {
+        merge_program: true,
+        ..Default::default()
+    };
     pre_process_program(&mut load_result.program, &opts);
 
     for (_, modules) in load_result.program.pkgs.iter() {
@@ -701,7 +703,7 @@ pub fn list_variables(
                 .program
                 .get_module(module)
                 .expect("Failed to acquire module lock")
-                .expect(&format!("module {:?} not found in program", module));
+                .unwrap_or_else(|| panic!("module {:?} not found in program", module));
             selector.walk_module(&module);
         }
     }
@@ -714,7 +716,7 @@ pub fn list_variables(
                 .map(|(k, v)| (k.clone(), v.clone()))
                 .collect();
             for (key, mut vars) in keys_and_vars {
-                let mut tmp_var = vars.get(0).unwrap().clone();
+                let mut tmp_var = vars.first().unwrap().clone();
                 for var in vars.iter_mut().skip(1) {
                     tmp_var.merge(var);
                 }

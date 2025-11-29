@@ -1,3 +1,5 @@
+#![allow(clippy::arc_with_non_send_sync)]
+
 use crate::exec_program;
 use crate::{execute, runner::ExecProgramArgs};
 use anyhow::Result;
@@ -72,7 +74,7 @@ const KCL_FILE_NAME: &str = "main.k";
 const MAIN_PKG_NAME: &str = "__main__";
 
 #[derive(serde::Deserialize, serde::Serialize)]
-struct SimplePanicInfo {
+pub struct SimplePanicInfo {
     line: i32,
     col: i32,
     message: String,
@@ -164,7 +166,7 @@ fn test_from_str_program_arg() {
             .display()
             .to_string();
         let expected_json_str = fs::read_to_string(test_case_json_file).unwrap();
-        let exec_prog_args = ExecProgramArgs::from_str(&expected_json_str);
+        let exec_prog_args = ExecProgramArgs::from_json(&expected_json_str);
         assert_eq!(expected_json_str.trim(), exec_prog_args.to_json().trim());
     }
 }
@@ -208,7 +210,7 @@ fn test_exec_with_err_result() {
 }
 
 fn clean_dir(path: String) {
-    if let Ok(_) = fs::remove_dir_all(path) {}
+    if fs::remove_dir_all(path).is_ok() {}
 }
 
 #[test]

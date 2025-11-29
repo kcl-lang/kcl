@@ -395,7 +395,7 @@ impl ValueRef {
                 let mut cur = start;
                 for _i in 1..(slice_len + 1) {
                     let char = str.chars().nth(cur as usize).unwrap();
-                    slice.push_str(&char.to_string());
+                    slice.push(char);
                     cur += step;
                 }
                 ValueRef::str(&slice)

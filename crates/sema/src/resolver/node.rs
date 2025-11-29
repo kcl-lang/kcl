@@ -195,7 +195,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
                 if !value_ty.is_any() && expected_ty.is_any() && assign_stmt.ty.is_none() {
                     // When the type is inferred and paths of target are empty, set the type to
                     // the whole AST node `target` and the first name of node `target.node.name`
-                    self.set_infer_type_to_scope(name, value_ty.clone(), &target);
+                    self.set_infer_type_to_scope(name, value_ty.clone(), target);
                     self.set_infer_type_to_scope(name, value_ty.clone(), &target.node.name);
                     if let Some(schema_ty) = &self.ctx.schema {
                         let mut schema_ty = schema_ty.borrow_mut();
@@ -405,8 +405,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
             .borrow()
             .attrs
             .get(name)
-            .map(|attr| attr.doc.clone())
-            .flatten();
+            .and_then(|attr| attr.doc.clone());
 
         self.insert_object(
             name,
@@ -432,33 +431,24 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
                 self.expr(value)
             };
             match &schema_attr.op {
-                Some(bin_or_aug) => match bin_or_aug {
-                    // Union
-                    ast::AugOp::BitOr => {
-                        let op = ast::BinOp::BitOr;
-                        let value_ty = self.binary(
-                            value_ty,
-                            expected_ty.clone(),
-                            &op,
-                            schema_attr.name.get_span_pos(),
-                        );
-                        self.must_assignable_to(
-                            value_ty,
-                            expected_ty,
-                            schema_attr.name.get_span_pos(),
-                            None,
-                        );
-                    }
-                    // Assign
-                    _ => self.must_assignable_to(
+                // Union operator
+                Some(ast::AugOp::BitOr) => {
+                    let op = ast::BinOp::BitOr;
+                    let value_ty = self.binary(
+                        value_ty,
+                        expected_ty.clone(),
+                        &op,
+                        schema_attr.name.get_span_pos(),
+                    );
+                    self.must_assignable_to(
                         value_ty,
                         expected_ty,
                         schema_attr.name.get_span_pos(),
                         None,
-                    ),
-                },
+                    );
+                }
                 // Default is Assign
-                None => self.must_assignable_to(
+                _ => self.must_assignable_to(
                     value_ty,
                     expected_ty,
                     schema_attr.name.get_span_pos(),
@@ -583,7 +573,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
                 &call_expr.func,
                 &call_expr.args,
                 &call_expr.keywords,
-                &func_ty,
+                func_ty,
             );
             func_ty.return_ty.clone()
         } else if let TypeKind::Schema(schema_ty) = &call_ty.kind {
@@ -907,7 +897,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
                         );
                     }
                 } else {
-                    let func = Box::new(ast::Node::node_with_pos(
+                    let func = Box::new(ast::Node::new_with_pos(
                         ast::Expr::Identifier(schema_expr.name.node.clone()),
                         schema_expr.name.pos(),
                     ));
@@ -1000,7 +990,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
         let (start, end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
         if let Some(ret_annotation_ty) = &lambda_expr.return_ty {
             ret_ty =
-                self.parse_ty_with_scope(Some(&ret_annotation_ty), (start.clone(), end.clone()));
+                self.parse_ty_with_scope(Some(ret_annotation_ty), (start.clone(), end.clone()));
         }
         self.enter_scope(start.clone(), end.clone(), ScopeKind::Lambda);
         self.ctx.in_lambda_expr.push(true);
@@ -1018,19 +1008,19 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
                 },
             )
         }
-        if let Some(stmt) = lambda_expr.body.last() {
-            if !matches!(
+        if let Some(stmt) = lambda_expr.body.last()
+            && !matches!(
                 stmt.node,
                 ast::Stmt::Expr(_)
                     | ast::Stmt::Assign(_)
                     | ast::Stmt::AugAssign(_)
                     | ast::Stmt::Assert(_)
-            ) {
-                self.handler.add_compile_error(
-                    "The last statement of the lambda body must be a expression e.g., x, 1, etc.",
-                    stmt.get_span_pos(),
-                );
-            }
+            )
+        {
+            self.handler.add_compile_error(
+                "The last statement of the lambda body must be a expression e.g., x, 1, etc.",
+                stmt.get_span_pos(),
+            );
         }
         // Walk lambda body statements except the last statement.
         if lambda_expr.body.len() > 1 {
@@ -1140,7 +1130,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
 
     fn walk_target(&mut self, target: &'ctx ast::Target) -> Self::Result {
         let tys = self.resolve_target(
-            &target,
+            target,
             (self.ctx.start_pos.clone(), self.ctx.end_pos.clone()),
         );
         if let Some(ty) = tys.first() {
@@ -1154,8 +1144,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
                 tys.get(index + 1).unwrap_or(&self.any_ty()).clone(),
             );
         }
-        let target_ty = tys.last().unwrap_or(&self.any_ty()).clone();
-        target_ty
+
+        tys.last().unwrap_or(&self.any_ty()).clone()
     }
 
     fn walk_number_lit(&mut self, number_lit: &'ctx ast::NumberLit) -> Self::Result {
@@ -1233,7 +1223,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
 
 impl<'ctx> Resolver<'_> {
     pub fn stmts(&mut self, stmts: &'ctx [ast::NodeRef<ast::Stmt>]) -> ResolvedResult {
-        let stmt_types: Vec<TypeRef> = stmts.iter().map(|stmt| self.stmt(&stmt)).collect();
+        let stmt_types: Vec<TypeRef> = stmts.iter().map(|stmt| self.stmt(stmt)).collect();
         match stmt_types.last() {
             Some(ty) => ty.clone(),
             _ => self.any_ty(),
@@ -1242,7 +1232,7 @@ impl<'ctx> Resolver<'_> {
 
     #[inline]
     pub fn exprs(&mut self, exprs: &'ctx [ast::NodeRef<ast::Expr>]) -> Vec<ResolvedResult> {
-        exprs.iter().map(|expr| self.expr(&expr)).collect()
+        exprs.iter().map(|expr| self.expr(expr)).collect()
     }
 
     pub fn expr(&mut self, expr: &'ctx ast::NodeRef<ast::Expr>) -> ResolvedResult {

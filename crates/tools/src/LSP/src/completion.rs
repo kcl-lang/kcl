@@ -125,30 +125,23 @@ pub fn completion(
                 // Complete builtin functions in root scope and lambda
                 match scope.get_kind() {
                     kcl_sema::core::scope::ScopeKind::Local => {
-                        if let Some(local_scope) = gs.get_scopes().try_get_local_scope(&scope) {
-                            match local_scope.get_kind() {
-                                kcl_sema::core::scope::LocalSymbolScopeKind::Lambda => {
-                                    completions.extend(BUILTIN_FUNCTIONS.iter().map(
-                                        |(name, ty)| KCLCompletionItem {
-                                            label: func_ty_complete_label(
-                                                name,
-                                                &ty.into_func_type(),
-                                            ),
-                                            detail: Some(
-                                                ty.into_func_type().func_signature_str(name),
-                                            ),
-                                            documentation: ty.ty_doc(),
-                                            kind: Some(KCLCompletionItemKind::Function),
-                                            insert_text: Some(func_ty_complete_insert_text(
-                                                name,
-                                                &ty.into_func_type(),
-                                            )),
-                                            additional_text_edits: None,
-                                        },
-                                    ));
+                        if let Some(local_scope) = gs.get_scopes().try_get_local_scope(&scope)
+                            && local_scope.get_kind()
+                                == &kcl_sema::core::scope::LocalSymbolScopeKind::Lambda
+                        {
+                            completions.extend(BUILTIN_FUNCTIONS.iter().map(|(name, ty)| {
+                                KCLCompletionItem {
+                                    label: func_ty_complete_label(name, &ty.into_func_type()),
+                                    detail: Some(ty.into_func_type().func_signature_str(name)),
+                                    documentation: ty.ty_doc(),
+                                    kind: Some(KCLCompletionItemKind::Function),
+                                    insert_text: Some(func_ty_complete_insert_text(
+                                        name,
+                                        &ty.into_func_type(),
+                                    )),
+                                    additional_text_edits: None,
                                 }
-                                _ => {}
-                            }
+                            }));
                         }
                     }
                     kcl_sema::core::scope::ScopeKind::Root => {
@@ -175,54 +168,49 @@ pub fn completion(
                 // Complete all usable symbol obj in inner most scope
                 if let Some(defs) = gs.get_all_defs_in_scope(scope, pos) {
                     for symbol_ref in defs {
-                        match gs.get_symbols().get_symbol(symbol_ref) {
-                            Some(def) => {
-                                let sema_info = def.get_sema_info();
-                                let name = def.get_name();
-                                match &sema_info.ty {
-                                    Some(ty) => match symbol_ref.get_kind() {
-                                        SymbolKind::Schema => {
-                                            let schema_ty = ty.into_schema_type();
-                                            // complete schema type
-                                            completions.insert(schema_ty_to_type_complete_item(
-                                                &schema_ty,
-                                            ));
-                                            // complete schema value
-                                            completions.insert(schema_ty_to_value_complete_item(
-                                                &schema_ty, true,
-                                            ));
-                                        }
-                                        SymbolKind::Package => {
-                                            completions.insert(KCLCompletionItem {
-                                                label: name,
-                                                detail: Some(ty.ty_str()),
-                                                documentation: sema_info.doc.clone(),
-                                                kind: Some(KCLCompletionItemKind::Module),
-                                                insert_text: None,
-                                                additional_text_edits: None,
-                                            });
-                                        }
-                                        _ => {
-                                            let detail = match &ty.kind {
-                                                TypeKind::Function(func_ty) => {
-                                                    func_ty.func_signature_str(&name)
-                                                }
-                                                _ => ty.ty_str(),
-                                            };
-                                            completions.insert(KCLCompletionItem {
-                                                label: name,
-                                                detail: Some(detail),
-                                                documentation: sema_info.doc.clone(),
-                                                kind: type_to_item_kind(ty),
-                                                insert_text: None,
-                                                additional_text_edits: None,
-                                            });
-                                        }
-                                    },
-                                    None => {}
+                        if let Some(def) = gs.get_symbols().get_symbol(symbol_ref) {
+                            let sema_info = def.get_sema_info();
+                            let name = def.get_name();
+                            if let Some(ty) = &sema_info.ty {
+                                match symbol_ref.get_kind() {
+                                    SymbolKind::Schema => {
+                                        let schema_ty = ty.into_schema_type();
+                                        // complete schema type
+                                        completions
+                                            .insert(schema_ty_to_type_complete_item(&schema_ty));
+                                        // complete schema value
+                                        completions.insert(schema_ty_to_value_complete_item(
+                                            &schema_ty, true,
+                                        ));
+                                    }
+                                    SymbolKind::Package => {
+                                        completions.insert(KCLCompletionItem {
+                                            label: name,
+                                            detail: Some(ty.ty_str()),
+                                            documentation: sema_info.doc.clone(),
+                                            kind: Some(KCLCompletionItemKind::Module),
+                                            insert_text: None,
+                                            additional_text_edits: None,
+                                        });
+                                    }
+                                    _ => {
+                                        let detail = match &ty.kind {
+                                            TypeKind::Function(func_ty) => {
+                                                func_ty.func_signature_str(&name)
+                                            }
+                                            _ => ty.ty_str(),
+                                        };
+                                        completions.insert(KCLCompletionItem {
+                                            label: name,
+                                            detail: Some(detail),
+                                            documentation: sema_info.doc.clone(),
+                                            kind: type_to_item_kind(ty),
+                                            insert_text: None,
+                                            additional_text_edits: None,
+                                        });
+                                    }
                                 }
                             }
-                            None => {}
                         }
                     }
                 }
@@ -245,7 +233,7 @@ fn completion_dot(
     let pre_pos = KCLPos {
         filename: pos.filename.clone(),
         line: pos.line,
-        column: pos.column.map(|c| if c >= 1 { c - 1 } else { 0 }),
+        column: pos.column.map(|c| c.saturating_sub(1)),
     };
 
     if let Some(stmt) = program.pos_to_stmt(&pre_pos) {
@@ -287,74 +275,67 @@ fn completion_dot(
         None => None,
     };
 
-    match def {
-        Some(def_ref) => {
-            if let Some(def) = gs.get_symbols().get_symbol(def_ref) {
-                let module_info = gs.get_packages().get_module_info(&pos.filename);
-                let attrs = def.get_all_attributes(gs.get_symbols(), module_info);
-                for attr in attrs {
-                    let attr_def = gs.get_symbols().get_symbol(attr);
-                    if let Some(attr_def) = attr_def {
-                        let sema_info = attr_def.get_sema_info();
-                        let name = attr_def.get_name();
-                        match &sema_info.ty {
-                            Some(attr_ty) => {
-                                let label: String = match &attr_ty.kind {
-                                    TypeKind::Function(func_ty) => {
-                                        func_ty_complete_label(&name, func_ty)
-                                    }
-                                    _ => name.clone(),
-                                };
-                                let insert_text = match &attr_ty.kind {
-                                    TypeKind::Function(func_ty) => {
-                                        Some(func_ty_complete_insert_text(&name, func_ty))
-                                    }
-                                    _ => None,
-                                };
-                                let kind = match &def.get_sema_info().ty {
-                                    Some(symbol_ty) => match &symbol_ty.kind {
-                                        TypeKind::Schema(_) => {
-                                            Some(KCLCompletionItemKind::SchemaAttr)
-                                        }
-                                        _ => type_to_item_kind(attr_ty),
-                                    },
-                                    None => type_to_item_kind(attr_ty),
-                                };
-                                let documentation = match &sema_info.doc {
-                                    Some(doc) => {
-                                        if doc.is_empty() {
-                                            None
-                                        } else {
-                                            Some(doc.clone())
-                                        }
-                                    }
-                                    None => None,
-                                };
-                                items.insert(KCLCompletionItem {
-                                    label,
-                                    detail: Some(format!("{}: {}", name, attr_ty.ty_str())),
-                                    documentation,
-                                    kind,
-                                    insert_text,
-                                    additional_text_edits: None,
-                                });
+    if let Some(def_ref) = def
+        && let Some(def) = gs.get_symbols().get_symbol(def_ref)
+    {
+        let module_info = gs.get_packages().get_module_info(&pos.filename);
+        let attrs = def.get_all_attributes(gs.get_symbols(), module_info);
+        for attr in attrs {
+            let attr_def = gs.get_symbols().get_symbol(attr);
+            if let Some(attr_def) = attr_def {
+                let sema_info = attr_def.get_sema_info();
+                let name = attr_def.get_name();
+                match &sema_info.ty {
+                    Some(attr_ty) => {
+                        let label: String = match &attr_ty.kind {
+                            TypeKind::Function(func_ty) => func_ty_complete_label(&name, func_ty),
+                            _ => name.clone(),
+                        };
+                        let insert_text = match &attr_ty.kind {
+                            TypeKind::Function(func_ty) => {
+                                Some(func_ty_complete_insert_text(&name, func_ty))
                             }
-                            None => {
-                                items.insert(KCLCompletionItem {
-                                    label: name,
-                                    detail: None,
-                                    documentation: None,
-                                    kind: None,
-                                    insert_text: None,
-                                    additional_text_edits: None,
-                                });
+                            _ => None,
+                        };
+                        let kind = match &def.get_sema_info().ty {
+                            Some(symbol_ty) => match &symbol_ty.kind {
+                                TypeKind::Schema(_) => Some(KCLCompletionItemKind::SchemaAttr),
+                                _ => type_to_item_kind(attr_ty),
+                            },
+                            None => type_to_item_kind(attr_ty),
+                        };
+                        let documentation = match &sema_info.doc {
+                            Some(doc) => {
+                                if doc.is_empty() {
+                                    None
+                                } else {
+                                    Some(doc.clone())
+                                }
                             }
-                        }
+                            None => None,
+                        };
+                        items.insert(KCLCompletionItem {
+                            label,
+                            detail: Some(format!("{}: {}", name, attr_ty.ty_str())),
+                            documentation,
+                            kind,
+                            insert_text,
+                            additional_text_edits: None,
+                        });
+                    }
+                    None => {
+                        items.insert(KCLCompletionItem {
+                            label: name,
+                            detail: None,
+                            documentation: None,
+                            kind: None,
+                            insert_text: None,
+                            additional_text_edits: None,
+                        });
                     }
                 }
             }
         }
-        None => {}
     }
     Some(into_completion_items(&items).into())
 }
@@ -363,43 +344,29 @@ fn completion_dot(
 /// Now, just completion for schema attr value
 fn completion_assign(pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::CompletionResponse> {
     let mut items = IndexSet::with_hasher(DefaultHashBuilder::default());
-    if let Some(symbol_ref) = find_def(pos, gs, false) {
-        if let Some(symbol) = gs.get_symbols().get_symbol(symbol_ref) {
-            if let Some(def) = symbol.get_definition() {
-                match def.get_kind() {
-                    SymbolKind::Attribute => {
-                        let sema_info = symbol.get_sema_info();
-                        match &sema_info.ty {
-                            Some(ty) => {
-                                items.extend(
-                                    ty_complete_label_and_inser_text(
-                                        ty,
-                                        gs.get_packages().get_module_info(&pos.filename),
-                                    )
-                                    .iter()
-                                    .map(
-                                        |(label, insert_text)| KCLCompletionItem {
-                                            label: format!(" {}", label),
-                                            detail: Some(format!(
-                                                "{}: {}",
-                                                symbol.get_name(),
-                                                ty.ty_str()
-                                            )),
-                                            kind: Some(KCLCompletionItemKind::Variable),
-                                            documentation: sema_info.doc.clone(),
-                                            insert_text: Some(format!(" {}", insert_text)),
-                                            additional_text_edits: None,
-                                        },
-                                    ),
-                                );
-                                return Some(into_completion_items(&items).into());
-                            }
-                            None => {}
-                        }
-                    }
-                    _ => {}
-                }
-            }
+    if let Some(symbol_ref) = find_def(pos, gs, false)
+        && let Some(symbol) = gs.get_symbols().get_symbol(symbol_ref)
+        && let Some(def) = symbol.get_definition()
+        && def.get_kind() == SymbolKind::Attribute
+    {
+        let sema_info = symbol.get_sema_info();
+        if let Some(ty) = &sema_info.ty {
+            items.extend(
+                ty_complete_label_and_inser_text(
+                    ty,
+                    gs.get_packages().get_module_info(&pos.filename),
+                )
+                .iter()
+                .map(|(label, insert_text)| KCLCompletionItem {
+                    label: format!(" {}", label),
+                    detail: Some(format!("{}: {}", symbol.get_name(), ty.ty_str())),
+                    kind: Some(KCLCompletionItemKind::Variable),
+                    documentation: sema_info.doc.clone(),
+                    insert_text: Some(format!(" {}", insert_text)),
+                    additional_text_edits: None,
+                }),
+            );
+            return Some(into_completion_items(&items).into());
         }
     }
     None
@@ -432,46 +399,37 @@ fn completion_newline(
     }
 
     // Complete schema attr when input newline in schema
-    if let Some(scope) = gs.look_up_scope(pos) {
-        if let ScopeKind::Local = scope.get_kind() {
-            if let Some(locol_scope) = gs.get_scopes().try_get_local_scope(&scope) {
-                if let LocalSymbolScopeKind::Config = locol_scope.get_kind() {
-                    if let Some(defs) = gs.get_defs_within_scope(scope, pos) {
-                        for symbol_ref in defs {
-                            match gs.get_symbols().get_symbol(symbol_ref) {
-                                Some(def) => {
-                                    let sema_info = def.get_sema_info();
-                                    let name = def.get_name();
-                                    match symbol_ref.get_kind() {
-                                        SymbolKind::Attribute => {
-                                            completions.insert(KCLCompletionItem {
-                                                label: name.clone(),
-                                                detail: sema_info
-                                                    .ty
-                                                    .as_ref()
-                                                    .map(|ty| format!("{}: {}", name, ty.ty_str())),
-                                                documentation: match &sema_info.doc {
-                                                    Some(doc) => {
-                                                        if doc.is_empty() {
-                                                            None
-                                                        } else {
-                                                            Some(doc.clone())
-                                                        }
-                                                    }
-                                                    None => None,
-                                                },
-                                                kind: Some(KCLCompletionItemKind::SchemaAttr),
-                                                insert_text: None,
-                                                additional_text_edits: None,
-                                            });
-                                        }
-                                        _ => {}
-                                    }
+    if let Some(scope) = gs.look_up_scope(pos)
+        && let ScopeKind::Local = scope.get_kind()
+        && let Some(locol_scope) = gs.get_scopes().try_get_local_scope(&scope)
+        && let LocalSymbolScopeKind::Config = locol_scope.get_kind()
+        && let Some(defs) = gs.get_defs_within_scope(scope, pos)
+    {
+        for symbol_ref in defs {
+            if let Some(def) = gs.get_symbols().get_symbol(symbol_ref) {
+                let sema_info = def.get_sema_info();
+                let name = def.get_name();
+                if symbol_ref.get_kind() == SymbolKind::Attribute {
+                    completions.insert(KCLCompletionItem {
+                        label: name.clone(),
+                        detail: sema_info
+                            .ty
+                            .as_ref()
+                            .map(|ty| format!("{}: {}", name, ty.ty_str())),
+                        documentation: match &sema_info.doc {
+                            Some(doc) => {
+                                if doc.is_empty() {
+                                    None
+                                } else {
+                                    Some(doc.clone())
                                 }
-                                None => {}
                             }
-                        }
-                    }
+                            None => None,
+                        },
+                        kind: Some(KCLCompletionItemKind::SchemaAttr),
+                        insert_text: None,
+                        additional_text_edits: None,
+                    });
                 }
             }
         }
@@ -496,12 +454,12 @@ fn completion_import_stmt(
         column: Some(0),
     };
 
-    if let Some(node) = program.pos_to_stmt(line_start_pos) {
-        if let Stmt::Import(_) = node.node {
-            completions.extend(completion_import_builtin_pkg());
-            completions.extend(completion_import_internal_pkg(program, line_start_pos));
-            completions.extend(completion_import_external_pkg(metadata));
-        }
+    if let Some(node) = program.pos_to_stmt(line_start_pos)
+        && let Stmt::Import(_) = node.node
+    {
+        completions.extend(completion_import_builtin_pkg());
+        completions.extend(completion_import_internal_pkg(program, line_start_pos));
+        completions.extend(completion_import_external_pkg(metadata));
     }
     completions
 }
@@ -527,52 +485,50 @@ fn completion_import_internal_pkg(
     let mut completions: IndexSet<KCLCompletionItem> = Default::default();
     if let Ok(entries) = fs::read_dir(program.root.clone()) {
         for entry in entries {
-            if let Ok(entry) = entry {
-                if let Ok(file_type) = entry.file_type() {
-                    // internal pkgs
-                    if file_type.is_dir() {
-                        if let Ok(files) = get_kcl_files(entry.path(), true) {
-                            // skip folder if without kcl file
-                            if files.is_empty() {
-                                continue;
-                            }
-                        } else {
+            if let Ok(entry) = entry
+                && let Ok(file_type) = entry.file_type()
+            {
+                // internal pkgs
+                if file_type.is_dir() {
+                    if let Ok(files) = get_kcl_files(entry.path(), true) {
+                        // skip folder if without kcl file
+                        if files.is_empty() {
                             continue;
-                        }
-                        if let Some(name) = entry.file_name().to_str() {
-                            completions.insert(KCLCompletionItem {
-                                label: name.to_string(),
-                                detail: None,
-                                documentation: None,
-                                kind: Some(KCLCompletionItemKind::Dir),
-                                insert_text: None,
-                                additional_text_edits: None,
-                            });
                         }
                     } else {
-                        // internal module
-                        let path = entry.path();
-                        if path.to_str().unwrap_or("").adjust_canonicalization()
-                            == line_start_pos.filename.adjust_canonicalization()
-                        {
-                            continue;
-                        }
-                        if let Some(extension) = path.extension() {
-                            if extension == KCL_FILE_EXTENSION {
-                                if let Some(name) = path.file_stem() {
-                                    if let Some(name) = name.to_str() {
-                                        completions.insert(KCLCompletionItem {
-                                            label: name.to_string(),
-                                            detail: None,
-                                            documentation: None,
-                                            kind: Some(KCLCompletionItemKind::Module),
-                                            insert_text: None,
-                                            additional_text_edits: None,
-                                        });
-                                    }
-                                }
-                            }
-                        }
+                        continue;
+                    }
+                    if let Some(name) = entry.file_name().to_str() {
+                        completions.insert(KCLCompletionItem {
+                            label: name.to_string(),
+                            detail: None,
+                            documentation: None,
+                            kind: Some(KCLCompletionItemKind::Dir),
+                            insert_text: None,
+                            additional_text_edits: None,
+                        });
+                    }
+                } else {
+                    // internal module
+                    let path = entry.path();
+                    if path.to_str().unwrap_or("").adjust_canonicalization()
+                        == line_start_pos.filename.adjust_canonicalization()
+                    {
+                        continue;
+                    }
+                    if let Some(extension) = path.extension()
+                        && extension == KCL_FILE_EXTENSION
+                        && let Some(name) = path.file_stem()
+                        && let Some(name) = name.to_str()
+                    {
+                        completions.insert(KCLCompletionItem {
+                            label: name.to_string(),
+                            detail: None,
+                            documentation: None,
+                            kind: Some(KCLCompletionItemKind::Module),
+                            insert_text: None,
+                            additional_text_edits: None,
+                        });
                     }
                 }
             }
@@ -617,7 +573,7 @@ fn schema_ty_to_value_complete_item(schema_ty: &SchemaType, has_import: bool) ->
     let pkg_path_last_name = if schema.pkgpath.is_empty() || schema.pkgpath == MAIN_PKG {
         "".to_string()
     } else {
-        format!("{}", schema.pkgpath.split('.').last().unwrap())
+        schema.pkgpath.split('.').next_back().unwrap().to_string()
     };
     let need_import = !pkg_path_last_name.is_empty() && !has_import;
 
@@ -757,44 +713,43 @@ fn dot_completion_in_import_stmt(
         real_path =
             get_real_path_from_external(tool, &stmt.pkg_name, pkgpath, program.root.clone().into());
     }
-    if real_path.is_dir() {
-        if let Ok(entries) = fs::read_dir(real_path) {
-            let mut entries = entries
-                .map(|res| res.map(|e| e.path()))
-                .collect::<Result<Vec<_>, io::Error>>()
-                .unwrap();
-            entries.sort();
-            for path in entries {
-                let filename = path.file_name().unwrap().to_str().unwrap().to_string();
-                if path.is_dir() {
-                    items.insert(KCLCompletionItem {
-                        label: filename,
-                        detail: None,
-                        documentation: None,
-                        kind: Some(KCLCompletionItemKind::Dir),
-                        insert_text: None,
-                        additional_text_edits: None,
-                    });
-                } else if path.is_file() {
-                    if let Some(extension) = path.extension() {
-                        if extension == KCL_FILE_EXTENSION {
-                            items.insert(KCLCompletionItem {
-                                label: path
-                                    .with_extension("")
-                                    .file_name()
-                                    .unwrap()
-                                    .to_str()
-                                    .unwrap()
-                                    .to_string(),
-                                detail: None,
-                                documentation: None,
-                                kind: Some(KCLCompletionItemKind::File),
-                                insert_text: None,
-                                additional_text_edits: None,
-                            });
-                        }
-                    }
-                }
+    if real_path.is_dir()
+        && let Ok(entries) = fs::read_dir(real_path)
+    {
+        let mut entries = entries
+            .map(|res| res.map(|e| e.path()))
+            .collect::<Result<Vec<_>, io::Error>>()
+            .unwrap();
+        entries.sort();
+        for path in entries {
+            let filename = path.file_name().unwrap().to_str().unwrap().to_string();
+            if path.is_dir() {
+                items.insert(KCLCompletionItem {
+                    label: filename,
+                    detail: None,
+                    documentation: None,
+                    kind: Some(KCLCompletionItemKind::Dir),
+                    insert_text: None,
+                    additional_text_edits: None,
+                });
+            } else if path.is_file()
+                && let Some(extension) = path.extension()
+                && extension == KCL_FILE_EXTENSION
+            {
+                items.insert(KCLCompletionItem {
+                    label: path
+                        .with_extension("")
+                        .file_name()
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                        .to_string(),
+                    detail: None,
+                    documentation: None,
+                    kind: Some(KCLCompletionItemKind::File),
+                    insert_text: None,
+                    additional_text_edits: None,
+                });
             }
         }
     }
@@ -836,7 +791,7 @@ fn ty_complete_label_and_inser_text(
                     } else if let Some(m) = module {
                         format!("{}.", pkg_real_name(&schema.pkgpath, m))
                     } else {
-                        format!("{}.", schema.pkgpath.split('.').last().unwrap())
+                        format!("{}.", schema.pkgpath.split('.').next_back().unwrap())
                     },
                     schema.name,
                     "{}"
@@ -856,7 +811,7 @@ fn pkg_real_name(pkg: &String, module: &ModuleInfo) -> String {
             return name;
         }
     }
-    pkg.split('.').last().unwrap().to_string()
+    pkg.split('.').next_back().unwrap().to_string()
 }
 
 fn func_ty_complete_label(func_name: &String, _func_type: &FunctionType) -> String {
@@ -959,7 +914,7 @@ fn unimport_schemas(
                 None => false,
             };
             if schema.pkgpath != MAIN_PKG {
-                completions.insert(schema_ty_to_value_complete_item(&schema, has_import));
+                completions.insert(schema_ty_to_value_complete_item(schema, has_import));
             }
         }
     }

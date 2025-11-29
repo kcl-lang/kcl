@@ -36,10 +36,11 @@ pub fn parse_attribute_path(path: &str) -> Result<Vec<String>> {
                     }
                     in_brackets = true;
                     // Skip the opening quote
-                    if let Some(next_char) = chars.next() {
-                        if next_char != '"' && next_char != '\'' {
-                            return Err(anyhow::anyhow!("Expected opening quote after '['"));
-                        }
+                    if let Some(next_char) = chars.next()
+                        && next_char != '"'
+                        && next_char != '\''
+                    {
+                        return Err(anyhow::anyhow!("Expected opening quote after '['"));
                     }
                 }
                 ']' => {

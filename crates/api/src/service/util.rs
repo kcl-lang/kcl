@@ -18,7 +18,7 @@ pub(crate) fn transform_exec_para(
     let mut args = match exec_args {
         Some(exec_args) => {
             let args_json = serde_json::to_string(exec_args)?;
-            kcl_runner::ExecProgramArgs::from_str(args_json.as_str())
+            kcl_runner::ExecProgramArgs::from_json(args_json.as_str())
         }
         None => kcl_runner::ExecProgramArgs::default(),
     };

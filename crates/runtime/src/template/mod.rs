@@ -5,15 +5,17 @@ use handlebars::{Handlebars, html_escape};
 
 /// Applies a parsed template to the specified data object and
 /// returns the string output.
+/// # Safety
+/// The caller must ensure that `ctx`, `template_str`, and `data` are valid
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_template_execute(
+pub unsafe extern "C-unwind" fn kcl_template_execute(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let ctx = mut_ptr_as_ref(ctx);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(template) = get_call_arg_str(args, kwargs, 0, Some("template")) {
         let mut handlebars = Handlebars::new();
@@ -36,15 +38,17 @@ pub extern "C-unwind" fn kcl_template_execute(
 }
 
 /// Replaces the characters `&"<>` with the equivalent html / xml entities.
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers.
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_template_html_escape(
+pub unsafe extern "C-unwind" fn kcl_template_html_escape(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let ctx = mut_ptr_as_ref(ctx);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(data) = get_call_arg_str(args, kwargs, 0, Some("data")) {
         return ValueRef::str(&html_escape(&data)).into_raw(ctx);

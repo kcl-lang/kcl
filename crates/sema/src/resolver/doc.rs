@@ -43,7 +43,7 @@ fn expand_tabs(s: &str, spaces_per_tab: usize) -> String {
 
 /// Clean up indentation by removing any common leading whitespace on all lines after the first line.
 fn clean_doc(doc: &str) -> String {
-    let tab_expanded = expand_tabs(&doc, 4);
+    let tab_expanded = expand_tabs(doc, 4);
     let mut lines: Vec<&str> = tab_expanded.split('\n').collect();
     // Find minimum indentation of any non-blank lines after first line.
     // Skip first line since it's not indented.
@@ -56,7 +56,7 @@ fn clean_doc(doc: &str) -> String {
             .unwrap_or(0);
 
         lines[1..].iter_mut().for_each(|line| {
-            *line = if line.trim().len() > 0 {
+            *line = if !line.trim().is_empty() {
                 if let Some(sub) = line.get(margin..) {
                     sub
                 } else {
@@ -100,15 +100,15 @@ impl Reader {
         if !self.eof() {
             let out = self.data[self.l].clone();
             self.l += 1;
-            return out;
+            out
         } else {
-            return "".to_string();
+            "".to_string()
         }
     }
 
     fn seek_next_non_empty_line(&mut self) {
         for l in self.data[self.l..].iter() {
-            if l.trim().len() > 0 {
+            if !l.trim().is_empty() {
                 break;
             } else {
                 self.l += 1;
@@ -131,40 +131,38 @@ impl Reader {
                 return self.data[start..self.l].to_vec();
             }
         }
-        return vec![];
+        vec![]
     }
 
     fn read_to_next_empty_line(&mut self) -> Vec<String> {
         self.seek_next_non_empty_line();
 
         fn is_empty(line: &str) -> bool {
-            return line.trim().len() == 0;
+            line.trim().len() == 0
         }
 
-        return self.read_to_condition(&is_empty);
+        self.read_to_condition(&is_empty)
     }
 
     fn read_to_next_unindented_line(&mut self) -> Vec<String> {
         fn is_unindented(line: &str) -> bool {
-            return line.trim().len() > 0 && line.trim_start().len() == line.len();
+            !line.trim().is_empty() && line.trim_start().len() == line.len()
         }
 
-        return self.read_to_condition(&is_unindented);
+        self.read_to_condition(&is_unindented)
     }
 
     fn peek(&self, n: usize, positive: bool) -> String {
         if positive {
             if self.l + n < self.data.len() {
-                return self.data[self.l + n].clone();
+                self.data[self.l + n].clone()
             } else {
-                return "".to_string();
+                "".to_string()
             }
+        } else if self.l >= n {
+            self.data[self.l - n].clone()
         } else {
-            if self.l >= n {
-                return self.data[self.l - n].clone();
-            } else {
-                return "".to_string();
-            }
+            "".to_string()
         }
     }
 }
@@ -252,7 +250,7 @@ pub fn parse_schema_doc_string(ori: &str) -> SchemaDoc {
     if ori.is_empty() {
         return SchemaDoc::new("".to_string(), vec![], HashMap::new());
     }
-    let mut doc = Reader::new(clean_doc(strip_quotes(&ori)));
+    let mut doc = Reader::new(clean_doc(strip_quotes(ori)));
     doc.reset();
     let summary = parse_summary(&mut doc);
 
@@ -266,7 +264,7 @@ pub fn parse_schema_doc_string(ori: &str) -> SchemaDoc {
     let example_section = read_to_next_section(&mut doc);
     if !example_section.is_empty() {
         let default_example_content = match example_section.len() {
-            0 | 1 | 2 => "".to_string(),
+            0..=2 => "".to_string(),
             _ => example_section[2..].join("\n"),
         };
         examples.insert(
@@ -626,8 +624,8 @@ unindented line
 
     #[test]
     fn test_parse_doc() {
-        let mut content = read_doc_content();
-        let doc = parse_schema_doc_string(&mut content);
+        let content = read_doc_content();
+        let doc = parse_schema_doc_string(&content);
         assert_eq!(
             doc.summary,
             "Server is the common user interface for long-running services adopting the best practice of Kubernetes."

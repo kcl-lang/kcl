@@ -19,9 +19,12 @@ fn c_char_to_vec(args: *const c_char, args_len: usize) -> Vec<u8> {
     slice.to_vec()
 }
 
-/// Create an instance of kcl_service and return its pointer
+/// Create an instance of kcl_service and return its pointer.
+///
+/// # Safety
+/// The caller must ensure that the returned pointer is properly managed and eventually freed using `kcl_service_delete`.
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_service_new(plugin_agent: u64) -> *mut kcl_service {
+pub unsafe extern "C-unwind" fn kcl_service_new(plugin_agent: u64) -> *mut kcl_service {
     let serv = kcl_service { plugin_agent };
     Box::into_raw(Box::new(serv))
 }
@@ -89,15 +92,18 @@ macro_rules! call {
 ///
 /// result: [*const c_char]
 ///     Result of the call serialized as protobuf byte sequence
+///
+/// # Safety
+/// The caller must ensure that `serv`, `name`, `args`, and `result_len` are valid pointers.
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_service_call(
+pub unsafe extern "C-unwind" fn kcl_service_call(
     serv: *mut kcl_service,
     name: *const c_char,
     args: *const c_char,
     args_len: usize,
 ) -> *const c_char {
     let mut _result_len = 0;
-    kcl_service_call_with_length(serv, name, args, args_len, &mut _result_len)
+    unsafe { kcl_service_call_with_length(serv, name, args, args_len, &mut _result_len) }
 }
 
 /// Call kcl service by C API. **Note that it is not thread safe.**
@@ -119,8 +125,11 @@ pub extern "C-unwind" fn kcl_service_call(
 ///
 /// result: [*const c_char]
 ///     Result of the call serialized as protobuf byte sequence
+///
+/// # Safety
+/// The caller must ensure that `serv`, `name`, `args`, and `result_len` are valid pointers.
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_service_call_with_length(
+pub unsafe extern "C-unwind" fn kcl_service_call_with_length(
     serv: *mut kcl_service,
     name: *const c_char,
     args: *const c_char,

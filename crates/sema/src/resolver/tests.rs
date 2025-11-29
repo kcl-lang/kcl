@@ -1,3 +1,5 @@
+#![allow(clippy::arc_with_non_send_sync)]
+
 use super::Options;
 use super::Resolver;
 use crate::builtin::BUILTIN_FUNCTION_NAMES;
@@ -125,9 +127,9 @@ fn test_pkg_init_in_schema_resolve() {
     );
     let module = &program.pkgs["pkg"][0];
     let module = program
-        .get_module(&module)
+        .get_module(module)
         .expect("Failed to acquire module lock")
-        .expect(&format!("module {:?} not found in program", module));
+        .unwrap_or_else(|| panic!("module {:?} not found in program", module));
     if let ast::Stmt::Schema(schema) = &module.body[1].node {
         if let ast::Stmt::SchemaAttr(attr) = &schema.body[0].node {
             let value = attr.value.as_ref().unwrap();
@@ -189,7 +191,7 @@ fn test_resolve_program_fail() {
         let path = Path::new(work_dir).join(case);
         let mut program = parse_program(&path.to_string_lossy()).unwrap();
         let scope = resolve_program(&mut program);
-        assert!(scope.handler.diagnostics.len() > 0, "{}", case);
+        assert!(!scope.handler.diagnostics.is_empty(), "{}", case);
     }
 }
 
@@ -423,7 +425,7 @@ fn test_lint() {
                 },
             ),
             style: Style::Line,
-            message: format!("The import stmt should be placed at the top of the module"),
+            message: "The import stmt should be placed at the top of the module".to_string(),
             note: Some("Consider moving tihs statement to the top of the file".to_string()),
             suggested_replacement: None,
         }],
@@ -444,7 +446,7 @@ fn test_lint() {
                 },
             ),
             style: Style::Line,
-            message: format!("Module 'a' is reimported multiple times"),
+            message: "Module 'a' is reimported multiple times".to_string(),
             note: Some("Consider removing this statement".to_string()),
             suggested_replacement: None,
         }],
@@ -465,7 +467,7 @@ fn test_lint() {
                 },
             ),
             style: Style::Line,
-            message: format!("Module 'a' imported but unused"),
+            message: "Module 'a' imported but unused".to_string(),
             note: Some("Consider removing this statement".to_string()),
             suggested_replacement: None,
         }],
@@ -701,9 +703,9 @@ fn test_resolve_function_with_default_values() {
     assert!(func.borrow().ty.is_func());
     let func_ty = func.borrow().ty.into_func_type();
     assert_eq!(func_ty.params.len(), 3);
-    assert_eq!(func_ty.params[0].has_default, false);
-    assert_eq!(func_ty.params[1].has_default, true);
-    assert_eq!(func_ty.params[2].has_default, true);
+    assert!(!func_ty.params[0].has_default);
+    assert!(func_ty.params[1].has_default);
+    assert!(func_ty.params[2].has_default);
 }
 
 #[test]

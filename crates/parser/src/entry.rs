@@ -26,8 +26,7 @@ pub struct Entries {
 impl Entries {
     /// [`get_unique_normal_paths_by_name`] will return all the unique normal paths of [`Entry`] with the given name in [`Entries`].
     pub fn get_unique_normal_paths_by_name(&self, name: &str) -> Vec<String> {
-        let paths = self
-            .get_unique_paths_by_name(name)
+        self.get_unique_paths_by_name(name)
             .iter()
             .filter(|path| {
                 // All the paths contains the normal paths and the mod relative paths start with ${KCL_MOD}.
@@ -38,8 +37,7 @@ impl Entries {
                     .unwrap_or(false)
             })
             .map(|entry| entry.to_string())
-            .collect::<Vec<String>>();
-        paths
+            .collect::<Vec<String>>()
     }
 
     /// [`get_unique_paths_by_name`] will return all the unique paths of [`Entry`] with the given name in [`Entries`].
@@ -80,18 +78,21 @@ impl Entries {
         self.entries.len()
     }
 
+    /// Returns true if the entries is empty.
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
+
     /// [`get_nth_entry`] will return the nth [`Entry`] in [`Entries`].
     #[allow(dead_code)]
     pub fn get_nth_entry(&self, n: usize) -> Option<&Entry> {
         if n >= self.len() {
             return None;
         }
-        let mut count = 0;
-        for entry in self.entries.iter() {
+        for (count, entry) in self.entries.iter().enumerate() {
             if count == n {
                 return Some(entry);
             }
-            count += 1;
         }
         None
     }
@@ -348,7 +349,7 @@ pub fn get_compile_entries_from_paths(
         let mut entry = Entry::new(kcl_ast::MAIN_PKG.to_string(), "".to_string());
         for file in &file_paths {
             entry.extend_k_files_and_codes(
-                get_main_files_from_pkg_path(&file, "", kcl_ast::MAIN_PKG, opts)?,
+                get_main_files_from_pkg_path(file, "", kcl_ast::MAIN_PKG, opts)?,
                 &mut k_code_queue,
             );
         }
@@ -363,7 +364,7 @@ pub fn get_compile_entries_from_paths(
         // If the 'kcl.mod' can be found only once, the package root path will be the path of the 'kcl.mod'.
         result
             .get_unique_normal_paths_by_name(kcl_ast::MAIN_PKG)
-            .get(0)
+            .first()
             .unwrap()
             .to_string()
     } else if main_pkg_paths_count > 1 && !opts.work_dir.is_empty() {
@@ -486,14 +487,12 @@ pub fn get_dir_files(dir: &str, is_recursive: bool) -> Result<Vec<String>> {
         if path.is_dir() {
             match fs::read_dir(path) {
                 Ok(entries) => {
-                    for entry in entries {
-                        if let Ok(entry) = entry {
-                            let path = entry.path();
-                            if path.is_dir() && is_recursive {
-                                queue.push_back(path.to_string_lossy().to_string());
-                            } else if !is_ignored_file(&path.display().to_string()) {
-                                list.push(path.display().to_string());
-                            }
+                    for entry in entries.flatten() {
+                        let path = entry.path();
+                        if path.is_dir() && is_recursive {
+                            queue.push_back(path.to_string_lossy().to_string());
+                        } else if !is_ignored_file(&path.display().to_string()) {
+                            list.push(path.display().to_string());
                         }
                     }
                 }

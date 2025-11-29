@@ -141,7 +141,7 @@ impl<'ctx> Resolver<'_> {
                             .collect::<Vec<String>>()
                     };
                     let suggs = suggestions::provide_suggestions(attr, &attrs);
-                    if suggs.len() > 0 {
+                    if !suggs.is_empty() {
                         suggestion = format!(", did you mean '{:?}'?", suggs);
                     }
                 }

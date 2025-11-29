@@ -9,7 +9,7 @@ use crate::ty::{Parameter, Type};
 macro_rules! register_decorator {
     ($($name:ident => $ty:expr)*) => (
         // Builtin decorator map.
-        pub const BUILTIN_DECORATORS: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+        pub static BUILTIN_DECORATORS: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
             let mut builtin_mapping = IndexMap::default();
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping

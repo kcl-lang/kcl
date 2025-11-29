@@ -8,27 +8,31 @@ use crate::*;
 // https://doc.rust-lang.org/std/primitive.f64.html
 // https://github.com/RustPython/RustPython/blob/main/stdlib/src/math.rs
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_math_ceil(
+pub unsafe extern "C-unwind" fn kcl_math_ceil(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
-        return kcl_value_Int(ctx, x);
+        return unsafe { kcl_value_Int(ctx, x) };
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kcl_value_Int(ctx, x.ceil() as i64);
+        return unsafe { kcl_value_Int(ctx, x.ceil() as i64) };
     }
 
     panic!("ceil() takes exactly one argument (0 given)");
 }
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_math_factorial(
+pub unsafe extern "C-unwind" fn kcl_math_factorial(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
@@ -46,18 +50,19 @@ pub extern "C-unwind" fn kcl_math_factorial(
         }
     }
 
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
-    if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
-        if x >= 0 {
-            return kcl_value_Int(ctx, factorial(x));
-        }
+    if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None))
+        && x >= 0
+    {
+        return unsafe { kcl_value_Int(ctx, factorial(x)) };
     }
-    if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        if x >= 0.0 && (x as i64 as f64) == x {
-            return kcl_value_Float(ctx, factorial(x as i64) as f64);
-        }
+    if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None))
+        && x >= 0.0
+        && (x as i64 as f64) == x
+    {
+        return unsafe { kcl_value_Float(ctx, factorial(x as i64) as f64) };
     }
 
     if args.args_len() > 0 {
@@ -66,38 +71,42 @@ pub extern "C-unwind" fn kcl_math_factorial(
     panic!("factorial() takes exactly one argument (0 given)");
 }
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_math_floor(
+pub unsafe extern "C-unwind" fn kcl_math_floor(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
-        return kcl_value_Int(ctx, x);
+        return unsafe { kcl_value_Int(ctx, x) };
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kcl_value_Int(ctx, x.floor() as i64);
+        return unsafe { kcl_value_Int(ctx, x.floor() as i64) };
     }
 
     panic!("floor() takes exactly one argument (0 given)");
 }
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_math_gcd(
+pub unsafe extern "C-unwind" fn kcl_math_gcd(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
-    if let Some(a) = args.arg_i_int(0, None).or(kwargs.kwarg_int("a", None)) {
-        if let Some(b) = args.arg_i_int(1, None).or(kwargs.kwarg_int("b", None)) {
-            return kcl_value_Int(ctx, num_integer::gcd(a, b));
-        }
+    if let Some(a) = args.arg_i_int(0, None).or(kwargs.kwarg_int("a", None))
+        && let Some(b) = args.arg_i_int(1, None).or(kwargs.kwarg_int("b", None))
+    {
+        return unsafe { kcl_value_Int(ctx, num_integer::gcd(a, b)) };
     }
 
     panic!(
@@ -106,87 +115,95 @@ pub extern "C-unwind" fn kcl_math_gcd(
     );
 }
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_math_isfinite(
+pub unsafe extern "C-unwind" fn kcl_math_isfinite(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if args
         .arg_i_int(0, None)
         .or(kwargs.kwarg_int("x", None))
         .is_some()
     {
-        return kcl_value_Bool(ctx, true as i8);
+        return unsafe { kcl_value_Bool(ctx, true as i8) };
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kcl_value_Bool(ctx, x.is_finite() as i8);
+        return unsafe { kcl_value_Bool(ctx, x.is_finite() as i8) };
     }
 
     panic!("isfinite() takes exactly one argument (0 given)");
 }
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_math_isinf(
+pub unsafe extern "C-unwind" fn kcl_math_isinf(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if args
         .arg_i_int(0, None)
         .or(kwargs.kwarg_int("x", None))
         .is_some()
     {
-        return kcl_value_Bool(ctx, false as i8);
+        return unsafe { kcl_value_Bool(ctx, false as i8) };
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kcl_value_Bool(ctx, x.is_infinite() as i8);
+        return unsafe { kcl_value_Bool(ctx, x.is_infinite() as i8) };
     }
     if args.arg_i_bool(0, None).is_some() {
-        return kcl_value_Bool(ctx, false as i8);
+        return unsafe { kcl_value_Bool(ctx, false as i8) };
     }
 
     panic!("isinf() takes exactly one argument (0 given)");
 }
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_math_isnan(
+pub unsafe extern "C-unwind" fn kcl_math_isnan(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if args
         .arg_i_int(0, None)
         .or(kwargs.kwarg_int("x", None))
         .is_some()
     {
-        return kcl_value_Bool(ctx, false as i8);
+        return unsafe { kcl_value_Bool(ctx, false as i8) };
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kcl_value_Bool(ctx, x.is_nan() as i8);
+        return unsafe { kcl_value_Bool(ctx, x.is_nan() as i8) };
     }
 
     panic!("isnan() takes exactly one argument (0 given)");
 }
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_math_modf(
+pub unsafe extern "C-unwind" fn kcl_math_modf(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let ctx = mut_ptr_as_ref(ctx);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
         let list = ValueRef::list_float(&[0.0, x as f64]);
@@ -209,170 +226,184 @@ pub extern "C-unwind" fn kcl_math_modf(
     panic!("modf() takes exactly one argument (0 given)");
 }
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_math_exp(
+pub unsafe extern "C-unwind" fn kcl_math_exp(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
-        return kcl_value_Float(ctx, (x as f64).exp());
+        return unsafe { kcl_value_Float(ctx, (x as f64).exp()) };
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kcl_value_Float(ctx, x.exp());
+        return unsafe { kcl_value_Float(ctx, x.exp()) };
     }
     panic!("exp() takes exactly one argument (0 given)");
 }
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_math_expm1(
+pub unsafe extern "C-unwind" fn kcl_math_expm1(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
-        return kcl_value_Float(ctx, (x as f64).exp_m1());
+        return unsafe { kcl_value_Float(ctx, (x as f64).exp_m1()) };
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kcl_value_Float(ctx, x.exp_m1());
+        return unsafe { kcl_value_Float(ctx, x.exp_m1()) };
     }
     panic!("expm1() takes exactly one argument (0 given)");
 }
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_math_log(
+pub unsafe extern "C-unwind" fn kcl_math_log(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
-    if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
-        if let Some(base) = args
+    if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None))
+        && let Some(base) = args
             .arg_i_float(1, Some(std::f64::consts::E))
             .or_else(|| kwargs.kwarg_float("e", Some(std::f64::consts::E)))
-        {
-            return kcl_value_Int(ctx, (x as f64).log(base) as i64);
-        }
+    {
+        return unsafe { kcl_value_Int(ctx, (x as f64).log(base) as i64) };
     }
-    if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        if let Some(base) = args
+    if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None))
+        && let Some(base) = args
             .arg_i_float(1, Some(std::f64::consts::E))
             .or_else(|| kwargs.kwarg_float("e", Some(std::f64::consts::E)))
-        {
-            return kcl_value_Float(ctx, x.log(base));
-        }
+    {
+        return unsafe { kcl_value_Float(ctx, x.log(base)) };
     }
     panic!("log() takes exactly one argument (0 given)");
 }
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_math_log1p(
+pub unsafe extern "C-unwind" fn kcl_math_log1p(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
-        return kcl_value_Float(ctx, ((x + 1) as f64).ln_1p());
+        return unsafe { kcl_value_Float(ctx, ((x + 1) as f64).ln_1p()) };
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kcl_value_Float(ctx, (x + 1.0).ln_1p());
+        return unsafe { kcl_value_Float(ctx, (x + 1.0).ln_1p()) };
     }
     panic!("log1p() takes exactly one argument (0 given)");
 }
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_math_log2(
+pub unsafe extern "C-unwind" fn kcl_math_log2(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
-        return kcl_value_Int(ctx, (x as f64).log2() as i64);
+        return unsafe { kcl_value_Int(ctx, (x as f64).log2() as i64) };
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kcl_value_Float(ctx, x.log2());
+        return unsafe { kcl_value_Float(ctx, x.log2()) };
     }
     panic!("log2() takes exactly one argument (0 given)");
 }
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_math_log10(
+pub unsafe extern "C-unwind" fn kcl_math_log10(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
-        return kcl_value_Float(ctx, (x as f64).log10());
+        return unsafe { kcl_value_Float(ctx, (x as f64).log10()) };
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kcl_value_Float(ctx, x.log10());
+        return unsafe { kcl_value_Float(ctx, x.log10()) };
     }
     panic!("log10() takes exactly one argument (0 given)");
 }
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_math_pow(
+pub unsafe extern "C-unwind" fn kcl_math_pow(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
         if let Some(n) = args.arg_i_int(1, None).or(kwargs.kwarg_int("n", None)) {
             if n < 0 {
-                return kcl_value_Float(ctx, (x as f64).powf(n as f64));
+                return unsafe { kcl_value_Float(ctx, (x as f64).powf(n as f64)) };
             } else {
-                return kcl_value_Int(ctx, x.pow(n as u32));
+                return unsafe { kcl_value_Int(ctx, x.pow(n as u32)) };
             }
         }
         if let Some(n) = args.arg_i_float(1, None).or(kwargs.kwarg_float("n", None)) {
-            return kcl_value_Float(ctx, (x as f64).powf(n));
+            return unsafe { kcl_value_Float(ctx, (x as f64).powf(n)) };
         }
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
         if let Some(n) = args.arg_i_int(1, None).or(kwargs.kwarg_int("n", None)) {
-            return kcl_value_Float(ctx, x.powi(n as i32));
+            return unsafe { kcl_value_Float(ctx, x.powi(n as i32)) };
         }
         if let Some(n) = args.arg_i_float(1, None).or(kwargs.kwarg_float("n", None)) {
-            return kcl_value_Float(ctx, x.powf(n));
+            return unsafe { kcl_value_Float(ctx, x.powf(n)) };
         }
     }
     panic!("pow() takes exactly one argument (0 given)");
 }
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_math_sqrt(
+pub unsafe extern "C-unwind" fn kcl_math_sqrt(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
-        return kcl_value_Float(ctx, (x as f64).sqrt());
+        return unsafe { kcl_value_Float(ctx, (x as f64).sqrt()) };
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return kcl_value_Float(ctx, x.sqrt());
+        return unsafe { kcl_value_Float(ctx, x.sqrt()) };
     }
     panic!("sqrt() takes exactly one argument (0 given)");
 }

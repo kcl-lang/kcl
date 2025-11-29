@@ -30,12 +30,12 @@ pub fn value_subsume(value1: &ValueRef, value2: &ValueRef, should_recursive_chec
     }
     match (&*value1.rc.borrow(), &*value2.rc.borrow()) {
         (Value::list_value(value1), Value::list_value(value2)) => {
-            return value1.values.len() == value2.values.len()
+            value1.values.len() == value2.values.len()
                 && value1
                     .values
                     .iter()
                     .zip(value2.values.iter())
-                    .all(|(item1, item2)| value_subsume(item1, item2, should_recursive_check));
+                    .all(|(item1, item2)| value_subsume(item1, item2, should_recursive_check))
         }
         (
             Value::dict_value(_) | Value::schema_value(_),

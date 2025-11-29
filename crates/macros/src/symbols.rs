@@ -131,17 +131,17 @@ fn symbols_with_errors(input: TokenStream) -> (TokenStream, Vec<syn::Error>) {
     };
 
     let mut check_order = |span: Span, str: &str, errors: &mut Errors| {
-        if let Some((prev_span, ref prev_str)) = prev_key {
-            if str < prev_str {
-                errors.error(
-                    span,
-                    format!("Symbol `{}` must precede `{}`", str, prev_str),
-                );
-                errors.error(
-                    prev_span,
-                    format!("location of previous symbol `{}`", prev_str),
-                );
-            }
+        if let Some((prev_span, ref prev_str)) = prev_key
+            && str < prev_str
+        {
+            errors.error(
+                span,
+                format!("Symbol `{}` must precede `{}`", str, prev_str),
+            );
+            errors.error(
+                prev_span,
+                format!("location of previous symbol `{}`", prev_str),
+            );
         }
         prev_key = Some((span, str.to_string()));
     };

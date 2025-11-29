@@ -50,7 +50,7 @@ pub const NAME_CONSTANTS: [&str; 4] = [
     NAME_CONSTANT_FALSE,
 ];
 
-pub const TYPES_MAPPING: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+pub static TYPES_MAPPING: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
     let mut mapping = IndexMap::default();
     mapping.insert(INT_TYPE_STR.to_string(), Type::INT);
     mapping.insert(FLOAT_TYPE_STR.to_string(), Type::FLOAT);
@@ -78,7 +78,7 @@ pub const TYPES_MAPPING: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
     );
     mapping
 });
-pub const ZERO_LIT_TYPES: Lazy<Vec<Type>> = Lazy::new(|| {
+pub static ZERO_LIT_TYPES: Lazy<Vec<Type>> = Lazy::new(|| {
     vec![
         Type::int_lit(0),
         Type::float_lit(0.0),

@@ -14,7 +14,7 @@ use once_cell::sync::Lazy;
 pub const BASE64: &str = "base64";
 macro_rules! register_base64_member {
     ($($name:ident => $ty:expr)*) => (
-        pub const BASE64_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+        pub static BASE64_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
             let mut builtin_mapping = IndexMap::default();
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
@@ -72,7 +72,7 @@ register_base64_member! {
 pub const BASE32: &str = "base32";
 macro_rules! register_base32_member {
     ($($name:ident => $ty:expr)*) => (
-        pub const BASE32_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+        pub static BASE32_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
             let mut builtin_mapping = IndexMap::default();
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
@@ -123,7 +123,7 @@ register_base32_member! {
 pub const NET: &str = "net";
 macro_rules! register_net_member {
     ($($name:ident => $ty:expr)*) => (
-        pub const NET_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+        pub static NET_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
             let mut builtin_mapping = IndexMap::default();
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
@@ -528,7 +528,7 @@ register_net_member! {
 pub const MANIFESTS: &str = "manifests";
 macro_rules! register_manifests_member {
     ($($name:ident => $ty:expr)*) => (
-        pub const MANIFESTS_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+        pub static MANIFESTS_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
             let mut builtin_mapping = IndexMap::default();
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
@@ -578,7 +578,7 @@ opts - The YAML serialization options
 pub const MATH: &str = "math";
 macro_rules! register_math_member {
     ($($name:ident => $ty:expr)*) => (
-        pub const MATH_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+        pub static MATH_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
             let mut builtin_mapping = IndexMap::default();
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
@@ -875,7 +875,7 @@ register_math_member! {
 pub const DATETIME: &str = "datetime";
 macro_rules! register_datetime_member {
     ($($name:ident => $ty:expr)*) => (
-        pub const DATETIME_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+        pub static DATETIME_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
             let mut builtin_mapping = IndexMap::default();
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
@@ -958,7 +958,7 @@ register_datetime_member! {
 pub const REGEX: &str = "regex";
 macro_rules! register_regex_member {
     ($($name:ident => $ty:expr)*) => (
-        pub const REGEX_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+        pub static REGEX_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
             let mut builtin_mapping = IndexMap::default();
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
@@ -1130,7 +1130,7 @@ register_regex_member! {
 pub const YAML: &str = "yaml";
 macro_rules! register_yaml_member {
     ($($name:ident => $ty:expr)*) => (
-        pub const YAML_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+        pub static YAML_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
             let mut builtin_mapping = IndexMap::default();
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
@@ -1360,7 +1360,7 @@ register_yaml_member! {
 pub const JSON: &str = "json";
 macro_rules! register_json_member {
     ($($name:ident => $ty:expr)*) => (
-        pub const JSON_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+        pub static JSON_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
             let mut builtin_mapping = IndexMap::default();
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
@@ -1507,7 +1507,7 @@ register_json_member! {
 pub const CRYPTO: &str = "crypto";
 macro_rules! register_crypto_member {
     ($($name:ident => $ty:expr)*) => (
-        pub const CRYPTO_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+        pub static CRYPTO_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
             let mut builtin_mapping = IndexMap::default();
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
@@ -1734,7 +1734,7 @@ pub const UNITS_FIELD_NAMES: &[&str] = &[
 ];
 macro_rules! register_units_member {
     ($($name:ident => $ty:expr)*) => (
-        pub const UNITS_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+        pub static UNITS_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
             let mut builtin_mapping = IndexMap::default();
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
@@ -1973,7 +1973,7 @@ register_units_member! {
 pub const COLLECTION: &str = "collection";
 macro_rules! register_collection_member {
     ($($name:ident => $ty:expr)*) => (
-        pub const COLLECTION_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+        pub static COLLECTION_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
             let mut builtin_mapping = IndexMap::default();
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
@@ -2009,7 +2009,7 @@ register_collection_member! {
 pub const FILE: &str = "file";
 macro_rules! register_file_member {
     ($($name:ident => $ty:expr)*) => (
-        pub const FILE_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+        pub static FILE_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
             let mut builtin_mapping = IndexMap::default();
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
@@ -2280,7 +2280,7 @@ register_file_member! {
 pub const TEMPLATE: &str = "template";
 macro_rules! register_template_member {
     ($($name:ident => $ty:expr)*) => (
-        pub const TEMPLATE_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+        pub static TEMPLATE_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
             let mut builtin_mapping = IndexMap::default();
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
@@ -2339,7 +2339,7 @@ register_template_member! {
 pub const RUNTIME: &str = "runtime";
 macro_rules! register_runtime_member {
     ($($name:ident => $ty:expr)*) => (
-        pub const RUNTIME_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+        pub static RUNTIME_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
             let mut builtin_mapping = IndexMap::default();
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping
@@ -2421,68 +2421,66 @@ pub fn get_system_module_members(name: &str) -> Vec<&str> {
 pub fn get_system_member_function_ty(name: &str, func: &str) -> TypeRef {
     let optional_ty = match name {
         BASE64 => {
-            let types = BASE64_FUNCTION_TYPES;
+            let types = &BASE64_FUNCTION_TYPES;
             types.get(func).cloned()
         }
         BASE32 => {
-            let types = BASE32_FUNCTION_TYPES;
+            let types = &BASE32_FUNCTION_TYPES;
             types.get(func).cloned()
         }
         NET => {
-            let types = NET_FUNCTION_TYPES;
+            let types = &NET_FUNCTION_TYPES;
             types.get(func).cloned()
         }
         MANIFESTS => {
-            let types = MANIFESTS_FUNCTION_TYPES;
+            let types = &MANIFESTS_FUNCTION_TYPES;
             types.get(func).cloned()
         }
         MATH => {
-            let types = MATH_FUNCTION_TYPES;
+            let types = &MATH_FUNCTION_TYPES;
             types.get(func).cloned()
         }
         DATETIME => {
-            let types = DATETIME_FUNCTION_TYPES;
+            let types = &DATETIME_FUNCTION_TYPES;
             types.get(func).cloned()
         }
         REGEX => {
-            let types = REGEX_FUNCTION_TYPES;
+            let types = &REGEX_FUNCTION_TYPES;
             types.get(func).cloned()
         }
         YAML => {
-            let types = YAML_FUNCTION_TYPES;
+            let types = &YAML_FUNCTION_TYPES;
             types.get(func).cloned()
         }
         JSON => {
-            let types = JSON_FUNCTION_TYPES;
+            let types = &JSON_FUNCTION_TYPES;
             types.get(func).cloned()
         }
         CRYPTO => {
-            let types = CRYPTO_FUNCTION_TYPES;
+            let types = &CRYPTO_FUNCTION_TYPES;
             types.get(func).cloned()
         }
         UNITS => {
-            let types = UNITS_FUNCTION_TYPES;
+            let types = &UNITS_FUNCTION_TYPES;
             types.get(func).cloned()
         }
         COLLECTION => {
-            let types = COLLECTION_FUNCTION_TYPES;
+            let types = &COLLECTION_FUNCTION_TYPES;
             types.get(func).cloned()
         }
         FILE => {
-            let types = FILE_FUNCTION_TYPES;
+            let types = &FILE_FUNCTION_TYPES;
             types.get(func).cloned()
         }
         TEMPLATE => {
-            let types = TEMPLATE_FUNCTION_TYPES;
+            let types = &TEMPLATE_FUNCTION_TYPES;
             types.get(func).cloned()
         }
         RUNTIME => {
-            let types = RUNTIME_FUNCTION_TYPES;
+            let types = &RUNTIME_FUNCTION_TYPES;
             types.get(func).cloned()
         }
         _ => None,
     };
-    optional_ty
-        .map(|ty| Arc::new(ty))
-        .unwrap_or(Type::any_ref())
+    optional_ty.map(Arc::new).unwrap_or(Type::any_ref())
 }

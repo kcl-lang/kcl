@@ -236,11 +236,9 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                 let modules: Vec<Arc<RwLock<Module>>> = modules
                     .iter()
                     .map(|m| {
-                        let m = self
-                            .program
-                            .get_module_ref(&m)
-                            .expect(&format!("module {:?} not found in program", m));
-                        m
+                        self.program
+                            .get_module_ref(m)
+                            .unwrap_or_else(|| panic!("module {:?} not found in program", m))
                     })
                     .collect();
                 self.compile_ast_modules(&modules);
@@ -463,7 +461,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                     config_value.dict_get_attr_operator(name),
                     Some(ConfigEntryOperationKind::Override)
                 );
-                let without_index = matches!(config_value.dict_get_insert_index(name), None);
+                let without_index = config_value.dict_get_insert_index(name).is_none();
                 is_override_op && without_index
             };
             if !is_override_attr {
@@ -878,13 +876,13 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                     self.pop_backtrace();
                     self.pop_pkgpath();
                 }
-                let value = (schema.body)(
+
+                (schema.body)(
                     self,
                     &schema.ctx.borrow().snapshot(config_value, config_meta),
                     &list_value,
                     &dict_value,
-                );
-                value
+                )
             } else if let Proxy::Rule(rule) = &frame.proxy {
                 self.push_pkgpath(&frame.pkgpath);
                 self.push_backtrace(&frame);
@@ -892,13 +890,13 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                     self.pop_backtrace();
                     self.pop_pkgpath();
                 }
-                let value = (rule.body)(
+
+                (rule.body)(
                     self,
                     &rule.ctx.borrow().snapshot(config_value, config_meta),
                     &list_value,
                     &dict_value,
-                );
-                value
+                )
             } else {
                 self.undefined_value()
             }
@@ -920,8 +918,8 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         defer! {
             self.leave_scope();
         }
-        let result = self.walk_config_entries(&config_expr.items);
-        result
+
+        self.walk_config_entries(&config_expr.items)
     }
 
     fn walk_check_expr(&self, check_expr: &'ctx ast::CheckExpr) -> Self::Result {
@@ -1157,24 +1155,22 @@ impl<'ctx> Evaluator<'ctx> {
                     .expect(kcl_error::INTERNAL_ERROR_MSG)
                     .clone()
             };
-            if let Proxy::Global(index) = &frame.proxy {
-                if let Some(module_list) = self
+            if let Proxy::Global(index) = &frame.proxy
+                && let Some(module_list) = self
                     .program
                     .pkgs
                     .get(&pkgpath_without_prefix!(frame.pkgpath))
-                {
-                    if let Some(module) = module_list.get(*index) {
-                        let module = self
-                            .program
-                            .get_module(module)
-                            .expect("Failed to acquire module lock")
-                            .expect(&format!("module {:?} not found in program", module));
-                        if let Some(stmt) = module.body.get(setter.stmt) {
-                            self.push_backtrack_meta(setter);
-                            self.walk_stmt(stmt).expect(INTERNAL_ERROR_MSG);
-                            self.pop_backtrack_meta();
-                        }
-                    }
+                && let Some(module) = module_list.get(*index)
+            {
+                let module = self
+                    .program
+                    .get_module(module)
+                    .expect("Failed to acquire module lock")
+                    .unwrap_or_else(|| panic!("module {:?} not found in program", module));
+                if let Some(stmt) = module.body.get(setter.stmt) {
+                    self.push_backtrack_meta(setter);
+                    self.walk_stmt(stmt).expect(INTERNAL_ERROR_MSG);
+                    self.pop_backtrack_meta();
                 }
             }
         }
@@ -1203,8 +1199,8 @@ impl<'ctx> Evaluator<'ctx> {
                         self.leave_scope();
                         self.pop_pkgpath();
                     }
-                    let value = self.walk_stmt(stmt);
-                    value
+
+                    self.walk_stmt(stmt)
                 } else {
                     self.ok_result()
                 }
@@ -1424,7 +1420,7 @@ impl<'ctx> Evaluator<'ctx> {
             ast::Expr::Identifier(ident) if ident.names.len() == 1 => ident.names[0].clone(),
             _ => panic!("invalid decorator name, expect single identifier"),
         };
-        let attr_name = if let Some(v) = attr_name { v } else { "" };
+        let attr_name = attr_name.unwrap_or_default();
         DecoratorValue::new(&name.node, &list_value, &dict_value).run(
             &mut self.runtime_ctx.borrow_mut(),
             attr_name,
@@ -1505,6 +1501,7 @@ impl<'ctx> Evaluator<'ctx> {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn walk_generator(
         &self,
         generators: &'ctx [Box<ast::Node<ast::CompClause>>],
@@ -1618,22 +1615,22 @@ impl<'ctx> Evaluator<'ctx> {
                     ast::Expr::StringLit(string_lit) => Some(string_lit.value.clone()),
                     ast::Expr::Subscript(subscript) => {
                         let mut name = None;
-                        if let ast::Expr::Identifier(identifier) = &subscript.value.node {
-                            if let Some(index_node) = &subscript.index {
-                                // Insert index
-                                if let ast::Expr::NumberLit(number) = &index_node.node {
-                                    if let ast::NumberLitValue::Int(v) = number.value {
-                                        insert_index = Some(v as i32);
-                                        name = Some(identifier.names[0].node.clone())
-                                    }
-                                } else if let ast::Expr::Unary(unary_expr) = &index_node.node {
-                                    // Negative insert index
-                                    if let ast::Expr::NumberLit(number) = &unary_expr.operand.node {
-                                        if let ast::NumberLitValue::Int(v) = number.value {
-                                            insert_index = Some(-v as i32);
-                                            name = Some(identifier.names[0].node.clone())
-                                        }
-                                    }
+                        if let ast::Expr::Identifier(identifier) = &subscript.value.node
+                            && let Some(index_node) = &subscript.index
+                        {
+                            // Insert index
+                            if let ast::Expr::NumberLit(number) = &index_node.node {
+                                if let ast::NumberLitValue::Int(v) = number.value {
+                                    insert_index = Some(v as i32);
+                                    name = Some(identifier.names[0].node.clone())
+                                }
+                            } else if let ast::Expr::Unary(unary_expr) = &index_node.node {
+                                // Negative insert index
+                                if let ast::Expr::NumberLit(number) = &unary_expr.operand.node
+                                    && let ast::NumberLitValue::Int(v) = number.value
+                                {
+                                    insert_index = Some(-v as i32);
+                                    name = Some(identifier.names[0].node.clone())
                                 }
                             }
                         }

@@ -67,7 +67,7 @@ pub fn subsume(ty_lhs: TypeRef, ty_rhs: TypeRef, check_left_any: bool) -> bool {
         subsume(ty_lhs_key, ty_rhs_key, check_left_any)
             && subsume(ty_lhs_val, ty_rhs_val, check_left_any)
     } else if ty_lhs.is_str() && ty_rhs.is_literal() && ty_rhs.is_str() {
-        return true;
+        true
     } else if ty_lhs.is_func() && ty_rhs.is_func() {
         let ty_lhs_fn_ty = ty_lhs.into_func_type();
         let ty_rhs_fn_ty = ty_rhs.into_func_type();

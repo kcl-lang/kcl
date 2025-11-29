@@ -1,3 +1,5 @@
+#![allow(clippy::arc_with_non_send_sync)]
+
 use std::{
     env,
     fs::{self, remove_file},
@@ -91,7 +93,7 @@ fn settings_arguments(path: std::path::PathBuf) -> Vec<String> {
 
 #[test]
 fn test_external_cmd() {
-    let matches = app().get_matches_from(&[ROOT_CMD, "run", "-E", "test_name=test_path"]);
+    let matches = app().get_matches_from([ROOT_CMD, "run", "-E", "test_name=test_path"]);
     let matches = matches.subcommand_matches("run").unwrap();
     let pair = hashmaps_from_matches(matches, "package_map")
         .unwrap()
@@ -103,13 +105,13 @@ fn test_external_cmd() {
 
 #[test]
 fn test_version_cmd() {
-    let matches = app().get_matches_from(&[ROOT_CMD, "version"]);
+    let matches = app().get_matches_from([ROOT_CMD, "version"]);
     assert!(matches.subcommand_matches("version").is_some())
 }
 
 #[test]
 fn test_multi_external_cmd() {
-    let matches = app().get_matches_from(&[
+    let matches = app().get_matches_from([
         ROOT_CMD,
         "run",
         "-E",
@@ -131,7 +133,7 @@ fn test_multi_external_cmd() {
 
 #[test]
 fn test_multi_external_with_same_key_cmd() {
-    let matches = app().get_matches_from(&[
+    let matches = app().get_matches_from([
         ROOT_CMD,
         "run",
         "-E",
@@ -158,7 +160,7 @@ fn test_external_cmd_invalid() {
         "=test_name=test_path=",
     ];
     for case in invalid_cases {
-        let matches = app().get_matches_from(&[ROOT_CMD, "run", "-E", case]);
+        let matches = app().get_matches_from([ROOT_CMD, "run", "-E", case]);
         let matches = matches.subcommand_matches("run").unwrap();
         match hashmaps_from_matches(matches, "package_map").unwrap() {
             Ok(_) => {
@@ -213,7 +215,7 @@ fn test_load_cache_with_different_pkg() {
 
     // Copy the content from main.k.v1 to main.k
     fs::copy(main_v1_path, &main_path).unwrap();
-    let matches = app().get_matches_from(&[
+    let matches = app().get_matches_from([
         ROOT_CMD,
         "run",
         main_path.to_str().unwrap(),
@@ -231,7 +233,7 @@ fn test_load_cache_with_different_pkg() {
 
     // Copy the content from main.k.v2 to main.k
     fs::copy(main_v2_path, &main_path).unwrap();
-    let matches = app().get_matches_from(&[
+    let matches = app().get_matches_from([
         ROOT_CMD,
         "run",
         main_path.to_str().unwrap(),
@@ -258,7 +260,7 @@ fn check_run_command_with_env(test_case_path: PathBuf, kcl_pkg_path_env: String)
     let test_case_expect_file = test_case_path.join("stdout").display().to_string();
     let expect = fs::read_to_string(test_case_expect_file).expect("Unable to read file");
 
-    let matches = app().arg_required_else_help(true).get_matches_from(&[
+    let matches = app().arg_required_else_help(true).get_matches_from([
         ROOT_CMD,
         "run",
         &test_case_path.join("main.k").display().to_string(),
@@ -277,7 +279,7 @@ fn test_kcl_path_is_sym_link() {
     let link = "./src/test_data/sym_link/sym_link";
 
     let origin_k_file_path = PathBuf::from(origin).join("a.k");
-    let origin_matches = app().arg_required_else_help(true).get_matches_from(&[
+    let origin_matches = app().arg_required_else_help(true).get_matches_from([
         ROOT_CMD,
         "run",
         origin_k_file_path.to_str().unwrap(),
@@ -299,7 +301,7 @@ fn test_kcl_path_is_sym_link() {
 
     let sym_link_k_file_path = PathBuf::from(link).join("a.k");
     let mut sym_link_res = Vec::new();
-    let sym_link_matches = app().arg_required_else_help(true).get_matches_from(&[
+    let sym_link_matches = app().arg_required_else_help(true).get_matches_from([
         ROOT_CMD,
         "run",
         sym_link_k_file_path.to_str().unwrap(),
@@ -323,13 +325,13 @@ fn test_kcl_path_is_sym_link() {
 fn test_compile_two_kcl_mod() {
     let test_case_path = PathBuf::from("./src/test_data/multimod");
 
-    let matches = app().arg_required_else_help(true).get_matches_from(&[
+    let matches = app().arg_required_else_help(true).get_matches_from([
         ROOT_CMD,
         "run",
         &test_case_path.join("kcl1/main.k").display().to_string(),
         "${kcl2:KCL_MOD}/main.k",
         "-E",
-        &format!("kcl2={}", test_case_path.join("kcl2").display().to_string()),
+        &format!("kcl2={}", test_case_path.join("kcl2").display()),
     ]);
 
     let mut buf = Vec::new();
@@ -340,13 +342,13 @@ fn test_compile_two_kcl_mod() {
         String::from_utf8(buf).unwrap()
     );
 
-    let matches = app().arg_required_else_help(true).get_matches_from(&[
+    let matches = app().arg_required_else_help(true).get_matches_from([
         ROOT_CMD,
         "run",
         &test_case_path.join("kcl2/main.k").display().to_string(),
         "${kcl1:KCL_MOD}/main.k",
         "-E",
-        &format!("kcl1={}", test_case_path.join("kcl1").display().to_string()),
+        &format!("kcl1={}", test_case_path.join("kcl1").display()),
     ]);
 
     let mut buf = Vec::new();
@@ -357,7 +359,7 @@ fn test_compile_two_kcl_mod() {
         String::from_utf8(buf).unwrap()
     );
 
-    let matches = app().arg_required_else_help(true).get_matches_from(&[
+    let matches = app().arg_required_else_help(true).get_matches_from([
         ROOT_CMD,
         "run",
         &test_case_path.join("kcl3/main.k").display().to_string(),
@@ -365,11 +367,7 @@ fn test_compile_two_kcl_mod() {
         "-E",
         &format!(
             "kcl4={}",
-            test_case_path
-                .join("kcl3")
-                .join("kcl4")
-                .display()
-                .to_string()
+            test_case_path.join("kcl3").join("kcl4").display()
         ),
     ]);
 
@@ -381,7 +379,7 @@ fn test_compile_two_kcl_mod() {
         String::from_utf8(buf).unwrap()
     );
 
-    let matches = app().arg_required_else_help(true).get_matches_from(&[
+    let matches = app().arg_required_else_help(true).get_matches_from([
         ROOT_CMD,
         "run",
         &test_case_path
@@ -390,7 +388,7 @@ fn test_compile_two_kcl_mod() {
             .to_string(),
         "${kcl3:KCL_MOD}/main.k",
         "-E",
-        &format!("kcl3={}", test_case_path.join("kcl3").display().to_string()),
+        &format!("kcl3={}", test_case_path.join("kcl3").display()),
     ]);
 
     let mut buf = Vec::new();
@@ -426,7 +424,7 @@ fn test_instances_with_yaml() {
 
 fn test_instances(kcl_yaml_path: &str, expected_file_path: &str) {
     let test_case_path = PathBuf::from("./src/test_data/instances");
-    let matches = app().arg_required_else_help(true).get_matches_from(&[
+    let matches = app().arg_required_else_help(true).get_matches_from([
         ROOT_CMD,
         "run",
         "-Y",
@@ -452,12 +450,12 @@ fn test_instances(kcl_yaml_path: &str, expected_file_path: &str) {
 fn test_main_pkg_not_found() {
     let test_case_path = PathBuf::from("./src/test_data/multimod");
 
-    let matches = app().arg_required_else_help(true).get_matches_from(&[
+    let matches = app().arg_required_else_help(true).get_matches_from([
         ROOT_CMD,
         "run",
         "${kcl3:KCL_MOD}/main.k",
         "-E",
-        &format!("kcl3={}", test_case_path.join("kcl3").display().to_string()),
+        &format!("kcl3={}", test_case_path.join("kcl3").display()),
     ]);
     let settings = must_build_settings(matches.subcommand_matches("run").unwrap());
     let sess = Arc::new(ParseSession::default());
@@ -476,7 +474,7 @@ fn test_main_pkg_not_found() {
 fn test_multi_mod_file() {
     let test_case_path = PathBuf::from("./src/test_data/multimod");
 
-    let matches = app().arg_required_else_help(true).get_matches_from(&[
+    let matches = app().arg_required_else_help(true).get_matches_from([
         ROOT_CMD,
         "run",
         &test_case_path.join("kcl1").display().to_string(),
@@ -498,7 +496,7 @@ fn test_multi_mod_file() {
 
 fn test_plugin_not_found() {
     let test_case_path = PathBuf::from("./src/test_data/plugin/plugin_not_found");
-    let matches = app().arg_required_else_help(true).get_matches_from(&[
+    let matches = app().arg_required_else_help(true).get_matches_from([
         ROOT_CMD,
         "run",
         test_case_path.as_path().display().to_string().as_str(),
@@ -513,7 +511,7 @@ fn test_plugin_not_found() {
 
 fn test_error_message_fuzz_matched() {
     let test_case_path = PathBuf::from("./src/test_data/fuzz_match/main.k");
-    let matches = app().arg_required_else_help(true).get_matches_from(&[
+    let matches = app().arg_required_else_help(true).get_matches_from([
         ROOT_CMD,
         "run",
         &test_case_path.canonicalize().unwrap().display().to_string(),
@@ -533,7 +531,7 @@ fn test_error_message_fuzz_matched() {
 
 fn test_error_message_fuzz_unmatched() {
     let test_case_path = PathBuf::from("./src/test_data/fuzz_match/main_unmatched.k");
-    let matches = app().arg_required_else_help(true).get_matches_from(&[
+    let matches = app().arg_required_else_help(true).get_matches_from([
         ROOT_CMD,
         "run",
         &test_case_path.canonicalize().unwrap().display().to_string(),
@@ -553,7 +551,7 @@ fn test_error_message_fuzz_unmatched() {
 
 fn test_keyword_argument_error_message() {
     let test_case_path = PathBuf::from("./src/test_data/failed/keyword_argument_error.k");
-    let matches = app().arg_required_else_help(true).get_matches_from(&[
+    let matches = app().arg_required_else_help(true).get_matches_from([
         ROOT_CMD,
         "run",
         &test_case_path.canonicalize().unwrap().display().to_string(),

@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 use kcl_ast::ast::Program;
 use kcl_driver::{lookup_compile_workspace, toolchain};
 use kcl_error::Diagnostic;
@@ -78,13 +80,12 @@ pub fn compile(
             Ok(module_cache) => {
                 let path = PathBuf::from(params.file.clone().unwrap());
                 module_cache.clear(&path);
-                if let Some(vfs) = &params.vfs {
-                    if let Ok(code_list) =
+                if let Some(vfs) = &params.vfs
+                    && let Ok(code_list) =
                         load_files_code_from_vfs(&[&params.file.clone().unwrap()], vfs)
-                    {
-                        module_cache.source_code.insert(path, code_list[0].clone());
-                    };
-                }
+                {
+                    module_cache.source_code.insert(path, code_list[0].clone());
+                };
             }
             Err(e) => {
                 return (
@@ -106,14 +107,13 @@ pub fn compile(
     diags.extend(sess.1.read().diagnostics.clone());
 
     // Resolver
-    if let Some(cached_scope) = params.scope_cache.as_ref() {
-        if let Some(file) = &params.file {
-            if let Some(mut cached_scope) = cached_scope.try_write() {
-                let mut invalidate_pkg_modules = HashSet::new();
-                invalidate_pkg_modules.insert(file.clone());
-                cached_scope.invalidate_pkg_modules = Some(invalidate_pkg_modules);
-            }
-        }
+    if let Some(cached_scope) = params.scope_cache.as_ref()
+        && let Some(file) = &params.file
+        && let Some(mut cached_scope) = cached_scope.try_write()
+    {
+        let mut invalidate_pkg_modules = HashSet::new();
+        invalidate_pkg_modules.insert(file.clone());
+        cached_scope.invalidate_pkg_modules = Some(invalidate_pkg_modules);
     }
 
     let prog_scope = resolve_program_with_opts(
@@ -151,7 +151,7 @@ pub fn compile(
     };
 
     gs.new_or_invalidate_pkgs
-        .extend(program.pkgs_not_imported.keys().map(|n| n.clone()));
+        .extend(program.pkgs_not_imported.keys().cloned());
 
     gs.clear_cache();
 

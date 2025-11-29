@@ -37,23 +37,21 @@ pub fn load_work_file<P: AsRef<Path> + std::fmt::Debug>(path: P) -> Result<WorkF
 
     let reader = BufReader::new(file);
     let mut workfile = WorkFile::default();
-    for line in reader.lines() {
-        if let Ok(line) = line {
-            let mut directive = line.split_whitespace();
-            if let Some(key) = directive.next() {
-                match key {
-                    "workspace" => {
-                        if let Some(path) = directive.next() {
-                            workfile.workspaces.push(WorkSpace {
-                                content: line.clone(),
-                                path: path.to_string(),
-                                abs_path: "".to_string(),
-                            });
-                        }
+    for line in reader.lines().map_while(Result::ok) {
+        let mut directive = line.split_whitespace();
+        if let Some(key) = directive.next() {
+            match key {
+                "workspace" => {
+                    if let Some(path) = directive.next() {
+                        workfile.workspaces.push(WorkSpace {
+                            content: line.clone(),
+                            path: path.to_string(),
+                            abs_path: "".to_string(),
+                        });
                     }
-                    _ => {
-                        workfile.failed.insert(line, "Unknown keyword".to_string());
-                    }
+                }
+                _ => {
+                    workfile.failed.insert(line, "Unknown keyword".to_string());
                 }
             }
         }

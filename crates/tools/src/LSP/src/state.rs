@@ -51,9 +51,9 @@ pub(crate) enum Event {
 #[allow(unused)]
 #[derive(Debug, Clone)]
 pub(crate) enum FileWatcherEvent {
-    ChangedConfigFile(Vec<PathBuf>),
-    RemoveConfigFile(Vec<PathBuf>),
-    CreateConfigFile(Vec<PathBuf>),
+    Changed(Vec<PathBuf>),
+    Removed(Vec<PathBuf>),
+    Create(Vec<PathBuf>),
 }
 
 pub(crate) struct Handle<H, C> {
@@ -67,6 +67,10 @@ pub(crate) type KCLWorkSpaceConfigCache = Arc<RwLock<HashMap<WorkSpaceKind, Comp
 
 pub(crate) type KCLToolChain = Arc<RwLock<dyn Toolchain>>;
 pub(crate) type KCLGlobalStateCache = Arc<Mutex<GlobalState>>;
+pub(crate) type FSEventWatcher = Handle<
+    Box<RecommendedWatcher>,
+    mpsc::Receiver<std::result::Result<notify::Event, notify::Error>>,
+>;
 
 /// State for the language server
 pub(crate) struct LanguageServerState {
@@ -107,12 +111,7 @@ pub(crate) struct LanguageServerState {
     pub workspace_folders: Option<Vec<WorkspaceFolder>>,
     /// Actively monitor file system changes. These changes will not be notified through lsp,
     /// e.g., execute `kcl mod add xxx`, `kcl fmt xxx`
-    pub fs_event_watcher: Option<
-        Handle<
-            Box<RecommendedWatcher>,
-            mpsc::Receiver<std::result::Result<notify::Event, notify::Error>>,
-        >,
-    >,
+    pub fs_event_watcher: Option<FSEventWatcher>,
 }
 
 /// A snapshot of the state of the language server
@@ -202,49 +201,42 @@ impl LanguageServerState {
     /// listens to. Returns the first event that is received.
     fn next_event(&self, receiver: &Receiver<lsp_server::Message>) -> Option<Event> {
         if let Some(fs_event_watcher) = &self.fs_event_watcher {
-            for event in fs_event_watcher._receiver.try_iter() {
-                if let Ok(e) = event {
-                    match e.kind {
-                        notify::EventKind::Modify(kind) => {
-                            if let notify::event::ModifyKind::Data(data_change) = kind {
-                                if let notify::event::DataChange::Content = data_change {
-                                    let paths = e.paths;
-                                    let kcl_config_file: Vec<PathBuf> =
-                                        filter_kcl_config_file(&paths);
-                                    if !kcl_config_file.is_empty() {
-                                        // TODO: wait for fix `kcl mod metadata` to read only. Otherwise it will lead to an infinite loop
-                                        // return Some(Event::FileWatcher(
-                                        //     FileWatcherEvent::ChangedConfigFile(kcl_config_file),
-                                        // ));
-                                    }
-                                }
+            for e in fs_event_watcher._receiver.try_iter().flatten() {
+                match e.kind {
+                    notify::EventKind::Modify(kind) => {
+                        if let notify::event::ModifyKind::Data(data_change) = kind
+                            && let notify::event::DataChange::Content = data_change
+                        {
+                            let paths = e.paths;
+                            let kcl_config_file: Vec<PathBuf> = filter_kcl_config_file(&paths);
+                            if !kcl_config_file.is_empty() {
+                                // TODO: wait for fix `kcl mod metadata` to read only. Otherwise it will lead to an infinite loop
+                                // return Some(Event::FileWatcher(
+                                //     FileWatcherEvent::ChangedConfigFile(kcl_config_file),
+                                // ));
                             }
                         }
-                        notify::EventKind::Remove(remove_kind) => {
-                            if let notify::event::RemoveKind::File = remove_kind {
-                                let paths = e.paths;
-                                let kcl_config_file: Vec<PathBuf> = filter_kcl_config_file(&paths);
-                                if !kcl_config_file.is_empty() {
-                                    return Some(Event::FileWatcher(
-                                        FileWatcherEvent::RemoveConfigFile(kcl_config_file),
-                                    ));
-                                }
-                            }
-                        }
-
-                        notify::EventKind::Create(create_kind) => {
-                            if let notify::event::CreateKind::File = create_kind {
-                                let paths = e.paths;
-                                let kcl_config_file: Vec<PathBuf> = filter_kcl_config_file(&paths);
-                                if !kcl_config_file.is_empty() {
-                                    return Some(Event::FileWatcher(
-                                        FileWatcherEvent::CreateConfigFile(kcl_config_file),
-                                    ));
-                                }
-                            }
-                        }
-                        _ => {}
                     }
+                    notify::EventKind::Remove(notify::event::RemoveKind::File) => {
+                        let paths = e.paths;
+                        let kcl_config_file: Vec<PathBuf> = filter_kcl_config_file(&paths);
+                        if !kcl_config_file.is_empty() {
+                            return Some(Event::FileWatcher(FileWatcherEvent::Removed(
+                                kcl_config_file,
+                            )));
+                        }
+                    }
+
+                    notify::EventKind::Create(notify::event::CreateKind::File) => {
+                        let paths = e.paths;
+                        let kcl_config_file: Vec<PathBuf> = filter_kcl_config_file(&paths);
+                        if !kcl_config_file.is_empty() {
+                            return Some(Event::FileWatcher(FileWatcherEvent::Create(
+                                kcl_config_file,
+                            )));
+                        }
+                    }
+                    _ => {}
                 }
             }
         }
@@ -258,10 +250,10 @@ impl LanguageServerState {
     /// Runs the language server to completion
     pub fn run(mut self, receiver: Receiver<lsp_server::Message>) -> anyhow::Result<()> {
         while let Some(event) = self.next_event(&receiver) {
-            if let Event::Lsp(lsp_server::Message::Notification(notification)) = &event {
-                if notification.method == lsp_types::notification::Exit::METHOD {
-                    return Ok(());
-                }
+            if let Event::Lsp(lsp_server::Message::Notification(notification)) = &event
+                && notification.method == lsp_types::notification::Exit::METHOD
+            {
+                return Ok(());
             }
             self.handle_event(event)?;
         }
@@ -332,7 +324,7 @@ impl LanguageServerState {
                         for (workspace, state) in state_workspaces.iter() {
                             match state {
                                 DBState::Ready(db) => {
-                                    if db.prog.modules.get(&filename).is_some() {
+                                    if db.prog.modules.contains_key(&filename) {
                                         let mut openfiles = self.opened_files.write();
                                         let file_info = openfiles.get_mut(&file.file_id).unwrap();
                                         file_info.workspaces.insert(workspace.clone());
@@ -362,7 +354,7 @@ impl LanguageServerState {
                                 Some(parent_dir) => {
                                     let (workspaces, failed) = lookup_compile_workspaces(
                                         &*tool.read(),
-                                        &parent_dir.to_str().unwrap().to_string(),
+                                        parent_dir.to_str().unwrap(),
                                         true,
                                     );
                                     if workspaces.is_empty() {
@@ -513,9 +505,9 @@ impl LanguageServerState {
     #[allow(clippy::unnecessary_wraps)]
     fn handle_file_watcher_event(&mut self, event: FileWatcherEvent) -> anyhow::Result<()> {
         match event {
-            FileWatcherEvent::ChangedConfigFile(paths) => self.handle_changed_confg_file(&paths),
-            FileWatcherEvent::CreateConfigFile(paths) => self.handle_create_confg_file(&paths),
-            FileWatcherEvent::RemoveConfigFile(paths) => self.handle_remove_confg_file(&paths),
+            FileWatcherEvent::Changed(paths) => self.handle_changed_confg_file(&paths),
+            FileWatcherEvent::Create(paths) => self.handle_create_confg_file(&paths),
+            FileWatcherEvent::Removed(paths) => self.handle_remove_confg_file(&paths),
         }
         Ok(())
     }
@@ -707,8 +699,8 @@ impl LanguageServerState {
                 }
 
                 for (file, diags) in old_diags_maps {
-                    if !new_diags_maps.contains_key(&file) {
-                        if let Ok(uri) = url_from_path(file) {
+                    if !new_diags_maps.contains_key(&file)
+                        && let Ok(uri) = url_from_path(file) {
                             sender.send(Task::Notify(lsp_server::Notification {
                                 method: PublishDiagnostics::METHOD.to_owned(),
                                 params: to_json(PublishDiagnosticsParams {
@@ -719,7 +711,6 @@ impl LanguageServerState {
                                 .unwrap(),
                             }));
                         }
-                    }
                 }
 
                 for (filename, diagnostics) in new_diags_maps {
@@ -750,7 +741,7 @@ impl LanguageServerState {
                             DBState::Ready(Arc::new(AnalysisDatabase { prog, gs, diags,schema_map })),
                         );
                         drop(workspaces);
-                        if temp && changed_file_id.is_some() {
+                        if temp && let Some(changed_file_id) = changed_file_id {
                             let mut temporary_workspace = snapshot.temporary_workspace.write();
 
                             log_message(
@@ -760,7 +751,7 @@ impl LanguageServerState {
                                 &sender,
                             );
                             temporary_workspace
-                                .insert(changed_file_id.unwrap(), Some(workspace.clone()));
+                                .insert(changed_file_id, Some(workspace.clone()));
                             drop(temporary_workspace);
                         }
                     }
@@ -773,15 +764,15 @@ impl LanguageServerState {
                             &sender,
                         );
                         workspaces.insert(workspace, DBState::Failed(e.to_string()));
-                        if temp && changed_file_id.is_some() {
+                        if temp && let Some(changed_file_id) = changed_file_id {
                             let mut temporary_workspace = snapshot.temporary_workspace.write();
                             log_message(
                                 format!(
-                                    "Reomve temporary workspace file id: {:?}",changed_file_id
+                                    "Reomve temporary workspace file id: {:?}", changed_file_id
                                 ),
                                 &sender,
                             );
-                            temporary_workspace.remove(&changed_file_id.unwrap());
+                            temporary_workspace.remove(&changed_file_id);
                             drop(temporary_workspace);
                         }
                     }
@@ -803,7 +794,7 @@ impl LanguageServerState {
                     _ => None,
                 } {
                     let opts =
-                        lookup_compile_workspace(&*self.tool.read(), &p.to_str().unwrap(), true);
+                        lookup_compile_workspace(&*self.tool.read(), p.to_str().unwrap(), true);
                     self.async_compile(workspace.clone(), opts, None, false);
                 }
             }
@@ -823,13 +814,8 @@ impl LanguageServerState {
                     None
                 } {
                     let opts =
-                        lookup_compile_workspace(&*self.tool.read(), &p.to_str().unwrap(), true);
-                    self.async_compile(
-                        workspace.clone().unwrap(),
-                        opts,
-                        Some(file_id.clone()),
-                        false,
-                    );
+                        lookup_compile_workspace(&*self.tool.read(), p.to_str().unwrap(), true);
+                    self.async_compile(workspace.clone().unwrap(), opts, Some(*file_id), false);
                 }
             }
         }

@@ -56,7 +56,7 @@ pub unsafe extern "C-unwind" fn libkcl_run(
 
 /// KCL CLI run function CAPI.
 fn libkcl_run_unsafe(args: *const c_char, plugin_agent: *const c_char) -> Result<String, String> {
-    let mut args = kcl_runner::ExecProgramArgs::from_str(
+    let mut args = kcl_runner::ExecProgramArgs::from_json(
         unsafe { std::ffi::CStr::from_ptr(args) }.to_str().unwrap(),
     );
     args.plugin_agent = plugin_agent as u64;

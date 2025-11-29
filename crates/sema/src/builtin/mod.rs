@@ -23,7 +23,7 @@ pub const BUILTIN_FUNCTION_PREFIX: &str = "$builtin";
 macro_rules! register_builtin {
     ($($name:ident => $ty:expr)*) => (
         // Builtin function map.
-        pub const BUILTIN_FUNCTIONS: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+        pub static BUILTIN_FUNCTIONS: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
             let mut builtin_mapping = IndexMap::default();
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping

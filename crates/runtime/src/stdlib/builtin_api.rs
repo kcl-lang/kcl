@@ -14,8 +14,8 @@ pub unsafe extern "C-unwind" fn kcl_builtin_option_init(
     key: *const c_char,
     value: *const c_char,
 ) {
-    let ctx = mut_ptr_as_ref(ctx);
-    ctx.builtin_option_init(c2str(key), c2str(value));
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    ctx.builtin_option_init(unsafe { c2str(key) }, unsafe { c2str(value) });
 }
 
 #[unsafe(no_mangle)]
@@ -24,10 +24,10 @@ pub unsafe extern "C-unwind" fn kcl_builtin_option_reset(
     _args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let ctx_ref = mut_ptr_as_ref(ctx);
+    let ctx_ref = unsafe { mut_ptr_as_ref(ctx) };
 
     ctx_ref.builtin_option_reset();
-    kcl_value_Undefined(ctx)
+    unsafe { kcl_value_Undefined(ctx) }
 }
 
 // def kcl_option(name: str, *, type="", required=False, default=None, help="", file="", line=0) -> typing.Any:
@@ -38,9 +38,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_option(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     fn _value_to_type(this: &ValueRef, typ: String) -> ValueRef {
         if typ.is_empty() {
@@ -196,9 +196,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_print(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let ctx_ref = mut_ptr_as_ref(ctx);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let ctx_ref = unsafe { mut_ptr_as_ref(ctx) };
     // args
     let list = args.as_list_ref();
     let values: Vec<String> = list.values.iter().map(|v| v.to_string()).collect();
@@ -210,7 +210,7 @@ pub unsafe extern "C-unwind" fn kcl_builtin_print(
     } else {
         ctx_ref.log_message.push('\n');
     }
-    kcl_value_None(ctx)
+    unsafe { kcl_value_None(ctx) }
 }
 
 #[unsafe(no_mangle)]
@@ -219,11 +219,11 @@ pub unsafe extern "C-unwind" fn kcl_builtin_len(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(arg) = get_call_arg(args, kwargs, 0, Some("inval")) {
-        return kcl_value_Int(ctx, arg.len() as i64);
+        return unsafe { kcl_value_Int(ctx, arg.len() as i64) };
     }
     panic!("len() takes exactly one argument (0 given)");
 }
@@ -234,13 +234,13 @@ pub unsafe extern "C-unwind" fn kcl_builtin_any_true(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("inval")) {
-        return kcl_value_Bool(ctx, arg0.any_true() as i8);
+        return unsafe { kcl_value_Bool(ctx, arg0.any_true() as i8) };
     }
-    kcl_value_Bool(ctx, 0)
+    unsafe { kcl_value_Bool(ctx, 0) }
 }
 
 #[unsafe(no_mangle)]
@@ -249,13 +249,13 @@ pub unsafe extern "C-unwind" fn kcl_builtin_isunique(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("inval")) {
-        return kcl_value_Bool(ctx, arg0.isunique() as i8);
+        return unsafe { kcl_value_Bool(ctx, arg0.isunique() as i8) };
     }
-    kcl_value_Bool(ctx, 0)
+    unsafe { kcl_value_Bool(ctx, 0) }
 }
 
 #[unsafe(no_mangle)]
@@ -264,9 +264,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_sorted(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("inval")) {
         let reverse = get_call_arg(args, kwargs, 1, Some("reverse"));
@@ -281,9 +281,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_int(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("number")) {
         let base = get_call_arg(args, kwargs, 1, Some("base"));
@@ -298,9 +298,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_float(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("number")) {
         return arg0.convert_to_float(ctx).into_raw(ctx);
@@ -314,9 +314,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_bool(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("x")) {
         return ValueRef::bool(arg0.is_truthy()).into_raw(ctx);
@@ -330,9 +330,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("x")) {
         return ValueRef::str(&arg0.to_string()).into_raw(ctx);
@@ -346,8 +346,8 @@ pub unsafe extern "C-unwind" fn kcl_builtin_max(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
     if args.args_len() > 1 {
         return args.max_value().into_raw(ctx);
     }
@@ -363,8 +363,8 @@ pub unsafe extern "C-unwind" fn kcl_builtin_min(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
     if args.args_len() > 1 {
         return args.min_value().into_raw(ctx);
     }
@@ -380,9 +380,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_multiplyof(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let (Some(arg0), Some(arg1)) = (
         get_call_arg(args, kwargs, 0, Some("a")),
@@ -402,9 +402,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_abs(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("inval")) {
         return arg0.abs().into_raw(ctx);
@@ -418,13 +418,13 @@ pub unsafe extern "C-unwind" fn kcl_builtin_all_true(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("inval")) {
-        return kcl_value_Bool(ctx, arg0.all_true() as i8);
+        return unsafe { kcl_value_Bool(ctx, arg0.all_true() as i8) };
     }
-    kcl_value_Bool(ctx, 0)
+    unsafe { kcl_value_Bool(ctx, 0) }
 }
 
 #[unsafe(no_mangle)]
@@ -433,9 +433,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_hex(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("number")) {
         return arg0.hex().into_raw(ctx);
@@ -449,16 +449,16 @@ pub unsafe extern "C-unwind" fn kcl_builtin_sum(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx_ref = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx_ref = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     match get_call_arg(args, kwargs, 0, Some("iterable")) {
         Some(arg0) => match get_call_arg(args, kwargs, 1, Some("start")) {
             Some(arg1) => arg0.sum(ctx_ref, &arg1).into_raw(ctx_ref),
             _ => arg0.sum(ctx_ref, &ValueRef::int(0)).into_raw(ctx_ref),
         },
-        _ => kcl_value_Undefined(ctx),
+        _ => unsafe { kcl_value_Undefined(ctx) },
     }
 }
 
@@ -468,9 +468,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_pow(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx_ref = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx_ref = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     match (
         get_call_arg(args, kwargs, 0, Some("x")),
@@ -480,7 +480,7 @@ pub unsafe extern "C-unwind" fn kcl_builtin_pow(
             Some(arg2) => builtin::pow(&arg0, &arg1, &arg2).into_raw(ctx_ref),
             _ => builtin::pow(&arg0, &arg1, &ValueRef::none()).into_raw(ctx_ref),
         },
-        _ => kcl_value_Undefined(ctx),
+        _ => unsafe { kcl_value_Undefined(ctx) },
     }
 }
 
@@ -490,16 +490,16 @@ pub unsafe extern "C-unwind" fn kcl_builtin_round(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx_ref = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx_ref = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     match get_call_arg(args, kwargs, 0, Some("number")) {
         Some(arg0) => match get_call_arg(args, kwargs, 1, Some("ndigits")) {
             Some(arg1) => builtin::round(&arg0, &arg1).into_raw(ctx_ref),
             _ => builtin::round(&arg0, &ValueRef::none()).into_raw(ctx_ref),
         },
-        _ => kcl_value_Undefined(ctx),
+        _ => unsafe { kcl_value_Undefined(ctx) },
     }
 }
 
@@ -509,8 +509,8 @@ pub unsafe extern "C-unwind" fn kcl_builtin_zip(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
     args.zip().into_raw(ctx)
 }
 
@@ -520,9 +520,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_list(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if args.args_len() > 0 {
         if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("x")) {
@@ -540,9 +540,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_dict(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
     let mut dict = ValueRef::dict(None);
     if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("x")) {
         let v = builtin::dict(ctx, Some(&arg0));
@@ -559,9 +559,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_typeof(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("x")) {
         if let Some(full_name) = get_call_arg(args, kwargs, 1, Some("full_name")) {
@@ -579,9 +579,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_bin(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("number")) {
         return arg0.bin().into_raw(ctx);
@@ -595,9 +595,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_oct(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("number")) {
         return arg0.oct().into_raw(ctx);
@@ -611,9 +611,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_ord(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("c")) {
         return arg0.ord().into_raw(ctx);
@@ -627,9 +627,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_range(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let ctx_ref = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx_ref = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     match get_call_arg(args, kwargs, 0, Some("start")) {
         Some(arg0) => match get_call_arg(args, kwargs, 1, Some("stop")) {
@@ -639,7 +639,7 @@ pub unsafe extern "C-unwind" fn kcl_builtin_range(
             },
             _ => builtin::range(&ValueRef::int(0), &arg0, &ValueRef::int(1)).into_raw(ctx_ref),
         },
-        _ => kcl_value_Undefined(ctx),
+        _ => unsafe { kcl_value_Undefined(ctx) },
     }
 }
 
@@ -650,9 +650,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_isnullish(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(arg0) = get_call_arg(args, kwargs, 0, Some("inval")) {
         return ValueRef::bool(arg0.is_none_or_undefined()).into_raw(ctx);

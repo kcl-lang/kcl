@@ -76,7 +76,7 @@ fn test_kcl_manifests_yaml_stream() {
             ConfigEntryOperationKind::Override,
             None,
         );
-        kcl_manifests_yaml_stream(&mut ctx, &args, &kwargs);
+        unsafe { kcl_manifests_yaml_stream(&mut ctx, &args, &kwargs) };
         assert_eq!(
             Some(yaml_str.to_string()),
             ctx.buffer.custom_manifests_output
@@ -95,7 +95,7 @@ fn test_kcl_manifests_yaml_stream_invalid() {
             let mut ctx = Context::new();
             let args = ValueRef::list(None).into_raw(&mut ctx);
             let kwargs = ValueRef::dict(None).into_raw(&mut ctx);
-            kcl_manifests_yaml_stream(ctx.into_raw(), args, kwargs);
+            unsafe { kcl_manifests_yaml_stream(ctx.into_raw(), args, kwargs) };
         },
     );
     assert_panic(
@@ -105,7 +105,7 @@ fn test_kcl_manifests_yaml_stream_invalid() {
             let args = ValueRef::list(None).into_raw(&mut ctx);
             let kwargs = ValueRef::dict(Some(&[("opts", &ValueRef::str("invalid_kwarg"))]))
                 .into_raw(&mut ctx);
-            kcl_manifests_yaml_stream(ctx.into_raw(), args, kwargs);
+            unsafe { kcl_manifests_yaml_stream(ctx.into_raw(), args, kwargs) };
         },
     );
     assert_panic(
@@ -114,7 +114,7 @@ fn test_kcl_manifests_yaml_stream_invalid() {
             let mut ctx = Context::new();
             let args = ValueRef::list(None).into_raw(&mut ctx);
             let kwargs = ValueRef::dict(Some(&[("opts", &ValueRef::none())])).into_raw(&mut ctx);
-            kcl_manifests_yaml_stream(ctx.into_raw(), args, kwargs);
+            unsafe { kcl_manifests_yaml_stream(ctx.into_raw(), args, kwargs) };
         },
     );
     std::panic::set_hook(prev_hook);

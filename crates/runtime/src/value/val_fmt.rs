@@ -62,6 +62,7 @@ fn format_inf(case: Case) -> String {
     inf.to_string()
 }
 
+#[inline]
 pub fn format_fixed(precision: usize, magnitude: f64, case: Case) -> String {
     match magnitude {
         magnitude if magnitude.is_finite() => format!("{magnitude:.precision$}"),
@@ -71,8 +72,9 @@ pub fn format_fixed(precision: usize, magnitude: f64, case: Case) -> String {
     }
 }
 
+#[inline]
 pub fn is_integer(v: f64) -> bool {
-    (v - v.round()).abs() < std::f64::EPSILON
+    (v - v.round()).abs() < f64::EPSILON
 }
 
 pub fn float_to_string(value: f64) -> String {
@@ -434,7 +436,7 @@ impl FormatSpec {
         for c in magnitude_integer_string.chars() {
             result.push(c);
             remaining -= 1;
-            if remaining % interval == 0 && remaining > 0 {
+            if remaining.is_multiple_of(interval) && remaining > 0 {
                 result.push(separator);
             }
         }

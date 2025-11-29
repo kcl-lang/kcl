@@ -31,7 +31,7 @@ pub fn transform_multi_assign(m: &mut ast::Module) {
             // Insert behind the node with the insert offset, so the index plus one.
             m.body.insert(
                 insert_index + insert_offset + 1,
-                Box::new(ast::Node::node_with_pos(
+                Box::new(ast::Node::new_with_pos(
                     ast::Stmt::Assign(assign_stmt.clone()),
                     pos.clone(),
                 )),

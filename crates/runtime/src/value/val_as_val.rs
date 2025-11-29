@@ -42,7 +42,7 @@ impl ValueRef {
         match &*self.rc.borrow() {
             Value::float_value(v) => *v,
             Value::int_value(v) => *v as f64,
-            _ => return 0.0,
+            _ => 0.0,
         }
     }
 

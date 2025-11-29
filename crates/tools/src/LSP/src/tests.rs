@@ -122,6 +122,7 @@ pub(crate) fn compile_test_file(
     (file, program, diags, gs, schema_map)
 }
 
+#[allow(clippy::type_complexity)]
 pub(crate) fn compile_test_file_and_metadata(
     testfile: &str,
 ) -> (
@@ -607,24 +608,20 @@ fn notification_test() {
 
     let msgs = server.messages.borrow();
     for msg in msgs.iter() {
-        match msg {
-            Message::Notification(not) => {
-                if let Some(uri) = not.params.get("uri") {
-                    if uri.clone() == to_json(Url::from_file_path(path).unwrap()).unwrap() {
-                        assert_eq!(
-                            not.params,
-                            to_json(PublishDiagnosticsParams {
-                                uri: Url::from_file_path(path).unwrap(),
-                                diagnostics: build_expect_diags(),
-                                version: None,
-                            })
-                            .unwrap()
-                        );
-                        break;
-                    }
-                }
-            }
-            _ => {}
+        if let Message::Notification(not) = msg
+            && let Some(uri) = not.params.get("uri")
+            && uri.clone() == to_json(Url::from_file_path(path).unwrap()).unwrap()
+        {
+            assert_eq!(
+                not.params,
+                to_json(PublishDiagnosticsParams {
+                    uri: Url::from_file_path(path).unwrap(),
+                    diagnostics: build_expect_diags(),
+                    version: None,
+                })
+                .unwrap()
+            );
+            break;
         }
     }
 }

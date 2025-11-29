@@ -102,7 +102,7 @@ fn test_c_api_get_schema_type_mapping() {
         "get-schema-type-mapping.response.json",
         |r| {
             let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-            for (_, s_ty) in &mut r.schema_type_mapping {
+            for s_ty in r.schema_type_mapping.values_mut() {
                 let filename = {
                     let filename = s_ty.filename.adjust_canonicalization();
                     match filename.strip_prefix(root.to_str().unwrap()) {
@@ -111,7 +111,7 @@ fn test_c_api_get_schema_type_mapping() {
                     }
                 };
 
-                s_ty.filename = filename.replace('.', "").replace('/', "").replace('\\', "")
+                s_ty.filename = filename.replace(['.', '/', '\\'], "")
             }
         },
     );
@@ -281,17 +281,11 @@ where
 fn test_c_api<A, R, F>(svc_name: &str, input: &str, output: &str, wrapper: F)
 where
     A: Message + DeserializeOwned,
-    R: Message
-        + Default
-        + std::fmt::Debug
-        + PartialEq
-        + DeserializeOwned
-        + serde::Serialize
-        + ?Sized,
+    R: Message + Default + std::fmt::Debug + PartialEq + DeserializeOwned + serde::Serialize,
     F: Fn(&mut R),
 {
     let _test_lock = TEST_MUTEX.lock().unwrap();
-    let serv = kcl_service_new(0);
+    let serv = unsafe { kcl_service_new(0) };
 
     let input_path = Path::new(TEST_DATA_PATH).join(input);
     let input = fs::read_to_string(&input_path)
@@ -300,13 +294,15 @@ where
     let args = unsafe { CString::from_vec_unchecked(args_vec.clone()) };
     let call = CString::new(svc_name).unwrap();
     let mut result_len: usize = 0;
-    let src_ptr = kcl_service_call_with_length(
-        serv,
-        call.as_ptr(),
-        args.as_ptr(),
-        args_vec.len(),
-        &mut result_len,
-    );
+    let src_ptr = unsafe {
+        kcl_service_call_with_length(
+            serv,
+            call.as_ptr(),
+            args.as_ptr(),
+            args_vec.len(),
+            &mut result_len,
+        )
+    };
 
     let mut dest_data: Vec<u8> = Vec::with_capacity(result_len);
     unsafe {
@@ -340,7 +336,7 @@ where
     A: Message + DeserializeOwned,
 {
     let _test_lock = TEST_MUTEX.lock().unwrap();
-    let serv = kcl_service_new(0);
+    let serv = unsafe { kcl_service_new(0) };
     let prev_hook = std::panic::take_hook();
     // disable print panic info
     std::panic::set_hook(Box::new(|_info| {}));
@@ -351,7 +347,7 @@ where
         let args_vec = serde_json::from_str::<A>(&input).unwrap().encode_to_vec();
         let args = unsafe { CString::from_vec_unchecked(args_vec.clone()) };
         let call = CString::new(svc_name).unwrap();
-        kcl_service_call(serv, call.as_ptr(), args.as_ptr(), args_vec.len())
+        unsafe { kcl_service_call(serv, call.as_ptr(), args.as_ptr(), args_vec.len()) }
     });
     std::panic::set_hook(prev_hook);
     match result {

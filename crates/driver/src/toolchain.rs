@@ -25,7 +25,7 @@ pub trait Toolchain: Send + Sync {
     /// # Parameters
     ///
     /// * `manifest_path` - A reference to the path of the manifest file, expected to be a type
-    /// that can be converted into a reference to a filesystem path.
+    ///   that can be converted into a reference to a filesystem path.
     fn fetch_metadata(&self, manifest_path: PathBuf) -> Result<Metadata>;
 
     /// Updates the dependencies as defined within the given manifest file path.
@@ -39,7 +39,7 @@ pub trait Toolchain: Send + Sync {
     /// # Parameters
     ///
     /// * `manifest_path` - A reference to the path of the manifest file, expected to be a type
-    /// that can be converted into a reference to a filesystem path.
+    ///   that can be converted into a reference to a filesystem path.
     fn update_dependencies(&self, manifest_path: PathBuf) -> Result<()>;
 }
 
@@ -219,10 +219,7 @@ pub fn get_real_path_from_external(
         .unwrap_or_else(|_| PathBuf::new());
     real_path = real_path.join(pkg_root);
 
-    let pkgpath = match rm_external_pkg_name(pkgpath) {
-        Ok(path) => path,
-        Err(_) => String::new(),
-    };
+    let pkgpath = rm_external_pkg_name(pkgpath).unwrap_or_default();
     pkgpath.split('.').for_each(|s| real_path.push(s));
     real_path
 }

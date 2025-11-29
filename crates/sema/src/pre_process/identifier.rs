@@ -66,11 +66,11 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
     fn walk_aug_assign_stmt(&mut self, aug_assign_stmt: &'ctx mut ast::AugAssignStmt) {
         let is_config = matches!(aug_assign_stmt.value.node, ast::Expr::Schema(_));
         let name = &aug_assign_stmt.target.node.name.node;
-        if is_private_field(name) || !self.global_names.contains_key(name) || is_config {
-            if self.scope_level == 0 {
-                self.global_names
-                    .insert(name.to_string(), aug_assign_stmt.target.get_pos());
-            }
+        if (is_private_field(name) || !self.global_names.contains_key(name) || is_config)
+            && self.scope_level == 0
+        {
+            self.global_names
+                .insert(name.to_string(), aug_assign_stmt.target.get_pos());
         }
         self.walk_expr(&mut aug_assign_stmt.value.node);
     }
@@ -132,10 +132,11 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
         if identifier.names.len() >= 2 {
             // skip global name and generator local variables in list/dict comp and quant expression
             let name = &identifier.names[0].node;
-            if !self.global_names.contains_key(name) && !self.local_vars.contains(name) {
-                if let Some(pkgpath) = self.import_names.get(name) {
-                    identifier.pkgpath = pkgpath.clone()
-                }
+            if !self.global_names.contains_key(name)
+                && !self.local_vars.contains(name)
+                && let Some(pkgpath) = self.import_names.get(name)
+            {
+                identifier.pkgpath = pkgpath.clone()
             }
         }
     }
@@ -143,10 +144,11 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
         if !target.paths.is_empty() {
             // skip global name and generator local variables in list/dict comp and quant expression
             let name = &target.name.node;
-            if !self.global_names.contains_key(name) && !self.local_vars.contains(name) {
-                if let Some(pkgpath) = self.import_names.get(name) {
-                    target.pkgpath = pkgpath.clone()
-                }
+            if !self.global_names.contains_key(name)
+                && !self.local_vars.contains(name)
+                && let Some(pkgpath) = self.import_names.get(name)
+            {
+                target.pkgpath = pkgpath.clone()
             }
         }
     }
@@ -223,8 +225,8 @@ impl<'ctx> MutSelfMutWalker<'ctx> for RawIdentifierTransformer {
 /// import path.to.pkg as pkgname
 ///
 /// x = pkgname.Name
-pub fn fix_qualified_identifier<'ctx>(
-    module: &'ctx mut ast::Module,
+pub fn fix_qualified_identifier(
+    module: &mut ast::Module,
     import_names: &mut IndexMap<String, String>,
 ) {
     // 0. init import names.
@@ -244,5 +246,5 @@ pub fn fix_qualified_identifier<'ctx>(
 /// Fix AST raw identifier prefix `$`, e.g., $filter -> filter
 #[inline]
 pub fn fix_raw_identifier_prefix(module: &'_ mut ast::Module) {
-    RawIdentifierTransformer::default().walk_module(module);
+    RawIdentifierTransformer.walk_module(module);
 }

@@ -1,3 +1,5 @@
+#![allow(clippy::arc_with_non_send_sync)]
+
 use anyhow::Result;
 use clap::ArgMatches;
 use kcl_error::StringError;

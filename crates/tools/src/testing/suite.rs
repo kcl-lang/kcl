@@ -139,13 +139,13 @@ pub fn load_test_suites<P: AsRef<str>>(path: P, opts: &TestOptions) -> Result<Ve
         for file in &test_files {
             let module = parse_file_force_errors(file, None)?;
             for stmt in &module.body {
-                if let ast::Stmt::Assign(assign_stmt) = &stmt.node {
-                    if let ast::Expr::Lambda(_lambda_expr) = &assign_stmt.value.node {
-                        for target in &assign_stmt.targets {
-                            let func_name = target.node.get_name();
-                            if is_test_suite(func_name) && should_run(&opts.run_regexp, func_name) {
-                                cases.insert(func_name.to_string(), TestCase {});
-                            }
+                if let ast::Stmt::Assign(assign_stmt) = &stmt.node
+                    && let ast::Expr::Lambda(_lambda_expr) = &assign_stmt.value.node
+                {
+                    for target in &assign_stmt.targets {
+                        let func_name = target.node.get_name();
+                        if is_test_suite(func_name) && should_run(&opts.run_regexp, func_name) {
+                            cases.insert(func_name.to_string(), TestCase {});
                         }
                     }
                 }

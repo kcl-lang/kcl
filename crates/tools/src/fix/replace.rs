@@ -59,7 +59,7 @@ impl Data {
         self.parts.iter().fold(Vec::new(), |mut acc, d| {
             match &d.data {
                 State::Initial => acc.extend_from_slice(&self.original[d.start..=d.end]),
-                State::Replaced(d) | State::Inserted(d) => acc.extend_from_slice(&d),
+                State::Replaced(d) | State::Inserted(d) => acc.extend_from_slice(d),
             };
             acc
         })
@@ -123,12 +123,12 @@ impl Data {
             // otherwise split then we ignore this for now. This means that you
             // can replace the exact same range with the exact same content
             // multiple times and we'll process and allow it.
-            if part_to_split.start == from && part_to_split.end == up_to_and_including {
-                if let State::Replaced(replacement) = &part_to_split.data {
-                    if &**replacement == data {
-                        return Ok(());
-                    }
-                }
+            if part_to_split.start == from
+                && part_to_split.end == up_to_and_including
+                && let State::Replaced(replacement) = &part_to_split.data
+                && &**replacement == data
+            {
+                return Ok(());
             }
 
             ensure!(

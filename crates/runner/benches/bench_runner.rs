@@ -30,6 +30,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);
 
+#[allow(clippy::arc_with_non_send_sync)]
 fn exec(file: &str) -> Result<String> {
     let mut args = ExecProgramArgs::default();
     args.k_filename_list.push(file.to_string());

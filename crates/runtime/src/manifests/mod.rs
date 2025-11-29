@@ -17,10 +17,10 @@ type kcl_value_ref_t = ValueRef;
 /// ManifestsYamlStreamOptions contain these options
 /// - sort_keys: Sort the encode result by keys (defaults to false).
 /// - ignore_private: Whether to ignore the attribute whose name starts with
-///     a character `_` (defaults to false).
+///   a character `_` (defaults to false).
 /// - ignore_none: Whether to ignore the attribute whose value is `None` (defaults to false).
 /// - sep: Which separator to use between YAML documents (defaults to "---").
-/// More information: https://github.com/kcl-lang/kcl/issues/94
+///   More information: https://github.com/kcl-lang/kcl/issues/94
 ///
 /// - Function signature.
 ///
@@ -49,15 +49,17 @@ type kcl_value_ref_t = ValueRef;
 /// })
 /// ```
 /// TODO: more options on the function `yaml_stream`.
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_manifests_yaml_stream(
+pub unsafe extern "C-unwind" fn kcl_manifests_yaml_stream(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let ctx = mut_ptr_as_ref(ctx);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     // Get the YAML encode options from the second keyword argument `opts`.
     let opts = match kwargs.kwarg("opts").or_else(|| args.arg_i(1)) {

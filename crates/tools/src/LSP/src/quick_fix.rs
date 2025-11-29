@@ -9,81 +9,34 @@ use serde_json::Value;
 pub fn quick_fix(uri: &Url, diags: &[Diagnostic]) -> Vec<lsp_types::CodeActionOrCommand> {
     let mut code_actions: Vec<lsp_types::CodeActionOrCommand> = vec![];
     for diag in diags {
-        if let Some(code) = &diag.code {
-            if let Some(id) = convert_code_to_kcl_diag_id(code) {
-                match id {
-                    DiagnosticId::Error(error) => match error {
-                        ErrorKind::CompileError => {
-                            let replacement_texts = extract_suggested_replacements(&diag.data);
-                            for replacement_text in replacement_texts {
-                                let mut changes = HashMap::new();
-                                changes.insert(
-                                    uri.clone(),
-                                    vec![TextEdit {
-                                        range: diag.range,
-                                        new_text: replacement_text.clone(),
-                                    }],
-                                );
-
-                                let action_title = if replacement_text.is_empty() {
-                                    "Consider removing the problematic code".to_string()
-                                } else {
-                                    format!(
-                                        "A local variable with a similar name exists: `{}`",
-                                        replacement_text
-                                    )
-                                };
-
-                                code_actions.push(CodeActionOrCommand::CodeAction(CodeAction {
-                                    title: action_title,
-                                    kind: Some(CodeActionKind::QUICKFIX),
-                                    diagnostics: Some(vec![diag.clone()]),
-                                    edit: Some(lsp_types::WorkspaceEdit {
-                                        changes: Some(changes),
-                                        ..Default::default()
-                                    }),
-                                    ..Default::default()
-                                }));
-                            }
-                        }
-                        ErrorKind::InvalidSyntax => {
-                            let replacement_texts = extract_suggested_replacements(&diag.data);
-                            for replacement_text in replacement_texts {
-                                let title = "Consider fix the problematic code".to_string();
-                                let mut changes = HashMap::new();
-                                changes.insert(
-                                    uri.clone(),
-                                    vec![TextEdit {
-                                        range: diag.range,
-                                        new_text: replacement_text.clone(),
-                                    }],
-                                );
-                                code_actions.push(CodeActionOrCommand::CodeAction(CodeAction {
-                                    title,
-                                    kind: Some(CodeActionKind::QUICKFIX),
-                                    diagnostics: Some(vec![diag.clone()]),
-                                    edit: Some(lsp_types::WorkspaceEdit {
-                                        changes: Some(changes),
-                                        ..Default::default()
-                                    }),
-                                    ..Default::default()
-                                }));
-                            }
-                        }
-                        _ => continue,
-                    },
-                    DiagnosticId::Warning(warn) => match warn {
-                        WarningKind::UnusedImportWarning => {
+        if let Some(code) = &diag.code
+            && let Some(id) = convert_code_to_kcl_diag_id(code)
+        {
+            match id {
+                DiagnosticId::Error(error) => match error {
+                    ErrorKind::CompileError => {
+                        let replacement_texts = extract_suggested_replacements(&diag.data);
+                        for replacement_text in replacement_texts {
                             let mut changes = HashMap::new();
                             changes.insert(
                                 uri.clone(),
                                 vec![TextEdit {
                                     range: diag.range,
-                                    new_text: "".to_string(),
+                                    new_text: replacement_text.clone(),
                                 }],
                             );
+
+                            let action_title = if replacement_text.is_empty() {
+                                "Consider removing the problematic code".to_string()
+                            } else {
+                                format!(
+                                    "A local variable with a similar name exists: `{}`",
+                                    replacement_text
+                                )
+                            };
+
                             code_actions.push(CodeActionOrCommand::CodeAction(CodeAction {
-                                title: WarningKind::UnusedImportWarning.name(),
+                                title: action_title,
                                 kind: Some(CodeActionKind::QUICKFIX),
                                 diagnostics: Some(vec![diag.clone()]),
                                 edit: Some(lsp_types::WorkspaceEdit {
@@ -91,19 +44,23 @@ pub fn quick_fix(uri: &Url, diags: &[Diagnostic]) -> Vec<lsp_types::CodeActionOr
                                     ..Default::default()
                                 }),
                                 ..Default::default()
-                            }))
+                            }));
                         }
-                        WarningKind::ReimportWarning => {
+                    }
+                    ErrorKind::InvalidSyntax => {
+                        let replacement_texts = extract_suggested_replacements(&diag.data);
+                        for replacement_text in replacement_texts {
+                            let title = "Consider fix the problematic code".to_string();
                             let mut changes = HashMap::new();
                             changes.insert(
                                 uri.clone(),
                                 vec![TextEdit {
                                     range: diag.range,
-                                    new_text: "".to_string(),
+                                    new_text: replacement_text.clone(),
                                 }],
                             );
                             code_actions.push(CodeActionOrCommand::CodeAction(CodeAction {
-                                title: WarningKind::ReimportWarning.name(),
+                                title,
                                 kind: Some(CodeActionKind::QUICKFIX),
                                 diagnostics: Some(vec![diag.clone()]),
                                 edit: Some(lsp_types::WorkspaceEdit {
@@ -111,12 +68,55 @@ pub fn quick_fix(uri: &Url, diags: &[Diagnostic]) -> Vec<lsp_types::CodeActionOr
                                     ..Default::default()
                                 }),
                                 ..Default::default()
-                            }))
+                            }));
                         }
-                        _ => continue,
-                    },
-                    DiagnosticId::Suggestions => continue,
-                }
+                    }
+                    _ => continue,
+                },
+                DiagnosticId::Warning(warn) => match warn {
+                    WarningKind::UnusedImportWarning => {
+                        let mut changes = HashMap::new();
+                        changes.insert(
+                            uri.clone(),
+                            vec![TextEdit {
+                                range: diag.range,
+                                new_text: "".to_string(),
+                            }],
+                        );
+                        code_actions.push(CodeActionOrCommand::CodeAction(CodeAction {
+                            title: WarningKind::UnusedImportWarning.name(),
+                            kind: Some(CodeActionKind::QUICKFIX),
+                            diagnostics: Some(vec![diag.clone()]),
+                            edit: Some(lsp_types::WorkspaceEdit {
+                                changes: Some(changes),
+                                ..Default::default()
+                            }),
+                            ..Default::default()
+                        }))
+                    }
+                    WarningKind::ReimportWarning => {
+                        let mut changes = HashMap::new();
+                        changes.insert(
+                            uri.clone(),
+                            vec![TextEdit {
+                                range: diag.range,
+                                new_text: "".to_string(),
+                            }],
+                        );
+                        code_actions.push(CodeActionOrCommand::CodeAction(CodeAction {
+                            title: WarningKind::ReimportWarning.name(),
+                            kind: Some(CodeActionKind::QUICKFIX),
+                            diagnostics: Some(vec![diag.clone()]),
+                            edit: Some(lsp_types::WorkspaceEdit {
+                                changes: Some(changes),
+                                ..Default::default()
+                            }),
+                            ..Default::default()
+                        }))
+                    }
+                    _ => continue,
+                },
+                DiagnosticId::Suggestions => continue,
             }
         }
     }
@@ -202,7 +202,7 @@ mod tests {
         let uri = Url::from_file_path(file).unwrap();
         let code_actions = quick_fix(&uri, &diagnostics);
 
-        let expected = vec![
+        let expected = [
             CodeActionOrCommand::CodeAction(CodeAction {
                 title: "ReimportWarning".to_string(),
                 kind: Some(CodeActionKind::QUICKFIX),

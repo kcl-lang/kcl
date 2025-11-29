@@ -60,7 +60,7 @@ impl TypeContext {
             Some(idx) => idx,
             None => return false,
         };
-        depth_first_search(&self.dep_graph, vec![idx.clone()], |event| match event {
+        depth_first_search(&self.dep_graph, vec![*idx], |event| match event {
             DfsEvent::BackEdge(_, _) => Err(()),
             _ => Ok(()),
         })

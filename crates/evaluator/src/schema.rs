@@ -20,7 +20,7 @@ pub type SchemaBodyHandler =
     Arc<dyn Fn(&Evaluator, &SchemaEvalContextRef, &ValueRef, &ValueRef) -> ValueRef>;
 
 pub type SchemaCheckHandler =
-    Arc<dyn Fn(&Evaluator, &SchemaEvalContextRef, &ValueRef, &ValueRef, &ValueRef) -> ()>;
+    Arc<dyn Fn(&Evaluator, &SchemaEvalContextRef, &ValueRef, &ValueRef, &ValueRef)>;
 
 pub type SchemaEvalContextRef = Rc<RefCell<SchemaEvalContext>>;
 
@@ -145,11 +145,7 @@ impl SchemaEvalContext {
             let func = s
                 .walk_identifier_with_ctx(&parent.node, &ast::ExprContext::Load, None)
                 .expect(kcl_error::RUNTIME_ERROR_MSG);
-            if let Some(index) = func.try_get_proxy() {
-                Some(index)
-            } else {
-                None
-            }
+            func.try_get_proxy()
         } else {
             None
         }
@@ -184,10 +180,10 @@ impl SchemaEvalContext {
     /// Whether the attribute is the schema context.
     pub fn has_attr(s: &Evaluator, ctx: &SchemaEvalContextRef, name: &str) -> bool {
         for stmt in &ctx.borrow().node.body {
-            if let ast::Stmt::SchemaAttr(attr) = &stmt.node {
-                if attr.name.node == name {
-                    return true;
-                }
+            if let ast::Stmt::SchemaAttr(attr) = &stmt.node
+                && attr.name.node == name
+            {
+                return true;
             }
         }
         if let Some(index) = ctx.borrow().parent {
@@ -518,7 +514,8 @@ pub(crate) fn schema_body(
     }
     // Do schema check for the sub schema.
     let is_sub_schema = { ctx.borrow().is_sub_schema };
-    let schema = if is_sub_schema {
+
+    if is_sub_schema {
         let index_sign_key_name = if let Some(index_signature) = &ctx.borrow().node.index_signature
         {
             if let Some(key_name) = &index_signature.node.key_name {
@@ -567,8 +564,7 @@ pub(crate) fn schema_body(
     } else {
         // Record base schema instances.
         schema_with_config(s, ctx, &schema_ctx_value, args, kwargs)
-    };
-    schema
+    }
 }
 
 // Schema check and index sign value update function
@@ -747,6 +743,7 @@ fn check_schema_optional_attr(s: &Evaluator, schema_value: &ValueRef) {
 }
 
 /// Schema additional value check
+#[allow(clippy::too_many_arguments)]
 fn schema_relaxed_attr_update_and_check(
     s: &Evaluator,
     schema_value: &mut ValueRef,

@@ -251,10 +251,10 @@ impl Scope {
             Some(_) => {
                 for child in self.children.iter() {
                     let child_ref = child.borrow();
-                    if let ScopeKind::Schema(schema_name) = &child_ref.kind {
-                        if name == schema_name {
-                            return Some(Rc::clone(child));
-                        }
+                    if let ScopeKind::Schema(schema_name) = &child_ref.kind
+                        && name == schema_name
+                    {
+                        return Some(Rc::clone(child));
                     }
                 }
                 None
@@ -343,7 +343,7 @@ impl ProgramScope {
     /// Returns the inner most scope on the position.
     pub fn inner_most_scope(&self, pos: &Position) -> Option<Scope> {
         for (_, scope) in &self.scope_map {
-            match scope.borrow().inner_most(&pos) {
+            match scope.borrow().inner_most(pos) {
                 Some(scope) => return Some(scope),
                 None => continue,
             }
@@ -436,7 +436,7 @@ impl<'ctx> Resolver<'ctx> {
                     .cloned()
                     .collect::<Vec<String>>();
                 let suggs = suggestions::provide_suggestions(name, &names);
-                if suggs.len() > 0 {
+                if !suggs.is_empty() {
                     suggestion = format!(", did you mean '{:?}'?", suggs);
                 }
                 self.handler.add_compile_error_with_suggestions(
@@ -582,7 +582,7 @@ impl DependencyGraph {
                 let module = program
                     .get_module(module)
                     .expect("Failed to acquire module lock")
-                    .expect(&format!("module {:?} not found in program", module));
+                    .unwrap_or_else(|| panic!("module {:?} not found in program", module));
                 let filename = module.filename.clone();
                 if !self.module_map.contains_key(&filename) {
                     new_modules.insert(filename.clone(), module);
@@ -608,11 +608,11 @@ impl DependencyGraph {
                     for pkg in result {
                         invalidated_set.insert(pkg);
                     }
-                    self.remove_dependency_from_pkg(&module_name);
-                    if let Ok(m) = program.get_module(module_name) {
-                        if let Some(module) = m {
-                            self.add_new_module(&module);
-                        }
+                    self.remove_dependency_from_pkg(module_name);
+                    if let Ok(m) = program.get_module(module_name)
+                        && let Some(module) = m
+                    {
+                        self.add_new_module(&module);
                     }
                 }
             }
@@ -622,7 +622,7 @@ impl DependencyGraph {
                         let module = program
                             .get_module(module)
                             .expect("Failed to acquire module lock")
-                            .expect(&format!("module {:?} not found in program", module));
+                            .unwrap_or_else(|| panic!("module {:?} not found in program", module));
                         let result = self.invalidate_module(&module.filename)?;
                         for pkg in result {
                             invalidated_set.insert(pkg);

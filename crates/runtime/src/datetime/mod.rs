@@ -8,14 +8,16 @@ use crate::*;
 
 /// Return the "%Y-%m-%d %H:%M:%S.%{ticks}" format date.
 /// `today() -> str`
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_datetime_today(
+pub unsafe extern "C-unwind" fn kcl_datetime_today(
     ctx: *mut kcl_context_t,
     _args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
     let s = Local::now();
-    let ctx = mut_ptr_as_ref(ctx);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     ValueRef::str(&(s.format("%Y-%m-%d %H:%M:%S").to_string() + "." + &s.timestamp().to_string()))
         .into_raw(ctx)
 }
@@ -23,16 +25,18 @@ pub extern "C-unwind" fn kcl_datetime_today(
 /// Return the local time format. e.g. 'Sat Jun 06 16:26:11 1998' or format the combined date and time per the specified format string,
 /// and the default date format is "%a %b %d %H:%M:%S %Y".
 /// `now() -> str`
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_datetime_now(
+pub unsafe extern "C-unwind" fn kcl_datetime_now(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
     let s = Local::now();
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
     let format = get_call_arg_str(args, kwargs, 0, Some("format"))
         .unwrap_or_else(|| "%a %b %d %H:%M:%S %Y".to_string());
     ValueRef::str(&s.format(&format).to_string()).into_raw(ctx)
@@ -40,41 +44,47 @@ pub extern "C-unwind" fn kcl_datetime_now(
 
 /// Return the current time in seconds since the Epoch. Fractions of a second may be present if the system clock provides them.
 /// `ticks() -> float`
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_datetime_ticks(
+pub unsafe extern "C-unwind" fn kcl_datetime_ticks(
     ctx: *mut kcl_context_t,
     _args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     let x = Local::now().timestamp();
     ValueRef::float(x as f64).into_raw(ctx)
 }
 
 /// Return the %Y-%m-%d %H:%M:%S format date.
 /// `date() -> str`
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_datetime_date(
+pub unsafe extern "C-unwind" fn kcl_datetime_date(
     ctx: *mut kcl_context_t,
     _args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
     let s = Local::now();
-    let ctx = mut_ptr_as_ref(ctx);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     ValueRef::str(&s.format("%Y-%m-%d %H:%M:%S").to_string()).into_raw(ctx)
 }
 
 /// Validates whether the provided date string matches the specified format.
 /// `validate(str, str) -> bool`
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_datetime_validate(
+pub unsafe extern "C-unwind" fn kcl_datetime_validate(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
     if let Some(date) = get_call_arg_str(args, kwargs, 0, Some("date")) {
         if let Some(format) = get_call_arg_str(args, kwargs, 1, Some("format")) {
             let result = validate_date(&date, &format);

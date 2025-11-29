@@ -27,7 +27,7 @@ impl<'ctx> Resolver<'ctx> {
                     .program
                     .get_module(module)
                     .expect("Failed to acquire module lock")
-                    .expect(&format!("module {:?} not found in program", module));
+                    .unwrap_or_else(|| panic!("module {:?} not found in program", module));
                 for stmt in &module.body {
                     if let ast::Stmt::Import(import_stmt) = &stmt.node {
                         let pkgpath = &import_stmt.path.node;
@@ -122,178 +122,170 @@ impl<'ctx> Resolver<'ctx> {
 
     /// Init import list and store the module scope object into the scope map.
     fn init_import_list(&mut self) {
-        let modules = self.program.pkgs.get(&self.ctx.pkgpath);
-        match modules {
-            Some(modules) => {
-                let mut import_table: IndexMap<String, String> = IndexMap::default();
-                for module in modules {
-                    let module = self
-                        .program
-                        .get_module(module)
-                        .expect("Failed to acquire module lock")
-                        .expect(&format!("module {:?} not found in program", module));
-                    self.ctx.filename = module.filename.clone();
-                    for stmt in &module.body {
-                        if let ast::Stmt::Import(import_stmt) = &stmt.node {
-                            // 'import sub as s' and 'import sub.sub as s' will raise this error.
-                            // 'import sub' and 'import sub' will not raise this error.
-                            // 'import sub as s' and 'import sub as s' will not raise this error.
-                            if let Some(path) = import_table.get(&import_stmt.name) {
-                                if path != &import_stmt.path.node {
-                                    self.handler.add_compile_error(
+        if let Some(modules) = self.program.pkgs.get(&self.ctx.pkgpath) {
+            let mut import_table: IndexMap<String, String> = IndexMap::default();
+            for module in modules {
+                let module = self
+                    .program
+                    .get_module(module)
+                    .expect("Failed to acquire module lock")
+                    .unwrap_or_else(|| panic!("module {:?} not found in program", module));
+                self.ctx.filename = module.filename.clone();
+                for stmt in &module.body {
+                    if let ast::Stmt::Import(import_stmt) = &stmt.node {
+                        // 'import sub as s' and 'import sub.sub as s' will raise this error.
+                        // 'import sub' and 'import sub' will not raise this error.
+                        // 'import sub as s' and 'import sub as s' will not raise this error.
+                        if let Some(path) = import_table.get(&import_stmt.name) {
+                            if path != &import_stmt.path.node {
+                                self.handler.add_compile_error(
                                         &format!(
                                             "the name '{}' is defined multiple times, '{}' must be defined only once",
                                             import_stmt.name, import_stmt.name
                                         ),
                                         stmt.get_span_pos(),
                                     );
-                                }
-                            } else {
-                                import_table.insert(
-                                    import_stmt.name.clone(),
-                                    import_stmt.path.node.clone(),
+                            }
+                        } else {
+                            import_table
+                                .insert(import_stmt.name.clone(), import_stmt.path.node.clone());
+                        }
+                        match self.ctx.import_names.get_mut(&self.ctx.filename) {
+                            Some(mapping) => {
+                                mapping.insert(
+                                    import_stmt.name.to_string(),
+                                    import_stmt.path.node.to_string(),
                                 );
                             }
-                            match self.ctx.import_names.get_mut(&self.ctx.filename) {
-                                Some(mapping) => {
-                                    mapping.insert(
-                                        import_stmt.name.to_string(),
-                                        import_stmt.path.node.to_string(),
-                                    );
+                            None => {
+                                let mut mapping = IndexMap::default();
+                                mapping.insert(
+                                    import_stmt.name.to_string(),
+                                    import_stmt.path.node.to_string(),
+                                );
+                                self.ctx
+                                    .import_names
+                                    .insert(self.ctx.filename.clone(), mapping);
+                            }
+                        }
+                        {
+                            let mut scope = self.scope.borrow_mut();
+                            let is_user_module = match scope.elems.get(&import_stmt.name) {
+                                Some(scope_obj) => {
+                                    let mut obj = scope_obj.borrow_mut();
+                                    match &mut obj.kind {
+                                        ScopeObjectKind::Module(m) => {
+                                            m.import_stmts.push((stmt.clone(), false))
+                                        }
+                                        _ => bug!(
+                                            "invalid module type in the import check function {}",
+                                            scope_obj.borrow().ty.ty_str()
+                                        ),
+                                    }
+                                    match &obj.ty.kind {
+                                        TypeKind::Module(module_ty) => {
+                                            let mut module_ty = module_ty.clone();
+                                            module_ty.imported.push(self.ctx.filename.to_string());
+                                            obj.ty = Arc::new(Type::module(
+                                                &module_ty.pkgpath,
+                                                &module_ty.imported,
+                                                module_ty.kind.clone(),
+                                            ));
+                                            matches!(module_ty.kind, ModuleKind::User)
+                                        }
+                                        _ => bug!(
+                                            "invalid module type in the import check function {}",
+                                            scope_obj.borrow().ty.ty_str()
+                                        ),
+                                    }
                                 }
                                 None => {
-                                    let mut mapping = IndexMap::default();
-                                    mapping.insert(
-                                        import_stmt.name.to_string(),
-                                        import_stmt.path.node.to_string(),
+                                    let kind = if import_stmt
+                                        .path
+                                        .node
+                                        .starts_with(PLUGIN_MODULE_PREFIX)
+                                    {
+                                        ModuleKind::Plugin
+                                    } else if STANDARD_SYSTEM_MODULES
+                                        .contains(&import_stmt.path.node.as_str())
+                                    {
+                                        ModuleKind::System
+                                    } else {
+                                        ModuleKind::User
+                                    };
+                                    let ty = Type::module(
+                                        &import_stmt.path.node,
+                                        std::slice::from_ref(&self.ctx.filename),
+                                        kind.clone(),
                                     );
-                                    self.ctx
-                                        .import_names
-                                        .insert(self.ctx.filename.clone(), mapping);
-                                }
-                            }
-                            {
-                                let mut scope = self.scope.borrow_mut();
-                                let is_user_module = match scope.elems.get(&import_stmt.name) {
-                                    Some(scope_obj) => {
-                                        let mut obj = scope_obj.borrow_mut();
-                                        match &mut obj.kind {
-                                            ScopeObjectKind::Module(m) => {
-                                                m.import_stmts.push((stmt.clone(), false))
-                                            }
-                                            _ => bug!(
-                                                "invalid module type in the import check function {}",
-                                                scope_obj.borrow().ty.ty_str()
-                                            ),
-                                        }
-                                        match &obj.ty.kind {
-                                            TypeKind::Module(module_ty) => {
-                                                let mut module_ty = module_ty.clone();
-                                                module_ty
-                                                    .imported
-                                                    .push(self.ctx.filename.to_string());
-                                                obj.ty = Arc::new(Type::module(
-                                                    &module_ty.pkgpath,
-                                                    &module_ty.imported,
-                                                    module_ty.kind.clone(),
-                                                ));
-                                                matches!(module_ty.kind, ModuleKind::User)
-                                            }
-                                            _ => bug!(
-                                                "invalid module type in the import check function {}",
-                                                scope_obj.borrow().ty.ty_str()
-                                            ),
-                                        }
-                                    }
-                                    None => {
-                                        let kind = if import_stmt
-                                            .path
-                                            .node
-                                            .starts_with(PLUGIN_MODULE_PREFIX)
-                                        {
-                                            ModuleKind::Plugin
-                                        } else if STANDARD_SYSTEM_MODULES
-                                            .contains(&import_stmt.path.node.as_str())
-                                        {
-                                            ModuleKind::System
-                                        } else {
-                                            ModuleKind::User
-                                        };
-                                        let ty = Type::module(
-                                            &import_stmt.path.node,
-                                            &[self.ctx.filename.clone()],
-                                            kind.clone(),
-                                        );
-                                        let (start, end) = stmt.get_span_pos();
+                                    let (start, end) = stmt.get_span_pos();
 
-                                        scope.elems.insert(
-                                            import_stmt.name.clone(),
-                                            Rc::new(RefCell::new(ScopeObject {
-                                                name: import_stmt.name.clone(),
-                                                start,
-                                                end,
-                                                ty: Arc::new(ty),
-                                                kind: ScopeObjectKind::Module(Module {
-                                                    import_stmts: vec![(stmt.clone(), false)],
-                                                }),
-                                                doc: None,
-                                            })),
-                                        );
+                                    scope.elems.insert(
+                                        import_stmt.name.clone(),
+                                        Rc::new(RefCell::new(ScopeObject {
+                                            name: import_stmt.name.clone(),
+                                            start,
+                                            end,
+                                            ty: Arc::new(ty),
+                                            kind: ScopeObjectKind::Module(Module {
+                                                import_stmts: vec![(stmt.clone(), false)],
+                                            }),
+                                            doc: None,
+                                        })),
+                                    );
 
-                                        matches!(kind, ModuleKind::User)
-                                    }
-                                };
-                                if !is_user_module {
-                                    continue;
+                                    matches!(kind, ModuleKind::User)
                                 }
+                            };
+                            if !is_user_module {
+                                continue;
                             }
-                            let current_pkgpath = self.ctx.pkgpath.clone();
-                            let current_filename = self.ctx.filename.clone();
-                            self.ctx.ty_ctx.add_dependencies(
-                                &self.ctx.pkgpath,
-                                &import_stmt.path.node,
-                                stmt.get_span_pos(),
-                            );
-                            if self.ctx.ty_ctx.is_cyclic_from_node(&self.ctx.pkgpath) {
-                                let cycles = self.ctx.ty_ctx.find_cycle_nodes(&self.ctx.pkgpath);
-                                for cycle in cycles {
-                                    let node_names: Vec<String> = cycle
-                                        .iter()
-                                        .map(|idx| {
-                                            if let Some(name) =
-                                                self.ctx.ty_ctx.dep_graph.node_weight(*idx)
-                                            {
-                                                name.clone()
-                                            } else {
-                                                "".to_string()
-                                            }
-                                        })
-                                        .filter(|name| !name.is_empty())
-                                        .collect();
-                                    for node in &cycle {
-                                        if let Some(range) = self.ctx.ty_ctx.get_node_range(node) {
-                                            self.handler.add_compile_error(
-                                                &format!(
-                                                    "There is a circular reference between modules {}",
-                                                    node_names.join(", "),
-                                                ),
-                                                range
-                                            );
-                                        }
-                                    }
-                                }
-                            }
-                            // Switch pkgpath context
-                            if !self.scope_map.contains_key(&import_stmt.path.node) {
-                                self.check(&import_stmt.path.node);
-                            }
-                            // Restore the current context
-                            self.change_package_context(&current_pkgpath, &current_filename);
                         }
+                        let current_pkgpath = self.ctx.pkgpath.clone();
+                        let current_filename = self.ctx.filename.clone();
+                        self.ctx.ty_ctx.add_dependencies(
+                            &self.ctx.pkgpath,
+                            &import_stmt.path.node,
+                            stmt.get_span_pos(),
+                        );
+                        if self.ctx.ty_ctx.is_cyclic_from_node(&self.ctx.pkgpath) {
+                            let cycles = self.ctx.ty_ctx.find_cycle_nodes(&self.ctx.pkgpath);
+                            for cycle in cycles {
+                                let node_names: Vec<String> = cycle
+                                    .iter()
+                                    .map(|idx| {
+                                        if let Some(name) =
+                                            self.ctx.ty_ctx.dep_graph.node_weight(*idx)
+                                        {
+                                            name.clone()
+                                        } else {
+                                            "".to_string()
+                                        }
+                                    })
+                                    .filter(|name| !name.is_empty())
+                                    .collect();
+                                for node in &cycle {
+                                    if let Some(range) = self.ctx.ty_ctx.get_node_range(node) {
+                                        self.handler.add_compile_error(
+                                            &format!(
+                                                "There is a circular reference between modules {}",
+                                                node_names.join(", "),
+                                            ),
+                                            range,
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                        // Switch pkgpath context
+                        if !self.scope_map.contains_key(&import_stmt.path.node) {
+                            self.check(&import_stmt.path.node);
+                        }
+                        // Restore the current context
+                        self.change_package_context(&current_pkgpath, &current_filename);
                     }
                 }
             }
-            None => {}
         }
     }
 

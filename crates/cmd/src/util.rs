@@ -37,7 +37,7 @@ pub(crate) fn hashmaps_from_matches(
 
 #[inline]
 pub(crate) fn bool_from_matches(matches: &ArgMatches, key: &str) -> Option<bool> {
-    if matches.get_flag(key) == true {
+    if matches.get_flag(key) {
         Some(true)
     } else {
         None

@@ -360,7 +360,7 @@ impl KclServiceImpl {
                 .map(|o| OptionHelp {
                     name: o.name.clone(),
                     r#type: o.ty.clone(),
-                    required: o.required.clone(),
+                    required: o.required,
                     default_value: o.default_value.clone(),
                     help: o.help.clone(),
                 })
@@ -421,7 +421,7 @@ impl KclServiceImpl {
             .map(|(key, vars)| (key, VariableList { variables: vars }))
             .collect();
 
-        return Ok(ListVariablesResult {
+        Ok(ListVariablesResult {
             variables: variable_list,
             unsupported_codes,
             parse_errors: select_res
@@ -429,7 +429,7 @@ impl KclServiceImpl {
                 .into_iter()
                 .map(|e| e.into_error())
                 .collect(),
-        });
+        })
     }
 
     /// Execute KCL file with arguments and return the JSON/YAML result.
@@ -1039,7 +1039,7 @@ impl KclServiceImpl {
         use std::path::Path;
         let mut client = ModClient::new(&args.manifest_path)?;
         if args.vendor {
-            client.set_vendor(&Path::new(&args.manifest_path).join("vendor"));
+            client.set_vendor(Path::new(&args.manifest_path).join("vendor"));
         }
         client.auth()?;
         let metadata = client.resolve_all_deps(true)?;

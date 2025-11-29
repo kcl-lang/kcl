@@ -982,9 +982,8 @@ pub fn walk_lambda_expr<'ctx, V: Walker<'ctx>>(walker: &mut V, lambda_expr: &'ct
 
 pub fn walk_keyword<'ctx, V: Walker<'ctx>>(walker: &mut V, keyword: &'ctx ast::Keyword) {
     walker.walk_identifier(&keyword.arg.node);
-    match &keyword.value {
-        Some(v) => walker.walk_expr(&v.node),
-        None => (),
+    if let Some(v) = &keyword.value {
+        walker.walk_expr(&v.node)
     }
 }
 

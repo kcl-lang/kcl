@@ -6,28 +6,30 @@ use crate::*;
 
 // match(string: str, pattern: str) -> bool:
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_regex_match(
+pub unsafe extern "C-unwind" fn kcl_regex_match(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
-    if let Some(string) = get_call_arg_str(args, kwargs, 0, Some("string")) {
-        if let Some(pattern) = get_call_arg_str(args, kwargs, 1, Some("pattern")) {
-            let re = fancy_regex::Regex::new(pattern.as_ref()).unwrap();
-            match re.is_match(string.as_ref()) {
-                Ok(ok) => {
-                    if ok {
-                        return kcl_value_Bool(ctx, 1);
-                    } else {
-                        return kcl_value_Bool(ctx, 0);
-                    }
+    if let Some(string) = get_call_arg_str(args, kwargs, 0, Some("string"))
+        && let Some(pattern) = get_call_arg_str(args, kwargs, 1, Some("pattern"))
+    {
+        let re = fancy_regex::Regex::new(pattern.as_ref()).unwrap();
+        match re.is_match(string.as_ref()) {
+            Ok(ok) => {
+                if ok {
+                    return unsafe { kcl_value_Bool(ctx, 1) };
+                } else {
+                    return unsafe { kcl_value_Bool(ctx, 0) };
                 }
-                _ => return kcl_value_Bool(ctx, 0),
             }
+            _ => return unsafe { kcl_value_Bool(ctx, 0) },
         }
     }
 
@@ -36,19 +38,21 @@ pub extern "C-unwind" fn kcl_regex_match(
 
 // replace(string: str, pattern: str, replace: str, count: int = 0):
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_regex_replace(
+pub unsafe extern "C-unwind" fn kcl_regex_replace(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let ctx = mut_ptr_as_ref(ctx);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     if let Some(string) = get_call_arg_str(args, kwargs, 0, Some("string")) {
         if let Some(pattern) = get_call_arg_str(args, kwargs, 1, Some("pattern")) {
             if let Some(replace) = get_call_arg_str(args, kwargs, 2, Some("replace")) {
-                let count = get_call_arg_int(args, kwargs, 3, Some("count")).unwrap_or_else(|| 0);
+                let count = get_call_arg_int(args, kwargs, 3, Some("count")).unwrap_or(0);
                 let re = fancy_regex::Regex::new(pattern.as_ref()).unwrap();
                 let s = re.replacen(string.as_ref(), count as usize, replace.as_ref() as &str);
                 return ValueRef::str(&s).into_raw(ctx);
@@ -62,19 +66,21 @@ pub extern "C-unwind" fn kcl_regex_replace(
 
 // compile(pattern: str) -> bool:
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_regex_compile(
+pub unsafe extern "C-unwind" fn kcl_regex_compile(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(pattern) = get_call_arg_str(args, kwargs, 0, Some("pattern")) {
         match fancy_regex::Regex::new(pattern.as_ref()) {
-            Ok(_) => return kcl_value_Bool(ctx, 1),
-            _ => return kcl_value_Bool(ctx, 0),
+            Ok(_) => return unsafe { kcl_value_Bool(ctx, 1) },
+            _ => return unsafe { kcl_value_Bool(ctx, 0) },
         }
     }
     panic!("compile() missing the required positional argument: 'pattern'")
@@ -82,15 +88,17 @@ pub extern "C-unwind" fn kcl_regex_compile(
 
 // findall(string: str, pattern: str) -> [str]:
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_regex_findall(
+pub unsafe extern "C-unwind" fn kcl_regex_findall(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let ctx = mut_ptr_as_ref(ctx);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     if let Some(string) = get_call_arg_str(args, kwargs, 0, Some("string")) {
         if let Some(pattern) = get_call_arg_str(args, kwargs, 1, Some("pattern")) {
             let mut list = ValueRef::list(None);
@@ -121,23 +129,25 @@ pub extern "C-unwind" fn kcl_regex_findall(
 
 // search(string: str, pattern: str):
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_regex_search(
+pub unsafe extern "C-unwind" fn kcl_regex_search(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(string) = get_call_arg_str(args, kwargs, 0, Some("string")) {
         if let Some(pattern) = get_call_arg_str(args, kwargs, 1, Some("pattern")) {
             let re = fancy_regex::Regex::new(pattern.as_ref()).unwrap();
 
             if let Ok(Some(..)) = re.find(string.as_ref()) {
-                return kcl_value_Bool(ctx, 1);
+                return unsafe { kcl_value_Bool(ctx, 1) };
             }
-            return kcl_value_Bool(ctx, 0);
+            return unsafe { kcl_value_Bool(ctx, 0) };
         }
         panic!("search() missing the required positional argument: 'pattern'");
     }
@@ -146,18 +156,20 @@ pub extern "C-unwind" fn kcl_regex_search(
 
 // split(string: str, pattern: str, maxsplit: int = 0):
 
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_regex_split(
+pub unsafe extern "C-unwind" fn kcl_regex_split(
     ctx: *mut kcl_context_t,
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let ctx = mut_ptr_as_ref(ctx);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     if let Some(string) = get_call_arg_str(args, kwargs, 0, Some("string")) {
         if let Some(pattern) = get_call_arg_str(args, kwargs, 1, Some("pattern")) {
-            let maxsplit = get_call_arg_int(args, kwargs, 2, Some("maxsplit")).unwrap_or_else(|| 0);
+            let maxsplit = get_call_arg_int(args, kwargs, 2, Some("maxsplit")).unwrap_or(0);
             let mut list = ValueRef::list(None);
 
             let re = fancy_regex::Regex::new(pattern.as_ref()).unwrap();

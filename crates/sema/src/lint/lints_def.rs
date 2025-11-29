@@ -1,5 +1,5 @@
-use crate::lint::lint::{Lint, LintArray, LintContext};
 use crate::lint::lintpass::LintPass;
+use crate::lint::types::{Lint, LintArray, LintContext};
 use crate::resolver::scope::Scope;
 use crate::{declare_lint_pass, resolver::scope::ScopeObjectKind};
 use kcl_ast::ast;
@@ -37,7 +37,7 @@ impl LintPass for ImportPosition {
         _ctx: &mut LintContext,
         module: &ast::Module,
     ) {
-        let mut first_non_importstmt = std::u64::MAX;
+        let mut first_non_importstmt = u64::MAX;
         for stmt in &module.body {
             match &stmt.node {
                 ast::Stmt::Import(_import_stmt) => {}
@@ -49,23 +49,22 @@ impl LintPass for ImportPosition {
             }
         }
         for stmt in &module.body {
-            if let ast::Stmt::Import(_import_stmt) = &stmt.node {
-                if stmt.line > first_non_importstmt {
-                    handler.add_warning(
-                        WarningKind::ImportPositionWarning,
-                        &[Message {
-                            range: stmt.get_span_pos(),
-                            style: Style::Line,
-                            message: format!(
-                                "The import stmt should be placed at the top of the module"
-                            ),
-                            note: Some(
-                                "Consider moving tihs statement to the top of the file".to_string(),
-                            ),
-                            suggested_replacement: None,
-                        }],
-                    );
-                }
+            if let ast::Stmt::Import(_import_stmt) = &stmt.node
+                && stmt.line > first_non_importstmt
+            {
+                handler.add_warning(
+                    WarningKind::ImportPositionWarning,
+                    &[Message {
+                        range: stmt.get_span_pos(),
+                        style: Style::Line,
+                        message: "The import stmt should be placed at the top of the module"
+                            .to_string(),
+                        note: Some(
+                            "Consider moving tihs statement to the top of the file".to_string(),
+                        ),
+                        suggested_replacement: None,
+                    }],
+                );
             }
         }
     }

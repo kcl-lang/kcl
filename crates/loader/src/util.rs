@@ -31,10 +31,10 @@ pub(crate) fn get_call_args_string(
     key: Option<&str>,
 ) -> String {
     let (args, kwargs) = arguments_to_string(&call_expr.args, &call_expr.keywords);
-    if let Some(key) = key {
-        if let Some(val) = kwargs.get(key) {
-            return val.to_string();
-        }
+    if let Some(key) = key
+        && let Some(val) = kwargs.get(key)
+    {
+        return val.to_string();
     }
     if index < args.len() {
         return args[index].to_string();

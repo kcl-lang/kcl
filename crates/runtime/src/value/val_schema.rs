@@ -64,6 +64,7 @@ pub fn schema_assert(ctx: &mut Context, value: &ValueRef, msg: &str, config_meta
 }
 
 impl ValueRef {
+    #[allow(clippy::too_many_arguments)]
     pub fn dict_to_schema(
         &self,
         name: &str,

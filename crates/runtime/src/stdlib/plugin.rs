@@ -24,7 +24,7 @@ lazy_static! {
 pub const PLUGIN_MODULE_PREFIX: &str = "kcl_plugin.";
 
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_plugin_init(
+pub unsafe extern "C-unwind" fn kcl_plugin_init(
     fn_ptr: extern "C-unwind" fn(
         method: *const c_char,
         args_json: *const c_char,
@@ -47,15 +47,15 @@ pub unsafe extern "C-unwind" fn kcl_plugin_invoke(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx_ref = mut_ptr_as_ref(ctx);
-    let method_ref = c2str(method);
+    let ctx_ref = unsafe { mut_ptr_as_ref(ctx) };
+    let method_ref = unsafe { c2str(method) };
     let plugin_short_method = match method_ref.strip_prefix(PLUGIN_MODULE_PREFIX) {
         Some(s) => s,
         None => method_ref,
     };
     if let Some(func) = ctx_ref.plugin_functions.get(plugin_short_method) {
-        let args = ptr_as_ref(args);
-        let kwargs = ptr_as_ref(kwargs);
+        let args = unsafe { ptr_as_ref(args) };
+        let kwargs = unsafe { ptr_as_ref(kwargs) };
         let result = func(ctx_ref, args, kwargs);
         return result.unwrap().into_raw(ctx_ref);
     }
@@ -65,7 +65,7 @@ pub unsafe extern "C-unwind" fn kcl_plugin_invoke(
     let args_json = unsafe { kcl_value_Str_ptr(args_s) };
     let kwargs_json = unsafe { kcl_value_Str_ptr(kwargs_s) };
 
-    let result_json = kcl_plugin_invoke_json(method, args_json, kwargs_json);
+    let result_json = unsafe { kcl_plugin_invoke_json(method, args_json, kwargs_json) };
 
     // Value delete by context.
     // kcl_value_delete(args_s);
@@ -73,8 +73,8 @@ pub unsafe extern "C-unwind" fn kcl_plugin_invoke(
 
     let ptr = unsafe { kcl_value_from_json(ctx, result_json) };
     {
-        if let Some(msg) = ptr_as_ref(ptr).dict_get_value("__kcl_PanicInfo__") {
-            let ctx = mut_ptr_as_ref(ctx);
+        if let Some(msg) = unsafe { ptr_as_ref(ptr).dict_get_value("__kcl_PanicInfo__") } {
+            let ctx = unsafe { mut_ptr_as_ref(ctx) };
             ctx.set_err_type(&RuntimeErrorType::EvaluationError);
 
             panic!("{}", msg.as_str());
@@ -86,7 +86,7 @@ pub unsafe extern "C-unwind" fn kcl_plugin_invoke(
 
 #[cfg(not(target_arch = "wasm32"))]
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_plugin_invoke_json(
+pub unsafe extern "C-unwind" fn kcl_plugin_invoke_json(
     method: *const c_char,
     args: *const c_char,
     kwargs: *const c_char,
@@ -101,7 +101,7 @@ pub extern "C-unwind" fn kcl_plugin_invoke_json(
 
 #[cfg(target_arch = "wasm32")]
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_plugin_invoke_json(
+pub unsafe extern "C-unwind" fn kcl_plugin_invoke_json(
     method: *const c_char,
     args: *const c_char,
     kwargs: *const c_char,

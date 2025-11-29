@@ -426,15 +426,19 @@ impl ParseError {
     }
 }
 
-impl ToString for ParseError {
-    fn to_string(&self) -> String {
-        match self {
-            ParseError::UnexpectedToken { expected, got, .. } => {
-                format!("expected one of {expected:?} got {got}")
+impl std::fmt::Display for ParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                ParseError::UnexpectedToken { expected, got, .. } => {
+                    format!("expected one of {expected:?} got {got}")
+                }
+                ParseError::Message { message, .. } => message.to_string(),
+                ParseError::String { message, .. } => message.to_string(),
             }
-            ParseError::Message { message, .. } => message.to_string(),
-            ParseError::String { message, .. } => message.to_string(),
-        }
+        )
     }
 }
 
@@ -447,7 +451,7 @@ impl SessionDiagnostic for ParseError {
             ParseError::UnexpectedToken { span, .. } => {
                 let code_snippet = CodeSnippet::new(span, Arc::clone(&sess.sm));
                 diag.append_component(Box::new(code_snippet));
-                diag.append_component(Box::new(format!(" {}\n", self.to_string())));
+                diag.append_component(Box::new(format!(" {}\n", self)));
                 Ok(diag)
             }
             ParseError::Message { message, span, .. } => {
@@ -511,13 +515,7 @@ impl SessionDiagnostic for Diagnostic {
             match Session::new_with_file_and_code(&msg.range.0.filename, None) {
                 Ok(sess) => {
                     let source = sess.sm.lookup_source_file(new_byte_pos(0));
-                    let line = source.get_line(
-                        (if msg.range.0.line >= 1 {
-                            msg.range.0.line - 1
-                        } else {
-                            0
-                        }) as usize,
-                    );
+                    let line = source.get_line(msg.range.0.line.saturating_sub(1) as usize);
                     match line.as_ref() {
                         Some(content) => {
                             let length = content.chars().count();

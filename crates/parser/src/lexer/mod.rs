@@ -4,7 +4,7 @@
 //!
 //! It's main responsibilities:
 //! 1. Mapping low level [`kcl_lexer::Token`] tokens into [`kcl_ast::Token`] tokens,
-//! and provide TokenStream to downstream [`kcl_parser::parser`].
+//!    and provide TokenStream to downstream [`kcl_parser::parser`].
 //! 2. Validations on Literals(String, Int, Float).
 //! 3. Validations on closure of delim tokens.
 //! 4. Validations on indent and dedent.

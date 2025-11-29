@@ -37,10 +37,10 @@ impl<'ctx> Resolver<'_> {
                         return vec![scope_ty.map_or(self.any_ty(), |ty| ty)];
                     }
                     // If it is a schema attribute, return the attribute type.
-                    if let Some(ty) = &ty {
-                        if !ty.is_any() {
-                            return vec![ty.clone()];
-                        }
+                    if let Some(ty) = &ty
+                        && !ty.is_any()
+                    {
+                        return vec![ty.clone()];
                     }
                     // Find from mixin schemas of a non-mixin schema
                     if ty.is_none() && !schema_ty.is_mixin {
@@ -112,14 +112,13 @@ impl<'ctx> Resolver<'_> {
         } else if !names.is_empty() {
             // Lookup pkgpath scope object and record it as "used". When enter child scope, e.g., in a schema scope, cant find module object.
             // It should be recursively search whole scope to lookup scope object, not the current scope.element.
-            if !pkgpath.is_empty() {
-                if let Some(obj) = self.scope.borrow().lookup(&names[0]) {
-                    if let ScopeObjectKind::Module(m) = &mut obj.borrow_mut().kind {
-                        for (stmt, used) in m.import_stmts.iter_mut() {
-                            if stmt.get_pos().filename == range.0.filename {
-                                *used = true;
-                            }
-                        }
+            if !pkgpath.is_empty()
+                && let Some(obj) = self.scope.borrow().lookup(&names[0])
+                && let ScopeObjectKind::Module(m) = &mut obj.borrow_mut().kind
+            {
+                for (stmt, used) in m.import_stmts.iter_mut() {
+                    if stmt.get_pos().filename == range.0.filename {
+                        *used = true;
                     }
                 }
             }

@@ -9,7 +9,7 @@ use crate::ty::{Parameter, Type};
 macro_rules! register_string_member {
     ($($name:ident => $ty:expr)*) => (
         // Builtin string member function map.
-        pub const STRING_MEMBER_FUNCTIONS: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+        pub static STRING_MEMBER_FUNCTIONS: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
             let mut builtin_mapping = IndexMap::default();
             $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
             builtin_mapping

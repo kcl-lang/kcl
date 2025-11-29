@@ -83,15 +83,13 @@ impl LazyEvalScope {
                                 value
                             } else {
                                 let fn_ptr = setters[index];
-                                unsafe {
-                                    let ctx_ref = mut_ptr_as_ref(ctx);
-                                    let panic_info = ctx_ref.panic_info.clone();
-                                    let setter_fn: SetterFuncType = transmute_copy(&fn_ptr);
-                                    // Restore the panic info of current schema attribute.
-                                    ctx_ref.panic_info = panic_info;
-                                    // Call setter functions
-                                    setter_fn(ctx, self)
-                                };
+                                let ctx_ref = unsafe { mut_ptr_as_ref(ctx) };
+                                let panic_info = ctx_ref.panic_info.clone();
+                                let setter_fn: SetterFuncType = unsafe { transmute_copy(&fn_ptr) };
+                                // Restore the panic info of current schema attribute.
+                                ctx_ref.panic_info = panic_info;
+                                // Call setter functions
+                                unsafe { setter_fn(ctx, self) };
                                 self.levels.insert(key.to_string(), level);
                                 let value = match self.vars.get(key) {
                                     Some(value) => value.clone(),

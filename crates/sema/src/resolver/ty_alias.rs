@@ -53,10 +53,10 @@ impl<'ctx> MutSelfMutWalker<'ctx> for TypeAliasTransformer {
         walk_if_mut!(self, walk_expr, schema_attr.value);
     }
     fn walk_assign_stmt(&mut self, assign_stmt: &'ctx mut ast::AssignStmt) {
-        if let Some(ty) = &mut assign_stmt.ty {
-            if let Some(type_alias) = self.type_alias_mapping.get(&ty.node.to_string()) {
-                ty.node = type_alias.clone().into();
-            }
+        if let Some(ty) = &mut assign_stmt.ty
+            && let Some(type_alias) = self.type_alias_mapping.get(&ty.node.to_string())
+        {
+            ty.node = type_alias.clone().into();
         }
         self.walk_expr(&mut assign_stmt.value.node);
     }
@@ -67,10 +67,10 @@ impl<'ctx> MutSelfMutWalker<'ctx> for TypeAliasTransformer {
     fn walk_lambda_expr(&mut self, lambda_expr: &'ctx mut ast::LambdaExpr) {
         walk_if_mut!(self, walk_arguments, lambda_expr.args);
         walk_list_mut!(self, walk_stmt, lambda_expr.body);
-        if let Some(ty) = &mut lambda_expr.return_ty {
-            if let Some(type_alias) = self.type_alias_mapping.get(&ty.node.to_string()) {
-                ty.node = type_alias.clone().into();
-            }
+        if let Some(ty) = &mut lambda_expr.return_ty
+            && let Some(type_alias) = self.type_alias_mapping.get(&ty.node.to_string())
+        {
+            ty.node = type_alias.clone().into();
         }
     }
     fn walk_arguments(&mut self, arguments: &'ctx mut ast::Arguments) {
@@ -103,7 +103,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for TypeAliasTransformer {
                 // schema Person:
                 //    name: Name
                 // ```
-                if self.pkgpath != &pkgpath[1..] {
+                if self.pkgpath != pkgpath[1..] {
                     identifier.pkgpath = pkgpath;
                     let mut first_node = identifier.names[0].clone();
                     first_node.node = splits[1].to_string();
@@ -129,13 +129,13 @@ impl<'ctx> MutSelfMutWalker<'ctx> for TypeAliasTransformer {
 }
 
 /// Replace type alias.
-fn fix_type_alias_identifier<'ctx>(
-    pkg: &String,
-    module: &'ctx mut ast::Module,
+fn fix_type_alias_identifier(
+    pkg: &str,
+    module: &mut ast::Module,
     type_alias_mapping: IndexMap<String, String>,
 ) {
     let mut type_alias_transformer = TypeAliasTransformer {
-        pkgpath: pkg.clone(),
+        pkgpath: pkg.to_string(),
         type_alias_mapping,
     };
     type_alias_transformer.walk_module(module);
@@ -151,7 +151,7 @@ pub fn type_alias_pass(
             let mut module = program
                 .get_module_mut(module)
                 .expect("Failed to acquire module lock")
-                .expect(&format!("module {:?} not found in program", module));
+                .unwrap_or_else(|| panic!("module {:?} not found in program", module));
             if let Some(type_alias_mapping) = type_alias_mapping.get(pkgpath) {
                 fix_type_alias_identifier(pkgpath, &mut module, type_alias_mapping.clone());
             }

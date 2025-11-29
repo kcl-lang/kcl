@@ -287,24 +287,24 @@ impl ModClient {
 
     /// Get the package metadata from the kcl.mod.lock file.
     pub fn get_metadata_from_mod_lock_file(&self) -> Option<Metadata> {
-        if let Some(mod_lock_file) = &self.mod_lock_file {
-            if let Some(dependencies) = &mod_lock_file.dependencies {
-                let vendor = self.get_vendor_path().ok()?;
-                let mut metadata = Metadata::default();
-                for (name, dep) in dependencies {
-                    metadata.packages.insert(
-                        name.replace('-', "_").to_string(),
-                        Package {
-                            name: name.to_string(),
-                            manifest_path: match self.get_local_path_from_lock_dep(dep) {
-                                Some(path) => vendor.join(path),
-                                None => "".into(),
-                            },
+        if let Some(mod_lock_file) = &self.mod_lock_file
+            && let Some(dependencies) = &mod_lock_file.dependencies
+        {
+            let vendor = self.get_vendor_path().ok()?;
+            let mut metadata = Metadata::default();
+            for (name, dep) in dependencies {
+                metadata.packages.insert(
+                    name.replace('-', "_").to_string(),
+                    Package {
+                        name: name.to_string(),
+                        manifest_path: match self.get_local_path_from_lock_dep(dep) {
+                            Some(path) => vendor.join(path),
+                            None => "".into(),
                         },
-                    );
-                }
-                return Some(metadata);
+                    },
+                );
             }
+            return Some(metadata);
         }
         None
     }

@@ -310,7 +310,7 @@ pub(crate) fn handle_completion(
     let file = file_path_from_url(&params.text_document_position.text_document.uri)?;
     let path: VfsPath =
         from_lsp::abs_path(&params.text_document_position.text_document.uri)?.into();
-    if !snapshot.verify_request_path(&path.clone().into(), &sender) {
+    if !snapshot.verify_request_path(&path.clone(), &sender) {
         return Ok(None);
     }
 
@@ -438,24 +438,21 @@ pub(crate) fn handle_rename(
     };
     let kcl_pos = kcl_pos(&file, params.text_document_position.position);
     let references = find_refs(&kcl_pos, &db.gs);
-    match references {
-        Some(locations) => {
-            let mut workspace_edit = lsp_types::WorkspaceEdit::default();
-            let changes = locations.into_iter().fold(
-                HashMap::new(),
-                |mut map: HashMap<lsp_types::Url, Vec<TextEdit>>, location| {
-                    let uri = location.uri;
-                    map.entry(uri.clone()).or_default().push(TextEdit {
-                        range: location.range,
-                        new_text: new_name.clone(),
-                    });
-                    map
-                },
-            );
-            workspace_edit.changes = Some(changes);
-            return anyhow::Ok(Some(workspace_edit));
-        }
-        None => {}
+    if let Some(locations) = references {
+        let mut workspace_edit = lsp_types::WorkspaceEdit::default();
+        let changes = locations.into_iter().fold(
+            HashMap::new(),
+            |mut map: HashMap<lsp_types::Url, Vec<TextEdit>>, location| {
+                let uri = location.uri;
+                map.entry(uri.clone()).or_default().push(TextEdit {
+                    range: location.range,
+                    new_text: new_name.clone(),
+                });
+                map
+            },
+        );
+        workspace_edit.changes = Some(changes);
+        return anyhow::Ok(Some(workspace_edit));
     }
     Ok(None)
 }

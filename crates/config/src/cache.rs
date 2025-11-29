@@ -182,10 +182,7 @@ pub fn read_info_cache(root: &str, target: &str, cache_dir: Option<&str>) -> Cac
         return Cache::default();
     }
     let file = File::open(cache_file).unwrap();
-    match ron::de::from_reader(file) {
-        Ok(cache) => cache,
-        Err(_) => HashMap::new(),
-    }
+    ron::de::from_reader(file).unwrap_or_default()
 }
 
 /// Update the cache info file.

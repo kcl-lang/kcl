@@ -37,7 +37,7 @@ pub type kcl_char_t = c_char;
 pub type kcl_size_t = i32;
 
 #[allow(non_camel_case_types)]
-type kcl_bool_t = i8;
+pub type kcl_bool_t = i8;
 
 #[allow(non_camel_case_types)]
 pub type kcl_int_t = i64;
@@ -50,8 +50,8 @@ pub unsafe extern "C-unwind" fn kcl_context_set_import_names(
     p: *mut kcl_context_t,
     import_names: *const kcl_value_ref_t,
 ) {
-    let p = mut_ptr_as_ref(p);
-    let import_names = ptr_as_ref(import_names);
+    let p = unsafe { mut_ptr_as_ref(p) };
+    let import_names = unsafe { ptr_as_ref(import_names) };
 
     let import_names_dict = import_names.as_dict_ref();
     for (k, v) in &import_names_dict.values {
@@ -69,37 +69,39 @@ pub unsafe extern "C-unwind" fn kcl_context_set_import_names(
 // ----------------------------------------------------------------------------
 
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_value_Undefined(ctx: *mut kcl_context_t) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
+pub unsafe extern "C-unwind" fn kcl_value_Undefined(
+    ctx: *mut kcl_context_t,
+) -> *mut kcl_value_ref_t {
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     new_mut_ptr(ctx, ValueRef::undefined())
 }
 
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_value_None(ctx: *mut kcl_context_t) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
+pub unsafe extern "C-unwind" fn kcl_value_None(ctx: *mut kcl_context_t) -> *mut kcl_value_ref_t {
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     new_mut_ptr(ctx, ValueRef::none())
 }
 
 // bool/int/float/str
 
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_value_True(ctx: *mut kcl_context_t) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    kcl_value_Bool(ctx, 1)
+pub unsafe extern "C-unwind" fn kcl_value_True(ctx: *mut kcl_context_t) -> *mut kcl_value_ref_t {
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    unsafe { kcl_value_Bool(ctx, 1) }
 }
 
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_value_False(ctx: *mut kcl_context_t) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    kcl_value_Bool(ctx, 0)
+pub unsafe extern "C-unwind" fn kcl_value_False(ctx: *mut kcl_context_t) -> *mut kcl_value_ref_t {
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    unsafe { kcl_value_Bool(ctx, 0) }
 }
 
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_value_Bool(
+pub unsafe extern "C-unwind" fn kcl_value_Bool(
     ctx: *mut kcl_context_t,
     v: kcl_bool_t,
 ) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     if v != 0 {
         ValueRef::bool(true).into_raw(ctx)
     } else {
@@ -108,32 +110,32 @@ pub extern "C-unwind" fn kcl_value_Bool(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_value_Int(
+pub unsafe extern "C-unwind" fn kcl_value_Int(
     ctx: *mut kcl_context_t,
     v: kcl_int_t,
 ) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     new_mut_ptr(ctx, ValueRef::int(v))
 }
 
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_value_Float(
+pub unsafe extern "C-unwind" fn kcl_value_Float(
     ctx: *mut kcl_context_t,
     v: kcl_float_t,
 ) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     new_mut_ptr(ctx, ValueRef::float(v))
 }
 
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_value_Unit(
+pub unsafe extern "C-unwind" fn kcl_value_Unit(
     ctx: *mut kcl_context_t,
     v: kcl_float_t,
     raw: kcl_int_t,
     unit: *const kcl_char_t,
 ) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let unit = c2str(unit);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let unit = unsafe { c2str(unit) };
     new_mut_ptr(ctx, ValueRef::unit(v, raw, unit))
 }
 
@@ -142,25 +144,29 @@ pub unsafe extern "C-unwind" fn kcl_value_Str(
     ctx: *mut kcl_context_t,
     v: *const kcl_char_t,
 ) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     unsafe {
         if v.is_null() || *v == '\0' as c_char {
             return new_mut_ptr(ctx, ValueRef::str(""));
         }
     }
-    return new_mut_ptr(ctx, ValueRef::str(c2str(v)));
+    new_mut_ptr(ctx, ValueRef::str(unsafe { c2str(v) }))
 }
 
 // list/dict/schema
 
+/// # Safety
+/// The caller must ensure that `ctx` is a valid pointer
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_value_List(ctx: *mut kcl_context_t) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
+pub unsafe extern "C-unwind" fn kcl_value_List(ctx: *mut kcl_context_t) -> *mut kcl_value_ref_t {
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     new_mut_ptr(ctx, ValueRef::list(None))
 }
 
+/// # Safety
+/// The caller must ensure that `ctx` is a valid pointer
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_value_List6(
+pub unsafe extern "C-unwind" fn kcl_value_List6(
     ctx: *mut kcl_context_t,
     v1: *const kcl_value_ref_t,
     v2: *const kcl_value_ref_t,
@@ -169,16 +175,18 @@ pub extern "C-unwind" fn kcl_value_List6(
     v5: *const kcl_value_ref_t,
     v6: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     let values: Vec<&ValueRef> = vec![v1, v2, v3, v4, v5, v6]
         .into_iter()
-        .map(ptr_as_ref)
+        .map(|ptr| unsafe { ptr_as_ref(ptr) })
         .collect();
     new_mut_ptr(ctx, ValueRef::list(Some(values.as_slice())))
 }
 
+/// # Safety
+/// The caller must ensure that `ctx` is a valid pointer
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_value_List10(
+pub unsafe extern "C-unwind" fn kcl_value_List10(
     ctx: *mut kcl_context_t,
     v1: *const kcl_value_ref_t,
     v2: *const kcl_value_ref_t,
@@ -191,26 +199,33 @@ pub extern "C-unwind" fn kcl_value_List10(
     v9: *const kcl_value_ref_t,
     v10: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     let values: Vec<&ValueRef> = vec![v1, v2, v3, v4, v5, v6, v7, v8, v9, v10]
         .into_iter()
-        .map(ptr_as_ref)
+        .map(|ptr| unsafe { ptr_as_ref(ptr) })
         .collect();
+
     new_mut_ptr(ctx, ValueRef::list(Some(values.as_slice())))
 }
 
+/// # Safety
+/// The caller must ensure that `ctx` is a valid pointer
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_value_Dict(ctx: *mut kcl_context_t) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
+pub unsafe extern "C-unwind" fn kcl_value_Dict(ctx: *mut kcl_context_t) -> *mut kcl_value_ref_t {
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     new_mut_ptr(ctx, ValueRef::dict(None))
 }
 
+/// # Safety
+/// The caller must ensure that `ctx` is a valid pointer
 #[unsafe(no_mangle)]
-pub extern "C-unwind" fn kcl_value_Schema(ctx: *mut kcl_context_t) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
+pub unsafe extern "C-unwind" fn kcl_value_Schema(ctx: *mut kcl_context_t) -> *mut kcl_value_ref_t {
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     new_mut_ptr(ctx, ValueRef::schema())
 }
 
+/// # Safety
+/// The caller must ensure that `ctx`, `schema_dict`, `config`, `config_meta`,
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_value_schema_with_config(
     ctx: *mut kcl_context_t,
@@ -226,23 +241,23 @@ pub unsafe extern "C-unwind" fn kcl_value_schema_with_config(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let schema_dict = ptr_as_ref(schema_dict);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let schema_dict = unsafe { ptr_as_ref(schema_dict) };
     // Config dict
-    let config = ptr_as_ref(config);
-    let config_meta = ptr_as_ref(config_meta);
+    let config = unsafe { ptr_as_ref(config) };
+    let config_meta = unsafe { ptr_as_ref(config_meta) };
     let config_keys: Vec<String> = config.as_dict_ref().values.keys().cloned().collect();
     // Schema meta
-    let name = c2str(name);
-    let pkgpath = c2str(pkgpath);
+    let name = unsafe { c2str(name) };
+    let pkgpath = unsafe { c2str(pkgpath) };
     let runtime_type = schema_runtime_type(name, pkgpath);
-    let is_sub_schema = ptr_as_ref(is_sub_schema);
-    let record_instance = ptr_as_ref(record_instance);
-    let instance_pkgpath = ptr_as_ref(instance_pkgpath);
+    let is_sub_schema = unsafe { ptr_as_ref(is_sub_schema) };
+    let record_instance = unsafe { ptr_as_ref(record_instance) };
+    let instance_pkgpath = unsafe { ptr_as_ref(instance_pkgpath) };
     let instance_pkgpath = instance_pkgpath.as_str();
-    let optional_mapping = ptr_as_ref(optional_mapping);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let optional_mapping = unsafe { ptr_as_ref(optional_mapping) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
     if record_instance.is_truthy() {
         // Record schema instance in the context
         if !ctx.instances.contains_key(&runtime_type) {
@@ -283,9 +298,9 @@ pub unsafe extern "C-unwind" fn kcl_value_Function(
     name: *const kcl_char_t,
     is_external: kcl_bool_t,
 ) -> *mut kcl_value_ref_t {
-    let ctx = mut_ptr_as_ref(ctx);
-    let closure = ptr_as_ref(closure);
-    let name = c2str(name);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let closure = unsafe { ptr_as_ref(closure) };
+    let name = unsafe { c2str(name) };
     new_mut_ptr(
         ctx,
         ValueRef::func(
@@ -305,8 +320,8 @@ pub unsafe extern "C-unwind" fn kcl_value_Function_using_ptr(
     fn_ptr: *const u64,
     name: *const kcl_char_t,
 ) -> *mut kcl_value_ref_t {
-    let name = c2str(name);
-    let ctx = mut_ptr_as_ref(ctx);
+    let name = unsafe { c2str(name) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     new_mut_ptr(
         ctx,
         ValueRef::func(fn_ptr as u64, 0, ValueRef::none(), name, "", false),
@@ -322,7 +337,7 @@ pub unsafe extern "C-unwind" fn kcl_value_schema_function(
     tpe: *const kcl_char_t,
 ) -> *mut kcl_value_ref_t {
     // Schema function closures
-    let ctx = mut_ptr_as_ref(ctx);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     let is_sub_schema = ValueRef::bool(false);
     let config_meta = ValueRef::dict(None);
     let config = ValueRef::dict(None);
@@ -348,7 +363,7 @@ pub unsafe extern "C-unwind" fn kcl_value_schema_function(
         schema_args_ref.values.push(record_instance);
         schema_args_ref.values.push(instance_pkgpath);
     }
-    let runtime_type = c2str(tpe);
+    let runtime_type = unsafe { c2str(tpe) };
     let schema_func = ValueRef::func(
         fn_ptr as u64,
         check_fn_ptr as u64,
@@ -357,7 +372,7 @@ pub unsafe extern "C-unwind" fn kcl_value_schema_function(
         runtime_type,
         false,
     );
-    let attr_map = ptr_as_ref(attr_map);
+    let attr_map = unsafe { ptr_as_ref(attr_map) };
     let attr_dict = attr_map.as_dict_ref();
     let schema_ty = SchemaType {
         name: runtime_type.to_string(),
@@ -382,13 +397,13 @@ pub unsafe extern "C-unwind" fn kcl_value_from_json(
     ctx: *mut kcl_context_t,
     s: *const kcl_char_t,
 ) -> *mut kcl_value_ref_t {
-    let ctx_ref = mut_ptr_as_ref(ctx);
+    let ctx_ref = unsafe { mut_ptr_as_ref(ctx) };
     if s.is_null() {
-        return kcl_value_Undefined(ctx);
+        return unsafe { kcl_value_Undefined(ctx) };
     }
-    match ValueRef::from_json(ctx_ref, c2str(s)) {
+    match ValueRef::from_json(ctx_ref, unsafe { c2str(s) }) {
         Ok(x) => x.into_raw(ctx_ref),
-        _ => kcl_value_Undefined(ctx),
+        _ => unsafe { kcl_value_Undefined(ctx) },
     }
 }
 
@@ -401,9 +416,9 @@ pub unsafe extern "C-unwind" fn kcl_value_to_json_value(
         return unsafe { kcl_value_Str(ctx, std::ptr::null()) };
     }
 
-    let p = ptr_as_ref(p);
+    let p = unsafe { ptr_as_ref(p) };
     let s = p.to_json_string();
-    let ctx = mut_ptr_as_ref(ctx);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     new_mut_ptr(ctx, ValueRef::str(s.as_ref()))
 }
 
@@ -416,9 +431,9 @@ pub unsafe extern "C-unwind" fn kcl_value_to_json_value_with_null(
         return unsafe { kcl_value_Str(ctx, std::ptr::null()) };
     }
 
-    let p = ptr_as_ref(p);
+    let p = unsafe { ptr_as_ref(p) };
     let s = p.to_json_string_with_null();
-    let ctx = mut_ptr_as_ref(ctx);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     new_mut_ptr(ctx, ValueRef::str(s.as_ref()))
 }
 
@@ -427,8 +442,8 @@ pub unsafe extern "C-unwind" fn kcl_value_plan_to_json(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let p = ptr_as_ref(p);
-    let ctx: &mut Context = mut_ptr_as_ref(ctx);
+    let p = unsafe { ptr_as_ref(p) };
+    let ctx: &mut Context = unsafe { mut_ptr_as_ref(ctx) };
     let value = match ctx.buffer.custom_manifests_output.clone() {
         Some(output) => ValueRef::from_yaml_stream(ctx, &output).unwrap(),
         None => p.clone(),
@@ -444,8 +459,8 @@ pub unsafe extern "C-unwind" fn kcl_value_plan_to_yaml(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let p = ptr_as_ref(p);
-    let ctx = mut_ptr_as_ref(ctx);
+    let p = unsafe { ptr_as_ref(p) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     let value = match ctx.buffer.custom_manifests_output.clone() {
         Some(output) => ValueRef::from_yaml_stream(ctx, &output).unwrap(),
         None => p.clone(),
@@ -464,8 +479,8 @@ pub unsafe extern "C-unwind" fn kcl_value_to_yaml_value(
     if p.is_null() {
         return unsafe { kcl_value_Str(ctx, std::ptr::null()) };
     }
-    let ctx = mut_ptr_as_ref(ctx);
-    let p = ptr_as_ref(p);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let p = unsafe { ptr_as_ref(p) };
     let s = p.to_yaml_string();
 
     new_mut_ptr(ctx, ValueRef::str(s.as_ref()))
@@ -480,8 +495,8 @@ pub unsafe extern "C-unwind" fn kcl_value_to_str_value(
         return unsafe { kcl_value_Str(ctx, std::ptr::null()) };
     }
 
-    let ctx = mut_ptr_as_ref(ctx);
-    let p = ptr_as_ref(p);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let p = unsafe { ptr_as_ref(p) };
     let s = p.to_string();
 
     new_mut_ptr(ctx, ValueRef::str(s.as_ref()))
@@ -493,7 +508,7 @@ pub unsafe extern "C-unwind" fn kcl_value_to_str_value(
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_value_Str_ptr(p: *const kcl_value_ref_t) -> *const kcl_char_t {
-    let p = ptr_as_ref(p);
+    let p = unsafe { ptr_as_ref(p) };
     match &*p.rc.borrow() {
         Value::str_value(v) => v.as_ptr() as *const c_char,
         _ => std::ptr::null(),
@@ -502,7 +517,7 @@ pub unsafe extern "C-unwind" fn kcl_value_Str_ptr(p: *const kcl_value_ref_t) -> 
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_value_function_ptr(p: *const kcl_value_ref_t) -> *const u64 {
-    let p = ptr_as_ref(p);
+    let p = unsafe { ptr_as_ref(p) };
     match &*p.rc.borrow() {
         Value::func_value(v) => v.fn_ptr as *const u64,
         _ => std::ptr::null::<u64>(),
@@ -513,92 +528,11 @@ pub unsafe extern "C-unwind" fn kcl_value_function_ptr(p: *const kcl_value_ref_t
 pub unsafe extern "C-unwind" fn kcl_value_check_function_ptr(
     p: *const kcl_value_ref_t,
 ) -> *const u64 {
-    let p = ptr_as_ref(p);
+    let p = unsafe { ptr_as_ref(p) };
     match &*p.rc.borrow() {
         Value::func_value(v) => v.check_fn_ptr as *const u64,
         _ => std::ptr::null::<u64>(),
     }
-}
-
-#[unsafe(no_mangle)]
-pub unsafe fn kcl_value_function_invoke(
-    p: *const kcl_value_ref_t,
-    ctx: *mut kcl_context_t,
-    args: *mut kcl_value_ref_t,
-    kwargs: *const kcl_value_ref_t,
-    pkgpath: *const kcl_char_t,
-    is_in_schema: *const kcl_value_ref_t,
-) -> *const kcl_value_ref_t {
-    let func = ptr_as_ref(p);
-    let args_ref = mut_ptr_as_ref(args);
-    if func.is_func() {
-        let func = func.as_function();
-        let fn_ptr = func.fn_ptr;
-        let closure = &func.closure;
-        let is_schema = !func.runtime_type.is_empty();
-        let ctx_ref = mut_ptr_as_ref(ctx);
-        if ctx_ref.cfg.debug_mode {
-            ctx_ref
-                .backtrace
-                .push(BacktraceFrame::from_panic_info(&ctx_ref.panic_info));
-            ctx_ref.panic_info.kcl_func = func.name.clone();
-        }
-        let now_meta_info = ctx_ref.panic_info.clone();
-        unsafe {
-            let call_fn: SchemaTypeFunc = transmute_copy(&fn_ptr);
-            // Call schema constructor twice
-            let value = if is_schema {
-                let pkgpath = c2str(pkgpath);
-                // Schema function closure
-                let mut args_new = args_ref.deep_copy();
-                let mut closure_new = closure.deep_copy();
-                let config_meta_index: isize = 1;
-                let cal_map_index: isize = 5;
-                let record_instance_index = closure.len() - 2;
-                let instance_pkgpath_index = closure.len() - 1;
-                args_ref.list_append_unpack(closure);
-                let args = args_ref.clone().into_raw(ctx_ref);
-                call_fn(ctx, args, kwargs);
-                let cal_map = closure.list_get(cal_map_index).unwrap();
-                // is sub schema
-                closure_new.list_set(0, &ValueRef::bool(true));
-                // record instance
-                closure_new.list_set(record_instance_index, &ValueRef::bool(true));
-                // instance pkgpath
-                closure_new.list_set(instance_pkgpath_index, &ValueRef::str(pkgpath));
-                // cal map
-                closure_new.list_set(cal_map_index as usize, &cal_map);
-                // config meta
-                let config_meta = schema_config_meta(
-                    &ctx_ref.panic_info.kcl_file,
-                    ctx_ref.panic_info.kcl_line as u64,
-                    ctx_ref.panic_info.kcl_col as u64,
-                );
-                closure_new.list_set(config_meta_index as usize, &config_meta);
-                args_new.list_append_unpack(&closure_new);
-                call_fn(ctx, args_new.into_raw(ctx_ref), kwargs)
-            // Normal kcl function, call directly
-            } else if func.is_external {
-                let name = format!("{}\0", func.name);
-                kcl_plugin_invoke(ctx, name.as_ptr() as *const c_char, args, kwargs)
-            } else {
-                args_ref.list_append_unpack_first(closure);
-                let args = args_ref.clone().into_raw(ctx_ref);
-                call_fn(ctx, args, kwargs)
-            };
-            let is_in_schema = ptr_as_ref(is_in_schema);
-            if is_schema && !is_in_schema.is_truthy() {
-                let schema_value = ptr_as_ref(value);
-                schema_value.schema_check_attr_optional(ctx_ref, true);
-            }
-            if ctx_ref.cfg.debug_mode {
-                ctx_ref.backtrace.pop();
-            }
-            ctx_ref.panic_info = now_meta_info;
-            return value;
-        };
-    }
-    kcl_value_Undefined(ctx)
 }
 
 // ----------------------------------------------------------------------------
@@ -612,8 +546,8 @@ pub unsafe extern "C-unwind" fn kcl_value_deep_copy(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let p = ptr_as_ref(p);
-    let ctx = mut_ptr_as_ref(ctx);
+    let p = unsafe { ptr_as_ref(p) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     p.deep_copy().into_raw(ctx)
 }
 
@@ -624,9 +558,9 @@ pub unsafe extern "C-unwind" fn kcl_value_delete(p: *mut kcl_value_ref_t) {
     if p.is_null() {
         return;
     }
-    let val = ptr_as_ref(p);
+    let val = unsafe { ptr_as_ref(p) };
     val.from_raw();
-    free_mut_ptr(p);
+    unsafe { free_mut_ptr(p) };
 }
 
 // ----------------------------------------------------------------------------
@@ -635,19 +569,19 @@ pub unsafe extern "C-unwind" fn kcl_value_delete(p: *mut kcl_value_ref_t) {
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_value_iter(p: *const kcl_value_ref_t) -> *mut kcl_iterator_t {
-    let p = ptr_as_ref(p);
+    let p = unsafe { ptr_as_ref(p) };
     let iter = ValueIterator::from_value(p);
     Box::into_raw(Box::new(iter))
 }
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_iterator_delete(p: *mut kcl_iterator_t) {
-    free_mut_ptr(p);
+    unsafe { free_mut_ptr(p) };
 }
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_iterator_is_end(p: *mut kcl_iterator_t) -> kcl_bool_t {
-    let p = ptr_as_ref(p);
+    let p = unsafe { ptr_as_ref(p) };
     p.is_end() as kcl_bool_t
 }
 
@@ -655,7 +589,7 @@ pub unsafe extern "C-unwind" fn kcl_iterator_is_end(p: *mut kcl_iterator_t) -> k
 pub unsafe extern "C-unwind" fn kcl_iterator_cur_key(
     p: *mut kcl_iterator_t,
 ) -> *const kcl_value_ref_t {
-    let p = ptr_as_ref(p);
+    let p = unsafe { ptr_as_ref(p) };
     match p.key() {
         Some(x) => x,
         None => std::ptr::null(),
@@ -666,7 +600,7 @@ pub unsafe extern "C-unwind" fn kcl_iterator_cur_key(
 pub unsafe extern "C-unwind" fn kcl_iterator_cur_value(
     p: *mut kcl_iterator_t,
 ) -> *const kcl_value_ref_t {
-    let p = mut_ptr_as_ref(p);
+    let p = unsafe { mut_ptr_as_ref(p) };
     match p.value() {
         Some(x) => x,
         None => std::ptr::null(),
@@ -678,8 +612,8 @@ pub unsafe extern "C-unwind" fn kcl_iterator_next_value(
     p: *mut kcl_iterator_t,
     host: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let p = mut_ptr_as_ref(p);
-    let host = ptr_as_ref(host);
+    let p = unsafe { mut_ptr_as_ref(p) };
+    let host = unsafe { ptr_as_ref(host) };
 
     match p.next(host) {
         Some(x) => x,
@@ -693,19 +627,19 @@ pub unsafe extern "C-unwind" fn kcl_iterator_next_value(
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_list_len(p: *const kcl_value_ref_t) -> kcl_size_t {
-    let p = ptr_as_ref(p);
+    let p = unsafe { ptr_as_ref(p) };
     p.len() as kcl_size_t
 }
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_list_resize(p: *mut kcl_value_ref_t, newsize: kcl_size_t) {
-    let p = mut_ptr_as_ref(p);
+    let p = unsafe { mut_ptr_as_ref(p) };
     p.list_resize(newsize as usize);
 }
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_list_clear(p: *mut kcl_value_ref_t) {
-    let p = mut_ptr_as_ref(p);
+    let p = unsafe { mut_ptr_as_ref(p) };
     p.list_clear();
 }
 
@@ -716,10 +650,10 @@ pub unsafe extern "C-unwind" fn kcl_list_count(
     p: *const kcl_value_ref_t,
     item: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let p = ptr_as_ref(p);
-    let item = ptr_as_ref(item);
+    let p = unsafe { ptr_as_ref(p) };
+    let item = unsafe { ptr_as_ref(item) };
     let count = p.list_count(item);
-    let ctx = mut_ptr_as_ref(ctx);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     let count_value = ValueRef::int(count as i64);
     count_value.into_raw(ctx)
 }
@@ -731,11 +665,11 @@ pub unsafe extern "C-unwind" fn kcl_list_find(
     p: *const kcl_value_ref_t,
     item: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let p = ptr_as_ref(p);
-    let item = ptr_as_ref(item);
+    let p = unsafe { ptr_as_ref(p) };
+    let item = unsafe { ptr_as_ref(item) };
     let index = p.list_find(item);
     let index_value = ValueRef::int(index as i64);
-    let ctx = mut_ptr_as_ref(ctx);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     index_value.into_raw(ctx)
 }
 
@@ -746,9 +680,9 @@ pub unsafe extern "C-unwind" fn kcl_list_insert(
     index: *const kcl_value_ref_t,
     value: *const kcl_value_ref_t,
 ) {
-    let p = mut_ptr_as_ref(p);
-    let index = ptr_as_ref(index);
-    let value = ptr_as_ref(value);
+    let p = unsafe { mut_ptr_as_ref(p) };
+    let index = unsafe { ptr_as_ref(index) };
+    let value = unsafe { ptr_as_ref(value) };
     p.list_insert_at(index.as_int() as usize, value);
 }
 
@@ -758,8 +692,8 @@ pub unsafe extern "C-unwind" fn kcl_list_get(
     p: *const kcl_value_ref_t,
     i: kcl_size_t,
 ) -> *const kcl_value_ref_t {
-    let p = ptr_as_ref(p);
-    let ctx = mut_ptr_as_ref(ctx);
+    let p = unsafe { ptr_as_ref(p) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     match p.list_get(i as isize) {
         Some(x) => x.into_raw(ctx),
         _ => panic!("list index out of range"),
@@ -772,11 +706,11 @@ pub unsafe extern "C-unwind" fn kcl_list_get_option(
     p: *const kcl_value_ref_t,
     i: kcl_size_t,
 ) -> *const kcl_value_ref_t {
-    let p = ptr_as_ref(p);
+    let p = unsafe { ptr_as_ref(p) };
 
     match p.list_get_option(i as isize) {
-        Some(x) => x.into_raw(mut_ptr_as_ref(ctx)),
-        _ => kcl_value_Undefined(ctx),
+        Some(x) => x.into_raw(unsafe { mut_ptr_as_ref(ctx) }),
+        _ => unsafe { kcl_value_Undefined(ctx) },
     }
 }
 
@@ -786,8 +720,8 @@ pub unsafe extern "C-unwind" fn kcl_list_set(
     i: kcl_size_t,
     v: *const kcl_value_ref_t,
 ) {
-    let p = mut_ptr_as_ref(p);
-    let v = ptr_as_ref(v);
+    let p = unsafe { mut_ptr_as_ref(p) };
+    let v = unsafe { ptr_as_ref(v) };
     p.list_set(i as usize, v);
 }
 
@@ -796,11 +730,11 @@ pub unsafe extern "C-unwind" fn kcl_list_pop(
     ctx: *mut kcl_context_t,
     p: *mut kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let p = mut_ptr_as_ref(p);
+    let p = unsafe { mut_ptr_as_ref(p) };
 
     match p.list_pop() {
-        Some(x) => x.into_raw(mut_ptr_as_ref(ctx)),
-        _ => kcl_value_Undefined(ctx),
+        Some(x) => x.into_raw(unsafe { mut_ptr_as_ref(ctx) }),
+        _ => unsafe { kcl_value_Undefined(ctx) },
     }
 }
 
@@ -809,10 +743,10 @@ pub unsafe extern "C-unwind" fn kcl_list_pop_first(
     ctx: *mut kcl_context_t,
     p: *mut kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let p = mut_ptr_as_ref(p);
+    let p = unsafe { mut_ptr_as_ref(p) };
     match p.list_pop_first() {
-        Some(x) => x.into_raw(mut_ptr_as_ref(ctx)),
-        _ => kcl_value_Undefined(ctx),
+        Some(x) => x.into_raw(unsafe { mut_ptr_as_ref(ctx) }),
+        _ => unsafe { kcl_value_Undefined(ctx) },
     }
 }
 
@@ -821,33 +755,33 @@ pub unsafe extern "C-unwind" fn kcl_list_append(
     p: *mut kcl_value_ref_t,
     v: *const kcl_value_ref_t,
 ) {
-    let p = mut_ptr_as_ref(p);
-    let v = ptr_as_ref(v);
+    let p = unsafe { mut_ptr_as_ref(p) };
+    let v = unsafe { ptr_as_ref(v) };
     p.list_append(v);
 }
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_list_append_bool(p: *mut kcl_value_ref_t, v: kcl_bool_t) {
-    let p = mut_ptr_as_ref(p);
+    let p = unsafe { mut_ptr_as_ref(p) };
     p.list_append(&ValueRef::bool(v != 0));
 }
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_list_append_int(p: *mut kcl_value_ref_t, v: kcl_int_t) {
-    let p = mut_ptr_as_ref(p);
+    let p = unsafe { mut_ptr_as_ref(p) };
     p.list_append(&ValueRef::int(v));
 }
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_list_append_float(p: *mut kcl_value_ref_t, v: kcl_float_t) {
-    let p = mut_ptr_as_ref(p);
+    let p = unsafe { mut_ptr_as_ref(p) };
     p.list_append(&ValueRef::float(v));
 }
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_list_append_str(p: *mut kcl_value_ref_t, v: *const kcl_char_t) {
-    let p = mut_ptr_as_ref(p);
-    p.list_append(&ValueRef::str(c2str(v)));
+    let p = unsafe { mut_ptr_as_ref(p) };
+    p.list_append(&ValueRef::str(unsafe { c2str(v) }));
 }
 
 #[unsafe(no_mangle)]
@@ -855,8 +789,8 @@ pub unsafe extern "C-unwind" fn kcl_list_append_unpack(
     p: *mut kcl_value_ref_t,
     v: *const kcl_value_ref_t,
 ) {
-    let p = mut_ptr_as_ref(p);
-    let v = ptr_as_ref(v);
+    let p = unsafe { mut_ptr_as_ref(p) };
+    let v = unsafe { ptr_as_ref(v) };
 
     if p.is_list() {
         p.list_append_unpack(v);
@@ -865,7 +799,7 @@ pub unsafe extern "C-unwind" fn kcl_list_append_unpack(
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_list_remove_at(p: *mut kcl_value_ref_t, i: kcl_size_t) {
-    let p = mut_ptr_as_ref(p);
+    let p = unsafe { mut_ptr_as_ref(p) };
     p.list_remove_at(i as usize);
 }
 
@@ -875,7 +809,7 @@ pub unsafe extern "C-unwind" fn kcl_list_remove_at(p: *mut kcl_value_ref_t, i: k
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_dict_len(p: *const kcl_value_ref_t) -> kcl_size_t {
-    let p = ptr_as_ref(p);
+    let p = unsafe { ptr_as_ref(p) };
     match &*p.rc.borrow() {
         Value::dict_value(dict) => dict.values.len() as kcl_size_t,
         _ => 0,
@@ -884,7 +818,7 @@ pub unsafe extern "C-unwind" fn kcl_dict_len(p: *const kcl_value_ref_t) -> kcl_s
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_dict_clear(p: *mut kcl_value_ref_t) {
-    let p = mut_ptr_as_ref(p);
+    let p = unsafe { mut_ptr_as_ref(p) };
     p.dict_clear();
 }
 
@@ -893,8 +827,8 @@ pub unsafe extern "C-unwind" fn kcl_dict_is_override_attr(
     p: *const kcl_value_ref_t,
     key: *const kcl_char_t,
 ) -> kcl_bool_t {
-    let p = ptr_as_ref(p);
-    let key = c2str(key);
+    let p = unsafe { ptr_as_ref(p) };
+    let key = unsafe { c2str(key) };
     let is_override_op = matches!(
         p.dict_get_attr_operator(key),
         Some(ConfigEntryOperationKind::Override)
@@ -909,12 +843,12 @@ pub unsafe extern "C-unwind" fn kcl_dict_get(
     p: *const kcl_value_ref_t,
     key: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let p = ptr_as_ref(p);
-    let key = ptr_as_ref(key);
+    let p = unsafe { ptr_as_ref(p) };
+    let key = unsafe { ptr_as_ref(key) };
 
     match p.dict_get(key) {
-        Some(x) => x.into_raw(mut_ptr_as_ref(ctx)),
-        None => kcl_value_Undefined(ctx),
+        Some(x) => x.into_raw(unsafe { mut_ptr_as_ref(ctx) }),
+        None => unsafe { kcl_value_Undefined(ctx) },
     }
 }
 
@@ -923,8 +857,8 @@ pub unsafe extern "C-unwind" fn kcl_dict_has_value(
     p: *const kcl_value_ref_t,
     key: *const kcl_char_t,
 ) -> kcl_bool_t {
-    let p = ptr_as_ref(p);
-    let key = c2str(key);
+    let p = unsafe { ptr_as_ref(p) };
+    let key = unsafe { c2str(key) };
     match p.dict_get_value(key) {
         Some(_) => true as kcl_bool_t,
         None => false as kcl_bool_t,
@@ -937,11 +871,11 @@ pub unsafe extern "C-unwind" fn kcl_dict_get_value(
     p: *const kcl_value_ref_t,
     key: *const kcl_char_t,
 ) -> *const kcl_value_ref_t {
-    let p = ptr_as_ref(p);
-    let key = c2str(key);
+    let p = unsafe { ptr_as_ref(p) };
+    let key = unsafe { c2str(key) };
     match p.dict_get_value(key) {
-        Some(x) => x.into_raw(mut_ptr_as_ref(ctx)),
-        None => kcl_value_Undefined(ctx),
+        Some(x) => x.into_raw(unsafe { mut_ptr_as_ref(ctx) }),
+        None => unsafe { kcl_value_Undefined(ctx) },
     }
 }
 
@@ -951,11 +885,11 @@ pub unsafe extern "C-unwind" fn kcl_dict_get_entry(
     p: *const kcl_value_ref_t,
     key: *const kcl_char_t,
 ) -> *const kcl_value_ref_t {
-    let p = ptr_as_ref(p);
-    let key = c2str(key);
+    let p = unsafe { ptr_as_ref(p) };
+    let key = unsafe { c2str(key) };
     match p.dict_get_entry(key) {
-        Some(x) => x.into_raw(mut_ptr_as_ref(ctx)),
-        None => kcl_value_Undefined(ctx),
+        Some(x) => x.into_raw(unsafe { mut_ptr_as_ref(ctx) }),
+        None => unsafe { kcl_value_Undefined(ctx) },
     }
 }
 
@@ -965,11 +899,11 @@ pub unsafe extern "C-unwind" fn kcl_dict_get_value_by_path(
     p: *const kcl_value_ref_t,
     path: *const kcl_char_t,
 ) -> *const kcl_value_ref_t {
-    let p = ptr_as_ref(p);
-    let path = c2str(path);
+    let p = unsafe { ptr_as_ref(p) };
+    let path = unsafe { c2str(path) };
     match p.get_by_path(path) {
-        Some(x) => x.into_raw(mut_ptr_as_ref(ctx)),
-        None => kcl_value_Undefined(ctx),
+        Some(x) => x.into_raw(unsafe { mut_ptr_as_ref(ctx) }),
+        None => unsafe { kcl_value_Undefined(ctx) },
     }
 }
 
@@ -980,9 +914,9 @@ pub unsafe extern "C-unwind" fn kcl_dict_set_value(
     key: *const kcl_char_t,
     val: *const kcl_value_ref_t,
 ) {
-    let p = mut_ptr_as_ref(p);
-    let key = c2str(key);
-    let val = ptr_as_ref(val);
+    let p = unsafe { mut_ptr_as_ref(p) };
+    let key = unsafe { c2str(key) };
+    let val = unsafe { ptr_as_ref(val) };
     if p.is_config() {
         p.dict_update_key_value(key, val.clone());
         if p.is_schema() {
@@ -991,7 +925,7 @@ pub unsafe extern "C-unwind" fn kcl_dict_set_value(
                 let schema_value = p.as_schema();
                 let mut config_keys = schema_value.config_keys.clone();
                 config_keys.push(key.to_string());
-                schema = resolve_schema(mut_ptr_as_ref(ctx), p, &config_keys);
+                schema = resolve_schema(unsafe { mut_ptr_as_ref(ctx) }, p, &config_keys);
             }
             p.schema_update_with_schema(&schema);
         }
@@ -1005,27 +939,25 @@ pub unsafe extern "C-unwind" fn kcl_dict_set_value(
 }
 
 #[unsafe(no_mangle)]
-
 /// Return all dict keys.
 pub unsafe extern "C-unwind" fn kcl_dict_keys(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let p = ptr_as_ref(p);
+    let p = unsafe { ptr_as_ref(p) };
     let r = p.dict_keys();
-    r.into_raw(mut_ptr_as_ref(ctx))
+    r.into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 #[unsafe(no_mangle)]
-
 /// Return all dict values.
 pub unsafe extern "C-unwind" fn kcl_dict_values(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let p = ptr_as_ref(p);
+    let p = unsafe { ptr_as_ref(p) };
     let r = p.dict_values();
-    r.into_raw(mut_ptr_as_ref(ctx))
+    r.into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 #[unsafe(no_mangle)]
@@ -1038,11 +970,11 @@ pub unsafe extern "C-unwind" fn kcl_dict_insert(
     insert_index: kcl_size_t,
     has_insert_index: kcl_bool_t,
 ) {
-    let p = mut_ptr_as_ref(p);
-    let v = ptr_as_ref(v);
+    let p = unsafe { mut_ptr_as_ref(p) };
+    let v = unsafe { ptr_as_ref(v) };
     p.dict_insert(
-        mut_ptr_as_ref(ctx),
-        c2str(key),
+        unsafe { mut_ptr_as_ref(ctx) },
+        unsafe { c2str(key) },
         v,
         ConfigEntryOperationKind::from_i32(op),
         if has_insert_index != 0 {
@@ -1063,10 +995,10 @@ pub unsafe extern "C-unwind" fn kcl_dict_merge(
     insert_index: kcl_size_t,
     has_insert_index: kcl_bool_t,
 ) {
-    let p = mut_ptr_as_ref(p);
-    let v = ptr_as_ref(v);
-    let key = c2str(key);
-    let ctx = mut_ptr_as_ref(ctx);
+    let p = unsafe { mut_ptr_as_ref(p) };
+    let v = unsafe { ptr_as_ref(v) };
+    let key = unsafe { c2str(key) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     let attr_map = {
         match &*p.rc.borrow() {
             Value::dict_value(dict) => dict.attr_map.clone(),
@@ -1112,12 +1044,12 @@ pub unsafe extern "C-unwind" fn kcl_dict_insert_value(
     insert_index: kcl_size_t,
     has_insert_index: kcl_bool_t,
 ) {
-    let p = mut_ptr_as_ref(p);
-    let v = ptr_as_ref(v);
-    let key = ptr_as_ref(key);
+    let p = unsafe { mut_ptr_as_ref(p) };
+    let v = unsafe { ptr_as_ref(v) };
+    let key = unsafe { ptr_as_ref(key) };
     let key = key.attr_str();
     p.dict_insert(
-        mut_ptr_as_ref(ctx),
+        unsafe { mut_ptr_as_ref(ctx) },
         key.as_str(),
         v,
         ConfigEntryOperationKind::from_i32(op),
@@ -1135,9 +1067,9 @@ pub unsafe extern "C-unwind" fn kcl_dict_update_key_value(
     key: *const kcl_value_ref_t,
     v: *const kcl_value_ref_t,
 ) {
-    let p = mut_ptr_as_ref(p);
-    let v = ptr_as_ref(v);
-    let key = ptr_as_ref(key);
+    let p = unsafe { mut_ptr_as_ref(p) };
+    let v = unsafe { ptr_as_ref(v) };
+    let key = unsafe { ptr_as_ref(key) };
     let key = key.attr_str();
     p.dict_update_key_value(key.as_str(), v.clone());
 }
@@ -1164,9 +1096,9 @@ pub unsafe extern "C-unwind" fn kcl_dict_insert_unpack(
     p: *mut kcl_value_ref_t,
     v: *const kcl_value_ref_t,
 ) {
-    let p = mut_ptr_as_ref(p);
-    let ctx = mut_ptr_as_ref(ctx);
-    let v = ptr_as_ref(v);
+    let p = unsafe { mut_ptr_as_ref(p) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let v = unsafe { ptr_as_ref(v) };
     p.dict_insert_unpack(ctx, v);
 }
 
@@ -1176,8 +1108,8 @@ pub unsafe extern "C-unwind" fn kcl_default_collection_insert_int_pointer(
     key: *const kcl_char_t,
     ptr: *const u64,
 ) {
-    let p = mut_ptr_as_ref(p);
-    let key = c2str(key);
+    let p = unsafe { mut_ptr_as_ref(p) };
+    let key = unsafe { c2str(key) };
     let ptr = ptr as i64;
     if p.is_dict() {
         let mut dict_ref_mut = p.as_dict_mut_ref();
@@ -1199,9 +1131,9 @@ pub unsafe extern "C-unwind" fn kcl_default_collection_insert_value(
     key: *const kcl_char_t,
     value: *const kcl_value_ref_t,
 ) {
-    let p = mut_ptr_as_ref(p);
-    let key = c2str(key);
-    let value = ptr_as_ref(value);
+    let p = unsafe { mut_ptr_as_ref(p) };
+    let key = unsafe { c2str(key) };
+    let value = unsafe { ptr_as_ref(value) };
     if p.is_dict() {
         let mut dict_ref_mut = p.as_dict_mut_ref();
         if !dict_ref_mut.values.contains_key(key) {
@@ -1217,8 +1149,8 @@ pub unsafe extern "C-unwind" fn kcl_default_collection_insert_value(
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_dict_remove(p: *mut kcl_value_ref_t, key: *const kcl_char_t) {
-    let p = mut_ptr_as_ref(p);
-    p.dict_remove(c2str(key));
+    let p = unsafe { mut_ptr_as_ref(p) };
+    p.dict_remove(unsafe { c2str(key) });
 }
 
 #[unsafe(no_mangle)]
@@ -1226,8 +1158,8 @@ pub unsafe extern "C-unwind" fn kcl_dict_update(
     p: *mut kcl_value_ref_t,
     v: *const kcl_value_ref_t,
 ) {
-    let p = mut_ptr_as_ref(p);
-    let v = ptr_as_ref(v);
+    let p = unsafe { mut_ptr_as_ref(p) };
+    let v = unsafe { ptr_as_ref(v) };
     p.dict_update(v);
 }
 
@@ -1239,7 +1171,7 @@ pub unsafe extern "C-unwind" fn kcl_dict_update(
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_value_is_truthy(p: *const kcl_value_ref_t) -> kcl_bool_t {
-    let p = ptr_as_ref(p);
+    let p = unsafe { ptr_as_ref(p) };
     p.is_truthy() as kcl_bool_t
 }
 
@@ -1247,7 +1179,7 @@ pub unsafe extern "C-unwind" fn kcl_value_is_truthy(p: *const kcl_value_ref_t) -
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_value_len(p: *const kcl_value_ref_t) -> kcl_size_t {
-    let p = ptr_as_ref(p);
+    let p = unsafe { ptr_as_ref(p) };
     p.len() as kcl_size_t
 }
 
@@ -1260,11 +1192,11 @@ pub unsafe extern "C-unwind" fn kcl_value_cmp_equal_to(
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
     if a == b {
-        return kcl_value_Bool(ctx, 1);
+        return unsafe { kcl_value_Bool(ctx, 1) };
     }
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    ValueRef::bool(a.cmp_equal(b)).into_raw(mut_ptr_as_ref(ctx))
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    ValueRef::bool(a.cmp_equal(b)).into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 #[unsafe(no_mangle)]
@@ -1274,11 +1206,11 @@ pub unsafe extern "C-unwind" fn kcl_value_cmp_not_equal_to(
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
     if a == b {
-        return kcl_value_Bool(ctx, 0);
+        return unsafe { kcl_value_Bool(ctx, 0) };
     }
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    ValueRef::bool(!a.cmp_equal(b)).into_raw(mut_ptr_as_ref(ctx))
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    ValueRef::bool(!a.cmp_equal(b)).into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 #[unsafe(no_mangle)]
@@ -1288,11 +1220,11 @@ pub unsafe extern "C-unwind" fn kcl_value_cmp_less_than(
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
     if a == b {
-        return kcl_value_Bool(ctx, 0);
+        return unsafe { kcl_value_Bool(ctx, 0) };
     }
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    ValueRef::bool(a.cmp_less_than(b)).into_raw(mut_ptr_as_ref(ctx))
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    ValueRef::bool(a.cmp_less_than(b)).into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 #[unsafe(no_mangle)]
@@ -1301,9 +1233,9 @@ pub unsafe extern "C-unwind" fn kcl_value_cmp_less_than_or_equal(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    ValueRef::bool(a.cmp_less_than_or_equal(b)).into_raw(mut_ptr_as_ref(ctx))
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    ValueRef::bool(a.cmp_less_than_or_equal(b)).into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 #[unsafe(no_mangle)]
@@ -1313,11 +1245,11 @@ pub unsafe extern "C-unwind" fn kcl_value_cmp_greater_than(
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
     if a == b {
-        return kcl_value_Bool(ctx, 0);
+        return unsafe { kcl_value_Bool(ctx, 0) };
     }
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    ValueRef::bool(a.cmp_greater_than(b)).into_raw(mut_ptr_as_ref(ctx))
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    ValueRef::bool(a.cmp_greater_than(b)).into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 #[unsafe(no_mangle)]
@@ -1326,9 +1258,9 @@ pub unsafe extern "C-unwind" fn kcl_value_cmp_greater_than_or_equal(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    ValueRef::bool(a.cmp_greater_than_or_equal(b)).into_raw(mut_ptr_as_ref(ctx))
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    ValueRef::bool(a.cmp_greater_than_or_equal(b)).into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 // is/in
@@ -1339,12 +1271,12 @@ pub unsafe extern "C-unwind" fn kcl_value_is(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
     if a == b {
-        return kcl_value_Bool(ctx, 1);
+        return unsafe { kcl_value_Bool(ctx, 1) };
     }
-    kcl_value_Bool(ctx, 0)
+    unsafe { kcl_value_Bool(ctx, 0) }
 }
 
 #[unsafe(no_mangle)]
@@ -1353,12 +1285,12 @@ pub unsafe extern "C-unwind" fn kcl_value_is_not(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
     if a == b {
-        return kcl_value_Bool(ctx, 0);
+        return unsafe { kcl_value_Bool(ctx, 0) };
     }
-    kcl_value_Bool(ctx, 1)
+    unsafe { kcl_value_Bool(ctx, 1) }
 }
 
 #[unsafe(no_mangle)]
@@ -1367,9 +1299,9 @@ pub unsafe extern "C-unwind" fn kcl_value_in(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    ValueRef::bool(a.r#in(b)).into_raw(mut_ptr_as_ref(ctx))
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    ValueRef::bool(a.r#in(b)).into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 #[unsafe(no_mangle)]
@@ -1378,9 +1310,9 @@ pub unsafe extern "C-unwind" fn kcl_value_not_in(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    ValueRef::bool(a.not_in(b)).into_raw(mut_ptr_as_ref(ctx))
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    ValueRef::bool(a.not_in(b)).into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 #[unsafe(no_mangle)]
@@ -1389,10 +1321,10 @@ pub unsafe extern "C-unwind" fn kcl_value_as(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
     let ty_str = b.as_str();
-    let ctx = mut_ptr_as_ref(ctx);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     let value = type_pack_and_check(ctx, a, vec![ty_str.as_str()], true);
     value.into_raw(ctx)
 }
@@ -1404,8 +1336,8 @@ pub unsafe extern "C-unwind" fn kcl_value_unary_plus(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    a.unary_plus().into_raw(mut_ptr_as_ref(ctx))
+    let a = unsafe { ptr_as_ref(a) };
+    a.unary_plus().into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 #[unsafe(no_mangle)]
@@ -1413,8 +1345,8 @@ pub unsafe extern "C-unwind" fn kcl_value_unary_minus(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    a.unary_minus().into_raw(mut_ptr_as_ref(ctx))
+    let a = unsafe { ptr_as_ref(a) };
+    a.unary_minus().into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 #[unsafe(no_mangle)]
@@ -1422,8 +1354,8 @@ pub unsafe extern "C-unwind" fn kcl_value_unary_not(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    a.unary_not().into_raw(mut_ptr_as_ref(ctx))
+    let a = unsafe { ptr_as_ref(a) };
+    a.unary_not().into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 #[unsafe(no_mangle)]
@@ -1431,8 +1363,8 @@ pub unsafe extern "C-unwind" fn kcl_value_unary_l_not(
     ctx: *mut kcl_context_t,
     a: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    a.unary_l_not().into_raw(mut_ptr_as_ref(ctx))
+    let a = unsafe { ptr_as_ref(a) };
+    a.unary_l_not().into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 // op-xxx
@@ -1443,9 +1375,9 @@ pub unsafe extern "C-unwind" fn kcl_value_op_add(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    let ctx = mut_ptr_as_ref(ctx);
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     a.bin_add(ctx, b).into_raw(ctx)
 }
 
@@ -1455,9 +1387,9 @@ pub unsafe extern "C-unwind" fn kcl_value_op_sub(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    let ctx = mut_ptr_as_ref(ctx);
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     a.bin_sub(ctx, b).into_raw(ctx)
 }
 
@@ -1467,9 +1399,9 @@ pub unsafe extern "C-unwind" fn kcl_value_op_mul(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    let ctx = mut_ptr_as_ref(ctx);
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     a.bin_mul(ctx, b).into_raw(ctx)
 }
 
@@ -1479,9 +1411,9 @@ pub unsafe extern "C-unwind" fn kcl_value_op_div(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    a.bin_div(b).into_raw(mut_ptr_as_ref(ctx))
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    a.bin_div(b).into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 #[unsafe(no_mangle)]
@@ -1490,9 +1422,9 @@ pub unsafe extern "C-unwind" fn kcl_value_op_mod(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    a.bin_mod(b).into_raw(mut_ptr_as_ref(ctx))
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    a.bin_mod(b).into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 #[unsafe(no_mangle)]
@@ -1501,9 +1433,9 @@ pub unsafe extern "C-unwind" fn kcl_value_op_pow(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    let ctx = mut_ptr_as_ref(ctx);
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     a.bin_pow(ctx, b).into_raw(ctx)
 }
 
@@ -1513,9 +1445,9 @@ pub unsafe extern "C-unwind" fn kcl_value_op_floor_div(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    a.bin_floor_div(b).into_raw(mut_ptr_as_ref(ctx))
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    a.bin_floor_div(b).into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 #[unsafe(no_mangle)]
@@ -1524,9 +1456,9 @@ pub unsafe extern "C-unwind" fn kcl_value_op_bit_lshift(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    let ctx = mut_ptr_as_ref(ctx);
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     a.bin_bit_lshift(ctx, b).into_raw(ctx)
 }
 
@@ -1536,9 +1468,9 @@ pub unsafe extern "C-unwind" fn kcl_value_op_bit_rshift(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    let ctx = mut_ptr_as_ref(ctx);
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     a.bin_bit_rshift(ctx, b).into_raw(ctx)
 }
 
@@ -1548,9 +1480,9 @@ pub unsafe extern "C-unwind" fn kcl_value_op_bit_and(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    a.bin_bit_and(b).into_raw(mut_ptr_as_ref(ctx))
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    a.bin_bit_and(b).into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 #[unsafe(no_mangle)]
@@ -1559,9 +1491,9 @@ pub unsafe extern "C-unwind" fn kcl_value_op_bit_xor(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    a.bin_bit_xor(b).into_raw(mut_ptr_as_ref(ctx))
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    a.bin_bit_xor(b).into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 #[unsafe(no_mangle)]
@@ -1570,9 +1502,9 @@ pub unsafe extern "C-unwind" fn kcl_value_op_bit_or(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    let ctx = mut_ptr_as_ref(ctx);
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     a.bin_bit_or(ctx, b).into_raw(ctx)
 }
 
@@ -1584,10 +1516,10 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_add(
     a: *mut kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let a = mut_ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    let ctx = mut_ptr_as_ref(ctx);
-    return a.bin_aug_add(ctx, b) as *const kcl_value_ref_t;
+    let a = unsafe { mut_ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    a.bin_aug_add(ctx, b) as *const kcl_value_ref_t
 }
 
 #[unsafe(no_mangle)]
@@ -1596,10 +1528,10 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_sub(
     a: *mut kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let a = mut_ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    let ctx = mut_ptr_as_ref(ctx);
-    return a.bin_aug_sub(ctx, b) as *const kcl_value_ref_t;
+    let a = unsafe { mut_ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    a.bin_aug_sub(ctx, b) as *const kcl_value_ref_t
 }
 
 #[unsafe(no_mangle)]
@@ -1608,10 +1540,10 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_mul(
     a: *mut kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let a = mut_ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    let ctx = mut_ptr_as_ref(ctx);
-    return a.bin_aug_mul(ctx, b);
+    let a = unsafe { mut_ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    a.bin_aug_mul(ctx, b)
 }
 
 #[unsafe(no_mangle)]
@@ -1620,9 +1552,9 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_div(
     a: *mut kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let a = mut_ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    return a.bin_aug_div(b) as *const kcl_value_ref_t;
+    let a = unsafe { mut_ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    a.bin_aug_div(b) as *const kcl_value_ref_t
 }
 
 #[unsafe(no_mangle)]
@@ -1631,9 +1563,9 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_mod(
     a: *mut kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let a = mut_ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    return a.bin_aug_mod(b) as *const kcl_value_ref_t;
+    let a = unsafe { mut_ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    a.bin_aug_mod(b) as *const kcl_value_ref_t
 }
 
 #[unsafe(no_mangle)]
@@ -1642,10 +1574,10 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_pow(
     a: *mut kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let a = mut_ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    let ctx = mut_ptr_as_ref(ctx);
-    return a.bin_aug_pow(ctx, b) as *const kcl_value_ref_t;
+    let a = unsafe { mut_ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    a.bin_aug_pow(ctx, b) as *const kcl_value_ref_t
 }
 
 #[unsafe(no_mangle)]
@@ -1654,9 +1586,9 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_floor_div(
     a: *mut kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let a = mut_ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    return a.bin_aug_floor_div(b) as *const kcl_value_ref_t;
+    let a = unsafe { mut_ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    a.bin_aug_floor_div(b) as *const kcl_value_ref_t
 }
 
 #[unsafe(no_mangle)]
@@ -1665,9 +1597,9 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_bit_lshift(
     a: *mut kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let a = mut_ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    let ctx = mut_ptr_as_ref(ctx);
+    let a = unsafe { mut_ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     a.bin_aug_bit_lshift(ctx, b) as *const kcl_value_ref_t
 }
 
@@ -1677,9 +1609,9 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_bit_rshift(
     a: *mut kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let a = mut_ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    let ctx = mut_ptr_as_ref(ctx);
+    let a = unsafe { mut_ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     a.bin_aug_bit_rshift(ctx, b) as *const kcl_value_ref_t
 }
 
@@ -1689,8 +1621,8 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_bit_and(
     a: *mut kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let a = mut_ptr_as_ref(a);
-    let b = ptr_as_ref(b);
+    let a = unsafe { mut_ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
     a.bin_aug_bit_and(b) as *const kcl_value_ref_t
 }
 
@@ -1700,8 +1632,8 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_bit_xor(
     a: *mut kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let a = mut_ptr_as_ref(a);
-    let b = ptr_as_ref(b);
+    let a = unsafe { mut_ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
     a.bin_aug_bit_xor(b) as *const kcl_value_ref_t
 }
 
@@ -1711,9 +1643,9 @@ pub unsafe extern "C-unwind" fn kcl_value_op_aug_bit_or(
     a: *mut kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let a = mut_ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    let ctx = mut_ptr_as_ref(ctx);
+    let a = unsafe { mut_ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     a.bin_aug_bit_or(ctx, b) as *const kcl_value_ref_t
 }
 
@@ -1723,9 +1655,9 @@ pub unsafe extern "C-unwind" fn kcl_value_union(
     schema: *mut kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let a = mut_ptr_as_ref(schema);
-    let b = ptr_as_ref(b);
-    let ctx = mut_ptr_as_ref(ctx);
+    let a = unsafe { mut_ptr_as_ref(schema) };
+    let b = unsafe { ptr_as_ref(b) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     let attr_map = match &*a.rc.borrow() {
         Value::dict_value(dict) => dict.attr_map.clone(),
         Value::schema_value(schema) => schema.config.attr_map.clone(),
@@ -1761,9 +1693,9 @@ pub unsafe extern "C-unwind" fn kcl_value_logic_and(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    ValueRef::bool(a.logic_and(b)).into_raw(mut_ptr_as_ref(ctx))
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    ValueRef::bool(a.logic_and(b)).into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 #[unsafe(no_mangle)]
@@ -1772,9 +1704,9 @@ pub unsafe extern "C-unwind" fn kcl_value_logic_or(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    ValueRef::bool(a.logic_or(b)).into_raw(mut_ptr_as_ref(ctx))
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    ValueRef::bool(a.logic_or(b)).into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 #[unsafe(no_mangle)]
@@ -1783,9 +1715,9 @@ pub unsafe extern "C-unwind" fn kcl_value_subscr(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    a.bin_subscr(b).into_raw(mut_ptr_as_ref(ctx))
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    a.bin_subscr(b).into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 #[unsafe(no_mangle)]
@@ -1795,10 +1727,10 @@ pub unsafe extern "C-unwind" fn kcl_value_subscr_set(
     index: *const kcl_value_ref_t,
     val: *const kcl_value_ref_t,
 ) {
-    let ctx = mut_ptr_as_ref(ctx);
-    let p = mut_ptr_as_ref(p);
-    let index = ptr_as_ref(index);
-    let val = ptr_as_ref(val);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let p = unsafe { mut_ptr_as_ref(p) };
+    let index = unsafe { ptr_as_ref(index) };
+    let val = unsafe { ptr_as_ref(val) };
     p.bin_subscr_set(ctx, index, val);
 }
 
@@ -1808,9 +1740,10 @@ pub unsafe extern "C-unwind" fn kcl_value_subscr_option(
     a: *const kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) -> *mut kcl_value_ref_t {
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    a.bin_subscr_option(b).into_raw(mut_ptr_as_ref(ctx))
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    a.bin_subscr_option(b)
+        .into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 #[unsafe(no_mangle)]
@@ -1819,9 +1752,9 @@ pub unsafe extern "C-unwind" fn kcl_value_load_attr(
     obj: *const kcl_value_ref_t,
     key: *const kcl_char_t,
 ) -> *const kcl_value_ref_t {
-    let p = ptr_as_ref(obj);
-    let key = c2str(key);
-    let ctx = mut_ptr_as_ref(ctx);
+    let p = unsafe { ptr_as_ref(obj) };
+    let key = unsafe { c2str(key) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     p.load_attr(key).into_raw(ctx)
 }
 
@@ -1831,11 +1764,11 @@ pub unsafe extern "C-unwind" fn kcl_value_load_attr_option(
     p: *const kcl_value_ref_t,
     key: *const kcl_char_t,
 ) -> *const kcl_value_ref_t {
-    let p_ref = ptr_as_ref(p);
+    let p_ref = unsafe { ptr_as_ref(p) };
     if p_ref.is_truthy() {
         unsafe { kcl_value_load_attr(ctx, p, key) }
     } else {
-        kcl_value_None(ctx)
+        unsafe { kcl_value_None(ctx) }
     }
 }
 
@@ -1844,8 +1777,8 @@ pub unsafe extern "C-unwind" fn kcl_value_remove_item(
     a: *mut kcl_value_ref_t,
     b: *const kcl_value_ref_t,
 ) {
-    let a = mut_ptr_as_ref(a);
-    let b = ptr_as_ref(b);
+    let a = unsafe { mut_ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
     if a.is_dict() {
         a.dict_remove(&b.as_str());
     } else if a.is_list() {
@@ -1863,11 +1796,12 @@ pub unsafe extern "C-unwind" fn kcl_value_slice(
     b: *const kcl_value_ref_t,
     step: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let x = ptr_as_ref(x);
-    let a = ptr_as_ref(a);
-    let b = ptr_as_ref(b);
-    let step = ptr_as_ref(step);
-    x.list_slice(a, b, step).into_raw(mut_ptr_as_ref(ctx))
+    let x = unsafe { ptr_as_ref(x) };
+    let a = unsafe { ptr_as_ref(a) };
+    let b = unsafe { ptr_as_ref(b) };
+    let step = unsafe { ptr_as_ref(step) };
+    x.list_slice(a, b, step)
+        .into_raw(unsafe { mut_ptr_as_ref(ctx) })
 }
 
 #[unsafe(no_mangle)]
@@ -1878,11 +1812,11 @@ pub unsafe extern "C-unwind" fn kcl_value_slice_option(
     b: *const kcl_value_ref_t,
     step: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let value = ptr_as_ref(x);
+    let value = unsafe { ptr_as_ref(x) };
     if value.is_truthy() {
         unsafe { kcl_value_slice(ctx, x, a, b, step) }
     } else {
-        kcl_value_None(ctx)
+        unsafe { kcl_value_None(ctx) }
     }
 }
 
@@ -1899,10 +1833,10 @@ pub unsafe extern "C-unwind" fn kcl_schema_backtrack_cache(
     name: *const kcl_char_t,
     runtime_type: *const kcl_value_ref_t,
 ) {
-    let schema = ptr_as_ref(schema);
-    let cache = mut_ptr_as_ref(cache);
-    let cal_map = ptr_as_ref(cal_map);
-    let name = c2str(name);
+    let schema = unsafe { ptr_as_ref(schema) };
+    let cache = unsafe { mut_ptr_as_ref(cache) };
+    let cal_map = unsafe { ptr_as_ref(cal_map) };
+    let name = unsafe { c2str(name) };
     if let Some(v) = cal_map.dict_get_value(name) {
         if v.len() == 1 {
             if let Some(value) = schema.dict_get_value(name) {
@@ -1911,20 +1845,19 @@ pub unsafe extern "C-unwind" fn kcl_schema_backtrack_cache(
         } else if let (Some(cal_map_runtime_type_list), Some(cal_map_meta_line_list)) = (
             cal_map.dict_get_value(&format!("{name}_{CAL_MAP_RUNTIME_TYPE}")),
             cal_map.dict_get_value(&format!("{name}_{CAL_MAP_META_LINE}")),
+        ) && let (Some(cal_map_runtime_type), Some(cal_map_meta_line)) = (
+            cal_map_runtime_type_list.list_get(-1),
+            cal_map_meta_line_list.list_get(-1),
         ) {
-            if let (Some(cal_map_runtime_type), Some(cal_map_meta_line)) = (
-                cal_map_runtime_type_list.list_get(-1),
-                cal_map_meta_line_list.list_get(-1),
-            ) {
-                let runtime_type = ptr_as_ref(runtime_type);
-                let ctx = mut_ptr_as_ref(ctx);
-                let line = ctx.panic_info.kcl_line as i64;
-                let cal_map_meta_line = cal_map_meta_line.as_int();
-                if runtime_type == &cal_map_runtime_type && line >= cal_map_meta_line {
-                    if let Some(value) = schema.dict_get_value(name) {
-                        cache.dict_update_key_value(name, value);
-                    }
-                }
+            let runtime_type = unsafe { ptr_as_ref(runtime_type) };
+            let ctx = unsafe { mut_ptr_as_ref(ctx) };
+            let line = ctx.panic_info.kcl_line as i64;
+            let cal_map_meta_line = cal_map_meta_line.as_int();
+            if runtime_type == &cal_map_runtime_type
+                && line >= cal_map_meta_line
+                && let Some(value) = schema.dict_get_value(name)
+            {
+                cache.dict_update_key_value(name, value);
             }
         }
     }
@@ -1936,9 +1869,9 @@ pub unsafe extern "C-unwind" fn kcl_schema_instances(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let ctx_ref = mut_ptr_as_ref(ctx);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let ctx_ref = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
     if let Some(val) = args.pop_arg_first() {
         let function = val.as_function();
         let full_pkg = args.arg_0().or_else(|| kwargs.kwarg("full_pkg"));
@@ -1953,23 +1886,23 @@ pub unsafe extern "C-unwind" fn kcl_schema_instances(
             let instance_map = ctx_ref.instances.get(runtime_type).unwrap();
             if full_pkg {
                 for (_, v_list) in instance_map {
-                    collect_schema_instances(&mut list, &v_list, runtime_type)
+                    collect_schema_instances(&mut list, v_list, runtime_type)
                 }
             } else {
                 // Get the schema instances only located at the main package.
                 if let Some(v_list) = instance_map.get(MAIN_PKG_PATH) {
-                    collect_schema_instances(&mut list, &v_list, runtime_type)
+                    collect_schema_instances(&mut list, v_list, runtime_type)
                 }
                 if let Some(v_list) = instance_map.get("") {
-                    collect_schema_instances(&mut list, &v_list, runtime_type)
+                    collect_schema_instances(&mut list, v_list, runtime_type)
                 }
             };
             list.into_raw(ctx_ref)
         } else {
-            kcl_value_List(ctx)
+            unsafe { kcl_value_List(ctx) }
         }
     } else {
-        kcl_value_None(ctx)
+        unsafe { kcl_value_None(ctx) }
     }
 }
 
@@ -2011,15 +1944,15 @@ pub unsafe extern "C-unwind" fn kcl_schema_value_check(
     value_type: *const kcl_char_t,
     _any_other: kcl_bool_t,
 ) {
-    let schema_value = mut_ptr_as_ref(schema_value);
-    let schema_config = ptr_as_ref(schema_config);
-    let index_sign_value = ptr_as_ref(index_sign_value);
-    let key_type = c2str(key_type);
-    let value_type = c2str(value_type);
-    let index_key_name = c2str(key_name);
+    let schema_value = unsafe { mut_ptr_as_ref(schema_value) };
+    let schema_config = unsafe { ptr_as_ref(schema_config) };
+    let index_sign_value = unsafe { ptr_as_ref(index_sign_value) };
+    let key_type = unsafe { c2str(key_type) };
+    let value_type = unsafe { c2str(value_type) };
+    let index_key_name = unsafe { c2str(key_name) };
     let has_index_signature = !key_type.is_empty();
 
-    let ctx = mut_ptr_as_ref(ctx);
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     if ctx.cfg.disable_schema_check {
         return;
     }
@@ -2054,7 +1987,7 @@ pub unsafe extern "C-unwind" fn kcl_schema_value_check(
                 );
             }
         } else if !has_index_signature && no_such_attr {
-            let schema_name = c2str(schema_name);
+            let schema_name = unsafe { c2str(schema_name) };
             panic!("No attribute named '{key}' in the schema '{schema_name}'");
         }
     }
@@ -2069,37 +2002,36 @@ pub unsafe extern "C-unwind" fn kcl_schema_do_check_with_index_sign_attr(
     attr_name: *const kcl_char_t,
 ) {
     let check_fn_ptr = check_fn_ptr as u64;
-    let args_value = ptr_as_ref(args);
-    let attr_name = c2str(attr_name);
-    unsafe {
-        let check_fn: SchemaTypeFunc = transmute_copy(&check_fn_ptr);
-        // args_0: config_meta, args_1: config, args_2: schema, args_3: cal_map
-        // Schema check function closure
-        let config_meta = args_value.arg_i(0).unwrap();
-        let config = args_value.arg_i(1).unwrap();
-        let mut schema = args_value.arg_i(2).unwrap();
-        let cal_map = args_value.arg_i(3).unwrap();
-        let backtrack_level_map = args_value.arg_i(4).unwrap();
-        let backtrack_cache = args_value.arg_i(5).unwrap();
-        for (k, _) in &config.as_dict_ref().values {
-            // relaxed keys
-            if schema.attr_map_get(k).is_none() {
-                let value = ValueRef::str(k);
-                schema.dict_update_key_value(attr_name, value);
-                let args = &mut ValueRef::list(None);
-                // Schema check function closure
-                args.list_append(&config_meta);
-                args.list_append(&config);
-                args.list_append(&schema);
-                args.list_append(&cal_map);
-                args.list_append(&backtrack_level_map);
-                args.list_append(&backtrack_cache);
-                let args = args.clone().into_raw(mut_ptr_as_ref(ctx));
-                check_fn(ctx, args, kwargs);
-            }
+    let args_value = unsafe { ptr_as_ref(args) };
+    let attr_name = unsafe { c2str(attr_name) };
+
+    let check_fn: SchemaTypeFunc = unsafe { transmute_copy(&check_fn_ptr) };
+    // args_0: config_meta, args_1: config, args_2: schema, args_3: cal_map
+    // Schema check function closure
+    let config_meta = args_value.arg_i(0).unwrap();
+    let config = args_value.arg_i(1).unwrap();
+    let mut schema = args_value.arg_i(2).unwrap();
+    let cal_map = args_value.arg_i(3).unwrap();
+    let backtrack_level_map = args_value.arg_i(4).unwrap();
+    let backtrack_cache = args_value.arg_i(5).unwrap();
+    for (k, _) in &config.as_dict_ref().values {
+        // relaxed keys
+        if schema.attr_map_get(k).is_none() {
+            let value = ValueRef::str(k);
+            schema.dict_update_key_value(attr_name, value);
+            let args = &mut ValueRef::list(None);
+            // Schema check function closure
+            args.list_append(&config_meta);
+            args.list_append(&config);
+            args.list_append(&schema);
+            args.list_append(&cal_map);
+            args.list_append(&backtrack_level_map);
+            args.list_append(&backtrack_cache);
+            let args = args.clone().into_raw(unsafe { mut_ptr_as_ref(ctx) });
+            unsafe { check_fn(ctx, args, kwargs) };
         }
-        schema.dict_remove(attr_name);
-    };
+    }
+    schema.dict_remove(attr_name);
 }
 
 #[unsafe(no_mangle)]
@@ -2107,8 +2039,8 @@ pub unsafe extern "C-unwind" fn kcl_schema_optional_check(
     ctx: *mut kcl_context_t,
     p: *const kcl_value_ref_t,
 ) {
-    let p = ptr_as_ref(p);
-    let ctx = mut_ptr_as_ref(ctx);
+    let p = unsafe { ptr_as_ref(p) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
     if !ctx.cfg.disable_schema_check {
         p.schema_check_attr_optional(ctx, true);
     }
@@ -2122,10 +2054,10 @@ pub unsafe extern "C-unwind" fn kcl_schema_default_settings(
     kwargs: *const kcl_value_ref_t,
     runtime_type: *const kcl_char_t,
 ) {
-    let schema_value = mut_ptr_as_ref(schema_value);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let runtime_type = c2str(runtime_type);
+    let schema_value = unsafe { mut_ptr_as_ref(schema_value) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let runtime_type = unsafe { c2str(runtime_type) };
     schema_value.set_potential_schema_type(runtime_type);
     schema_value.set_schema_args(args, kwargs);
 }
@@ -2137,11 +2069,11 @@ pub unsafe extern "C-unwind" fn kcl_schema_assert(
     msg: *const kcl_value_ref_t,
     config_meta: *const kcl_value_ref_t,
 ) {
-    let value = ptr_as_ref(value);
-    let msg = ptr_as_ref(msg);
-    let config_meta = ptr_as_ref(config_meta);
+    let value = unsafe { ptr_as_ref(value) };
+    let msg = unsafe { ptr_as_ref(msg) };
+    let config_meta = unsafe { ptr_as_ref(config_meta) };
     if !value.is_truthy() {
-        let ctx = mut_ptr_as_ref(ctx);
+        let ctx = unsafe { mut_ptr_as_ref(ctx) };
         ctx.set_err_type(&RuntimeErrorType::SchemaCheckFailure);
         if let Some(config_meta_file) = config_meta.get_by_key(CONFIG_META_FILENAME) {
             let config_meta_line = config_meta.get_by_key(CONFIG_META_LINE).unwrap();
@@ -2178,11 +2110,11 @@ pub unsafe extern "C-unwind" fn kcl_schema_value_new(
     config_meta: *const kcl_value_ref_t,
     pkgpath: *const kcl_char_t,
 ) -> *const kcl_value_ref_t {
-    let schema_value_or_func = ptr_as_ref(schema_value_or_func);
+    let schema_value_or_func = unsafe { ptr_as_ref(schema_value_or_func) };
     if schema_value_or_func.is_func() {
         let schema_func = schema_value_or_func.as_function();
         let schema_fn_ptr = schema_func.fn_ptr;
-        let ctx_ref = mut_ptr_as_ref(ctx);
+        let ctx_ref = unsafe { mut_ptr_as_ref(ctx) };
         let now_meta_info = ctx_ref.panic_info.clone();
         if ctx_ref.cfg.debug_mode {
             ctx_ref
@@ -2257,14 +2189,14 @@ pub unsafe extern "C-unwind" fn kcl_schema_value_new(
         }
         value
     } else {
-        let config = ptr_as_ref(config);
+        let config = unsafe { ptr_as_ref(config) };
         let result = schema_value_or_func.deep_copy().union_entry(
-            mut_ptr_as_ref(ctx),
+            unsafe { mut_ptr_as_ref(ctx) },
             config,
             true,
             &UnionOptions::default(),
         );
-        result.into_raw(mut_ptr_as_ref(ctx))
+        result.into_raw(unsafe { mut_ptr_as_ref(ctx) })
     }
 }
 
@@ -2275,11 +2207,11 @@ pub unsafe extern "C-unwind" fn kcl_convert_collection_value(
     tpe: *const kcl_char_t,
     is_in_schema: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let value = ptr_as_ref(value);
-    let ctx = mut_ptr_as_ref(ctx);
-    let tpe = c2str(tpe);
+    let value = unsafe { ptr_as_ref(value) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let tpe = unsafe { c2str(tpe) };
     let value = type_pack_and_check(ctx, value, vec![tpe], false);
-    let is_in_schema = ptr_as_ref(is_in_schema);
+    let is_in_schema = unsafe { ptr_as_ref(is_in_schema) };
     // Schema required attribute validating.
     if !is_in_schema.is_truthy() {
         walk_value_mut(&value, &mut |value: &ValueRef| {
@@ -2305,14 +2237,14 @@ pub unsafe extern "C-unwind" fn kcl_schema_get_value(
     args: *mut kcl_value_ref_t,
     kwargs: *mut kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let schema = ptr_as_ref(p);
-    let key = c2str(key);
-    let cal_map = ptr_as_ref(cal_map);
-    let target_attr = c2str(target_attr);
-    let backtrack_level_map = mut_ptr_as_ref(backtrack_level_map);
-    let backtrack_cache = mut_ptr_as_ref(backtrack_cache);
-    let args_org = mut_ptr_as_ref(args);
-    let kwargs = mut_ptr_as_ref(kwargs);
+    let schema = unsafe { ptr_as_ref(p) };
+    let key = unsafe { c2str(key) };
+    let cal_map = unsafe { ptr_as_ref(cal_map) };
+    let target_attr = unsafe { c2str(target_attr) };
+    let backtrack_level_map = unsafe { mut_ptr_as_ref(backtrack_level_map) };
+    let backtrack_cache = unsafe { mut_ptr_as_ref(backtrack_cache) };
+    let args_org = unsafe { mut_ptr_as_ref(args) };
+    let kwargs = unsafe { mut_ptr_as_ref(kwargs) };
     let default_level = ValueRef::int(0);
     let level = backtrack_level_map
         .dict_get_value(key)
@@ -2322,12 +2254,12 @@ pub unsafe extern "C-unwind" fn kcl_schema_get_value(
     // Deal in-place modify and return it self immediately
     if key == target_attr && !is_backtracking {
         match schema.dict_get_value(key) {
-            Some(x) => return x.into_raw(mut_ptr_as_ref(ctx)),
-            None => return kcl_value_Undefined(ctx),
+            Some(x) => return x.into_raw(unsafe { mut_ptr_as_ref(ctx) }),
+            None => return unsafe { kcl_value_Undefined(ctx) },
         }
     }
     if let Some(v) = backtrack_cache.dict_get_value(key) {
-        return v.into_raw(mut_ptr_as_ref(ctx));
+        return v.into_raw(unsafe { mut_ptr_as_ref(ctx) });
     }
     if let Some(attr_code) = cal_map.dict_get_value(key) {
         let now_level = level + 1;
@@ -2340,13 +2272,13 @@ pub unsafe extern "C-unwind" fn kcl_schema_get_value(
                 Some(x) => x,
                 None => ValueRef::undefined(),
             };
-            return value.into_raw(mut_ptr_as_ref(ctx));
+            return value.into_raw(unsafe { mut_ptr_as_ref(ctx) });
         }
         let fn_ptr = &attr_code.values[index];
         let fn_ptr = fn_ptr.as_int();
         // When we calculate other schema attribute values, we retain
         // the row and column number information of the current schema attribute.
-        let ctx_ref = mut_ptr_as_ref(ctx);
+        let ctx_ref = unsafe { mut_ptr_as_ref(ctx) };
         let panic_info = ctx_ref.panic_info.clone();
         unsafe {
             let attr_fn: SchemaTypeFunc = transmute_copy(&fn_ptr);
@@ -2379,8 +2311,8 @@ pub unsafe extern "C-unwind" fn kcl_schema_get_value(
         backtrack_cache.dict_update_key_value(key, value);
     }
     match schema.dict_get_value(key) {
-        Some(x) => x.into_raw(mut_ptr_as_ref(ctx)),
-        None => kcl_value_Undefined(ctx),
+        Some(x) => x.into_raw(unsafe { mut_ptr_as_ref(ctx) }),
+        None => unsafe { kcl_value_Undefined(ctx) },
     }
 }
 
@@ -2390,9 +2322,9 @@ pub unsafe extern "C-unwind" fn kcl_config_attr_map(
     name: *const kcl_char_t,
     type_str: *const kcl_char_t,
 ) {
-    let value = mut_ptr_as_ref(value);
-    let name = c2str(name);
-    let type_str = c2str(type_str);
+    let value = unsafe { mut_ptr_as_ref(value) };
+    let name = unsafe { c2str(name) };
+    let type_str = unsafe { c2str(type_str) };
     value.update_attr_map(name, type_str);
 }
 
@@ -2411,16 +2343,16 @@ pub unsafe extern "C-unwind" fn kcl_value_Decorator(
     config_value: *const kcl_value_ref_t,
     is_schema_target: *const kcl_value_ref_t,
 ) -> *const kcl_decorator_value_t {
-    let name = c2str(name);
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
-    let config_meta = ptr_as_ref(config_meta);
-    let attr_name = c2str(attr_name);
-    let config_value = ptr_as_ref(config_value);
-    let is_schema_target = ptr_as_ref(is_schema_target);
+    let name = unsafe { c2str(name) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let config_meta = unsafe { ptr_as_ref(config_meta) };
+    let attr_name = unsafe { c2str(attr_name) };
+    let config_value = unsafe { ptr_as_ref(config_value) };
+    let is_schema_target = unsafe { ptr_as_ref(is_schema_target) };
     let decorator = DecoratorValue::new(name, args, kwargs);
     decorator.run(
-        mut_ptr_as_ref(ctx),
+        unsafe { mut_ptr_as_ref(ctx) },
         attr_name,
         is_schema_target.as_bool(),
         config_value,
@@ -2439,9 +2371,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_lower(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
-        val.str_lower().into_raw(mut_ptr_as_ref(ctx))
+        val.str_lower().into_raw(unsafe { mut_ptr_as_ref(ctx) })
     } else {
         panic!("invalid self value in str_lower");
     }
@@ -2453,9 +2385,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_upper(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
-        val.str_upper().into_raw(mut_ptr_as_ref(ctx))
+        val.str_upper().into_raw(unsafe { mut_ptr_as_ref(ctx) })
     } else {
         panic!("invalid self value in str_upper");
     }
@@ -2467,9 +2399,10 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_capitalize(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
-        val.str_capitalize().into_raw(mut_ptr_as_ref(ctx))
+        val.str_capitalize()
+            .into_raw(unsafe { mut_ptr_as_ref(ctx) })
     } else {
         panic!("invalid self value in str_capitalize");
     }
@@ -2481,9 +2414,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_chars(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
-        val.str_chars().into_raw(mut_ptr_as_ref(ctx))
+        val.str_chars().into_raw(unsafe { mut_ptr_as_ref(ctx) })
     } else {
         panic!("invalid self value in str_chars");
     }
@@ -2495,13 +2428,13 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_count(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
         if let Some(sub) = args.arg_0() {
             let start = args.arg_i(1);
             let end = args.arg_i(2);
             val.str_count(&sub, start.as_ref(), end.as_ref())
-                .into_raw(mut_ptr_as_ref(ctx))
+                .into_raw(unsafe { mut_ptr_as_ref(ctx) })
         } else {
             panic!("count() takes at least 1 argument (0 given)");
         }
@@ -2516,13 +2449,13 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_endswith(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
         if let Some(suffix) = args.arg_0() {
             let start = args.arg_i(1);
             let end = args.arg_i(2);
             val.str_endswith(&suffix, start.as_ref(), end.as_ref())
-                .into_raw(mut_ptr_as_ref(ctx))
+                .into_raw(unsafe { mut_ptr_as_ref(ctx) })
         } else {
             panic!("endswith() takes at least 1 argument (0 given)");
         }
@@ -2537,13 +2470,13 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_find(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
         if let Some(sub) = args.arg_0() {
             let start = args.arg_i(1);
             let end = args.arg_i(2);
             val.str_find(&sub, start.as_ref(), end.as_ref())
-                .into_raw(mut_ptr_as_ref(ctx))
+                .into_raw(unsafe { mut_ptr_as_ref(ctx) })
         } else {
             panic!("find() takes at least 1 argument (0 given)");
         }
@@ -2558,10 +2491,11 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_format(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
     if let Some(val) = args.pop_arg_first() {
-        val.str_format(args, kwargs).into_raw(mut_ptr_as_ref(ctx))
+        val.str_format(args, kwargs)
+            .into_raw(unsafe { mut_ptr_as_ref(ctx) })
     } else {
         panic!("invalid self value in str_format");
     }
@@ -2573,13 +2507,13 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_index(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
         if let Some(sub) = args.arg_0() {
             let start = args.arg_i(1);
             let end = args.arg_i(2);
             val.str_index(&sub, start.as_ref(), end.as_ref())
-                .into_raw(mut_ptr_as_ref(ctx))
+                .into_raw(unsafe { mut_ptr_as_ref(ctx) })
         } else {
             panic!("index() takes at least 1 argument (0 given)");
         }
@@ -2594,9 +2528,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_isalnum(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
-        val.str_isalnum().into_raw(mut_ptr_as_ref(ctx))
+        val.str_isalnum().into_raw(unsafe { mut_ptr_as_ref(ctx) })
     } else {
         panic!("invalid self value in str_isalnum");
     }
@@ -2608,9 +2542,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_isalpha(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
-        val.str_isalpha().into_raw(mut_ptr_as_ref(ctx))
+        val.str_isalpha().into_raw(unsafe { mut_ptr_as_ref(ctx) })
     } else {
         panic!("invalid self value in str_isalpha");
     }
@@ -2622,9 +2556,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_isdigit(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
-        val.str_isdigit().into_raw(mut_ptr_as_ref(ctx))
+        val.str_isdigit().into_raw(unsafe { mut_ptr_as_ref(ctx) })
     } else {
         panic!("invalid self value in str_isdigit");
     }
@@ -2636,9 +2570,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_islower(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
-        val.str_islower().into_raw(mut_ptr_as_ref(ctx))
+        val.str_islower().into_raw(unsafe { mut_ptr_as_ref(ctx) })
     } else {
         panic!("invalid self value in str_islower");
     }
@@ -2650,9 +2584,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_isspace(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
-        val.str_isspace().into_raw(mut_ptr_as_ref(ctx))
+        val.str_isspace().into_raw(unsafe { mut_ptr_as_ref(ctx) })
     } else {
         panic!("invalid self value in str_isspace");
     }
@@ -2664,9 +2598,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_istitle(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
-        val.str_istitle().into_raw(mut_ptr_as_ref(ctx))
+        val.str_istitle().into_raw(unsafe { mut_ptr_as_ref(ctx) })
     } else {
         panic!("invalid self value in str_istitle");
     }
@@ -2678,9 +2612,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_isupper(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
-        val.str_isupper().into_raw(mut_ptr_as_ref(ctx))
+        val.str_isupper().into_raw(unsafe { mut_ptr_as_ref(ctx) })
     } else {
         panic!("invalid self value in str_isupper");
     }
@@ -2692,10 +2626,10 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_join(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
         let iter = args.arg_i(0).unwrap();
-        val.str_join(&iter).into_raw(mut_ptr_as_ref(ctx))
+        val.str_join(&iter).into_raw(unsafe { mut_ptr_as_ref(ctx) })
     } else {
         panic!("invalid self value in str_join");
     }
@@ -2707,10 +2641,11 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_lstrip(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
         let chars = args.arg_i(0);
-        val.str_lstrip(chars.as_ref()).into_raw(mut_ptr_as_ref(ctx))
+        val.str_lstrip(chars.as_ref())
+            .into_raw(unsafe { mut_ptr_as_ref(ctx) })
     } else {
         panic!("invalid self value in str_lstrip");
     }
@@ -2722,10 +2657,11 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_rstrip(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
         let chars = args.arg_i(0);
-        val.str_rstrip(chars.as_ref()).into_raw(mut_ptr_as_ref(ctx))
+        val.str_rstrip(chars.as_ref())
+            .into_raw(unsafe { mut_ptr_as_ref(ctx) })
     } else {
         panic!("invalid self value in str_rstrip");
     }
@@ -2737,13 +2673,13 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_replace(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
         let old = args.arg_i(0).expect("expect 1 argument, found 0");
         let new = args.arg_i(1).expect("expect 2 arguments, found 1");
         let count = args.arg_i(2);
         val.str_replace(&old, &new, count.as_ref())
-            .into_raw(mut_ptr_as_ref(ctx))
+            .into_raw(unsafe { mut_ptr_as_ref(ctx) })
     } else {
         panic!("invalid self value in str_replace");
     }
@@ -2757,10 +2693,11 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_removeprefix(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
         let prefix = args.arg_i(0).expect("expect 1 argument, found 0");
-        val.str_removeprefix(&prefix).into_raw(mut_ptr_as_ref(ctx))
+        val.str_removeprefix(&prefix)
+            .into_raw(unsafe { mut_ptr_as_ref(ctx) })
     } else {
         panic!("invalid self value in str_removeprefix");
     }
@@ -2774,10 +2711,11 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_removesuffix(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
         let suffix = args.arg_i(0).expect("expect 1 argument, found 0");
-        val.str_removesuffix(&suffix).into_raw(mut_ptr_as_ref(ctx))
+        val.str_removesuffix(&suffix)
+            .into_raw(unsafe { mut_ptr_as_ref(ctx) })
     } else {
         panic!("invalid self value in str_removesuffix");
     }
@@ -2789,13 +2727,13 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_rfind(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
         if let Some(sub) = args.arg_0() {
             let start = args.arg_i(1);
             let end = args.arg_i(2);
             val.str_rfind(&sub, start.as_ref(), end.as_ref())
-                .into_raw(mut_ptr_as_ref(ctx))
+                .into_raw(unsafe { mut_ptr_as_ref(ctx) })
         } else {
             panic!("rfind() takes at least 1 argument (0 given)");
         }
@@ -2810,13 +2748,13 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_rindex(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
         if let Some(sub) = args.arg_0() {
             let start = args.arg_i(1);
             let end = args.arg_i(2);
             val.str_rindex(&sub, start.as_ref(), end.as_ref())
-                .into_raw(mut_ptr_as_ref(ctx))
+                .into_raw(unsafe { mut_ptr_as_ref(ctx) })
         } else {
             panic!("rindex() takes at least 1 argument (0 given)");
         }
@@ -2831,8 +2769,8 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_rsplit(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
     if let Some(val) = args.pop_arg_first() {
         let sep = if let Some(sep) = args.arg_i(0) {
             Some(sep)
@@ -2845,7 +2783,7 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_rsplit(
             kwargs.kwarg("maxsplit")
         };
         val.str_rsplit(sep.as_ref(), maxsplit.as_ref())
-            .into_raw(mut_ptr_as_ref(ctx))
+            .into_raw(unsafe { mut_ptr_as_ref(ctx) })
     } else {
         panic!("invalid self value in str_rsplit");
     }
@@ -2857,8 +2795,8 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_split(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
     if let Some(val) = args.pop_arg_first() {
         let sep = if let Some(sep) = args.arg_i(0) {
             Some(sep)
@@ -2871,7 +2809,7 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_split(
             kwargs.kwarg("maxsplit")
         };
         let x = val.str_split(sep.as_ref(), maxsplit.as_ref());
-        x.into_raw(mut_ptr_as_ref(ctx))
+        x.into_raw(unsafe { mut_ptr_as_ref(ctx) })
     } else {
         panic!("invalid self value in str_split");
     }
@@ -2883,17 +2821,18 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_splitlines(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
-    let kwargs = ptr_as_ref(kwargs);
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
     if let Some(val) = args.pop_arg_first() {
         if let Some(keepends) = args.arg_i(0) {
             val.str_splitlines(Some(&keepends))
-                .into_raw(mut_ptr_as_ref(ctx))
+                .into_raw(unsafe { mut_ptr_as_ref(ctx) })
         } else if let Some(keepends) = kwargs.kwarg("keepends") {
             val.str_splitlines(Some(&keepends))
-                .into_raw(mut_ptr_as_ref(ctx))
+                .into_raw(unsafe { mut_ptr_as_ref(ctx) })
         } else {
-            val.str_splitlines(None).into_raw(mut_ptr_as_ref(ctx))
+            val.str_splitlines(None)
+                .into_raw(unsafe { mut_ptr_as_ref(ctx) })
         }
     } else {
         panic!("invalid self value in str_splitlines");
@@ -2906,13 +2845,13 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_startswith(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
         if let Some(suffix) = args.arg_0() {
             let start = args.arg_i(1);
             let end = args.arg_i(2);
             val.str_startswith(&suffix, start.as_ref(), end.as_ref())
-                .into_raw(mut_ptr_as_ref(ctx))
+                .into_raw(unsafe { mut_ptr_as_ref(ctx) })
         } else {
             panic!("startswith() takes at least 1 argument (0 given)");
         }
@@ -2927,10 +2866,11 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_strip(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
         let chars = args.arg_i(0);
-        val.str_strip(chars.as_ref()).into_raw(mut_ptr_as_ref(ctx))
+        val.str_strip(chars.as_ref())
+            .into_raw(unsafe { mut_ptr_as_ref(ctx) })
     } else {
         panic!("invalid self value in str_strip");
     }
@@ -2942,9 +2882,9 @@ pub unsafe extern "C-unwind" fn kcl_builtin_str_title(
     args: *const kcl_value_ref_t,
     _kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let args = ptr_as_ref(args);
+    let args = unsafe { ptr_as_ref(args) };
     if let Some(val) = args.pop_arg_first() {
-        val.str_title().into_raw(mut_ptr_as_ref(ctx))
+        val.str_title().into_raw(unsafe { mut_ptr_as_ref(ctx) })
     } else {
         panic!("invalid self value in str_title");
     }

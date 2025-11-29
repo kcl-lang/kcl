@@ -1,8 +1,8 @@
-use crate::lint::lint::{LintArray, LintContext};
 use crate::lint::lintpass::LintPass;
 use crate::lint::lints_def::ImportPosition;
 use crate::lint::lints_def::ReImport;
 use crate::lint::lints_def::UnusedImport;
+use crate::lint::types::{LintArray, LintContext};
 use crate::lint_methods;
 use crate::resolver::scope::Scope;
 use kcl_ast::ast;
@@ -82,6 +82,12 @@ macro_rules! declare_combined_lint_pass {
         #[allow(non_snake_case)]
         $v struct $name {
             $($passes: $passes,)*
+        }
+
+        impl Default for $name {
+            fn default() -> Self {
+                Self::new()
+            }
         }
 
         impl $name {
