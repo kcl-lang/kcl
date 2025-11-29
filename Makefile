@@ -13,7 +13,7 @@ build:
 
 .PHONY: build-wasm
 build-wasm:
-	cargo build --target=wasm32-wasip1 --release
+	RUSTFLAGS="-Cpanic=abort -Cllvm-args=-wasm-use-legacy-eh=false" cargo build --target=wasm32-wasip1 --release
 
 .PHONY: build-lsp
 build-lsp:
