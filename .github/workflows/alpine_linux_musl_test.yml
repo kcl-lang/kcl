@@ -35,9 +35,17 @@ jobs:
                 python3 \
                 python3-dev \
                 py3-pip \
-                rust \
-                cargo \
+                curl \
+                ca-certificates \
                 && \
+              curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > rustup-init.sh && \
+              chmod +x rustup-init.sh && \
+              ./rustup-init.sh -y --default-toolchain stable --no-modify-path && \
+              ls -l /root/.cargo/env && \
+              source /root/.cargo/env && \
+              export PATH=/root/.cargo/bin:$PATH && \
+              rustup update stable && \
+              cargo --version && \
               export KCL_BUILD_GIT_SHA=$(git rev-parse HEAD) && \
               git config --global --add safe.directory /workspace && \
               git config --global user.name 'GitHub Action' && \
