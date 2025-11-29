@@ -371,7 +371,6 @@ mod modfile_test {
             Some(&Dependency::Oci(OciSource {
                 oci: "oci://ghcr.io/kcl-lang/helloworld".to_string(),
                 tag: Some("0.1.1".to_string()),
-                ..Default::default()
             }))
         );
         assert_eq!(

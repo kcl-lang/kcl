@@ -46,7 +46,7 @@ const INVALID_FILE_RESULT: &[&str] = &[
 
 fn construct_full_path(path: &str) -> Result<String> {
     let mut cargo_file_path = PathBuf::from(CARGO_DIR);
-    cargo_file_path.push(&rel_path());
+    cargo_file_path.push(rel_path());
     cargo_file_path.push(path);
     Ok(cargo_file_path
         .to_str()
@@ -233,6 +233,9 @@ mod test_expr_builder {
     #[test]
     /// Test `expr_builder.build()` with files that do not exist.
     fn test_build_with_noexist_file() {
+        let regex =
+            Regex::new(r"^Failed to Load '.*'\n\nCaused by:\n    0: Failed to Load '.*'\n .*")
+                .unwrap();
         for i in 0..2 {
             let file_path = construct_full_path(&format!(
                 "json/{}.{}",
@@ -244,13 +247,7 @@ mod test_expr_builder {
                     panic!("This test case should be failed.")
                 }
                 Err(err) => {
-                    assert!(
-                        Regex::new(
-                            r"^Failed to Load '.*'\n\nCaused by:\n    0: Failed to Load '.*'\n .*"
-                        )
-                        .unwrap()
-                        .is_match(&format!("{:?}", err))
-                    )
+                    assert!(regex.is_match(&format!("{:?}", err)))
                 }
             };
         }

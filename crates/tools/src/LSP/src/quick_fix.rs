@@ -202,7 +202,7 @@ mod tests {
         let uri = Url::from_file_path(file).unwrap();
         let code_actions = quick_fix(&uri, &diagnostics);
 
-        let expected = vec![
+        let expected = [
             CodeActionOrCommand::CodeAction(CodeAction {
                 title: "ReimportWarning".to_string(),
                 kind: Some(CodeActionKind::QUICKFIX),

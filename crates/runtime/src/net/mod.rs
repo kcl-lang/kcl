@@ -1107,7 +1107,7 @@ mod test_net {
             unsafe {
                 let actual = &*kcl_net_split_host_port(
                     &mut ctx,
-                    &ValueRef::list(Some(&[&ip_end_point])),
+                    &ValueRef::list(Some(&[ip_end_point])),
                     &ValueRef::dict(None),
                 );
                 assert_eq!(expected, actual);
@@ -1233,7 +1233,7 @@ mod test_net {
             unsafe {
                 let actual = &*kcl_net_join_host_port(
                     &mut ctx,
-                    &ValueRef::list(Some(&[&host, &port])),
+                    &ValueRef::list(Some(&[host, port])),
                     &ValueRef::dict(None),
                 );
                 assert_eq!(expected, actual);
@@ -1381,7 +1381,7 @@ mod test_net {
             unsafe {
                 let actual = &*kcl_net_parse_CIDR(
                     &mut ctx,
-                    &ValueRef::list(Some(&[&cidr])),
+                    &ValueRef::list(Some(&[cidr])),
                     &ValueRef::dict(None),
                 );
                 assert_eq!(expected, actual, "{} positional", cidr);
@@ -2038,7 +2038,7 @@ mod test_net {
                 .collect::<Vec<_>>();
             let expected_valueref = expected
                 .iter()
-                .map(|x| ValueRef::str(*x))
+                .map(|x| ValueRef::str(x))
                 .collect::<Vec<_>>();
             unsafe {
                 let actual = &*kcl_net_CIDR_subnets(

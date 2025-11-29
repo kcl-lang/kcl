@@ -624,8 +624,8 @@ unindented line
 
     #[test]
     fn test_parse_doc() {
-        let mut content = read_doc_content();
-        let doc = parse_schema_doc_string(&mut content);
+        let content = read_doc_content();
+        let doc = parse_schema_doc_string(&content);
         assert_eq!(
             doc.summary,
             "Server is the common user interface for long-running services adopting the best practice of Kubernetes."

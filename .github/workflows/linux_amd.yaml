@@ -39,7 +39,7 @@ jobs:
         run: cargo fmt --check
         shell: bash
       - name: Code clippy check
-        run: cargo clippy --no-deps -r
+        run: make lint-all
         shell: bash
       - name: Grammar test
         run: export PATH=$PATH:$PWD/_build/dist/linux/core && make && make test-grammar

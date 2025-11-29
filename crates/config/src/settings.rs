@@ -500,7 +500,7 @@ mod settings_test {
     fn test_merge_settings() -> anyhow::Result<()> {
         let settings1 = load_file(SETTINGS_FILE)?;
         let settings2 = load_file(SETTINGS_FILE)?;
-        let settings = merge_settings(&vec![settings1, settings2]);
+        let settings = merge_settings(&[settings1, settings2]);
         if let Some(kcl_cli_configs) = settings.kcl_cli_configs {
             let files = vec![
                 String::from("../main.k"),

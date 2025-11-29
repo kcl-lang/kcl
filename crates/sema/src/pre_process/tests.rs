@@ -1,3 +1,5 @@
+#![allow(clippy::arc_with_non_send_sync)]
+
 use std::sync::Arc;
 
 use super::*;
@@ -177,7 +179,7 @@ fn test_config_merge() {
     let module = program
         .get_module(module)
         .expect("Failed to acquire module lock")
-        .expect(&format!("module {:?} not found in program", module));
+        .unwrap_or_else(|| panic!("module {:?} not found in program", module));
     if let ast::Stmt::Unification(unification) = &module.body[0].node {
         let schema = &unification.value.node;
         if let ast::Expr::Config(config) = &schema.config.node {
@@ -224,7 +226,7 @@ fn test_config_override() {
     let module = program
         .get_module(module)
         .expect("Failed to acquire module lock")
-        .expect(&format!("module {:?} not found in program", module));
+        .unwrap_or_else(|| panic!("module {:?} not found in program", module));
     if let ast::Stmt::Unification(unification) = &module.body[2].node {
         let schema = &unification.value.node;
         if let ast::Expr::Config(config) = &schema.config.node {
@@ -274,11 +276,11 @@ fn test_skip_merge_program() {
     let config1 = program
         .get_module(config1)
         .expect("Failed to acquire module lock")
-        .expect(&format!("module {:?} not found in program", config1));
+        .unwrap_or_else(|| panic!("module {:?} not found in program", config1));
     let config2 = program
         .get_module(config2)
         .expect("Failed to acquire module lock")
-        .expect(&format!("module {:?} not found in program", config2));
+        .unwrap_or_else(|| panic!("module {:?} not found in program", config2));
     if let ast::Stmt::Unification(unification) = &config1.body[0].node {
         let schema = &unification.value.node;
         if let ast::Expr::Config(config) = &schema.config.node {

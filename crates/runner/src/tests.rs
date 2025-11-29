@@ -1,3 +1,5 @@
+#![allow(clippy::arc_with_non_send_sync)]
+
 use crate::exec_program;
 use crate::{execute, runner::ExecProgramArgs};
 use anyhow::Result;
@@ -208,7 +210,7 @@ fn test_exec_with_err_result() {
 }
 
 fn clean_dir(path: String) {
-    if let Ok(_) = fs::remove_dir_all(path) {}
+    if fs::remove_dir_all(path).is_ok() {}
 }
 
 #[test]

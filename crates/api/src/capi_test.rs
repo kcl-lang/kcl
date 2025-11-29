@@ -102,7 +102,7 @@ fn test_c_api_get_schema_type_mapping() {
         "get-schema-type-mapping.response.json",
         |r| {
             let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-            for (_, s_ty) in &mut r.schema_type_mapping {
+            for s_ty in r.schema_type_mapping.values_mut() {
                 let filename = {
                     let filename = s_ty.filename.adjust_canonicalization();
                     match filename.strip_prefix(root.to_str().unwrap()) {
@@ -111,7 +111,7 @@ fn test_c_api_get_schema_type_mapping() {
                     }
                 };
 
-                s_ty.filename = filename.replace('.', "").replace('/', "").replace('\\', "")
+                s_ty.filename = filename.replace(['.', '/', '\\'], "")
             }
         },
     );
@@ -281,13 +281,7 @@ where
 fn test_c_api<A, R, F>(svc_name: &str, input: &str, output: &str, wrapper: F)
 where
     A: Message + DeserializeOwned,
-    R: Message
-        + Default
-        + std::fmt::Debug
-        + PartialEq
-        + DeserializeOwned
-        + serde::Serialize
-        + ?Sized,
+    R: Message + Default + std::fmt::Debug + PartialEq + DeserializeOwned + serde::Serialize,
     F: Fn(&mut R),
 {
     let _test_lock = TEST_MUTEX.lock().unwrap();

@@ -155,28 +155,28 @@ mod tests {
             compile_test_file("src/test_data/document_symbol/document_symbol.k");
 
         let mut res = document_symbol(file.as_str(), &gs).unwrap();
-        let mut expect = vec![];
-        expect.push(build_document_symbol(
-            "schema Person4",
-            SymbolKind::STRUCT,
-            ((0, 7), (0, 14)),
-            Some(vec![build_document_symbol(
-                "name",
-                SymbolKind::PROPERTY,
-                ((1, 4), (1, 8)),
+        let mut expect = vec![
+            build_document_symbol(
+                "schema Person4",
+                SymbolKind::STRUCT,
+                ((0, 7), (0, 14)),
+                Some(vec![build_document_symbol(
+                    "name",
+                    SymbolKind::PROPERTY,
+                    ((1, 4), (1, 8)),
+                    None,
+                    Some("str".to_string()),
+                )]),
+                Some("Person4".to_string()),
+            ),
+            build_document_symbol(
+                "p",
+                SymbolKind::VARIABLE,
+                ((3, 0), (3, 1)),
                 None,
-                Some("str".to_string()),
-            )]),
-            Some("Person4".to_string()),
-        ));
-        expect.push(build_document_symbol(
-            "p",
-            SymbolKind::VARIABLE,
-            ((3, 0), (3, 1)),
-            None,
-            Some("Person4".to_string()),
-        ));
-
+                Some("Person4".to_string()),
+            ),
+        ];
         expect.sort_by(|a, b| a.name.cmp(&b.name));
 
         match &mut res {

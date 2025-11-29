@@ -515,7 +515,7 @@ fn test_list_variables() {
         let specs = vec![spec.to_string()];
         let result = list_variables(vec![file.clone()], specs, None).unwrap();
         assert_eq!(
-            result.variables.get(spec).unwrap().get(0).unwrap().value,
+            result.variables.get(spec).unwrap().first().unwrap().value,
             expected,
             "{spec}"
         );
@@ -524,14 +524,14 @@ fn test_list_variables() {
                 .variables
                 .get(spec)
                 .unwrap()
-                .get(0)
+                .first()
                 .unwrap()
                 .type_name,
             expected_name,
             "{spec}"
         );
         assert_eq!(
-            result.variables.get(spec).unwrap().get(0).unwrap().op_sym,
+            result.variables.get(spec).unwrap().first().unwrap().op_sym,
             op_sym,
             "{spec}"
         );
@@ -660,7 +660,7 @@ fn test_list_all_variables() {
         println!("{:?}", spec);
         let result = list_variables(vec![file.clone()], vec![], None).unwrap();
         assert_eq!(
-            result.variables.get(spec).unwrap().get(0).unwrap().value,
+            result.variables.get(spec).unwrap().first().unwrap().value,
             expected,
             "{spec}"
         );
@@ -669,14 +669,14 @@ fn test_list_all_variables() {
                 .variables
                 .get(spec)
                 .unwrap()
-                .get(0)
+                .first()
                 .unwrap()
                 .type_name,
             expected_name,
             "{spec}"
         );
         assert_eq!(
-            result.variables.get(spec).unwrap().get(0).unwrap().op_sym,
+            result.variables.get(spec).unwrap().first().unwrap().op_sym,
             op_sym,
             "{spec}"
         );
@@ -764,7 +764,7 @@ fn test_list_unsupported_variables() {
         let specs = vec![spec.to_string()];
         let result = list_variables(vec![file.clone()], specs, None).unwrap();
         assert_eq!(
-            result.variables.get(spec).unwrap().get(0).unwrap().value,
+            result.variables.get(spec).unwrap().first().unwrap().value,
             expected_code,
             "{spec}",
         );
@@ -875,8 +875,8 @@ fn test_overridefile_with_invalid_kcl() {
 
     let result = override_file(
         &simple_path.display().to_string(),
-        &vec!["a=b".to_string()],
-        &vec![],
+        &["a=b".to_string()],
+        &[],
     )
     .unwrap();
 

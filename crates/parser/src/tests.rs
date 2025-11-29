@@ -255,7 +255,7 @@ pub fn test_import_vendor() {
     let sm = SourceMap::new(FilePathMapping::empty());
     let sess = Arc::new(ParseSession::with_source_map(Arc::new(sm)));
 
-    let test_cases = vec![
+    let test_cases = [
         ("assign.k", vec!["__main__", "assign", "assign.assign"]),
         (
             "config_expr.k",
@@ -311,7 +311,7 @@ pub fn test_import_vendor() {
                     if name == pkg {
                         if name == "__main__" {
                             assert_eq!(modules.len(), 1);
-                            let module = m.get_module(modules.get(0).unwrap()).unwrap().unwrap();
+                            let module = m.get_module(modules.first().unwrap()).unwrap().unwrap();
                             assert_eq!(module.filename, test_case_path);
                         } else {
                             modules.into_iter().for_each(|module| {
@@ -362,7 +362,7 @@ pub fn test_import_vendor_without_kclmod() {
                 if name == pkg {
                     if name == "__main__" {
                         assert_eq!(modules.len(), 1);
-                        let module = m.get_module(modules.get(0).unwrap()).unwrap().unwrap();
+                        let module = m.get_module(modules.first().unwrap()).unwrap().unwrap();
                         assert_eq!(module.filename, test_case_path);
                     } else {
                         modules.into_iter().for_each(|module| {
@@ -535,7 +535,7 @@ fn test_import_vendor_by_external_arguments() {
         .canonicalize()
         .unwrap();
 
-    let test_cases = vec![
+    let test_cases = [
         (
             "import_by_external_assign.k",
             "assign",
@@ -602,7 +602,7 @@ fn test_import_vendor_by_external_arguments() {
                 if name == pkg {
                     if name == "__main__" {
                         assert_eq!(modules.len(), 1);
-                        let module = m.get_module(modules.get(0).unwrap()).unwrap().unwrap();
+                        let module = m.get_module(modules.first().unwrap()).unwrap().unwrap();
                         assert_eq!(module.filename, test_case_path);
                     } else {
                         modules.into_iter().for_each(|module| {
@@ -708,8 +708,10 @@ fn test_dir_with_k_code_list() {
         .canonicalize()
         .unwrap();
 
-    let mut opts = LoadProgramOptions::default();
-    opts.k_code_list = vec!["test_code = 1".to_string()];
+    let opts = LoadProgramOptions {
+        k_code_list: vec!["test_code = 1".to_string()],
+        ..Default::default()
+    };
 
     match load_program(
         sess.clone(),
@@ -765,7 +767,7 @@ fn test_expand_input_files_with_kcl_mod() {
         path.join("**").join("main.k").to_string_lossy().to_string(),
         "${KCL_MOD}/testdata/expand_file_pattern/KCL_MOD".to_string(),
     ];
-    let expected_files = vec![
+    let expected_files = [
         path.join("kcl1/kcl2/main.k").to_string_lossy().to_string(),
         path.join("kcl1/kcl4/main.k").to_string_lossy().to_string(),
         path.join("kcl1/main.k").to_string_lossy().to_string(),
@@ -852,16 +854,18 @@ fn parse_all_file_under_path() {
     let b = testpath.join("b");
 
     let sess = ParseSessionRef::default();
-    let mut opt = LoadProgramOptions::default();
-    opt.vendor_dirs = vec![get_vendor_home()];
-    opt.package_maps
+    let mut opts = LoadProgramOptions {
+        vendor_dirs: vec![get_vendor_home()],
+        ..Default::default()
+    };
+
+    opts.package_maps
         .insert("b".to_string(), b.to_str().unwrap().to_string());
-    opt.package_maps.insert(
+    opts.package_maps.insert(
         "helloworld".to_string(),
         helloworld.to_str().unwrap().to_string(),
     );
-
-    let res = load_all_files_under_paths(sess.clone(), &[main], Some(opt), None).unwrap();
+    let res = load_all_files_under_paths(sess.clone(), &[main], Some(opts), None).unwrap();
 
     assert_eq!(res.program.pkgs.keys().len(), 1);
     assert_eq!(res.program.pkgs_not_imported.keys().len(), 3);

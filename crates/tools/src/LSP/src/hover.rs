@@ -804,7 +804,7 @@ mod tests {
         };
         let got = hover(&pos, &gs).unwrap();
 
-        let expect_content = vec![
+        let expect_content = [
             lsp_types::MarkedString::String("__main__".to_string()),
             lsp_types::MarkedString::LanguageString(lsp_types::LanguageString {
                 language: "KCL".to_string(),
