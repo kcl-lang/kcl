@@ -19,39 +19,34 @@ pub fn goto_def(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<lsp_types::GotoDef
     let mut res = IndexSet::with_hasher(DefaultHashBuilder::default());
     let def = find_def(kcl_pos, gs, true);
 
-    match def {
-        Some(def_ref) => match gs.get_symbols().get_symbol(def_ref) {
-            Some(def) => match def_ref.get_kind() {
-                kcl_sema::core::symbol::SymbolKind::Package => {
-                    let pkg_info = match gs.get_packages().get_package_info(&def.get_name()) {
-                        Some(pkg_info) => pkg_info,
-                        None => return None,
+    if let Some(def_ref) = def
+        && let Some(def) = gs.get_symbols().get_symbol(def_ref)
+    {
+        match def_ref.get_kind() {
+            kcl_sema::core::symbol::SymbolKind::Package => {
+                let pkg_info = gs.get_packages().get_package_info(&def.get_name())?;
+                if pkg_info.is_system() {
+                    return None;
+                }
+                for file in pkg_info.get_kfile_paths() {
+                    let dummy_pos = KCLPos {
+                        filename: file.clone(),
+                        line: 1,
+                        column: None,
                     };
-                    if pkg_info.is_system() {
-                        return None;
-                    }
-                    for file in pkg_info.get_kfile_paths() {
-                        let dummy_pos = KCLPos {
-                            filename: file.clone(),
-                            line: 1,
-                            column: None,
-                        };
-                        res.insert((dummy_pos.clone(), dummy_pos));
-                    }
+                    res.insert((dummy_pos.clone(), dummy_pos));
                 }
-                _ => {
-                    res.insert(def.get_range());
-                }
-            },
-            None => {}
-        },
-        None => {}
+            }
+            _ => {
+                res.insert(def.get_range());
+            }
+        }
     }
     positions_to_goto_def_resp(&res)
 }
 
 pub(crate) fn find_def(kcl_pos: &KCLPos, gs: &GlobalState, exact: bool) -> Option<SymbolRef> {
-    let def = if exact {
+    if exact {
         match gs.look_up_exact_symbol(kcl_pos) {
             Some(symbol_ref) => match gs.get_symbols().get_symbol(symbol_ref) {
                 Some(symbol) => symbol.get_definition(),
@@ -67,18 +62,15 @@ pub(crate) fn find_def(kcl_pos: &KCLPos, gs: &GlobalState, exact: bool) -> Optio
             },
             None => None,
         }
-    };
-
-    def
+    }
 }
 
 pub(crate) fn find_symbol(kcl_pos: &KCLPos, gs: &GlobalState, exact: bool) -> Option<SymbolRef> {
-    let res = if exact {
+    if exact {
         gs.look_up_exact_symbol(kcl_pos)
     } else {
         gs.look_up_closest_symbol(kcl_pos)
-    };
-    res
+    }
 }
 
 // Convert kcl position to GotoDefinitionResponse. This function will convert to

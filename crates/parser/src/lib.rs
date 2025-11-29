@@ -1,3 +1,4 @@
+#![allow(clippy::arc_with_non_send_sync)]
 //! Copyright The KCL Authors. All rights reserved.
 
 pub mod entry;

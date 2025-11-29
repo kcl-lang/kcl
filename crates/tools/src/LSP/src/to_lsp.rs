@@ -17,7 +17,7 @@ use std::{
 /// The position in lsp protocol is different with position in ast node whose line number is 1 based.
 pub fn lsp_pos(pos: &KCLPos) -> Position {
     Position {
-        line: pos.line.checked_sub(1).unwrap_or(0) as u32,
+        line: pos.line.saturating_sub(1) as u32,
         character: pos.column.unwrap_or(0) as u32,
     }
 }
@@ -131,7 +131,7 @@ pub fn kcl_diag_to_lsp_diags(diag: &KCLDiagnostic) -> HashMap<String, Vec<Diagno
             code,
         );
 
-        diags_map.entry(filename).or_insert(vec![]).push(lsp_diag);
+        diags_map.entry(filename).or_default().push(lsp_diag);
     }
     diags_map
 }

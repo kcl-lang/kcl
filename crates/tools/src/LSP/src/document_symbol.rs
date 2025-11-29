@@ -16,67 +16,47 @@ pub fn document_symbol(file: &str, gs: &GlobalState) -> Option<lsp_types::Docume
         line: 1,
         column: Some(0),
     };
-    if let Some(scope) = gs.get_scopes().get_root_scope(MAIN_PKG.to_owned()) {
-        if let Some(defs) = gs.get_all_defs_in_scope(scope, &dummy_pos) {
-            for symbol_ref in defs {
-                match gs.get_symbols().get_symbol(symbol_ref) {
-                    Some(symbol) => {
-                        let def = symbol.get_definition();
-                        match def {
-                            Some(def) => {
-                                let symbol_range = symbol.get_range();
-                                // filter current file symbols
-                                if symbol_range.0.filename == file {
-                                    match def.get_kind() {
-                                        KCLSymbolKind::Schema => {
-                                            match &mut symbol_to_document_symbol(symbol) {
-                                                Some(schema_symbol) => {
-                                                    let module_info = gs
-                                                        .get_packages()
-                                                        .get_module_info(&dummy_pos.filename);
-                                                    let attrs = symbol.get_all_attributes(
-                                                        gs.get_symbols(),
-                                                        module_info,
-                                                    );
-                                                    let mut children = vec![];
+    if let Some(scope) = gs.get_scopes().get_root_scope(MAIN_PKG.to_owned())
+        && let Some(defs) = gs.get_all_defs_in_scope(scope, &dummy_pos)
+    {
+        for symbol_ref in defs {
+            if let Some(symbol) = gs.get_symbols().get_symbol(symbol_ref) {
+                let def = symbol.get_definition();
+                if let Some(def) = def {
+                    let symbol_range = symbol.get_range();
+                    // filter current file symbols
+                    if symbol_range.0.filename == file {
+                        match def.get_kind() {
+                            KCLSymbolKind::Schema => {
+                                if let Some(schema_symbol) = &mut symbol_to_document_symbol(symbol)
+                                {
+                                    let module_info =
+                                        gs.get_packages().get_module_info(&dummy_pos.filename);
+                                    let attrs =
+                                        symbol.get_all_attributes(gs.get_symbols(), module_info);
+                                    let mut children = vec![];
 
-                                                    for attr in attrs {
-                                                        match gs.get_symbols().get_symbol(attr) {
-                                                            Some(attr_symbol) => {
-                                                                match symbol_to_document_symbol(
-                                                                    attr_symbol,
-                                                                ) {
-                                                                    Some(symbol) => {
-                                                                        children.push(symbol)
-                                                                    }
-                                                                    None => {}
-                                                                }
-                                                            }
-                                                            None => {}
-                                                        }
-                                                    }
-
-                                                    schema_symbol.children = Some(children);
-                                                    schema_symbol.name =
-                                                        format!("schema {}", schema_symbol.name);
-                                                    document_symbols.push(schema_symbol.clone());
-                                                }
-                                                None => {}
-                                            }
-                                        }
-                                        _ => {
-                                            if let Some(symbol) = symbol_to_document_symbol(symbol)
-                                            {
-                                                document_symbols.push(symbol)
-                                            }
+                                    for attr in attrs {
+                                        if let Some(attr_symbol) = gs.get_symbols().get_symbol(attr)
+                                            && let Some(symbol) =
+                                                symbol_to_document_symbol(attr_symbol)
+                                        {
+                                            children.push(symbol)
                                         }
                                     }
+
+                                    schema_symbol.children = Some(children);
+                                    schema_symbol.name = format!("schema {}", schema_symbol.name);
+                                    document_symbols.push(schema_symbol.clone());
                                 }
                             }
-                            None => {}
+                            _ => {
+                                if let Some(symbol) = symbol_to_document_symbol(symbol) {
+                                    document_symbols.push(symbol)
+                                }
+                            }
                         }
                     }
-                    None => {}
                 }
             }
         }

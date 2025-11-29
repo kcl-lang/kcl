@@ -608,11 +608,11 @@ impl Variable {
     }
 
     pub fn is_union(&self) -> bool {
-        self.op_sym == ast::ConfigEntryOperation::Union.symbol().to_string()
+        self.op_sym == ast::ConfigEntryOperation::Union.symbol()
     }
 
     pub fn is_override(&self) -> bool {
-        self.op_sym == ast::ConfigEntryOperation::Override.symbol().to_string()
+        self.op_sym == ast::ConfigEntryOperation::Override.symbol()
     }
 
     pub fn is_dict(&self) -> bool {
@@ -632,43 +632,41 @@ impl Variable {
 
         if var.is_union() {
             // For int, float, str and bool types, when their values are different, they are considered as conflicts.
-            if self.is_base_type() && self.is_base_type() && self.value == self.value {
+            if self.is_base_type() && var.is_base_type() && self.value == var.value {
                 return self;
-            } else {
-                if self.is_dict() && var.is_dict() {
-                    let mut dict = BTreeMap::new();
-                    for entry in self.dict_entries.iter() {
+            } else if self.is_dict() && var.is_dict() {
+                let mut dict = BTreeMap::new();
+                for entry in self.dict_entries.iter() {
+                    dict.insert(entry.key.clone(), entry.value.clone());
+                }
+
+                for entry in var.dict_entries.iter() {
+                    if let Some(v) = dict.get_mut(&entry.key) {
+                        v.merge(&entry.value);
+                    } else {
                         dict.insert(entry.key.clone(), entry.value.clone());
                     }
+                }
 
-                    for entry in var.dict_entries.iter() {
-                        if let Some(v) = dict.get_mut(&entry.key) {
-                            v.merge(&entry.value);
-                        } else {
-                            dict.insert(entry.key.clone(), entry.value.clone());
-                        }
-                    }
+                self.dict_entries = dict
+                    .iter()
+                    .map(|(k, v)| DictEntry {
+                        key: k.clone(),
+                        value: v.clone(),
+                    })
+                    .collect();
 
-                    self.dict_entries = dict
-                        .iter()
-                        .map(|(k, v)| DictEntry {
-                            key: k.clone(),
-                            value: v.clone(),
-                        })
-                        .collect();
-
-                    let expr: Option<Box<ast::Node<ast::Expr>>> =
-                        build_expr_from_string(&self.to_string());
-                    if let Some(expr) = expr {
-                        self.value = print_ast_node(ASTNode::Expr(&expr));
-                    } else {
-                        self.value = self.to_string();
-                    }
+                let expr: Option<Box<ast::Node<ast::Expr>>> =
+                    build_expr_from_string(&self.to_string());
+                if let Some(expr) = expr {
+                    self.value = print_ast_node(ASTNode::Expr(&expr));
+                } else {
+                    self.value = self.to_string();
                 }
             }
         }
 
-        return self;
+        self
     }
 }
 
@@ -678,6 +676,7 @@ pub struct ListOptions {
 
 /// list_options provides users with the ability to parse kcl program and get all option
 /// calling information.
+#[allow(clippy::arc_with_non_send_sync)]
 pub fn list_variables(
     files: Vec<String>,
     specs: Vec<String>,
@@ -691,8 +690,10 @@ pub fn list_variables(
         None,
     )?;
 
-    let mut opts = Options::default();
-    opts.merge_program = true;
+    let opts = Options {
+        merge_program: true,
+        ..Default::default()
+    };
     pre_process_program(&mut load_result.program, &opts);
 
     for (_, modules) in load_result.program.pkgs.iter() {
@@ -701,7 +702,7 @@ pub fn list_variables(
                 .program
                 .get_module(module)
                 .expect("Failed to acquire module lock")
-                .expect(&format!("module {:?} not found in program", module));
+                .unwrap_or_else(|| panic!("module {:?} not found in program", module));
             selector.walk_module(&module);
         }
     }
@@ -714,7 +715,7 @@ pub fn list_variables(
                 .map(|(k, v)| (k.clone(), v.clone()))
                 .collect();
             for (key, mut vars) in keys_and_vars {
-                let mut tmp_var = vars.get(0).unwrap().clone();
+                let mut tmp_var = vars.first().unwrap().clone();
                 for var in vars.iter_mut().skip(1) {
                     tmp_var.merge(var);
                 }

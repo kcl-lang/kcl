@@ -1,3 +1,5 @@
+#![allow(clippy::type_complexity)]
+
 use crossbeam_channel::Sender;
 use lsp_server::{ExtractError, Request};
 use serde::Serialize;
@@ -53,10 +55,10 @@ impl<'a> NotificationDispatcher<'a> {
 
     /// Wraps-up the dispatcher. If the notification was not handled, log an error.
     pub fn finish(&mut self) {
-        if let Some(notification) = &self.notification {
-            if !notification.method.starts_with("$/") {
-                log::error!("unhandled notification: {:?}", notification);
-            }
+        if let Some(notification) = &self.notification
+            && !notification.method.starts_with("$/")
+        {
+            log::error!("unhandled notification: {:?}", notification);
         }
     }
 }
@@ -125,7 +127,7 @@ impl<'a> RequestDispatcher<'a> {
                 match &result {
                     Err(e)
                         if e.downcast_ref::<LSPError>()
-                            .map_or(false, |lsp_err| matches!(lsp_err, LSPError::Retry)) =>
+                            .is_some_and(|lsp_err| matches!(lsp_err, LSPError::Retry)) =>
                     {
                         sender.send(Task::Retry(req)).unwrap();
                     }
@@ -169,7 +171,7 @@ impl<'a> RequestDispatcher<'a> {
                 match &result {
                     Err(e)
                         if e.downcast_ref::<LSPError>()
-                            .map_or(false, |lsp_err| matches!(lsp_err, LSPError::Retry)) =>
+                            .is_some_and(|lsp_err| matches!(lsp_err, LSPError::Retry)) =>
                     {
                         sender.send(Task::Retry(req.clone())).unwrap();
                         let mut request_retry = request_retry.write();

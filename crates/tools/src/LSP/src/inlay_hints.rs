@@ -61,7 +61,7 @@ pub fn inlay_hints(file: &str, gs: &GlobalState) -> Option<Vec<InlayHint>> {
                 }
             }
         }
-        inlay_hints.extend(line_hint.values().map(|h| generate_inlay_hint(h)));
+        inlay_hints.extend(line_hint.values().map(generate_inlay_hint));
     }
 
     Some(
@@ -77,8 +77,8 @@ fn generate_inlay_hint(hint: &SymbolHint) -> KCLInlayHint {
     let text_edits = match hint.kind {
         SymbolHintKind::TypeHint(_) => Some(vec![TextEdit {
             range: Range {
-                start: position.clone(),
-                end: position.clone(),
+                start: position,
+                end: position,
             },
             new_text: part.value.clone(),
         }]),
@@ -96,7 +96,7 @@ fn generate_inlay_hint(hint: &SymbolHint) -> KCLInlayHint {
 #[inline]
 fn into_lsp_inlay_hint(hint: &KCLInlayHint) -> InlayHint {
     InlayHint {
-        position: hint.position.clone(),
+        position: hint.position,
         label: lsp_types::InlayHintLabel::LabelParts(vec![hint.part.clone()]),
         kind: Some(hint.kind),
         text_edits: hint.text_edits.clone(),

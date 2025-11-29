@@ -5,37 +5,28 @@ use lsp_types::Location;
 use std::collections::HashSet;
 
 pub fn find_refs(kcl_pos: &KCLPos, gs: &GlobalState) -> Option<Vec<Location>> {
-    match gs.look_up_exact_symbol(kcl_pos) {
-        Some(symbol_ref) => match gs.get_symbols().get_symbol(symbol_ref) {
-            Some(symbol) => match symbol.get_definition() {
-                Some(def_ref) => {
-                    if let Some(def) = gs.get_symbols().get_symbol(def_ref) {
-                        let refs = def.get_references();
-                        let mut refs_locs: HashSet<(KCLPos, KCLPos)> = refs
-                            .iter()
-                            .filter_map(|symbol| {
-                                gs.get_symbols()
-                                    .get_symbol(*symbol)
-                                    .map(|sym| sym.get_range())
-                            })
-                            .collect();
-                        refs_locs.insert(symbol.get_range());
-                        refs_locs.insert(def.get_range());
-                        let mut res: Vec<Location> = refs_locs
-                            .iter()
-                            .filter_map(|(start, end)| {
-                                lsp_location(start.filename.clone(), &start, &end).map(|loc| loc)
-                            })
-                            .collect();
-                        res.sort_by_key(|e| e.range.start.line);
-                        return Some(res);
-                    }
-                }
-                None => {}
-            },
-            None => {}
-        },
-        None => {}
+    if let Some(symbol_ref) = gs.look_up_exact_symbol(kcl_pos)
+        && let Some(symbol) = gs.get_symbols().get_symbol(symbol_ref)
+        && let Some(def_ref) = symbol.get_definition()
+        && let Some(def) = gs.get_symbols().get_symbol(def_ref)
+    {
+        let refs = def.get_references();
+        let mut refs_locs: HashSet<(KCLPos, KCLPos)> = refs
+            .iter()
+            .filter_map(|symbol| {
+                gs.get_symbols()
+                    .get_symbol(*symbol)
+                    .map(|sym| sym.get_range())
+            })
+            .collect();
+        refs_locs.insert(symbol.get_range());
+        refs_locs.insert(def.get_range());
+        let mut res: Vec<Location> = refs_locs
+            .iter()
+            .filter_map(|(start, end)| lsp_location(start.filename.clone(), start, end))
+            .collect();
+        res.sort_by_key(|e| e.range.start.line);
+        return Some(res);
     };
     None
 }

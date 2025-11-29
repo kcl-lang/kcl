@@ -115,7 +115,7 @@ pub(crate) fn filter_kcl_config_file(paths: &[PathBuf]) -> Vec<PathBuf> {
                 || p.file_name().map(|n| n.to_str().unwrap())
                     == Some(kcl_config::settings::DEFAULT_SETTING_FILE)
         })
-        .map(|p| p.clone())
+        .cloned()
         .collect()
 }
 
@@ -186,10 +186,10 @@ pub(crate) fn inner_most_expr_in_stmt(
 ) -> (Option<Node<Expr>>, Option<Node<Expr>>) {
     match stmt {
         Stmt::Assign(assign_stmt) => {
-            if let Some(ty) = &assign_stmt.ty {
-                if ty.contains_pos(pos) {
-                    return (build_identifier_from_ty_string(ty, pos), schema_def);
-                }
+            if let Some(ty) = &assign_stmt.ty
+                && ty.contains_pos(pos)
+            {
+                return (build_identifier_from_ty_string(ty, pos), schema_def);
             }
             walk_if_contains!(assign_stmt.value, pos, schema_def);
 
@@ -359,10 +359,10 @@ pub(crate) fn inner_most_expr(
         Expr::Identifier(_) => (Some(expr.clone()), schema_def),
         Expr::Target(target) => {
             for path in &target.paths {
-                if let MemberOrIndex::Index(index) = path {
-                    if index.contains_pos(pos) {
-                        return (Some(*index.clone()), schema_def);
-                    }
+                if let MemberOrIndex::Index(index) = path
+                    && index.contains_pos(pos)
+                {
+                    return (Some(*index.clone()), schema_def);
                 }
             }
             (Some(expr.clone()), schema_def)
@@ -553,10 +553,10 @@ fn inner_most_expr_in_config_entry(
     pos: &KCLPos,
     schema_def: Option<Node<Expr>>,
 ) -> (Option<Node<Expr>>, Option<Node<Expr>>) {
-    if let Some(key) = &config_entry.node.key {
-        if key.contains_pos(pos) {
-            return inner_most_expr(key, pos, schema_def);
-        }
+    if let Some(key) = &config_entry.node.key
+        && key.contains_pos(pos)
+    {
+        return inner_most_expr(key, pos, schema_def);
     }
     if config_entry.node.value.contains_pos(pos) {
         inner_most_expr(&config_entry.node.value, pos, None)
@@ -633,23 +633,23 @@ fn build_identifier_from_ty_string(ty: &NodeRef<Type>, pos: &KCLPos) -> Option<N
         )),
         Type::Basic(_) => None,
         Type::List(list_ty) => {
-            if let Some(inner) = &list_ty.inner_type {
-                if inner.contains_pos(pos) {
-                    return build_identifier_from_ty_string(inner, pos);
-                }
+            if let Some(inner) = &list_ty.inner_type
+                && inner.contains_pos(pos)
+            {
+                return build_identifier_from_ty_string(inner, pos);
             }
             None
         }
         Type::Dict(dict_ty) => {
-            if let Some(key_ty) = &dict_ty.key_type {
-                if key_ty.contains_pos(pos) {
-                    return build_identifier_from_ty_string(key_ty, pos);
-                }
+            if let Some(key_ty) = &dict_ty.key_type
+                && key_ty.contains_pos(pos)
+            {
+                return build_identifier_from_ty_string(key_ty, pos);
             }
-            if let Some(value_ty) = &dict_ty.value_type {
-                if value_ty.contains_pos(pos) {
-                    return build_identifier_from_ty_string(value_ty, pos);
-                }
+            if let Some(value_ty) = &dict_ty.value_type
+                && value_ty.contains_pos(pos)
+            {
+                return build_identifier_from_ty_string(value_ty, pos);
             }
             None
         }
