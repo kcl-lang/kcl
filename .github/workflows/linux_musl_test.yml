@@ -1,0 +1,62 @@
+name: Build and Test on Linux AMD64
+on:
+  pull_request:
+    branches:
+     - main
+  push:
+    branches:
+     - main
+jobs:
+  build-and-test:
+    # Ref: https://github.com/actions/runner-images/tree/main/images/linux
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          submodules: "true"
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.23
+
+      # Prerequisite
+
+      - name: Install Python3 (for Grammar test)
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git wget curl make
+          sudo apt-get install python3 python3-pip -y
+      - name: Install rust nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.91
+          override: true
+          components: clippy, rustfmt
+
+      - name: KCL Lib GLIBC 2.17 Build and Release
+        shell: bash
+        run: |
+          pip3 install ziglang
+          cargo install --locked cargo-zigbuild
+          rustup target add x86_64-unknown-linux-musl
+          cargo zigbuild --target x86_64-unknown-linux-musl -r -p kcl-lib
+          mkdir -p _build/dist/linux
+          cp -f target/x86_64-unknown-linux-musl/release/libkcl.so _build/dist/linux
+          make release
+
+      - name: Read VERSION file
+        run: |
+          VERSION=$(cargo pkgid -p kcl-api | cut -d'@' -f2)
+          echo "VERSION=v${VERSION}" >> $GITHUB_ENV
+
+      - name: Rename artifact name with version
+        run: sudo mv -f _build/dist/linux/kcl-latest-linux-amd64.tar.gz _build/dist/linux/kcl-${{ env.VERSION }}-linux-musl-amd64.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kcl-${{ env.VERSION }}-linux-musl-amd64
+          if-no-files-found: error
+          path: _build/dist/linux/kcl-${{ env.VERSION }}-linux-musl-amd64.tar.gz
