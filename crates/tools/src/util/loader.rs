@@ -138,11 +138,11 @@ impl Loader<located_yaml::Yaml> for DataLoader {
     }
 }
 
-impl Loader<serde_yaml_ng::Value> for DataLoader {
+impl Loader<serde_yaml::Value> for DataLoader {
     /// Load data into Yaml value.
-    fn load(&self) -> Result<serde_yaml_ng::Value> {
+    fn load(&self) -> Result<serde_yaml::Value> {
         let v = match self.kind {
-            LoaderKind::YAML => serde_yaml_ng::from_str(self.get_data())
+            LoaderKind::YAML => serde_yaml::from_str(self.get_data())
                 .with_context(|| format!("Failed to String '{}' to Yaml", self.get_data()))?,
             _ => {
                 bail!("Failed to String to Yaml Value")

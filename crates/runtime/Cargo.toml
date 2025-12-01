@@ -8,7 +8,7 @@ kcl-primitives.workspace = true
 
 serde_json = "1.0.132"
 serde = { version = "1", features = ["derive"] }
-serde_yaml_ng = "0.10.0"
+serde_yaml.workspace = true
 lazy_static = "1.4.0"
 generational-arena = "0.2.9"
 base64 = "0.13.0"
