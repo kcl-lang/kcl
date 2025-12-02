@@ -63,17 +63,17 @@ impl ExprBuilder {
     }
 }
 
-impl ExprGenerator<serde_yaml_ng::Value> for ExprBuilder {
+impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
     fn generate(
         &self,
-        value: &serde_yaml_ng::Value,
+        value: &serde_yaml::Value,
         schema_name: &Option<String>,
     ) -> Result<NodeRef<Expr>> {
         match value {
-            serde_yaml_ng::Value::Null => Ok(node_ref!(Expr::NameConstantLit(NameConstantLit {
+            serde_yaml::Value::Null => Ok(node_ref!(Expr::NameConstantLit(NameConstantLit {
                 value: NameConstant::None,
             }))),
-            serde_yaml_ng::Value::Bool(j_bool) => {
+            serde_yaml::Value::Bool(j_bool) => {
                 let name_const = match NameConstant::try_from(*j_bool) {
                     Ok(nc) => nc,
                     Err(err) => {
@@ -85,7 +85,7 @@ impl ExprGenerator<serde_yaml_ng::Value> for ExprBuilder {
                     value: name_const
                 })))
             }
-            serde_yaml_ng::Value::Number(j_num) => {
+            serde_yaml::Value::Number(j_num) => {
                 if j_num.is_f64() {
                     let number_lit = match j_num.as_f64() {
                         Some(num_f64) => num_f64,
@@ -114,11 +114,11 @@ impl ExprGenerator<serde_yaml_ng::Value> for ExprBuilder {
                     bail!("{FAIL_LOAD_VALIDATED_ERR_MSG}, Unsupported Unsigned 64");
                 }
             }
-            serde_yaml_ng::Value::String(j_string) => {
+            serde_yaml::Value::String(j_string) => {
                 let str_lit = From::from(j_string.to_string());
                 Ok(node_ref!(Expr::StringLit(str_lit)))
             }
-            serde_yaml_ng::Value::Sequence(j_arr) => {
+            serde_yaml::Value::Sequence(j_arr) => {
                 let mut j_arr_ast_nodes: Vec<NodeRef<Expr>> = Vec::new();
                 for j_arr_item in j_arr {
                     j_arr_ast_nodes.push(
@@ -131,7 +131,7 @@ impl ExprGenerator<serde_yaml_ng::Value> for ExprBuilder {
                     elts: j_arr_ast_nodes
                 })))
             }
-            serde_yaml_ng::Value::Mapping(j_map) => {
+            serde_yaml::Value::Mapping(j_map) => {
                 let mut config_entries: Vec<NodeRef<ConfigEntry>> = Vec::new();
 
                 for (k, v) in j_map.iter() {
@@ -172,7 +172,7 @@ impl ExprGenerator<serde_yaml_ng::Value> for ExprBuilder {
                     None => Ok(config_expr),
                 }
             }
-            serde_yaml_ng::Value::Tagged(v) => {
+            serde_yaml::Value::Tagged(v) => {
                 bail!(
                     "{FAIL_LOAD_VALIDATED_ERR_MSG}, Unsupported Yaml tag {}",
                     v.tag

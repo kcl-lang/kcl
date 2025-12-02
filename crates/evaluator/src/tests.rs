@@ -84,6 +84,7 @@ evaluator_snapshot! {assign_stmt_7, r#"_a = [{key.key = [0] * 2}] * 2
 _a[0].key.key[0] = 1
 a = _a
 "#}
+evaluator_snapshot! {assign_stmt_8, r#"on = 'on'"#}
 
 evaluator_snapshot! {aug_assign_stmt_0, r#"_a = 1
 _a += 1

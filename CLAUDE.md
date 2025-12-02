@@ -160,7 +160,7 @@ make build-wasm     # WASM target
 
 ### Major Dependencies
 - **serde/serde_json** - Serialization
-- **serde_yaml_ng** - YAML support (note: migrated from serde_yaml)
+- **3rdparty/serde_yaml** - YAML support (note: migrated from serde_yaml)
 - **prost/protobuf** - Protocol buffers
 - **tokio** - Async runtime
 - **lsp-server/lsp-types** - Language Server Protocol
@@ -294,7 +294,7 @@ make test-grammar
 4. **Cross-platform support** - Consider multiple platforms when making changes
 5. **Documentation** - Keep docs in sync with code changes
 6. **The codebase uses workspaces** - Changes may affect multiple crates
-7. **Recent migration from serde_yaml to serde_yaml_ng** - Use the new library
+7. **Recent migration from serde_yaml to serde_yaml** - Use the new library
 
 ## Quick Reference
 

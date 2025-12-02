@@ -1,7 +1,7 @@
 //! Copyright The KCL Authors. All rights reserved.
 
 extern crate serde_json;
-extern crate serde_yaml_ng;
+extern crate serde_yaml;
 
 use crate::*;
 
@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 /// - ignore_none: Whether to ignore the attribute whose value is `None` (defaults to false).
 /// - sep: Which separator to use between YAML documents (defaults to "---").
 ///
-/// TODO: We have not yet supported the following options because serde_yaml_ng
+/// TODO: We have not yet supported the following options because serde_yaml
 /// does not support these capabilities yet.
 /// Ref: https://github.com/dtolnay/serde-yaml/issues/337
 /// - indent: Which kind of indentation to use when emitting (defaults to 2).
@@ -44,17 +44,17 @@ impl Default for YamlEncodeOptions {
 
 impl ValueRef {
     /// Decode a yaml single document string to a ValueRef.
-    /// Returns [serde_yaml_ng::Error] when decoding fails.
-    pub fn from_yaml(ctx: &mut Context, s: &str) -> Result<Self, serde_yaml_ng::Error> {
+    /// Returns [serde_yaml::Error] when decoding fails.
+    pub fn from_yaml(ctx: &mut Context, s: &str) -> Result<Self, serde_yaml::Error> {
         // We use JsonValue to implement the KCL universal serialization object.
-        let json_value: JsonValue = serde_yaml_ng::from_str(s)?;
+        let json_value: JsonValue = serde_yaml::from_str(s)?;
         Ok(Self::from_json(ctx, serde_json::to_string(&json_value).unwrap().as_ref()).unwrap())
     }
 
     /// Decode yaml stream string that contains `---` to a ValueRef.
-    /// Returns [serde_yaml_ng::Error] when decoding fails.
-    pub fn from_yaml_stream(ctx: &mut Context, s: &str) -> Result<Self, serde_yaml_ng::Error> {
-        let documents = serde_yaml_ng::Deserializer::from_str(s);
+    /// Returns [serde_yaml::Error] when decoding fails.
+    pub fn from_yaml_stream(ctx: &mut Context, s: &str) -> Result<Self, serde_yaml::Error> {
+        let documents = serde_yaml::Deserializer::from_str(s);
         let mut result = ValueRef::list_value(None);
         for document in documents {
             let json_value: JsonValue = JsonValue::deserialize(document)?;
@@ -71,9 +71,9 @@ impl ValueRef {
     }
 
     /// Decode yaml stream string that contains `---` to a ValueRef.
-    /// Returns [serde_yaml_ng::Error] when decoding fails.
-    pub fn list_from_yaml_stream(ctx: &mut Context, s: &str) -> Result<Self, serde_yaml_ng::Error> {
-        let documents = serde_yaml_ng::Deserializer::from_str(s);
+    /// Returns [serde_yaml::Error] when decoding fails.
+    pub fn list_from_yaml_stream(ctx: &mut Context, s: &str) -> Result<Self, serde_yaml::Error> {
+        let documents = serde_yaml::Deserializer::from_str(s);
         let mut result = ValueRef::list_value(None);
         for document in documents {
             let json_value: JsonValue = JsonValue::deserialize(document)?;
@@ -84,8 +84,8 @@ impl ValueRef {
 
     pub fn to_yaml(&self) -> Vec<u8> {
         let json = self.to_json_string();
-        let yaml_value: serde_yaml_ng::Value = serde_json::from_str(json.as_ref()).unwrap();
-        match serde_yaml_ng::to_string(&yaml_value) {
+        let yaml_value: serde_yaml::Value = serde_json::from_str(json.as_ref()).unwrap();
+        match serde_yaml::to_string(&yaml_value) {
             Ok(s) => s.into_bytes(),
             _ => Vec::new(),
         }
@@ -93,8 +93,8 @@ impl ValueRef {
 
     pub fn to_yaml_string(&self) -> String {
         let json = self.to_json_string();
-        let yaml_value: serde_yaml_ng::Value = serde_json::from_str(json.as_ref()).unwrap();
-        match serde_yaml_ng::to_string(&yaml_value) {
+        let yaml_value: serde_yaml::Value = serde_json::from_str(json.as_ref()).unwrap();
+        match serde_yaml::to_string(&yaml_value) {
             Ok(s) => {
                 let s = s.strip_prefix("---\n").unwrap_or_else(|| s.as_ref());
                 s.to_string()
@@ -113,8 +113,8 @@ impl ValueRef {
             ignore_none: opts.ignore_none,
         };
         let json = self.to_json_string_with_options(&json_opts);
-        let yaml_value: serde_yaml_ng::Value = serde_json::from_str(json.as_ref()).unwrap();
-        match serde_yaml_ng::to_string(&yaml_value) {
+        let yaml_value: serde_yaml::Value = serde_json::from_str(json.as_ref()).unwrap();
+        match serde_yaml::to_string(&yaml_value) {
             Ok(s) => {
                 let s = s.strip_prefix("---\n").unwrap_or_else(|| s.as_ref());
                 s.to_string()
@@ -129,9 +129,11 @@ mod test_value_yaml {
     use crate::*;
 
     #[test]
-    fn test_serde_yaml_ng_on_str() {
-        let on_str = serde_yaml_ng::to_string("on").unwrap();
-        assert_eq!(on_str, "on\n");
+    fn test_serde_yaml_1_1_str() {
+        let on_str = serde_yaml::to_string("on").unwrap();
+        assert_eq!(on_str, "'on'\n");
+        let yes_str = serde_yaml::to_string("yes").unwrap();
+        assert_eq!(yes_str, "'yes'\n");
     }
 
     #[test]
