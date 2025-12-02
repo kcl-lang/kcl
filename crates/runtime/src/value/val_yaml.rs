@@ -129,9 +129,11 @@ mod test_value_yaml {
     use crate::*;
 
     #[test]
-    fn test_serde_yaml_on_str() {
+    fn test_serde_yaml_1_1_str() {
         let on_str = serde_yaml::to_string("on").unwrap();
-        assert_eq!(on_str, "on\n");
+        assert_eq!(on_str, "'on'\n");
+        let yes_str = serde_yaml::to_string("yes").unwrap();
+        assert_eq!(yes_str, "'yes'\n");
     }
 
     #[test]
