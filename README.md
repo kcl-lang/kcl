@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/github/release/kcl-lang/kcl.svg">
   <img src="https://img.shields.io/github/license/kcl-lang/kcl.svg">
   <a href="https://www.bestpractices.dev/projects/7867"><img src="https://www.bestpractices.dev/projects/7867/badge"></a>
-  <img src="https://img.shields.io/github/downloads/kcl-lang/kcl/total?label=Github%20downloads&logo=github">
+  <img src="https://img.shields.io/github/downloads/kcl-lang/cli/total?label=Github%20downloads&logo=github">
   <img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkcl-lang%2Fkcl.svg?type=shield">
   <a href="https://deepwiki.com/kcl-lang/kcl"><img src="https://deepwiki.com/badge.svg"></a>
 </p>
