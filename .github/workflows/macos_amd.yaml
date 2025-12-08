@@ -13,7 +13,7 @@ jobs:
     # Ref: https://github.com/actions/runner-images/tree/main/images/macos
     strategy:
       matrix:
-        os: [macos-13]
+        os: [macos-15-intel]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Git checkout
