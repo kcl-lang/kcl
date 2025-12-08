@@ -1,4 +1,7 @@
-use crate::gpyrpc::{Decorator, Example, KclType};
+use crate::{
+    IndexSignature,
+    gpyrpc::{Decorator, Example, KclType},
+};
 use kcl_primitives::IndexSet;
 use kcl_sema::ty::{DictType, SchemaType, Type};
 use std::collections::HashMap;
@@ -55,6 +58,14 @@ pub(crate) fn kcl_schema_ty_to_pb_ty(schema_ty: &SchemaType) -> KclType {
             .base
             .as_ref()
             .map(|base| Box::new(kcl_schema_ty_to_pb_ty(base))),
+        index_signature: schema_ty.index_signature.as_ref().map(|i| {
+            Box::new(IndexSignature {
+                key_name: i.key_name.clone(),
+                key: Some(Box::new(kcl_ty_to_pb_ty(&i.key_ty))),
+                val: Some(Box::new(kcl_ty_to_pb_ty(&i.val_ty))),
+                any_other: i.any_other,
+            })
+        }),
         ..Default::default()
     }
 }

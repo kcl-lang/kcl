@@ -1452,6 +1452,19 @@ message KclType {
 	map<string, Example> examples = 15;
 	// Base schema if applicable.
 	KclType base_schema = 16;
+	// Optional schema index signature
+	optional IndexSignature index_signature = 17;
+}
+
+// Message representing an index signature in KCL.
+message IndexSignature {
+	// The optional index signature key name
+	optional string key_name = 1;
+	// Key type of the index signature.
+	KclType key = 2;
+	// Value type of the index signature.
+	KclType val = 3;
+	bool any_other = 4;
 }
 
 // Message representing a decorator in KCL.
