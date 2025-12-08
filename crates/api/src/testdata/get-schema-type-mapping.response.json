@@ -37,7 +37,9 @@
             "pkg_path": "ccc",
             "description": "",
             "examples": {},
-            "base_schema": null
+            "base_schema": null,
+            "function": null,
+            "index_signature": null
         },
         "a": {
             "type": "schema",
@@ -46,27 +48,147 @@
             "schema_name": "B",
             "schema_doc": "",
             "properties": {
+                "my_func": {
+                    "type": "function",
+                    "union_types": [],
+                    "default": "",
+                    "schema_name": "",
+                    "schema_doc": "",
+                    "properties": {},
+                    "required": [],
+                    "key": null,
+                    "item": null,
+                    "line": 1,
+                    "decorators": [],
+                    "filename": "",
+                    "pkg_path": "",
+                    "description": "",
+                    "examples": {},
+                    "base_schema": null,
+                    "function": {
+                        "params": [
+                            {
+                                "name": "",
+                                "ty": {
+                                    "type": "int",
+                                    "union_types": [],
+                                    "default": "",
+                                    "schema_name": "",
+                                    "schema_doc": "",
+                                    "properties": {},
+                                    "required": [],
+                                    "key": null,
+                                    "item": null,
+                                    "line": 0,
+                                    "decorators": [],
+                                    "filename": "",
+                                    "pkg_path": "",
+                                    "description": "",
+                                    "examples": {},
+                                    "base_schema": null,
+                                    "function": null,
+                                    "index_signature": null
+                                }
+                            }
+                        ],
+                        "return_ty": {
+                            "type": "int",
+                            "union_types": [],
+                            "default": "",
+                            "schema_name": "",
+                            "schema_doc": "",
+                            "properties": {},
+                            "required": [],
+                            "key": null,
+                            "item": null,
+                            "line": 0,
+                            "decorators": [],
+                            "filename": "",
+                            "pkg_path": "",
+                            "description": "",
+                            "examples": {},
+                            "base_schema": null,
+                            "function": null,
+                            "index_signature": null
+                        }
+                    },
+                    "index_signature": null
+                },
                 "name": {
                     "type": "str",
-                    "line": 2
-                },
-                "my_func": {
-                    "type": "(int) -> int",
-                    "line": 1
+                    "union_types": [],
+                    "default": "",
+                    "schema_name": "",
+                    "schema_doc": "",
+                    "properties": {},
+                    "required": [],
+                    "key": null,
+                    "item": null,
+                    "line": 2,
+                    "decorators": [],
+                    "filename": "",
+                    "pkg_path": "",
+                    "description": "",
+                    "examples": {},
+                    "base_schema": null,
+                    "function": null,
+                    "index_signature": null
                 }
             },
             "required": [
                 "name"
             ],
+            "key": null,
+            "item": null,
+            "line": 0,
+            "decorators": [],
             "filename": "./src/testdata/get_schema_ty/bbb/main.k",
             "pkg_path": "bbb",
+            "description": "",
+            "examples": {},
+            "base_schema": null,
+            "function": null,
             "index_signature": {
                 "key_name": null,
                 "key": {
-                    "type": "str"
+                    "type": "str",
+                    "union_types": [],
+                    "default": "",
+                    "schema_name": "",
+                    "schema_doc": "",
+                    "properties": {},
+                    "required": [],
+                    "key": null,
+                    "item": null,
+                    "line": 0,
+                    "decorators": [],
+                    "filename": "",
+                    "pkg_path": "",
+                    "description": "",
+                    "examples": {},
+                    "base_schema": null,
+                    "function": null,
+                    "index_signature": null
                 },
                 "val": {
-                    "type": "int"
+                    "type": "int",
+                    "union_types": [],
+                    "default": "",
+                    "schema_name": "",
+                    "schema_doc": "",
+                    "properties": {},
+                    "required": [],
+                    "key": null,
+                    "item": null,
+                    "line": 0,
+                    "decorators": [],
+                    "filename": "",
+                    "pkg_path": "",
+                    "description": "",
+                    "examples": {},
+                    "base_schema": null,
+                    "function": null,
+                    "index_signature": null
                 },
                 "any_other": true
             }

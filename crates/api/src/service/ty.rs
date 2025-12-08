@@ -1,5 +1,5 @@
 use crate::{
-    IndexSignature,
+    FunctionType, IndexSignature, Parameter,
     gpyrpc::{Decorator, Example, KclType},
 };
 use kcl_primitives::IndexSet;
@@ -25,6 +25,7 @@ pub(crate) fn kcl_ty_to_pb_ty(ty: &Type) -> KclType {
             union_types: types.iter().map(|ty| kcl_ty_to_pb_ty(ty)).collect(),
             ..Default::default()
         },
+        kcl_sema::ty::TypeKind::Function(function_ty) => kcl_function_ty_to_pb_ty(function_ty),
         kcl_sema::ty::TypeKind::Schema(schema_ty) => kcl_schema_ty_to_pb_ty(schema_ty),
         _ => KclType {
             r#type: ty.ty_str(),
@@ -33,7 +34,8 @@ pub(crate) fn kcl_ty_to_pb_ty(ty: &Type) -> KclType {
     }
 }
 
-/// Convert the kcl sematic type to the kcl protobuf type.
+/// Convert the kcl sematic schema type to the kcl protobuf type.
+#[inline]
 pub(crate) fn kcl_schema_ty_to_pb_ty(schema_ty: &SchemaType) -> KclType {
     KclType {
         r#type: "schema".to_string(),
@@ -66,6 +68,26 @@ pub(crate) fn kcl_schema_ty_to_pb_ty(schema_ty: &SchemaType) -> KclType {
                 any_other: i.any_other,
             })
         }),
+        ..Default::default()
+    }
+}
+
+/// Convert the kcl sematic function type to the kcl protobuf type.
+#[inline]
+pub(crate) fn kcl_function_ty_to_pb_ty(function_ty: &kcl_sema::ty::FunctionType) -> KclType {
+    KclType {
+        r#type: "function".to_string(),
+        function: Some(Box::new(FunctionType {
+            params: function_ty
+                .params
+                .iter()
+                .map(|p| Parameter {
+                    name: p.name.clone(),
+                    ty: Some(kcl_ty_to_pb_ty(&p.ty)),
+                })
+                .collect(),
+            return_ty: Some(Box::new(kcl_ty_to_pb_ty(&function_ty.return_ty))),
+        })),
         ..Default::default()
     }
 }
