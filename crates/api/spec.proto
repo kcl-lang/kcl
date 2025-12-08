@@ -1420,7 +1420,7 @@ message UpdateDependenciesResult {
 
 // Message representing a KCL type.
 message KclType {
-	// Type name (e.g., schema, dict, list, str, int, float, bool, any, union, number_multiplier).
+	// Type name (e.g., schema, dict, list, str, int, float, bool, any, union, function, number_multiplier).
 	string type = 1;
 	// Union types if applicable.
 	repeated KclType union_types = 2;
@@ -1452,8 +1452,20 @@ message KclType {
 	map<string, Example> examples = 15;
 	// Base schema if applicable.
 	KclType base_schema = 16;
+	// Function type if the KclType is a function.
+	optional FunctionType function = 17;
 	// Optional schema index signature
-	optional IndexSignature index_signature = 17;
+	optional IndexSignature index_signature = 18;
+}
+
+message FunctionType {
+	repeated Parameter params = 1;
+	KclType return_ty = 2;
+}
+
+message Parameter {
+	string name = 1;
+	KclType ty = 2;
 }
 
 // Message representing an index signature in KCL.
