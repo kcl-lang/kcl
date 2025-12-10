@@ -35,10 +35,10 @@ jobs:
         run: |
           pip3 install ziglang
           cargo install --locked cargo-zigbuild
-          rustup target add aarch64-unknown-linux-musl
-          cargo zigbuild --target aarch64-unknown-linux-musl -r -p kcl-lib
-          mkdir -p _build/dist/linux
-          cp -f target/aarch64-unknown-linux-musl/release/libkcl.a _build/dist/linux/core
+          rustup target add x86_64-unknown-linux-musl
+          cargo zigbuild --target x86_64-unknown-linux-musl -r -p kcl-lib
+          mkdir -p _build/dist/linux/core
+          cp -f target/x86_64-unknown-linux-musl/release/libkcl.a _build/dist/linux/core
           make release
 
       - name: Read VERSION file
