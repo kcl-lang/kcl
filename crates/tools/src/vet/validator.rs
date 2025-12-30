@@ -217,7 +217,7 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool> {
                     .get_module_mut(module)
                     .expect("Failed to acquire module lock")
                     .unwrap_or_else(|| panic!("module {:?} not found in program", module));
-                m.body.insert(0, assign_stmt);
+                m.body.push(assign_stmt);
             } else {
                 return Err(anyhow::anyhow!("No main module found"));
             }

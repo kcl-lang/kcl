@@ -337,6 +337,7 @@ mod test_validater {
         "plain_value.k",
         "complex.k",
         "with_import.k",
+        "lambda_check.k",
     ];
     const KCL_TEST_CASES_WITH_CODE: &[&str] =
         &["test.k", "simple.k", "list.k", "plain_value.k", "complex.k"];
@@ -358,6 +359,48 @@ mod test_validater {
         println!("test_invalid_validate_with_json_pos - PASS");
         test_invalid_validate_with_yaml_pos();
         println!("test_invalid_validate_with_yaml_pos - PASS");
+        test_validate_with_lambda_check();
+        println!("test_validate_with_lambda_check - PASS");
+    }
+
+    /// Test validation with lambda functions in check blocks.
+    /// This test ensures that lambda functions are properly evaluated
+    /// when used in schema check blocks during validation.
+    fn test_validate_with_lambda_check() {
+        for (i, file_suffix) in VALIDATED_FILE_TYPE.iter().enumerate() {
+            let validated_file_path = construct_full_path(&format!(
+                "{}.{}",
+                Path::new("validate_cases").join("lambda_check.k").display(),
+                file_suffix
+            ))
+            .unwrap();
+
+            let kcl_file_path = construct_full_path(
+                &Path::new("validate_cases")
+                    .join("lambda_check.k")
+                    .display()
+                    .to_string(),
+            )
+            .unwrap();
+
+            let opt = ValidateOption::new(
+                None,
+                "value".to_string(),
+                validated_file_path.clone(),
+                *LOADER_KIND[i],
+                Some(kcl_file_path.to_string()),
+                None,
+                Default::default(),
+            );
+
+            match validate(opt) {
+                Ok(res) => assert!(res, "lambda_check validation should succeed"),
+                Err(err) => panic!(
+                    "lambda_check validation failed: {:?}\nvalidated_file: {}",
+                    err, validated_file_path
+                ),
+            }
+        }
     }
 
     fn test_validate() {
