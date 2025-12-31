@@ -170,6 +170,7 @@ pub(crate) fn merge_setters(
 /// backtracking meta information.
 #[derive(Debug, Default)]
 pub struct BacktrackMeta {
+    pub stmt_id: Option<AstIndex>,
     pub stopped: Option<AstIndex>,
     pub is_break: bool,
     pub kind: SetterKind,

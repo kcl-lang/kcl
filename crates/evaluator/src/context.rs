@@ -280,6 +280,7 @@ impl<'ctx> Evaluator<'ctx> {
     pub(crate) fn push_backtrack_meta(&self, setter: &Setter) {
         let meta = &mut self.backtrack_meta.borrow_mut();
         meta.push(BacktrackMeta {
+            stmt_id: Some(setter.stmt_id.clone()),
             stopped: setter.stopped.clone(),
             is_break: false,
             kind: setter.kind.clone(),
@@ -294,17 +295,25 @@ impl<'ctx> Evaluator<'ctx> {
 
     #[inline]
     pub(crate) fn is_backtrack_only_if(&self) -> bool {
-        let meta = &mut self.backtrack_meta.borrow_mut();
+        let meta = self.backtrack_meta.borrow_mut();
+        let current_ast_id = self.ast_id.borrow().clone();
         meta.last()
-            .map(|m| matches!(m.kind, SetterKind::If))
+            .map(|m| {
+                let stmt_id_matches = m.stmt_id.as_ref().is_none_or(|id| current_ast_id == *id);
+                matches!(m.kind, SetterKind::If) && stmt_id_matches
+            })
             .unwrap_or_default()
     }
 
     #[inline]
     pub(crate) fn is_backtrack_only_or_else(&self) -> bool {
-        let meta = &mut self.backtrack_meta.borrow_mut();
+        let meta = self.backtrack_meta.borrow_mut();
+        let current_ast_id = self.ast_id.borrow().clone();
         meta.last()
-            .map(|m| matches!(m.kind, SetterKind::OrElse))
+            .map(|m| {
+                let stmt_id_matches = m.stmt_id.as_ref().is_none_or(|id| current_ast_id == *id);
+                matches!(m.kind, SetterKind::OrElse) && stmt_id_matches
+            })
             .unwrap_or_default()
     }
 
