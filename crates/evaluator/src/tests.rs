@@ -586,6 +586,171 @@ fn test_if_stmt_setters() {
     assert_eq!(var_setters.len(), 3);
 }
 
+#[test]
+fn test_nested_if_stmt_variable_assignment() {
+    // Test for bug fix: nested if statements should correctly assign variables
+    // Issue: https://github.com/kcl-lang/kcl/issues/1978
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"
+            _engine_version = None
+            _engine_name = None
+
+            if _engine_version == None:
+                if _engine_name == "redis":
+                    _engine_version = "7.1"
+                else:
+                    _engine_version = "test"
+
+            items = {
+                "engineVersion": _engine_version
+            }
+            "#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator.run().unwrap();
+
+    // Verify the output contains the expected result (JSON format)
+    assert!(
+        output.contains(r#""engineVersion": "test""#),
+        "Expected '\"engineVersion\": \"test\"' in output, got: {}",
+        output
+    );
+}
+
+#[test]
+fn test_nested_if_stmt_different_condition() {
+    // Test nested if with different condition variables
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"
+            _a = None
+            _b = None
+
+            if _a == None:
+                if _b == "redis":
+                    _a = 2
+                else:
+                    _a = 3
+
+            result = {
+                "value": _a
+            }
+            "#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator.run().unwrap();
+
+    // Verify the output contains the expected value (JSON format)
+    assert!(
+        output.contains(r#""value": 3"#),
+        "Expected '\"value\": 3' in output, got: {}",
+        output
+    );
+}
+
+#[test]
+fn test_nested_if_stmt_true_condition() {
+    // Test nested if with true condition in inner if
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"
+            _a = None
+            _b = "redis"
+
+            if _a == None:
+                if _b == "redis":
+                    _a = "matched"
+                else:
+                    _a = "not matched"
+
+            result = {
+                "value": _a
+            }
+            "#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator.run().unwrap();
+
+    // Verify the output contains the expected value (JSON format)
+    assert!(
+        output.contains(r#""value": "matched""#),
+        "Expected '\"value\": \"matched\"' in output, got: {}",
+        output
+    );
+}
+
+#[test]
+fn test_nested_if_stmt_multiple_levels() {
+    // Test deeply nested if statements
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"
+            _a = None
+            _b = None
+            _c = None
+
+            if _a == None:
+                if _b == None:
+                    if _c == None:
+                        _a = "deeply nested"
+                    else:
+                        _a = "level 2 else"
+                else:
+                    _a = "level 1 else"
+
+            result = {
+                "value": _a
+            }
+            "#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator.run().unwrap();
+
+    // Verify the output contains the expected value (JSON format)
+    assert!(
+        output.contains(r#""value": "deeply nested""#),
+        "Expected '\"value\": \"deeply nested\"' in output, got: {}",
+        output
+    );
+}
+
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
