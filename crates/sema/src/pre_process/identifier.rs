@@ -82,10 +82,21 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
     }
     fn walk_import_stmt(&mut self, _: &'ctx mut ast::ImportStmt) {}
     fn walk_lambda_expr(&mut self, lambda_expr: &'ctx mut ast::LambdaExpr) {
+        // Add lambda parameters to local_vars before processing the body
+        // to ensure they take precedence over schema attributes with the same name
+        if let Some(args) = &lambda_expr.args {
+            for arg in &args.node.args {
+                if !arg.node.names.is_empty() {
+                    self.local_vars.insert(arg.node.names[0].node.to_string());
+                }
+            }
+        }
         walk_if_mut!(self, walk_arguments, lambda_expr.args);
         self.scope_level += 1;
         walk_list_mut!(self, walk_stmt, lambda_expr.body);
         self.scope_level -= 1;
+        // Clear lambda parameters after processing the body
+        self.local_vars.clear();
     }
     fn walk_list_comp(&mut self, list_comp: &'ctx mut ast::ListComp) {
         for g in &mut list_comp.generators {

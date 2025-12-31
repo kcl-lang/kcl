@@ -414,6 +414,65 @@ my_dict = {
 }
 "#}
 
+// Test for lambda parameter scope bug fix
+// When a lambda parameter has the same name as a schema field,
+// the lambda parameter should take precedence.
+evaluator_snapshot! {lambda_7, r#"
+schema Value:
+    r: int
+
+schema Value2:
+    r: int
+
+foo = lambda v: Value -> Value2 {
+    Value2 {
+        r = v.r
+    }
+}
+
+schema bar[input: Value]:
+    v: Value2
+
+    v = foo(input)
+
+x = Value {
+    r = 1
+}
+y = bar(x)
+"#}
+
+evaluator_snapshot! {lambda_8, r#"
+schema TestRole:
+    name: str
+
+test_lambda = lambda roles: [TestRole], custom_roles: [str] = [] -> [TestRole] {
+    roles + [TestRole{name=role} for role in custom_roles]
+}
+
+
+schema TestSchema:
+    custom_roles: [TestRole]
+
+    get_roles: () -> [any] = lambda {
+        test_lambda(roles=custom_roles, custom_roles=[])
+    }
+
+_test_role = TestRole{name="test"}
+test = TestSchema{custom_roles=[_test_role]}.get_roles()
+"#}
+
+evaluator_snapshot! {lambda_9, r#"
+foo = lambda values: [int] -> [int] {
+    [v for v in values]
+}    
+
+schema Bar:
+    values = [123]
+    foo_result: [int] = foo([456])
+
+my_bar = Bar {}
+"#}
+
 evaluator_snapshot! {schema_0, r#"
 schema Person:
     name: str = "Alice"

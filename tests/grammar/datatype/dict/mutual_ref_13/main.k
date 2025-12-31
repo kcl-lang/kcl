@@ -9,7 +9,8 @@ schema Config[data: Data]:
 
 Func = lambda data: Data {
     {
-        internal.data = data.id
+        # Note data here is a local schema variable
+        internal: {"data" = data.id}
         id = data.id
     }
 }
