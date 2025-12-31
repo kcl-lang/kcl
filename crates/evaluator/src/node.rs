@@ -1486,6 +1486,9 @@ impl<'ctx> Evaluator<'ctx> {
                     arg_value =
                         type_pack_and_check(self, &arg_value, vec![&ty.node.to_string()], false);
                 }
+                // Mark positional argument as a local variable
+                let name = arg_name.names[0].node.as_str();
+                self.add_local_var(name);
                 self.store_variable(&arg_name.names[0].node, arg_value);
             } else {
                 break;
@@ -1495,6 +1498,8 @@ impl<'ctx> Evaluator<'ctx> {
         for arg_name in arg_names.iter() {
             let name = &arg_name.names[0].node;
             if let Some(arg) = kwargs.dict_get_value(name) {
+                // Mark keyword argument as a local variable
+                self.add_local_var(name);
                 // Find argument name in the scope
                 self.store_variable(&arg_name.names[0].node, arg);
             }

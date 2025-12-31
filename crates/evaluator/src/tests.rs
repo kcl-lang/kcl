@@ -414,6 +414,33 @@ my_dict = {
 }
 "#}
 
+// Test for lambda parameter scope bug fix
+// When a lambda parameter has the same name as a schema field,
+// the lambda parameter should take precedence.
+evaluator_snapshot! {lambda_7, r#"
+schema Value:
+    r: int
+
+schema Value2:
+    r: int
+
+foo = lambda v: Value -> Value2 {
+    Value2 {
+        r = v.r
+    }
+}
+
+schema bar[input: Value]:
+    v: Value2
+
+    v = foo(input)
+
+x = Value {
+    r = 1
+}
+y = bar(x)
+"#}
+
 evaluator_snapshot! {schema_0, r#"
 schema Person:
     name: str = "Alice"
