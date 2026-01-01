@@ -308,10 +308,10 @@ fn exec_with_result_at(path: &str) {
         #[cfg(target_os = "windows")]
         let newline = "\r\n";
 
-        let expected = std::fs::read_to_string(output_file)
-            .unwrap()
+        let expected_str = std::fs::read_to_string(output_file).unwrap();
+        let expected = expected_str
             .strip_suffix(newline)
-            .unwrap()
+            .unwrap_or(&expected_str)
             .to_string();
 
         #[cfg(target_os = "windows")]

@@ -2,8 +2,6 @@
 source: crates/evaluator/src/tests.rs
 expression: "format! (\"{}\", evaluator.run().unwrap().1)"
 ---
-1
----
-2
----
-3
+- 1
+- 2
+- 3
