@@ -1,0 +1,4 @@
+test:
+  key: |
+    config:
+      timeout: '5m'
