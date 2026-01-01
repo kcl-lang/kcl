@@ -6,7 +6,7 @@ use generational_arena::Index;
 use kcl_ast::ast;
 use kcl_ast::walker::TypedResultWalker;
 use kcl_primitives::{DefaultHashBuilder, IndexMap};
-use kcl_runtime::{ConfigEntryOperationKind, ValueRef, schema_runtime_type};
+use kcl_runtime::{ConfigEntryOperationKind, Value, ValueRef, schema_runtime_type};
 use scopeguard::defer;
 
 use crate::lazy::{LazyEvalScope, LazyEvalScopeRef, merge_variables_and_setters};
@@ -655,6 +655,21 @@ pub(crate) fn schema_with_config(
     // avoid unexpected non idempotent calls. For example, I instantiated a MySchema in pkg1,
     // but the length of the list returned by calling the instances method in other packages
     // is uncertain.
+
+    // Dict to schema
+    let is_sub_schema = { ctx.borrow().is_sub_schema };
+    let has_parent = { ctx.borrow().node.parent_name.is_some() };
+
+    // Store args and kwargs in the dict's schema_args metadata field
+    // Only do this for schemas without a parent to avoid breaking inheritance
+    if !has_parent && schema_ctx_value.is_dict() {
+        // Use borrow_mut to get mutable access through RefCell
+        let mut dict = schema_ctx_value.rc.borrow_mut();
+        if let Value::dict_value(d) = &mut *dict {
+            d.schema_args = Some((args.clone(), kwargs.clone()));
+        }
+    }
+
     {
         let mut ctx = s.runtime_ctx.borrow_mut();
         // Record schema instance in the context
@@ -672,7 +687,6 @@ pub(crate) fn schema_with_config(
             .push(schema_ctx_value.clone());
     }
     // Dict to schema
-    let is_sub_schema = { ctx.borrow().is_sub_schema };
     if is_sub_schema {
         let ctx = ctx.borrow();
         // Record instance copy and convert it to schema value.

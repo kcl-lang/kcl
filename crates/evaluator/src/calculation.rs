@@ -272,15 +272,39 @@ impl<'ctx> Evaluator<'ctx> {
     /// Set dict key with the value. When the dict is a schema and resolve schema validations.
     pub(crate) fn dict_set_value(&self, p: &mut ValueRef, key: &str, val: &ValueRef) {
         if p.is_config() {
+            // Check if this is a modification of an already-constructed schema instance.
+            // If the schema has parameters (args) and the key already exists in the schema
+            // config AND we're not currently inside a schema body execution, then we're
+            // modifying an existing instance (e.g., one returned by instances()), so we
+            // don't need to re-evaluate the entire schema which would fail because schema
+            // parameters are out of scope (issue #1959).
+            // However, if the schema has no parameters, we should still re-evaluate to run
+            // any check blocks (e.g., tests/grammar/unification/fail_2).
+            let is_in_schema = self.is_in_schema();
+            let (should_resolve, mut config_keys) = if p.is_schema() && !is_in_schema {
+                let schema_value = p.as_schema();
+                // Check if the schema has positional parameters
+                let has_params = schema_value.args.is_truthy();
+                // Check if the key already exists in the config
+                let key_exists = schema_value.config.values.contains_key(key);
+                // Only skip re-evaluation if the schema has parameters AND the key exists
+                let should_resolve = !(has_params && key_exists);
+                let config_keys = schema_value.config_keys.clone();
+                (should_resolve, config_keys)
+            } else {
+                (true, vec![])
+            };
+
             p.dict_update_key_value(key, val.clone());
-            if p.is_schema() {
-                let schema: ValueRef;
-                {
+
+            // Only resolve schema validation for schema values, not for plain dicts
+            if should_resolve && p.is_schema() {
+                if config_keys.is_empty() {
                     let schema_value = p.as_schema();
-                    let mut config_keys = schema_value.config_keys.clone();
-                    config_keys.push(key.to_string());
-                    schema = resolve_schema(self, p, &config_keys);
+                    config_keys = schema_value.config_keys.clone();
                 }
+                config_keys.push(key.to_string());
+                let schema = resolve_schema(self, p, &config_keys);
                 p.schema_update_with_schema(&schema);
             }
         } else {

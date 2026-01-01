@@ -1,0 +1,11 @@
+instances:
+- apiVersion: apiextensions.crossplane.io/v1
+  kind: CHANGED
+  metadata:
+    name: xrapp.apps.group.tech
+  spec:
+    group: apps.group.tech
+    names:
+      kind: XRApp
+    versions:
+    - name: v1alpha1

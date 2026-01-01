@@ -229,6 +229,9 @@ pub struct DictValue {
     pub attr_map: IndexMap<String, String>,
     /// The runtime dict to schema reflect type string.
     pub potential_schema: Option<String>,
+    /// Stored schema arguments (args, kwargs) for instances() to use
+    /// This is None for non-schema dicts, Some(args, kwargs) for schema instances
+    pub schema_args: Option<(ValueRef, ValueRef)>,
 }
 
 #[derive(PartialEq, Clone, Default, Debug)]
