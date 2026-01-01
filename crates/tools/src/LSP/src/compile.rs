@@ -43,6 +43,9 @@ pub fn compile(
     // Ignore the kcl plugin sematic check.
     let mut opts = opts.unwrap_or_default();
     opts.load_plugins = true;
+    // Preserve symlink paths for LSP - don't resolve symlinks to maintain
+    // the original file paths as provided by the editor
+    opts.preserve_symlink_paths = true;
     // Get input files code from vfs
     let normalized_files = match get_normalized_k_files_from_paths(files, &opts) {
         Ok(file_list) => file_list,
