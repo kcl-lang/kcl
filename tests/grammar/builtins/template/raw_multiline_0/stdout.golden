@@ -1,0 +1,5 @@
+content: |
+  name: test
+  config:
+    timeout: '5m'
+    retry: 3
