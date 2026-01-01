@@ -932,15 +932,24 @@ pub unsafe extern "C-unwind" fn kcl_dict_set_value(
     let key = unsafe { c2str(key) };
     let val = unsafe { ptr_as_ref(val) };
     if p.is_config() {
+        // Check if this is a modification of an already-constructed schema instance.
+        // If the key already exists in the schema config, we're modifying an existing
+        // instance (e.g., one returned by instances()), so we don't need to re-evaluate
+        // the entire schema which would fail because schema parameters are out of scope.
+        let (should_resolve, mut config_keys) = if p.is_schema() {
+            let schema_value = p.as_schema();
+            let should_resolve = !schema_value.config.values.contains_key(key);
+            let config_keys = schema_value.config_keys.clone();
+            (should_resolve, config_keys)
+        } else {
+            (false, vec![])
+        };
+
         p.dict_update_key_value(key, val.clone());
-        if p.is_schema() {
-            let schema: ValueRef;
-            {
-                let schema_value = p.as_schema();
-                let mut config_keys = schema_value.config_keys.clone();
-                config_keys.push(key.to_string());
-                schema = resolve_schema(unsafe { mut_ptr_as_ref(ctx) }, p, &config_keys);
-            }
+
+        if should_resolve {
+            config_keys.push(key.to_string());
+            let schema = resolve_schema(unsafe { mut_ptr_as_ref(ctx) }, p, &config_keys);
             p.schema_update_with_schema(&schema);
         }
     } else {
@@ -1931,14 +1940,24 @@ fn collect_schema_instances(list: &mut ValueRef, v_list: &[ValueRef], runtime_ty
             let names: Vec<&str> = runtime_type.rsplit('.').collect();
             let name = names[0];
             let pkgpath = names[1];
+            // Retrieve args and kwargs from the dict's schema_args metadata
+            let (args, kwargs) = if let Value::dict_value(d) = &*v.rc.borrow() {
+                d.schema_args
+                    .as_ref()
+                    .map(|(a, kw)| (Some(a.clone()), Some(kw.clone())))
+                    .unwrap_or((None, None))
+            } else {
+                (None, None)
+            };
+            // Convert to schema with the retrieved args
             let v = v.dict_to_schema(
                 name,
                 pkgpath,
                 &[],
                 &ValueRef::dict(None),
                 &ValueRef::dict(None),
-                None,
-                None,
+                args,
+                kwargs,
             );
             list.list_append(&v);
         }
@@ -2274,6 +2293,16 @@ pub unsafe extern "C-unwind" fn kcl_schema_get_value(
     }
     if let Some(v) = backtrack_cache.dict_get_value(key) {
         return v.into_raw(unsafe { mut_ptr_as_ref(ctx) });
+    }
+    // Check if this attribute already has a computed value in the schema config.
+    // This can happen when accessing attributes on a schema instance returned by
+    // instances(). In that case, we should return the existing value rather than
+    // re-computing it, which would fail because schema parameters are out of scope.
+    if let Some(v) = schema.dict_get_value(key) {
+        if cal_map.dict_get_value(key).is_some() {
+            // This is a computed attribute that already has a value
+            return v.into_raw(unsafe { mut_ptr_as_ref(ctx) });
+        }
     }
     if let Some(attr_code) = cal_map.dict_get_value(key) {
         let now_level = level + 1;

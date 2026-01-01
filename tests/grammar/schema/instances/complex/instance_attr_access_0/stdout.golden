@@ -1,0 +1,25 @@
+configmap:
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: default/my-config
+    namespace: default
+
+instances:
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: default/my-config
+    namespace: default
+
+instance:
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: default/my-config
+    namespace: default
+
+output:
+  kind: ConfigMap
+  metadata_name: default/my-config
+  metadata_namespace: default

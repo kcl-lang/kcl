@@ -1,0 +1,19 @@
+instances:
+- apiVersion: v1
+  kind: Deployment
+  metadata:
+    name: web
+    labels:
+      app: web
+      count: '3'
+  spec:
+    replicas: 3
+- apiVersion: v1
+  kind: StatefulSet
+  metadata:
+    name: api
+    labels:
+      app: api
+      count: '2'
+  spec:
+    replicas: 2
