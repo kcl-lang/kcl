@@ -264,6 +264,11 @@ pub struct LoadProgramOptions {
     pub load_packages: bool,
     /// Whether to load plugins
     pub load_plugins: bool,
+    /// Whether to preserve symlink paths instead of resolving them.
+    /// When true, file paths are used as-is without canonicalization.
+    /// This is important for LSP and other tools that need to maintain
+    /// the original file paths as provided by the user/editor.
+    pub preserve_symlink_paths: bool,
 }
 
 impl Default for LoadProgramOptions {
@@ -276,6 +281,7 @@ impl Default for LoadProgramOptions {
             mode: ParseMode::ParseComments,
             load_packages: true,
             load_plugins: false,
+            preserve_symlink_paths: false,
         }
     }
 }

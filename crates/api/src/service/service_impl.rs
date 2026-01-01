@@ -180,7 +180,7 @@ impl KclServiceImpl {
     /// assert_eq!(result.deps.len(), 2);
     /// ```
     pub fn parse_file(&self, args: &ParseFileArgs) -> anyhow::Result<ParseFileResult> {
-        let file = canonicalize_input_file(&args.path, "");
+        let file = canonicalize_input_file(&args.path, "", false);
         let result = parse_single_file(&file, transform_str_para(&args.source))?;
         let ast_json = serde_json::to_string(&result.module)?;
 

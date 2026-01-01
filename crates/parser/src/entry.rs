@@ -302,7 +302,7 @@ pub fn get_compile_entries_from_paths(
     let mut k_code_queue = VecDeque::from(opts.k_code_list.clone());
     let file_paths = expand_input_files(file_paths);
     for file in &file_paths {
-        let file = canonicalize_input_file(file, &opts.work_dir);
+        let file = canonicalize_input_file(file, &opts.work_dir, opts.preserve_symlink_paths);
         let path = ModRelativePath::from(file.to_string());
 
         // If the path is a [`ModRelativePath`] with prefix '${<package_name>:KCL_MOD}',
@@ -425,12 +425,17 @@ fn get_main_files_from_pkg_path(
         }
     }
 
-    match PathBuf::from(s.clone()).canonicalize() {
-        Ok(path) => {
-            path_list.push(path.to_str().unwrap().to_string());
+    // When preserve_symlink_paths is true, don't canonicalize (resolves symlinks)
+    if opts.preserve_symlink_paths {
+        path_list.push(s);
+    } else {
+        match PathBuf::from(s.clone()).canonicalize() {
+            Ok(path) => {
+                path_list.push(path.to_str().unwrap().to_string());
+            }
+            // path from virtual file system
+            Err(_) => path_list.push(s),
         }
-        // path from virtual file system
-        Err(_) => path_list.push(s),
     }
 
     // get k files
@@ -525,7 +530,18 @@ fn is_ignored_file(filename: &str) -> bool {
 }
 
 /// Normalize the input file with the working directory and replace ${KCL_MOD} with the module root path.
-pub fn canonicalize_input_file(file: &str, work_dir: &str) -> String {
+pub fn canonicalize_input_file(file: &str, work_dir: &str, preserve_symlink_paths: bool) -> String {
+    // If preserve_symlink_paths is true, don't canonicalize (resolves symlinks)
+    if preserve_symlink_paths {
+        if !std::path::Path::new(file).is_absolute() {
+            return std::path::Path::new(work_dir)
+                .join(file)
+                .to_string_lossy()
+                .to_string();
+        }
+        return file.to_string();
+    }
+
     let path = std::path::Path::new(file);
     let is_absolute = path.is_absolute();
     // If the input file or path is a relative path and it is not a absolute path in the KCL module VFS,
