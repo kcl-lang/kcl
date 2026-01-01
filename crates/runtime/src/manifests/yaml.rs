@@ -13,7 +13,10 @@ pub(crate) fn encode_yaml_stream_to_manifests(
             .as_list_ref()
             .values
             .iter()
-            .map(|v| v.to_yaml_string_with_options(&opts))
+            .map(|v| {
+                let s = v.to_yaml_string_with_options(&opts);
+                s.strip_suffix('\n').unwrap_or(&s).to_string()
+            })
             .collect::<Vec<String>>()
             .join(&format!("\n{}\n", opts.sep)),
     );
@@ -32,12 +35,12 @@ mod test_manifests_yaml {
     fn test_encode_yaml_stream_to_manifests() {
         let cases = [
             (
-                "a: 1\n",
+                "a: 1",
                 ValueRef::list(Some(&[&ValueRef::dict(Some(&[("a", &ValueRef::int(1))]))])),
                 YamlEncodeOptions::default(),
             ),
             (
-                "a: 1\nb: 2\n",
+                "a: 1\nb: 2",
                 ValueRef::list(Some(&[&ValueRef::dict(Some(&[
                     ("a", &ValueRef::int(1)),
                     ("b", &ValueRef::int(2)),
@@ -45,7 +48,7 @@ mod test_manifests_yaml {
                 YamlEncodeOptions::default(),
             ),
             (
-                "a:\n- 1\n- 2\n- 3\nb: s\n",
+                "a:\n- 1\n- 2\n- 3\nb: s",
                 ValueRef::list(Some(&[&ValueRef::dict(Some(&[
                     ("a", &ValueRef::list_int(&[1, 2, 3])),
                     ("b", &ValueRef::str("s")),
@@ -53,7 +56,7 @@ mod test_manifests_yaml {
                 YamlEncodeOptions::default(),
             ),
             (
-                "a: 1\n",
+                "a: 1",
                 ValueRef::list(Some(&[&ValueRef::dict(Some(&[
                     ("a", &ValueRef::int(1)),
                     ("_b", &ValueRef::none()),
@@ -64,7 +67,7 @@ mod test_manifests_yaml {
                 },
             ),
             (
-                "a: 1\nb: null\n",
+                "a: 1\nb: null",
                 ValueRef::list(Some(&[&ValueRef::dict(Some(&[
                     ("a", &ValueRef::int(1)),
                     ("b", &ValueRef::none()),
@@ -72,7 +75,7 @@ mod test_manifests_yaml {
                 YamlEncodeOptions::default(),
             ),
             (
-                "a: 1\n",
+                "a: 1",
                 ValueRef::list(Some(&[&ValueRef::dict(Some(&[
                     ("a", &ValueRef::int(1)),
                     ("_b", &ValueRef::int(2)),

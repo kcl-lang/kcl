@@ -44,6 +44,7 @@ pub fn app() -> Command {
             .about("run")
             .arg(arg!([input] ... "Specify the input files to run").num_args(0..))
             .arg(arg!(output: -o --output <output> "Specify the YAML output file path"))
+            .arg(arg!(format: -f --format <format> "Specify the output format (yaml or json)"))
             .arg(arg!(setting: -Y --setting <setting> ... "Specify the input setting file").num_args(1..))
             .arg(arg!(verbose: -v --verbose "Print test information verbosely").action(ArgAction::Count))
             .arg(arg!(disable_none: -n --disable_none "Disable dumping None values"))

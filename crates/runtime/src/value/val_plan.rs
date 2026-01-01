@@ -32,11 +32,40 @@ fn filter_results(ctx: &Context, key_values: &ValueRef) -> Vec<ValueRef> {
     // Plan list value with the yaml stream format.
     if key_values.is_list() {
         let key_values_list = &key_values.as_list_ref().values;
-        for key_values in key_values_list {
-            if key_values.is_list_or_config() {
+        // Check if all elements are configs that need to be expanded for YAML stream format
+        let all_configs = key_values_list.iter().all(|v| v.is_config());
+        // Check if explicit stream separator is set (e.g., via yaml_stream())
+        // If sep is set, always expand to stream format regardless of element types
+        let use_stream_format = all_configs || ctx.plan_opts.sep.is_some();
+
+        if use_stream_format {
+            // Expand all elements for YAML stream format
+            for key_values in key_values_list {
                 results.append(&mut filter_results(ctx, key_values));
-            } else if key_values.is_scalar() {
-                results.push(key_values.clone());
+            }
+        } else {
+            // Not all configs - preserve the list structure
+            // Process nested elements but keep them in a list
+            let mut processed_elements: Vec<ValueRef> = vec![];
+            for item in key_values_list {
+                if item.is_config() {
+                    // Config elements might need special handling
+                    let filtered = filter_results(ctx, item);
+                    if filtered.len() == 1 {
+                        processed_elements.push(filtered[0].clone());
+                    } else {
+                        // Config returned multiple results, append them directly
+                        results.append(&mut filtered.clone());
+                    }
+                } else {
+                    // Non-config elements (scalars, lists) - keep as is
+                    processed_elements.push(item.clone());
+                }
+            }
+            if !processed_elements.is_empty() {
+                results.push(ValueRef::list(Some(
+                    &processed_elements.iter().collect::<Vec<_>>(),
+                )));
             }
         }
         results
@@ -221,33 +250,53 @@ impl ValueRef {
         };
         if value.is_list_or_config() {
             let results = filter_results(ctx, &value);
-            let sep = ctx
-                .plan_opts
-                .sep
-                .clone()
-                .unwrap_or_else(|| "---".to_string());
-            // Plan YAML result
-            let yaml_result = results
-                .iter()
-                .map(|r| {
-                    r.to_yaml_string_with_options(&yaml_opts)
+
+            // Plan result using the same approach for both JSON and YAML
+            // Serialize the whole filtered value instead of using stream format
+            if results.len() == 1 {
+                // For config/dict, use the filtered result
+                (
+                    results[0].to_json_string_with_options(&json_opts),
+                    results[0]
+                        .to_yaml_string_with_options(&yaml_opts)
                         .strip_suffix('\n')
                         .unwrap()
-                        .to_string()
-                })
-                .collect::<Vec<String>>()
-                .join(&format!("\n{}\n", sep));
-            // Plan JSON result
-            let json_result = results
-                .iter()
-                .map(|r| r.to_json_string_with_options(&json_opts))
-                .collect::<Vec<String>>()
-                .join(JSON_STREAM_SEP);
-            (json_result, yaml_result)
+                        .to_string(),
+                )
+            } else {
+                // Fallback to original value (shouldn't happen normally)
+                let sep = ctx
+                    .plan_opts
+                    .sep
+                    .clone()
+                    .unwrap_or_else(|| "---".to_string());
+                // Plan YAML array results
+                let yaml_result = results
+                    .iter()
+                    .map(|r| {
+                        r.to_yaml_string_with_options(&yaml_opts)
+                            .strip_suffix('\n')
+                            .unwrap()
+                            .to_string()
+                    })
+                    .collect::<Vec<String>>()
+                    .join(&format!("\n{}\n", sep));
+                // Plan JSON array results
+                let json_result = results
+                    .iter()
+                    .map(|r| r.to_json_string_with_options(&json_opts))
+                    .collect::<Vec<String>>()
+                    .join(JSON_STREAM_SEP);
+                (json_result, yaml_result)
+            }
         } else {
             (
                 value.to_json_string_with_options(&json_opts),
-                value.to_yaml_string_with_options(&yaml_opts),
+                value
+                    .to_yaml_string_with_options(&yaml_opts)
+                    .strip_suffix('\n')
+                    .unwrap()
+                    .to_string(),
             )
         }
     }

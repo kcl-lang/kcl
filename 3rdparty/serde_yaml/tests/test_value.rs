@@ -142,7 +142,7 @@ fn test_tagged() {
         Variant(usize),
     }
 
-    let value = serde_yaml::to_value(&Enum::Variant(0)).unwrap();
+    let value = serde_yaml::to_value(Enum::Variant(0)).unwrap();
 
     let deserialized: serde_yaml::Value = serde_yaml::from_value(value.clone()).unwrap();
     assert_eq!(value, deserialized);

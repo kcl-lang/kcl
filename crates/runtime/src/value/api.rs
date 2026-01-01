@@ -444,14 +444,21 @@ pub unsafe extern "C-unwind" fn kcl_value_plan_to_json(
 ) -> *mut kcl_value_ref_t {
     let p = unsafe { ptr_as_ref(p) };
     let ctx: &mut Context = unsafe { mut_ptr_as_ref(ctx) };
-    let value = match ctx.buffer.custom_manifests_output.clone() {
-        Some(output) => ValueRef::from_yaml_stream(ctx, &output).unwrap(),
-        None => p.clone(),
-    };
-    let (json_string, yaml_string) = value.plan(ctx);
-    ctx.json_result = json_string.clone();
-    ctx.yaml_result = yaml_string.clone();
-    new_mut_ptr(ctx, ValueRef::str(&json_string))
+    // If custom_manifests_output is set (e.g., from yaml_stream), use it directly for YAML
+    // For JSON, parse the YAML stream and format as JSON stream
+    if let Some(output) = ctx.buffer.custom_manifests_output.take() {
+        ctx.yaml_result = output.clone();
+        let yaml_result = ctx.yaml_result.clone();
+        let value = ValueRef::from_yaml_stream(ctx, &yaml_result).unwrap();
+        let (json_string, _) = value.plan(ctx);
+        ctx.json_result = json_string.clone();
+        new_mut_ptr(ctx, ValueRef::str(&ctx.json_result))
+    } else {
+        let (json_string, yaml_string) = p.plan(ctx);
+        ctx.json_result = json_string.clone();
+        ctx.yaml_result = yaml_string.clone();
+        new_mut_ptr(ctx, ValueRef::str(&ctx.json_result))
+    }
 }
 
 #[unsafe(no_mangle)]
@@ -461,14 +468,21 @@ pub unsafe extern "C-unwind" fn kcl_value_plan_to_yaml(
 ) -> *mut kcl_value_ref_t {
     let p = unsafe { ptr_as_ref(p) };
     let ctx = unsafe { mut_ptr_as_ref(ctx) };
-    let value = match ctx.buffer.custom_manifests_output.clone() {
-        Some(output) => ValueRef::from_yaml_stream(ctx, &output).unwrap(),
-        None => p.clone(),
-    };
-    let (json_string, yaml_string) = value.plan(ctx);
-    ctx.json_result = json_string.clone();
-    ctx.yaml_result = yaml_string.clone();
-    new_mut_ptr(ctx, ValueRef::str(&yaml_string))
+    // If custom_manifests_output is set (e.g., from yaml_stream), use it directly
+    if let Some(output) = ctx.buffer.custom_manifests_output.take() {
+        ctx.yaml_result = output.clone();
+        // For JSON, we still need to parse and format the YAML stream
+        let yaml_str = ctx.yaml_result.clone();
+        let value = ValueRef::from_yaml_stream(ctx, &yaml_str).unwrap();
+        let (json_string, _) = value.plan(ctx);
+        ctx.json_result = json_string;
+        new_mut_ptr(ctx, ValueRef::str(&ctx.yaml_result))
+    } else {
+        let (json_string, yaml_string) = p.plan(ctx);
+        ctx.json_result = json_string.clone();
+        ctx.yaml_result = yaml_string.clone();
+        new_mut_ptr(ctx, ValueRef::str(&yaml_string))
+    }
 }
 
 #[unsafe(no_mangle)]

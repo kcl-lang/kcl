@@ -4,12 +4,12 @@ use crate::*;
 fn test_kcl_manifests_yaml_stream() {
     let cases = [
         (
-            "a: 1\n",
+            "a: 1",
             ValueRef::list(Some(&[&ValueRef::dict(Some(&[("a", &ValueRef::int(1))]))])),
             YamlEncodeOptions::default(),
         ),
         (
-            "a: 1\nb: 2\n",
+            "a: 1\nb: 2",
             ValueRef::list(Some(&[&ValueRef::dict(Some(&[
                 ("a", &ValueRef::int(1)),
                 ("b", &ValueRef::int(2)),
@@ -17,7 +17,7 @@ fn test_kcl_manifests_yaml_stream() {
             YamlEncodeOptions::default(),
         ),
         (
-            "a:\n- 1\n- 2\n- 3\nb: s\n",
+            "a:\n- 1\n- 2\n- 3\nb: s",
             ValueRef::list(Some(&[&ValueRef::dict(Some(&[
                 ("a", &ValueRef::list_int(&[1, 2, 3])),
                 ("b", &ValueRef::str("s")),
@@ -25,7 +25,7 @@ fn test_kcl_manifests_yaml_stream() {
             YamlEncodeOptions::default(),
         ),
         (
-            "a: 1\n",
+            "a: 1",
             ValueRef::list(Some(&[&ValueRef::dict(Some(&[
                 ("a", &ValueRef::int(1)),
                 ("_b", &ValueRef::none()),
@@ -36,7 +36,7 @@ fn test_kcl_manifests_yaml_stream() {
             },
         ),
         (
-            "a: 1\nb: null\n",
+            "a: 1\nb: null",
             ValueRef::list(Some(&[&ValueRef::dict(Some(&[
                 ("a", &ValueRef::int(1)),
                 ("b", &ValueRef::none()),
@@ -44,7 +44,7 @@ fn test_kcl_manifests_yaml_stream() {
             YamlEncodeOptions::default(),
         ),
         (
-            "a: 1\n",
+            "a: 1",
             ValueRef::list(Some(&[&ValueRef::dict(Some(&[
                 ("a", &ValueRef::int(1)),
                 ("_b", &ValueRef::int(2)),
