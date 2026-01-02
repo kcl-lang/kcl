@@ -214,8 +214,7 @@ impl<'ctx> Evaluator<'ctx> {
         let msg = format!("pkgpath {} is not found", current_pkgpath);
         let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
         if let Some(last) = scopes.last_mut() {
-            let variables = &mut last.variables;
-            variables.insert(name.to_string(), pointer);
+            last.variables.insert(name.to_string(), pointer);
         }
     }
 
@@ -349,6 +348,7 @@ impl<'ctx> Evaluator<'ctx> {
     /// Get the variable value named `name` from the scope, return Err when not found
     pub fn get_variable(&self, name: &str) -> ValueRef {
         let current_pkgpath = self.current_pkgpath();
+        // Use a more obvious debug marker
         self.get_variable_in_pkgpath(name, &current_pkgpath)
     }
 
@@ -519,10 +519,28 @@ impl<'ctx> Evaluator<'ctx> {
                     } else {
                         false
                     };
-                    if index >= last_lambda_scope && !ignore {
-                        var.clone()
+                    // Determine if we should use the current scope value or closure value
+                    // The logic differs for schema methods vs regular lambdas:
+                    // - Schema methods: lambda level may be > execution level, need special handling
+                    // - Regular lambdas: use original logic
+                    let is_schema_method = self.current_method_receiver.borrow().is_some();
+                    if is_schema_method {
+                        // Schema method: prefer current value if variable is in current scope
+                        // (even if it's also in the closure from previous execution)
+                        if index >= INNER_LEVEL && !ignore {
+                            // Variable is in current execution scope, use current value
+                            var.clone()
+                        } else {
+                            // Variable from outer scope or builtin/global, check closure
+                            lambda_ctx.closure.get(name).unwrap_or(var).clone()
+                        }
                     } else {
-                        lambda_ctx.closure.get(name).unwrap_or(var).clone()
+                        // Regular lambda: use original logic
+                        if index >= last_lambda_scope && !ignore {
+                            var.clone()
+                        } else {
+                            lambda_ctx.closure.get(name).unwrap_or(var).clone()
+                        }
                     }
                 } else {
                     // Not in the lambda, maybe a local variable.
@@ -547,7 +565,9 @@ impl<'ctx> Evaluator<'ctx> {
             .as_ref()
             .map(|ctx| ctx.closure.clone())
             .unwrap_or_default();
-        // Get variable map including schema  in the current scope.
+
+        // Capture all variables from scopes >= INNER_LEVEL
+        // This is the original simple logic that works correctly for nested lambdas
         for i in INNER_LEVEL..scopes.len() {
             let variables = &scopes
                 .get(i)
@@ -574,12 +594,25 @@ impl<'ctx> Evaluator<'ctx> {
             } else {
                 self.undefined_value()
             };
+            // Track the receiver for schema method calls
+            let mut receiver = value.clone();
             for i in 0..names.len() - 1 {
                 let attr = names[i + 1];
                 if i == 0 && !pkgpath.is_empty() {
                     value = self.get_variable_in_pkgpath(attr, pkgpath);
+                    receiver = value.clone();
                 } else {
-                    value = value.load_attr(attr)
+                    value = value.load_attr(attr);
+                    // Fix: If we're loading a lambda method from a schema instance,
+                    // store the receiver so it can be used when the lambda is called
+                    // Check if this is a schema/dict method call
+                    if (receiver.is_schema() || receiver.is_dict())
+                        && value.is_func()
+                        && let Some(_proxy) = value.try_get_proxy()
+                    {
+                        // Store the receiver for use when the lambda is called
+                        *self.current_method_receiver.borrow_mut() = Some(receiver.clone());
+                    }
                 }
             }
             value
@@ -614,11 +647,9 @@ impl<'ctx> Evaluator<'ctx> {
 
     /// Load global or local value from name.
     pub fn load_name(&self, name: &str) -> ValueRef {
-        match (
-            self.is_in_schema(),
-            self.is_in_lambda(),
-            self.is_local_var(name),
-        ) {
+        let is_local = self.is_local_var(name);
+
+        match (self.is_in_schema(), self.is_in_lambda(), is_local) {
             // Get variable from the global lazy scope.
             (false, _, false) => {
                 let variable = self.get_variable(name);

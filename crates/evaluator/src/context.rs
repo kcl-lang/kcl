@@ -74,6 +74,68 @@ impl<'ctx> Evaluator<'ctx> {
             .push(LambdaOrSchemaEvalContext::Lambda(lambda_ctx));
     }
 
+    /// Push a lambda definition scope into the lambda stack with an optional receiver
+    pub fn push_lambda_with_receiver(
+        &self,
+        lambda_ctx: FunctionEvalContextRef,
+        current_pkgpath: &str,
+        frame_pkgpath: &str,
+        level: usize,
+        receiver: Option<&kcl_runtime::ValueRef>,
+    ) {
+        // Capture function schema this reference.
+        // Use the provided receiver if available, otherwise use captured this
+        if let Some(recv) = receiver {
+            if recv.is_schema() || recv.is_dict() {
+                // For schema/dict method calls, use the captured this as a template
+                // but update its value with the receiver
+                if let Some(this_ctx) = &lambda_ctx.this {
+                    // Create a new schema context using the captured context as template,
+                    // but with the receiver's value and config
+                    let updated_ctx = match &this_ctx.ctx {
+                        EvalContext::Schema(schema_ctx) => {
+                            // For schemas, config is the same as value
+                            // For dicts, use the dict itself as config
+                            let config = recv.clone();
+                            let new_ctx = schema_ctx.borrow().new_with_value(recv, &config);
+                            EvalContext::Schema(new_ctx)
+                        }
+                        EvalContext::Rule(_) => {
+                            // Should not happen for schema methods
+                            this_ctx.eval_ctx()
+                        }
+                    };
+                    self.push_schema(updated_ctx);
+                } else {
+                    // No captured this, but receiver is schema/dict
+                    // Try to find a schema context from the stack to use as template
+                    if let Some(ctx) = self.schema_stack.borrow().last()
+                        && let EvalContext::Schema(schema_ctx) = ctx
+                    {
+                        let config = recv.clone();
+                        let new_ctx = schema_ctx.borrow().new_with_value(recv, &config);
+                        self.push_schema(EvalContext::Schema(new_ctx));
+                    }
+                }
+            } else if let Some(this) = &lambda_ctx.this {
+                self.push_schema(this.eval_ctx());
+            }
+        } else if let Some(this) = &lambda_ctx.this {
+            self.push_schema(this.eval_ctx());
+        }
+
+        // Inner scope function calling.
+        // Note the minimum lambda.ctx.level is 2 for the top level lambda definitions.
+        if frame_pkgpath == current_pkgpath && level >= lambda_ctx.level {
+            // The scope cover is [lambda.ctx.level, self.scope_level()]
+            self.push_scope_cover(lambda_ctx.level, level);
+        }
+        self.lambda_stack.borrow_mut().push(lambda_ctx.clone());
+        self.ctx_stack
+            .borrow_mut()
+            .push(LambdaOrSchemaEvalContext::Lambda(lambda_ctx));
+    }
+
     /// Pop a lambda definition scope.
     #[inline]
     pub fn pop_lambda(

@@ -2298,11 +2298,11 @@ pub unsafe extern "C-unwind" fn kcl_schema_get_value(
     // This can happen when accessing attributes on a schema instance returned by
     // instances(). In that case, we should return the existing value rather than
     // re-computing it, which would fail because schema parameters are out of scope.
-    if let Some(v) = schema.dict_get_value(key) {
-        if cal_map.dict_get_value(key).is_some() {
-            // This is a computed attribute that already has a value
-            return v.into_raw(unsafe { mut_ptr_as_ref(ctx) });
-        }
+    if let Some(v) = schema.dict_get_value(key)
+        && cal_map.dict_get_value(key).is_some()
+    {
+        // This is a computed attribute that already has a value
+        return v.into_raw(unsafe { mut_ptr_as_ref(ctx) });
     }
     if let Some(attr_code) = cal_map.dict_get_value(key) {
         let now_level = level + 1;
