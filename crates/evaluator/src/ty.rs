@@ -83,6 +83,49 @@ pub fn type_pack_and_check(
             tpe,
             strict,
         );
+        // For schema types, validate required attributes in specific cases:
+        // 1. When the value is an empty dict (likely user error like User({}))
+        // 2. When the value is a standalone dict (not part of a config merge)
+        if checked && is_schema_type(tpe) && value.is_config() {
+            let config = value.as_dict_ref();
+            // Only validate if it looks like a user-provided schema instance:
+            // - Empty dict (definitely missing required attributes)
+            // - Dict with some attributes but not all (partial definition)
+            // Skip validation for config merge scenarios (inherited/mixin attributes)
+            if config.values.is_empty() {
+                // Empty dict - definitely needs validation
+                let schema_type_name = if tpe.contains('.') {
+                    if tpe.starts_with(PKG_PATH_PREFIX) {
+                        tpe.to_string()
+                    } else {
+                        format!("{PKG_PATH_PREFIX}{tpe}")
+                    }
+                } else {
+                    format!("{}.{}", s.current_pkgpath(), tpe)
+                };
+
+                if let Some(index) = s.schemas.borrow().get(&schema_type_name) {
+                    let frame = {
+                        let frames = s.frames.borrow();
+                        frames
+                            .get(*index)
+                            .expect(kcl_error::INTERNAL_ERROR_MSG)
+                            .clone()
+                    };
+                    if let Proxy::Schema(caller) = &frame.proxy {
+                        for (attr, _is_optional) in SchemaEvalContext::get_attrs(s, &caller.ctx) {
+                            let is_required =
+                                SchemaEvalContext::is_attr_required(s, &caller.ctx, &attr);
+                            if is_required {
+                                // Required attribute is missing, set checked to false
+                                checked = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
         if checked {
             break;
         }

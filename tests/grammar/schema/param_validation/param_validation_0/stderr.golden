@@ -1,0 +1,7 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:5:1
+  |
+5 |     envName: "staging" | "production"
+  |  expect Arg, got dict. For details:
+Schema Arg's attribute envName is missing
+  |
