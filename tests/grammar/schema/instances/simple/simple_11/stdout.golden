@@ -1,0 +1,10 @@
+instance1:
+  kind: Deployment
+  spec:
+    replicas: 3
+instance2:
+  kind: Service
+  spec:
+    type: ClusterIP
+base_instances: 2
+derived_instances: 2

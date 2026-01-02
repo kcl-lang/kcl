@@ -38,6 +38,10 @@ pub struct SchemaEvalContext {
     pub config_meta: ValueRef,
     pub optional_mapping: ValueRef,
     pub is_sub_schema: bool,
+    /// Whether the schema body has been fully evaluated.
+    /// This flag is used to avoid redundant calculations during
+    /// schema attribute assignments.
+    pub body_evaluated: bool,
 }
 
 impl SchemaEvalContext {
@@ -59,6 +63,7 @@ impl SchemaEvalContext {
             config_meta: ValueRef::dict(None),
             optional_mapping: ValueRef::dict(None),
             is_sub_schema: true,
+            body_evaluated: false,
         }
     }
 
@@ -76,6 +81,7 @@ impl SchemaEvalContext {
             config_meta,
             optional_mapping: ValueRef::dict(None),
             is_sub_schema: true,
+            body_evaluated: false,
         }))
     }
 
@@ -93,6 +99,7 @@ impl SchemaEvalContext {
             config_meta: ValueRef::dict(None),
             optional_mapping: ValueRef::dict(None),
             is_sub_schema: true,
+            body_evaluated: false,
         }))
     }
 
@@ -505,6 +512,8 @@ pub(crate) fn schema_body(
         for stmt in &node.body {
             s.walk_stmt(stmt).expect(kcl_error::RUNTIME_ERROR_MSG);
         }
+        // Mark schema body as evaluated to avoid redundant calculations
+        ctx.borrow_mut().body_evaluated = true;
         // Schema decorators check
         for decorator in &node.decorators {
             s.walk_decorator_with_name(&decorator.node, Some(&schema_name), true)
@@ -704,20 +713,30 @@ pub(crate) fn schema_with_config(
     }
 
     {
-        let mut ctx = s.runtime_ctx.borrow_mut();
+        let mut runtime_ctx = s.runtime_ctx.borrow_mut();
         // Record schema instance in the context
-        if !ctx.instances.contains_key(&runtime_type) {
-            ctx.instances
+        if !runtime_ctx.instances.contains_key(&runtime_type) {
+            runtime_ctx
+                .instances
                 .insert(runtime_type.clone(), IndexMap::default());
         }
-        let pkg_instance_map = ctx.instances.get_mut(&runtime_type).unwrap();
+        let pkg_instance_map = runtime_ctx.instances.get_mut(&runtime_type).unwrap();
         if !pkg_instance_map.contains_key(&instance_pkgpath) {
             pkg_instance_map.insert(instance_pkgpath.clone(), vec![]);
         }
-        pkg_instance_map
-            .get_mut(&instance_pkgpath)
-            .unwrap()
-            .push(schema_ctx_value.clone());
+        // Only record the instance once after the schema body is fully evaluated
+        // to avoid recording intermediate states during mixin/parent processing
+        let should_record = ctx.borrow().body_evaluated;
+        if should_record {
+            let instance_list = pkg_instance_map.get_mut(&instance_pkgpath).unwrap();
+            // Check by reference to avoid exact duplicates
+            let is_duplicate = instance_list
+                .iter()
+                .any(|existing| std::ptr::eq(&existing.rc, &schema_ctx_value.rc));
+            if !is_duplicate {
+                instance_list.push(schema_ctx_value.clone());
+            }
+        }
     }
     // Dict to schema
     if is_sub_schema {
