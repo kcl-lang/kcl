@@ -224,6 +224,39 @@ impl SchemaEvalContext {
         attrs
     }
 
+    /// Check if an attribute is required (no default value and not optional)
+    pub fn is_attr_required(s: &Evaluator, ctx: &SchemaEvalContextRef, attr_name: &str) -> bool {
+        for stmt in &ctx.borrow().node.body {
+            if let ast::Stmt::SchemaAttr(attr) = &stmt.node
+                && attr.name.node == attr_name
+            {
+                // If it's optional, it's not required
+                if attr.is_optional {
+                    return false;
+                }
+                // If it has a default value, it's not required
+                if attr.value.is_some() {
+                    return false;
+                }
+                return true;
+            }
+        }
+        // Check parent schema
+        if let Some(index) = ctx.borrow().parent {
+            let frame = {
+                let frames = s.frames.borrow();
+                frames
+                    .get(index)
+                    .expect(kcl_error::INTERNAL_ERROR_MSG)
+                    .clone()
+            };
+            if let Proxy::Schema(schema) = &frame.proxy {
+                return SchemaEvalContext::is_attr_required(s, &schema.ctx, attr_name);
+            }
+        }
+        false
+    }
+
     /// Whether the index signature is the schema context.
     pub fn has_index_signature(s: &Evaluator, ctx: &SchemaEvalContextRef) -> bool {
         if ctx.borrow().node.index_signature.is_some() {

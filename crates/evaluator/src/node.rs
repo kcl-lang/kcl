@@ -1474,7 +1474,7 @@ impl<'ctx> Evaluator<'ctx> {
         }
         // Positional arguments
         let argument_len = args.len();
-        for (i, (arg_name, arg_type)) in arg_names.iter().zip(arg_types).enumerate() {
+        for (i, (arg_name, arg_type)) in arg_names.iter().zip(arg_types.iter()).enumerate() {
             // Positional arguments
             let is_in_range = i < argument_len;
             if is_in_range {
@@ -1495,13 +1495,19 @@ impl<'ctx> Evaluator<'ctx> {
             }
         }
         // Keyword arguments
-        for arg_name in arg_names.iter() {
+        for (arg_name, arg_type) in arg_names.iter().zip(arg_types.iter()) {
             let name = &arg_name.names[0].node;
             if let Some(arg) = kwargs.dict_get_value(name) {
+                let mut arg_value = arg;
+                // Type check keyword arguments if type annotation is present
+                if let Some(ty) = arg_type {
+                    arg_value =
+                        type_pack_and_check(self, &arg_value, vec![&ty.node.to_string()], false);
+                }
                 // Mark keyword argument as a local variable
                 self.add_local_var(name);
                 // Find argument name in the scope
-                self.store_variable(&arg_name.names[0].node, arg);
+                self.store_variable(&arg_name.names[0].node, arg_value);
             }
         }
     }
