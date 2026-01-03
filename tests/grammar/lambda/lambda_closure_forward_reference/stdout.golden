@@ -1,0 +1,7 @@
+multiplier: 5
+p1:
+  input: 10
+  result: 50
+p2:
+  input: 20
+  result: 100

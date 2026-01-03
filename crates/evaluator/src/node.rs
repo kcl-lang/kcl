@@ -1246,8 +1246,37 @@ impl<'ctx> Evaluator<'ctx> {
             } else {
                 let is_local_var = self.is_local_var(name);
                 let value = right_value.clone();
-                match (is_local_var, is_in_schema) {
-                    (false, true) => self.update_schema_or_rule_scope_value(name, Some(&value)),
+                // Check if we're executing a global setter (backtrack_meta is not empty)
+                // Only force global scope storage if this is NOT a schema attribute
+                let is_executing_setter = !self.backtrack_meta.borrow().is_empty();
+                let is_schema_attr = if is_in_schema {
+                    // Check if this name is a schema attribute
+                    self.schema_stack
+                        .borrow()
+                        .last()
+                        .map(|ctx| ctx.value().has_key(name))
+                        .unwrap_or(false)
+                } else {
+                    false
+                };
+                match (
+                    is_local_var,
+                    is_in_schema,
+                    is_executing_setter,
+                    is_schema_attr,
+                ) {
+                    (_, _, true, false) => {
+                        // Executing a global setter for a non-schema attribute, store to global scope
+                        self.add_variable(name, value)
+                    }
+                    (false, true, _, true) => {
+                        // Schema attribute, store to schema
+                        self.update_schema_or_rule_scope_value(name, Some(&value))
+                    }
+                    (false, true, false, false) => {
+                        // Not in setter, in schema, and not a local var - store to schema
+                        self.update_schema_or_rule_scope_value(name, Some(&value))
+                    }
                     _ => self.add_variable(name, value),
                 }
             }
@@ -1329,8 +1358,35 @@ impl<'ctx> Evaluator<'ctx> {
                     } else {
                         let is_local_var = self.is_local_var(name);
                         let value = right_value.clone().expect(kcl_error::INTERNAL_ERROR_MSG);
-                        match (is_local_var, is_in_schema) {
-                            (false, true) => {
+                        // Check if we're executing a global setter (backtrack_meta is not empty)
+                        // Only force global scope storage if this is NOT a schema attribute
+                        let is_executing_setter = !self.backtrack_meta.borrow().is_empty();
+                        let is_schema_attr = if is_in_schema {
+                            // Check if this name is a schema attribute
+                            self.schema_stack
+                                .borrow()
+                                .last()
+                                .map(|ctx| ctx.value().has_key(name))
+                                .unwrap_or(false)
+                        } else {
+                            false
+                        };
+                        match (
+                            is_local_var,
+                            is_in_schema,
+                            is_executing_setter,
+                            is_schema_attr,
+                        ) {
+                            (_, _, true, false) => {
+                                // Executing a global setter for a non-schema attribute, store to global scope
+                                self.add_variable(name, value)
+                            }
+                            (false, true, _, true) => {
+                                // Schema attribute, store to schema
+                                self.update_schema_or_rule_scope_value(name, Some(&value))
+                            }
+                            (false, true, false, false) => {
+                                // Not in setter, in schema, and not a local var - store to schema
                                 self.update_schema_or_rule_scope_value(name, Some(&value))
                             }
                             _ => self.add_variable(name, value),

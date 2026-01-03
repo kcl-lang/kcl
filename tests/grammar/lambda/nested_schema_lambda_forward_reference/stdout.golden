@@ -1,0 +1,12 @@
+instance1:
+  inner:
+    innerValue: inner1
+    value: 'formatted: inner1'
+  outerValue: outer1
+  formatted: 'formatted: outer1'
+instance2:
+  inner:
+    innerValue: inner2
+    value: 'formatted: inner2'
+  outerValue: outer2
+  formatted: 'formatted: outer2'
