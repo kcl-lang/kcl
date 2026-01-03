@@ -1,0 +1,7 @@
+imageSHA: '12e1'
+imageSHA2: '12e12'
+val1: '1.5e-3'
+val2: '2E10'
+count: 42
+count_doubled: 84
+sciVal: '3.14e5'

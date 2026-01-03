@@ -60,6 +60,28 @@ fn test_parse_key_value_pair() {
                 value: "[1, 2, 3]".into(),
             },
         ),
+        // Test scientific notation - should be treated as string
+        (
+            "k=12e1",
+            KeyValuePair {
+                key: "k".to_string(),
+                value: "\"12e1\"".into(),
+            },
+        ),
+        (
+            "k=1.5e-3",
+            KeyValuePair {
+                key: "k".to_string(),
+                value: "\"1.5e-3\"".into(),
+            },
+        ),
+        (
+            "k=2E10",
+            KeyValuePair {
+                key: "k".to_string(),
+                value: "\"2E10\"".into(),
+            },
+        ),
     ];
     for (value, pair) in cases {
         let result = parse_key_value_pair(value).unwrap();
