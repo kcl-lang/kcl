@@ -1,0 +1,7 @@
+result_type: Resource
+my_resource:
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: test-resource
+instances_count: 2

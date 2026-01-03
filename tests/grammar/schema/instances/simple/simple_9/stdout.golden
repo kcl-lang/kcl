@@ -1,0 +1,35 @@
+config1:
+  data:
+    key: value
+    env: production
+  metadata:
+    name: config-1
+config2:
+  data:
+    key: value
+    env: staging
+  metadata:
+    name: config-2
+config3:
+  data:
+    key: value
+    env: development
+  metadata:
+    name: config-3
+instances_count: 3
+instances_list:
+- data:
+    key: value
+    env: production
+  metadata:
+    name: config-1
+- data:
+    key: value
+    env: staging
+  metadata:
+    name: config-2
+- data:
+    key: value
+    env: development
+  metadata:
+    name: config-3

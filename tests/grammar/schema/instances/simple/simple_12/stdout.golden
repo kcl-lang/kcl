@@ -1,0 +1,6 @@
+r1:
+  name: resource-1
+r2:
+  name: resource-2
+resource_instances: 2
+mixin_instances: 0
