@@ -637,7 +637,35 @@ impl<'ctx> Evaluator<'ctx> {
             // Get variable from the local or global scope.
             (false, _, _) | (_, _, true) => self.get_variable(name),
             // Get variable from the current schema scope.
-            (true, false, false) => self.get_variable_in_schema_or_rule(name),
+            (true, false, false) => {
+                let variable = self.get_variable_in_schema_or_rule(name);
+                // If the variable is not found in schema, check if it's a global variable
+                // that might be defined later using lazy evaluation
+                if variable.is_undefined() {
+                    // Check if there's a setter in the global lazy scope for this variable
+                    let pkgpath = self.current_pkgpath();
+                    let has_setter = {
+                        let lazy_scopes = self.lazy_scopes.borrow();
+                        lazy_scopes
+                            .get(&pkgpath)
+                            .map(|scope| scope.setters.contains_key(name))
+                            .unwrap_or(false)
+                    };
+                    if has_setter {
+                        // This variable has a lazy setter, use lazy scope to get its value
+                        self.get_value_from_lazy_scope(
+                            &pkgpath,
+                            name,
+                            &self.get_target_var(),
+                            variable,
+                        )
+                    } else {
+                        variable
+                    }
+                } else {
+                    variable
+                }
+            }
             // Get from local scope including lambda arguments, lambda variables,
             // loop variables or global variables.
             (true, true, _) =>

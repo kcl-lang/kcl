@@ -1,0 +1,7 @@
+calc:
+  a: 11
+  b: 40
+  c: 25
+resultA: 101
+resultB: 200
+resultC: 95
