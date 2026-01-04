@@ -3,4 +3,3 @@ import d
 
 schema A:
     name: str
-

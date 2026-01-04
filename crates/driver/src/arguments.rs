@@ -24,11 +24,12 @@ fn val_to_json(value: &str) -> String {
     // If it is a json string, returns it.
     if serde_json::from_str::<serde_json::Value>(value).is_ok() {
         // Check if it's a number literal with scientific notation that should be treated as a string
-        if let Ok(json_val) = serde_json::from_str::<serde_json::Value>(value) {
-            if json_val.is_number() && looks_like_scientific_notation(value) {
-                // If it looks like scientific notation (e.g., 12e1), treat it as a string
-                return format!("{:?}", value);
-            }
+        if let Ok(json_val) = serde_json::from_str::<serde_json::Value>(value)
+            && json_val.is_number()
+            && looks_like_scientific_notation(value)
+        {
+            // If it looks like scientific notation (e.g., 12e1), treat it as a string
+            return format!("{:?}", value);
         }
         return value.to_string();
     }
@@ -64,7 +65,7 @@ fn looks_like_scientific_notation(s: &str) -> bool {
     }
     // Check if it looks like a valid number with scientific notation
     // Pattern: [digits][.digits][eE][+-][digits]
-    let parts: Vec<&str> = s.split(|c: char| c == 'e' || c == 'E').collect();
+    let parts: Vec<&str> = s.split(['e', 'E']).collect();
     if parts.len() != 2 {
         return false;
     }

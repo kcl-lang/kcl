@@ -335,7 +335,13 @@ impl<'p> Printer<'p> {
 pub fn print_ast_module(module: &Module) -> String {
     let mut printer = Printer::default();
     printer.write_module(module);
-    printer.out
+    // Trim trailing newlines to ensure exactly one newline at EOF
+    let trimmed = printer.out.trim_end_matches('\n');
+    if trimmed.is_empty() {
+        trimmed.to_string()
+    } else {
+        format!("{}\n", trimmed)
+    }
 }
 
 /// Print AST to string
