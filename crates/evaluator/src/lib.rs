@@ -91,6 +91,8 @@ pub struct Evaluator<'ctx> {
     pub backtrack_meta: RefCell<Vec<BacktrackMeta>>,
     /// Current AST id for the evaluator walker.
     pub ast_id: RefCell<AstIndex>,
+    /// Current method receiver for schema method calls (e.g., b2 in b2.add())
+    pub current_method_receiver: RefCell<Option<kcl_runtime::ValueRef>>,
 }
 
 #[derive(Clone)]
@@ -156,6 +158,7 @@ impl<'ctx> Evaluator<'ctx> {
             backtrack_meta: RefCell::new(Default::default()),
             ast_id: RefCell::new(AstIndex::default()),
             ctx_stack: RefCell::new(Default::default()),
+            current_method_receiver: RefCell::new(None),
         }
     }
 
