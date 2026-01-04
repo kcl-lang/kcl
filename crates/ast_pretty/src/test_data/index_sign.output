@@ -10,4 +10,3 @@ schema DataMap:
 
     check:
         name in ["A", "B", "C"]
-

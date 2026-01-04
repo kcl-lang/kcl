@@ -236,3 +236,41 @@ fn get_files<P: AsRef<Path>>(
     }
     files
 }
+
+#[test]
+fn test_format_trailing_newlines() {
+    let schema_end = "foo = \"bar\"\n\nschema Name:\n    first: str\n";
+    let var_end = "schema Name:\n    first: str\n\nfoo = \"bar\"\n";
+
+    let (schema_formatted, _) = format_source("test.k", schema_end, &Default::default()).unwrap();
+    let (var_formatted, _) = format_source("test.k", var_end, &Default::default()).unwrap();
+
+    // Count trailing newlines
+    let schema_trailing = schema_formatted
+        .chars()
+        .rev()
+        .take_while(|c| *c == '\n')
+        .count();
+    let var_trailing = var_formatted
+        .chars()
+        .rev()
+        .take_while(|c| *c == '\n')
+        .count();
+
+    println!("Schema ending: {} trailing newlines", schema_trailing);
+    println!("Schema output:\n{}", schema_formatted);
+    println!("Var ending: {} trailing newlines", var_trailing);
+    println!("Var output:\n{}", var_formatted);
+
+    // Both should have exactly 1 trailing newline
+    assert_eq!(
+        schema_trailing, 1,
+        "Schema ending should have 1 trailing newline, got {}",
+        schema_trailing
+    );
+    assert_eq!(
+        var_trailing, 1,
+        "Var ending should have 1 trailing newline, got {}",
+        var_trailing
+    );
+}
