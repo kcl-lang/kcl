@@ -1,0 +1,33 @@
+p1:
+  name: default
+  data: []
+p2:
+  name: default
+  data:
+  - item1
+p3:
+  name: default
+  data:
+  - item1
+n1:
+  name: my_processor
+  data: []
+n2:
+  name: my_processor
+  data:
+  - first
+n3:
+  name: my_processor
+  data:
+  - first
+x1:
+  name: test
+  data: []
+x2:
+  name: test
+  data:
+  - '{name}:{item}'
+x3:
+  name: test
+  data:
+  - '{name}:{item}'
