@@ -1,0 +1,142 @@
+---
+source: crates/parser/src/tests/expr.rs
+expression: "$crate :: tests ::\nparsing_expr_string(r####\"[\n    {\n        name: \"test\"\n    }\n    {\n        name: \"test2\"\n    }]\"####)"
+---
+Node {
+    node: List(
+        ListExpr {
+            elts: [
+                Node {
+                    node: Config(
+                        ConfigExpr {
+                            items: [
+                                Node {
+                                    node: ConfigEntry {
+                                        key: Some(
+                                            Node {
+                                                node: Identifier(
+                                                    Identifier {
+                                                        names: [
+                                                            Node {
+                                                                node: "name",
+                                                                filename: "",
+                                                                line: 3,
+                                                                column: 8,
+                                                                end_line: 3,
+                                                                end_column: 12,
+                                                            },
+                                                        ],
+                                                        pkgpath: "",
+                                                        ctx: Load,
+                                                    },
+                                                ),
+                                                filename: "",
+                                                line: 3,
+                                                column: 8,
+                                                end_line: 3,
+                                                end_column: 12,
+                                            },
+                                        ),
+                                        value: Node {
+                                            node: StringLit(
+                                                StringLit {
+                                                    is_long_string: false,
+                                                    raw_value: "\"test\"",
+                                                    value: "test",
+                                                },
+                                            ),
+                                            filename: "",
+                                            line: 3,
+                                            column: 14,
+                                            end_line: 3,
+                                            end_column: 20,
+                                        },
+                                        operation: Union,
+                                    },
+                                    filename: "",
+                                    line: 3,
+                                    column: 8,
+                                    end_line: 3,
+                                    end_column: 20,
+                                },
+                            ],
+                        },
+                    ),
+                    filename: "",
+                    line: 2,
+                    column: 4,
+                    end_line: 4,
+                    end_column: 5,
+                },
+                Node {
+                    node: Config(
+                        ConfigExpr {
+                            items: [
+                                Node {
+                                    node: ConfigEntry {
+                                        key: Some(
+                                            Node {
+                                                node: Identifier(
+                                                    Identifier {
+                                                        names: [
+                                                            Node {
+                                                                node: "name",
+                                                                filename: "",
+                                                                line: 6,
+                                                                column: 8,
+                                                                end_line: 6,
+                                                                end_column: 12,
+                                                            },
+                                                        ],
+                                                        pkgpath: "",
+                                                        ctx: Load,
+                                                    },
+                                                ),
+                                                filename: "",
+                                                line: 6,
+                                                column: 8,
+                                                end_line: 6,
+                                                end_column: 12,
+                                            },
+                                        ),
+                                        value: Node {
+                                            node: StringLit(
+                                                StringLit {
+                                                    is_long_string: false,
+                                                    raw_value: "\"test2\"",
+                                                    value: "test2",
+                                                },
+                                            ),
+                                            filename: "",
+                                            line: 6,
+                                            column: 14,
+                                            end_line: 6,
+                                            end_column: 21,
+                                        },
+                                        operation: Union,
+                                    },
+                                    filename: "",
+                                    line: 6,
+                                    column: 8,
+                                    end_line: 6,
+                                    end_column: 21,
+                                },
+                            ],
+                        },
+                    ),
+                    filename: "",
+                    line: 5,
+                    column: 4,
+                    end_line: 7,
+                    end_column: 5,
+                },
+            ],
+            ctx: Load,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 7,
+    end_column: 6,
+}

@@ -224,3 +224,37 @@ parse_expr_snapshot!(
     a = 1
 "####
 );
+
+// Test for issue #2042: List with multiple config items without newline after [
+parse_expr_snapshot!(
+    list_with_config_items_0,
+    r####"[{
+        name: "test"
+    }
+    {
+        name: "test2"
+    }]"####
+);
+
+// Test for issue #2042: List with multiple config items with comma separators
+parse_expr_snapshot!(
+    list_with_config_items_1,
+    r####"[{
+        name: "test"
+    },
+    {
+        name: "test2"
+    }]"####
+);
+
+// Test for issue #2042: List with multiple config items with newline after [
+parse_expr_snapshot!(
+    list_with_config_items_2,
+    r####"[
+    {
+        name: "test"
+    }
+    {
+        name: "test2"
+    }]"####
+);

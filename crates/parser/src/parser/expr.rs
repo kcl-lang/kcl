@@ -964,7 +964,7 @@ impl<'a> Parser<'a> {
             ));
         }
 
-        let has_newline = if self.token.kind == TokenKind::Newline {
+        if self.token.kind == TokenKind::Newline {
             self.skip_newlines();
             self.clean_all_indentations();
             if self.token.kind == TokenKind::CloseDelim(DelimToken::Bracket) {
@@ -978,13 +978,10 @@ impl<'a> Parser<'a> {
                     self.sess.struct_token_loc(token, self.prev_token),
                 ));
             }
-            true
-        } else {
-            false
-        };
+        }
 
         let item_start_token = self.token;
-        let items = self.parse_list_items(has_newline);
+        let items = self.parse_list_items();
         let generators = self.parse_comp_clauses();
 
         // _DEDENT
@@ -1052,10 +1049,9 @@ impl<'a> Parser<'a> {
 
     /// Syntax:
     /// list_items: expr ((COMMA [NEWLINE] | NEWLINE) expr)* [COMMA] [NEWLINE]
-    pub(crate) fn parse_list_items(&mut self, has_newline: bool) -> Vec<NodeRef<Expr>> {
+    pub(crate) fn parse_list_items(&mut self) -> Vec<NodeRef<Expr>> {
         let is_terminator = |token: &kcl_ast::token::Token| match &token.kind {
             TokenKind::CloseDelim(DelimToken::Bracket) | TokenKind::Eof => true,
-            TokenKind::Newline if !has_newline => true,
             _ => token.is_keyword(kw::For),
         };
 
@@ -1068,9 +1064,7 @@ impl<'a> Parser<'a> {
         if let TokenKind::Comma = self.token.kind {
             self.bump();
         }
-        if has_newline {
-            self.skip_newlines();
-        }
+        self.skip_newlines();
         loop {
             let marker = self.mark();
             self.clean_all_indentations();
@@ -1090,9 +1084,7 @@ impl<'a> Parser<'a> {
             if let TokenKind::Comma = self.token.kind {
                 self.bump();
             }
-            if has_newline {
-                self.skip_newlines();
-            }
+            self.skip_newlines();
             self.drop(marker);
         }
         items
