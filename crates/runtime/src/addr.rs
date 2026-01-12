@@ -153,6 +153,7 @@ pub fn kcl_get_fn_ptr_by_name(name: &str) -> u64 {
         "kcl_json_decode" => crate::kcl_json_decode as *const () as u64,
         "kcl_json_dump_to_file" => crate::kcl_json_dump_to_file as *const () as u64,
         "kcl_json_encode" => crate::kcl_json_encode as *const () as u64,
+        "kcl_json_merge" => crate::kcl_json_merge as *const () as u64,
         "kcl_json_validate" => crate::kcl_json_validate as *const () as u64,
         "kcl_list_append" => crate::kcl_list_append as *const () as u64,
         "kcl_list_append_bool" => crate::kcl_list_append_bool as *const () as u64,

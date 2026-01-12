@@ -1498,6 +1498,32 @@ register_json_member! {
         false,
         None,
     )
+    merge => Type::function(
+        None,
+        Type::any_ref(),
+        &[
+            Parameter {
+                name: "src".to_string(),
+                ty: Type::any_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+            Parameter {
+                name: "patch".to_string(),
+                ty: Type::any_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Merge patch into src following RFC 7396 JSON Merge Patch semantics.
+When patch is a dict/schema, recursively merge matching keys.
+When patch value is None/Undefined, remove the key from result.
+Otherwise, replace the value."#,
+        false,
+        None,
+    )
 }
 
 // ------------------------------
