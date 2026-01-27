@@ -1,0 +1,153 @@
+---
+source: crates/parser/src/tests/expr.rs
+assertion_line: 93
+expression: "$crate :: tests ::\nparsing_expr_string(r####\"filter z in _a?.items { z > 1 }\"####)"
+---
+Node {
+    node: Quant(
+        QuantExpr {
+            target: Node {
+                node: Selector(
+                    SelectorExpr {
+                        value: Node {
+                            node: Identifier(
+                                Identifier {
+                                    names: [
+                                        Node {
+                                            node: "_a",
+                                            filename: "",
+                                            line: 1,
+                                            column: 12,
+                                            end_line: 1,
+                                            end_column: 14,
+                                        },
+                                    ],
+                                    pkgpath: "",
+                                    ctx: Load,
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 12,
+                            end_line: 1,
+                            end_column: 14,
+                        },
+                        attr: Node {
+                            node: Identifier {
+                                names: [
+                                    Node {
+                                        node: "items",
+                                        filename: "",
+                                        line: 1,
+                                        column: 16,
+                                        end_line: 1,
+                                        end_column: 21,
+                                    },
+                                ],
+                                pkgpath: "",
+                                ctx: Load,
+                            },
+                            filename: "",
+                            line: 1,
+                            column: 16,
+                            end_line: 1,
+                            end_column: 21,
+                        },
+                        ctx: Load,
+                        has_question: true,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 12,
+                end_line: 1,
+                end_column: 21,
+            },
+            variables: [
+                Node {
+                    node: Identifier {
+                        names: [
+                            Node {
+                                node: "z",
+                                filename: "",
+                                line: 1,
+                                column: 7,
+                                end_line: 1,
+                                end_column: 8,
+                            },
+                        ],
+                        pkgpath: "",
+                        ctx: Load,
+                    },
+                    filename: "",
+                    line: 1,
+                    column: 7,
+                    end_line: 1,
+                    end_column: 8,
+                },
+            ],
+            op: Filter,
+            test: Node {
+                node: Compare(
+                    Compare {
+                        left: Node {
+                            node: Identifier(
+                                Identifier {
+                                    names: [
+                                        Node {
+                                            node: "z",
+                                            filename: "",
+                                            line: 1,
+                                            column: 24,
+                                            end_line: 1,
+                                            end_column: 25,
+                                        },
+                                    ],
+                                    pkgpath: "",
+                                    ctx: Load,
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 24,
+                            end_line: 1,
+                            end_column: 25,
+                        },
+                        ops: [
+                            Gt,
+                        ],
+                        comparators: [
+                            Node {
+                                node: NumberLit(
+                                    NumberLit {
+                                        binary_suffix: None,
+                                        value: Int(
+                                            1,
+                                        ),
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 28,
+                                end_line: 1,
+                                end_column: 29,
+                            },
+                        ],
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 24,
+                end_line: 1,
+                end_column: 29,
+            },
+            if_cond: None,
+            ctx: Load,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 31,
+}

@@ -1,0 +1,155 @@
+---
+source: crates/parser/src/tests/expr.rs
+assertion_line: 97
+expression: "$crate :: tests ::\nparsing_expr_string(r####\"map w in _a?.items?[0] { w }\"####)"
+---
+Node {
+    node: Quant(
+        QuantExpr {
+            target: Node {
+                node: Subscript(
+                    Subscript {
+                        value: Node {
+                            node: Selector(
+                                SelectorExpr {
+                                    value: Node {
+                                        node: Identifier(
+                                            Identifier {
+                                                names: [
+                                                    Node {
+                                                        node: "_a",
+                                                        filename: "",
+                                                        line: 1,
+                                                        column: 9,
+                                                        end_line: 1,
+                                                        end_column: 11,
+                                                    },
+                                                ],
+                                                pkgpath: "",
+                                                ctx: Load,
+                                            },
+                                        ),
+                                        filename: "",
+                                        line: 1,
+                                        column: 9,
+                                        end_line: 1,
+                                        end_column: 11,
+                                    },
+                                    attr: Node {
+                                        node: Identifier {
+                                            names: [
+                                                Node {
+                                                    node: "items",
+                                                    filename: "",
+                                                    line: 1,
+                                                    column: 13,
+                                                    end_line: 1,
+                                                    end_column: 18,
+                                                },
+                                            ],
+                                            pkgpath: "",
+                                            ctx: Load,
+                                        },
+                                        filename: "",
+                                        line: 1,
+                                        column: 13,
+                                        end_line: 1,
+                                        end_column: 18,
+                                    },
+                                    ctx: Load,
+                                    has_question: true,
+                                },
+                            ),
+                            filename: "",
+                            line: 1,
+                            column: 9,
+                            end_line: 1,
+                            end_column: 18,
+                        },
+                        index: Some(
+                            Node {
+                                node: NumberLit(
+                                    NumberLit {
+                                        binary_suffix: None,
+                                        value: Int(
+                                            0,
+                                        ),
+                                    },
+                                ),
+                                filename: "",
+                                line: 1,
+                                column: 20,
+                                end_line: 1,
+                                end_column: 21,
+                            },
+                        ),
+                        lower: None,
+                        upper: None,
+                        step: None,
+                        ctx: Load,
+                        has_question: true,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 9,
+                end_line: 1,
+                end_column: 22,
+            },
+            variables: [
+                Node {
+                    node: Identifier {
+                        names: [
+                            Node {
+                                node: "w",
+                                filename: "",
+                                line: 1,
+                                column: 4,
+                                end_line: 1,
+                                end_column: 5,
+                            },
+                        ],
+                        pkgpath: "",
+                        ctx: Load,
+                    },
+                    filename: "",
+                    line: 1,
+                    column: 4,
+                    end_line: 1,
+                    end_column: 5,
+                },
+            ],
+            op: Map,
+            test: Node {
+                node: Identifier(
+                    Identifier {
+                        names: [
+                            Node {
+                                node: "w",
+                                filename: "",
+                                line: 1,
+                                column: 25,
+                                end_line: 1,
+                                end_column: 26,
+                            },
+                        ],
+                        pkgpath: "",
+                        ctx: Load,
+                    },
+                ),
+                filename: "",
+                line: 1,
+                column: 25,
+                end_line: 1,
+                end_column: 26,
+            },
+            if_cond: None,
+            ctx: Load,
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 28,
+}
