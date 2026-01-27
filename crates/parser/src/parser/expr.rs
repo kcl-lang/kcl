@@ -730,7 +730,7 @@ impl<'a> Parser<'a> {
     /// Syntax:
     /// quant_expr: quant_op [ identifier COMMA ] identifier IN quant_target LEFT_BRACE (expr [IF expr]
     /// | NEWLINE _INDENT simple_expr [IF expr] NEWLINE _DEDENT)? RIGHT_BRACE
-    /// quant_target: string | identifier | list_expr | list_comp | dict_expr | dict_comp
+    /// quant_target: string | identifier | list_expr | list_comp | dict_expr | dict_comp | selector_expr
     /// quant_op: ALL | ANY | FILTER | MAP
     fn parse_quant_expr(&mut self) -> NodeRef<Expr> {
         let token = self.token;
@@ -886,8 +886,38 @@ impl<'a> Parser<'a> {
                     );
                     self.missing_expr()
                 } else {
-                    // identifier
-                    self.parse_identifier_expr()
+                    // identifier - parse identifier and then suffixes like ., ?., []
+                    let lo = self.token;
+                    let mut operand: NodeRef<Expr> = Box::new(Node::new_with_loc(
+                        Expr::Identifier(self.parse_identifier().node),
+                        self.sess.struct_token_loc(lo, self.prev_token),
+                    ));
+
+                    // Parse suffixes: ., ?., [], ?[]
+                    loop {
+                        match self.token.kind {
+                            TokenKind::Dot => {
+                                operand = self.parse_selector_expr(operand, lo);
+                            }
+                            TokenKind::Question => match self.cursor.peek() {
+                                Some(token) => match token.kind {
+                                    TokenKind::Dot => {
+                                        operand = self.parse_selector_expr(operand, lo);
+                                    }
+                                    TokenKind::OpenDelim(DelimToken::Bracket) => {
+                                        operand = self.parse_subscript_expr(operand, lo);
+                                    }
+                                    _ => break,
+                                },
+                                None => break,
+                            },
+                            TokenKind::OpenDelim(DelimToken::Bracket) => {
+                                operand = self.parse_subscript_expr(operand, lo);
+                            }
+                            _ => break,
+                        }
+                    }
+                    operand
                 }
             }
             TokenKind::Literal(lk) => {

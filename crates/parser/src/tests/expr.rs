@@ -81,6 +81,11 @@ parse_expr_snapshot!(
     quant_expr_6,
     r####"map i, e in [{k1 = "v1", k2 = "v2"}] { e if i > 0 }"####
 );
+// Test safe navigation operator in quant expressions (issue #2048)
+parse_expr_snapshot!(quant_safe_nav_0, r####"any x in _a?.b { x > 0 }"####);
+parse_expr_snapshot!(quant_safe_nav_1, r####"all y in _a?.b?.c { y < 0 }"####);
+parse_expr_snapshot!(quant_safe_nav_2, r####"filter z in _a?.items { z > 1 }"####);
+parse_expr_snapshot!(quant_safe_nav_3, r####"map w in _a?.items?[0] { w }"####);
 parse_expr_snapshot!(lambda_expr_0, r####"lambda {}"####);
 parse_expr_snapshot!(lambda_expr_1, r####"lambda x {}"####);
 parse_expr_snapshot!(lambda_expr_2, r####"lambda x: int -> int {x}"####);
