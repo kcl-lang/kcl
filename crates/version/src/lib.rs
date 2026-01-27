@@ -2,7 +2,10 @@
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const CHECK_SUM: &str = "c020ab3eb4b9179219d6837a57f5d323";
-pub const GIT_SHA: &str = env!("VERGEN_GIT_SHA");
+pub const GIT_SHA: &str = match option_env!("VERGEN_GIT_SHA") {
+    Some(sha) => sha,
+    None => "unknown",
+};
 pub const HOST_TRIPLE: &str = env!("VERGEN_RUSTC_HOST_TRIPLE");
 
 /// Get KCL full version string with the format `{version}-{check_sum}`.
