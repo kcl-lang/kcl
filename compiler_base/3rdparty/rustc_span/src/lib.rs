@@ -26,6 +26,7 @@ pub use span_encoding::{DUMMY_SP, Span};
 mod analyze_source_file;
 
 use std::borrow::Cow;
+use std::cell::RefCell;
 use std::cmp::{self, Ordering};
 use std::collections::hash_map::DefaultHasher;
 use std::fmt;
@@ -669,6 +670,15 @@ impl SourceFileHash {
     }
 }
 
+/// Cache for bytepos to charpos conversions to avoid repeated multibyte char iteration.
+#[derive(Default, Clone)]
+struct BytePosCache {
+    /// Cached position (byte offset)
+    cached_pos: u32,
+    /// Cached char pos result
+    cached_charpos: usize,
+}
+
 /// A single source in the [`SourceMap`].
 #[derive(Clone)]
 pub struct SourceFile {
@@ -694,6 +704,9 @@ pub struct SourceFile {
     pub normalized_pos: Vec<NormalizedPos>,
     /// A hash of the filename, used for speeding up hashing in incremental compilation.
     pub name_hash: u64,
+    /// Cache for bytepos_to_file_charpos to avoid repeated computation.
+    /// Use RefCell for interior mutability since SourceFile needs to be cloneable.
+    charpos_cache: RefCell<BytePosCache>,
 }
 
 impl fmt::Debug for SourceFile {
@@ -735,6 +748,7 @@ impl SourceFile {
             non_narrow_chars,
             normalized_pos,
             name_hash,
+            charpos_cache: RefCell::default(),
         }
     }
 
@@ -842,10 +856,39 @@ impl SourceFile {
 
     /// Converts an absolute `BytePos` to a `CharPos` relative to the `SourceFile`.
     pub fn bytepos_to_file_charpos(&self, bpos: BytePos) -> CharPos {
+        // Fast path: check cache first
+        let mut cache = self.charpos_cache.borrow_mut();
+        let bpos_u32 = bpos.to_u32();
+
+        // If this is the same position as cached, return cached result
+        if cache.cached_pos == bpos_u32 {
+            return CharPos(cache.cached_charpos);
+        }
+
         // The number of extra bytes due to multibyte chars in the `SourceFile`.
         let mut total_extra_bytes = 0;
 
-        for mbc in self.multibyte_chars.iter() {
+        // Find starting index based on cached position for faster lookup
+        let start_idx = if cache.cached_pos > 0 && cache.cached_pos < bpos_u32 {
+            // Cached position is before requested position, start from there
+            // Reconstruct total_extra_bytes from cached result
+            let cached_byte_offset = cache.cached_pos - self.start_pos.0;
+            let cached_char_offset = cache.cached_charpos as u32;
+            total_extra_bytes = cached_byte_offset - cached_char_offset;
+
+            // Find the index to start from
+            match self
+                .multibyte_chars
+                .binary_search_by_key(&BytePos(cache.cached_pos), |mbc| mbc.pos)
+            {
+                Ok(idx) => idx + 1,
+                Err(idx) => idx,
+            }
+        } else {
+            0
+        };
+
+        for mbc in self.multibyte_chars.iter().skip(start_idx) {
             debug!("{}-byte char at {:?}", mbc.bytes, mbc.pos);
             if mbc.pos < bpos {
                 // Every character is at least one byte, so we only
@@ -860,7 +903,14 @@ impl SourceFile {
         }
 
         assert!(self.start_pos.to_u32() + total_extra_bytes <= bpos.to_u32());
-        CharPos(bpos.to_usize() - self.start_pos.to_usize() - total_extra_bytes as usize)
+        let result =
+            CharPos(bpos.to_usize() - self.start_pos.to_usize() - total_extra_bytes as usize);
+
+        // Update cache
+        cache.cached_pos = bpos_u32;
+        cache.cached_charpos = result.0;
+
+        result
     }
 
     /// Looks up the file's (1-based) line number and (0-based `CharPos`) column offset, for a

@@ -148,11 +148,37 @@ pub fn r#typeof(types: &[TypeRef], should_remove_sub_types: bool) -> TypeRef {
     // 3. Remove sub types according to partial order relation rules e.g. sub schema types.
     if should_remove_sub_types {
         let mut remove_index_set = HashSet::new();
+        let len = type_set.len();
+
         for (i, (source_addr, source)) in type_set.iter().enumerate() {
-            for j in i + 1..type_set.len() {
+            // Skip if already marked for removal
+            if remove_index_set.contains(source_addr) {
+                continue;
+            }
+
+            for j in i + 1..len {
                 let (target_addr, target) = type_set.get_index(j).unwrap();
+
+                // Skip if target already marked for removal
+                if remove_index_set.contains(target_addr) {
+                    continue;
+                }
+
+                // Fast path: same pointer means same type
+                if source_addr == target_addr {
+                    continue;
+                }
+
+                // Fast path: use equality check before expensive subsume
+                if equal(source.clone(), target.clone()) {
+                    // Types are equal, mark target for removal
+                    remove_index_set.insert(*target_addr);
+                    continue;
+                }
+
                 if subsume(source.clone(), target.clone(), false) {
                     remove_index_set.insert(*source_addr);
+                    break; // source is removed, no need to check other targets
                 } else if subsume(target.clone(), source.clone(), false) {
                     remove_index_set.insert(*target_addr);
                 }

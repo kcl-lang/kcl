@@ -379,6 +379,7 @@ impl SourceMap {
             non_narrow_chars: file_local_non_narrow_chars,
             normalized_pos: file_local_normalized_pos,
             name_hash,
+            charpos_cache: std::cell::RefCell::default(),
         });
 
         let mut files = self.files.borrow_mut();
