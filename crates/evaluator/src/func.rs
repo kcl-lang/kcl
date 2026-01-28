@@ -83,13 +83,25 @@ impl FunctionCaller {
 }
 
 impl<'ctx> Evaluator<'ctx> {
-    #[inline]
     pub(crate) fn invoke_proxy_function(
         &'ctx self,
         proxy_index: Index,
         args: &ValueRef,
         kwargs: &ValueRef,
     ) -> ValueRef {
+        self.invoke_proxy_function_with_receiver(proxy_index, args, kwargs, None)
+    }
+
+    pub(crate) fn invoke_proxy_function_with_receiver(
+        &'ctx self,
+        proxy_index: Index,
+        args: &ValueRef,
+        kwargs: &ValueRef,
+        receiver: Option<&ValueRef>,
+    ) -> ValueRef {
+        // Capture the current_method_receiver before it might be overwritten by arg evaluation
+        let stored_receiver = self.current_method_receiver.borrow().clone();
+
         let frame = {
             let frames = self.frames.borrow();
             frames
@@ -114,9 +126,23 @@ impl<'ctx> Evaluator<'ctx> {
                 // Push the current lambda scope level in the lambda stack.
                 let pkgpath = self.current_pkgpath();
                 let level = self.scope_level();
-                self.push_lambda(lambda.ctx.clone(), &pkgpath, &frame.pkgpath, level);
+
+                // Use the stored receiver we captured earlier
+                let effective_receiver = receiver.or(stored_receiver.as_ref());
+
+                self.push_lambda_with_receiver(
+                    lambda.ctx.clone(),
+                    &pkgpath,
+                    &frame.pkgpath,
+                    level,
+                    effective_receiver,
+                );
                 let value = (lambda.body)(self, &lambda.ctx, args, kwargs);
                 self.pop_lambda(lambda.ctx.clone(), &pkgpath, &frame.pkgpath, level);
+
+                // Clear the stored receiver after lambda execution completes
+                *self.current_method_receiver.borrow_mut() = None;
+
                 value
             }
             // Call a schema and return the schema value.
