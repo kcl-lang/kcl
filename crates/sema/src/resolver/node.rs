@@ -622,7 +622,17 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
 
     fn walk_list_expr(&mut self, list_expr: &'ctx ast::ListExpr) -> Self::Result {
         let stack_depth = self.switch_list_expr_context();
-        let item_type = sup(&self.exprs(&list_expr.elts).to_vec());
+
+        // Optimization: Check if all elements are homogeneous schema expressions
+        // If so, batch process them to avoid repeated context switching
+        let item_types =
+            if list_expr.elts.len() > 10 && self.is_homogeneous_schema_array(&list_expr.elts) {
+                self.walk_homogeneous_schema_array(&list_expr.elts)
+            } else {
+                self.exprs(&list_expr.elts).to_vec()
+            };
+
+        let item_type = sup(&item_types);
         self.clear_config_expr_context(stack_depth, false);
         Type::list_ref(item_type)
     }
@@ -1330,5 +1340,105 @@ impl<'ctx> Resolver<'_> {
             .borrow_mut()
             .insert(self.get_node_key(target.id.clone()), target_ty.clone());
         target_ty
+    }
+
+    /// Check if all elements in the list are homogeneous schema expressions of the same type
+    fn is_homogeneous_schema_array(&mut self, elts: &[ast::NodeRef<ast::Expr>]) -> bool {
+        if elts.is_empty() {
+            return false;
+        }
+
+        // Get the schema type of the first element
+        let first_schema_ty = match &elts[0].node {
+            ast::Expr::Schema(schema_expr) => {
+                let ty = self.walk_identifier_expr(&schema_expr.name);
+                match &ty.kind {
+                    TypeKind::Schema(_) => Some(ty),
+                    _ => None,
+                }
+            }
+            _ => None,
+        };
+
+        let first_schema_ty = match first_schema_ty {
+            Some(ty) => ty,
+            None => return false,
+        };
+
+        // Check all elements are schema expressions of the same type
+        for elt in &elts[1..] {
+            match &elt.node {
+                ast::Expr::Schema(schema_expr) => {
+                    let ty = self.walk_identifier_expr(&schema_expr.name);
+                    match &ty.kind {
+                        TypeKind::Schema(schema_ty) => {
+                            // Compare schema runtime types (name + pkgpath)
+                            let runtime_type = kcl_runtime::schema_runtime_type(
+                                &schema_ty.name,
+                                &schema_ty.pkgpath,
+                            );
+                            let first_runtime_type = kcl_runtime::schema_runtime_type(
+                                &first_schema_ty.into_schema_type().name,
+                                &first_schema_ty.into_schema_type().pkgpath,
+                            );
+                            if runtime_type != first_runtime_type {
+                                return false;
+                            }
+                        }
+                        _ => return false,
+                    }
+                }
+                _ => return false,
+            }
+        }
+
+        true
+    }
+
+    /// Batch process homogeneous schema array to avoid repeated context switching
+    fn walk_homogeneous_schema_array(
+        &mut self,
+        elts: &[ast::NodeRef<ast::Expr>],
+    ) -> Vec<ResolvedResult> {
+        let mut item_types = Vec::with_capacity(elts.len());
+
+        // Get the schema type from the first element
+        let (schema_ty, schema_name) = match &elts[0].node {
+            ast::Expr::Schema(schema_expr) => {
+                let ty = self.walk_identifier_expr(&schema_expr.name);
+                match &ty.kind {
+                    TypeKind::Schema(schema_ty) => (ty.clone(), schema_ty.name.clone()),
+                    _ => return self.exprs(elts).to_vec(),
+                }
+            }
+            _ => return self.exprs(elts).to_vec(),
+        };
+
+        // Create a shared config context object for all elements
+        let obj = self.new_config_expr_context_item(
+            &schema_name,
+            schema_ty.clone(),
+            Position::dummy_pos(),
+            Position::dummy_pos(),
+        );
+
+        // Batch process all elements with the shared context
+        for elt in elts {
+            if let ast::Expr::Schema(schema_expr) = &elt.node {
+                let init_stack_depth = self.switch_config_expr_context(Some(obj.clone()));
+                self.expr(&schema_expr.config);
+                self.node_ty_map.borrow_mut().insert(
+                    self.get_node_key(schema_expr.config.id.clone()),
+                    schema_ty.clone(),
+                );
+                self.clear_config_expr_context(init_stack_depth as usize, false);
+                item_types.push(self.any_ty());
+            } else {
+                // Fallback to normal processing if not a schema expr
+                item_types.push(self.expr(elt));
+            }
+        }
+
+        item_types
     }
 }

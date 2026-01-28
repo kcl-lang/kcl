@@ -20,17 +20,17 @@ anyhow = "1.0"
 regex = "1.7.0"
 lazy_static = "1.4.0"
 
-kcl-primitives = { path = "../primitives" }
-kcl-ast = { path = "../ast" }
-kcl-ast-pretty = { path = "../ast_pretty" }
-kcl-runtime = { path = "../runtime" }
-kcl-error = { path = "../error" }
-kcl-span = { path = "../span" }
-kcl-utils = { path = "../utils" }
-compiler_base_span = "0.1.2"
-compiler_base_session = "0.1.3"
-compiler_base_macros = "0.1.1"
-compiler_base_error = "0.1.6"
+kcl-primitives.workspace = true
+kcl-ast.workspace = true
+kcl-ast-pretty.workspace = true
+kcl-runtime.workspace = true
+kcl-error.workspace = true
+kcl-span.workspace = true
+kcl-utils.workspace = true
+compiler_base_span.workspace = true
+compiler_base_session.workspace = true
+compiler_base_macros.workspace = true
+compiler_base_error.workspace = true
 suggestions = "0.1.1"
 parking_lot = { version = "0.12.0", default-features = false }
 

@@ -7,16 +7,16 @@ edition.workspace = true
 
 [dependencies]
 anyhow = "1.0"
-compiler_base_session = "0.1.3"
-compiler_base_macros = "0.1.1"
+compiler_base_session.workspace = true
+compiler_base_macros.workspace = true
 
-kcl-ast = { path = "../ast" }
-kcl-ast-pretty = { path = "../ast_pretty" }
-kcl-parser = { path = "../parser" }
-kcl-sema = { path = "../sema" }
-kcl-error = { path = "../error" }
-kcl-utils = { path = "../utils" }
-kcl-primitives = { path = "../primitives" }
+kcl-ast.workspace = true
+kcl-ast-pretty.workspace = true
+kcl-parser.workspace = true
+kcl-sema.workspace = true
+kcl-error.workspace = true
+kcl-utils.workspace = true
+kcl-primitives.workspace = true
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 fancy-regex = "0.7.1"

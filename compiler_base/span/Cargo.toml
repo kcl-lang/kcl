@@ -14,4 +14,4 @@ categories = ["command-line-utilities"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rustc_span = "0.1.2"
+rustc_span.workspace = true

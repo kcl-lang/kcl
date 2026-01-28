@@ -480,7 +480,10 @@ impl Component<DiagnosticStyle> for SuggestionsLabel {
 }
 
 impl SessionDiagnostic for Diagnostic {
-    fn into_diagnostic(self, _: &Session) -> Result<DiagnosticTrait<DiagnosticStyle>> {
+    fn into_diagnostic(
+        self,
+        _: &Session,
+    ) -> Result<DiagnosticTrait<DiagnosticStyle>, anyhow::Error> {
         let mut diag = DiagnosticTrait::<DiagnosticStyle>::new();
         match self.code {
             Some(id) => match id {
@@ -588,7 +591,10 @@ impl SessionDiagnostic for Diagnostic {
 }
 
 impl SessionDiagnostic for StringError {
-    fn into_diagnostic(self, _: &Session) -> Result<DiagnosticTrait<DiagnosticStyle>> {
+    fn into_diagnostic(
+        self,
+        _: &Session,
+    ) -> Result<DiagnosticTrait<DiagnosticStyle>, anyhow::Error> {
         let mut diag = DiagnosticTrait::<DiagnosticStyle>::new();
         diag.append_component(Box::new(Label::Error(E3M38.code.to_string())));
         diag.append_component(Box::new(format!(": {}\n", self.0)));

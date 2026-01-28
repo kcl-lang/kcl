@@ -6,15 +6,15 @@ edition.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-compiler_base_span = "0.1.2"
-compiler_base_session = "0.1.3"
-compiler_base_error = "0.1.6"
-compiler_base_macros = "0.1.1"
+compiler_base_span.workspace = true
+compiler_base_session.workspace = true
+compiler_base_error.workspace = true
+compiler_base_macros.workspace = true
 
-kcl-primitives = { path = "../primitives" }
-kcl-span = { path = "../span" }
-kcl-runtime = { path = "../runtime" }
-kcl-utils = { path = "../utils" }
+kcl-primitives.workspace = true
+kcl-span.workspace = true
+kcl-runtime.workspace = true
+kcl-utils.workspace = true
 
 anyhow = "1.0"
 tracing = "0.1"

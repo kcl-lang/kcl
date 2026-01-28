@@ -11,6 +11,16 @@ members = [
 ]
 resolver = "2"
 
+[workspace.dependencies]
+compiler_base_span = { path = "span", version = "0.1.3" }
+compiler_base_macros = { path = "macros", version = "0.1.1" }
+compiler_base_session = { path = "session", version = "0.1.3" }
+compiler_base_error = { path = "error", version = "0.1.6" }
+compiler_base_parallel = { path = "parallel", version = "0.1.0" }
+rustc_span = { path = "3rdparty/rustc_span", version = "0.1.2" }
+rustc_errors = { path = "3rdparty/rustc_errors", version = "0.1.2" }
+rustc_data_structures = { path = "3rdparty/rustc_data_structures", version = "0.1.2" }
+
 [workspace.package]
 version = "0.2.0"
 edition = "2024"

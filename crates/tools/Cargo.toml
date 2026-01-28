@@ -9,28 +9,28 @@ edition.workspace = true
 fancy-regex = "0.7.1"
 walkdir = "2"
 anyhow = "1.0"
-compiler_base_session = "0.1.3"
+compiler_base_session.workspace = true
 
 rustc_lexer = "0.1.0"
-kcl-ast = { path = "../ast" }
-kcl-error = { path = "../error" }
-kcl-parser = { path = "../parser" }
-kcl-sema = { path = "../sema" }
-kcl-config = { path = "../config" }
-kcl-ast-pretty = { path = "../ast_pretty" }
-kcl-query = { path = "../query" }
-kcl-runner = { path = "../runner" }
-kcl-runtime = { path = "../runtime" }
-kcl-driver = { path = "../driver" }
-kcl-utils = { path = "../utils" }
-kcl-primitives = { path = "../primitives" }
+kcl-ast.workspace = true
+kcl-error.workspace = true
+kcl-parser.workspace = true
+kcl-sema.workspace = true
+kcl-config.workspace = true
+kcl-ast-pretty.workspace = true
+kcl-query.workspace = true
+kcl-runner.workspace = true
+kcl-runtime.workspace = true
+kcl-driver.workspace = true
+kcl-utils.workspace = true
+kcl-primitives.workspace = true
 
 serde_json = "1.0"
 serde_yaml.workspace = true
 once_cell = "1.15.0"
 regex = "1.3"
 json-spanned-value = "0.2.2"
-compiler_base_span = "0.1.2"
+compiler_base_span.workspace = true
 located_yaml = "0.2.1"
 
 [dev-dependencies]
