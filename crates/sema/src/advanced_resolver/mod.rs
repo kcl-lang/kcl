@@ -90,11 +90,30 @@ pub struct Context<'ctx> {
 }
 
 impl<'ctx> Context<'ctx> {
-    pub fn get_node_key(&self, id: &AstIndex) -> NodeKey {
-        NodeKey {
-            pkgpath: self.current_pkgpath.clone().unwrap(),
+    fn get_current_pkgpath(&self) -> anyhow::Result<String> {
+        self.current_pkgpath
+            .clone()
+            .ok_or_else(|| anyhow::anyhow!("current_pkgpath is not set"))
+    }
+
+    fn get_current_filename(&self) -> anyhow::Result<String> {
+        self.current_filename
+            .clone()
+            .ok_or_else(|| anyhow::anyhow!("current_filename is not set"))
+    }
+
+    fn get_current_scope(&self) -> anyhow::Result<ScopeRef> {
+        self.scopes
+            .last()
+            .copied()
+            .ok_or_else(|| anyhow::anyhow!("scope stack is empty"))
+    }
+
+    pub fn get_node_key(&self, id: &AstIndex) -> anyhow::Result<NodeKey> {
+        Ok(NodeKey {
+            pkgpath: self.get_current_pkgpath()?,
             id: id.clone(),
-        }
+        })
     }
 }
 
@@ -152,7 +171,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 name.to_string(),
                 pkg_info.pkg_filepath.clone(),
                 pkg_info.kfile_paths.clone(),
-            );
+            )?;
 
             let modules = self.ctx.program.get_modules_for_pkg(name);
             for module in modules.iter() {
@@ -182,7 +201,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 .gs
                 .get_scopes_mut()
                 .get_root_scope(name.to_string())
-                .unwrap();
+                .ok_or_else(|| anyhow::anyhow!("root scope not found for {}", name))?;
 
             self.ctx.scopes.push(scope_ref);
             let modules = self.ctx.program.get_modules_for_pkg(name);
@@ -201,16 +220,17 @@ impl<'ctx> AdvancedResolver<'ctx> {
         pkgpath: String,
         filename: String,
         kfile_paths: IndexSet<String>,
-    ) {
+    ) -> anyhow::Result<()> {
         let package_ref = self
             .gs
             .get_symbols_mut()
             .get_symbol_by_fully_qualified_name(&pkgpath)
-            .unwrap();
+            .ok_or_else(|| anyhow::anyhow!("symbol not found for {}", &pkgpath))?;
 
         let root_scope = RootSymbolScope::new(pkgpath, filename, package_ref, kfile_paths);
         let scope_ref = self.gs.get_scopes_mut().alloc_root_scope(root_scope);
         self.ctx.scopes.push(scope_ref);
+        Ok(())
     }
 
     fn enter_local_scope(
@@ -219,8 +239,8 @@ impl<'ctx> AdvancedResolver<'ctx> {
         start: Position,
         end: Position,
         kind: LocalSymbolScopeKind,
-    ) {
-        let parent = *self.ctx.scopes.last().unwrap();
+    ) -> anyhow::Result<()> {
+        let parent = self.ctx.get_current_scope()?;
         let local_scope = LocalSymbolScope::new(parent, start, end, kind);
         let scope_ref = self.gs.get_scopes_mut().alloc_local_scope(local_scope);
 
@@ -230,7 +250,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                     .get_scopes_mut()
                     .roots
                     .get_mut(parent.get_id())
-                    .unwrap()
+                    .ok_or_else(|| anyhow::anyhow!("root scope not found"))?
                     .add_child(filepath, scope_ref);
             }
             ScopeKind::Local => {
@@ -238,11 +258,12 @@ impl<'ctx> AdvancedResolver<'ctx> {
                     .get_scopes_mut()
                     .locals
                     .get_mut(parent.get_id())
-                    .unwrap()
+                    .ok_or_else(|| anyhow::anyhow!("local scope not found"))?
                     .add_child(scope_ref);
             }
         }
         self.ctx.scopes.push(scope_ref);
+        Ok(())
     }
 
     fn enter_schema_def_scope(
@@ -252,10 +273,10 @@ impl<'ctx> AdvancedResolver<'ctx> {
         start: Position,
         end: Position,
         kind: LocalSymbolScopeKind,
-    ) {
-        let parent = *self.ctx.scopes.last().unwrap();
+    ) -> anyhow::Result<()> {
+        let parent = self.ctx.get_current_scope()?;
         let local_scope = LocalSymbolScope::new(parent, start, end, kind);
-        let pkg_path = self.ctx.current_pkgpath.clone().unwrap();
+        let pkg_path = self.ctx.get_current_pkgpath()?;
         let fqn_name = format!("{pkg_path}.{filepath}.{name}");
         let scope_ref = match self.gs.get_scopes().schema_scope_map.get(&fqn_name) {
             Some(scope_ref) => *scope_ref,
@@ -272,7 +293,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                             .get_scopes_mut()
                             .roots
                             .get_mut(parent.get_id())
-                            .unwrap()
+                            .ok_or_else(|| anyhow::anyhow!("root scope not found"))?
                             .add_child(filepath, scope_ref);
                     }
                     ScopeKind::Local => {
@@ -280,7 +301,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                             .get_scopes_mut()
                             .locals
                             .get_mut(parent.get_id())
-                            .unwrap()
+                            .ok_or_else(|| anyhow::anyhow!("local scope not found"))?
                             .add_child(scope_ref);
                     }
                 }
@@ -288,6 +309,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
             }
         };
         self.ctx.scopes.push(scope_ref);
+        Ok(())
     }
 
     fn leave_scope(&mut self) {
