@@ -9,3 +9,4 @@ This list shows non-exhaustive adopters of KCL. If you are using to KCL, then pl
 + *[Ant Group](https://www.antgroup.com/)* - Large scale Kubernetes configuration abstraction and management with GitOps.
 + *[Youzan](https://www.youzan.com/)* - Large scale Kubernetes configuration abstraction and management with GitOps.
 + *[Huawei](https://www.huawei.com/)* - Terraform resource model abstraction and management.
++ *[Upbound](https://www.upbound.io/)* - Upbound reference platform implementations and Crossplane composition authoring using KCL.
