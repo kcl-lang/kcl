@@ -954,6 +954,8 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
     fn walk_lambda_expr(&self, lambda_expr: &'ctx ast::LambdaExpr) -> Self::Result {
         let func = Arc::new(func_body);
         // Capture schema self
+        let closure_map = self.get_current_closure_map();
+
         let proxy = FunctionCaller::new(
             FunctionEvalContext {
                 node: lambda_expr.clone(),
@@ -966,7 +968,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                         value: ctx.value(),
                         config: ctx.config(),
                     }),
-                closure: self.get_current_closure_map(),
+                closure: closure_map,
                 level: self.scope_level() + 1,
             },
             func,
@@ -1534,7 +1536,7 @@ impl<'ctx> Evaluator<'ctx> {
             // Positional arguments
             let is_in_range = i < argument_len;
             if is_in_range {
-                let mut arg_value = match args.list_get_option(i as isize) {
+                let mut arg_value = match args.list_get(i as isize) {
                     Some(v) => v,
                     None => self.undefined_value(),
                 };
@@ -1545,7 +1547,10 @@ impl<'ctx> Evaluator<'ctx> {
                 // Mark positional argument as a local variable
                 let name = arg_name.names[0].node.as_str();
                 self.add_local_var(name);
-                self.store_variable(&arg_name.names[0].node, arg_value);
+                // FIX: Use add_variable instead of store_variable for positional arguments
+                // store_variable only updates existing variables, but positional parameters
+                // don't exist yet, so we need to use add_variable to create them
+                self.add_variable(name, arg_value);
             } else {
                 break;
             }
