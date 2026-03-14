@@ -92,24 +92,28 @@ pub fn runtime_catch(s: &Evaluator, args: &ValueRef, kwargs: &ValueRef) -> Value
     panic!("catch() takes exactly one argument (0 given)");
 }
 
-/// Apply a reducer function to an initial value. Returns the result of the function.
-/// The list parameter is currently ignored.
+/// Reduce a list to a single value by applying a reducer function cumulatively.
 pub fn runtime_reduce(s: &Evaluator, args: &ValueRef, kwargs: &ValueRef) -> ValueRef {
     let reducer = get_call_arg(args, kwargs, 0, Some("reducer"));
-    let _list = get_call_arg(args, kwargs, 1, Some("list"));
+    let list = get_call_arg(args, kwargs, 1, Some("list"));
     let initial = get_call_arg(args, kwargs, 2, Some("initial"));
 
     // Validate arguments
     let reducer =
         reducer.unwrap_or_else(|| panic!("reduce() missing required argument: 'reducer'"));
+    let list = list.unwrap_or_else(|| panic!("reduce() missing required argument: 'list'"));
     let initial =
         initial.unwrap_or_else(|| panic!("reduce() missing required argument: 'initial'"));
     let proxy = reducer
         .try_get_proxy()
         .unwrap_or_else(|| panic!("reduce() argument 'reducer' must be a function"));
 
-    // Call reducer(initial, initial)
-    let call_args = ValueRef::list(Some(&[&initial, &initial]));
+    // Iterate over list, accumulating result
+    let mut acc = initial;
     let call_kwargs = ValueRef::dict(None);
-    s.invoke_proxy_function(proxy, &call_args, &call_kwargs)
+    for item in list.as_list_ref().values.iter() {
+        let call_args = ValueRef::list(Some(&[&acc, item]));
+        acc = s.invoke_proxy_function(proxy, &call_args, &call_kwargs);
+    }
+    acc
 }
