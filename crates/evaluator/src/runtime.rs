@@ -102,16 +102,25 @@ pub fn runtime_reduce(s: &Evaluator, args: &ValueRef, kwargs: &ValueRef) -> Valu
     let reducer =
         reducer.unwrap_or_else(|| panic!("reduce() missing required argument: 'reducer'"));
     let list = list.unwrap_or_else(|| panic!("reduce() missing required argument: 'list'"));
-    let initial =
-        initial.unwrap_or_else(|| panic!("reduce() missing required argument: 'initial'"));
     let proxy = reducer
         .try_get_proxy()
         .unwrap_or_else(|| panic!("reduce() argument 'reducer' must be a function"));
 
-    // Iterate over list, accumulating result
-    let mut acc = initial;
+    let list_ref = list.as_list_ref();
+    let mut iter = list_ref.values.iter();
+
+    // Determine initial accumulator value
+    let mut acc = match initial {
+        Some(init) => init,
+        None => match iter.next() {
+            Some(first) => first.clone(),
+            None => return ValueRef::none(),
+        },
+    };
+
+    // Iterate over remaining items, accumulating result
     let call_kwargs = ValueRef::dict(None);
-    for item in list.as_list_ref().values.iter() {
+    for item in iter {
         let call_args = ValueRef::list(Some(&[&acc, item]));
         acc = s.invoke_proxy_function(proxy, &call_args, &call_kwargs);
     }

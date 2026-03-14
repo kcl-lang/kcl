@@ -626,9 +626,10 @@ If no argument is given, the constructor creates a new empty dict."#,
                 range: dummy_range(),
             },
         ],
-        r#"Apply a function of two arguments to an initial value. Returns the result of the function.
+        r#"Apply a function of two arguments cumulatively to the items of a list, from left to right, to reduce the list to a single value.
 
-The initial value is required. The list parameter is currently ignored."#,
+If initial is provided, it is used as the starting accumulator value and applies the reducer to all list elements. An empty list returns initial.
+If initial is not provided, uses the first element as the starting accumulator value and applies the reducer to the remaining elements. An empty list returns None."#,
         false,
         None,
     )
