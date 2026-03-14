@@ -585,4 +585,51 @@ If no argument is given, the constructor creates a new empty dict."#,
         false,
         None,
     )
+    reduce => Type::function(
+        None,
+        Arc::new(Type::ANY),
+        &[
+            Parameter {
+                name: "reducer".to_string(),
+                ty: Arc::new(Type::function(None, Type::any_ref(), &[
+                    Parameter {
+                        name: "accumulator".to_string(),
+                        ty: Arc::new(Type::ANY),
+                        has_default: false,
+                        default_value: None,
+                        range: dummy_range(),
+                    },
+                    Parameter {
+                        name: "item".to_string(),
+                        ty: Arc::new(Type::ANY),
+                        has_default: false,
+                        default_value: None,
+                        range: dummy_range(),
+                    },
+                ], "", false, None)),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+            Parameter {
+                name: "list".to_string(),
+                ty: Type::list_ref(Arc::new(Type::ANY)),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+            Parameter {
+                name: "initial".to_string(),
+                ty: Arc::new(Type::ANY),
+                has_default: true,
+                default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Apply a function of two arguments to an initial value. Returns the result of the function.
+
+The initial value is required. The list parameter is currently ignored."#,
+        false,
+        None,
+    )
 }
