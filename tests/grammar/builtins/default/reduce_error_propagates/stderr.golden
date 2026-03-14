@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:2:1
+  |
+2 | result = reduce(lambda acc: int, item: int -> int { assert False, "reducer error" }, [1], 5)
+  |  reducer error
+  |

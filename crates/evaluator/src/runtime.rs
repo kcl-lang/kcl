@@ -5,11 +5,36 @@ use std::{
 };
 
 use kcl_runtime::{
-    Context, SchemaTypeFunc, UnsafeWrapper, ValueRef, get_call_arg, is_runtime_catch_function,
-    kcl_plugin_invoke, ptr_as_ref,
+    Context, SchemaTypeFunc, UnsafeWrapper, ValueRef, get_call_arg, kcl_builtin_reduce,
+    kcl_plugin_invoke, kcl_runtime_catch, ptr_as_ref,
 };
 
 use crate::Evaluator;
+
+/// Macro to define evaluator builtins.
+/// Each entry maps: stub function pointer => handler function
+macro_rules! evaluator_builtins {
+    ($ptr:expr; $($stub:path => $handler:expr),* $(,)?) => {{
+        $(
+            if $ptr == $stub as *const () as u64 {
+                return Some($handler);
+            }
+        )*
+        None
+    }};
+}
+
+/// Get the handler for an evaluator builtin, if the pointer matches one.
+#[inline]
+fn get_evaluator_builtin_handler(
+    ptr: u64,
+) -> Option<fn(&Evaluator, &ValueRef, &ValueRef) -> ValueRef> {
+    // All evaluator builtins defined in one place:
+    evaluator_builtins!(ptr;
+        kcl_runtime_catch => runtime_catch,
+        kcl_builtin_reduce => runtime_reduce,
+    )
+}
 
 /// Invoke functions with arguments and keyword arguments.
 pub fn invoke_function(
@@ -22,8 +47,8 @@ pub fn invoke_function(
         let func = func.as_function();
         let fn_ptr = func.fn_ptr;
         let closure = &func.closure;
-        if is_runtime_catch_function(fn_ptr) {
-            runtime_catch(s, args, kwargs)
+        if let Some(handler) = get_evaluator_builtin_handler(fn_ptr) {
+            handler(s, args, kwargs)
         } else {
             let ctx: &mut Context = &mut s.runtime_ctx.borrow_mut();
             // Call schema constructor twice
@@ -65,4 +90,67 @@ pub fn runtime_catch(s: &Evaluator, args: &ValueRef, kwargs: &ValueRef) -> Value
         };
     }
     panic!("catch() takes exactly one argument (0 given)");
+}
+
+/// Reduce a list to a single value by applying a reducer function cumulatively.
+pub fn runtime_reduce(s: &Evaluator, args: &ValueRef, kwargs: &ValueRef) -> ValueRef {
+    let reducer = get_call_arg(args, kwargs, 0, Some("reducer"));
+    let list = get_call_arg(args, kwargs, 1, Some("list"));
+    let initial = get_call_arg(args, kwargs, 2, Some("initial"));
+
+    // Validate arguments
+    let reducer =
+        reducer.unwrap_or_else(|| panic!("reduce() missing required argument: 'reducer'"));
+    let list = list.unwrap_or_else(|| panic!("reduce() missing required argument: 'list'"));
+    let proxy = reducer
+        .try_get_proxy()
+        .unwrap_or_else(|| panic!("reduce() argument 'reducer' must be a function"));
+
+    let list_ref = list.as_list_ref();
+    let mut iter = list_ref.values.iter();
+
+    // Determine initial accumulator value
+    let mut acc = match initial {
+        Some(init) => init,
+        None => match iter.next() {
+            Some(first) => first.clone(),
+            None => {
+                // Failure Triad: empty list, no initial - check if acc type is nullable
+                if let Some(acc_type) = get_reducer_acc_type(s, proxy) {
+                    if !acc_type.contains("None") && acc_type != "any" {
+                        panic!(
+                            "reduce() empty list with no initial value and non-nullable accumulator type '{}'",
+                            acc_type
+                        );
+                    }
+                }
+                return ValueRef::none();
+            }
+        },
+    };
+
+    // Iterate over remaining items, accumulating result
+    let call_kwargs = ValueRef::dict(None);
+    for item in iter {
+        let call_args = ValueRef::list(Some(&[&acc, item]));
+        acc = s.invoke_proxy_function(proxy, &call_args, &call_kwargs);
+    }
+    acc
+}
+
+/// Get the accumulator type from the reducer's first parameter, if available.
+fn get_reducer_acc_type(s: &Evaluator, proxy: generational_arena::Index) -> Option<String> {
+    use crate::proxy::Proxy;
+    let frames = s.frames.borrow();
+    let frame = frames.get(proxy)?;
+    if let Proxy::Lambda(lambda) = &frame.proxy {
+        if let Some(args) = &lambda.ctx.node.args {
+            if let Some(first_type) = args.node.ty_list.first() {
+                if let Some(ty) = first_type {
+                    return Some(ty.node.to_string());
+                }
+            }
+        }
+    }
+    None
 }

@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:2:1
+  |
+2 | result = reduce(lambda acc: int, item: int -> int { assert False, "should not be called" }, [])
+  |  reduce() empty list with no initial value and non-nullable accumulator type 'int'
+  |

@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:2:1
+  |
+2 | result = reduce(None, [], 5)
+  |  reduce() argument 'reducer' must be a function
+  |

@@ -62,9 +62,17 @@ pub unsafe extern "C-unwind" fn kcl_runtime_catch(
     panic!("catch() takes exactly one argument (0 given)");
 }
 
-#[inline]
-pub fn is_runtime_catch_function(ptr: u64) -> bool {
-    ptr == kcl_runtime_catch as *const () as u64
+/// Stub function for reduce builtin. The actual implementation is in the evaluator
+/// crate because it needs access to invoke_proxy_function.
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers.
+#[unsafe(no_mangle)]
+pub unsafe extern "C-unwind" fn kcl_builtin_reduce(
+    _ctx: *mut kcl_context_t,
+    _args: *const kcl_value_ref_t,
+    _kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
+    panic!("kcl_builtin_reduce should be handled by the evaluator")
 }
 
 /// Convert an error to string.

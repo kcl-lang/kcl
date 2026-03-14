@@ -585,4 +585,52 @@ If no argument is given, the constructor creates a new empty dict."#,
         false,
         None,
     )
+    reduce => Type::function(
+        None,
+        Arc::new(Type::ANY),
+        &[
+            Parameter {
+                name: "reducer".to_string(),
+                ty: Arc::new(Type::function(None, Type::any_ref(), &[
+                    Parameter {
+                        name: "accumulator".to_string(),
+                        ty: Arc::new(Type::ANY),
+                        has_default: false,
+                        default_value: None,
+                        range: dummy_range(),
+                    },
+                    Parameter {
+                        name: "item".to_string(),
+                        ty: Arc::new(Type::ANY),
+                        has_default: false,
+                        default_value: None,
+                        range: dummy_range(),
+                    },
+                ], "", false, None)),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+            Parameter {
+                name: "list".to_string(),
+                ty: Type::list_ref(Arc::new(Type::ANY)),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+            Parameter {
+                name: "initial".to_string(),
+                ty: Arc::new(Type::ANY),
+                has_default: true,
+                default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Apply a function of two arguments cumulatively to the items of a list, from left to right, to reduce the list to a single value.
+
+If initial is provided, it is used as the starting accumulator value and applies the reducer to all list elements. An empty list returns initial.
+If initial is not provided, uses the first element as the starting accumulator value and applies the reducer to the remaining elements. An empty list with a non-nullable accumulator type raises an error; otherwise returns None."#,
+        false,
+        None,
+    )
 }

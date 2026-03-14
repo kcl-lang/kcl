@@ -1,0 +1,11 @@
+test1: 9123
+test2:
+- 7
+- 2
+- 4
+- 6
+test3: 3.215
+test4: 99
+test5: 15
+test6: 42
+test7: null
