@@ -629,7 +629,7 @@ If no argument is given, the constructor creates a new empty dict."#,
         r#"Apply a function of two arguments cumulatively to the items of a list, from left to right, to reduce the list to a single value.
 
 If initial is provided, it is used as the starting accumulator value and applies the reducer to all list elements. An empty list returns initial.
-If initial is not provided, uses the first element as the starting accumulator value and applies the reducer to the remaining elements. An empty list returns None."#,
+If initial is not provided, uses the first element as the starting accumulator value and applies the reducer to the remaining elements. An empty list with a non-nullable accumulator type raises an error; otherwise returns None."#,
         false,
         None,
     )

@@ -114,7 +114,18 @@ pub fn runtime_reduce(s: &Evaluator, args: &ValueRef, kwargs: &ValueRef) -> Valu
         Some(init) => init,
         None => match iter.next() {
             Some(first) => first.clone(),
-            None => return ValueRef::none(),
+            None => {
+                // Failure Triad: empty list, no initial - check if acc type is nullable
+                if let Some(acc_type) = get_reducer_acc_type(s, proxy) {
+                    if !acc_type.contains("None") && acc_type != "any" {
+                        panic!(
+                            "reduce() empty list with no initial value and non-nullable accumulator type '{}'",
+                            acc_type
+                        );
+                    }
+                }
+                return ValueRef::none();
+            }
         },
     };
 
@@ -125,4 +136,21 @@ pub fn runtime_reduce(s: &Evaluator, args: &ValueRef, kwargs: &ValueRef) -> Valu
         acc = s.invoke_proxy_function(proxy, &call_args, &call_kwargs);
     }
     acc
+}
+
+/// Get the accumulator type from the reducer's first parameter, if available.
+fn get_reducer_acc_type(s: &Evaluator, proxy: generational_arena::Index) -> Option<String> {
+    use crate::proxy::Proxy;
+    let frames = s.frames.borrow();
+    let frame = frames.get(proxy)?;
+    if let Proxy::Lambda(lambda) = &frame.proxy {
+        if let Some(args) = &lambda.ctx.node.args {
+            if let Some(first_type) = args.node.ty_list.first() {
+                if let Some(ty) = first_type {
+                    return Some(ty.node.to_string());
+                }
+            }
+        }
+    }
+    None
 }
