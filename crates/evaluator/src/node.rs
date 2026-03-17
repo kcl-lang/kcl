@@ -26,7 +26,6 @@ use crate::ty::type_pack_and_check;
 use crate::union::union_entry;
 use crate::{EvalResult, Evaluator};
 use crate::{GLOBAL_LEVEL, INNER_LEVEL, error as kcl_error};
-use crate::{backtrack_break_here, backtrack_update_break};
 
 /// Impl TypedResultWalker for Evaluator to visit AST nodes to evaluate the result.
 impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
