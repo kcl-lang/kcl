@@ -30,6 +30,7 @@ pub fn kcl_get_fn_ptr_by_name(name: &str) -> u64 {
         "kcl_builtin_pow" => crate::kcl_builtin_pow as *const () as u64,
         "kcl_builtin_print" => crate::kcl_builtin_print as *const () as u64,
         "kcl_builtin_range" => crate::kcl_builtin_range as *const () as u64,
+        "kcl_builtin_reduce" => crate::kcl_builtin_reduce as *const () as u64,
         "kcl_builtin_round" => crate::kcl_builtin_round as *const () as u64,
         "kcl_builtin_sorted" => crate::kcl_builtin_sorted as *const () as u64,
         "kcl_builtin_str" => crate::kcl_builtin_str as *const () as u64,
