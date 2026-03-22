@@ -330,7 +330,10 @@ impl<'ctx> Evaluator<'ctx> {
             if variables.get(&name.to_string()).is_some() {
                 variables.insert(name.to_string(), value.clone());
                 if save_lazy_scope {
-                    self.set_value_to_lazy_scope(&current_pkgpath, name, &value)
+                    self.set_value_to_lazy_scope(&current_pkgpath, name, &value);
+                    // Also force update the cache to avoid stale references when
+                    // the variable is reassigned with a new value (for example, via |=)
+                    self.update_lazy_scope_cache(&current_pkgpath, name, &value);
                 }
                 existed = true;
             }
