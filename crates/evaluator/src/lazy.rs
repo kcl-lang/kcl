@@ -398,9 +398,10 @@ impl<'ctx> Evaluator<'ctx> {
     pub(crate) fn update_lazy_scope_cache(&self, pkgpath: &str, key: &str, value: &ValueRef) {
         let mut lazy_scopes = self.lazy_scopes.borrow_mut();
         if let Some(scope) = lazy_scopes.get_mut(pkgpath) {
-            if scope.cache.contains_key(key) {
-                scope.cache.insert(key.to_string(), value.clone());
-            }
+            // Always update the cache when a variable is reassigned, whether or not
+            // it already exists in the cache. This ensures subsequent loads get the
+            // new value instead of evaluating setters that would return a stale value.
+            scope.cache.insert(key.to_string(), value.clone());
         }
     }
 }
