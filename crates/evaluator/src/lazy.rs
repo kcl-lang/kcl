@@ -389,4 +389,18 @@ impl<'ctx> Evaluator<'ctx> {
             scope.cache.insert(key.to_string(), value.clone());
         }
     }
+
+    /// Force update the lazy scope cache with a new value.
+    /// This is used when a variable is reassigned with a new ValueRef
+    /// (for example, via |= which creates a new value via deep_copy)
+    /// to avoid stale references in subsequent subscript assignments.
+    #[inline]
+    pub(crate) fn update_lazy_scope_cache(&self, pkgpath: &str, key: &str, value: &ValueRef) {
+        let mut lazy_scopes = self.lazy_scopes.borrow_mut();
+        if let Some(scope) = lazy_scopes.get_mut(pkgpath) {
+            if scope.cache.contains_key(key) {
+                scope.cache.insert(key.to_string(), value.clone());
+            }
+        }
+    }
 }
