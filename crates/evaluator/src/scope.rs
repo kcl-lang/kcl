@@ -213,9 +213,19 @@ impl<'ctx> Evaluator<'ctx> {
         let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
         let msg = format!("pkgpath {} is not found", current_pkgpath);
         let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
+        let mut existed = false;
         if let Some(last) = scopes.last_mut() {
             let variables = &mut last.variables;
-            variables.insert(name.to_string(), pointer);
+            existed = variables.contains_key(name);
+            variables.insert(name.to_string(), pointer.clone());
+        }
+        // Release the borrow before calling update_lazy_scope_cache
+        drop(pkg_scopes);
+        // If updating an existing variable, also update the lazy scope cache
+        // to avoid stale references when the variable is reassigned with a new
+        // ValueRef (for example, via += which creates a new list).
+        if existed {
+            self.update_lazy_scope_cache(&current_pkgpath, name, &pointer);
         }
     }
 
