@@ -4,7 +4,7 @@ expression: "format! (\"{}\", evaluator.run().unwrap().1)"
 ---
 VALUES_MAP:
   '1':
-    attr1: foobar
+    attr1: foo
   '2':
     attr2: bar
 config:

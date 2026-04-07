@@ -1,6 +1,6 @@
 instances:
 - apiVersion: apiextensions.crossplane.io/v1
-  kind: CHANGED
+  kind: CompositeResourceDefinition
   metadata:
     name: xrapp.apps.group.tech
   spec:

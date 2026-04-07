@@ -1,6 +1,6 @@
 instances:
 - apiVersion: v1
-  kind: Deployment
+  kind: Pod
   metadata:
     name: web
     labels:
@@ -9,7 +9,7 @@ instances:
   spec:
     replicas: 3
 - apiVersion: v1
-  kind: StatefulSet
+  kind: Pod
   metadata:
     name: api
     labels:
