@@ -303,7 +303,9 @@ impl<'ctx> Evaluator<'ctx> {
                     let schema_value = p.as_schema();
                     config_keys = schema_value.config_keys.clone();
                 }
-                config_keys.push(key.to_string());
+                if !config_keys.iter().any(|k| k == key) {
+                    config_keys.push(key.to_string());
+                }
                 let schema = resolve_schema(self, p, &config_keys);
                 p.schema_update_with_schema(&schema);
             }

@@ -112,6 +112,9 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         if assign_stmt.targets.len() == 1 {
             // Store the single target
             let name = &assign_stmt.targets[0];
+            // Deep copy the value to ensure assign-by-value semantics.
+            // This mirrors the behavior of multi-target assignment below.
+            let value = self.value_deep_copy(&value);
             self.walk_target_with_value(&name.node, value.clone())?;
         } else {
             // Store multiple targets

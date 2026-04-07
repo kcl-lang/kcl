@@ -473,6 +473,31 @@ schema Bar:
 my_bar = Bar {}
 "#}
 
+// Test for assign by value with different schemas (issue #2080).
+// Assignments should be by value, so mutating a schema after assignment
+// should not affect the original object. This test verifies that foo is
+// a deep copy of input, so modifying foo.world does NOT propagate back to bar.
+evaluator_snapshot! {lambda_10, r#"
+schema Foo:
+    hello: str
+
+schema Bar(Foo):
+    world: str
+
+testCopyByValue = lambda input: Bar {
+    foo: any = input
+    foo.world = "modified"
+    foo
+}
+
+bar = Bar {
+    hello = "world"
+    world = "hello"
+}
+
+output = testCopyByValue(bar)
+"#}
+
 evaluator_snapshot! {schema_0, r#"
 schema Person:
     name: str = "Alice"
