@@ -1,0 +1,117 @@
+---
+source: crates/parser/src/tests/expr.rs
+assertion_line: 102
+expression: "$crate :: tests ::\nparsing_expr_string(r####\"lambda { x: int } -> int {x}\"####)"
+---
+Node {
+    node: Lambda(
+        LambdaExpr {
+            args: Some(
+                Node {
+                    node: Arguments {
+                        args: [
+                            Node {
+                                node: Identifier {
+                                    names: [
+                                        Node {
+                                            node: "x",
+                                            filename: "",
+                                            line: 1,
+                                            column: 9,
+                                            end_line: 1,
+                                            end_column: 10,
+                                        },
+                                    ],
+                                    pkgpath: "",
+                                    ctx: Load,
+                                },
+                                filename: "",
+                                line: 1,
+                                column: 9,
+                                end_line: 1,
+                                end_column: 10,
+                            },
+                        ],
+                        defaults: [
+                            None,
+                        ],
+                        ty_list: [
+                            Some(
+                                Node {
+                                    node: Basic(
+                                        Int,
+                                    ),
+                                    filename: "",
+                                    line: 1,
+                                    column: 12,
+                                    end_line: 1,
+                                    end_column: 15,
+                                },
+                            ),
+                        ],
+                    },
+                    filename: "",
+                    line: 1,
+                    column: 7,
+                    end_line: 1,
+                    end_column: 17,
+                },
+            ),
+            body: [
+                Node {
+                    node: Expr(
+                        ExprStmt {
+                            exprs: [
+                                Node {
+                                    node: Identifier(
+                                        Identifier {
+                                            names: [
+                                                Node {
+                                                    node: "x",
+                                                    filename: "",
+                                                    line: 1,
+                                                    column: 26,
+                                                    end_line: 1,
+                                                    end_column: 27,
+                                                },
+                                            ],
+                                            pkgpath: "",
+                                            ctx: Load,
+                                        },
+                                    ),
+                                    filename: "",
+                                    line: 1,
+                                    column: 26,
+                                    end_line: 1,
+                                    end_column: 27,
+                                },
+                            ],
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 26,
+                    end_line: 1,
+                    end_column: 27,
+                },
+            ],
+            return_ty: Some(
+                Node {
+                    node: Basic(
+                        Int,
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 21,
+                    end_line: 1,
+                    end_column: 24,
+                },
+            ),
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 28,
+}

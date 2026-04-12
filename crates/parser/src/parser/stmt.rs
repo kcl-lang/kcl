@@ -729,6 +729,7 @@ impl<'a> Parser<'a> {
                 &[TokenKind::OpenDelim(DelimToken::Bracket)],
                 &[TokenKind::CloseDelim(DelimToken::Bracket)],
                 true,
+                false,
             )
         } else {
             None
@@ -851,11 +852,14 @@ impl<'a> Parser<'a> {
     /// Syntax:
     /// schema_arguments: schema_argument (COMMA schema_argument)*
     /// schema_argument: NAME [COLON type] [ASSIGN test]
+    /// If multiline is true:
+    /// schema_arguments: schema_argument (COMMA NEWLINE* schema_argument)*
     pub(crate) fn parse_parameters(
         &mut self,
         open_tokens: &[TokenKind],
         close_tokens: &[TokenKind],
         bump_close: bool,
+        multiline: bool,
     ) -> Option<NodeRef<Arguments>> {
         let mut has_open_token = false;
 
@@ -894,6 +898,11 @@ impl<'a> Parser<'a> {
                 break;
             }
 
+            if multiline && self.token.kind == TokenKind::Newline {
+                self.skip_newlines();
+                self.clean_all_indentations();
+            }
+
             if matches!(self.token.kind, TokenKind::Newline | TokenKind::Eof) {
                 let expect_tokens: Vec<String> = close_tokens
                     .iter()
@@ -930,6 +939,11 @@ impl<'a> Parser<'a> {
             // Parameter interval comma
             if let TokenKind::Comma = self.token.kind {
                 self.bump();
+            }
+
+            if multiline && self.token.kind == TokenKind::Newline {
+                self.skip_newlines();
+                self.clean_all_indentations();
             }
 
             self.drop(marker);
@@ -1423,6 +1437,7 @@ impl<'a> Parser<'a> {
                 &[TokenKind::OpenDelim(DelimToken::Bracket)],
                 &[TokenKind::CloseDelim(DelimToken::Bracket)],
                 true,
+                false,
             )
         } else {
             None
