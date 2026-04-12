@@ -1,0 +1,203 @@
+---
+source: crates/parser/src/tests/expr.rs
+assertion_line: 106
+expression: "$crate :: tests ::\nparsing_expr_string(r####\"lambda {\n    x: int = 5, y: str = \"hello\",\n    z\n} -> any {\n    x\n}\"####)"
+---
+Node {
+    node: Lambda(
+        LambdaExpr {
+            args: Some(
+                Node {
+                    node: Arguments {
+                        args: [
+                            Node {
+                                node: Identifier {
+                                    names: [
+                                        Node {
+                                            node: "x",
+                                            filename: "",
+                                            line: 2,
+                                            column: 4,
+                                            end_line: 2,
+                                            end_column: 5,
+                                        },
+                                    ],
+                                    pkgpath: "",
+                                    ctx: Load,
+                                },
+                                filename: "",
+                                line: 2,
+                                column: 4,
+                                end_line: 2,
+                                end_column: 5,
+                            },
+                            Node {
+                                node: Identifier {
+                                    names: [
+                                        Node {
+                                            node: "y",
+                                            filename: "",
+                                            line: 2,
+                                            column: 16,
+                                            end_line: 2,
+                                            end_column: 17,
+                                        },
+                                    ],
+                                    pkgpath: "",
+                                    ctx: Load,
+                                },
+                                filename: "",
+                                line: 2,
+                                column: 16,
+                                end_line: 2,
+                                end_column: 17,
+                            },
+                            Node {
+                                node: Identifier {
+                                    names: [
+                                        Node {
+                                            node: "z",
+                                            filename: "",
+                                            line: 3,
+                                            column: 4,
+                                            end_line: 3,
+                                            end_column: 5,
+                                        },
+                                    ],
+                                    pkgpath: "",
+                                    ctx: Load,
+                                },
+                                filename: "",
+                                line: 3,
+                                column: 4,
+                                end_line: 3,
+                                end_column: 5,
+                            },
+                        ],
+                        defaults: [
+                            Some(
+                                Node {
+                                    node: NumberLit(
+                                        NumberLit {
+                                            binary_suffix: None,
+                                            value: Int(
+                                                5,
+                                            ),
+                                        },
+                                    ),
+                                    filename: "",
+                                    line: 2,
+                                    column: 13,
+                                    end_line: 2,
+                                    end_column: 14,
+                                },
+                            ),
+                            Some(
+                                Node {
+                                    node: StringLit(
+                                        StringLit {
+                                            is_long_string: false,
+                                            raw_value: "\"hello\"",
+                                            value: "hello",
+                                        },
+                                    ),
+                                    filename: "",
+                                    line: 2,
+                                    column: 25,
+                                    end_line: 2,
+                                    end_column: 32,
+                                },
+                            ),
+                            None,
+                        ],
+                        ty_list: [
+                            Some(
+                                Node {
+                                    node: Basic(
+                                        Int,
+                                    ),
+                                    filename: "",
+                                    line: 2,
+                                    column: 7,
+                                    end_line: 2,
+                                    end_column: 10,
+                                },
+                            ),
+                            Some(
+                                Node {
+                                    node: Basic(
+                                        Str,
+                                    ),
+                                    filename: "",
+                                    line: 2,
+                                    column: 19,
+                                    end_line: 2,
+                                    end_column: 22,
+                                },
+                            ),
+                            None,
+                        ],
+                    },
+                    filename: "",
+                    line: 1,
+                    column: 7,
+                    end_line: 4,
+                    end_column: 1,
+                },
+            ),
+            body: [
+                Node {
+                    node: Expr(
+                        ExprStmt {
+                            exprs: [
+                                Node {
+                                    node: Identifier(
+                                        Identifier {
+                                            names: [
+                                                Node {
+                                                    node: "x",
+                                                    filename: "",
+                                                    line: 5,
+                                                    column: 4,
+                                                    end_line: 5,
+                                                    end_column: 5,
+                                                },
+                                            ],
+                                            pkgpath: "",
+                                            ctx: Load,
+                                        },
+                                    ),
+                                    filename: "",
+                                    line: 5,
+                                    column: 4,
+                                    end_line: 5,
+                                    end_column: 5,
+                                },
+                            ],
+                        },
+                    ),
+                    filename: "",
+                    line: 5,
+                    column: 4,
+                    end_line: 5,
+                    end_column: 5,
+                },
+            ],
+            return_ty: Some(
+                Node {
+                    node: Any,
+                    filename: "",
+                    line: 4,
+                    column: 5,
+                    end_line: 4,
+                    end_column: 8,
+                },
+            ),
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 6,
+    end_column: 1,
+}

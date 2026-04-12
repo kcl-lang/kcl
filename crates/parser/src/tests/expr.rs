@@ -99,6 +99,25 @@ parse_expr_snapshot!(
     _a
 }"####
 );
+parse_expr_snapshot!(lambda_expr_4, r####"lambda { x: int } -> int {x}"####);
+parse_expr_snapshot!(
+    lambda_expr_5,
+    r####"lambda { x: int = 5, y: str  } -> any {x}"####
+);
+parse_expr_snapshot!(lambda_expr_6, r####"lambda { } -> int {5}"####);
+parse_expr_snapshot!(
+    lambda_expr_7,
+    r####"lambda { x = { y = 5 } } -> int {x.y}"####
+);
+parse_expr_snapshot!(
+    lambda_expr_8,
+    r####"lambda {
+    x: int = 5, y: str = "hello",
+    z
+} -> any {
+    x
+}"####
+);
 parse_expr_snapshot!(
     config_expr_0,
     r####"{

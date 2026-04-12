@@ -1959,7 +1959,10 @@ impl<'a> Parser<'a> {
     }
 
     /// Syntax:
-    /// lambda_expr: LAMBDA [arguments] [RIGHT_ARROW type]
+    /// lambda_expr: LAMBDA (
+    ///     [arguments] [RIGHT_ARROW type] |
+    ///     LEFT_BRACE [arguments] RIGHT_BRACE RIGHT_ARROW type
+    ///   )
     ///   LEFT_BRACE
     ///     [expr_stmt | NEWLINE _INDENT schema_init_stmt+ _DEDENT]
     ///   RIGHT_BRACE
@@ -1967,14 +1970,45 @@ impl<'a> Parser<'a> {
         let token = self.token;
         self.bump_keyword(kw::Lambda);
 
+        // peek braces to check if followed by arrow
+        let mut brace_followed_by_arrow = false;
+        if self.token.kind == TokenKind::OpenDelim(DelimToken::Brace) {
+            let mut cursor = 1;
+            let mut brace_depth = 1;
+            while let Some(tok) = self.cursor.peekn(cursor) {
+                match tok.kind {
+                    TokenKind::OpenDelim(DelimToken::Brace) => brace_depth += 1,
+                    TokenKind::CloseDelim(DelimToken::Brace) => {
+                        brace_depth -= 1;
+                        if brace_depth == 0 {
+                            if let Some(next_tok) = self.cursor.peekn(cursor + 1) {
+                                brace_followed_by_arrow = next_tok.kind == TokenKind::RArrow;
+                            }
+                            break;
+                        }
+                    }
+                    _ => {}
+                }
+                cursor += 1;
+            }
+        }
+
         let mut args = None;
         let mut return_ty = None;
 
-        // schema_arguments
-        if !matches!(self.token.kind, TokenKind::RArrow | TokenKind::OpenDelim(_)) {
+        // treat brace body as arguments if followed by arrow
+        if brace_followed_by_arrow {
+            args = self.parse_parameters(
+                &[TokenKind::OpenDelim(DelimToken::Brace)],
+                &[TokenKind::CloseDelim(DelimToken::Brace)],
+                true,
+                true,
+            );
+        } else if !matches!(self.token.kind, TokenKind::RArrow | TokenKind::OpenDelim(_)) {
             args = self.parse_parameters(
                 &[],
                 &[TokenKind::RArrow, TokenKind::OpenDelim(DelimToken::Brace)],
+                false,
                 false,
             );
         }

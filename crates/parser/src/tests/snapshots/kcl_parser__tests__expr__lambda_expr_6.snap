@@ -1,0 +1,72 @@
+---
+source: crates/parser/src/tests/expr.rs
+assertion_line: 104
+expression: "$crate :: tests :: parsing_expr_string(r####\"lambda { } -> int {5}\"####)"
+---
+Node {
+    node: Lambda(
+        LambdaExpr {
+            args: Some(
+                Node {
+                    node: Arguments {
+                        args: [],
+                        defaults: [],
+                        ty_list: [],
+                    },
+                    filename: "",
+                    line: 1,
+                    column: 7,
+                    end_line: 1,
+                    end_column: 10,
+                },
+            ),
+            body: [
+                Node {
+                    node: Expr(
+                        ExprStmt {
+                            exprs: [
+                                Node {
+                                    node: NumberLit(
+                                        NumberLit {
+                                            binary_suffix: None,
+                                            value: Int(
+                                                5,
+                                            ),
+                                        },
+                                    ),
+                                    filename: "",
+                                    line: 1,
+                                    column: 19,
+                                    end_line: 1,
+                                    end_column: 20,
+                                },
+                            ],
+                        },
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 19,
+                    end_line: 1,
+                    end_column: 20,
+                },
+            ],
+            return_ty: Some(
+                Node {
+                    node: Basic(
+                        Int,
+                    ),
+                    filename: "",
+                    line: 1,
+                    column: 14,
+                    end_line: 1,
+                    end_column: 17,
+                },
+            ),
+        },
+    ),
+    filename: "",
+    line: 1,
+    column: 0,
+    end_line: 1,
+    end_column: 21,
+}

@@ -44,17 +44,19 @@ impl Cursor {
 
     /// Peek next token.
     pub fn peek(&self) -> Option<Token> {
-        if self.index < self.stream.len() {
-            Some(self.stream[self.index])
-        } else {
-            None
-        }
+        self.peekn(1)
     }
 
     /// Peek next two token.
     pub fn peek2(&self) -> Option<Token> {
-        if self.index + 1 < self.stream.len() {
-            Some(self.stream[self.index + 1])
+        self.peekn(2)
+    }
+
+    /// Peek next n token.
+    pub fn peekn(&self, n: usize) -> Option<Token> {
+        let index = self.index + n - 1;
+        if index < self.stream.len() {
+            Some(self.stream[index])
         } else {
             None
         }
