@@ -16,6 +16,7 @@ type ParameterType<'a> = (
 
 const COMMA_WHITESPACE: &str = ", ";
 const IDENTIFIER_REGEX: &str = r#"^\$?[a-zA-Z_]\w*$"#;
+const RECOMMENDED_LINE_LENGTH: usize = 80;
 
 macro_rules! interleave {
     ($inter: expr, $f: expr, $seq: expr) => {
@@ -707,19 +708,27 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
     }
 
     fn walk_lambda_expr(&mut self, lambda_expr: &'ctx ast::LambdaExpr) -> Self::Result {
-        self.write("lambda");
-        if let Some(args) = &lambda_expr.args {
-            self.write_space();
-            self.walk_arguments(&args.node);
+        let has_comments = lambda_expr
+            .args
+            .as_ref()
+            .map(|args| args.node.args.iter().any(|e| self.has_comments_on_node(e)))
+            .unwrap_or(false);
+        let multiline = has_comments || {
+            self.push_tmp_buffer();
+            self.write_single_line_lambda_signature(lambda_expr);
+            let line_length = self.pop_tmp_buffer().map_or(0, |buf| buf.len());
+            line_length > RECOMMENDED_LINE_LENGTH
+        };
+
+        if multiline {
+            self.write_multi_line_lambda_signature(lambda_expr);
+        } else {
+            self.write_single_line_lambda_signature(lambda_expr);
         }
-        if let Some(ty_str) = &lambda_expr.return_ty {
-            self.write_space();
-            self.write_token(TokenKind::RArrow);
-            self.write_space();
-            self.write(&ty_str.node.to_string());
-        }
+
         self.write_space();
         self.write_token(TokenKind::OpenDelim(DelimToken::Brace));
+
         self.write_newline_without_fill();
         self.write_indentation(Indentation::Indent);
 
@@ -954,6 +963,77 @@ impl<'p> Printer<'p> {
         } else {
             self.write(&attr.node);
         };
+    }
+
+    fn write_single_line_lambda_signature(&mut self, lambda_expr: &ast::LambdaExpr) {
+        self.write("lambda");
+        if let Some(args) = &lambda_expr.args {
+            self.write_space();
+            self.walk_arguments(&args.node);
+        }
+        if let Some(ty_str) = &lambda_expr.return_ty {
+            self.write_space();
+            self.write_token(TokenKind::RArrow);
+            self.write_space();
+            self.write(&ty_str.node.to_string());
+        }
+    }
+
+    fn write_multi_line_lambda_signature(&mut self, lambda_expr: &ast::LambdaExpr) {
+        self.write("lambda");
+        self.write_space();
+        self.write_token(TokenKind::OpenDelim(DelimToken::Brace));
+        self.write_newline_without_fill();
+        self.write_indentation(Indentation::Indent);
+        self.fill("");
+
+        if let Some(args) = &lambda_expr.args {
+            let parameter_zip_list: Vec<ParameterType<'_>> = args
+                .node
+                .args
+                .iter()
+                .zip(
+                    args.node
+                        .ty_list
+                        .iter()
+                        .map(|ty| ty.clone().map(|n| n.node.to_string())),
+                )
+                .zip(args.node.defaults.iter())
+                .collect();
+            interleave!(
+                || {
+                    self.write(",");
+                    self.writeln("");
+                },
+                |para: &ParameterType<'_>| {
+                    let ((arg, ty_str), default) = para;
+                    self.write_comments_before_node(arg);
+                    self.walk_identifier(&arg.node);
+                    if let Some(ty_str) = ty_str {
+                        self.write(&format!(": {}", ty_str));
+                    }
+                    if let Some(default) = default {
+                        self.write(" = ");
+                        self.expr(default);
+                    }
+                },
+                parameter_zip_list
+            );
+        }
+
+        self.write(",");
+        self.write_newline_without_fill();
+        self.write_indentation(Indentation::Dedent);
+        self.fill("");
+        self.write_token(TokenKind::CloseDelim(DelimToken::Brace));
+        self.write_space();
+        self.write_token(TokenKind::RArrow);
+        self.write_space();
+        if let Some(ty_str) = &lambda_expr.return_ty {
+            self.write(&ty_str.node.to_string());
+        } else {
+            self.write("any");
+        }
     }
 }
 

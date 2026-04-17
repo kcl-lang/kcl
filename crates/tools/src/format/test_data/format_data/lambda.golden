@@ -11,3 +11,47 @@ f2 = lambda {
         }
     }
 }
+f3 = lambda {
+    x,
+    y: int = 3,
+    z,
+    some_super_long_argument: SomeSuperLongType,
+    another_super_long_arguments: YetAnotherSuperLongTypeThatTakesQuiteAFewCharacters,
+} -> any {
+    y + x + z + 1
+}
+f4 = lambda {
+    x,
+    y: int = 3,
+    z,
+    some_super_long_argument: SomeSuperLongType,
+    another_super_long_arguments: YetAnotherSuperLongTypeThatTakesQuiteAFewCharacters,
+} -> any {
+    y + x + z + 1
+}
+f5 = lambda x: any = {y = 1} -> any {
+    y + x + z + 1
+}
+f6 = lambda {
+    # some comment
+    x,
+    # some other comment
+    y,
+} -> any {
+    y + x + z + 1
+}
+f7 = lambda {
+    # some comment
+    x: int = 5,
+} -> any {
+    1
+}
+f8 = lambda {
+    x: any = {
+        some_very_long_key_that_takes_a_long_line = 1
+        another_very_long_key_that_takes_a_long_line = 1
+        x = 2
+    },
+} -> any {
+    5
+}

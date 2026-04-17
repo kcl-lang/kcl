@@ -62,6 +62,8 @@ pub trait PrinterHook {
 pub struct Printer<'p> {
     /// Output string buffer.
     pub out: String,
+    /// Temporary buffers for look ahead formatting
+    pub tmp_buffers: Vec<String>,
     pub indent: usize,
     pub cfg: Config,
     /// Print comments,
@@ -79,6 +81,7 @@ impl Default for Printer<'_> {
         Self {
             hook: &NoHook,
             out: Default::default(),
+            tmp_buffers: Vec::default(),
             indent: Default::default(),
             cfg: Default::default(),
             comments: Default::default(),
@@ -93,6 +96,7 @@ impl<'p> Printer<'p> {
     pub fn new(cfg: Config, hook: &'p (dyn PrinterHook + 'p)) -> Self {
         Self {
             out: "".to_string(),
+            tmp_buffers: Vec::default(),
             indent: 0,
             cfg,
             comments: VecDeque::default(),
@@ -143,7 +147,10 @@ impl<'p> Printer<'p> {
     /// Print string
     #[inline]
     pub fn write_string(&mut self, string: &str) {
-        self.out.push_str(string);
+        self.tmp_buffers
+            .last_mut()
+            .unwrap_or(&mut self.out)
+            .push_str(string);
     }
 
     pub fn write_indentation(&mut self, indentation: Indentation) {
@@ -316,6 +323,14 @@ impl<'p> Printer<'p> {
     /// Leave with a dedent
     pub fn leave(&mut self) {
         self.indent -= 1;
+    }
+
+    pub(crate) fn push_tmp_buffer(&mut self) {
+        self.tmp_buffers.push(String::new());
+    }
+
+    pub(crate) fn pop_tmp_buffer(&mut self) -> Option<String> {
+        self.tmp_buffers.pop()
     }
 
     pub(crate) fn push_expr_span(&mut self, start_line: u64, end_line: u64) {
