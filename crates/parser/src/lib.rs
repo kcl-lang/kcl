@@ -656,16 +656,26 @@ fn get_dir_files(dir: &str) -> Result<Vec<String>> {
 /// - The name of the external package could not be resolved from [`pkg_path`].
 fn is_external_pkg(pkg_path: &str, opts: &LoadProgramOptions) -> Result<Option<PkgInfo>> {
     let pkg_name = parse_external_pkg_name(pkg_path)?;
-    let external_pkg_root = if let Some(root) = opts.package_maps.get(&pkg_name) {
-        PathBuf::from(root).join(KCL_MOD_FILE)
+    // Two resolution paths:
+    //
+    // 1. Caller registered the pkg explicitly via `opts.package_maps` —
+    //    e.g. an embedder that materialized the pkg to a known path
+    //    (possibly via WASI preopens on wasip1, where `Path::exists`
+    //    through absolute preopen paths is unreliable in std).
+    //    TRUST the caller: skip the .exists() probe, jump straight
+    //    to the pkg-root resolution below.
+    // 2. Fall back to `vendor_dirs`, where we do probe with
+    //    `.exists()` since the caller didn't declare anything.
+    let (external_pkg_root, explicit) = if let Some(root) = opts.package_maps.get(&pkg_name) {
+        (PathBuf::from(root).join(KCL_MOD_FILE), true)
     } else {
         match pkg_exists(&opts.vendor_dirs, pkg_path) {
-            Some(path) => PathBuf::from(path).join(&pkg_name).join(KCL_MOD_FILE),
+            Some(path) => (PathBuf::from(path).join(&pkg_name).join(KCL_MOD_FILE), false),
             None => return Ok(None),
         }
     };
 
-    if external_pkg_root.exists() {
+    if explicit || external_pkg_root.exists() {
         Ok(Some(match external_pkg_root.parent() {
             Some(root) => {
                 let abs_root: String = match root.canonicalize() {
