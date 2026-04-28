@@ -91,8 +91,15 @@ pub unsafe extern "C-unwind" fn kcl_plugin_invoke_json(
     args: *const c_char,
     kwargs: *const c_char,
 ) -> *const c_char {
-    let fn_ptr_guard = PLUGIN_HANDLER_FN_PTR.lock().unwrap();
-    if let Some(fn_ptr) = *fn_ptr_guard {
+    // Copy the fn pointer (Copy + Sync) and release the mutex before
+    // invoking the handler. Holding the lock across the user
+    // callback deadlocks any nested KCL eval the callback might
+    // trigger (e.g. akua's `pkg.render(...)` plugin doing a
+    // synchronous render of an upstream Package), because
+    // `std::sync::Mutex` isn't reentrant. The fn pointer is set
+    // once at plugin-init time, so this race-free copy is enough.
+    let fn_ptr = { *PLUGIN_HANDLER_FN_PTR.lock().unwrap() };
+    if let Some(fn_ptr) = fn_ptr {
         fn_ptr(method, args, kwargs)
     } else {
         panic!("plugin handler is nil, should call kcl_plugin_init at first");
