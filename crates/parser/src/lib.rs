@@ -548,7 +548,25 @@ fn pkg_exists(pkgroots: &[String], pkgpath: &str) -> Option<String> {
 fn pkg_exists_in_path(path: &str, pkgpath: &str) -> bool {
     let mut pathbuf = PathBuf::from(path);
     pkgpath.split('.').for_each(|s| pathbuf.push(s));
-    pathbuf.exists() || pathbuf.with_extension(KCL_FILE_EXTENSION).exists()
+    path_exists_or_file(&pathbuf)
+        || path_exists_or_file(&pathbuf.with_extension(KCL_FILE_EXTENSION))
+}
+
+/// Check whether a path exists. On `wasm32-wasip1`, `Path::exists()` is
+/// unreliable for absolute paths that traverse preopens — the std
+/// implementation doesn't resolve them through the preopen table for
+/// metadata calls. Fall back to an actual read attempt (`read_dir` for
+/// dirs, `File::open` for files) which DOES go through wasi's `path_open`
+/// and honors the preopens.
+fn path_exists_or_file(path: &std::path::Path) -> bool {
+    #[cfg(target_arch = "wasm32")]
+    {
+        std::fs::read_dir(path).is_ok() || std::fs::File::open(path).is_ok()
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        path.exists()
+    }
 }
 
 /// Look for [`pkgpath`] in the current package's [`pkgroot`].
@@ -558,6 +576,13 @@ fn pkg_exists_in_path(path: &str, pkgpath: &str) -> bool {
 ///
 /// [`is_internal_pkg`] will return an error if the package's source files cannot be found.
 fn is_internal_pkg(pkg_name: &str, pkg_root: &str, pkg_path: &str) -> Result<Option<PkgInfo>> {
+    // No internal pkg can exist without a pkg_root on disk — skip the
+    // probe. Avoids a bogus `get_pkg_kfile_list("", pkg_path)` call in
+    // cases (like inline `k_code_list` compilation) where main has no
+    // kcl.mod anchor.
+    if pkg_root.is_empty() {
+        return Ok(None);
+    }
     match pkg_exists(&[pkg_root.to_string()], pkg_path) {
         Some(internal_pkg_root) => {
             let fullpath = if pkg_name == kcl_ast::MAIN_PKG {
@@ -603,12 +628,17 @@ fn get_pkg_kfile_list(pkgroot: &str, pkgpath: &str) -> Result<Vec<String>> {
         Ok(p) => p.to_str().unwrap().to_string(),
         Err(_) => pathbuf.as_path().to_str().unwrap().to_string(),
     };
-    if std::path::Path::new(abspath.as_str()).exists() {
-        return get_dir_files(abspath.as_str());
+    if path_exists_or_file(std::path::Path::new(abspath.as_str())) {
+        // Only a real directory enumerates k-files; if abspath resolves
+        // to a file (e.g. a `.k` mistakenly passed without extension)
+        // let the next branch handle it.
+        if std::fs::read_dir(abspath.as_str()).is_ok() {
+            return get_dir_files(abspath.as_str());
+        }
     }
 
     let as_k_path = abspath + KCL_FILE_SUFFIX;
-    if std::path::Path::new((as_k_path).as_str()).exists() {
+    if path_exists_or_file(std::path::Path::new(as_k_path.as_str())) {
         return Ok(vec![as_k_path]);
     }
 
@@ -617,7 +647,7 @@ fn get_pkg_kfile_list(pkgroot: &str, pkgpath: &str) -> Result<Vec<String>> {
 
 /// Get file list in the directory.
 fn get_dir_files(dir: &str) -> Result<Vec<String>> {
-    if !std::path::Path::new(dir).exists() {
+    if !path_exists_or_file(std::path::Path::new(dir)) {
         return Ok(Vec::new());
     }
 
@@ -656,16 +686,26 @@ fn get_dir_files(dir: &str) -> Result<Vec<String>> {
 /// - The name of the external package could not be resolved from [`pkg_path`].
 fn is_external_pkg(pkg_path: &str, opts: &LoadProgramOptions) -> Result<Option<PkgInfo>> {
     let pkg_name = parse_external_pkg_name(pkg_path)?;
-    let external_pkg_root = if let Some(root) = opts.package_maps.get(&pkg_name) {
-        PathBuf::from(root).join(KCL_MOD_FILE)
+    // Two resolution paths:
+    //
+    // 1. Caller registered the pkg explicitly via `opts.package_maps` —
+    //    e.g. an embedder that materialized the pkg to a known path
+    //    (possibly via WASI preopens on wasip1, where `Path::exists`
+    //    through absolute preopen paths is unreliable in std).
+    //    TRUST the caller: skip the .exists() probe, jump straight
+    //    to the pkg-root resolution below.
+    // 2. Fall back to `vendor_dirs`, where we do probe with
+    //    `.exists()` since the caller didn't declare anything.
+    let (external_pkg_root, explicit) = if let Some(root) = opts.package_maps.get(&pkg_name) {
+        (PathBuf::from(root).join(KCL_MOD_FILE), true)
     } else {
         match pkg_exists(&opts.vendor_dirs, pkg_path) {
-            Some(path) => PathBuf::from(path).join(&pkg_name).join(KCL_MOD_FILE),
+            Some(path) => (PathBuf::from(path).join(&pkg_name).join(KCL_MOD_FILE), false),
             None => return Ok(None),
         }
     };
 
-    if external_pkg_root.exists() {
+    if explicit || external_pkg_root.exists() {
         Ok(Some(match external_pkg_root.parent() {
             Some(root) => {
                 let abs_root: String = match root.canonicalize() {

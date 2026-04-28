@@ -18,6 +18,38 @@ use serde::{Serialize, de::DeserializeOwned};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+/// `Url::from_file_path` is `cfg(any(unix, windows))` in the `url`
+/// crate — unavailable on `wasm32-unknown-unknown`. The LSP only
+/// needs a `file://` URL for a path, so on wasm32 we build one via
+/// `Url::parse`. No Windows-drive handling on wasm32 since that
+/// target has no filesystem anyway.
+pub(crate) fn url_from_file_path<P: AsRef<Path>>(path: P) -> Result<Url, ()> {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        Url::from_file_path(path)
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        let p = path.as_ref().to_string_lossy();
+        Url::parse(&format!("file://{p}")).map_err(|_| ())
+    }
+}
+
+/// Inverse of [`url_from_file_path`]. Same story: `to_file_path` is
+/// `cfg(any(unix, windows))` on `url`. On wasm32 we strip the
+/// `file://` prefix and return the remainder as a `PathBuf`.
+pub(crate) fn url_to_file_path(url: &Url) -> Result<PathBuf, ()> {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        url.to_file_path()
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        let s = url.as_str();
+        s.strip_prefix("file://").map(PathBuf::from).ok_or(())
+    }
+}
+
 /// Deserializes a `T` from a json value.
 pub(crate) fn from_json<T: DeserializeOwned>(
     what: &'static str,
@@ -73,7 +105,7 @@ pub(crate) fn load_files_code_from_vfs(
     let mut res = vec![];
     let vfs = &mut vfs.read();
     for file in files {
-        let url = Url::from_file_path(file)
+        let url = url_from_file_path(file)
             .map_err(|_| anyhow::anyhow!("can't convert file to url: {}", file))?;
         let path = from_lsp::abs_path(&url)?;
         match vfs.file_id(&path.clone().into()) {

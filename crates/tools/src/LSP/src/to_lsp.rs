@@ -8,6 +8,8 @@ use kcl_utils::path::PathPrefix;
 use lsp_types::*;
 use serde_json::json;
 
+use crate::util::url_from_file_path;
+
 use std::{
     path::{Component, Path, Prefix},
     str::FromStr,
@@ -25,7 +27,7 @@ pub fn lsp_pos(pos: &KCLPos) -> Position {
 /// Convert start and pos format to lsp location.
 /// The position of the location in lsp protocol is different with position in ast node whose line number is 1 based.
 pub fn lsp_location(file_path: String, start: &KCLPos, end: &KCLPos) -> Option<Location> {
-    let uri = Url::from_file_path(file_path).ok()?;
+    let uri = url_from_file_path(file_path).ok()?;
     Some(Location {
         uri,
         range: Range {
@@ -69,7 +71,7 @@ pub fn kcl_msg_to_lsp_diags(
         Some(
             related_msg
                 .iter()
-                .filter_map(|m| match Url::from_file_path(m.range.0.filename.clone()) {
+                .filter_map(|m| match url_from_file_path(m.range.0.filename.clone()) {
                     Ok(uri) => Some(DiagnosticRelatedInformation {
                         location: Location {
                             uri,
@@ -183,7 +185,7 @@ pub(crate) fn url_from_path(path: impl AsRef<Path>) -> anyhow::Result<Url> {
 /// Returns a `Url` object from a given path, will lowercase drive letters if present.
 /// This will only happen when processing Windows paths.
 ///
-/// When processing non-windows path, this is essentially do the same as `Url::from_file_path`.
+/// When processing non-windows path, this is essentially do the same as `url_from_file_path`.
 pub(crate) fn url_from_path_with_drive_lowercasing(path: impl AsRef<Path>) -> anyhow::Result<Url> {
     let component_has_windows_drive = path.as_ref().components().any(|comp| {
         if let Component::Prefix(c) = comp {
@@ -197,7 +199,7 @@ pub(crate) fn url_from_path_with_drive_lowercasing(path: impl AsRef<Path>) -> an
 
     // VSCode expects drive letters to be lowercased, whereas rust will uppercase the drive letters.
     if component_has_windows_drive {
-        let url_original = Url::from_file_path(&path).map_err(|_| {
+        let url_original = url_from_file_path(&path).map_err(|_| {
             anyhow::anyhow!("can't convert path to url: {}", path.as_ref().display())
         })?;
 
@@ -214,7 +216,7 @@ pub(crate) fn url_from_path_with_drive_lowercasing(path: impl AsRef<Path>) -> an
             .map_err(|e| anyhow::anyhow!("Url from str ParseError: {}", e))?;
         Ok(url)
     } else {
-        Ok(Url::from_file_path(&path).map_err(|_| {
+        Ok(url_from_file_path(&path).map_err(|_| {
             anyhow::anyhow!("can't convert path to url: {}", path.as_ref().display())
         })?)
     }
