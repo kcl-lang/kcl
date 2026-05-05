@@ -54,5 +54,6 @@ readme = "README.md"
 [profile.release]
 rpath = true
 panic = "unwind"
-opt-level = "z"  # Optimize for size.
+opt-level = 3  # Optimize for speed.
 lto = true
+codegen-units = 1
