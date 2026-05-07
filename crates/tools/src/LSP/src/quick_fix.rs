@@ -6,6 +6,8 @@ use lsp_types::{
 };
 use serde_json::Value;
 
+use crate::util::url_from_file_path;
+
 pub fn quick_fix(uri: &Url, diags: &[Diagnostic]) -> Vec<lsp_types::CodeActionOrCommand> {
     let mut code_actions: Vec<lsp_types::CodeActionOrCommand> = vec![];
     for diag in diags {
@@ -199,7 +201,7 @@ mod tests {
             .flat_map(|diag| kcl_diag_to_lsp_diags_by_file(diag, file))
             .collect::<Vec<Diagnostic>>();
 
-        let uri = Url::from_file_path(file).unwrap();
+        let uri = url_from_file_path(file).unwrap();
         let code_actions = quick_fix(&uri, &diagnostics);
 
         let expected = [
