@@ -43,6 +43,7 @@ use std::{
 use compiler_base_span::{Loc, Span};
 use std::fmt::Debug;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use uuid;
 
 use super::token;
@@ -109,9 +110,13 @@ impl Serialize for AstIndex {
     }
 }
 
+static AST_INDEX_COUNTER: AtomicU64 = AtomicU64::new(1);
+
 impl Default for AstIndex {
     fn default() -> Self {
-        Self(uuid::Uuid::new_v4())
+        Self(uuid::Uuid::from_u128(
+            AST_INDEX_COUNTER.fetch_add(1, Ordering::Relaxed) as u128,
+        ))
     }
 }
 
