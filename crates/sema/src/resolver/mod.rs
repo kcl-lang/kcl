@@ -34,6 +34,7 @@ use crate::{resolver::scope::Scope, ty::SchemaType};
 use kcl_ast::ast::Program;
 use kcl_error::*;
 
+use self::doc::SchemaDoc;
 use self::scope::{KCLScopeCache, NodeTyMap, ProgramScope, builtin_scope};
 
 /// Resolver is responsible for program semantic checking, mainly
@@ -161,6 +162,8 @@ pub struct Context {
     pub type_alias_mapping: IndexMap<String, IndexMap<String, String>>,
     /// invalid pkg scope, remove when after resolve
     pub invalid_pkg_scope: IndexSet<String>,
+    /// Memoized parsed schema/rule doc strings, keyed by raw doc text.
+    pub parsed_doc_cache: IndexMap<String, Arc<SchemaDoc>>,
 }
 
 /// Resolve options.
