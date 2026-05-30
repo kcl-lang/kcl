@@ -3,6 +3,7 @@
 extern crate fancy_regex;
 
 use crate::*;
+use lazy_static::lazy_static;
 use std::mem::transmute_copy;
 
 pub const BUILTIN_TYPE_INT: &str = "int";
@@ -576,19 +577,13 @@ pub fn is_literal_type(tpe: &str) -> bool {
 /// is_dict_type returns the type string whether is a dict type
 #[inline]
 pub fn is_dict_type(tpe: &str) -> bool {
-    let count = tpe.chars().count();
-    count >= 2
-        && matches!(tpe.chars().next(), Some('{'))
-        && matches!(tpe.chars().nth(count - 1), Some('}'))
+    tpe.len() >= 2 && tpe.starts_with('{') && tpe.ends_with('}')
 }
 
 /// is_list_type returns the type string whether is a list type
 #[inline]
 pub fn is_list_type(tpe: &str) -> bool {
-    let count = tpe.chars().count();
-    count >= 2
-        && matches!(tpe.chars().next(), Some('['))
-        && matches!(tpe.chars().nth(count - 1), Some(']'))
+    tpe.len() >= 2 && tpe.starts_with('[') && tpe.ends_with(']')
 }
 
 #[inline]
@@ -607,40 +602,90 @@ pub fn is_schema_type(expected_type: &str) -> bool {
         && !is_literal_type(expected_type)
 }
 
-/// is union type
-pub fn is_type_union(tpe: &str) -> bool {
-    let mut stack = String::new();
-    let mut i = 0;
-    while i < tpe.chars().count() {
-        let c = tpe.chars().nth(i).unwrap();
-        if c == '|' && stack.is_empty() {
-            return true;
-        } else if c == '[' || c == '{' {
-            stack.push(c);
-        } else if c == ']' || c == '}' {
-            stack.pop();
-        } else if c == '\"' {
-            let t: String = tpe.chars().skip(i).collect();
-            let re = fancy_regex::Regex::new(r#""(?!"").*?(?<!\\)(\\\\)*?""#).unwrap();
-            if let Ok(Some(v)) = re.find(&t) {
-                i += v.as_str().chars().count() - 1;
-            }
-        } else if c == '\'' {
-            let t: String = tpe.chars().skip(i).collect();
-            let re = fancy_regex::Regex::new(r#"'(?!'').*?(?<!\\)(\\\\)*?'"#).unwrap();
-            if let Ok(Some(v)) = re.find(&t) {
-                i += v.as_str().chars().count() - 1;
-            }
+/// Returns the index of the quote that closes the string literal starting at
+/// `start`, or `start` itself when the literal is unterminated.
+#[inline]
+fn skip_quoted_type_literal(bytes: &[u8], start: usize) -> usize {
+    let quote = bytes[start];
+    let mut index = start + 1;
+    let mut escaped = false;
+    while index < bytes.len() {
+        let byte = bytes[index];
+        if escaped {
+            escaped = false;
+        } else if byte == b'\\' {
+            escaped = true;
+        } else if byte == quote {
+            return index;
         }
-        i += 1;
+        index += 1;
+    }
+    start
+}
+
+/// Returns whether `delimiter` occurs at the top level of the type string
+/// `tpe`, i.e. outside any `[]`/`{}` nesting or quoted string literal.
+#[inline]
+pub fn has_top_level_delimiter(tpe: &str, delimiter: u8) -> bool {
+    let bytes = tpe.as_bytes();
+    let mut depth: i32 = 0;
+    let mut index = 0;
+    while index < bytes.len() {
+        match bytes[index] {
+            b'[' | b'{' => depth += 1,
+            b']' | b'}' => depth = (depth - 1).max(0),
+            b'"' | b'\'' => {
+                index = skip_quoted_type_literal(bytes, index);
+            }
+            byte if byte == delimiter && depth == 0 => return true,
+            _ => {}
+        }
+        index += 1;
     }
     false
 }
 
+/// Splits `tpe` on every top-level `delimiter` (outside any `[]`/`{}` nesting
+/// or quoted string literal), returning the raw, unstripped segments.
+#[inline]
+pub fn split_top_level(tpe: &str, delimiter: u8) -> Vec<&str> {
+    let bytes = tpe.as_bytes();
+    let mut depth: i32 = 0;
+    let mut start = 0;
+    let mut index = 0;
+    let mut parts = Vec::new();
+    while index < bytes.len() {
+        match bytes[index] {
+            b'[' | b'{' => depth += 1,
+            b']' | b'}' => depth = (depth - 1).max(0),
+            b'"' | b'\'' => {
+                index = skip_quoted_type_literal(bytes, index);
+            }
+            byte if byte == delimiter && depth == 0 => {
+                parts.push(&tpe[start..index]);
+                start = index + 1;
+            }
+            _ => {}
+        }
+        index += 1;
+    }
+    parts.push(&tpe[start..]);
+    parts
+}
+
+/// is union type
+pub fn is_type_union(tpe: &str) -> bool {
+    has_top_level_delimiter(tpe, b'|')
+}
+
+lazy_static! {
+    static ref NUMBER_MULTIPLIER_RE: fancy_regex::Regex =
+        fancy_regex::Regex::new(NUMBER_MULTIPLIER_REGEX).unwrap();
+}
+
 /// is number multiplier literal type
 fn is_number_multiplier_literal_type(tpe: &str) -> bool {
-    let re = fancy_regex::Regex::new(NUMBER_MULTIPLIER_REGEX).unwrap();
-    re.is_match(tpe).unwrap_or_default()
+    NUMBER_MULTIPLIER_RE.is_match(tpe).unwrap_or_default()
 }
 
 #[inline]
@@ -653,45 +698,10 @@ fn ty_str_strip(ty_str: &str) -> &str {
 /// separate_kv split the union type and do not split '|' in dict and list
 /// e.g., "int|str" -> vec!["int", "str"], "int | str" -> vec!["int", "str"]
 pub fn split_type_union(tpe: &str) -> Vec<&str> {
-    let mut i = 0;
-    let mut s_index = 0;
-    let mut stack = String::new();
-    let mut types: Vec<&str> = vec![];
-    while i < tpe.chars().count() {
-        let (c_idx, c) = tpe.char_indices().nth(i).unwrap();
-        if c == '|' && stack.is_empty() {
-            types.push(&tpe[s_index..c_idx]);
-            s_index = c_idx + 1;
-        }
-        // List/Dict type
-        else if c == '[' || c == '{' {
-            stack.push(c);
-        }
-        // List/Dict type
-        else if c == ']' || c == '}' {
-            stack.pop();
-        }
-        // String literal type
-        else if c == '\"' {
-            let t: String = tpe.chars().skip(i).collect();
-            let re = fancy_regex::Regex::new(r#""(?!"").*?(?<!\\)(\\\\)*?""#).unwrap();
-            if let Ok(Some(v)) = re.find(&t) {
-                i += v.as_str().chars().count() - 1;
-            }
-        }
-        // String literal type
-        else if c == '\'' {
-            let t: String = tpe.chars().skip(i).collect();
-            let re = fancy_regex::Regex::new(r#"'(?!'').*?(?<!\\)(\\\\)*?'"#).unwrap();
-            if let Ok(Some(v)) = re.find(&t) {
-                i += v.as_str().chars().count() - 1;
-            }
-        }
-        i += 1;
-    }
-    types.push(&tpe[s_index..]);
-    // Remove empty and tab chars in the type string.
-    types.iter().map(|ty| ty_str_strip(ty)).collect()
+    split_top_level(tpe, b'|')
+        .into_iter()
+        .map(ty_str_strip)
+        .collect()
 }
 
 /// separate_kv function separates key_type and value_type in the dictionary type strings,
@@ -989,6 +999,13 @@ mod test_value_type {
             ("{str:\"|\"}|\"|\"", true),
             ("\"aa\\\"ab|\"", false),
             ("\"|aa\\\"ab|\"", false),
+            ("日本|語", true),
+            ("日本語", false),
+            ("\"日本|x\"", false),
+            ("{ключ:\"日本|x\"}|str", true),
+            ("\"\"\"a|b\"\"\"", false),
+            ("]|x", true),
+            ("\"a|b", true),
         ];
         for (value, expected) in cases {
             assert_eq!(is_type_union(value), expected);
@@ -1009,6 +1026,11 @@ mod test_value_type {
             ("'123'|'456'|'789'", vec!["'123'", "'456'", "'789'"]),
             ("'|'|'||'|'|||'", vec!["'|'", "'||'", "'|||'"]),
             ("{str:\"|\"}|\"|\"", vec!["{str:\"|\"}", "\"|\""]),
+            ("日本|語", vec!["日本", "語"]),
+            ("日本語|x", vec!["日本語", "x"]),
+            ("{ключ:\"日本|x\"}|str", vec!["{ключ:\"日本|x\"}", "str"]),
+            ("\"\"\"a|b\"\"\"", vec!["\"\"\"a|b\"\"\""]),
+            ("]|x", vec!["]", "x"]),
         ];
         for (value, expected) in cases {
             assert_eq!(split_type_union(value), expected);

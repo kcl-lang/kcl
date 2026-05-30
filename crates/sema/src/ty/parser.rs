@@ -49,13 +49,13 @@ pub fn is_literal_type_str(ty_str: &str) -> bool {
 /// is_dict_type returns the type string whether is a dict type
 #[inline]
 pub fn is_dict_type_str(ty: &str) -> bool {
-    ty.len() >= 2 && &ty[0..1] == "{" && &ty[ty.len() - 1..] == "}"
+    ty.len() >= 2 && ty.starts_with('{') && ty.ends_with('}')
 }
 
 /// is_list_type returns the type string whether is a list type
 #[inline]
 pub fn is_list_type_str(ty: &str) -> bool {
-    ty.len() >= 2 && &ty[0..1] == "[" && &ty[ty.len() - 1..] == "]"
+    ty.len() >= 2 && ty.starts_with('[') && ty.ends_with(']')
 }
 
 #[inline]
@@ -76,81 +76,23 @@ pub fn is_schema_type_str(expected_type: &str) -> bool {
 
 /// is union type
 pub fn is_union_type_str(ty: &str) -> bool {
-    let mut stack = String::new();
-    let mut i = 0;
-    while i < ty.chars().count() {
-        let c = ty.chars().nth(i).unwrap();
-        if c == '|' && stack.is_empty() {
-            return true;
-        } else if c == '[' || c == '{' {
-            stack.push(c);
-        } else if c == ']' || c == '}' {
-            stack.pop();
-        } else if c == '\"' {
-            let t = &ty[i..];
-            let re = fancy_regex::Regex::new(r#""(?!"").*?(?<!\\)(\\\\)*?""#).unwrap();
-            if let Ok(Some(v)) = re.find(t) {
-                i += v.range().end - 1;
-            }
-        } else if c == '\'' {
-            let t = &ty[i..];
-            let re = fancy_regex::Regex::new(r#"'(?!'').*?(?<!\\)(\\\\)*?'"#).unwrap();
-            if let Ok(Some(v)) = re.find(t) {
-                i += v.range().end - 1;
-            }
-        }
-        i += 1;
-    }
-    false
+    kcl_runtime::has_top_level_delimiter(ty, b'|')
+}
+
+lazy_static::lazy_static! {
+    static ref NUMBER_MULTIPLIER_RE: fancy_regex::Regex =
+        fancy_regex::Regex::new(NUMBER_MULTIPLIER_REGEX).unwrap();
 }
 
 /// is number multiplier literal type
 fn is_number_multiplier_literal_type_str(ty_str: &str) -> bool {
-    let re = fancy_regex::Regex::new(NUMBER_MULTIPLIER_REGEX).unwrap();
-    re.is_match(ty_str).unwrap_or_default()
+    NUMBER_MULTIPLIER_RE.is_match(ty_str).unwrap_or_default()
 }
 
 /// separate_kv split the union type and do not split '|' in dict and list
 /// e.g., "int|str" -> vec!["int", "str"]
 pub fn split_type_union(ty_str: &str) -> Vec<&str> {
-    let mut i = 0;
-    let mut s_index = 0;
-    let mut stack = String::new();
-    let mut types: Vec<&str> = vec![];
-    while i < ty_str.chars().count() {
-        let c = ty_str.chars().nth(i).unwrap();
-        if c == '|' && stack.is_empty() {
-            types.push(&ty_str[s_index..i]);
-            s_index = i + 1;
-        }
-        // List/Dict type
-        else if c == '[' || c == '{' {
-            stack.push(c);
-        }
-        // List/Dict type
-        else if c == ']' || c == '}' {
-            stack.pop();
-        }
-        // String literal type
-        else if c == '\"' {
-            let t = &ty_str[i..];
-            let re = fancy_regex::Regex::new(r#""(?!"").*?(?<!\\)(\\\\)*?""#).unwrap();
-            if let Ok(Some(v)) = re.find(t) {
-                i += v.range().end - 1;
-            }
-        }
-        // String literal type
-        else if c == '\'' {
-            let t = &ty_str[i..];
-            let re = fancy_regex::Regex::new(r#"'(?!'').*?(?<!\\)(\\\\)*?'"#).unwrap();
-            if let Ok(Some(v)) = re.find(t) {
-                i += v.range().end - 1;
-            }
-        }
-        i += 1;
-    }
-    types.push(&ty_str[s_index..]);
-    types
+    kcl_runtime::split_top_level(ty_str, b'|')
 }
 
 /// Parse union type string.
@@ -258,4 +200,44 @@ pub fn dereference_type(tpe: &str) -> String {
 fn ty_str_strip(ty_str: &str) -> &str {
     let chars = " \r\n";
     ty_str.trim_matches(|c| chars.contains(c))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{is_union_type_str, split_type_union};
+
+    #[test]
+    fn test_is_union_type_str() {
+        let cases = [
+            ("A|B|C", true),
+            ("'123'|'456'|'789'", true),
+            ("'|'|'||'|'|||'", true),
+            ("{str:\"|\"}|\"|\"", true),
+            ("\"aa\\\"ab|\"", false),
+            ("\"|aa\\\"ab|\"", false),
+            ("日本|語", true),
+            ("日本語", false),
+            ("\"日本|x\"", false),
+            ("{ключ:\"日本|x\"}|str", true),
+        ];
+        for (value, expected) in cases {
+            assert_eq!(is_union_type_str(value), expected);
+        }
+    }
+
+    #[test]
+    fn test_split_type_union() {
+        let cases = [
+            ("str|int", vec!["str", "int"]),
+            ("str|{str:int}", vec!["str", "{str:int}"]),
+            ("{str:\"|\"}|\"|\"", vec!["{str:\"|\"}", "\"|\""]),
+            ("'|'|'||'|'|||'", vec!["'|'", "'||'", "'|||'"]),
+            ("日本|語", vec!["日本", "語"]),
+            ("日本語|x", vec!["日本語", "x"]),
+            ("{ключ:\"日本|x\"}|str", vec!["{ключ:\"日本|x\"}", "str"]),
+        ];
+        for (value, expected) in cases {
+            assert_eq!(split_type_union(value), expected);
+        }
+    }
 }
