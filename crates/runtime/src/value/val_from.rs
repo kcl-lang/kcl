@@ -131,7 +131,7 @@ macro_rules! define_value_dict_from_iter_trait {
             fn from_iter<I: IntoIterator<Item = (&'a str, $elem_type)>>(iter: I) -> Self {
                 let mut dict: DictValue = Default::default();
                 for (k, v) in iter {
-                    dict.values.insert(k.to_string(), v.into());
+                    dict.values.insert(k.into(), v.into());
                 }
                 Self::from(Value::dict_value(Box::new(dict)))
             }
@@ -142,7 +142,7 @@ macro_rules! define_value_dict_from_iter_trait {
             fn from_iter<I: IntoIterator<Item = (&'a str, &'a $elem_type)>>(iter: I) -> Self {
                 let mut dict: DictValue = Default::default();
                 for (k, v) in iter {
-                    dict.values.insert(k.to_string(), v.into());
+                    dict.values.insert(k.into(), v.into());
                 }
                 Self::from(Value::dict_value(Box::new(dict)))
             }

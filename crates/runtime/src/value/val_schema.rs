@@ -139,7 +139,7 @@ impl ValueRef {
         if self.is_config() {
             let config = self.as_dict_ref();
             for (key, _) in &config.values {
-                let no_such_attr = ty.attrs.get(key).is_none()
+                let no_such_attr = ty.attrs.get(key.as_str()).is_none()
                     && cal_order.dict_get_value(key).is_none()
                     && !key.starts_with('_');
                 let has_index_signature = ty.has_index_signature
@@ -258,13 +258,13 @@ impl ValueRef {
     pub fn update_attr_map(&mut self, name: &str, type_str: &str) {
         match &mut *self.rc.borrow_mut() {
             Value::dict_value(dict) => {
-                dict.attr_map.insert(name.to_string(), type_str.to_string());
+                dict.attr_map.insert(name.into(), type_str.to_string());
             }
             Value::schema_value(schema) => {
                 schema
                     .config
                     .attr_map
-                    .insert(name.to_string(), type_str.to_string());
+                    .insert(name.into(), type_str.to_string());
             }
             _ => panic!("invalid object '{}' in update_attr_map", self.type_str()),
         }

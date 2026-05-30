@@ -136,12 +136,12 @@ impl ValueRef {
             // k in {k:v}
             Value::dict_value(dict) => {
                 let key = self.as_str();
-                dict.values.contains_key(&key)
+                dict.values.contains_key(key.as_str())
             }
             // k in schema{}
             Value::schema_value(schema) => {
                 let key = self.as_str();
-                schema.config.values.contains_key(&key)
+                schema.config.values.contains_key(key.as_str())
             }
             _ => {
                 let msg = format!(

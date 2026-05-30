@@ -501,14 +501,14 @@ impl ValueRef {
                         }
                         crate::Value::none => {
                             if !opts.ignore_none {
-                                val_map.insert(key.clone(), val.build_json(opts));
+                                val_map.insert(key.to_string(), val.build_json(opts));
                             }
                         }
                         crate::Value::func_value(_) => {
                             // ignore func
                         }
                         _ => {
-                            val_map.insert(key.clone(), val.build_json(opts));
+                            val_map.insert(key.to_string(), val.build_json(opts));
                         }
                     }
                 }
@@ -531,14 +531,14 @@ impl ValueRef {
                         }
                         crate::Value::none => {
                             if !opts.ignore_none {
-                                val_map.insert(key.clone(), val.build_json(opts));
+                                val_map.insert(key.to_string(), val.build_json(opts));
                             }
                         }
                         crate::Value::func_value(_) => {
                             // ignore func
                         }
                         _ => {
-                            val_map.insert(key.clone(), val.build_json(opts));
+                            val_map.insert(key.to_string(), val.build_json(opts));
                         }
                     }
                 }

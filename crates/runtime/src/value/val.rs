@@ -57,7 +57,7 @@ impl ValueRef {
         let mut dict: DictValue = Default::default();
         if let Some(values) = values {
             for x in values {
-                dict.values.insert(x.0.to_string(), (*x.1).clone());
+                dict.values.insert(x.0.into(), (*x.1).clone());
             }
         }
         Self::from(Value::dict_value(Box::new(dict)))

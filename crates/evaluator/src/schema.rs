@@ -687,7 +687,7 @@ pub(crate) fn schema_with_config(
             .as_dict_ref()
             .values
             .keys()
-            .cloned()
+            .map(|k| k.to_string())
             .collect()
     };
     let runtime_type = schema_runtime_type(&name, &pkgpath);

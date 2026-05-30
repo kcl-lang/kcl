@@ -36,7 +36,7 @@ impl ValueIterator {
                 pos: 0,
             },
             Value::dict_value(dict) => {
-                let keys: Vec<String> = dict.values.keys().map(|s| (*s).clone()).collect();
+                let keys: Vec<String> = dict.values.keys().map(|s| s.to_string()).collect();
                 ValueIterator {
                     len: dict.values.len(),
                     cur_key: Default::default(),
@@ -47,7 +47,8 @@ impl ValueIterator {
             }
 
             Value::schema_value(schema) => {
-                let keys: Vec<String> = schema.config.values.keys().map(|s| (*s).clone()).collect();
+                let keys: Vec<String> =
+                    schema.config.values.keys().map(|s| s.to_string()).collect();
                 ValueIterator {
                     len: schema.config.values.len(),
                     cur_key: Default::default(),
@@ -119,14 +120,14 @@ impl ValueIterator {
             Value::dict_value(dict) => {
                 let key = &self.keys[self.pos as usize];
                 self.cur_key = ValueRef::str(key);
-                self.cur_val = dict.values[key].clone();
+                self.cur_val = dict.values[key.as_str()].clone();
                 self.pos += 1;
                 Some(&self.cur_key)
             }
             Value::schema_value(schema) => {
                 let key = &self.keys[self.pos as usize];
                 self.cur_key = ValueRef::str(key);
-                self.cur_val = schema.config.values[key].clone();
+                self.cur_val = schema.config.values[key.as_str()].clone();
                 self.pos += 1;
                 Some(&self.cur_key)
             }

@@ -4,6 +4,7 @@ use crate::{new_mut_ptr, val_plan::PlanOptions};
 use generational_arena::Index;
 use kcl_primitives::{IndexMap, IndexSet};
 use serde::{Deserialize, Serialize};
+use smol_str::SmolStr;
 use std::collections::{HashMap, HashSet};
 use std::panic::{RefUnwindSafe, UnwindSafe};
 use std::rc::Rc;
@@ -222,11 +223,11 @@ pub struct ListValue {
 
 #[derive(PartialEq, Eq, Clone, Default, Debug)]
 pub struct DictValue {
-    pub values: IndexMap<String, ValueRef>,
-    pub ops: IndexMap<String, ConfigEntryOperationKind>,
-    pub insert_indexs: IndexMap<String, i32>,
+    pub values: IndexMap<SmolStr, ValueRef>,
+    pub ops: IndexMap<SmolStr, ConfigEntryOperationKind>,
+    pub insert_indexs: IndexMap<SmolStr, i32>,
     /// Attribute type annotation string mapping.
-    pub attr_map: IndexMap<String, String>,
+    pub attr_map: IndexMap<SmolStr, String>,
     /// The runtime dict to schema reflect type string.
     pub potential_schema: Option<String>,
     /// Stored schema arguments (args, kwargs) for instances() to use
