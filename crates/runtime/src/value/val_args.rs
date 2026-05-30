@@ -151,7 +151,7 @@ impl ValueRef {
 
     pub fn kwarg(&self, name: &str) -> Option<Self> {
         match &*self.rc.borrow() {
-            Value::dict_value(dict) => dict.values.get(&name.to_string()).cloned(),
+            Value::dict_value(dict) => dict.values.get(name).cloned(),
             _ => None,
         }
     }

@@ -315,15 +315,17 @@ impl ValueRef {
                     panic!("list index out of range: {b}");
                 }
             }
-            (Value::dict_value(a), Value::str_value(b)) => match a.values.get(b) {
+            (Value::dict_value(a), Value::str_value(b)) => match a.values.get(b.as_str()) {
                 Some(x) => (*x).clone(),
                 _ => Self::undefined(),
             },
             (Value::dict_value(_), _) => Self::undefined(),
-            (Value::schema_value(a), Value::str_value(b)) => match a.config.values.get(b) {
-                Some(x) => (*x).clone(),
-                _ => Self::undefined(),
-            },
+            (Value::schema_value(a), Value::str_value(b)) => {
+                match a.config.values.get(b.as_str()) {
+                    Some(x) => (*x).clone(),
+                    _ => Self::undefined(),
+                }
+            }
             _ => panic!(
                 "'{}' object is not subscriptable with '{}'",
                 self.type_str(),

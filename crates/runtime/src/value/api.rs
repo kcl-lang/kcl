@@ -246,7 +246,12 @@ pub unsafe extern "C-unwind" fn kcl_value_schema_with_config(
     // Config dict
     let config = unsafe { ptr_as_ref(config) };
     let config_meta = unsafe { ptr_as_ref(config_meta) };
-    let config_keys: Vec<String> = config.as_dict_ref().values.keys().cloned().collect();
+    let config_keys: Vec<String> = config
+        .as_dict_ref()
+        .values
+        .keys()
+        .map(|k| k.to_string())
+        .collect();
     // Schema meta
     let name = unsafe { c2str(name) };
     let pkgpath = unsafe { c2str(pkgpath) };
@@ -1138,7 +1143,7 @@ pub unsafe extern "C-unwind" fn kcl_default_collection_insert_int_pointer(
         let mut dict_ref_mut = p.as_dict_mut_ref();
         if !dict_ref_mut.values.contains_key(key) {
             let value = ValueRef::list(None);
-            dict_ref_mut.values.insert(key.to_string(), value);
+            dict_ref_mut.values.insert(key.into(), value);
         }
         let values = dict_ref_mut.values.get_mut(key).unwrap();
         let value = ValueRef::int(ptr);
@@ -1161,7 +1166,7 @@ pub unsafe extern "C-unwind" fn kcl_default_collection_insert_value(
         let mut dict_ref_mut = p.as_dict_mut_ref();
         if !dict_ref_mut.values.contains_key(key) {
             let value = ValueRef::list(None);
-            dict_ref_mut.values.insert(key.to_string(), value);
+            dict_ref_mut.values.insert(key.into(), value);
         }
         let values = dict_ref_mut.values.get_mut(key).unwrap();
         if !value.r#in(values) {

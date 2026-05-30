@@ -304,7 +304,7 @@ impl ValueRef {
                 if dict.values.is_empty() {
                     panic!("arg is an empty dict");
                 }
-                let keys: Vec<String> = dict.values.keys().map(|s| (*s).clone()).collect();
+                let keys: Vec<String> = dict.values.keys().map(|s| s.to_string()).collect();
                 let mut result = keys.first().unwrap();
                 for key in keys.iter() {
                     if filter(&ValueRef::str(key), &ValueRef::str(result)) {
@@ -317,7 +317,8 @@ impl ValueRef {
                 if schema.config.values.is_empty() {
                     panic!("arg is an empty dict");
                 }
-                let keys: Vec<String> = schema.config.values.keys().map(|s| (*s).clone()).collect();
+                let keys: Vec<String> =
+                    schema.config.values.keys().map(|s| s.to_string()).collect();
                 let mut result = keys.first().unwrap();
                 for key in keys.iter() {
                     if filter(&ValueRef::str(key), &ValueRef::str(result)) {

@@ -6,21 +6,21 @@ impl DictValue {
     pub fn new(values: &[(&str, &ValueRef)]) -> DictValue {
         let mut dict = DictValue::default();
         for x in values {
-            dict.values.insert(x.0.to_string(), x.1.clone());
+            dict.values.insert(x.0.into(), x.1.clone());
         }
         dict
     }
 
     pub fn get(&self, key: &ValueRef) -> Option<ValueRef> {
         match &*key.rc.borrow() {
-            Value::str_value(s) => self.values.get(s).cloned(),
+            Value::str_value(s) => self.values.get(s.as_str()).cloned(),
             _ => None,
         }
     }
 
     pub fn insert(&mut self, key: &ValueRef, value: &ValueRef) {
         if let Value::str_value(s) = &*key.rc.borrow() {
-            self.values.insert(s.to_string(), value.clone());
+            self.values.insert(s.as_str().into(), value.clone());
         }
     }
 
@@ -44,7 +44,7 @@ impl ValueRef {
     pub fn dict_int(values: &[(&str, i64)]) -> Self {
         let mut dict = DictValue::default();
         for x in values {
-            dict.values.insert(x.0.to_string(), Self::int(x.1));
+            dict.values.insert(x.0.into(), Self::int(x.1));
         }
         Self::from(Value::dict_value(Box::new(dict)))
     }
@@ -52,7 +52,7 @@ impl ValueRef {
     pub fn dict_float(values: &[(&str, f64)]) -> Self {
         let mut dict = DictValue::default();
         for x in values {
-            dict.values.insert(x.0.to_string(), Self::float(x.1));
+            dict.values.insert(x.0.into(), Self::float(x.1));
         }
         Self::from(Value::dict_value(Box::new(dict)))
     }
@@ -60,7 +60,7 @@ impl ValueRef {
     pub fn dict_bool(values: &[(&str, bool)]) -> Self {
         let mut dict = DictValue::default();
         for x in values {
-            dict.values.insert(x.0.to_string(), Self::bool(x.1));
+            dict.values.insert(x.0.into(), Self::bool(x.1));
         }
         Self::from(Value::dict_value(Box::new(dict)))
     }
@@ -68,7 +68,7 @@ impl ValueRef {
     pub fn dict_str(values: &[(&str, &str)]) -> Self {
         let mut dict = DictValue::default();
         for x in values {
-            dict.values.insert(x.0.to_string(), Self::str(x.1));
+            dict.values.insert(x.0.into(), Self::str(x.1));
         }
         Self::from(Value::dict_value(Box::new(dict)))
     }
@@ -87,7 +87,7 @@ impl ValueRef {
     /// Dict get keys.
     pub fn dict_keys(&self) -> ValueRef {
         let dict = self.dict_config();
-        let keys: Vec<String> = dict.values.keys().cloned().collect();
+        let keys: Vec<String> = dict.values.keys().map(|k| k.to_string()).collect();
         ValueRef::list_str(&keys)
     }
 
@@ -290,10 +290,10 @@ impl ValueRef {
     pub fn dict_update_key_value(&mut self, key: &str, val: ValueRef) {
         match &mut *self.rc.borrow_mut() {
             Value::dict_value(dict) => {
-                dict.values.insert(key.to_string(), val);
+                dict.values.insert(key.into(), val);
             }
             Value::schema_value(schema) => {
-                schema.config.values.insert(key.to_string(), val);
+                schema.config.values.insert(key.into(), val);
             }
             _ => panic!(
                 "failed to update the dict. An iterable of key-value pairs was expected, but got {}. Check if the syntax for updating the dictionary with the attribute '{}' is correct",
@@ -317,10 +317,10 @@ impl ValueRef {
             Value::schema_value(v) => v.config.as_mut(),
             _ => panic!("invalid dict update value: {}", self.type_str()),
         };
-        dict.values.insert(key.to_string(), val.clone());
-        dict.ops.insert(key.to_string(), op.clone());
+        dict.values.insert(key.into(), val.clone());
+        dict.ops.insert(key.into(), op.clone());
         if let Some(index) = index {
-            dict.insert_indexs.insert(key.to_string(), *index);
+            dict.insert_indexs.insert(key.into(), *index);
         }
     }
 
@@ -381,10 +381,10 @@ impl ValueRef {
 
         if self.is_config() {
             let mut dict: DictValue = Default::default();
-            dict.values.insert(key.to_string(), v.clone());
-            dict.ops.insert(key.to_string(), op);
+            dict.values.insert(key.into(), v.clone());
+            dict.ops.insert(key.into(), op);
             if let Some(insert_index) = insert_index {
-                dict.insert_indexs.insert(key.to_string(), insert_index);
+                dict.insert_indexs.insert(key.into(), insert_index);
             }
             self.union_entry(
                 ctx,

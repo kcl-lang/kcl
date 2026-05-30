@@ -170,7 +170,7 @@ pub fn type_pack_and_check(
                         }
 
                         for (attr, is_optional) in SchemaEvalContext::get_attrs(s, &caller.ctx) {
-                            if !config.values.contains_key(&attr) && !is_optional {
+                            if !config.values.contains_key(attr.as_str()) && !is_optional {
                                 error_msgs.push(format!(
                                     "Schema {}'s attribute {} is missing",
                                     tpe, attr

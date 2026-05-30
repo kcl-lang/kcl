@@ -330,10 +330,10 @@ impl<'ctx> Evaluator<'ctx> {
     ) {
         if p.is_config() {
             let mut dict: DictValue = Default::default();
-            dict.values.insert(key.to_string(), v.clone());
-            dict.ops.insert(key.to_string(), op);
+            dict.values.insert(key.into(), v.clone());
+            dict.ops.insert(key.into(), op);
             if let Some(index) = insert_index {
-                dict.insert_indexs.insert(key.to_string(), index);
+                dict.insert_indexs.insert(key.into(), index);
             }
             union_entry(
                 self,

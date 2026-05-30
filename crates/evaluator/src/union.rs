@@ -79,7 +79,7 @@ fn do_union(
                                     let union_value =
                                         union(s, &mut value, v, false, opts, union_context);
                                     if union_context.conflict {
-                                        union_context.path_backtrace.push(k.clone());
+                                        union_context.path_backtrace.push(k.to_string());
                                         return;
                                     }
                                     let index = must_normalize_index(index, origin_value.len());
@@ -101,7 +101,7 @@ fn do_union(
                             if let Some(obj_value) = obj.values.get_mut(k) {
                                 if opts.idempotent_check && !value_subsume(v, obj_value, false) {
                                     union_context.conflict = true;
-                                    union_context.path_backtrace.push(k.clone());
+                                    union_context.path_backtrace.push(k.to_string());
                                     union_context.obj_json = if obj_value.is_config() {
                                         "{...}".to_string()
                                     } else if obj_value.is_list() {
@@ -121,7 +121,7 @@ fn do_union(
                                 }
                                 union(s, obj_value, v, false, opts, union_context);
                                 if union_context.conflict {
-                                    union_context.path_backtrace.push(k.clone());
+                                    union_context.path_backtrace.push(k.to_string());
                                     return;
                                 }
                             } else {
@@ -161,7 +161,7 @@ fn do_union(
                         let origin_value = obj.values.get_mut(k);
                         if origin_value.is_none() || origin_value.unwrap().is_none_or_undefined() {
                             let list = ValueRef::list(None);
-                            obj.values.insert(k.to_string(), list);
+                            obj.values.insert(k.clone(), list);
                         }
                         let origin_value = obj.values.get_mut(k).unwrap();
                         if origin_value.is_same_ref(v) {
@@ -242,7 +242,7 @@ fn do_union(
             let obj_value = obj.config.as_mut();
             union_fn(obj_value, delta);
             common_keys = obj.config_keys.clone();
-            let mut other_keys: Vec<String> = delta.values.keys().cloned().collect();
+            let mut other_keys: Vec<String> = delta.values.keys().map(|k| k.to_string()).collect();
             common_keys.append(&mut other_keys);
             args = Some(obj.args.clone());
             kwargs = Some(obj.kwargs.clone());
@@ -267,7 +267,7 @@ fn do_union(
             let delta_value = delta.config.as_ref();
             union_fn(obj, delta_value);
             common_keys = delta.config_keys.clone();
-            let mut other_keys: Vec<String> = obj.values.keys().cloned().collect();
+            let mut other_keys: Vec<String> = obj.values.keys().map(|k| k.to_string()).collect();
             common_keys.append(&mut other_keys);
             args = Some(delta.args.clone());
             kwargs = Some(delta.kwargs.clone());
