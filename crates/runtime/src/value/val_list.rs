@@ -388,13 +388,14 @@ impl ValueRef {
                 slice
             }
             Value::str_value(str) => {
+                let chars: Vec<char> = str.chars().collect();
                 let (start, stop, step) = ValueRef::slice_unpack(start, stop, step);
                 let (start, _stop, slice_len) =
-                    ValueRef::slice_adjust_indices(str.chars().count() as i64, start, stop, step);
+                    ValueRef::slice_adjust_indices(chars.len() as i64, start, stop, step);
                 let mut slice = String::new();
                 let mut cur = start;
                 for _i in 1..(slice_len + 1) {
-                    let char = str.chars().nth(cur as usize).unwrap();
+                    let char = chars[cur as usize];
                     slice.push(char);
                     cur += step;
                 }
