@@ -23,6 +23,10 @@ impl PkgFile {
         }
     }
 
+    pub fn from_normalized_path(path: PathBuf, pkg_path: String) -> PkgFile {
+        PkgFile { path, pkg_path }
+    }
+
     pub fn get_path(&self) -> &PathBuf {
         &self.path
     }
