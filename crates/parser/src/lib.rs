@@ -39,7 +39,7 @@ use std::sync::{Arc, RwLock};
 
 use kcl_span::create_session_globals_then;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 /// [`PkgInfo`] is some basic information about a kcl package.
 pub(crate) struct PkgInfo {
     /// the name of the kcl package.
@@ -344,6 +344,21 @@ impl ModuleCache {
         }
     }
 }
+
+/// [`ParseLoadCache`] memoizes the filesystem lookups performed while
+/// resolving the import graph during a single load.
+#[derive(Default, Debug)]
+pub struct ParseLoadCache {
+    /// canonicalized form of the paths seen during loading.
+    canonical_paths: HashMap<PathBuf, PathBuf>,
+    /// whether a package path exists under a given search root.
+    pkg_exists_in_path: HashMap<(String, String), bool>,
+    /// the kcl files belonging to a `(pkgroot, pkgpath)` package.
+    pkg_kfile_list: HashMap<(String, String), Vec<String>>,
+    /// resolved package info keyed by `(pkg_name, pkg_root, pkg_path)`.
+    resolved_packages: HashMap<(String, String, String), PkgInfo>,
+}
+
 struct Loader {
     sess: ParseSessionRef,
     paths: Vec<String>,
@@ -352,6 +367,7 @@ struct Loader {
     file_graph: FileGraphCache,
     pkgmap: PkgMap,
     parsed_file: HashSet<PkgFile>,
+    load_cache: ParseLoadCache,
 }
 
 impl Loader {
@@ -372,6 +388,7 @@ impl Loader {
             file_graph: FileGraphCache::default(),
             pkgmap: Default::default(),
             parsed_file: HashSet::new(),
+            load_cache: ParseLoadCache::default(),
         }
     }
 
@@ -388,9 +405,31 @@ impl Loader {
             self.file_graph.clone(),
             &mut self.pkgmap,
             &mut self.parsed_file,
+            &mut self.load_cache,
             &self.opts,
         )
     }
+}
+
+/// Canonicalize [`path`], caching the result for the rest of the load.
+fn canonicalize_path_cached(path: &Path, load_cache: &mut ParseLoadCache) -> PathBuf {
+    if let Some(cached) = load_cache.canonical_paths.get(path) {
+        return cached.clone();
+    }
+    let canonical = match path.canonicalize() {
+        Ok(canonical) => PathBuf::from(canonical.adjust_canonicalization()),
+        Err(_) => path.to_path_buf(),
+    };
+    load_cache
+        .canonical_paths
+        .insert(path.to_path_buf(), canonical.clone());
+    canonical
+}
+
+/// Build a [`PkgFile`] from [`path`], reusing the cached canonical form.
+fn cached_pkg_file(path: PathBuf, pkg_path: String, load_cache: &mut ParseLoadCache) -> PkgFile {
+    let canonical = canonicalize_path_cached(&path, load_cache);
+    PkgFile::from_normalized_path(canonical, pkg_path)
 }
 
 fn fix_rel_import_path_with_file(
@@ -398,6 +437,7 @@ fn fix_rel_import_path_with_file(
     m: &mut ast::Module,
     file: &PkgFile,
     pkgmap: &PkgMap,
+    load_cache: &mut ParseLoadCache,
     opts: &LoadProgramOptions,
     sess: ParseSessionRef,
 ) {
@@ -419,6 +459,7 @@ fn fix_rel_import_path_with_file(
                 &pkg.pkg_name,
                 &pkg.pkg_root,
                 &fix_path,
+                load_cache,
                 opts,
                 sess.clone(),
             )
@@ -446,11 +487,21 @@ fn find_packages(
     pkg_name: &str,
     pkg_root: &str,
     pkg_path: &str,
+    load_cache: &mut ParseLoadCache,
     opts: &LoadProgramOptions,
     sess: ParseSessionRef,
 ) -> Result<Option<PkgInfo>> {
     if pkg_path.is_empty() {
         return Ok(None);
+    }
+
+    let cache_key = (
+        pkg_name.to_string(),
+        pkg_root.to_string(),
+        pkg_path.to_string(),
+    );
+    if let Some(pkg_info) = load_cache.resolved_packages.get(&cache_key) {
+        return Ok(Some(pkg_info.clone()));
     }
 
     // plugin pkgs
@@ -476,9 +527,9 @@ fn find_packages(
     }
 
     // 1. Look for in the current package's directory.
-    let is_internal = is_internal_pkg(pkg_name, pkg_root, pkg_path)?;
+    let is_internal = is_internal_pkg(pkg_name, pkg_root, pkg_path, load_cache)?;
     // 2. Look for in the vendor path.
-    let is_external = is_external_pkg(pkg_path, opts)?;
+    let is_external = is_external_pkg(pkg_path, opts, load_cache)?;
 
     // 3. Internal and external packages cannot be duplicated
     if is_external.is_some() && is_internal.is_some() {
@@ -501,7 +552,12 @@ fn find_packages(
     // 4. Get package information based on whether the package is internal or external.
 
     match is_internal.or(is_external) {
-        Some(pkg_info) => Ok(Some(pkg_info)),
+        Some(pkg_info) => {
+            load_cache
+                .resolved_packages
+                .insert(cache_key, pkg_info.clone());
+            Ok(Some(pkg_info))
+        }
         None => {
             sess.1.write().add_error(
                 ErrorKind::CannotFindModule,
@@ -536,19 +592,29 @@ fn find_packages(
 ///
 /// All paths in [`pkgpath`] must contain the kcl.mod file.
 /// It returns the parent directory of kcl.mod if present, or none if not.
-fn pkg_exists(pkgroots: &[String], pkgpath: &str) -> Option<String> {
+fn pkg_exists(
+    pkgroots: &[String],
+    pkgpath: &str,
+    load_cache: &mut ParseLoadCache,
+) -> Option<String> {
     pkgroots
         .iter()
-        .find(|root| pkg_exists_in_path(root, pkgpath))
+        .find(|root| pkg_exists_in_path(root, pkgpath, load_cache))
         .cloned()
 }
 
 /// Search for [`pkgpath`] under [`path`].
 /// It only returns [`true`] if [`path`]/[`pkgpath`] or [`path`]/[`pkgpath.k`] exists.
-fn pkg_exists_in_path(path: &str, pkgpath: &str) -> bool {
+fn pkg_exists_in_path(path: &str, pkgpath: &str, load_cache: &mut ParseLoadCache) -> bool {
+    let cache_key = (path.to_string(), pkgpath.to_string());
+    if let Some(exists) = load_cache.pkg_exists_in_path.get(&cache_key) {
+        return *exists;
+    }
     let mut pathbuf = PathBuf::from(path);
     pkgpath.split('.').for_each(|s| pathbuf.push(s));
-    pathbuf.exists() || pathbuf.with_extension(KCL_FILE_EXTENSION).exists()
+    let exists = pathbuf.exists() || pathbuf.with_extension(KCL_FILE_EXTENSION).exists();
+    load_cache.pkg_exists_in_path.insert(cache_key, exists);
+    exists
 }
 
 /// Look for [`pkgpath`] in the current package's [`pkgroot`].
@@ -557,27 +623,35 @@ fn pkg_exists_in_path(path: &str, pkgpath: &str) -> bool {
 /// # Error
 ///
 /// [`is_internal_pkg`] will return an error if the package's source files cannot be found.
-fn is_internal_pkg(pkg_name: &str, pkg_root: &str, pkg_path: &str) -> Result<Option<PkgInfo>> {
-    match pkg_exists(&[pkg_root.to_string()], pkg_path) {
-        Some(internal_pkg_root) => {
-            let fullpath = if pkg_name == kcl_ast::MAIN_PKG {
-                pkg_path.to_string()
-            } else {
-                format!("{}.{}", pkg_name, pkg_path)
-            };
-            let k_files = get_pkg_kfile_list(pkg_root, pkg_path)?;
-            Ok(Some(PkgInfo::new(
-                pkg_name.to_string(),
-                internal_pkg_root,
-                fullpath,
-                k_files,
-            )))
-        }
-        None => Ok(None),
+fn is_internal_pkg(
+    pkg_name: &str,
+    pkg_root: &str,
+    pkg_path: &str,
+    load_cache: &mut ParseLoadCache,
+) -> Result<Option<PkgInfo>> {
+    if pkg_exists_in_path(pkg_root, pkg_path, load_cache) {
+        let fullpath = if pkg_name == kcl_ast::MAIN_PKG {
+            pkg_path.to_string()
+        } else {
+            format!("{}.{}", pkg_name, pkg_path)
+        };
+        let k_files = get_pkg_kfile_list(pkg_root, pkg_path, load_cache)?;
+        Ok(Some(PkgInfo::new(
+            pkg_name.to_string(),
+            pkg_root.to_string(),
+            fullpath,
+            k_files,
+        )))
+    } else {
+        Ok(None)
     }
 }
 
-fn get_pkg_kfile_list(pkgroot: &str, pkgpath: &str) -> Result<Vec<String>> {
+fn get_pkg_kfile_list(
+    pkgroot: &str,
+    pkgpath: &str,
+    load_cache: &mut ParseLoadCache,
+) -> Result<Vec<String>> {
     // plugin pkgs
     if is_plugin_pkg(pkgpath) {
         return Ok(Vec::new());
@@ -592,6 +666,11 @@ fn get_pkg_kfile_list(pkgroot: &str, pkgpath: &str) -> Result<Vec<String>> {
         return Err(anyhow::anyhow!(format!("pkgroot not found: {:?}", pkgpath)));
     }
 
+    let cache_key = (pkgroot.to_string(), pkgpath.to_string());
+    if let Some(k_files) = load_cache.pkg_kfile_list.get(&cache_key) {
+        return Ok(k_files.clone());
+    }
+
     let mut pathbuf = std::path::PathBuf::new();
     pathbuf.push(pkgroot);
 
@@ -599,19 +678,21 @@ fn get_pkg_kfile_list(pkgroot: &str, pkgpath: &str) -> Result<Vec<String>> {
         pathbuf.push(s);
     }
 
-    let abspath = match pathbuf.canonicalize() {
-        Ok(p) => p.to_str().unwrap().to_string(),
-        Err(_) => pathbuf.as_path().to_str().unwrap().to_string(),
-    };
-    if std::path::Path::new(abspath.as_str()).exists() {
-        return get_dir_files(abspath.as_str());
+    let abspath = canonicalize_path_cached(pathbuf.as_path(), load_cache);
+    if abspath.exists() {
+        let k_files = get_dir_files(abspath.to_str().unwrap())?;
+        load_cache.pkg_kfile_list.insert(cache_key, k_files.clone());
+        return Ok(k_files);
     }
 
-    let as_k_path = abspath + KCL_FILE_SUFFIX;
-    if std::path::Path::new((as_k_path).as_str()).exists() {
-        return Ok(vec![as_k_path]);
+    let as_k_path = format!("{}{}", abspath.display(), KCL_FILE_SUFFIX);
+    if std::path::Path::new(as_k_path.as_str()).exists() {
+        let k_files = vec![as_k_path];
+        load_cache.pkg_kfile_list.insert(cache_key, k_files.clone());
+        return Ok(k_files);
     }
 
+    load_cache.pkg_kfile_list.insert(cache_key, Vec::new());
     Ok(Vec::new())
 }
 
@@ -654,12 +735,16 @@ fn get_dir_files(dir: &str) -> Result<Vec<String>> {
 ///
 /// - [`is_external_pkg`] will return an error if the package's source files cannot be found.
 /// - The name of the external package could not be resolved from [`pkg_path`].
-fn is_external_pkg(pkg_path: &str, opts: &LoadProgramOptions) -> Result<Option<PkgInfo>> {
+fn is_external_pkg(
+    pkg_path: &str,
+    opts: &LoadProgramOptions,
+    load_cache: &mut ParseLoadCache,
+) -> Result<Option<PkgInfo>> {
     let pkg_name = parse_external_pkg_name(pkg_path)?;
     let external_pkg_root = if let Some(root) = opts.package_maps.get(&pkg_name) {
         PathBuf::from(root).join(KCL_MOD_FILE)
     } else {
-        match pkg_exists(&opts.vendor_dirs, pkg_path) {
+        match pkg_exists(&opts.vendor_dirs, pkg_path, load_cache) {
             Some(path) => PathBuf::from(path).join(&pkg_name).join(KCL_MOD_FILE),
             None => return Ok(None),
         }
@@ -668,11 +753,11 @@ fn is_external_pkg(pkg_path: &str, opts: &LoadProgramOptions) -> Result<Option<P
     if external_pkg_root.exists() {
         Ok(Some(match external_pkg_root.parent() {
             Some(root) => {
-                let abs_root: String = match root.canonicalize() {
-                    Ok(p) => p.to_str().unwrap().to_string(),
-                    Err(_) => root.display().to_string(),
-                };
-                let k_files = get_pkg_kfile_list(&abs_root, &rm_external_pkg_name(pkg_path)?)?;
+                let abs_root = canonicalize_path_cached(root, load_cache)
+                    .display()
+                    .to_string();
+                let k_files =
+                    get_pkg_kfile_list(&abs_root, &rm_external_pkg_name(pkg_path)?, load_cache)?;
                 PkgInfo::new(
                     pkg_name.to_string(),
                     abs_root,
@@ -699,6 +784,7 @@ pub fn parse_file(
     pkgs: &mut HashMap<String, Vec<String>>,
     pkgmap: &mut PkgMap,
     file_graph: FileGraphCache,
+    load_cache: &mut ParseLoadCache,
     opts: &LoadProgramOptions,
 ) -> Result<Vec<PkgFile>> {
     let src = match src {
@@ -710,7 +796,7 @@ pub fn parse_file(
         .cloned(),
     };
     let m = parse_file_with_session(sess.clone(), file.get_path().to_str().unwrap(), src)?;
-    let deps = get_deps(&file, &m, pkgs, pkgmap, opts, sess)?;
+    let deps = get_deps(&file, &m, pkgs, pkgmap, load_cache, opts, sess)?;
     let dep_files = deps.keys().cloned().collect();
     pkgmap.extend(deps.clone());
     match &mut module_cache.write() {
@@ -748,6 +834,7 @@ pub fn get_deps(
     m: &Module,
     pkgs: &mut HashMap<String, Vec<String>>,
     pkgmap: &PkgMap,
+    load_cache: &mut ParseLoadCache,
     opts: &LoadProgramOptions,
     sess: ParseSessionRef,
 ) -> Result<PkgMap> {
@@ -766,6 +853,7 @@ pub fn get_deps(
                 &pkg.pkg_name,
                 &pkg.pkg_root,
                 &fix_path,
+                load_cache,
                 opts,
                 sess.clone(),
             )?;
@@ -777,7 +865,7 @@ pub fn get_deps(
                 }
 
                 pkg_info.k_files.iter().for_each(|p| {
-                    let file = PkgFile::new(p.into(), pkg_info.pkg_path.clone());
+                    let file = cached_pkg_file(p.into(), pkg_info.pkg_path.clone(), load_cache);
                     deps.insert(
                         file.clone(),
                         file_graph::Pkg {
@@ -792,6 +880,7 @@ pub fn get_deps(
     Ok(deps)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn parse_pkg(
     sess: ParseSessionRef,
     files: Vec<(PkgFile, Option<String>)>,
@@ -799,6 +888,7 @@ pub fn parse_pkg(
     pkgs: &mut HashMap<String, Vec<String>>,
     pkgmap: &mut PkgMap,
     file_graph: FileGraphCache,
+    load_cache: &mut ParseLoadCache,
     opts: &LoadProgramOptions,
 ) -> Result<Vec<PkgFile>> {
     let mut dependent = vec![];
@@ -811,6 +901,7 @@ pub fn parse_pkg(
             pkgs,
             pkgmap,
             file_graph.clone(),
+            load_cache,
             opts,
         )?;
         dependent.extend(deps);
@@ -826,6 +917,7 @@ pub fn parse_entry(
     pkgs: &mut HashMap<String, Vec<String>>,
     pkgmap: &mut PkgMap,
     file_graph: FileGraphCache,
+    load_cache: &mut ParseLoadCache,
     opts: &LoadProgramOptions,
     parsed_file: &mut HashSet<PkgFile>,
 ) -> Result<HashSet<PkgFile>> {
@@ -834,7 +926,11 @@ pub fn parse_entry(
     let mut files = vec![];
     let mut new_files = HashSet::new();
     for (i, f) in k_files.iter().enumerate() {
-        let file = PkgFile::new(f.adjust_canonicalization().into(), MAIN_PKG.to_string());
+        let file = cached_pkg_file(
+            f.adjust_canonicalization().into(),
+            MAIN_PKG.to_string(),
+            load_cache,
+        );
         files.push((file.clone(), maybe_k_codes.get(i).unwrap_or(&None).clone()));
         new_files.insert(file.clone());
         pkgmap.insert(
@@ -852,6 +948,7 @@ pub fn parse_entry(
         pkgs,
         pkgmap,
         file_graph.clone(),
+        load_cache,
         opts,
     )?;
     let mut unparsed_file: VecDeque<PkgFile> = dependent_paths.into();
@@ -881,8 +978,16 @@ pub fn parse_entry(
             Ok(m_cache) => match m_cache.ast_cache.get(file.get_path()) {
                 Some(m) => {
                     let deps = m_cache.dep_cache.get(&file).cloned().unwrap_or_else(|| {
-                        get_deps(&file, &m.read().unwrap(), pkgs, pkgmap, opts, sess.clone())
-                            .unwrap()
+                        get_deps(
+                            &file,
+                            &m.read().unwrap(),
+                            pkgs,
+                            pkgmap,
+                            load_cache,
+                            opts,
+                            sess.clone(),
+                        )
+                        .unwrap()
                     });
                     let dep_files: Vec<PkgFile> = deps.keys().cloned().collect();
                     pkgmap.extend(deps.clone());
@@ -913,6 +1018,7 @@ pub fn parse_entry(
                         pkgs,
                         pkgmap,
                         file_graph.clone(),
+                        load_cache,
                         opts,
                     )?;
                     for dep in deps {
@@ -928,6 +1034,7 @@ pub fn parse_entry(
     Ok(new_files)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn parse_program(
     sess: ParseSessionRef,
     paths: Vec<String>,
@@ -935,6 +1042,7 @@ pub fn parse_program(
     file_graph: FileGraphCache,
     pkgmap: &mut PkgMap,
     parsed_file: &mut HashSet<PkgFile>,
+    load_cache: &mut ParseLoadCache,
     opts: &LoadProgramOptions,
 ) -> Result<LoadProgramResult> {
     let compile_entries = get_compile_entries_from_paths(&paths, opts)?;
@@ -952,6 +1060,7 @@ pub fn parse_program(
             &mut pkgs,
             pkgmap,
             file_graph.clone(),
+            load_cache,
             opts,
             parsed_file,
         )?);
@@ -1004,7 +1113,15 @@ pub fn parse_program(
         if new_files.contains(file) {
             let pkg = pkgmap.get(file).expect("file not in pkgmap");
             let mut m = m_ref.write().unwrap();
-            fix_rel_import_path_with_file(&pkg.pkg_root, &mut m, file, pkgmap, opts, sess.clone());
+            fix_rel_import_path_with_file(
+                &pkg.pkg_root,
+                &mut m,
+                file,
+                pkgmap,
+                load_cache,
+                opts,
+                sess.clone(),
+            );
         }
         modules.insert(filename.clone(), m_ref);
         match pkgs.get_mut(&file.pkg_path) {
@@ -1051,6 +1168,7 @@ pub fn load_all_files_under_paths(
             loader.file_graph.clone(),
             &mut loader.pkgmap,
             &mut loader.parsed_file,
+            &mut loader.load_cache,
             &loader.opts,
         ) {
             Ok(res) => {
@@ -1094,7 +1212,8 @@ pub fn load_all_files_under_paths(
                 for (pkg, paths) in &k_files_under_path {
                     for p in paths {
                         if !k_files_from_import.contains(p) {
-                            let pkgfile = PkgFile::new(p.clone(), pkg.clone());
+                            let pkgfile =
+                                cached_pkg_file(p.clone(), pkg.clone(), &mut loader.load_cache);
                             let module_cache_read = module_cache.read();
                             if let Ok(m_cache) = &module_cache_read {
                                 match m_cache.ast_cache.get(pkgfile.get_path()) {
@@ -1129,6 +1248,7 @@ pub fn load_all_files_under_paths(
                                     pkgs_not_imported,
                                     &mut loader.pkgmap,
                                     loader.file_graph.clone(),
+                                    &mut loader.load_cache,
                                     &loader.opts,
                                 )?;
 
@@ -1155,6 +1275,7 @@ pub fn load_all_files_under_paths(
                                     &mut m,
                                     &file,
                                     &loader.pkgmap,
+                                    &mut loader.load_cache,
                                     &loader.opts,
                                     sess.clone(),
                                 );
