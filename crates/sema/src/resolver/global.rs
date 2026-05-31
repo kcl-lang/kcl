@@ -13,7 +13,7 @@ use kcl_ast_pretty::{ASTNode, print_ast_node, print_schema_expr};
 use kcl_error::*;
 use kcl_primitives::IndexMap;
 
-use super::doc::parse_schema_doc_string;
+use super::doc::{SchemaDoc, parse_schema_doc_string};
 use super::scope::{ScopeObject, ScopeObjectKind};
 use kcl_ast::pos::GetPos;
 
@@ -22,6 +22,15 @@ pub const MIXIN_SUFFIX: &str = "Mixin";
 pub const PROTOCOL_SUFFIX: &str = "Protocol";
 
 impl<'ctx> Resolver<'_> {
+    fn parse_schema_doc_cached(&mut self, doc: String) -> Arc<SchemaDoc> {
+        if let Some(parsed) = self.ctx.parsed_doc_cache.get(&doc) {
+            return parsed.clone();
+        }
+        let parsed = Arc::new(parse_schema_doc_string(&doc));
+        self.ctx.parsed_doc_cache.insert(doc, parsed.clone());
+        parsed
+    }
+
     /// Init global types including top-level global variable types and
     /// schema types. Because the schema allows backward references,
     /// we scan multiple times.
@@ -88,13 +97,13 @@ impl<'ctx> Resolver<'_> {
                         );
                         continue;
                     }
-                    let parsed_doc = parse_schema_doc_string(&doc);
+                    let parsed_doc = self.parse_schema_doc_cached(doc);
                     let schema_ty = SchemaType {
                         name: name.to_string(),
                         pkgpath: self.ctx.pkgpath.clone(),
                         filename: self.ctx.filename.clone(),
                         doc: parsed_doc.summary.clone(),
-                        examples: parsed_doc.examples,
+                        examples: parsed_doc.examples.clone(),
                         is_instance: false,
                         is_mixin,
                         is_protocol,
@@ -576,8 +585,8 @@ impl<'ctx> Resolver<'_> {
         };
         // Schema attributes
         let mut attr_obj_map: IndexMap<String, SchemaAttr> = IndexMap::default();
-        let parsed_doc = parse_schema_doc_string(
-            &schema_stmt
+        let parsed_doc = self.parse_schema_doc_cached(
+            schema_stmt
                 .doc
                 .as_ref()
                 .map(|doc| doc.node.clone())
@@ -827,7 +836,7 @@ impl<'ctx> Resolver<'_> {
             pkgpath: self.ctx.pkgpath.clone(),
             filename: self.ctx.filename.clone(),
             doc: parsed_doc.summary.clone(),
-            examples: parsed_doc.examples,
+            examples: parsed_doc.examples.clone(),
             is_instance: false,
             is_mixin: schema_stmt.is_mixin,
             is_protocol: schema_stmt.is_protocol,
@@ -961,8 +970,8 @@ impl<'ctx> Resolver<'_> {
             &rule_stmt.name.node,
         );
 
-        let parsed_doc = parse_schema_doc_string(
-            &rule_stmt
+        let parsed_doc = self.parse_schema_doc_cached(
+            rule_stmt
                 .doc
                 .as_ref()
                 .map(|doc| doc.node.clone())
@@ -977,7 +986,7 @@ impl<'ctx> Resolver<'_> {
             pkgpath: self.ctx.pkgpath.clone(),
             filename: self.ctx.filename.clone(),
             doc: parsed_doc.summary.clone(),
-            examples: parsed_doc.examples,
+            examples: parsed_doc.examples.clone(),
             is_instance: false,
             is_mixin: false,
             is_protocol: false,
