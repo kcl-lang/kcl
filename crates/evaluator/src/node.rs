@@ -7,7 +7,7 @@ use std::sync::{Arc, RwLock};
 use anyhow::Ok;
 use generational_arena::Index;
 use kcl_ast::ast::{self, CallExpr, ConfigEntry, Module, NodeRef};
-use kcl_ast::walker::TypedResultWalker;
+use kcl_ast::walker::{MutSelfWalker, TypedResultWalker};
 use kcl_runtime::{
     ConfigEntryOperationKind, DecoratorValue, PKG_PATH_PREFIX, RuntimeErrorType, UnionOptions,
     ValueRef, schema_assert, schema_runtime_type,
@@ -26,6 +26,24 @@ use crate::ty::type_pack_and_check;
 use crate::union::union_entry;
 use crate::{EvalResult, Evaluator};
 use crate::{GLOBAL_LEVEL, INNER_LEVEL, error as kcl_error};
+
+/// True if an expr reads a target name (self-referential assign like `x = x | {..}`).
+/// Lambda bodies are skipped: their references are deferred, not read at assign time.
+struct SelfRefFinder<'a> {
+    targets: &'a [&'a str],
+    found: bool,
+}
+
+impl MutSelfWalker for SelfRefFinder<'_> {
+    fn walk_identifier(&mut self, identifier: &ast::Identifier) {
+        if let Some(first) = identifier.names.first()
+            && self.targets.contains(&first.node.as_str())
+        {
+            self.found = true;
+        }
+    }
+    fn walk_lambda_expr(&mut self, _lambda_expr: &ast::LambdaExpr) {}
+}
 
 /// Impl TypedResultWalker for Evaluator to visit AST nodes to evaluate the result.
 impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
@@ -109,17 +127,38 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         if let Some(ty) = &assign_stmt.ty {
             value = type_pack_and_check(self, &value, vec![&ty.node.to_string()], false);
         }
+        let self_ref = {
+            let targets: Vec<&str> = assign_stmt
+                .targets
+                .iter()
+                .map(|t| t.node.name.node.as_str())
+                .collect();
+            let mut finder = SelfRefFinder {
+                targets: &targets,
+                found: false,
+            };
+            finder.walk_expr(&assign_stmt.value.node);
+            finder.found
+        };
         if assign_stmt.targets.len() == 1 {
             // Store the single target
             let name = &assign_stmt.targets[0];
             // Deep copy the value to ensure assign-by-value semantics.
             // This mirrors the behavior of multi-target assignment below.
             let value = self.value_deep_copy(&value);
+            *self.lazy_reassign.borrow_mut() = self_ref;
+            defer! {
+                *self.lazy_reassign.borrow_mut() = false;
+            }
             self.walk_target_with_value(&name.node, value.clone())?;
         } else {
             // Store multiple targets
             for name in &assign_stmt.targets {
                 let value = self.value_deep_copy(&value);
+                *self.lazy_reassign.borrow_mut() = self_ref;
+                defer! {
+                    *self.lazy_reassign.borrow_mut() = false;
+                }
                 self.walk_target_with_value(&name.node, value.clone())?;
             }
         }
@@ -154,7 +193,13 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             }
         };
         // Store the target value
-        self.walk_target_with_value(&aug_assign_stmt.target.node, value.clone())?;
+        {
+            *self.lazy_reassign.borrow_mut() = true;
+            defer! {
+                *self.lazy_reassign.borrow_mut() = false;
+            }
+            self.walk_target_with_value(&aug_assign_stmt.target.node, value.clone())?;
+        }
         self.pop_target_var();
         Ok(value)
     }

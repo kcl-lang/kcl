@@ -1,0 +1,1 @@
+_replicas = 3

@@ -127,6 +127,7 @@ impl SchemaEvalContext {
                     levels: other.levels.clone(),
                     cal_times: other.cal_times.clone(),
                     setters: other.setters.clone(),
+                    resolved: other.resolved.clone(),
                 })))
             }
         }
