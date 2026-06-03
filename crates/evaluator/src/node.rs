@@ -420,7 +420,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             // Next value block
             let variables = &quant_expr.variables;
             for v in variables {
-                self.add_local_var(&v.node.names[0].node);
+                self.add_loop_var(&v.node.names[0].node);
             }
             if variables.len() == 1 {
                 // Store the target
@@ -1637,7 +1637,7 @@ impl<'ctx> Evaluator<'ctx> {
         while let Some((next_value, key, value)) = iter_value.next_with_key_value(&iter_host_value)
         {
             for v in targets {
-                self.add_local_var(&v.node.names[0].node)
+                self.add_loop_var(&v.node.names[0].node)
             }
             if targets.len() == 1 {
                 // Store the target
@@ -1714,7 +1714,7 @@ impl<'ctx> Evaluator<'ctx> {
             }
         }
         for v in targets {
-            self.remove_local_var(&v.node.names[0].node)
+            self.remove_loop_var(&v.node.names[0].node)
         }
     }
 
@@ -1754,7 +1754,7 @@ impl<'ctx> Evaluator<'ctx> {
                 };
                 // Store a local variable for every entry key.
                 let key = match &optional_name {
-                    Some(name) if !self.is_local_var(name) => self.string_value(name),
+                    Some(name) if !self.is_loop_var(name) => self.string_value(name),
                     _ => self.walk_expr(key_node)?,
                 };
                 self.dict_insert(

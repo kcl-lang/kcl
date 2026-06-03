@@ -155,21 +155,43 @@ impl<'ctx> Evaluator<'ctx> {
     }
 
     #[inline]
-    pub(crate) fn clear_local_vars(&self) {
-        self.local_vars.borrow_mut().clear();
+    pub(crate) fn add_loop_var(&self, name: &str) {
+        self.local_vars.borrow_mut().insert(name.to_string());
+        self.loop_vars.borrow_mut().insert(name.to_string());
     }
 
     #[inline]
-    pub(crate) fn clean_and_cloned_local_vars(&self) -> HashSet<String> {
+    pub(crate) fn remove_loop_var(&self, name: &str) {
+        self.local_vars.borrow_mut().remove(name);
+        self.loop_vars.borrow_mut().remove(name);
+    }
+
+    #[inline]
+    pub(crate) fn is_loop_var(&self, name: &str) -> bool {
+        self.loop_vars.borrow().contains(name)
+    }
+
+    #[inline]
+    pub(crate) fn clear_local_vars(&self) {
+        self.local_vars.borrow_mut().clear();
+        self.loop_vars.borrow_mut().clear();
+    }
+
+    #[inline]
+    pub(crate) fn clean_and_cloned_local_vars(&self) -> (HashSet<String>, HashSet<String>) {
         let mut local_vars = self.local_vars.borrow_mut();
         let r = local_vars.clone();
         local_vars.clear();
-        r
+        let mut loop_vars = self.loop_vars.borrow_mut();
+        let lr = loop_vars.clone();
+        loop_vars.clear();
+        (r, lr)
     }
 
     #[inline]
-    pub(crate) fn set_local_vars(&self, vars: HashSet<String>) {
-        self.local_vars.borrow_mut().extend(vars);
+    pub(crate) fn set_local_vars(&self, vars: (HashSet<String>, HashSet<String>)) {
+        self.local_vars.borrow_mut().extend(vars.0);
+        self.loop_vars.borrow_mut().extend(vars.1);
     }
 
     #[inline]
