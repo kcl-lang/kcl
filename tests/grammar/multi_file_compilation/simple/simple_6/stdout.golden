@@ -1,0 +1,3 @@
+config:
+  replicas: 3
+  name: app

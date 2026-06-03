@@ -4,7 +4,7 @@ use std::rc::Rc;
 use generational_arena::Index;
 use kcl_ast::ast;
 use kcl_ast::ast::AstIndex;
-use kcl_primitives::IndexMap;
+use kcl_primitives::{IndexMap, IndexSet};
 use kcl_runtime::ValueRef;
 
 use crate::Evaluator;
@@ -51,6 +51,9 @@ pub struct LazyEvalScope {
     pub setters: IndexMap<String, Vec<Setter>>,
     /// Calculate times without backtracking.
     pub cal_times: IndexMap<String, usize>,
+    /// Keys whose cached value was resolved from a later setter via backtracking.
+    /// An earlier-precedence setter must not overwrite such a resolved entry.
+    pub resolved: IndexSet<String>,
 }
 
 impl LazyEvalScope {
@@ -367,6 +370,7 @@ impl<'ctx> Evaluator<'ctx> {
                                         lazy_scopes.get_mut(pkgpath).expect(INTERNAL_ERROR_MSG);
                                     scope.levels.insert(key.to_string(), level);
                                     scope.cache.insert(key.to_string(), value.clone());
+                                    scope.resolved.insert(key.to_string());
                                     value
                                 }
                             }
@@ -396,11 +400,22 @@ impl<'ctx> Evaluator<'ctx> {
     /// to avoid stale references in subsequent subscript assignments.
     #[inline]
     pub(crate) fn update_lazy_scope_cache(&self, pkgpath: &str, key: &str, value: &ValueRef) {
+        if !*self.lazy_reassign.borrow() {
+            return;
+        }
         let mut lazy_scopes = self.lazy_scopes.borrow_mut();
         if let Some(scope) = lazy_scopes.get_mut(pkgpath) {
-            // Always update the cache when a variable is reassigned, whether or not
-            // it already exists in the cache. This ensures subsequent loads get the
-            // new value instead of evaluating setters that would return a stale value.
+            // A value already resolved from a later setter via backtracking must not be
+            // downgraded by an earlier-precedence setter that the eager walk reaches
+            // afterwards (e.g. a base definition walked after a conditional override was
+            // resolved by an early reader). Only the last setter may refresh a resolved
+            // entry; forward in-place reassignments (|=, +=, subscript) were never
+            // backtrack-resolved, so they still update.
+            if scope.resolved.contains(key)
+                && !scope.is_last_setter_ast_index(key, &self.ast_id.borrow())
+            {
+                return;
+            }
             scope.cache.insert(key.to_string(), value.clone());
         }
     }

@@ -87,6 +87,10 @@ pub struct Evaluator<'ctx> {
     pub scope_covers: RefCell<Vec<(usize, usize)>>,
     /// Local variables in the loop.
     pub local_vars: RefCell<HashSet<String>>,
+    /// True only while storing an augmented assignment (`+=`, `|=`, …) target, so
+    /// the lazy-scope cache is force-updated for in-place reassignment but not for a
+    /// plain `=` that would pre-empt backtracking to a later setter.
+    pub lazy_reassign: RefCell<bool>,
     /// Schema attr backtrack meta.
     pub backtrack_meta: RefCell<Vec<BacktrackMeta>>,
     /// Current AST id for the evaluator walker.
@@ -153,6 +157,7 @@ impl<'ctx> Evaluator<'ctx> {
             lazy_scopes: RefCell::new(Default::default()),
             scope_covers: RefCell::new(Default::default()),
             local_vars: RefCell::new(Default::default()),
+            lazy_reassign: RefCell::new(false),
             backtrack_meta: RefCell::new(Default::default()),
             ast_id: RefCell::new(AstIndex::default()),
             ctx_stack: RefCell::new(Default::default()),
