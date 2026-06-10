@@ -17,6 +17,9 @@ class kclx_Net:
     def __init__(self, dylib_=None):
         self.dylib = dylib_ if dylib_ else _Dylib
 
+    def is_IPv6(self, value: str) -> bool:
+        return self.dylib.Invoke(f"net.is_IPv6", value)
+
     def is_global_unicast_IP(self, value: str) -> bool:
         return self.dylib.Invoke(f"net.is_global_unicast_IP", value)
 
@@ -43,6 +46,12 @@ kclxnet = kclx_Net(_Dylib)
 
 
 class BaseTest(unittest.TestCase):
+    def test_is_IPv6(self):
+        self.assertTrue(kclxnet.is_IPv6("2001:0db8:85a3:0000:0000:8a2e:0370:7334"))
+        self.assertTrue(kclxnet.is_IPv6("::1"))
+        self.assertFalse(kclxnet.is_IPv6("192.168.1.1"))
+        self.assertFalse(kclxnet.is_IPv6("invalid_ip"))
+
     def test_is_interface_local_multicast_IP(self):
         self.assertFalse(kclxnet.is_interface_local_multicast_IP("224.0.0.0"))
         self.assertTrue(kclxnet.is_interface_local_multicast_IP("ff11::1"))

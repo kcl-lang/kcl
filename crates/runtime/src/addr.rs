@@ -102,6 +102,8 @@ pub fn kcl_get_fn_ptr_by_name(name: &str) -> u64 {
         "kcl_crypto_sha512" => crate::kcl_crypto_sha512 as *const () as u64,
         "kcl_crypto_uuid" => crate::kcl_crypto_uuid as *const () as u64,
         "kcl_datetime_date" => crate::kcl_datetime_date as *const () as u64,
+        "kcl_datetime_is_iso8601" => crate::kcl_datetime_is_iso8601 as *const () as u64,
+        "kcl_datetime_is_rfc3339" => crate::kcl_datetime_is_rfc3339 as *const () as u64,
         "kcl_datetime_now" => crate::kcl_datetime_now as *const () as u64,
         "kcl_datetime_ticks" => crate::kcl_datetime_ticks as *const () as u64,
         "kcl_datetime_today" => crate::kcl_datetime_today as *const () as u64,
@@ -200,6 +202,7 @@ pub fn kcl_get_fn_ptr_by_name(name: &str) -> u64 {
         "kcl_net_is_IP" => crate::kcl_net_is_IP as *const () as u64,
         "kcl_net_is_IP_in_CIDR" => crate::kcl_net_is_IP_in_CIDR as *const () as u64,
         "kcl_net_is_IPv4" => crate::kcl_net_is_IPv4 as *const () as u64,
+        "kcl_net_is_IPv6" => crate::kcl_net_is_IPv6 as *const () as u64,
         "kcl_net_is_global_unicast_IP" => crate::kcl_net_is_global_unicast_IP as *const () as u64,
         "kcl_net_is_interface_local_multicast_IP" => {
             crate::kcl_net_is_interface_local_multicast_IP as *const () as u64

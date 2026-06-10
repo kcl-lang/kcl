@@ -352,6 +352,22 @@ register_net_member! {
         false,
         None,
     )
+    is_IPv6 => Type::function(
+        None,
+        Type::bool_ref(),
+        &[
+            Parameter {
+                name: "ip".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Whether ip is a IPv6 one."#,
+        false,
+        None,
+    )
     is_IP => Type::function(
         None,
         Type::bool_ref(),
@@ -946,6 +962,38 @@ register_datetime_member! {
             },
         ],
         r#"Validate whether the provided date string matches the specified format."#,
+        false,
+        None,
+    )
+    is_rfc3339 => Type::function(
+        None,
+        Type::bool_ref(),
+        &[
+            Parameter {
+                name: "date".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Validate whether the provided date string is a valid RFC 3339 date-time."#,
+        false,
+        None,
+    )
+    is_iso8601 => Type::function(
+        None,
+        Type::bool_ref(),
+        &[
+            Parameter {
+                name: "date".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Validate whether the provided date string is a valid ISO 8601 duration or date-time."#,
         false,
         None,
     )

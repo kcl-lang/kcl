@@ -320,6 +320,33 @@ pub unsafe extern "C-unwind" fn kcl_net_is_IPv4(
     panic!("is_IPv4() missing 1 required positional argument: 'ip'");
 }
 
+// is_IPv6(ip: str) -> bool
+
+/// # Safety
+/// This function involves raw pointer manipulation and should be used with caution.
+#[unsafe(no_mangle)]
+pub unsafe extern "C-unwind" fn kcl_net_is_IPv6(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+
+    if let Some(ip) = get_call_arg_str(args, kwargs, 0, Some("ip")) {
+        if let Ok(_addr) = Ipv6Addr::from_str(ip.as_ref()) {
+            return unsafe { kcl_value_True(ctx) };
+        }
+        if let Ok(_addr) = Ipv4Addr::from_str(ip.as_ref()) {
+            return unsafe { kcl_value_False(ctx) };
+        }
+
+        return unsafe { kcl_value_False(ctx) };
+    }
+
+    panic!("is_IPv6() missing 1 required positional argument: 'ip'");
+}
+
 // is_IP(ip: str) -> bool
 
 /// # Safety
