@@ -1,6 +1,5 @@
 ---
 source: crates/loader/src/tests.rs
-assertion_line: 37
 expression: "format! (\"{:#?}\", p.symbols.values())"
 ---
 [
@@ -89,27 +88,6 @@ expression: "format! (\"{:#?}\", p.symbols.values())"
             },
         ),
         attrs: [
-            SymbolRef {
-                id: Index {
-                    index: 151,
-                    generation: 0,
-                },
-                kind: Function,
-            },
-            SymbolRef {
-                id: Index {
-                    index: 152,
-                    generation: 0,
-                },
-                kind: Function,
-            },
-            SymbolRef {
-                id: Index {
-                    index: 153,
-                    generation: 0,
-                },
-                kind: Function,
-            },
             SymbolRef {
                 id: Index {
                     index: 154,
@@ -295,6 +273,27 @@ expression: "format! (\"{:#?}\", p.symbols.values())"
             SymbolRef {
                 id: Index {
                     index: 180,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 181,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 182,
+                    generation: 0,
+                },
+                kind: Function,
+            },
+            SymbolRef {
+                id: Index {
+                    index: 183,
                     generation: 0,
                 },
                 kind: Function,

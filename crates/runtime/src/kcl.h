@@ -255,6 +255,10 @@ kcl_value_ref_t* kcl_crypto_uuid(kcl_context_t* ctx, kcl_value_ref_t* _args, kcl
 
 kcl_value_ref_t* kcl_datetime_date(kcl_context_t* ctx, kcl_value_ref_t* _args, kcl_value_ref_t* _kwargs);
 
+kcl_value_ref_t* kcl_datetime_is_iso8601(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
+kcl_value_ref_t* kcl_datetime_is_rfc3339(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
 kcl_value_ref_t* kcl_datetime_now(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
 
 kcl_value_ref_t* kcl_datetime_ticks(kcl_context_t* ctx, kcl_value_ref_t* _args, kcl_value_ref_t* _kwargs);
@@ -440,6 +444,8 @@ kcl_value_ref_t* kcl_net_is_IP(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_va
 kcl_value_ref_t* kcl_net_is_IP_in_CIDR(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
 
 kcl_value_ref_t* kcl_net_is_IPv4(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
+kcl_value_ref_t* kcl_net_is_IPv6(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
 
 kcl_value_ref_t* kcl_net_is_global_unicast_IP(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
 

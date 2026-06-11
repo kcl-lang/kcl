@@ -112,3 +112,50 @@ fn validate_date(date: &str, format: &str) -> bool {
         .or_else(|_| NaiveTime::parse_from_str(date, format).map(|_| true))
         .is_ok()
 }
+
+/// Validates whether the provided string is a valid RFC 3339 date-time.
+/// `is_rfc3339(str) -> bool`
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
+#[unsafe(no_mangle)]
+pub unsafe extern "C-unwind" fn kcl_datetime_is_rfc3339(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    if let Some(date) = get_call_arg_str(args, kwargs, 0, Some("date")) {
+        let is_valid = chrono::DateTime::parse_from_rfc3339(&date).is_ok();
+        return ValueRef::bool(is_valid).into_raw(ctx);
+    }
+    panic!("is_rfc3339() missing 1 required positional argument: 'date'");
+}
+
+/// Validates whether the provided string is a valid ISO 8601 duration or date-time.
+/// `is_iso8601(str) -> bool`
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
+#[unsafe(no_mangle)]
+pub unsafe extern "C-unwind" fn kcl_datetime_is_iso8601(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    if let Some(date) = get_call_arg_str(args, kwargs, 0, Some("date")) {
+        // Check if it is a valid RFC 3339 (which is an ISO 8601 profile)
+        if chrono::DateTime::parse_from_rfc3339(&date).is_ok() {
+            return ValueRef::bool(true).into_raw(ctx);
+        }
+        // Fallback: Check if it is an ISO 8601 Duration
+        // A standard regex for ISO 8601 durations (e.g., P3Y6M4DT12H30M5.5S)
+        let re = fancy_regex::Regex::new(r"^P(?!$)(?:\d+(?:\.\d+)?Y)?(?:\d+(?:\.\d+)?M)?(?:\d+(?:\.\d+)?W)?(?:\d+(?:\.\d+)?D)?(?:T(?=\d)(?:\d+(?:\.\d+)?H)?(?:\d+(?:\.\d+)?M)?(?:\d+(?:\.\d+)?S)?)?$").unwrap();
+        let is_valid = re.is_match(&date).unwrap_or(false);
+        return ValueRef::bool(is_valid).into_raw(ctx);
+    }
+    panic!("is_iso8601() missing 1 required positional argument: 'date'");
+}
