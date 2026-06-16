@@ -167,6 +167,7 @@ fn test_resolve_program_fail() {
         "comp_clause_error_4.k",
         "config_expr.k",
         "invalid_mixin_0.k",
+        "invalid_mixin_1.k",
         "lambda_schema_ty_0.k",
         "lambda_schema_ty_1.k",
         "lambda_schema_ty_2.k",
@@ -1172,5 +1173,41 @@ fn clear_cache_test() {
     assert_eq!(
         first_scope.schema_mapping.len(),
         second_scope.schema_mapping.len()
+    );
+}
+
+#[test]
+fn test_resolve_program_valid_mixin_host_attr() {
+    let path = "./src/resolver/test_data/valid_mixin_host_attr.k";
+    let mut program = parse_program(path).unwrap();
+    let scope = resolve_program(&mut program);
+    assert!(
+        scope.handler.diagnostics.is_empty(),
+        "valid mixin host-attr access produced unexpected errors: {:?}",
+        scope.handler.diagnostics
+    );
+}
+
+#[test]
+fn test_resolve_program_invalid_mixin_error_count() {
+    let path = "./src/resolver/test_fail_data/invalid_mixin_1.k";
+    let mut program = parse_program(path).unwrap();
+    let scope = resolve_program(&mut program);
+    let msgs: Vec<&str> = scope
+        .handler
+        .diagnostics
+        .iter()
+        .flat_map(|d| d.messages.iter().map(|m| m.message.as_str()))
+        .collect();
+    assert_eq!(
+        msgs.len(),
+        3,
+        "Expected exactly 3 'UndefinedSchema is not defined' errors (one per broken_1/2/3), got: {:?}",
+        msgs
+    );
+    assert!(
+        msgs.iter().all(|m| m.contains("UndefinedSchema")),
+        "All errors should reference 'UndefinedSchema', got: {:?}",
+        msgs
     );
 }
