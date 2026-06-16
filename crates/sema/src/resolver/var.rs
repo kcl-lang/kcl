@@ -54,9 +54,10 @@ impl<'ctx> Resolver<'_> {
                     // raise an error and return an any type.
                     // At present, retaining certain dynamic characteristics for mixins and rules
                     // requires further consideration of their semantics.
+                    let is_type_ref = name.starts_with(|c: char| c.is_uppercase());
                     if ty.is_none()
                         && scope_ty.is_none()
-                        && !schema_ty.is_mixin
+                        && (!schema_ty.is_mixin || is_type_ref)
                         && !schema_ty.is_rule
                     {
                         vec![self.lookup_type_from_scope(name, range)]
