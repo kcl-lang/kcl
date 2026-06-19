@@ -29,6 +29,7 @@ use kcl_ast::token_stream::TokenStream;
 use kcl_error::ParseErrorMessage;
 use kcl_lexer::Base;
 use kcl_span::symbol::Symbol;
+pub(crate) use string::dedent_string;
 pub(crate) use string::str_content_eval;
 
 use self::indent::IndentLevel;

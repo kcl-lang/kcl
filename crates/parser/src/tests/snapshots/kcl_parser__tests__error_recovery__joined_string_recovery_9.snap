@@ -8,20 +8,6 @@ Node {
             is_long_string: true,
             values: [
                 Node {
-                    node: StringLit(
-                        StringLit {
-                            is_long_string: false,
-                            raw_value: "\\\n  ",
-                            value: "  ",
-                        },
-                    ),
-                    filename: "",
-                    line: 1,
-                    column: 1,
-                    end_line: 1,
-                    end_column: 1,
-                },
-                Node {
                     node: FormattedValue(
                         FormattedValue {
                             is_long_string: false,

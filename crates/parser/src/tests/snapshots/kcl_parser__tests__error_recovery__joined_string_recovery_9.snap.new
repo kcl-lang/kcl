@@ -1,6 +1,7 @@
 ---
 source: crates/parser/src/tests/error_recovery.rs
-expression: "$crate :: tests :: parsing_expr_string(r#\"\"\"\"\n  ${CC}\n\"\"\"\"#)"
+assertion_line: 216
+expression: "$crate :: tests :: parsing_expr_string(r#\"'''\\\n  ${CC}\n'''\"#)"
 ---
 Node {
     node: JoinedString(
@@ -58,7 +59,7 @@ Node {
                     end_column: 1,
                 },
             ],
-            raw_value: "\"\"\"\n  ${CC}\n\"\"\"",
+            raw_value: "'''\\\n  ${CC}\n'''",
         },
     ),
     filename: "",

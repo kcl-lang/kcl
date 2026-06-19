@@ -2390,7 +2390,10 @@ impl<'a> Parser<'a> {
 
         let (is_long_string, raw_value, value) = match lk.kind {
             token::LitKind::Str { is_long_string, .. } => {
-                let value = lk.symbol.as_str();
+                let mut value = lk.symbol.as_str();
+                if is_long_string {
+                    value = crate::lexer::dedent_string(&value);
+                }
                 let raw_value = lk.raw.map_or("".to_string(), |raw| raw.as_str());
                 (is_long_string, raw_value, value)
             }
