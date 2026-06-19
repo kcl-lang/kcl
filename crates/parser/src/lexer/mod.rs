@@ -30,6 +30,7 @@ use kcl_error::ParseErrorMessage;
 use kcl_lexer::Base;
 use kcl_span::symbol::Symbol;
 pub(crate) use string::str_content_eval;
+pub(crate) use string::dedent_string;
 
 use self::indent::IndentLevel;
 use crate::session::ParseSession;

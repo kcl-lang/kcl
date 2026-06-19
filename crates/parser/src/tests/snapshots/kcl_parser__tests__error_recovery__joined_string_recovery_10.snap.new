@@ -1,5 +1,6 @@
 ---
 source: crates/parser/src/tests/error_recovery.rs
+assertion_line: 219
 expression: "$crate :: tests :: parsing_expr_string(r#\"\"\"\"\n  ${CC}\n\"\"\"\"#)"
 ---
 Node {
