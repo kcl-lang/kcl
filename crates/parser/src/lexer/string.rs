@@ -140,9 +140,9 @@ fn parse_unicode_name(chars: &mut std::iter::Peekable<Chars>) -> Option<char> {
 pub(crate) fn dedent_string(s: &str) -> String {
     let lines = s.split('\n');
     let mut min_indent = usize::MAX;
-    
+
     let lines_vec: Vec<&str> = lines.collect();
-    
+
     // Find the minimum indent of all non-empty lines, EXCEPT the first line
     // (if it's empty, it won't be counted anyway because we check !trim().is_empty()).
     // However, if the first line has text right after the opening quotes (e.g. `"""foo`),
@@ -153,7 +153,7 @@ pub(crate) fn dedent_string(s: &str) -> String {
             min_indent = min_indent.min(indent);
         }
     }
-    
+
     // Check if the last line is just whitespace (e.g., closing quotes indented)
     // We want to use its indentation as a baseline too.
     if let Some(last) = lines_vec.last() {
@@ -162,26 +162,30 @@ pub(crate) fn dedent_string(s: &str) -> String {
             min_indent = min_indent.min(indent);
         }
     }
-    
+
     if min_indent == usize::MAX {
         min_indent = 0;
     }
-    
+
     // Determine whether to skip the first empty line
     let skip_first = lines_vec.len() > 1 && lines_vec[0].is_empty();
-    
+
     let mut result = String::new();
     for (i, line) in lines_vec.iter().enumerate() {
         if i == 0 && skip_first {
             continue;
         }
-        
+
         if i > 0 && !(i == 1 && skip_first) {
             result.push('\n');
         }
-        
-        let chars_to_skip = line.chars().take_while(|c| *c == ' ' || *c == '\t').count().min(min_indent);
-        
+
+        let chars_to_skip = line
+            .chars()
+            .take_while(|c| *c == ' ' || *c == '\t')
+            .count()
+            .min(min_indent);
+
         // Use byte indices to split safely, assuming ASCII space/tabs
         let mut byte_offset = 0;
         let mut char_count = 0;
@@ -197,11 +201,11 @@ pub(crate) fn dedent_string(s: &str) -> String {
         } else if char_count == chars_to_skip && chars_to_skip == line.chars().count() {
             byte_offset = line.len(); // if we skip the entire string
         }
-        
+
         let (_, dedented) = line.split_at(byte_offset);
         result.push_str(dedented);
     }
-    
+
     result
 }
 
@@ -234,7 +238,7 @@ mod tests {
       bar
     ";
         assert_eq!(dedent_string(s), "foo\n  bar\n");
-        
+
         // Only one line with spaces
         let s = "  foo  ";
         assert_eq!(dedent_string(s), "foo  ");
