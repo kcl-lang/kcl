@@ -208,7 +208,8 @@ impl<'ctx> Evaluator<'ctx> {
         }
         // Deal scalars
         for scalar in scalars.iter() {
-            self.dict_insert_merge_value(&mut global_dict, SCALAR_KEY, scalar);
+            let scalar = scalar.deep_copy();
+            self.dict_insert_merge_value(&mut global_dict, SCALAR_KEY, &scalar);
         }
         // Deal global variables
         for (name, value) in globals.iter() {

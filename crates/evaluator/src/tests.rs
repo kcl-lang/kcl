@@ -464,7 +464,7 @@ test = TestSchema{custom_roles=[_test_role]}.get_roles()
 evaluator_snapshot! {lambda_9, r#"
 foo = lambda values: [int] -> [int] {
     [v for v in values]
-}    
+}
 
 schema Bar:
     values = [123]
@@ -580,6 +580,13 @@ version = "v0.1.0"
 
 evaluator_snapshot! {list_comp1, r#"
 a = [ x for x in "你好"]
+"#}
+
+evaluator_snapshot! {issue_2046_public_scalar_alias, r#"
+test = {
+    bean: "test"
+}
+test
 "#}
 
 #[test]
