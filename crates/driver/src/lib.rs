@@ -325,7 +325,15 @@ pub fn lookup_workspace(path: &str) -> io::Result<WorkSpaceKind> {
 pub fn get_pkg_list(pkgpath: &str) -> Result<Vec<String>> {
     let mut dir_list: Vec<String> = Vec::new();
     let mut dir_map: HashSet<String> = HashSet::new();
+    // `std::env::current_dir()` is an unconditional panic on `wasm32-wasip1`
+    // (Rust std has no cwd concept on wasip1). The only consumer of `cwd` in
+    // this function is the `pkgpath.is_empty()` branch below, where "." is a
+    // correct walk-root substitute: WASI hosts already map "." via preopens.
+    // Native callers keep the prior behaviour.
+    #[cfg(not(target_arch = "wasm32"))]
     let cwd = std::env::current_dir()?;
+    #[cfg(target_arch = "wasm32")]
+    let cwd = std::path::PathBuf::from(".");
 
     let pkgpath = if pkgpath.is_empty() {
         cwd.to_string_lossy().to_string()
