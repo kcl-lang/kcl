@@ -87,6 +87,7 @@ fn test_format_with_stdout_option() {
         is_stdout: true,
         recursively: false,
         omit_errors: false,
+        ..Default::default()
     };
     let changed_files = format("./src/format/test_data/format_path_data/if.k", &opts).unwrap();
     assert_eq!(changed_files.len(), 1);
@@ -96,6 +97,30 @@ fn test_format_with_stdout_option() {
         is_stdout: true,
         recursively: true,
         omit_errors: false,
+        ..Default::default()
+    };
+    let changed_files = format("./src/format/test_data/format_path_data/", &opts).unwrap();
+    assert_eq!(changed_files.len(), 2);
+}
+
+#[test]
+fn test_format_with_dry_run_option() {
+    let opts = FormatOptions {
+        dry_run: true,
+        ..Default::default()
+    };
+    let before = std::fs::read_to_string("./src/format/test_data/format_path_data/if.k").unwrap();
+    let changed_files = format("./src/format/test_data/format_path_data/if.k", &opts).unwrap();
+    let after = std::fs::read_to_string("./src/format/test_data/format_path_data/if.k").unwrap();
+    assert_eq!(changed_files.len(), 1);
+    assert_eq!(
+        before, after,
+        "dry_run option should not modify input files"
+    );
+    let opts = FormatOptions {
+        recursively: true,
+        dry_run: true,
+        ..Default::default()
     };
     let changed_files = format("./src/format/test_data/format_path_data/", &opts).unwrap();
     assert_eq!(changed_files.len(), 2);
@@ -107,6 +132,7 @@ fn test_format_with_omit_error_option() {
         is_stdout: false,
         recursively: false,
         omit_errors: true,
+        ..Default::default()
     };
     let cases = [
         (

@@ -19,11 +19,13 @@ mod tests;
 /// - is_stdout: whether to output the formatted result to stdout.
 /// - recursively: whether to recursively traverse a folder and format all KCL files in it.
 /// - omit_errors: whether to omit the parse errors when format the KCL code.
+/// - dry_run: whether to return the filenames that would be formatted rather than format them.
 #[derive(Debug, Default)]
 pub struct FormatOptions {
     pub is_stdout: bool,
     pub recursively: bool,
     pub omit_errors: bool,
+    pub dry_run: bool,
 }
 
 /// Formats kcl file or directory path contains kcl files and
@@ -74,7 +76,7 @@ pub fn format_file(file: &str, opts: &FormatOptions) -> Result<bool> {
     let (source, is_formatted) = format_source(file, &src, opts)?;
     if opts.is_stdout {
         println!("{}", source);
-    } else {
+    } else if !opts.dry_run {
         std::fs::write(file, &source)?
     }
     Ok(is_formatted)
