@@ -688,6 +688,7 @@ impl KclServiceImpl {
                 is_stdout: false,
                 recursively: false,
                 omit_errors: true,
+                ..Default::default()
             },
         )?;
         Ok(FormatCodeResult {
@@ -725,6 +726,7 @@ impl KclServiceImpl {
                 recursively,
                 is_stdout: false,
                 omit_errors: true,
+                dry_run: args.dry_run,
             },
         )?;
         Ok(FormatPathResult { changed_paths })

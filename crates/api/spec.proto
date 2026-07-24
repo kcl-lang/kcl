@@ -1078,6 +1078,8 @@ message FormatCodeResult {
 message FormatPathArgs {
 	// Path of the file to format.
 	string path = 1;
+	// Whether to dry run the formatting.
+	bool dry_run = 2;
 }
 
 // Message for format file path response.
