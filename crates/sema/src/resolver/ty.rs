@@ -416,7 +416,10 @@ impl<'ctx> Resolver<'_> {
             // empty dict {}
             TypeKind::Any => true,
             // single key: {key1: value1}
-            TypeKind::StrLit(s) => !schema_ty.attrs.is_empty() && schema_ty.attrs.contains_key(s),
+            TypeKind::StrLit(s) => {
+                let (attrs, has_index_signature) = Self::get_schema_attrs(schema_ty);
+                attrs.contains(s) || has_index_signature
+            }
             // multi key: {
             // key1: value1
             // key2: value2

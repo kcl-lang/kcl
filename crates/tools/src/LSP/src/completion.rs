@@ -2135,6 +2135,14 @@ mod tests {
         Some('\n')
     );
 
+    completion_label_without_builtin_func_test_snapshot!(
+        schema_attr_newline_completion_2,
+        "src/test_data/completion_test/newline/schema/schema_2/schema_2.k",
+        13,
+        8,
+        Some('\n')
+    );
+
     completion_label_without_system_pkg_test_snapshot!(
         import_internal_pkg_test,
         "src/test_data/completion_test/import/internal/main.k",
