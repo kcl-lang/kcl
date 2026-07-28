@@ -288,22 +288,18 @@ impl<'ctx> Resolver<'ctx> {
         {
             return self.bool_ty();
         }
-        if self
-            .ctx
-            .ty_ctx
-            .is_primitive_type_or_primitive_union_type(t1.clone())
-            && self
-                .ctx
-                .ty_ctx
-                .is_primitive_type_or_primitive_union_type(t2.clone())
-            && matches!(op, ast::CmpOp::Eq | ast::CmpOp::NotEq)
+        if matches!(op, ast::CmpOp::Eq | ast::CmpOp::NotEq)
+            && ((t1.is_list() && t2.is_list())
+                || (t1.is_dict_or_schema() && t2.is_dict_or_schema())
+                || (self
+                    .ctx
+                    .ty_ctx
+                    .is_primitive_type_or_primitive_union_type(t1.clone())
+                    && self
+                        .ctx
+                        .ty_ctx
+                        .is_primitive_type_or_primitive_union_type(t2.clone())))
         {
-            return self.bool_ty();
-        }
-        if matches!(op, ast::CmpOp::Eq) && t1.is_list() && t2.is_list() {
-            return self.bool_ty();
-        }
-        if matches!(op, ast::CmpOp::Eq) && t1.is_dict_or_schema() && t2.is_dict_or_schema() {
             return self.bool_ty();
         }
         if matches!(op, ast::CmpOp::In | ast::CmpOp::NotIn) && t2.is_iterable() {
