@@ -192,12 +192,19 @@ impl ValueRef {
                     }
                 }
                 // Recursive check schema values for every attributes.
+                //
+                // We pass `recursive = false` here. The enclosing `walk_value_mut`
+                // already descends into every nested schema, so each visited
+                // schema only needs to validate its own required attributes.
+                // Passing `true` would restart a full descent inside each visited
+                // schema, giving a 2^(d-1) blow-up at schema depth `d` (see
+                // issue #2113).
                 if recursive {
                     for value in attr_map.values() {
                         // For composite type structures, we recursively check the schema within them.
                         walk_value_mut(value, &mut |value: &ValueRef| {
                             if value.is_schema() {
-                                value.schema_check_attr_optional(ctx, true);
+                                value.schema_check_attr_optional(ctx, false);
                             }
                         })
                     }
@@ -423,5 +430,115 @@ mod test_value_schema {
         assert_ne!(schema1, schema2);
         schema1.schema_update_with_schema(&schema2);
         assert_eq!(schema1, schema2);
+    }
+
+    /// Build a linear chain of nested schemas — `depth` is the number of
+    /// non-leaf levels, so the total schema count is `depth + 1`. Mirrors the
+    /// `repro.k` shape from issue #2113.
+    fn make_chain_schema(depth: usize) -> ValueRef {
+        let config_meta = ValueRef::dict(None);
+        let optional_mapping = ValueRef::dict_bool(&[
+            ("name", false), // required
+            ("payload", true),
+            ("child", true),
+        ]);
+        let payload = ValueRef::list(None);
+        let dict = if depth == 0 {
+            ValueRef::from(Value::dict_value(Box::new(DictValue::new(&[
+                ("name", &ValueRef::str("c")),
+                ("payload", &payload),
+            ]))))
+        } else {
+            let child = make_chain_schema(depth - 1);
+            ValueRef::from(Value::dict_value(Box::new(DictValue::new(&[
+                ("name", &ValueRef::str("c")),
+                ("payload", &payload),
+                ("child", &child),
+            ]))))
+        };
+        dict.dict_to_schema(
+            TEST_SCHEMA_NAME,
+            MAIN_PKG_PATH,
+            &[],
+            &config_meta,
+            &optional_mapping,
+            None,
+            None,
+        )
+    }
+
+    /// Regression test for issue #2113: before the fix, `schema_check_attr_optional`
+    /// restarted a full `walk_value_mut` descent inside every visited nested
+    /// schema, giving a 2^(d-1) blow-up at schema depth `d`. A 100-deep chain
+    /// would never complete; with the fix the work is O(n) in the tree size.
+    #[test]
+    fn test_schema_check_attr_optional_chain_does_not_explode() {
+        use std::time::Instant;
+        let mut ctx = Context::new();
+        let schema = make_chain_schema(100);
+        let start = Instant::now();
+        schema.schema_check_attr_optional(&mut ctx, true);
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed.as_secs() < 2,
+            "schema_check_attr_optional took {:?} on a 100-deep chain \
+             (expected O(n), was 2^d before the fix)",
+            elapsed
+        );
+    }
+
+    /// Verifies that the fix at `val_schema.rs:200` (passing `recursive = false`
+    /// to nested calls) does not skip validation: a missing required attribute
+    /// at the deepest schema must still cause a panic.
+    #[test]
+    fn test_schema_check_attr_optional_chain_missing_required() {
+        let result = std::panic::catch_unwind(|| {
+            let mut ctx = Context::new();
+            let config_meta = ValueRef::dict(None);
+            let optional_mapping =
+                ValueRef::dict_bool(&[("name", false), ("payload", true), ("child", true)]);
+            // Leaf schema missing its required `name` attribute.
+            let leaf = ValueRef::from(Value::dict_value(Box::new(DictValue::new(&[(
+                "payload",
+                &ValueRef::list(None),
+            )]))))
+            .dict_to_schema(
+                TEST_SCHEMA_NAME,
+                MAIN_PKG_PATH,
+                &[],
+                &config_meta,
+                &optional_mapping,
+                None,
+                None,
+            );
+            // Outer schema is fully populated; the missing attribute is buried
+            // several levels down so the recursive walk has to reach it.
+            let outer = make_chain_schema(10);
+            // Replace the deepest "child" with our broken leaf to make sure the
+            // missing required attribute is found deep in the tree.
+            let payload = ValueRef::list(None);
+            let outer_with_broken_leaf =
+                ValueRef::from(Value::dict_value(Box::new(DictValue::new(&[
+                    ("name", &ValueRef::str("outer")),
+                    ("payload", &payload),
+                    ("child", &leaf),
+                ]))))
+                .dict_to_schema(
+                    TEST_SCHEMA_NAME,
+                    MAIN_PKG_PATH,
+                    &[],
+                    &config_meta,
+                    &optional_mapping,
+                    None,
+                    None,
+                );
+            outer_with_broken_leaf.schema_check_attr_optional(&mut ctx, true);
+            // Silence the unused-variable warning for `outer`.
+            let _ = outer;
+        });
+        assert!(
+            result.is_err(),
+            "expected panic for missing required attribute in nested schema"
+        );
     }
 }
