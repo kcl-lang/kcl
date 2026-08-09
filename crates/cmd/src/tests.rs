@@ -218,6 +218,12 @@ fn test_external_cmd_invalid() {
 #[cfg(not(windows))]
 // All the unit test cases in [`test_run_command`] can not be executed concurrently.
 fn test_run_command() {
+    // `run_command` reads `KCL_ERROR_FORMAT`, so this test must hold the
+    // same lock the error-format tests use to mutate the variable. Without
+    // it, a parallel `error_format_*` test can observe a bogus value
+    // mid-flight and bubble an `invalid diagnostic format` error up
+    // through `resolve_error_format`.
+    let _env_lock = error_format_env_lock().lock().unwrap();
     test_run_command_with_import();
     test_load_cache_with_different_pkg();
     test_kcl_path_is_sym_link();

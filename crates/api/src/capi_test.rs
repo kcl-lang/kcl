@@ -174,11 +174,25 @@ fn test_c_api_call_exec_program_with_arcanist_error_format_and_bad_kcl() {
     //   3. Surface the formatted error string in `err_message` so the
     //      machine-readable path (`emit_machine_readable_error`) actually
     //      has something to render to stderr.
+    //
+    // The expected `err_message` fixture embeds the absolute path to the
+    // KCL source file, which differs between dev machines and CI. The
+    // wrapper normalises both sides by stripping the manifest directory
+    // prefix and replacing it with a stable placeholder, so the comparison
+    // is independent of the build host.
     test_c_api::<ExecProgramArgs, ExecProgramResult, _>(
         "KclService.ExecProgram",
         "exec-program-with-arcanist-error-format-and-bad-kcl.json",
         "exec-program-with-arcanist-error-format-and-bad-kcl.response.json",
-        |_| {},
+        |r| {
+            let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+            let placeholder = "<MANIFEST_DIR>";
+            if let Some(root_str) = root.to_str() {
+                if !root_str.is_empty() {
+                    r.err_message = r.err_message.replace(root_str, placeholder);
+                }
+            }
+        },
     );
 }
 
