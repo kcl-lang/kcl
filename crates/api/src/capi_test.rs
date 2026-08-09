@@ -192,6 +192,12 @@ fn test_c_api_call_exec_program_with_arcanist_error_format_and_bad_kcl() {
                     r.err_message = r.err_message.replace(root_str, placeholder);
                 }
             }
+            // Normalise path separators: on Windows `err_message` embeds the
+            // absolute path with `\` separators, while the fixture (and the
+            // string above after manifest-dir substitution) use `/`.
+            // Convert all remaining `\` to `/` so the comparison is
+            // independent of the host OS.
+            r.err_message = r.err_message.replace('\\', "/");
         },
     );
 }
@@ -336,7 +342,7 @@ where
     R: Message + Default + std::fmt::Debug + PartialEq + DeserializeOwned + serde::Serialize,
     F: Fn(&mut R),
 {
-    let _test_lock = TEST_MUTEX.lock().unwrap();
+    let _test_lock = TEST_MUTEX.lock().unwrap_or_else(|p| p.into_inner());
     let serv = unsafe { kcl_service_new(0) };
 
     let input_path = Path::new(TEST_DATA_PATH).join(input);
@@ -387,7 +393,7 @@ fn test_c_api_panic<A>(svc_name: &str, input: &str, output: &str)
 where
     A: Message + DeserializeOwned,
 {
-    let _test_lock = TEST_MUTEX.lock().unwrap();
+    let _test_lock = TEST_MUTEX.lock().unwrap_or_else(|p| p.into_inner());
     let serv = unsafe { kcl_service_new(0) };
     let prev_hook = std::panic::take_hook();
     // disable print panic info
