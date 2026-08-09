@@ -624,10 +624,7 @@ fn error_format_defaults_to_pretty() {
         .arg_required_else_help(true)
         .get_matches_from([ROOT_CMD, "run"]);
     let sub = matches.subcommand_matches("run").unwrap();
-    assert_eq!(
-        resolve_error_format(sub).unwrap(),
-        DiagnosticFormat::Pretty
-    );
+    assert_eq!(resolve_error_format(sub).unwrap(), DiagnosticFormat::Pretty);
 }
 
 #[test]
@@ -640,9 +637,12 @@ fn error_format_from_cli_flag() {
         ("arcanist", DiagnosticFormat::Arcanist),
         ("sarif", DiagnosticFormat::Sarif),
     ] {
-        let matches = app()
-            .arg_required_else_help(true)
-            .get_matches_from([ROOT_CMD, "run", "--error_format", name]);
+        let matches = app().arg_required_else_help(true).get_matches_from([
+            ROOT_CMD,
+            "run",
+            "--error_format",
+            name,
+        ]);
         let sub = matches.subcommand_matches("run").unwrap();
         assert_eq!(
             resolve_error_format(sub).unwrap(),
@@ -670,24 +670,27 @@ fn error_format_from_env_var() {
 fn error_format_cli_overrides_env() {
     let _lock = error_format_env_lock().lock().unwrap();
     let _guard = EnvVarGuard::set("KCL_ERROR_FORMAT", "short");
-    let matches = app()
-        .arg_required_else_help(true)
-        .get_matches_from([ROOT_CMD, "run", "--error_format", "sarif"]);
+    let matches = app().arg_required_else_help(true).get_matches_from([
+        ROOT_CMD,
+        "run",
+        "--error_format",
+        "sarif",
+    ]);
     let sub = matches.subcommand_matches("run").unwrap();
     // CLI flag must win over env var.
-    assert_eq!(
-        resolve_error_format(sub).unwrap(),
-        DiagnosticFormat::Sarif
-    );
+    assert_eq!(resolve_error_format(sub).unwrap(), DiagnosticFormat::Sarif);
 }
 
 #[test]
 fn error_format_invalid_value_reports_error() {
     let _lock = error_format_env_lock().lock().unwrap();
     let _guard = EnvVarGuard::remove("KCL_ERROR_FORMAT");
-    let matches = app()
-        .arg_required_else_help(true)
-        .get_matches_from([ROOT_CMD, "run", "--error_format", "xml"]);
+    let matches = app().arg_required_else_help(true).get_matches_from([
+        ROOT_CMD,
+        "run",
+        "--error_format",
+        "xml",
+    ]);
     let sub = matches.subcommand_matches("run").unwrap();
     let err = resolve_error_format(sub).unwrap_err();
     let msg = format!("{err}");

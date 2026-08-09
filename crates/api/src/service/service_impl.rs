@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::io::Write;
 use std::path::PathBuf;
-use std::string::String;
 use std::str::FromStr;
+use std::string::String;
 
 use crate::gpyrpc::{self, *};
 
@@ -1186,10 +1186,7 @@ mod error_format_tests {
     fn resolve_defaults_to_pretty_when_nothing_set() {
         let _lock = env_lock().lock().unwrap();
         let _guard = EnvGuard::remove("KCL_ERROR_FORMAT");
-        assert_eq!(
-            resolve_error_format("").unwrap(),
-            DiagnosticFormat::Pretty
-        );
+        assert_eq!(resolve_error_format("").unwrap(), DiagnosticFormat::Pretty);
     }
 
     #[test]
@@ -1206,10 +1203,7 @@ mod error_format_tests {
     fn resolve_falls_back_to_env() {
         let _lock = env_lock().lock().unwrap();
         let _env = EnvGuard::set("KCL_ERROR_FORMAT", "sarif");
-        assert_eq!(
-            resolve_error_format("").unwrap(),
-            DiagnosticFormat::Sarif
-        );
+        assert_eq!(resolve_error_format("").unwrap(), DiagnosticFormat::Sarif);
     }
 
     #[test]
@@ -1247,7 +1241,10 @@ mod error_format_tests {
             DiagnosticFormat::Arcanist,
             DiagnosticFormat::Sarif,
         ] {
-            assert!(emit_machine_readable_error("", fmt).is_ok(), "fmt = {fmt:?}");
+            assert!(
+                emit_machine_readable_error("", fmt).is_ok(),
+                "fmt = {fmt:?}"
+            );
         }
     }
 
@@ -1271,28 +1268,29 @@ mod error_format_tests {
 
     #[test]
     fn render_short_format_contains_message_and_level_marker() {
-        let s = render_machine_readable_error(
-            "divisor cannot be zero",
-            DiagnosticFormat::Short,
-        )
-        .unwrap();
+        let s = render_machine_readable_error("divisor cannot be zero", DiagnosticFormat::Short)
+            .unwrap();
         assert!(s.contains("error["), "got: {s}");
         assert!(s.contains("divisor cannot be zero"), "got: {s}");
     }
 
     #[test]
     fn render_arcanist_format_is_valid_json_array_with_expected_keys() {
-        let s = render_machine_readable_error(
-            "schema mismatch",
-            DiagnosticFormat::Arcanist,
-        )
-        .unwrap();
-        let v: serde_json::Value =
-            serde_json::from_str(&s).expect("must be valid JSON");
+        let s =
+            render_machine_readable_error("schema mismatch", DiagnosticFormat::Arcanist).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&s).expect("must be valid JSON");
         let arr = v.as_array().expect("must be an array");
         assert_eq!(arr.len(), 1);
         let entry = &arr[0];
-        for key in ["Char", "Code", "Description", "Line", "Name", "OriginalText", "Path"] {
+        for key in [
+            "Char",
+            "Code",
+            "Description",
+            "Line",
+            "Name",
+            "OriginalText",
+            "Path",
+        ] {
             assert!(entry.get(key).is_some(), "missing key {key} in {entry}");
         }
         assert_eq!(entry["Description"], "schema mismatch");
@@ -1300,10 +1298,7 @@ mod error_format_tests {
 
     #[test]
     fn render_sarif_format_is_valid_sarif_log() {
-        let s = render_machine_readable_error(
-            "boom", DiagnosticFormat::Sarif,
-        )
-        .unwrap();
+        let s = render_machine_readable_error("boom", DiagnosticFormat::Sarif).unwrap();
         let v: serde_json::Value = serde_json::from_str(&s).unwrap();
         assert_eq!(v["version"], "2.1.0");
         assert!(v["runs"].is_array());
@@ -1312,17 +1307,18 @@ mod error_format_tests {
     #[test]
     fn render_short_format_emits_pretty_marker_for_warning_via_level() {
         // Error level => output begins with "error[".
-        let s = render_machine_readable_error(
-            "boom", DiagnosticFormat::Short,
-        ).unwrap();
+        let s = render_machine_readable_error("boom", DiagnosticFormat::Short).unwrap();
         assert!(s.starts_with("error["), "got: {s}");
     }
 
     #[test]
     fn render_pretty_format_returns_empty_string() {
         // Pretty must not contribute to the String-returning channel.
-        assert!(render_machine_readable_error("x", DiagnosticFormat::Pretty)
-            .unwrap().is_empty());
+        assert!(
+            render_machine_readable_error("x", DiagnosticFormat::Pretty)
+                .unwrap()
+                .is_empty()
+        );
     }
 
     #[test]
@@ -1364,11 +1360,9 @@ mod error_format_tests {
             // Short: stderr must contain the "error[" level marker.
             (DiagnosticFormat::Short, "short", |s| s.contains("error[")),
             // Arcanist: stderr must be a JSON array with a Description key.
-            (
-                DiagnosticFormat::Arcanist,
-                "arcanist",
-                |s| s.contains("\"Description\""),
-            ),
+            (DiagnosticFormat::Arcanist, "arcanist", |s| {
+                s.contains("\"Description\"")
+            }),
             // Sarif: stderr must mention version 2.1.0 in some form.
             (DiagnosticFormat::Sarif, "sarif", |s| s.contains("2.1.0")),
         ];
@@ -1393,8 +1387,7 @@ mod error_format_tests {
                 .unwrap_or_else(|e| panic!("emit_machine_readable_error({name}) failed: {e}"));
             let mut log = redirect.into_inner();
             let mut captured = String::new();
-            log.seek(SeekFrom::Start(0))
-                .expect("seek redirect target");
+            log.seek(SeekFrom::Start(0)).expect("seek redirect target");
             log.read_to_string(&mut captured)
                 .expect("read redirect target");
             let _ = std::fs::remove_file(&path);
@@ -1500,13 +1493,10 @@ mod error_format_tests {
                 .expect("open redirect target");
             let redirect = Redirect::stderr(log).expect("redirect stderr");
             emit_machine_readable_error(&result.err_message, format.parse().unwrap())
-                .unwrap_or_else(|e| {
-                    panic!("emit_machine_readable_error({format}) failed: {e}")
-                });
+                .unwrap_or_else(|e| panic!("emit_machine_readable_error({format}) failed: {e}"));
             let mut log = redirect.into_inner();
             let mut captured = String::new();
-            log.seek(SeekFrom::Start(0))
-                .expect("seek redirect target");
+            log.seek(SeekFrom::Start(0)).expect("seek redirect target");
             log.read_to_string(&mut captured)
                 .expect("read redirect target");
             let _ = std::fs::remove_file(&path);

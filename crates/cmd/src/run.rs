@@ -38,7 +38,10 @@ fn diag_from_err_message(message: &str) -> Diagnostic {
     Diagnostic {
         level: Level::Error,
         messages: vec![Message {
-            range: (kcl_error::Position::dummy_pos(), kcl_error::Position::dummy_pos()),
+            range: (
+                kcl_error::Position::dummy_pos(),
+                kcl_error::Position::dummy_pos(),
+            ),
             style: kcl_error::Style::LineAndColumn,
             message: message.to_string(),
             note: None,
@@ -48,7 +51,11 @@ fn diag_from_err_message(message: &str) -> Diagnostic {
     }
 }
 
-fn emit_machine_readable(handler: &mut Handler, message: &str, format: DiagnosticFormat) -> Result<()> {
+fn emit_machine_readable(
+    handler: &mut Handler,
+    message: &str,
+    format: DiagnosticFormat,
+) -> Result<()> {
     handler.add_diagnostic(diag_from_err_message(message));
     let _ = handler.emit_as(format)?;
     Ok(())

@@ -309,7 +309,12 @@ mod tests {
         assert_eq!(runs.len(), 1);
         let driver = &runs[0]["tool"]["driver"];
         assert_eq!(driver["name"], "kcl");
-        assert!(driver["informationUri"].as_str().unwrap().starts_with("https://"));
+        assert!(
+            driver["informationUri"]
+                .as_str()
+                .unwrap()
+                .starts_with("https://")
+        );
         let rules = driver["rules"].as_array().unwrap();
         assert_eq!(rules.len(), 1);
         assert_eq!(rules[0]["id"], "E2F04");
@@ -318,13 +323,13 @@ mod tests {
         assert_eq!(results.len(), 1);
         assert_eq!(results[0]["ruleId"], "E2F04");
         assert_eq!(results[0]["level"], "error");
-        assert_eq!(
-            results[0]["message"]["text"],
-            "imported module not found"
-        );
+        assert_eq!(results[0]["message"]["text"], "imported module not found");
         let locs = results[0]["locations"].as_array().unwrap();
         assert_eq!(locs.len(), 1);
-        assert_eq!(locs[0]["physicalLocation"]["artifactLocation"]["uri"], "/tmp/file.k");
+        assert_eq!(
+            locs[0]["physicalLocation"]["artifactLocation"]["uri"],
+            "/tmp/file.k"
+        );
         assert_eq!(locs[0]["physicalLocation"]["region"]["startLine"], 7);
         assert_eq!(locs[0]["physicalLocation"]["region"]["startColumn"], 1);
     }
@@ -339,7 +344,10 @@ mod tests {
         let out = render(&[diag]);
         let parsed = parse_log(&out).unwrap();
         assert_eq!(parsed["runs"][0]["results"][0]["level"], "warning");
-        assert_eq!(parsed["runs"][0]["tool"]["driver"]["rules"][0]["id"], "W1001");
+        assert_eq!(
+            parsed["runs"][0]["tool"]["driver"]["rules"][0]["id"],
+            "W1001"
+        );
     }
 
     #[test]

@@ -53,8 +53,7 @@ impl ArcanistEntry {
         }
         if let Some(p) = pos {
             if !p.filename.is_empty() {
-                original_text =
-                    lookup_source_line(&p.filename, p.line).unwrap_or_default();
+                original_text = lookup_source_line(&p.filename, p.line).unwrap_or_default();
             }
         }
         for msg in related_messages(diag) {

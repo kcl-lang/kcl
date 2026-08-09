@@ -9,7 +9,9 @@
 //! When the diagnostic has no associated source file, the leading
 //! `path:line:col -` segment is omitted. There is no ANSI coloring.
 
-use super::{external_column, primary_message, primary_position, related_messages, rule_code, rule_name};
+use super::{
+    external_column, primary_message, primary_position, related_messages, rule_code, rule_name,
+};
 use crate::Diagnostic;
 
 /// Render a single diagnostic in the short (one-line) format.

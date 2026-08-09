@@ -104,7 +104,9 @@ pub fn lookup_source_line(filename: &str, line: u64) -> Option<String> {
         return None;
     }
     let sess = Session::new_with_file_and_code(filename, None).ok()?;
-    let source = sess.sm.lookup_source_file(compiler_base_span::span::new_byte_pos(0));
+    let source = sess
+        .sm
+        .lookup_source_file(compiler_base_span::span::new_byte_pos(0));
     source
         .get_line(line.saturating_sub(1) as usize)
         .as_ref()
@@ -140,16 +142,8 @@ pub fn rule_code(diag: &Diagnostic) -> String {
         Some(DiagnosticId::Warning(warn)) => format!("{}[{}]", level, warn.code()),
         Some(DiagnosticId::Suggestions) => format!("{}[Suggestions]", level),
         None => match diag.level {
-            Level::Error => format!(
-                "{}[{}]",
-                level,
-                crate::ErrorKind::EvaluationError.code()
-            ),
-            Level::Warning => format!(
-                "{}[{}]",
-                level,
-                crate::WarningKind::CompilerWarning.code()
-            ),
+            Level::Error => format!("{}[{}]", level, crate::ErrorKind::EvaluationError.code()),
+            Level::Warning => format!("{}[{}]", level, crate::WarningKind::CompilerWarning.code()),
             Level::Note => format!("{}[Note]", level),
             Level::Suggestions => format!("{}[Suggestion]", level),
         },
@@ -321,7 +315,9 @@ mod tests {
     fn rule_name_for_warning_kind() {
         let diag = diag_with_messages(
             vec![dummy_message("x")],
-            Some(DiagnosticId::Warning(crate::WarningKind::UnusedImportWarning)),
+            Some(DiagnosticId::Warning(
+                crate::WarningKind::UnusedImportWarning,
+            )),
         );
         assert_eq!(rule_name(&diag), "UnusedImportWarning");
     }

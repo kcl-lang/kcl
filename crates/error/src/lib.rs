@@ -98,12 +98,14 @@ impl Handler {
                 Ok(self.has_errors())
             }
             format::DiagnosticFormat::Arcanist => {
-                let rendered = format::arcanist::render(&Vec::from_iter(self.diagnostics.iter().cloned()));
+                let rendered =
+                    format::arcanist::render(&Vec::from_iter(self.diagnostics.iter().cloned()));
                 eprintln!("{rendered}");
                 Ok(self.has_errors())
             }
             format::DiagnosticFormat::Sarif => {
-                let rendered = format::sarif::render(&Vec::from_iter(self.diagnostics.iter().cloned()));
+                let rendered =
+                    format::sarif::render(&Vec::from_iter(self.diagnostics.iter().cloned()));
                 eprintln!("{rendered}");
                 Ok(self.has_errors())
             }
@@ -125,12 +127,12 @@ impl Handler {
                 }
                 Ok(out)
             }
-            format::DiagnosticFormat::Arcanist => Ok(format::arcanist::render(
-                &Vec::from_iter(self.diagnostics.iter().cloned()),
-            )),
-            format::DiagnosticFormat::Sarif => Ok(format::sarif::render(
-                &Vec::from_iter(self.diagnostics.iter().cloned()),
-            )),
+            format::DiagnosticFormat::Arcanist => Ok(format::arcanist::render(&Vec::from_iter(
+                self.diagnostics.iter().cloned(),
+            ))),
+            format::DiagnosticFormat::Sarif => Ok(format::sarif::render(&Vec::from_iter(
+                self.diagnostics.iter().cloned(),
+            ))),
         }
     }
 
