@@ -1026,6 +1026,11 @@ message ExecProgramArgs {
 	repeated string path_selector = 17;
 	// Flag for fast evaluation.
 	bool fast_eval = 18;
+	// Diagnostic output format. One of: pretty, short, arcanist, sarif.
+	// When set to anything other than "pretty", compile/eval errors are
+	// emitted to stderr in the chosen machine-readable format. Falls back
+	// to the `KCL_ERROR_FORMAT` environment variable when empty.
+	string error_format = 19;
 }
 
 // Message for execute program response.
