@@ -1,0 +1,7 @@
+{
+	"work_dir" : "./src/testdata",
+	"k_filename_list":[
+		"bad_runtime_error.k"
+	],
+	"error_format": "arcanist"
+}

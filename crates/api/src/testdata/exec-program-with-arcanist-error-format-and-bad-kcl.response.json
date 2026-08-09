@@ -1,0 +1,6 @@
+{
+  "json_result": "",
+  "yaml_result": "",
+  "log_message": "",
+  "err_message": "EvaluationError\n \u001b[1;38;5;12m-->\u001b[0m /Users/timi/codes/kcl/crates/api/src/testdata/bad_runtime_error.k:1:1\n\u001b[1;38;5;12m  |\u001b[0m\n\u001b[1;38;5;12m1 |\u001b[0m x = [1, 2][5]\n\u001b[1;38;5;12m  |\u001b[0m\u001b[1;38;5;9m \u001b[0m \u001b[1;38;5;9mlist index out of range: 5\u001b[0m\n\u001b[1;38;5;12m  |\u001b[0m\n\n"
+}

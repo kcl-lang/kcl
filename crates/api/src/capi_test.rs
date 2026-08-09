@@ -154,6 +154,44 @@ fn test_c_api_call_exec_program_with_compile_only() {
 }
 
 #[test]
+fn test_c_api_call_exec_program_with_arcanist_error_format() {
+    test_c_api::<ExecProgramArgs, ExecProgramResult, _>(
+        "KclService.ExecProgram",
+        "exec-program-with-arcanist-error-format.json",
+        "exec-program-with-arcanist-error-format.response.json",
+        |_| {},
+    );
+}
+
+#[test]
+fn test_c_api_call_exec_program_with_arcanist_error_format_and_bad_kcl() {
+    // Same fixture, but pointing at a KCL file that triggers a runtime
+    // evaluation error (`x = [1, 2][5]` → "list index out of range"). The
+    // service must:
+    //   1. Accept the `error_format: "arcanist"` proto field,
+    //   2. Return Ok (not Err) — runtime errors populate `err_message`
+    //      but do not propagate as a service error,
+    //   3. Surface the formatted error string in `err_message` so the
+    //      machine-readable path (`emit_machine_readable_error`) actually
+    //      has something to render to stderr.
+    test_c_api::<ExecProgramArgs, ExecProgramResult, _>(
+        "KclService.ExecProgram",
+        "exec-program-with-arcanist-error-format-and-bad-kcl.json",
+        "exec-program-with-arcanist-error-format-and-bad-kcl.response.json",
+        |_| {},
+    );
+}
+
+#[test]
+fn test_c_api_call_exec_program_with_invalid_error_format() {
+    test_c_api_panic::<ExecProgramArgs>(
+        "KclService.ExecProgram",
+        "exec-program-with-invalid-error-format.json",
+        "exec-program-with-invalid-error-format.response.panic",
+    );
+}
+
+#[test]
 fn test_c_api_validate_code_with_dep() {
     test_c_api_without_wrapper::<ValidateCodeArgs, ValidateCodeResult>(
         "KclService.ValidateCode",
