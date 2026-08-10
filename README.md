@@ -4,7 +4,7 @@
 <a href="./README.md">English</a> | <a href="./README-zh.md">简体中文</a>
 </p>
 <p align="center">
-<a href="#introduction">Introduction</a> | <a href="#features">Features</a> | <a href="#what-is-it-for">What is it for</a> | <a href="#installation">Installation</a> | <a href="#documentation">Documentation</a> | <a href="#contributing">Contributing</a> | <a href="#roadmap">Roadmap</a>
+<a href="#introduction">Introduction</a> | <a href="#features">Features</a> | <a href="#what-is-it-for">What is it for</a> | <a href="#installation">Installation</a> | <a href="#documentation">Documentation</a> | <a href="#contributing">Contributing</a>
 </p>
 
 <p align="center">
@@ -74,10 +74,6 @@ There is also a very nice [Devin](https://devin.ai/) generated document availabl
 See [Developing Guide](./docs/dev_guide/1.about_this_guide.md). You can also get started by opening the project in GitHub Codespaces.
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/kcl-lang/kcl)
-
-## Roadmap
-
-See [KCL Roadmap](https://github.com/kcl-lang/kcl/issues/882).
 
 ## Community
 

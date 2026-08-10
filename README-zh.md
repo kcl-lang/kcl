@@ -4,7 +4,7 @@
 <a href="./README.md">English</a> | <a href="./README-zh.md">简体中文</a>
 </p>
 <p align="center">
-<a href="#介绍">介绍</a> | <a href="#特性">特性</a> | <a href="#场景">场景</a> | <a href="#安装">安装</a> | <a href="#文档">文档</a> | <a href="#贡献">贡献</a> | <a href="#路线规划">路线规划</a>
+<a href="#介绍">介绍</a> | <a href="#特性">特性</a> | <a href="#场景">场景</a> | <a href="#安装">安装</a> | <a href="#文档">文档</a> | <a href="#贡献">贡献</a>
 </p>
 
 <p align="center">
@@ -75,10 +75,6 @@ KCL 是一个开源的基于约束的记录及函数语言并通过成熟的编�
 参考[开发手册](./docs/dev_guide/1.about_this_guide.md)。您也可以直接在 GitHub Codespaces 中打开该项目开始贡献。
 
 [![用 GitHub Codespaces 打开](https://github.com/codespaces/badge.svg)](https://codespaces.new/kcl-lang/kcl)
-
-## 路线规划
-
-参考[KCL 路线规划](https://github.com/kcl-lang/kcl/issues/882)
 
 ## 社区
 
