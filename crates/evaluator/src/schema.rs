@@ -402,10 +402,13 @@ impl SchemaEvalContext {
                                     scope.levels.insert(key.to_string(), next_level);
                                 }
                                 let n = setters.len();
-                                let index = n - next_level;
-                                if index >= n {
+                                // Guard the subtraction: when the backtrack has exhausted
+                                // every setter for this key, fall back to the cached value
+                                // rather than panicking on a `usize` underflow.
+                                if next_level > n {
                                     value
                                 } else {
+                                    let index = n - next_level;
                                     // Call setter function
                                     s.walk_schema_stmts_with_setter(
                                         &self.node.body,
