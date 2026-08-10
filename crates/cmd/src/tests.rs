@@ -4,19 +4,60 @@ use std::{
     env,
     fs::{self, remove_file},
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{Arc, Mutex, OnceLock},
 };
 
 use kcl_config::modfile::KCL_PKG_PATH;
+use kcl_error::format::DiagnosticFormat;
 use kcl_parser::ParseSession;
 use kcl_runner::{MapErrorResult, exec_program};
 
 use crate::{
     app,
-    run::run_command,
+    run::{resolve_error_format, run_command},
     settings::{build_settings, must_build_settings},
     util::hashmaps_from_matches,
 };
+
+/// Serialises every test that touches `KCL_ERROR_FORMAT`. cargo runs unit
+/// tests in parallel and `std::env::set_var` mutates process-global state,
+/// so we have to take a lock whenever we read or write that variable.
+fn error_format_env_lock() -> &'static Mutex<()> {
+    static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+    LOCK.get_or_init(|| Mutex::new(()))
+}
+
+/// RAII helper that snapshots and restores `KCL_ERROR_FORMAT` for the
+/// duration of a test.
+struct EnvVarGuard {
+    name: &'static str,
+    prev: Option<String>,
+}
+
+impl EnvVarGuard {
+    fn set(name: &'static str, value: &str) -> Self {
+        let prev = env::var(name).ok();
+        // SAFETY: the surrounding test holds `error_format_env_lock()` so
+        // no other test can observe this set_var race.
+        unsafe { env::set_var(name, value) };
+        Self { name, prev }
+    }
+
+    fn remove(name: &'static str) -> Self {
+        let prev = env::var(name).ok();
+        unsafe { env::remove_var(name) };
+        Self { name, prev }
+    }
+}
+
+impl Drop for EnvVarGuard {
+    fn drop(&mut self) {
+        match &self.prev {
+            Some(value) => unsafe { env::set_var(self.name, value) },
+            None => unsafe { env::remove_var(self.name) },
+        }
+    }
+}
 
 #[cfg(unix)]
 use std::os::unix::fs::symlink;
@@ -177,6 +218,12 @@ fn test_external_cmd_invalid() {
 #[cfg(not(windows))]
 // All the unit test cases in [`test_run_command`] can not be executed concurrently.
 fn test_run_command() {
+    // `run_command` reads `KCL_ERROR_FORMAT`, so this test must hold the
+    // same lock the error-format tests use to mutate the variable. Without
+    // it, a parallel `error_format_*` test can observe a bogus value
+    // mid-flight and bubble an `invalid diagnostic format` error up
+    // through `resolve_error_format`.
+    let _env_lock = error_format_env_lock().lock().unwrap();
     test_run_command_with_import();
     test_load_cache_with_different_pkg();
     test_kcl_path_is_sym_link();
@@ -567,4 +614,105 @@ fn test_keyword_argument_error_message() {
             assert!(msg.contains("keyword argument 'ID' not found"));
         }
     }
+}
+
+// Tests for `--error-format` resolution. These exercise the CLI flag and
+// `KCL_ERROR_FORMAT` environment variable precedence without driving the
+// full `run_command` (which calls `std::process::exit(1)` for non-pretty
+// formats). The unit tests in `kcl-error::format` already cover the
+// per-format rendering; here we focus on the CLI/environment plumbing.
+
+#[test]
+fn error_format_defaults_to_pretty() {
+    let _lock = error_format_env_lock().lock().unwrap();
+    let _guard = EnvVarGuard::remove("KCL_ERROR_FORMAT");
+    let matches = app()
+        .arg_required_else_help(true)
+        .get_matches_from([ROOT_CMD, "run"]);
+    let sub = matches.subcommand_matches("run").unwrap();
+    assert_eq!(resolve_error_format(sub).unwrap(), DiagnosticFormat::Pretty);
+}
+
+#[test]
+fn error_format_from_cli_flag() {
+    let _lock = error_format_env_lock().lock().unwrap();
+    let _guard = EnvVarGuard::remove("KCL_ERROR_FORMAT");
+    for (name, expected) in [
+        ("pretty", DiagnosticFormat::Pretty),
+        ("short", DiagnosticFormat::Short),
+        ("arcanist", DiagnosticFormat::Arcanist),
+        ("sarif", DiagnosticFormat::Sarif),
+    ] {
+        let matches = app().arg_required_else_help(true).get_matches_from([
+            ROOT_CMD,
+            "run",
+            "--error_format",
+            name,
+        ]);
+        let sub = matches.subcommand_matches("run").unwrap();
+        assert_eq!(
+            resolve_error_format(sub).unwrap(),
+            expected,
+            "format {name} did not parse to the expected variant"
+        );
+    }
+}
+
+#[test]
+fn error_format_from_env_var() {
+    let _lock = error_format_env_lock().lock().unwrap();
+    let _guard = EnvVarGuard::set("KCL_ERROR_FORMAT", "arcanist");
+    let matches = app()
+        .arg_required_else_help(true)
+        .get_matches_from([ROOT_CMD, "run"]);
+    let sub = matches.subcommand_matches("run").unwrap();
+    assert_eq!(
+        resolve_error_format(sub).unwrap(),
+        DiagnosticFormat::Arcanist
+    );
+}
+
+#[test]
+fn error_format_cli_overrides_env() {
+    let _lock = error_format_env_lock().lock().unwrap();
+    let _guard = EnvVarGuard::set("KCL_ERROR_FORMAT", "short");
+    let matches = app().arg_required_else_help(true).get_matches_from([
+        ROOT_CMD,
+        "run",
+        "--error_format",
+        "sarif",
+    ]);
+    let sub = matches.subcommand_matches("run").unwrap();
+    // CLI flag must win over env var.
+    assert_eq!(resolve_error_format(sub).unwrap(), DiagnosticFormat::Sarif);
+}
+
+#[test]
+fn error_format_invalid_value_reports_error() {
+    let _lock = error_format_env_lock().lock().unwrap();
+    let _guard = EnvVarGuard::remove("KCL_ERROR_FORMAT");
+    let matches = app().arg_required_else_help(true).get_matches_from([
+        ROOT_CMD,
+        "run",
+        "--error_format",
+        "xml",
+    ]);
+    let sub = matches.subcommand_matches("run").unwrap();
+    let err = resolve_error_format(sub).unwrap_err();
+    let msg = format!("{err}");
+    assert!(msg.contains("xml"));
+    assert!(msg.contains("pretty"));
+    assert!(msg.contains("sarif"));
+}
+
+#[test]
+fn error_format_invalid_env_value_reports_error() {
+    let _lock = error_format_env_lock().lock().unwrap();
+    let _guard = EnvVarGuard::set("KCL_ERROR_FORMAT", "bogus");
+    let matches = app()
+        .arg_required_else_help(true)
+        .get_matches_from([ROOT_CMD, "run"]);
+    let sub = matches.subcommand_matches("run").unwrap();
+    let err = resolve_error_format(sub).unwrap_err();
+    assert!(format!("{err}").contains("bogus"));
 }

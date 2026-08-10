@@ -1,0 +1,1 @@
+invalid diagnostic format `xml` (expected one of: pretty, short, arcanist, sarif)

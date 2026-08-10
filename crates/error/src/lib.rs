@@ -5,6 +5,7 @@
 
 pub mod diagnostic;
 mod error;
+pub mod format;
 
 use annotate_snippets::{
     display_list::DisplayList,
@@ -80,6 +81,59 @@ impl Handler {
             error_strings.push(error?);
         }
         Ok(error_strings.join("\n"))
+    }
+
+    /// Emit all diagnostics using the requested output format.
+    ///
+    /// `Pretty` is fully equivalent to [`Self::emit`] and is the default
+    /// behaviour for callers that don't pass `--error-format`. The other
+    /// variants bypass `annotate_snippets` and write directly to stderr.
+    pub fn emit_as(&mut self, format: format::DiagnosticFormat) -> Result<bool> {
+        match format {
+            format::DiagnosticFormat::Pretty => self.emit(),
+            format::DiagnosticFormat::Short => {
+                for diag in &self.diagnostics {
+                    eprintln!("{}", format::short::render(diag));
+                }
+                Ok(self.has_errors())
+            }
+            format::DiagnosticFormat::Arcanist => {
+                let rendered =
+                    format::arcanist::render(&Vec::from_iter(self.diagnostics.iter().cloned()));
+                eprintln!("{rendered}");
+                Ok(self.has_errors())
+            }
+            format::DiagnosticFormat::Sarif => {
+                let rendered =
+                    format::sarif::render(&Vec::from_iter(self.diagnostics.iter().cloned()));
+                eprintln!("{rendered}");
+                Ok(self.has_errors())
+            }
+        }
+    }
+
+    /// Render diagnostics to a string using the requested output format.
+    ///
+    /// Used by callers that want to intercept the rendered output (e.g. to
+    /// send it over a different channel or to compare against a fixture).
+    pub fn emit_to_string_as(&mut self, format: format::DiagnosticFormat) -> Result<String> {
+        match format {
+            format::DiagnosticFormat::Pretty => self.emit_to_string(),
+            format::DiagnosticFormat::Short => {
+                let mut out = String::new();
+                for diag in &self.diagnostics {
+                    out.push_str(&format::short::render(diag));
+                    out.push('\n');
+                }
+                Ok(out)
+            }
+            format::DiagnosticFormat::Arcanist => Ok(format::arcanist::render(&Vec::from_iter(
+                self.diagnostics.iter().cloned(),
+            ))),
+            format::DiagnosticFormat::Sarif => Ok(format::sarif::render(&Vec::from_iter(
+                self.diagnostics.iter().cloned(),
+            ))),
+        }
     }
 
     /// Emit all diagnostics and abort if has any errors.

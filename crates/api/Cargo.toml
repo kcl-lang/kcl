@@ -41,6 +41,7 @@ tokio = { version = "1.37.0", features = ["full"] }
 
 [dev-dependencies]
 criterion = "0.5"
+gag = "1.0"
 
 [build-dependencies]
 protoc-bin-vendored = "3.2.0"

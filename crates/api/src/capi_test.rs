@@ -154,6 +154,64 @@ fn test_c_api_call_exec_program_with_compile_only() {
 }
 
 #[test]
+fn test_c_api_call_exec_program_with_arcanist_error_format() {
+    test_c_api::<ExecProgramArgs, ExecProgramResult, _>(
+        "KclService.ExecProgram",
+        "exec-program-with-arcanist-error-format.json",
+        "exec-program-with-arcanist-error-format.response.json",
+        |_| {},
+    );
+}
+
+#[test]
+fn test_c_api_call_exec_program_with_arcanist_error_format_and_bad_kcl() {
+    // Same fixture, but pointing at a KCL file that triggers a runtime
+    // evaluation error (`x = [1, 2][5]` → "list index out of range"). The
+    // service must:
+    //   1. Accept the `error_format: "arcanist"` proto field,
+    //   2. Return Ok (not Err) — runtime errors populate `err_message`
+    //      but do not propagate as a service error,
+    //   3. Surface the formatted error string in `err_message` so the
+    //      machine-readable path (`emit_machine_readable_error`) actually
+    //      has something to render to stderr.
+    //
+    // The expected `err_message` fixture embeds the absolute path to the
+    // KCL source file, which differs between dev machines and CI. The
+    // wrapper normalises both sides by stripping the manifest directory
+    // prefix and replacing it with a stable placeholder, so the comparison
+    // is independent of the build host.
+    test_c_api::<ExecProgramArgs, ExecProgramResult, _>(
+        "KclService.ExecProgram",
+        "exec-program-with-arcanist-error-format-and-bad-kcl.json",
+        "exec-program-with-arcanist-error-format-and-bad-kcl.response.json",
+        |r| {
+            let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+            let placeholder = "<MANIFEST_DIR>";
+            if let Some(root_str) = root.to_str() {
+                if !root_str.is_empty() {
+                    r.err_message = r.err_message.replace(root_str, placeholder);
+                }
+            }
+            // Normalise path separators: on Windows `err_message` embeds the
+            // absolute path with `\` separators, while the fixture (and the
+            // string above after manifest-dir substitution) use `/`.
+            // Convert all remaining `\` to `/` so the comparison is
+            // independent of the host OS.
+            r.err_message = r.err_message.replace('\\', "/");
+        },
+    );
+}
+
+#[test]
+fn test_c_api_call_exec_program_with_invalid_error_format() {
+    test_c_api_panic::<ExecProgramArgs>(
+        "KclService.ExecProgram",
+        "exec-program-with-invalid-error-format.json",
+        "exec-program-with-invalid-error-format.response.panic",
+    );
+}
+
+#[test]
 fn test_c_api_validate_code_with_dep() {
     test_c_api_without_wrapper::<ValidateCodeArgs, ValidateCodeResult>(
         "KclService.ValidateCode",
@@ -284,7 +342,7 @@ where
     R: Message + Default + std::fmt::Debug + PartialEq + DeserializeOwned + serde::Serialize,
     F: Fn(&mut R),
 {
-    let _test_lock = TEST_MUTEX.lock().unwrap();
+    let _test_lock = TEST_MUTEX.lock().unwrap_or_else(|p| p.into_inner());
     let serv = unsafe { kcl_service_new(0) };
 
     let input_path = Path::new(TEST_DATA_PATH).join(input);
@@ -335,7 +393,7 @@ fn test_c_api_panic<A>(svc_name: &str, input: &str, output: &str)
 where
     A: Message + DeserializeOwned,
 {
-    let _test_lock = TEST_MUTEX.lock().unwrap();
+    let _test_lock = TEST_MUTEX.lock().unwrap_or_else(|p| p.into_inner());
     let serv = unsafe { kcl_service_new(0) };
     let prev_hook = std::panic::take_hook();
     // disable print panic info
