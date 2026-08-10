@@ -356,10 +356,13 @@ impl<'ctx> Evaluator<'ctx> {
                                 scope.levels.insert(key.to_string(), next_level);
                             }
                             let n = setters.len();
-                            let index = n - next_level;
-                            if index >= n {
+                            // Guard the subtraction: when the backtrack has exhausted
+                            // every setter for this key, fall back to the default value
+                            // rather than panicking on a `usize` underflow.
+                            if next_level > n {
                                 default
                             } else {
+                                let index = n - next_level;
                                 // Call setter function.
                                 self.walk_stmts_with_setter(&setters[index]);
                                 // Store cache value.

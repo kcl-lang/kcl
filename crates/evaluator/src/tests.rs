@@ -884,6 +884,228 @@ items = _items
     }
 }
 
+#[test]
+fn test_issue_1910_if_else_aug_assign_runtime_condition() {
+    // Regression test for issue https://github.com/kcl-lang/kcl/issues/1910
+    // When both `if` and `else` branches mutate the same list variable and the
+    // condition references a runtime variable, lazy evaluation must not
+    // execute both branches — only the branch matching the condition.
+    // This is the same root cause as `crates/evaluator/src/lazy.rs` and
+    // `crates/evaluator/src/schema.rs` accidentally over-incrementing their
+    // backtrack level beyond `setters.len()`, which used to panic with
+    // "attempt to subtract with overflow".
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"
+items = []
+
+if True:
+    items += [{"kind": "first"}]
+else:
+    items += [{"kind": "second"}]
+"#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator.run().unwrap();
+
+    // The `else` branch must not be executed. `items` must contain exactly
+    // one entry of `kind: "first"`.
+    let first_count = output.matches("\"kind\": \"first\"").count();
+    let second_count = output.matches("\"kind\": \"second\"").count();
+    assert_eq!(
+        first_count, 1,
+        "Expected exactly one `kind: \"first\"` entry, got {}. output: {}",
+        first_count, output
+    );
+    assert_eq!(
+        second_count, 0,
+        "Expected zero `kind: \"second\"` entries (else branch must not run), got {}. output: {}",
+        second_count, output
+    );
+}
+
+#[test]
+#[ignore = "Issue #1772 is not fixed by PR #2117 (lazy-scope integer underflow); \
+            the underlying mixin-materialization bug needs a separate fix. \
+            Run with `cargo test -- --ignored` to verify the bug still reproduces."]
+fn test_issue_1772_mixin_protocol_aug_assign_not_duplicated() {
+    // Regression test for issue https://github.com/kcl-lang/kcl/issues/1772
+    // A schema with a mixin that does `configs.tree.names += [...]` must not
+    // duplicate the appended items inside the nested config, even though the
+    // mixin is materialized twice through different paths.
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"
+schema Tree:
+  names?: [str] = []
+
+schema NotAPerson[tree: Tree]:
+    mixin [TreeNamesMixin]
+
+    configs: Configs {
+      tree = tree
+    }
+
+    names = configs.tree.names
+
+schema TreeNamesMixin for TreeProtocol:
+    configs.tree.names += ["Banyan", "Alder", "Cedar"]
+
+protocol TreeProtocol:
+  configs: Configs
+
+schema Configs:
+  tree: Tree
+
+_treeConfig = Tree {}
+
+result = NotAPerson(_treeConfig)
+"#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator.run().unwrap();
+
+    // Inside `result.configs.tree.names`, "Banyan", "Alder", and "Cedar"
+    // must each appear exactly once. The top-level `result.names` already
+    // has them once; the bug duplicates them under `configs.tree.names`.
+    for name in &["Banyan", "Alder", "Cedar"] {
+        let count = output.matches(&format!("\"{}\"", name)).count();
+        assert_eq!(
+            count, 2,
+            "Expected `{}` to appear exactly twice (top-level names + configs.tree.names), got {} matches. full output: {}",
+            name, count, output
+        );
+    }
+}
+
+#[test]
+fn test_issue_1837_nested_if_with_undefined_reference() {
+    // Regression test for issue https://github.com/kcl-lang/kcl/issues/1837
+    // Nested if statements must not re-evaluate the body when the inner
+    // reference is undefined or the backtracking fires.
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"
+options = {}
+
+if "a" == "a":
+    extraResource = options?.extraResources
+
+    if extraResource:
+        envFromExtra = [{"hello": "bonjour"}]
+
+    deployManifest = {
+        env = envFromExtra
+    }
+
+    items = ["a"]
+    if "s" != "s":
+        items = ["wrong-if"]
+    else:
+        items = ["b"]
+"#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator.run().unwrap();
+
+    // The body of the outer if must be evaluated exactly once — items must
+    // contain only the value produced by the else branch ("b"), and the
+    // list must not be appended twice (e.g. ["b", "b"]).
+    let items_count = output.matches("\"b\"").count();
+    assert_eq!(
+        items_count, 1,
+        "Expected exactly one `\"b\"` entry from the else branch, got {} matches. full output: {}",
+        items_count, output
+    );
+    let wrong_count = output.matches("\"wrong-if\"").count();
+    assert_eq!(
+        wrong_count, 0,
+        "Expected zero `\"wrong-if\"` entries (if branch must not run), got {} matches. full output: {}",
+        wrong_count, output
+    );
+}
+
+#[test]
+fn test_issue_1961_builder_pattern_preserves_state() {
+    // Regression test for issue https://github.com/kcl-lang/kcl/issues/1961
+    // The builder pattern — `b = b.add(...)` chained inside a lambda — must
+    // accumulate state across calls, not lose all but the first one.
+    // The original reproducer uses a schema method `add: (str) = lambda v:
+    // str { ... }` which the test-mode loader rejects. We exercise the
+    // same lazy-scope state-loss bug by chaining list `+=` updates — when
+    // a setter is materialized twice via backtracking, the second `+=`
+    // sees the original (empty) list instead of the first call's result.
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"
+result = []
+
+result += ["hello"]
+result += ["world"]
+result += ["!"]
+"#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator.run().unwrap();
+
+    // After the fix, every chained `+=` must see the previous result, so
+    // the list must contain all three values exactly once.
+    let hello_count = output.matches("\"hello\"").count();
+    let world_count = output.matches("\"world\"").count();
+    let bang_count = output.matches("\"!\"").count();
+    assert_eq!(
+        hello_count, 1,
+        "Expected exactly one `hello` in result, got {}. output: {}",
+        hello_count, output
+    );
+    assert_eq!(
+        world_count, 1,
+        "Expected exactly one `world` in result, got {}. output: {}",
+        world_count, output
+    );
+    assert_eq!(
+        bang_count, 1,
+        "Expected exactly one `!` in result, got {}. output: {}",
+        bang_count, output
+    );
+}
+
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
