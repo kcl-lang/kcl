@@ -783,6 +783,107 @@ fn test_nested_if_stmt_multiple_levels() {
     );
 }
 
+#[test]
+fn test_issue_1918_if_false_function_call_no_duplicate() {
+    // Regression test for issue https://github.com/kcl-lang/kcl/issues/1918
+    // An element appended after an `if False` branch should NOT be rendered twice
+    // even when the appended element uses a function/lambda call inside.
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"
+_items = []
+functionTest = lambda -> str {
+    "value"
+}
+_items += [{
+    name = "A"
+}]
+
+_role = []
+
+if False:
+    _items += [
+        {name = "B"}
+    ]
+
+
+_items += [
+  {
+    name = "C"
+    key = functionTest()
+  }
+]
+
+items = _items
+"#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator.run().unwrap();
+
+    // Count occurrences of the "C" entry; it must appear exactly once.
+    let count_c = output.matches("\"name\": \"C\"").count();
+    assert_eq!(
+        count_c, 1,
+        "Expected exactly one entry with name \"C\", got {} in output: {}",
+        count_c, output
+    );
+}
+
+#[test]
+fn test_issue_1918_if_true_with_function_in_other_branch() {
+    // Regression test for issue https://github.com/kcl-lang/kcl/issues/1918
+    // When the if branch is True and a function call appears in the *other*
+    // (else / later) branch, the appended element must still appear only once.
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"
+_items = []
+functionTest = lambda -> str {
+    "value"
+}
+_items += [{name = "A"}]
+
+if True:
+    _items += [{name = "B"}]
+
+_items += [{name = "C", key = functionTest()}]
+
+items = _items
+"#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator.run().unwrap();
+
+    // Each of "A", "B", "C" must appear exactly once.
+    for name in &["A", "B", "C"] {
+        let needle = format!("\"name\": \"{}\"", name);
+        let count = output.matches(&needle).count();
+        assert_eq!(
+            count, 1,
+            "Expected exactly one entry with name \"{}\", got {} in output: {}",
+            name, count, output
+        );
+    }
+}
+
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
