@@ -149,7 +149,7 @@ pub fn func_body(
         s.leave_scope();
     }
     // Evaluate arguments and keyword arguments and store values to local variables.
-    s.walk_arguments(&ctx.node.args, args, kwargs);
+    s.walk_arguments(&ctx.node.args, args, kwargs, false);
     let mut result = s
         .walk_stmts(&ctx.node.body)
         .expect(kcl_error::RUNTIME_ERROR_MSG);

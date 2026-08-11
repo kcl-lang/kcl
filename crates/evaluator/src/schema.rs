@@ -503,7 +503,17 @@ pub(crate) fn schema_body(
         s.pop_schema();
     }
     // Evaluate arguments and keyword arguments and store values to local variables.
-    s.walk_arguments(&ctx.borrow().node.args, args, kwargs);
+    //
+    // When the schema is being called as the base of a child schema
+    // (`is_sub_schema == false` after `set_info_with_schema` was invoked by
+    // `call_schema_body`), the values forwarded here are the child's values
+    // matched against the child's argument list. The child may have
+    // overridden the parent's argument with a different type, so
+    // re-validating those values against the parent's declared types is
+    // incorrect. The child's own `walk_arguments` call (further down in the
+    // child's `schema_body`) still enforces the child's types.
+    let skip_type_check = !ctx.borrow().is_sub_schema;
+    s.walk_arguments(&ctx.borrow().node.args, args, kwargs, skip_type_check);
     // Eval schema body and record schema instances.
     {
         let schema_pkgpath = &s.current_pkgpath();

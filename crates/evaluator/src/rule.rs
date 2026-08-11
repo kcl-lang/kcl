@@ -110,7 +110,7 @@ pub fn rule_body(
         s.pop_schema();
     }
     // Evaluate arguments and keyword arguments and store values to local variables.
-    s.walk_arguments(&ctx.borrow().node.args, args, kwargs);
+    s.walk_arguments(&ctx.borrow().node.args, args, kwargs, false);
     // Eval schema body and record schema instances.
     {
         // Rule decorators check

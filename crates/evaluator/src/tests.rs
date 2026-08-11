@@ -1201,3 +1201,199 @@ sum = testing.add(1, 1)
     let evaluator = Evaluator::new_with_runtime_ctx(&p.program, context_with_plugin());
     insta::assert_snapshot!(format!("{}", evaluator.run().unwrap().1));
 }
+
+#[test]
+fn test_issue_1915_child_schema_arg_overrides_parent_type() {
+    // Regression test for issue https://github.com/kcl-lang/kcl/issues/1915
+    // When a child schema inherits from a parent and both declare the same
+    // parameter name with different types, calling the child with a value of
+    // the child's declared type must succeed — the child's argument
+    // declaration must override the parent's type at the inheritance
+    // boundary. Re-validating the child's value against the parent's
+    // declared type at runtime was incorrectly raising `expect str, got bool`.
+    //
+    // The test exercises both positional and keyword passing styles, plus a
+    // body that consumes the child-only `extra` parameter, so that the schema
+    // body actually executes and proves the parameters are bound correctly.
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![r#"
+schema Parent[value: str]:
+schema Child[value: bool, extra: str](Parent):
+    valueAttr: bool = value
+    extraAttr: str = extra
+
+positional = Child(True, "p")
+keyword = Child(value=False, extra="k")
+caller_keyword = Child(False, "c")
+"#
+            .to_string()],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    // Before the fix this `run` returned an EvaluationError containing
+    // `expect str, got bool` while validating the positional value against
+    // the *parent's* declared `str` type. After the fix the parent's runtime
+    // type check is skipped (it's the child's value, validated against the
+    // child's `bool` declaration), so all three valid constructions must
+    // succeed.
+    //
+    // `Evaluator::run()` returns `(json_string, yaml_string)`. We assert on
+    // the YAML rendering because the assertions target human-readable
+    // schema-attribute names.
+    let (_, yaml_output) = evaluator
+        .run()
+        .expect("child schema must evaluate without type error from parent");
+    assert!(
+        yaml_output.contains("positional:"),
+        "Expected `positional:` instance in YAML output, got:\n{}",
+        yaml_output
+    );
+    assert!(
+        yaml_output.contains("keyword:"),
+        "Expected `keyword:` instance in YAML output, got:\n{}",
+        yaml_output
+    );
+    assert!(
+        yaml_output.contains("caller_keyword:"),
+        "Expected `caller_keyword:` instance in YAML output, got:\n{}",
+        yaml_output
+    );
+    // The bool parameter, bound via the child's body, surfaces as a schema
+    // attribute. Two values: `true` (positional) and `false` (keyword).
+    assert!(
+        yaml_output.contains("valueAttr: true"),
+        "Expected `valueAttr: true` (positional=True) in YAML output, got:\n{}",
+        yaml_output
+    );
+    assert!(
+        yaml_output.contains("valueAttr: false"),
+        "Expected `valueAttr: false` (keyword=False) in YAML output, got:\n{}",
+        yaml_output
+    );
+    // Extra string parameter is preserved through inheritance.
+    assert!(
+        yaml_output.contains("extraAttr: p"),
+        "Expected `extraAttr: p` in YAML output, got:\n{}",
+        yaml_output
+    );
+}
+
+#[test]
+fn test_issue_1915_type_mismatch_in_child_still_errors() {
+    // Companion to issue #1915: a runtime type error inside the child's own
+    // argument list (i.e. against the child's declared type) must still be
+    // reported. The fix only skips the *parent's* type check when the schema
+    // is invoked as a base of a child — never the child's own check.
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![r#"
+schema Parent[value: str]:
+schema Child[value: bool, extra: str](Parent):
+child = Child("not_a_bool", "extra")
+"#
+            .to_string()],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    // `type_pack_and_check` raises via `panic!`, which surfaces as a panic
+    // propagating out of the evaluator. `catch_unwind` captures it so we
+    // can assert on the message.
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let e = Evaluator::new(&p.program);
+        e.run()
+    }));
+    let msg = match result {
+        Ok(Ok(_)) => panic!(
+            "expected a runtime type error from the child's own argument list, \
+             but evaluation succeeded"
+        ),
+        Ok(Err(err)) => format!("{}", err),
+        Err(panic) => {
+            // The panic payload is the formatted panic message string when
+            // raised from `panic!("...")`.
+            if let Some(s) = panic.downcast_ref::<&'static str>() {
+                s.to_string()
+            } else if let Some(s) = panic.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                String::from("<non-string panic payload>")
+            }
+        }
+    };
+    assert!(
+        msg.contains("expect bool"),
+        "Expected the child's `expect bool` runtime error in the panic message, got: {}",
+        msg
+    );
+    // Critically, the parent's `expect str` check must NOT appear — the
+    // parent is invoked as a base, so its argument list must NOT be
+    // re-validated. If the pre-fix behaviour resurfaces, this assertion
+    // will fire and point us back to `walk_arguments`.
+    assert!(
+        !msg.contains("expect str"),
+        "Parent's `expect str` runtime check must NOT appear when the schema \
+         is invoked as a base of a child; got: {}",
+        msg
+    );
+}
+
+#[test]
+fn test_issue_1915_three_level_inheritance_default_values() {
+    // Regression test for issue https://github.com/kcl-lang/kcl/issues/1915:
+    // default values declared on a child schema must not be re-validated
+    // against the type declared on a base schema that the child overrides.
+    // `B[a: int]` and `C[a: bool]` should override `A[a: str]` without
+    // triggering a runtime type error for the default value.
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![r#"
+schema A[a: str = "a_default"]:
+schema B[a: int = 1](A):
+schema C[a: bool = True](B):
+    chosen = a
+
+c = C()
+"#
+            .to_string()],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (_, yaml_output) = evaluator
+        .run()
+        .expect("multi-level inheritance with default values must succeed");
+    // The `chosen` attribute is bound to `a` inside C's body, so it inherits
+    // C's default of `true` (overriding A's str default and B's int default).
+    // If the pre-fix behaviour resurfaces, evaluation aborts with a runtime
+    // type error during default-value binding for one of the intermediate
+    // schemas and this assertion is never reached.
+    assert!(
+        yaml_output.contains("chosen: true"),
+        "Expected `chosen: true` (the C-level default wins over A and B) \
+         in YAML output, got:\n{}",
+        yaml_output
+    );
+    // Critically the parent's `"a_default"` string default must NOT have been
+    // bound to `c.a` when `c = C()` was constructed — the child override must
+    // take effect.
+    assert!(
+        !yaml_output.contains("a_default"),
+        "Parent A's `str` default `a_default` must NOT appear; the C-level `bool` \
+         default must override it. YAML output:\n{}",
+        yaml_output
+    );
+}

@@ -1539,6 +1539,7 @@ impl<'ctx> Evaluator<'ctx> {
         arguments: &'ctx Option<ast::NodeRef<ast::Arguments>>,
         args: &ValueRef,
         kwargs: &ValueRef,
+        skip_type_check: bool,
     ) {
         // Arguments names and defaults
         let (arg_names, arg_types, arg_defaults) = if let Some(args) = &arguments {
@@ -1562,9 +1563,11 @@ impl<'ctx> Evaluator<'ctx> {
             } else {
                 self.none_value()
             };
-            if let Some(ty) = arg_type {
-                arg_value =
-                    type_pack_and_check(self, &arg_value, vec![&ty.node.to_string()], false);
+            if !skip_type_check {
+                if let Some(ty) = arg_type {
+                    arg_value =
+                        type_pack_and_check(self, &arg_value, vec![&ty.node.to_string()], false);
+                }
             }
             // Arguments are immutable, so we place them in different scopes.
             let name = arg_name.get_name();
@@ -1585,9 +1588,11 @@ impl<'ctx> Evaluator<'ctx> {
                     Some(v) => v,
                     None => self.undefined_value(),
                 };
-                if let Some(ty) = arg_type {
-                    arg_value =
-                        type_pack_and_check(self, &arg_value, vec![&ty.node.to_string()], false);
+                if !skip_type_check {
+                    if let Some(ty) = arg_type {
+                        arg_value =
+                            type_pack_and_check(self, &arg_value, vec![&ty.node.to_string()], false);
+                    }
                 }
                 // Mark positional argument as a local variable
                 let name = arg_name.names[0].node.as_str();
@@ -1603,9 +1608,11 @@ impl<'ctx> Evaluator<'ctx> {
             if let Some(arg) = kwargs.dict_get_value(name) {
                 let mut arg_value = arg;
                 // Type check keyword arguments if type annotation is present
-                if let Some(ty) = arg_type {
-                    arg_value =
-                        type_pack_and_check(self, &arg_value, vec![&ty.node.to_string()], false);
+                if !skip_type_check {
+                    if let Some(ty) = arg_type {
+                        arg_value =
+                            type_pack_and_check(self, &arg_value, vec![&ty.node.to_string()], false);
+                    }
                 }
                 // Mark keyword argument as a local variable
                 self.add_local_var(name);
