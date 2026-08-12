@@ -1218,7 +1218,8 @@ fn test_issue_1915_child_schema_arg_overrides_parent_type() {
     let p = load_packages(&LoadPackageOptions {
         paths: vec!["test.k".to_string()],
         load_opts: Some(LoadProgramOptions {
-            k_code_list: vec![r#"
+            k_code_list: vec![
+                r#"
 schema Parent[value: str]:
 schema Child[value: bool, extra: str](Parent):
     valueAttr: bool = value
@@ -1228,7 +1229,8 @@ positional = Child(True, "p")
 keyword = Child(value=False, extra="k")
 caller_keyword = Child(False, "c")
 "#
-            .to_string()],
+                .to_string(),
+            ],
             ..Default::default()
         }),
         load_builtin: false,
@@ -1293,12 +1295,14 @@ fn test_issue_1915_type_mismatch_in_child_still_errors() {
     let p = load_packages(&LoadPackageOptions {
         paths: vec!["test.k".to_string()],
         load_opts: Some(LoadProgramOptions {
-            k_code_list: vec![r#"
+            k_code_list: vec![
+                r#"
 schema Parent[value: str]:
 schema Child[value: bool, extra: str](Parent):
 child = Child("not_a_bool", "extra")
 "#
-            .to_string()],
+                .to_string(),
+            ],
             ..Default::default()
         }),
         load_builtin: false,
@@ -1357,7 +1361,8 @@ fn test_issue_1915_three_level_inheritance_default_values() {
     let p = load_packages(&LoadPackageOptions {
         paths: vec!["test.k".to_string()],
         load_opts: Some(LoadProgramOptions {
-            k_code_list: vec![r#"
+            k_code_list: vec![
+                r#"
 schema A[a: str = "a_default"]:
 schema B[a: int = 1](A):
 schema C[a: bool = True](B):
@@ -1365,7 +1370,8 @@ schema C[a: bool = True](B):
 
 c = C()
 "#
-            .to_string()],
+                .to_string(),
+            ],
             ..Default::default()
         }),
         load_builtin: false,

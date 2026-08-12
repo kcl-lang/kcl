@@ -1590,8 +1590,12 @@ impl<'ctx> Evaluator<'ctx> {
                 };
                 if !skip_type_check {
                     if let Some(ty) = arg_type {
-                        arg_value =
-                            type_pack_and_check(self, &arg_value, vec![&ty.node.to_string()], false);
+                        arg_value = type_pack_and_check(
+                            self,
+                            &arg_value,
+                            vec![&ty.node.to_string()],
+                            false,
+                        );
                     }
                 }
                 // Mark positional argument as a local variable
@@ -1610,8 +1614,12 @@ impl<'ctx> Evaluator<'ctx> {
                 // Type check keyword arguments if type annotation is present
                 if !skip_type_check {
                     if let Some(ty) = arg_type {
-                        arg_value =
-                            type_pack_and_check(self, &arg_value, vec![&ty.node.to_string()], false);
+                        arg_value = type_pack_and_check(
+                            self,
+                            &arg_value,
+                            vec![&ty.node.to_string()],
+                            false,
+                        );
                     }
                 }
                 // Mark keyword argument as a local variable

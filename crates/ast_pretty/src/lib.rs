@@ -25,11 +25,18 @@ pub enum Indentation {
 }
 
 /// Printer config
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Config {
+    /// Display width of a TAB character. Per the EditorConfig spec, this is a
+    /// *display* hint only — it does not change the bytes the printer emits
+    /// for a tab-indented line. In space-mode, `tab_len` is unused.
     pub tab_len: usize,
+    /// Width of a single indent level (in spaces when `use_spaces` is true).
     pub indent_len: usize,
+    /// `true` emits spaces (controlled by `indent_len`); `false` emits a
+    /// single TAB per indent level regardless of `indent_len`/`tab_len`.
     pub use_spaces: bool,
+    /// Whether to emit source comments in the printed output.
     pub write_comments: bool,
 }
 
@@ -346,9 +353,12 @@ impl<'p> Printer<'p> {
     }
 }
 
-/// Print AST to string. The default format is according to the KCL code style defined here: https://kcl-lang.io/docs/reference/lang/spec/codestyle
-pub fn print_ast_module(module: &Module) -> String {
-    let mut printer = Printer::default();
+/// Print AST to string with an explicit printer configuration. Use this when
+/// the caller needs to override defaults (e.g. to honor `.editorconfig`).
+/// The default format is according to the KCL code style defined here:
+/// https://kcl-lang.io/docs/reference/lang/spec/codestyle
+pub fn print_ast_module_with_config(module: &Module, cfg: Config) -> String {
+    let mut printer = Printer::new(cfg, &NoHook);
     printer.write_module(module);
     // Trim trailing newlines to ensure exactly one newline at EOF
     let trimmed = printer.out.trim_end_matches('\n');
@@ -357,6 +367,11 @@ pub fn print_ast_module(module: &Module) -> String {
     } else {
         format!("{}\n", trimmed)
     }
+}
+
+/// Print AST to string. The default format is according to the KCL code style defined here: https://kcl-lang.io/docs/reference/lang/spec/codestyle
+pub fn print_ast_module(module: &Module) -> String {
+    print_ast_module_with_config(module, Config::default())
 }
 
 /// Print AST to string

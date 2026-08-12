@@ -798,6 +798,7 @@ impl KclServiceImpl {
                 is_stdout: false,
                 omit_errors: true,
                 dry_run: args.dry_run,
+                ..Default::default()
             },
         )?;
         Ok(FormatPathResult { changed_paths })
