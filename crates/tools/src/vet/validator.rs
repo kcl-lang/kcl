@@ -74,6 +74,7 @@ use kcl_ast::{
     ast::{AssignStmt, Expr, Node, NodeRef, Program, SchemaStmt, Stmt, Target},
     node_ref,
 };
+use kcl_config::modfile::{KCL_FILE_SUFFIX, KCL_MOD_FILE, get_pkg_root};
 use kcl_parser::{LoadProgramOptions, ParseSessionRef};
 use kcl_runner::{ExecProgramArgs, MapErrorResult, execute};
 
@@ -180,9 +181,15 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool> {
     let k_code = val_opt.kcl_code.map_or_else(Vec::new, |code| vec![code]);
 
     let sess = ParseSessionRef::default();
+    // Expand a single file path to the full set of `.k` files in its
+    // surrounding package directory. This makes `kcl vet` resolve schema
+    // references across sibling files in the same package (e.g. `a.k`
+    // referring to a schema declared in `b.k` without an explicit `import`)
+    // and lets `kcl.mod` drive vendor-cache lookup for external packages.
+    let k_paths = expand_kcl_path(&k_path)?;
     let compile_res = kcl_parser::load_program(
         sess,
-        [k_path]
+        k_paths
             .iter()
             .map(|s| s.as_str())
             .collect::<Vec<&str>>()
@@ -265,6 +272,93 @@ fn filter_schema_stmt_from_prog(prog: &Program) -> Vec<SchemaStmt> {
     }
 
     result
+}
+
+/// Expand a single KCL file path into the list of files that should be
+/// handed to the loader. When the path points to a regular `.k` file
+/// inside a directory that declares itself as a KCL package via a
+/// `kcl.mod`, we return every loadable sibling `.k` file in that
+/// package directory so that:
+///
+/// - schema references across sibling files inside the same package
+///   (e.g. `a.k` referring to a schema declared in `b.k` without an
+///   explicit `import`) resolve during validation; and
+/// - `kcl.mod` entries can drive vendor-cache lookup for external
+///   packages declared in `[dependencies]`.
+///
+/// The function returns a single-element vector containing the original
+/// path unchanged in every other case, to preserve historical behaviour
+/// for inputs that are not part of a declared KCL package:
+///
+/// - the path is empty,
+/// - the path is the synthetic `TMP_FILE` placeholder used when only
+///   `kcl_code` is supplied,
+/// - the path does not refer to an existing file,
+/// - the file has no detectable package root (e.g. it lives outside the
+///   filesystem),
+/// - the resolved package root is not a directory, or
+/// - the resolved package root does not contain a `kcl.mod` file. In
+///   that case we keep the historical "single file" behaviour, because
+///   neighbouring `.k` files in a flat directory are typically unrelated
+///   ad-hoc schemas and including them would cause spurious
+///   duplicate-definition errors.
+fn expand_kcl_path(path: &str) -> Result<Vec<String>> {
+    if path.is_empty() || path == TMP_FILE {
+        return Ok(vec![path.to_string()]);
+    }
+
+    let p = std::path::Path::new(path);
+    if !p.is_file() {
+        return Ok(vec![path.to_string()]);
+    }
+
+    let pkg_root = match get_pkg_root(path) {
+        Some(root) => root,
+        None => return Ok(vec![path.to_string()]),
+    };
+
+    let pkg_root_path = std::path::Path::new(&pkg_root);
+    if !pkg_root_path.is_dir() {
+        return Ok(vec![path.to_string()]);
+    }
+
+    // Only treat the surrounding directory as a package if it actually
+    // declares itself with a `kcl.mod`. Without that marker, sibling
+    // files are typically unrelated ad-hoc schemas and including them
+    // would cause spurious duplicate-definition errors.
+    if !pkg_root_path.join(KCL_MOD_FILE).is_file() {
+        return Ok(vec![path.to_string()]);
+    }
+
+    let mut files: Vec<String> = Vec::new();
+    for entry in std::fs::read_dir(pkg_root_path)
+        .map_err(|e| anyhow::anyhow!("Failed to read package directory '{}': {}", pkg_root, e))?
+    {
+        let entry = entry?;
+        let entry_path = entry.path();
+        if !entry_path.is_file() {
+            continue;
+        }
+        // Skip non-KCL files, hidden files, and KCL test files.
+        let name = match entry_path.file_name().and_then(|n| n.to_str()) {
+            Some(n) => n,
+            None => continue,
+        };
+        if name.starts_with('_') || !name.ends_with(KCL_FILE_SUFFIX) {
+            continue;
+        }
+        if let Ok(canonical) = entry_path.canonicalize() {
+            files.push(canonical.to_string_lossy().to_string());
+        } else {
+            files.push(entry_path.to_string_lossy().to_string());
+        }
+    }
+    files.sort();
+
+    if files.is_empty() {
+        return Ok(vec![path.to_string()]);
+    }
+    Ok(files)
 }
 
 pub struct ValidateOption {

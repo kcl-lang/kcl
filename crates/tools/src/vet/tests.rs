@@ -355,6 +355,10 @@ mod test_validater {
         println!("test_validate_with_invalid_file_path - PASS");
         test_validate_with_invalid_file_type();
         println!("test_validate_with_invalid_file_type - PASS");
+        test_validate_with_pkg_with_kcl_mod();
+        println!("test_validate_with_pkg_with_kcl_mod - PASS");
+        test_validate_without_kcl_mod_keeps_single_file_behavior();
+        println!("test_validate_without_kcl_mod_keeps_single_file_behavior - PASS");
         test_invalid_validate_with_json_pos();
         println!("test_invalid_validate_with_json_pos - PASS");
         test_invalid_validate_with_yaml_pos();
@@ -400,6 +404,86 @@ mod test_validater {
                     err, validated_file_path
                 ),
             }
+        }
+    }
+
+    /// Regression test for https://github.com/kcl-lang/kcl/issues/1877.
+    ///
+    /// When a schema lives in a KCL package (a directory containing a
+    /// `kcl.mod`) and references another schema declared in a sibling
+    /// file without an explicit `import`, `kcl vet` used to fail with
+    /// `Cannot find the module` because only the single file passed on
+    /// the command line was loaded. After the fix, all sibling `.k`
+    /// files in the same package directory are loaded so cross-file
+    /// schema references resolve correctly.
+    fn test_validate_with_pkg_with_kcl_mod() {
+        for (i, file_suffix) in VALIDATED_FILE_TYPE.iter().enumerate() {
+            let validated_file_path = construct_full_path(&format!(
+                "{}.{}",
+                Path::new("validate_cases")
+                    .join("pkg_with_kcl_mod")
+                    .join("person.k")
+                    .display(),
+                file_suffix
+            ))
+            .unwrap();
+
+            let kcl_file_path = construct_full_path(
+                &Path::new("validate_cases")
+                    .join("pkg_with_kcl_mod")
+                    .join("person.k")
+                    .display()
+                    .to_string(),
+            )
+            .unwrap();
+
+            let opt = ValidateOption::new(
+                Some("Person".to_string()),
+                "value".to_string(),
+                validated_file_path.clone(),
+                *LOADER_KIND[i],
+                Some(kcl_file_path.to_string()),
+                None,
+                Default::default(),
+            );
+
+            match validate(opt) {
+                Ok(res) => assert!(
+                    res,
+                    "pkg_with_kcl_mod validation should succeed (cross-file schema reference)"
+                ),
+                Err(err) => panic!(
+                    "pkg_with_kcl_mod validation failed: {:?}\nvalidated_file: {}",
+                    err, validated_file_path
+                ),
+            }
+        }
+    }
+
+    /// Regression test for the historical "single file" behaviour of
+    /// `kcl vet` outside of declared KCL packages.
+    ///
+    /// Without a `kcl.mod` in the directory, neighbouring `.k` files in
+    /// `validate_cases/` (each declaring its own `schema User` for
+    /// unrelated test scenarios) must NOT be pulled in. Loading them
+    /// would cause spurious "Unique key error" failures.
+    fn test_validate_without_kcl_mod_keeps_single_file_behavior() {
+        let validated_file_path = construct_full_path("validate_cases/test.k.json").unwrap();
+        let kcl_file_path = construct_full_path("validate_cases/test.k").unwrap();
+
+        let opt = ValidateOption::new(
+            None,
+            "value".to_string(),
+            validated_file_path,
+            LoaderKind::JSON,
+            Some(kcl_file_path),
+            None,
+            Default::default(),
+        );
+
+        match validate(opt) {
+            Ok(res) => assert!(res, "validate_cases/test.k validation should still succeed"),
+            Err(err) => panic!("validate_cases/test.k validation failed: {:?}", err),
         }
     }
 
