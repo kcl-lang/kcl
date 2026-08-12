@@ -993,6 +993,164 @@ result = NotAPerson(_treeConfig)
     }
 }
 
+// Companion regression test for issue #1772: the same eager/lazy duplication
+// must not happen when the mixin is *not* decorated with `for Protocol`.
+// The eager `call_schema_body` loop and lazy-replay `get_value` setter walk
+// both reach the mixin's `+=`; without the dedup, `tree.names` would carry
+// `["A", "B", "A", "B"]` instead of `["A", "B"]`. The body's `all_names =
+// tree.names` is what forces lazy replay (reading the affected attribute);
+// the eager loop alone would only apply the mixin once.
+#[test]
+fn test_issue_1772_mixin_plain_aug_assign_not_duplicated() {
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"
+schema Tree:
+    names?: [str] = []
+
+schema Holder:
+    mixin [AddNamesMixin]
+    tree: Tree
+    all_names = tree.names
+
+schema AddNamesMixin:
+    tree.names += ["A", "B"]
+
+result = Holder { tree = Tree {} }
+"#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator.run().unwrap();
+
+    // Each name must appear exactly twice: once in `result.tree.names` and
+    // once in `result.all_names` (which is an alias of the same list).
+    // Without the fix, each would appear four times (mixin applied twice via
+    // eager path, then read, then mixin re-applied twice via the second
+    // eager iteration triggered by something else in the body).
+    for name in &["A", "B"] {
+        let count = output.matches(&format!("\"{}\"", name)).count();
+        assert_eq!(
+            count, 2,
+            "Expected `{}` to appear exactly twice (tree.names + all_names), got {} matches. full output: {}",
+            name, count, output
+        );
+    }
+}
+
+// Companion regression test for issue #1772: when *multiple* mixins all
+// mutate the same nested attribute, the dedup must be keyed per-mixin so
+// that each mixin's `+=` is applied exactly once. A counter that
+// incorrectly collapsed across mixin names would let one of them through
+// (or double-apply one of them). Here both mixins are distinct and the
+// final list must hold all four items in declared order.
+#[test]
+fn test_issue_1772_mixin_multiple_aug_assign_not_duplicated() {
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"
+schema Tree:
+    names?: [str] = []
+
+schema TwoMixins:
+    mixin [MixinA, MixinB]
+    tree: Tree
+    all_names = tree.names
+
+schema MixinA:
+    tree.names += ["a1", "a2"]
+
+schema MixinB:
+    tree.names += ["b1", "b2"]
+
+result = TwoMixins { tree = Tree {} }
+"#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator.run().unwrap();
+
+    // Each of the four items must appear exactly twice (tree.names +
+    // all_names). Without the fix, each mixin's `+=` is applied twice
+    // (eager + lazy), so each name would appear four times.
+    for name in &["a1", "a2", "b1", "b2"] {
+        let count = output.matches(&format!("\"{}\"", name)).count();
+        assert_eq!(
+            count, 2,
+            "Expected `{}` to appear exactly twice, got {} matches. full output: {}",
+            name, count, output
+        );
+    }
+}
+
+// Companion regression test for issue #1772: a single mixin that emits
+// *multiple* `+=` statements against the same attribute must still
+// produce exactly one application of each. The dedup counter increments
+// once per lazy-replayed setter, so a mixin with two setters sets the
+// counter to 2; the eager loop decrements by 1 per mixin iteration and
+// skips the body. Both `+=` statements must therefore run exactly once.
+#[test]
+fn test_issue_1772_mixin_multi_setter_aug_assign_not_duplicated() {
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"
+schema Tree:
+    names?: [str] = []
+
+schema MultiAug:
+    mixin [AddTwiceMixin]
+    tree: Tree
+    all_names = tree.names
+
+schema AddTwiceMixin:
+    tree.names += ["x"]
+    tree.names += ["y"]
+
+result = MultiAug { tree = Tree {} }
+"#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator.run().unwrap();
+
+    // Each of the two items must appear exactly twice (tree.names +
+    // all_names). Without the fix, each `+=` is applied twice (once via
+    // lazy replay per setter, once via the eager `call_schema_body`),
+    // so each name would appear four times.
+    for name in &["x", "y"] {
+        let count = output.matches(&format!("\"{}\"", name)).count();
+        assert_eq!(
+            count, 2,
+            "Expected `{}` to appear exactly twice, got {} matches. full output: {}",
+            name, count, output
+        );
+    }
+}
+
 #[test]
 fn test_issue_1837_nested_if_with_undefined_reference() {
     // Regression test for issue https://github.com/kcl-lang/kcl/issues/1837
