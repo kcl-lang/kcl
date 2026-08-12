@@ -934,9 +934,6 @@ else:
 }
 
 #[test]
-#[ignore = "Issue #1772 is not fixed by PR #2117 (lazy-scope integer underflow); \
-            the underlying mixin-materialization bug needs a separate fix. \
-            Run with `cargo test -- --ignored` to verify the bug still reproduces."]
 fn test_issue_1772_mixin_protocol_aug_assign_not_duplicated() {
     // Regression test for issue https://github.com/kcl-lang/kcl/issues/1772
     // A schema with a mixin that does `configs.tree.names += [...]` must not
