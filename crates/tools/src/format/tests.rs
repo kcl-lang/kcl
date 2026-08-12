@@ -300,3 +300,80 @@ fn test_format_trailing_newlines() {
         var_trailing
     );
 }
+
+// ---------------------------------------------------------------------------
+// .editorconfig end-to-end tests
+// ---------------------------------------------------------------------------
+
+mod editorconfig_e2e {
+    use std::fs;
+    use tempfile::TempDir;
+
+    use super::*;
+
+    /// Helper: write an `.editorconfig` with `root = true` so the walk
+    /// cannot escape the temp directory.
+    fn write_ec(dir: &std::path::Path, body: &str) {
+        let mut full = String::from("root = true\n\n");
+        full.push_str(body);
+        fs::write(dir.join(".editorconfig"), full).unwrap();
+    }
+
+    #[test]
+    fn editorconfig_two_space_indent() {
+        let dir = TempDir::new().unwrap();
+        write_ec(dir.path(), "[*.k]\nindent_style = space\nindent_size = 2\n");
+        let k = dir.path().join("sample.k");
+        fs::write(&k, "x = {\n    a: {\n        b: 1\n    }\n}\n").unwrap();
+
+        let src = std::fs::read_to_string(&k).unwrap();
+        let (formatted, _) =
+            format_source(k.to_str().unwrap(), &src, &FormatOptions::default()).unwrap();
+
+        // Two-space indent from .editorconfig — every nested key gets 2 spaces.
+        assert!(
+            formatted.contains("  a: {\n    b: 1\n  }\n}"),
+            "expected 2-space indent from .editorconfig, got:\n{formatted}"
+        );
+    }
+
+    #[test]
+    fn editorconfig_tab_indent_style() {
+        let dir = TempDir::new().unwrap();
+        write_ec(dir.path(), "[*.k]\nindent_style = tab\n");
+        let k = dir.path().join("sample.k");
+        fs::write(&k, "x = {\n    a: {\n        b: 1\n    }\n}\n").unwrap();
+
+        let src = std::fs::read_to_string(&k).unwrap();
+        let (formatted, _) =
+            format_source(k.to_str().unwrap(), &src, &FormatOptions::default()).unwrap();
+
+        // Tab mode emits one TAB per indent level regardless of indent_len.
+        assert!(
+            formatted.contains("\n\ta: {\n\t\tb: 1\n\t}\n}\n"),
+            "expected TAB indent from .editorconfig, got:\n{formatted}"
+        );
+    }
+
+    #[test]
+    fn format_options_override_editorconfig() {
+        let dir = TempDir::new().unwrap();
+        write_ec(dir.path(), "[*.k]\nindent_style = space\nindent_size = 8\n");
+        let k = dir.path().join("sample.k");
+        fs::write(&k, "x = {\n    a: 1\n}\n").unwrap();
+
+        let src = std::fs::read_to_string(&k).unwrap();
+        // Override: ask for 2-space indent regardless of what the file's
+        // .editorconfig says.
+        let opts = FormatOptions {
+            indent_width: Some(2),
+            ..FormatOptions::default()
+        };
+        let (formatted, _) = format_source(k.to_str().unwrap(), &src, &opts).unwrap();
+
+        assert!(
+            formatted.contains("  a: 1\n}\n"),
+            "expected explicit 2-space override, got:\n{formatted}"
+        );
+    }
+}

@@ -6,11 +6,13 @@
 //! AST Module, and then use the AST printer [kcl_tools::printer::print_ast_module]
 //! to print it as source code string.
 use anyhow::Result;
-use kcl_ast_pretty::print_ast_module;
+use kcl_ast_pretty::print_ast_module_with_config;
 use kcl_parser::get_kcl_files;
 use std::path::Path;
 
 use kcl_parser::{parse_file_force_errors, parse_single_file};
+
+mod editorconfig;
 
 #[cfg(test)]
 mod tests;
@@ -20,12 +22,19 @@ mod tests;
 /// - recursively: whether to recursively traverse a folder and format all KCL files in it.
 /// - omit_errors: whether to omit the parse errors when format the KCL code.
 /// - dry_run: whether to return the filenames that would be formatted rather than format them.
+/// - use_spaces: override the `.editorconfig` `indent_style`. `Some(true)` emits
+///   spaces, `Some(false)` emits a single TAB per indent level. `None` lets
+///   `.editorconfig` decide (or the default if no `.editorconfig` applies).
+/// - indent_width: override the `.editorconfig` `indent_size`/`tab_width`.
+///   Ignored when `Some(0)` is passed.
 #[derive(Debug, Default)]
 pub struct FormatOptions {
     pub is_stdout: bool,
     pub recursively: bool,
     pub omit_errors: bool,
     pub dry_run: bool,
+    pub use_spaces: Option<bool>,
+    pub indent_width: Option<usize>,
 }
 
 /// Formats kcl file or directory path contains kcl files and
@@ -90,7 +99,10 @@ pub fn format_source(file: &str, src: &str, opts: &FormatOptions) -> Result<(Str
     } else {
         parse_file_force_errors(file, Some(src.to_string()))?
     };
-    let formatted_src = print_ast_module(&module);
+    // Resolve per file so directory walks can span subtrees with different
+    // `.editorconfig` files.
+    let cfg = editorconfig::resolve_config(file, opts);
+    let formatted_src = print_ast_module_with_config(&module, cfg);
     let is_formatted = src != formatted_src;
     Ok((formatted_src, is_formatted))
 }
