@@ -171,6 +171,58 @@ impl<'ctx> Evaluator<'ctx> {
         self.loop_vars.borrow().contains(name)
     }
 
+    /// Enter a config expression scope for config entry variable marks.
+    #[inline]
+    pub(crate) fn enter_config_entry_scope(&self) {
+        self.config_entry_vars.borrow_mut().push(vec![]);
+    }
+
+    /// Mark a config entry name as a local variable, so that the following
+    /// sibling entries resolve it lexically in the current config scope
+    /// instead of falling back to an enclosing schema attribute of the same
+    /// name. Names that are already local (loop variables, lambda arguments,
+    /// entries of an outer config, ...) are left untouched so that leaving
+    /// this config scope does not drop a mark it does not own.
+    #[inline]
+    pub(crate) fn mark_config_entry_var(&self, name: &str) {
+        if self.is_local_var(name) {
+            return;
+        }
+        match self.config_entry_vars.borrow_mut().last_mut() {
+            Some(frame) => frame.push(name.to_string()),
+            // No enclosing config scope to undo the mark, so do not add one.
+            None => return,
+        }
+        self.add_local_var(name);
+    }
+
+    /// Leave a config expression scope and undo the marks it added.
+    #[inline]
+    pub(crate) fn leave_config_entry_scope(&self) {
+        let frame = self.config_entry_vars.borrow_mut().pop();
+        if let Some(frame) = frame {
+            for name in frame {
+                self.remove_local_var(&name);
+            }
+        }
+    }
+
+    /// Re-assert the marks of the current config scope.
+    ///
+    /// Evaluating a nested schema body runs `clear_local_vars` for every schema
+    /// attribute, which drops the marks of the config expression we are still
+    /// walking. Re-asserting them before each entry keeps the preceding sibling
+    /// entries visible to the following ones.
+    #[inline]
+    pub(crate) fn restore_config_entry_vars(&self) {
+        if let Some(frame) = self.config_entry_vars.borrow().last() {
+            let mut local_vars = self.local_vars.borrow_mut();
+            for name in frame {
+                local_vars.insert(name.clone());
+            }
+        }
+    }
+
     #[inline]
     pub(crate) fn clear_local_vars(&self) {
         self.local_vars.borrow_mut().clear();

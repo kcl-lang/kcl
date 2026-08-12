@@ -1,0 +1,14 @@
+outer:
+  p: 100
+  item:
+    p: 101
+    q: 102
+  after: 100
+top:
+  a: 10
+  mid:
+    a: 11
+    nested:
+      a: 50
+      b: 50
+    c: 11

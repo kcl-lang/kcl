@@ -93,6 +93,10 @@ pub struct Evaluator<'ctx> {
     pub lazy_reassign: RefCell<bool>,
     /// Loop (comprehension/quantifier) target variables, a subset of local_vars.
     pub loop_vars: RefCell<HashSet<String>>,
+    /// Names newly marked as local variables by config entries, one frame per
+    /// config expression scope. Used to undo the marks when the config
+    /// expression is left, so the shadowing does not outlive its scope.
+    pub config_entry_vars: RefCell<Vec<Vec<String>>>,
     /// Schema attr backtrack meta.
     pub backtrack_meta: RefCell<Vec<BacktrackMeta>>,
     /// Current AST id for the evaluator walker.
@@ -161,6 +165,7 @@ impl<'ctx> Evaluator<'ctx> {
             local_vars: RefCell::new(Default::default()),
             lazy_reassign: RefCell::new(false),
             loop_vars: RefCell::new(Default::default()),
+            config_entry_vars: RefCell::new(Default::default()),
             backtrack_meta: RefCell::new(Default::default()),
             ast_id: RefCell::new(AstIndex::default()),
             ctx_stack: RefCell::new(Default::default()),
