@@ -42,6 +42,26 @@ pub struct SchemaEvalContext {
     /// This flag is used to avoid redundant calculations during
     /// schema attribute assignments.
     pub body_evaluated: bool,
+    /// Tracks, per mixin name (qualified by the AST identifier's namespace so
+    /// that two mixins sharing the same simple name but living in different
+    /// packages remain distinct), how many times lazy-replay has walked a
+    /// setter originating from a mixin of that name. The eager
+    /// `call_schema_body` loop in `schema_body` uses this counter to skip
+    /// mixin applications that have already been materialised by lazy replay,
+    /// preventing duplicate application of augmented assignments (e.g.
+    /// `configs.tree.names += [...]`) across the two code paths.
+    ///
+    /// We key by mixin *name* (not frame `Index`) because the frame
+    /// `Index` returned by `walk_identifier_with_ctx` and `load_global_value`
+    /// can disagree for protocol-decorated mixins, while the AST-level name
+    /// stays stable. See https://github.com/kcl-lang/kcl/issues/1772.
+    pub applied_mixins: RefCell<IndexMap<String, usize>>,
+    /// Side map from mixin `Index` to the stable name used as the key in
+    /// `applied_mixins`. Populated by `init_lazy_scope` from the parallel
+    /// `self.node.mixins` AST identifiers so that `get_value` (which only sees
+    /// the setter's frame `Index`) can record lazy-replay against the same
+    /// name the eager loop uses to compare.
+    pub mixin_name_by_frame: RefCell<IndexMap<Index, String>>,
 }
 
 impl SchemaEvalContext {
@@ -64,6 +84,8 @@ impl SchemaEvalContext {
             optional_mapping: ValueRef::dict(None),
             is_sub_schema: true,
             body_evaluated: false,
+            applied_mixins: RefCell::new(IndexMap::default()),
+            mixin_name_by_frame: RefCell::new(IndexMap::default()),
         }
     }
 
@@ -82,6 +104,8 @@ impl SchemaEvalContext {
             optional_mapping: ValueRef::dict(None),
             is_sub_schema: true,
             body_evaluated: false,
+            applied_mixins: RefCell::new(IndexMap::default()),
+            mixin_name_by_frame: RefCell::new(IndexMap::default()),
         }))
     }
 
@@ -100,6 +124,8 @@ impl SchemaEvalContext {
             optional_mapping: ValueRef::dict(None),
             is_sub_schema: true,
             body_evaluated: false,
+            applied_mixins: RefCell::new(IndexMap::default()),
+            mixin_name_by_frame: RefCell::new(IndexMap::default()),
         }))
     }
 
@@ -142,6 +168,17 @@ impl SchemaEvalContext {
         self.optional_mapping = other.optional_mapping.clone();
         // Note that for the host schema, it will evaluate the final value.
         self.is_sub_schema = true;
+    }
+
+    /// Look up the stable name (used as the `applied_mixins` key) for a given
+    /// mixin frame `Index`. Returns `None` if the frame is not one of this
+    /// schema's mixins.
+    fn mixin_name_by_frame(&self, frame: Index) -> Option<String> {
+        if !self.mixins.contains(&frame) {
+            return None;
+        }
+        let map = self.mixin_name_by_frame.borrow();
+        map.get(&frame).cloned()
     }
 
     /// Update parent schema and mixin schema information in the current scope.
@@ -336,7 +373,7 @@ impl SchemaEvalContext {
             &s.emit_setters(&self.node.body, index),
         );
         // Mixin schema setters
-        for idx in &self.mixins {
+        for (i, idx) in self.mixins.iter().enumerate() {
             let frame = {
                 let frames = s.frames.borrow();
                 frames
@@ -345,6 +382,32 @@ impl SchemaEvalContext {
                     .clone()
             };
             if let Proxy::Schema(schema) = &frame.proxy {
+                // Build the identity key from the AST-level mixin identifier
+                // (the same source `get_mixin_schemas` walks) so the
+                // lazy-replay tracker in `get_value` and the eager loop in
+                // `schema_body` agree on keying, even when the proxy
+                // `Index` returned by `load_global_value` and
+                // `walk_identifier_with_ctx` diverge for protocol-decorated
+                // mixins. `self.mixins[i]` corresponds to `self.node.mixins[i]`
+                // by construction.
+                let mixin_name = if let Some(ast_mixin) = self.node.mixins.get(i) {
+                    ast_mixin
+                        .node
+                        .names
+                        .iter()
+                        .map(|n| n.node.as_str())
+                        .collect::<Vec<_>>()
+                        .join(".")
+                } else {
+                    schema.ctx.borrow().node.name.node.to_string()
+                };
+                {
+                    let mut name_map = self.mixin_name_by_frame.borrow_mut();
+                    name_map.insert(*idx, mixin_name.clone());
+                    drop(name_map);
+                    let mut applied = self.applied_mixins.borrow_mut();
+                    applied.entry(mixin_name).or_insert(0);
+                }
                 let mut mixin = schema.ctx.borrow_mut();
                 mixin.init_lazy_scope(s, Some(*idx));
                 if let Some(scope) = &mixin.scope {
@@ -409,6 +472,17 @@ impl SchemaEvalContext {
                                     value
                                 } else {
                                     let index = n - next_level;
+                                    // Track this lazy-replay so the eager `call_schema_body`
+                                    // loop in `schema_body` can skip it instead of applying
+                                    // the same mixin setter a second time. Only count setters
+                                    // whose origin frame is one of this host's mixins.
+                                    if let Some(mixin_idx) = setters[index].index {
+                                        if let Some(name) = self.mixin_name_by_frame(mixin_idx) {
+                                            let mut applied = self.applied_mixins.borrow_mut();
+                                            let entry = applied.entry(name).or_insert(0);
+                                            *entry += 1;
+                                        }
+                                    }
                                     // Call setter function
                                     s.walk_schema_stmts_with_setter(
                                         &self.node.body,
@@ -551,6 +625,30 @@ pub(crate) fn schema_body(
                     .map(|n| n.node.as_str())
                     .collect::<Vec<&str>>(),
             );
+            // Build the same stable name `init_lazy_scope` used to populate
+            // `mixin_name_by_frame` so this lookup hits the counter set by
+            // `get_value`'s lazy-replay.
+            let mixin_name = mixin
+                .node
+                .names
+                .iter()
+                .map(|n| n.node.as_str())
+                .collect::<Vec<_>>()
+                .join(".");
+            let skip_eager = ctx_ref
+                .applied_mixins
+                .borrow()
+                .get(&mixin_name)
+                .copied()
+                .unwrap_or(0)
+                > 0;
+            if skip_eager {
+                let mut applied = ctx_ref.applied_mixins.borrow_mut();
+                if let Some(count) = applied.get_mut(&mixin_name) {
+                    *count = count.saturating_sub(1);
+                }
+                continue;
+            }
             schema_ctx_value = call_schema_body(s, &mixin_func, args, kwargs, ctx);
         }
     }
