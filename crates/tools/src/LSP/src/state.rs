@@ -14,8 +14,8 @@ use kcl_sema::resolver::scope::KCLScopeCache;
 use lsp_server::RequestId;
 use lsp_server::{ReqQueue, Request, Response};
 use lsp_types::{
-    InitializeParams, PublishDiagnosticsParams, WorkspaceFolder,
-    notification::{Notification, PublishDiagnostics},
+    InitializeParams, MessageType, PublishDiagnosticsParams, WorkspaceFolder,
+    notification::{Notification, PublishDiagnostics, ShowMessage},
 };
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use parking_lot::RwLock;
@@ -570,6 +570,46 @@ impl LanguageServerState {
         self.send(not.into());
     }
 
+    /// Send a `window/showMessage` notification to the client.
+    ///
+    /// Used for user-facing warnings/errors that the user should see in the
+    /// editor UI (toast/notification area), as opposed to `log_message` which
+    /// only emits INFO-level entries into the language client log.
+    pub fn show_message(&self, typ: MessageType, message: String) {
+        let not = lsp_server::Notification::new(
+            ShowMessage::METHOD.to_string(),
+            lsp_types::ShowMessageParams { typ, message },
+        );
+        self.send(not.into());
+    }
+
+    /// Handle errors from `notify::Watcher::watch`, surfacing a friendly
+    /// `window/showMessage` warning when the OS file-watcher limit was hit.
+    fn handle_watch_error(&self, path: &Path, err: &notify::Error) {
+        self.log_message(format!("Failed watch {:?}: {:?}", path, err));
+        if matches!(err.kind, notify::ErrorKind::MaxFilesWatch) {
+            self.handle_watch_error_toast(path);
+        }
+    }
+
+    /// Emit a `window/showMessage` WARNING telling the user how to recover
+    /// from a `notify::ErrorKind::MaxFilesWatch` error. Split out from
+    /// [`Self::handle_watch_error`] so the caller can free the mutable
+    /// borrow of the watcher handle before we touch `self` again.
+    fn handle_watch_error_toast(&self, path: &Path) {
+        let msg = format!(
+            "KCL language server failed to watch {:?}: the OS file watcher \
+ limit was reached. On Linux you can increase it with:\n  \
+             sudo sysctl fs.inotify.max_user_watches=<N>\n  \
+             sudo sysctl -p\n\
+             You can also add the offending directories (e.g. `.direnv/`, \
+             `node_modules/`, `target/`) to `.gitignore` so the language \
+             server can skip them.",
+            path
+        );
+        self.show_message(MessageType::WARNING, msg);
+    }
+
     pub(crate) fn is_completed(&self, request: &lsp_server::Request) -> bool {
         self.request_queue.incoming.is_completed(&request.id)
     }
@@ -579,26 +619,67 @@ impl LanguageServerState {
         if let Some(workspace_folders) = &self.workspace_folders {
             for folder in workspace_folders {
                 let path = file_path_from_url(&folder.uri).unwrap();
-                if let Some(fs_event_watcher) = &mut self.fs_event_watcher {
-                    let mut watcher = &mut fs_event_watcher.handle;
-                    match watcher.watch(std::path::Path::new(&path), RecursiveMode::Recursive) {
-                        Ok(_) => self.log_message(format!("Start watch {:?}", path)),
-                        Err(e) => self.log_message(format!("Failed watch {:?}: {:?}", path, e)),
-                    }
-                    self.log_message(format!("Start watch {:?}", path));
-                    let tool = Arc::clone(&self.tool);
-                    let (workspaces, failed) =
-                        lookup_compile_workspaces(&*tool.read(), &path, true);
+                let watch_targets = crate::util::collect_watch_paths(Path::new(&path));
 
-                    if let Some(failed) = failed {
-                        for (key, err) in failed {
-                            self.log_message(format!("parse kcl.work failed: {}: {}", key, err));
+                // Register watches, collecting any errors so we can report
+                // them *after* the mutable borrow of the watcher handle is
+                // released (so we can call `self.log_message` / `self.show_message`).
+                let mut watched: usize = 0;
+                let mut errors: Vec<(PathBuf, notify::Error)> = Vec::new();
+                {
+                    let Some(fs_event_watcher) = &mut self.fs_event_watcher else {
+                        continue;
+                    };
+                    let watcher = &mut fs_event_watcher.handle;
+
+                    if watch_targets.is_empty() {
+                        // Nothing non-ignored to watch — fall back to the root
+                        // so we still receive events if files appear later.
+                        match watcher.watch(Path::new(&path), RecursiveMode::Recursive) {
+                            Ok(_) => watched = 1,
+                            Err(e) => errors.push((PathBuf::from(&path), e)),
+                        }
+                    } else {
+                        for target in &watch_targets {
+                            match watcher.watch(target, RecursiveMode::Recursive) {
+                                Ok(_) => watched += 1,
+                                Err(e) => errors.push((target.clone(), e)),
+                            }
                         }
                     }
+                }
 
-                    for (workspace, opts) in workspaces {
-                        self.async_compile(workspace, opts, None, false);
+                // Mutable borrow released; safe to call `self` methods.
+                let mut max_files_watch: Option<PathBuf> = None;
+                for (p, e) in &errors {
+                    self.log_message(format!("Failed watch {:?}: {:?}", p, e));
+                    if matches!(e.kind, notify::ErrorKind::MaxFilesWatch) {
+                        max_files_watch.get_or_insert_with(|| p.clone());
                     }
+                }
+                if watch_targets.is_empty() {
+                    if errors.is_empty() {
+                        self.log_message(format!("Start watch {:?}", path));
+                    }
+                } else {
+                    self.log_message(format!("Start watch {:?} ({} entries)", path, watched));
+                }
+                if let Some(p) = max_files_watch {
+                    self.handle_watch_error_toast(&p);
+                }
+
+                // Compile unit discovery — unchanged from the original code.
+                let tool = Arc::clone(&self.tool);
+                let (workspaces, failed) = lookup_compile_workspaces(&*tool.read(), &path, true);
+
+                if let Some(failed) = failed {
+                    for (key, err) in failed {
+                        self.log_message(format!("parse kcl.work failed: {}: {}", key, err));
+                    }
+                }
+
+                for (workspace, opts) in workspaces {
+                    self.async_compile(workspace, opts, None, false);
                 }
             }
         }

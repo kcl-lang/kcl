@@ -119,6 +119,32 @@ pub(crate) fn filter_kcl_config_file(paths: &[PathBuf]) -> Vec<PathBuf> {
         .collect()
 }
 
+/// Returns the immediate children (files and directories) of `root` that are
+/// NOT excluded by `.gitignore`, global gitignore, `.git/info/exclude`, or
+/// ignore files in ancestor directories. The root itself is excluded.
+///
+/// Used by the LSP file watcher to avoid watching huge gitignored subtrees
+/// (e.g. `.direnv/`, `node_modules/`, `target/`) that can exhaust the OS
+/// file-watcher limit.
+pub(crate) fn collect_watch_paths(root: &Path) -> Vec<PathBuf> {
+    let walker = ignore::WalkBuilder::new(root)
+        .git_ignore(true)
+        .git_global(true)
+        .git_exclude(true)
+        .hidden(false)
+        .require_git(false)
+        .parents(true)
+        .follow_links(false)
+        .max_depth(Some(1))
+        .build();
+
+    walker
+        .flatten()
+        .map(|e| e.into_path())
+        .filter(|p| p != root)
+        .collect()
+}
+
 macro_rules! walk_if_contains {
     ($expr: expr, $pos: expr, $schema_def: expr) => {
         if $expr.contains_pos($pos) {

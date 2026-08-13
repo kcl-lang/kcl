@@ -1943,3 +1943,76 @@ fn aug_assign_without_define() {
         compile_test_file("src/test_data/error_code/aug_assign/aug_assign.k");
     assert_eq!(diags.len(), 1);
 }
+
+#[test]
+fn collect_watch_paths_skips_gitignored_dirs() {
+    use crate::util::collect_watch_paths;
+
+    let base = std::env::temp_dir().join(format!(
+        "kcl-lsp-gitignore-{}-{}",
+        std::process::id(),
+        chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+    ));
+    std::fs::create_dir_all(&base).unwrap();
+
+    // Layout: root/.gitignore ignores `direnv/` and `target/`.
+    std::fs::write(base.join(".gitignore"), "direnv/\ntarget/\n").unwrap();
+    std::fs::create_dir_all(base.join("direnv")).unwrap();
+    std::fs::write(base.join("direnv/foo.k"), "x = 1\n").unwrap();
+    std::fs::create_dir_all(base.join("target")).unwrap();
+    std::fs::write(base.join("target/bar.k"), "x = 1\n").unwrap();
+    std::fs::write(base.join("main.k"), "x = 1\n").unwrap();
+    std::fs::create_dir_all(base.join("src")).unwrap();
+    std::fs::write(base.join("src/baz.k"), "x = 1\n").unwrap();
+
+    let mut paths = collect_watch_paths(&base);
+    paths.sort();
+
+    let names: Vec<String> = paths
+        .iter()
+        .map(|p| p.file_name().unwrap().to_string_lossy().into_owned())
+        .collect();
+
+    assert!(names.contains(&".gitignore".to_string()));
+    assert!(names.contains(&"main.k".to_string()));
+    assert!(names.contains(&"src".to_string()));
+    assert!(!names.iter().any(|n| n == "direnv"));
+    assert!(!names.iter().any(|n| n == "target"));
+
+    let _ = std::fs::remove_dir_all(&base);
+}
+
+#[test]
+fn init_workspaces_with_ignored_dir_does_not_panic() {
+    let base = std::env::temp_dir().join(format!(
+        "kcl-lsp-watch-{}-{}",
+        std::process::id(),
+        chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+    ));
+    std::fs::create_dir_all(&base).unwrap();
+
+    std::fs::write(base.join(".gitignore"), ".direnv/\n").unwrap();
+    std::fs::create_dir_all(base.join(".direnv")).unwrap();
+    for i in 0..50 {
+        std::fs::write(base.join(format!(".direnv/f{}.k", i)), "x = 1\n").unwrap();
+    }
+    std::fs::write(base.join("main.k"), "x = 1\n").unwrap();
+
+    let initialize_params = InitializeParams {
+        workspace_folders: Some(vec![WorkspaceFolder {
+            uri: Url::from_file_path(&base).unwrap(),
+            name: "test".to_string(),
+        }]),
+        ..Default::default()
+    };
+
+    // If init_workspaces panics, the worker thread dies and we never reach
+    // wait_for_message_cond; otherwise we get at least one logMessage.
+    let server = Project {}.server(initialize_params);
+    server.wait_for_message_cond(1, &|msg: &Message| match msg {
+        Message::Notification(not) => not.method == "window/logMessage",
+        _ => false,
+    });
+
+    let _ = std::fs::remove_dir_all(&base);
+}
