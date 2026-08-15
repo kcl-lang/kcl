@@ -17,6 +17,12 @@ use super::doc::{SchemaDoc, parse_schema_doc_string};
 use super::scope::{ScopeObject, ScopeObjectKind};
 use kcl_ast::pos::GetPos;
 
+/// Sentinel used in `init_global_lambda_types` to mark names whose
+/// declaration is reassigned (e.g. `f = lambda...; f = 1`). Reassignment
+/// drops the lambda signature from the side table so the pre-scan does
+/// not type-check calls against a stale function type.
+const NO_LAMBDA: Option<FunctionType> = None;
+
 const MAX_SCOPE_SCAN_COUNT: usize = 3;
 pub const MIXIN_SUFFIX: &str = "Mixin";
 pub const PROTOCOL_SUFFIX: &str = "Protocol";
@@ -188,7 +194,88 @@ impl<'ctx> Resolver<'_> {
             }
             // 2.  Build all variable types
             self.init_global_var_types(false);
+            // 4. Record the signatures of the top level lambda globals.
+            self.init_global_lambda_types();
         }
+    }
+
+    /// Pre-scan top-level direct `AssignStmt`s whose RHS is a lambda and
+    /// record a provisional `FunctionType` (parsed parameter types + an
+    /// `any` return) under the assigned name in
+    /// `Context::global_lambda_tys`. This is the counterpart of the
+    /// schema pre-scan: top-level globals are evaluated at runtime in
+    /// declaration-order-independent fashion, but the source-order type
+    /// walker sees them in text order, which causes forward references
+    /// to a lambda to fail argument type-checking (`E2G22`). See issue
+    /// kcl-lang/kcl#1725.
+    ///
+    /// Scope: only direct top-level single-target unannotated `AssignStmt`s
+    /// are processed, exactly the same conditions under which globals are
+    /// order-independent at runtime. Reassignments drop the prior
+    /// signature. The lambda body and defaults are NOT walked during the
+    /// pre-scan — `walk_lambda_expr` still runs exactly once per lambda
+    /// during the main source-order walk and produces the normal body /
+    /// return diagnostics.
+    fn init_global_lambda_types(&mut self) {
+        let pkgpath = self.ctx.pkgpath.clone();
+        let Some(modules) = self
+            .program
+            .pkgs
+            .get(&pkgpath)
+            .or_else(|| self.program.pkgs_not_imported.get(&pkgpath))
+            .cloned()
+        else {
+            return;
+        };
+        let mut lambda_tys: IndexMap<String, Option<FunctionType>> = IndexMap::default();
+        for module in modules {
+            let module = self
+                .program
+                .get_module(&module)
+                .expect("Failed to acquire module lock")
+                .unwrap_or_else(|| panic!("module {:?} not found in program", module));
+            self.ctx.filename = module.filename.clone();
+            for stmt in &module.body {
+                let ast::Stmt::Assign(assign_stmt) = &stmt.node else {
+                    continue;
+                };
+                if assign_stmt.targets.len() != 1 {
+                    continue;
+                }
+                let target = &assign_stmt.targets[0];
+                if !target.node.paths.is_empty() {
+                    continue;
+                }
+                let name = target.node.get_name();
+                if lambda_tys.contains_key(name) {
+                    // A later assignment to the same name — drop any
+                    // prior lambda signature so we don't type-check
+                    // calls against a stale function type.
+                    lambda_tys.insert(name.to_string(), NO_LAMBDA);
+                    continue;
+                }
+                let lambda_ty = match (&assign_stmt.ty, &assign_stmt.value.node) {
+                    (None, ast::Expr::Lambda(lambda_expr)) => {
+                        let params = self.parse_lambda_params(lambda_expr);
+                        Some(FunctionType {
+                            doc: "".to_string(),
+                            params,
+                            self_ty: None,
+                            return_ty: self.any_ty(),
+                            is_variadic: false,
+                            kw_only_index: None,
+                        })
+                    }
+                    _ => NO_LAMBDA,
+                };
+                lambda_tys.insert(name.to_string(), lambda_ty);
+            }
+        }
+        let lambda_tys: IndexMap<String, FunctionType> = lambda_tys
+            .into_iter()
+            .filter_map(|(name, ty)| ty.map(|ty| (name, ty)))
+            .collect();
+        self.ctx.global_lambda_tys.insert(pkgpath, lambda_tys);
     }
 
     /// Init global var types.

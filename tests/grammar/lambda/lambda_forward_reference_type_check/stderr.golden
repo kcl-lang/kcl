@@ -1,0 +1,11 @@
+error[E2G22]: TypeError
+ --> ${CWD}/main.k:6:13
+  |
+6 |     k: f(k, v) for k, v in _xs
+  |             ^ expected str, got [str]
+  |
+ --> ${CWD}/main.k:9:20
+  |
+9 | f = lambda a: str, b: str -> str {
+  |                    ^ variable is defined here, its type is str, but got [str]
+  |

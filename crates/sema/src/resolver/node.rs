@@ -4,6 +4,7 @@ use kcl_ast::walker::MutSelfTypedResultWalker;
 use kcl_ast_pretty::{ASTNode, print_ast_node};
 use kcl_error::*;
 use kcl_primitives::IndexMap;
+use std::rc::Rc;
 use std::sync::Arc;
 
 use crate::info::is_private_field;
@@ -561,13 +562,59 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
         let call_ty = self.expr(&call_expr.func);
         let range = call_expr.func.get_span_pos();
         if call_ty.is_any() {
-            self.do_arguments_type_check(
-                &call_expr.func,
-                &call_expr.args,
-                &call_expr.keywords,
-                &FunctionType::variadic_func(),
-            );
-            self.any_ty()
+            // Look up a provisional `FunctionType` for this call's
+            // callee when the callee is a bare identifier that resolves
+            // to a package-level global recorded in
+            // `Context::global_lambda_tys`. This lets forward references
+            // to top-level lambdas (declared after the call site, issue
+            // kcl-lang/kcl#1725) be type-checked against the lambda's
+            // declared parameter types instead of falling through to the
+            // variadic fallback. We require the resolved scope object to
+            // be the same `Rc` as the package-scope entry — verified via
+            // `Rc::ptr_eq` — so this branch only fires for package-level
+            // lambdas, never for nested closures or local variables that
+            // happen to share a name.
+            let global_lambda_ty = if let ast::Expr::Identifier(identifier) = &call_expr.func.node
+                && identifier.names.len() == 1
+                && identifier.pkgpath.is_empty()
+            {
+                let name = &identifier.names[0].node;
+                let package_obj = self
+                    .scope_map
+                    .get(&self.ctx.pkgpath)
+                    .and_then(|scope| scope.borrow().elems.get(name).cloned());
+                let resolved_obj = self.scope.borrow().lookup(name);
+                if let (Some(package_obj), Some(resolved_obj)) = (package_obj, resolved_obj)
+                    && Rc::ptr_eq(&package_obj, &resolved_obj)
+                {
+                    self.ctx
+                        .global_lambda_tys
+                        .get(&self.ctx.pkgpath)
+                        .and_then(|lambda_tys| lambda_tys.get(name))
+                        .cloned()
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
+            if let Some(func_ty) = global_lambda_ty {
+                self.do_arguments_type_check(
+                    &call_expr.func,
+                    &call_expr.args,
+                    &call_expr.keywords,
+                    &func_ty,
+                );
+                self.any_ty()
+            } else {
+                self.do_arguments_type_check(
+                    &call_expr.func,
+                    &call_expr.args,
+                    &call_expr.keywords,
+                    &FunctionType::variadic_func(),
+                );
+                self.any_ty()
+            }
         } else if let TypeKind::Function(func_ty) = &call_ty.kind {
             self.do_arguments_type_check(
                 &call_expr.func,
@@ -959,41 +1006,16 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
 
     fn walk_lambda_expr(&mut self, lambda_expr: &'ctx ast::LambdaExpr) -> Self::Result {
         let mut ret_ty = self.any_ty();
-        let mut params = vec![];
         self.do_parameters_check(&lambda_expr.args);
+        let params = self.parse_lambda_params(lambda_expr);
         if let Some(args) = &lambda_expr.args {
             for (i, arg) in args.node.args.iter().enumerate() {
-                let name = arg.node.get_name();
-                let arg_ty = args.node.get_arg_type_node(i);
-                let range = match arg_ty {
-                    Some(arg_type_node) => arg_type_node.get_span_pos(),
-                    None => arg.get_span_pos(),
-                };
-                let ty = self.parse_ty_with_scope(arg_ty, range);
-
-                // If the arguments type of a lambda is a schema type,
-                // It should be marked as an schema instance type.
-                let ty = if let TypeKind::Schema(sty) = &ty.kind {
-                    let mut arg_ty = sty.clone();
-                    arg_ty.is_instance = true;
-                    Arc::new(Type::schema(arg_ty))
-                } else {
-                    ty.clone()
-                };
                 if let Some(name) = arg.node.names.last() {
                     self.node_ty_map
                         .borrow_mut()
-                        .insert(self.get_node_key(name.id.clone()), ty.clone());
+                        .insert(self.get_node_key(name.id.clone()), params[i].ty.clone());
                 }
-
                 let value = &args.node.defaults[i];
-                params.push(Parameter {
-                    name,
-                    ty: ty.clone(),
-                    has_default: value.is_some(),
-                    default_value: value.as_ref().map(|v| print_ast_node(ASTNode::Expr(v))),
-                    range: args.node.args[i].get_span_pos(),
-                });
                 self.expr_or_any_type(value);
             }
         }
@@ -1232,6 +1254,47 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
 }
 
 impl<'ctx> Resolver<'_> {
+    /// Parse the parameter declarations of a lambda expression and return
+    /// them as a `Vec<Parameter>`. Used by both the global pre-scan
+    /// (`init_global_lambda_types`) and the regular `walk_lambda_expr`.
+    ///
+    /// This helper does NOT call `do_parameters_check` and does NOT walk
+    /// default-value expressions — both are validation passes that produce
+    /// diagnostics and are still performed exactly once by
+    /// `walk_lambda_expr`. Calling this from a pre-scan therefore cannot
+    /// produce duplicate diagnostics.
+    pub fn parse_lambda_params(&mut self, lambda_expr: &'ctx ast::LambdaExpr) -> Vec<Parameter> {
+        let mut params = vec![];
+        if let Some(args) = &lambda_expr.args {
+            for (i, arg) in args.node.args.iter().enumerate() {
+                let name = arg.node.get_name();
+                let arg_ty = args.node.get_arg_type_node(i);
+                let range = match arg_ty {
+                    Some(arg_type_node) => arg_type_node.get_span_pos(),
+                    None => arg.get_span_pos(),
+                };
+                let ty = self.parse_ty_with_scope(arg_ty, range);
+                // Match walk_lambda_expr: schema param annotations become instance types.
+                let ty = if let TypeKind::Schema(sty) = &ty.kind {
+                    let mut arg_ty = sty.clone();
+                    arg_ty.is_instance = true;
+                    Arc::new(Type::schema(arg_ty))
+                } else {
+                    ty
+                };
+                let value = &args.node.defaults[i];
+                params.push(Parameter {
+                    name,
+                    ty,
+                    has_default: value.is_some(),
+                    default_value: value.as_ref().map(|v| print_ast_node(ASTNode::Expr(v))),
+                    range: args.node.args[i].get_span_pos(),
+                });
+            }
+        }
+        params
+    }
+
     pub fn stmts(&mut self, stmts: &'ctx [ast::NodeRef<ast::Stmt>]) -> ResolvedResult {
         let stmt_types: Vec<TypeRef> = stmts.iter().map(|stmt| self.stmt(stmt)).collect();
         match stmt_types.last() {
