@@ -172,6 +172,7 @@ fn test_resolve_program_fail() {
         "lambda_schema_ty_1.k",
         "lambda_schema_ty_2.k",
         "lambda_schema_ty_3.k",
+        "lambda_forward_reference.k",
         "module_optional_select.k",
         "mutable_error_0.k",
         "mutable_error_1.k",

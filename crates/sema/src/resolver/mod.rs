@@ -30,7 +30,7 @@ use crate::resolver::scope::ScopeObject;
 use crate::resolver::ty_alias::type_alias_pass;
 use crate::resolver::ty_erasure::type_func_erasure_pass;
 use crate::ty::TypeContext;
-use crate::{resolver::scope::Scope, ty::SchemaType};
+use crate::{resolver::scope::Scope, ty::FunctionType, ty::SchemaType};
 use kcl_ast::ast::Program;
 use kcl_error::*;
 
@@ -164,6 +164,13 @@ pub struct Context {
     pub invalid_pkg_scope: IndexSet<String>,
     /// Memoized parsed schema/rule doc strings, keyed by raw doc text.
     pub parsed_doc_cache: IndexMap<String, Arc<SchemaDoc>>,
+    /// Signatures of top-level lambda globals, used to type-check calls of
+    /// lambdas that are declared after the call site (issue #1725). Keyed
+    /// by package path, then by global name. Populated by
+    /// `init_global_lambda_types`; consulted by `walk_call_expr` when the
+    /// callee resolves to `any` (the default installed before the
+    /// lambda is processed in source order).
+    pub global_lambda_tys: IndexMap<String, IndexMap<String, FunctionType>>,
 }
 
 /// Resolve options.
