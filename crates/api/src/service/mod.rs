@@ -3,6 +3,8 @@ pub(crate) mod into;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod jsonrpc;
 pub mod service_impl;
+#[cfg(test)]
+pub(crate) mod test_support;
 pub(crate) mod ty;
 pub(crate) mod util;
 

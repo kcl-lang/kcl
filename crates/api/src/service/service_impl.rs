@@ -103,6 +103,42 @@ pub(crate) fn emit_machine_readable_error(
     Ok(())
 }
 
+/// Force the allocator to release freed memory back to the OS.
+///
+/// On Linux glibc this calls `malloc_trim(0)`, which returns the top free
+/// chunk to the kernel. On macOS / Windows / WASM this is a no-op — there is
+/// no portable reclaim primitive, and the most reliable fix is to load the
+/// library with `LD_PRELOAD=libmimalloc.so.1 MIMALLOC_RESET=1` (Linux) or
+/// the platform-specific equivalent. See `docs/dev_guide/6.memory_tuning.md`
+/// for the full discussion.
+///
+/// This is invoked automatically at the end of
+/// [`KclServiceImpl::exec_program`]; it is also exposed publicly so
+/// callers driving other RPCs can invoke it manually.
+#[cfg(target_os = "linux")]
+fn release_memory() {
+    // SAFETY: `malloc_trim(0)` is always safe to call. It walks glibc's
+    // arena bins and returns the top free chunk to the OS via `madvise`
+    // / `munmap`. Sub-millisecond on typical workloads; idempotent.
+    unsafe {
+        libc::malloc_trim(0);
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn release_memory() {
+    // No stable public API exists. `malloc_zone_pressure_relief` is
+    // per-zone, brittle, and not part of the documented allocator
+    // contract. Production deployments should preload mimalloc with
+    // `MIMALLOC_RESET=1` — see docs/dev_guide/6.memory_tuning.md.
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+fn release_memory() {
+    // Windows / WASM / other Unixes — no portable reclaim primitive.
+    // Same mimalloc recommendation as macOS.
+}
+
 /// Specific implementation of calling service
 #[derive(Debug, Clone, Default)]
 pub struct KclServiceImpl {
@@ -551,12 +587,41 @@ impl KclServiceImpl {
         // downstream tools can pick it up alongside the textual result.
         emit_machine_readable_error(&result.err_message, error_format)?;
 
+        // Bound RSS growth for cgo consumers (e.g. crossplane function-kcl)
+        // that hold a single `KclServiceImpl` across many `exec_program`
+        // calls. On Linux glibc the per-call session/cache/AST memory is freed
+        // back to the allocator but glibc keeps it in its top free chunk; on
+        // subsequent calls the process RSS keeps climbing even though the
+        // "live" set is stable. `malloc_trim(0)` returns the top free chunk
+        // to the OS. Cost is sub-millisecond on typical workloads.
+        //
+        // macOS / Windows have no portable reclaim primitive; the
+        // recommended fix on those platforms is to preload mimalloc with
+        // `MIMALLOC_RESET=1` (see `docs/dev_guide/6.memory_tuning.md`).
+        release_memory();
+
         Ok(ExecProgramResult {
             json_result: result.json_result,
             yaml_result: result.yaml_result,
             log_message: result.log_message,
             err_message: result.err_message,
         })
+    }
+
+    /// Force the allocator to release freed memory back to the operating system.
+    ///
+    /// On Linux glibc this calls `malloc_trim(0)`, which returns the top
+    /// free chunk to the OS. Useful for cgo consumers (e.g. crossplane
+    /// `function-kcl`) that drive many `exec_program` calls from a single
+    /// long-lived `KclServiceImpl`. Already called automatically at the end
+    /// of [`exec_program`](Self::exec_program); callers that issue many
+    /// non-`exec_program` requests can invoke this manually.
+    ///
+    /// On macOS / Windows / WASM this is a no-op — see the module docs at
+    /// `service_impl` for the rationale and the recommended `mimalloc`
+    /// workaround.
+    pub fn release_memory(&self) {
+        release_memory();
     }
 
     /// Override KCL file with args
@@ -1531,5 +1596,282 @@ mod error_format_tests {
         assert_ne!(short, arcanist, "Short vs Arcanist should differ");
         assert_ne!(short, sarif, "Short vs Sarif should differ");
         assert_ne!(arcanist, sarif, "Arcanist vs Sarif should differ");
+    }
+}
+
+// =============================================================================
+// RSS stability tests (long-running, `#[ignore]`).
+//
+// Run with:  cargo test -p kcl-api --lib -- --ignored exec_program_rss_
+//
+// These exercise the same scenario as crossplane-contrib/function-kcl #211:
+// a single `KclServiceImpl` driven across many `exec_program` calls from a
+// long-lived process (cgo consumer / repeated gRPC reconcile). On Linux
+// glibc, the per-call session/AST/scope memory is freed but glibc keeps it
+// in its top free chunk, so RSS keeps climbing even though the live set is
+// stable. `release_memory()` (i.e. `malloc_trim(0)` on glibc) is supposed to
+// bound that growth.
+//
+// We mark these `#[ignore]` so they don't run on every `cargo test`. They
+// take ~30s each, and on platforms where RSS is unsupported (Windows,
+// WASM) they skip silently rather than fail.
+// =============================================================================
+
+#[cfg(test)]
+mod rss_stability_tests {
+    use super::*;
+    use crate::service::test_support;
+    use std::time::Instant;
+
+    /// Build an inline KCL source that emits 50 generated resources, modelled
+    /// after the function-kcl user case from crossplane-contrib/function-kcl
+    /// issue #211. ~5 KB of source, ~70 KB of AST per call — enough to put
+    /// meaningful pressure on the allocator so `malloc_trim(0)` has
+    /// something to trim.
+    fn build_fixture_source(seed: u32) -> String {
+        let mut s = String::with_capacity(8 * 1024);
+        s.push_str(&format!("items_{seed:04} = ["));
+        for i in 0..50u32 {
+            // KCL requires `,` at the end of each non-last item, on the
+            // same line as the closing `}` — putting the `,` on a new line
+            // confuses the parser.
+            s.push_str(&format!(
+                "{{
+    apiVersion = \"example.org/v1\"
+    kind = \"Generated{seed}_{i}\"
+    metadata.name = \"gen-{seed}-{i}\"
+    metadata.annotations = {{\"krm.kcl.dev/composition-resource-name\": \"resource-{seed}-{i}\"}}
+    spec.count = {n}
+    spec.tags = [\"a\", \"b\", \"c\", \"d\"]
+    spec.nested = {{\"x\": \"y-{i}\", \"z\": \"w-{i}\"}}
+}},",
+                seed = seed,
+                i = i,
+                n = (i.wrapping_mul(17).wrapping_add(seed) % 9999),
+            ));
+        }
+        s.push_str("]\n");
+        s
+    }
+
+    /// Write `source` to a temp `.k` file and return the (NamedTempFile,
+    /// path) pair. The temp file lives as long as the `NamedTempFile`; we
+    /// return both so the caller can keep the file alive for the duration
+    /// of the exec call (the file path must exist on disk for
+    /// `exec_program` to read it).
+    fn write_fixture_to_disk(source: &str) -> (NamedTempFile, String) {
+        let file = NamedTempFile::with_suffix(".k").expect("create temp .k");
+        let path = file.path().to_string_lossy().to_string();
+        std::fs::write(&file, source).expect("write temp .k");
+        (file, path)
+    }
+
+    /// Build N variant sources by varying `seed`; gives a diverse-source
+    /// eviction pattern that exercises the module cache.
+    fn build_diverse_sources(n: usize) -> Vec<String> {
+        (0..n).map(|i| build_fixture_source(i as u32)).collect()
+    }
+
+    fn exec(serv: &KclServiceImpl, path: &str) {
+        let args = ExecProgramArgs {
+            k_filename_list: vec![path.to_string()],
+            ..Default::default()
+        };
+        // Surface any real failure rather than silently swallowing it.
+        if let Err(e) = serv.exec_program(&args) {
+            panic!("exec_program({path}) failed during RSS stress: {e}");
+        }
+    }
+
+    /// Skip the test if RSS is not supported on this platform, or if we
+    /// can't get a baseline reading.
+    fn require_rss() -> Option<u64> {
+        match test_support::rss_bytes() {
+            Some(rss) if rss > 0 => Some(rss),
+            Some(_) => None,
+            None => None,
+        }
+    }
+
+    /// Functional sanity test: `release_memory()` must be idempotent and
+    /// must not panic on any platform.
+    #[test]
+    fn release_memory_is_idempotent() {
+        let serv = KclServiceImpl::default();
+        for _ in 0..10 {
+            serv.release_memory();
+        }
+    }
+
+    /// Functional sanity test: a `release_memory()` call between two
+    /// `exec_program` calls with the same source must not change the
+    /// produced `json_result`.
+    #[test]
+    fn exec_program_is_stable_across_release_memory() {
+        let serv = KclServiceImpl::default();
+        let source = build_fixture_source(0);
+        let (_file, path) = write_fixture_to_disk(&source);
+        let r1 = serv
+            .exec_program(&ExecProgramArgs {
+                k_filename_list: vec![path.clone()],
+                ..Default::default()
+            })
+            .expect("first exec_program");
+        serv.release_memory();
+        let r2 = serv
+            .exec_program(&ExecProgramArgs {
+                k_filename_list: vec![path],
+                ..Default::default()
+            })
+            .expect("second exec_program");
+        assert_eq!(r1.json_result, r2.json_result);
+        assert_eq!(r1.err_message, r2.err_message);
+    }
+
+    /// Run the same fixture 500 times; assert that RSS grows by less than
+    /// 32 MiB. With `release_memory()` after every call, on glibc we
+    /// expect the post-warmup RSS to plateau within ~5 MiB. The 32 MiB
+    /// ceiling leaves ample room for Go-runtime-style noise while still
+    /// failing loudly if the allocator is leaking.
+    #[test]
+    #[ignore]
+    fn exec_program_rss_stable_across_repeated_calls() {
+        let Some(rss0) = require_rss() else {
+            eprintln!("skip: rss unsupported on this platform");
+            return;
+        };
+        let serv = KclServiceImpl::default();
+        let source = build_fixture_source(0);
+        let (_file, path) = write_fixture_to_disk(&source);
+
+        // Warmup — allocates the modules, scopes, AST caches, etc.
+        for _ in 0..50 {
+            exec(&serv, &path);
+        }
+        let Some(rss_warm) = require_rss() else {
+            eprintln!("skip: rss read failed mid-test");
+            return;
+        };
+
+        let iters = 500u64;
+        let t0 = Instant::now();
+        for i in 0..iters {
+            exec(&serv, &path);
+            if i % 50 == 49 {
+                let rss = test_support::rss_bytes().unwrap_or(0);
+                eprintln!(
+                    "iter {}: RSS = {:.2} MiB",
+                    i + 1,
+                    rss as f64 / (1024.0 * 1024.0)
+                );
+            }
+        }
+        let elapsed = t0.elapsed();
+        let Some(rss_end) = require_rss() else {
+            eprintln!("skip: rss read failed mid-test");
+            return;
+        };
+        let delta = rss_end as i64 - rss_warm as i64;
+        eprintln!(
+            "----\n{} iters in {:.2?} — warmup RSS {:.2} MiB → final {:.2} MiB (Δ = {:+.2} MiB)",
+            iters,
+            elapsed,
+            rss_warm as f64 / (1024.0 * 1024.0),
+            rss_end as f64 / (1024.0 * 1024.0),
+            delta as f64 / (1024.0 * 1024.0),
+        );
+
+        // Allow up to 32 MiB of growth across 500 iterations (~64 KiB /
+        // call). On a healthy glibc + release_memory we expect < 5 MiB.
+        let max_growth: i64 = 32 * 1024 * 1024;
+        assert!(
+            delta < max_growth,
+            "RSS grew by {} MiB across {} iters (max {} MiB) — release_memory not bounding growth?",
+            delta / (1024 * 1024),
+            iters,
+            max_growth / (1024 * 1024),
+        );
+
+        // Sanity: the warmup RSS itself should be > 0 (we don't want a
+        // false positive where the test passes because RSS was always 0).
+        assert!(rss0 > 0, "baseline RSS was zero — rss_bytes() is broken");
+    }
+
+    /// Run a diverse set of N=100 sources × C=10 cycles = 1000 calls,
+    /// exercising the cache eviction pattern. Assert post-warmup RSS grows
+    /// by less than 64 MiB.
+    #[test]
+    #[ignore]
+    fn exec_program_rss_stable_across_eviction_pattern() {
+        let Some(rss_warm0) = require_rss() else {
+            eprintln!("skip: rss unsupported on this platform");
+            return;
+        };
+        let serv = KclServiceImpl::default();
+        let sources = build_diverse_sources(100);
+        // Keep temp files alive for the whole test; each iteration's
+        // `exec` borrows the corresponding path.
+        let paths: Vec<(NamedTempFile, String)> =
+            sources.iter().map(|s| write_fixture_to_disk(s)).collect();
+        let paths_ref: Vec<&str> = paths
+            .iter()
+            .map(|(_f, p): &(NamedTempFile, String)| p.as_str())
+            .collect();
+
+        // Warmup: 1 cycle through all sources.
+        for path in &paths_ref {
+            exec(&serv, path);
+        }
+        let Some(rss_warm) = require_rss() else {
+            eprintln!("skip: rss read failed mid-test");
+            return;
+        };
+
+        let cycles = 10u64;
+        let t0 = Instant::now();
+        for c in 0..cycles {
+            for path in &paths_ref {
+                exec(&serv, path);
+            }
+            let rss = test_support::rss_bytes().unwrap_or(0);
+            eprintln!(
+                "cycle {}: RSS = {:.2} MiB",
+                c + 1,
+                rss as f64 / (1024.0 * 1024.0)
+            );
+        }
+        let elapsed = t0.elapsed();
+        let Some(rss_end) = require_rss() else {
+            eprintln!("skip: rss read failed mid-test");
+            return;
+        };
+        let delta = rss_end as i64 - rss_warm as i64;
+        eprintln!(
+            "----\n{} cycles × {} sources = {} iters in {:.2?} — warmup RSS {:.2} MiB → final {:.2} MiB (Δ = {:+.2} MiB)",
+            cycles,
+            sources.len(),
+            cycles * sources.len() as u64,
+            elapsed,
+            rss_warm as f64 / (1024.0 * 1024.0),
+            rss_end as f64 / (1024.0 * 1024.0),
+            delta as f64 / (1024.0 * 1024.0),
+        );
+
+        // Allow up to 64 MiB growth across 1000 calls (~64 KiB/call) for
+        // the eviction pattern. Healthy glibc + release_memory expects
+        // ~10-20 MiB.
+        let max_growth: i64 = 64 * 1024 * 1024;
+        assert!(
+            delta < max_growth,
+            "RSS grew by {} MiB across {} cycles (max {} MiB) — eviction pattern leaking?",
+            delta / (1024 * 1024),
+            cycles,
+            max_growth / (1024 * 1024),
+        );
+
+        assert!(
+            rss_warm0 > 0,
+            "baseline RSS was zero — rss_bytes() is broken"
+        );
     }
 }
