@@ -58,7 +58,18 @@ jobs:
       - name: Unit test
         run: export PATH=$PATH:$PWD/_build/dist/linux/core && make test
         shell: bash
-      
+
+      # RSS stability stress tests for the `release_memory()` path. See
+      # the matching step in `linux_amd.yaml` for context. ARM glibc has
+      # the same fragmentation behaviour as AMD glibc, so we run these
+      # on both.
+      - name: RSS stability stress tests (kcl-api, glibc malloc_trim)
+        shell: bash
+        timeout-minutes: 15
+        run: |
+          cargo test -p kcl-api --lib --no-fail-fast -- \
+            --ignored --nocapture exec_program_rss_
+
       - name: Release
         run: export PATH=$PATH:$PWD/_build/dist/linux/core && make release
         shell: bash

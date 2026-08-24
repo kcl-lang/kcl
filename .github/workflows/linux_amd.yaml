@@ -56,6 +56,19 @@ jobs:
         run: export PATH=$PATH:$PWD/_build/dist/linux/core && make test
         shell: bash
 
+      # Long-running RSS stability tests for the `release_memory()` path.
+      # Validates that the per-`exec_program` `malloc_trim(0)` call keeps
+      # the process RSS bounded across many calls — the exact pattern
+      # crossplane-contrib/function-kcl #211 sees in production. These are
+      # `#[ignore]`d in the source so they don't slow down the default
+      # `cargo test` run; we run them explicitly here.
+      - name: RSS stability stress tests (kcl-api, glibc malloc_trim)
+        shell: bash
+        timeout-minutes: 15
+        run: |
+          cargo test -p kcl-api --lib --no-fail-fast -- \
+            --ignored --nocapture exec_program_rss_
+
       - name: KCL Lib GLIBC 2.17 Build and Release
         shell: bash
         run: |

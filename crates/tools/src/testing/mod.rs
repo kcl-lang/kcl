@@ -4,10 +4,10 @@
 //! that have the suffix "_test.k" and do not start with "_". These test files will be regard
 //! as test suites. Within these files, any lambda literals starting with "test_" will be
 //! considered as test cases, but these lambda functions should not have any parameters.
-//! To perform the testing, the tool compiles the test suite file and its dependencies into an
-//! [kcl_runner::Artifact], which is regard as a new compilation entry point. Then,
-//! it executes each test case separately and collects information about the test cases,
-//! such as the execution time and whether the test passes or fails.
+//! To perform the testing, the tool compiles and executes the test suite file together with
+//! its dependencies as a single program entry point. Then, it executes each test case
+//! separately and collects information about the test cases, such as the execution time and
+//! whether the test passes or fails.
 pub use crate::testing::suite::{TestSuite, load_test_suites};
 use anyhow::{Error, Result};
 use kcl_primitives::IndexMap;
