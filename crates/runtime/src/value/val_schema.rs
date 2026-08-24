@@ -63,6 +63,57 @@ pub fn schema_assert(ctx: &mut Context, value: &ValueRef, msg: &str, config_meta
     }
 }
 
+/// Pick the best data-file position to surface for a missing required
+/// attribute on a schema instance. Preference order:
+///
+/// 1. The first present sibling attribute's `CONFIG_ITEM_META` position.
+///    For a YAML hash like `key: b`, the per-key `CONFIG_ITEM_META`
+///    carries the actual row location of `key`, which is more useful
+///    than the schema-instance position (which usually points at the
+///    opening row of the hash).
+/// 2. The schema-instance level `CONFIG_META` position. This is the
+///    fallback for empty-instance cases such as `Person {}`, where no
+///    sibling attributes exist.
+///
+/// Returns `(filename, line, col)` as `Option`s; callers should pass
+/// them straight to `Context::set_kcl_location_info`.
+fn pick_data_position(config_meta: &ValueRef) -> (Option<String>, Option<i32>, Option<i32>) {
+    // 1. Try any sibling's CONFIG_ITEM_META.
+    if let Value::dict_value(dict) = &*config_meta.rc.borrow() {
+        for (_attr, attr_meta) in &dict.values {
+            // CONFIG_META_* keys at the top level are not siblings, so
+            // they won't have a `filename` key under them.
+            if let Value::dict_value(inner) = &*attr_meta.rc.borrow() {
+                if let Some(file) = inner.values.get(CONFIG_ITEM_META_FILENAME) {
+                    let filename = file.as_str();
+                    if !filename.is_empty() {
+                        let line = inner
+                            .values
+                            .get(CONFIG_ITEM_META_LINE)
+                            .map(|v| v.as_int() as i32);
+                        let col = inner
+                            .values
+                            .get(CONFIG_ITEM_META_COLUMN)
+                            .map(|v| v.as_int() as i32);
+                        return (Some(filename), line, col);
+                    }
+                }
+            }
+        }
+    }
+    // 2. Fallback to the schema-instance level CONFIG_META.
+    let filename = config_meta
+        .get_by_key(CONFIG_META_FILENAME)
+        .map(|v| v.as_str());
+    let line = config_meta
+        .get_by_key(CONFIG_META_LINE)
+        .map(|v| v.as_int() as i32);
+    let col = config_meta
+        .get_by_key(CONFIG_META_COLUMN)
+        .map(|v| v.as_int() as i32);
+    (filename, line, col)
+}
+
 impl ValueRef {
     #[allow(clippy::too_many_arguments)]
     pub fn dict_to_schema(
@@ -176,19 +227,25 @@ impl ValueRef {
                     let undefined = ValueRef::undefined();
                     let value = attr_map.get(attr).unwrap_or(&undefined);
                     if is_required && value.is_none_or_undefined() {
-                        let filename = config_meta.get_by_key(CONFIG_META_FILENAME);
-                        let line = config_meta.get_by_key(CONFIG_META_LINE);
-                        if let Some(filename) = filename {
-                            ctx.set_kcl_filename(&filename.as_str());
-                        }
-                        if let Some(line) = line {
-                            ctx.panic_info.kcl_line = line.as_int() as i32;
-                        }
-                        panic!(
+                        let msg = format!(
                             "attribute '{}' of {} is required and can't be None or Undefined",
                             attr,
                             self.schema_name()
                         );
+                        // Surface a data-file position (sibling attribute or
+                        // schema-instance level) as the primary diagnostic
+                        // location, so the user is pointed at the file where
+                        // the missing attribute should have appeared. See
+                        // issue kcl-lang/kcl#1845.
+                        let (data_file, data_line, data_col) = pick_data_position(&config_meta);
+                        ctx.set_err_type(&RuntimeErrorType::SchemaCheckFailure);
+                        ctx.set_kcl_location_info(
+                            Some(msg.as_str()),
+                            data_file.as_deref(),
+                            data_line,
+                            data_col,
+                        );
+                        panic!("{}", msg);
                     }
                 }
                 // Recursive check schema values for every attributes.

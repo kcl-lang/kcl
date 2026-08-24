@@ -339,6 +339,12 @@ mod test_validater {
         "with_import.k",
         "lambda_check.k",
     ];
+    // Cases that only appear under `invalid_vet_cases_yaml/` and have no
+    // matching file in `validate_cases/`. They are exercised by the
+    // `test_invalid_validate_with_yaml_pos` (and json) tests so that
+    // schema-validation regressions — e.g. kcl-lang/kcl#1845 — stay
+    // covered.
+    const KCL_INVALID_TEST_CASES: &[&str] = &["required_attr.k"];
     const KCL_TEST_CASES_WITH_CODE: &[&str] =
         &["test.k", "simple.k", "list.k", "plain_value.k", "complex.k"];
     const VALIDATED_FILE_TYPE: &[&str] = &["json", "yaml"];
@@ -581,7 +587,7 @@ mod test_validater {
         let root_path = PathBuf::from(construct_full_path("invalid_vet_cases_yaml").unwrap())
             .canonicalize()
             .unwrap();
-        for case in KCL_TEST_CASES {
+        for case in KCL_TEST_CASES.iter().chain(KCL_INVALID_TEST_CASES.iter()) {
             let validated_file_path = construct_full_path(&format!(
                 "{}.{}",
                 Path::new("invalid_vet_cases_yaml").join(case).display(),

@@ -1,6 +1,6 @@
 error[E3M38]: EvaluationError
- --> ${CWD}/main.k:2:1
-  |
-2 |     name: str
-  |  expect str, got int
-  |
+  --> ${CWD}/main.k:15:1
+   |
+15 |     expected: Container = _config | {}
+   |  expect str, got int
+   |

@@ -1,6 +1,6 @@
 error[E3M38]: EvaluationError
- --> ${CWD}/main.k:2:1
+ --> ${CWD}/main.k:5:1
   |
-2 |     x_1?: True|123|3.14|"abc"|[]|{str:}
+5 |     x_1: 443
   |  expect True | 123 | 3.14 | "abc" | [] | {str:}, got int
   |
