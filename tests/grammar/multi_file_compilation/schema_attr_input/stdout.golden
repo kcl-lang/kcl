@@ -1,3 +1,6 @@
+appConfiguration:
+  replicas: 3
+  image: nginx:1.7.8
 result:
   replicas: 3
   name: app

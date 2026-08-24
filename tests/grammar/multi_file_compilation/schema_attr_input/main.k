@@ -7,13 +7,12 @@ schema ServerBackend[inputConfig: Server]:
     config: Server = inputConfig
     app: any = None
     workloadAttributes: {str:} = {
-        spec = {
-            replicas = config.replicas
-        }
+        replicas = config.replicas
+        name = app
     }
 
-# Base definition - first file
+# Base config provided by the main file; pkg.k consumes it.
 appConfiguration: Server {
+    replicas = 3
     image = "nginx:1.7.8"
-    mainContainer = {}
 }
