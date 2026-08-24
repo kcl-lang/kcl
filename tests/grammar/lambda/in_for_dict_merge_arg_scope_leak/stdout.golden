@@ -1,0 +1,21 @@
+o:
+  config:
+    name: x
+    workloadType: Deployment
+    services:
+    - selector: null
+    labels: null
+    selector: null
+  kubernetes:
+    Deployment:
+    - spec:
+        selector:
+          matchLabels:
+            app: test
+  workloadAttributes:
+  - metadata:
+      name: override
+      labels: null
+    spec:
+      selector:
+        app: test

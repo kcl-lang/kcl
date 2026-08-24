@@ -190,8 +190,16 @@ impl<'ctx> Evaluator<'ctx> {
 
     #[inline]
     pub(crate) fn set_local_vars(&self, vars: (HashSet<String>, HashSet<String>)) {
-        self.local_vars.borrow_mut().extend(vars.0);
-        self.loop_vars.borrow_mut().extend(vars.1);
+        // Replace (not extend) local_vars and loop_vars. The call site
+        // (walk_call_expr) uses `clean_and_cloned_local_vars` to save the
+        // pre-call state and clear the current state before invoking the
+        // function. Extending after the call would leave any local vars
+        // introduced by the called function (e.g. lambda argument names
+        // added by `walk_arguments`) behind, polluting the surrounding
+        // scope and breaking subsequent identifier lookups via
+        // `is_local_var`/`load_name`.
+        *self.local_vars.borrow_mut() = vars.0;
+        *self.loop_vars.borrow_mut() = vars.1;
     }
 
     #[inline]
