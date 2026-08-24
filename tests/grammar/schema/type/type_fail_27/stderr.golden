@@ -1,6 +1,6 @@
 error[E3M38]: EvaluationError
- --> ${CWD}/main.k:4:1
+ --> ${CWD}/main.k:3:1
   |
-4 |     config?: [str]
+3 |     age: int = 1
   |  expect [str], got Person
   |

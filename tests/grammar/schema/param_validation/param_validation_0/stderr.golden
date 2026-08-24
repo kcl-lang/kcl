@@ -1,7 +1,7 @@
 error[E3M38]: EvaluationError
- --> ${CWD}/main.k:5:1
+ --> ${CWD}/main.k:7:1
   |
-5 |     envName: "staging" | "production"
+7 | _user = User({})
   |  expect Arg, got dict. For details:
 Schema Arg's attribute envName is missing
   |

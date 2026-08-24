@@ -1,6 +1,6 @@
 error[E3M38]: EvaluationError
- --> ${CWD}/main.k:7:1
+ --> ${CWD}/main.k:5:1
   |
-7 |     "lastName": "Doe"
+5 | person1 = Person {}
   |  attribute 'name' of Person is required and can't be None or Undefined
   |

@@ -55,7 +55,15 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
 
     fn walk_stmt(&self, stmt: &'ctx ast::Node<ast::Stmt>) -> Self::Result {
         backtrack_break_here!(self, stmt);
-        self.update_ctx_panic_info(stmt);
+        // For SchemaAttr statements inside a schema body, keep the panic_info
+        // pointing at the value being walked rather than the schema attribute
+        // declaration. Otherwise nested type conversions triggered from the
+        // schema body (e.g., a nested schema's `convert_collection_value`)
+        // would read panic_info from the schema attribute declaration, which
+        // misleads schema-check error locations. See issue #1898.
+        if !matches!(stmt.node, ast::Stmt::SchemaAttr(_)) || !self.is_in_schema() {
+            self.update_ctx_panic_info(stmt);
+        }
         self.update_ast_id(stmt);
         let value = match &stmt.node {
             ast::Stmt::TypeAlias(type_alias) => self.walk_type_alias_stmt(type_alias),
