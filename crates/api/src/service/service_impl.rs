@@ -105,17 +105,19 @@ pub(crate) fn emit_machine_readable_error(
 
 /// Force the allocator to release freed memory back to the OS.
 ///
-/// On Linux glibc this calls `malloc_trim(0)`, which returns the top free
-/// chunk to the kernel. On macOS / Windows / WASM this is a no-op — there is
-/// no portable reclaim primitive, and the most reliable fix is to load the
-/// library with `LD_PRELOAD=libmimalloc.so.1 MIMALLOC_RESET=1` (Linux) or
-/// the platform-specific equivalent. See `docs/dev_guide/6.memory_tuning.md`
+/// On Linux **glibc** this calls `malloc_trim(0)`, which returns the top
+/// free chunk to the kernel. (MUSL and other libcs don't expose
+/// `malloc_trim`, so the call is cfg-gated to glibc only.) On macOS /
+/// Windows / WASM this is a no-op — there is no portable reclaim
+/// primitive, and the most reliable fix is to load the library with
+/// `LD_PRELOAD=libmimalloc.so.1 MIMALLOC_RESET=1` (Linux) or the
+/// platform-specific equivalent. See `docs/dev_guide/6.memory_tuning.md`
 /// for the full discussion.
 ///
 /// This is invoked automatically at the end of
 /// [`KclServiceImpl::exec_program`]; it is also exposed publicly so
 /// callers driving other RPCs can invoke it manually.
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", target_env = "gnu"))]
 fn release_memory() {
     // SAFETY: `malloc_trim(0)` is always safe to call. It walks glibc's
     // arena bins and returns the top free chunk to the OS via `madvise`
@@ -133,11 +135,10 @@ fn release_memory() {
     // `MIMALLOC_RESET=1` — see docs/dev_guide/6.memory_tuning.md.
 }
 
-#[cfg(not(any(target_os = "linux", target_os = "macos")))]
-fn release_memory() {
-    // Windows / WASM / other Unixes — no portable reclaim primitive.
-    // Same mimalloc recommendation as macOS.
-}
+/// MUSL / unknown libc / Windows / WASM — no portable reclaim primitive.
+/// Same mimalloc recommendation as macOS.
+#[cfg(not(any(all(target_os = "linux", target_env = "gnu"), target_os = "macos")))]
+fn release_memory() {}
 
 /// Specific implementation of calling service
 #[derive(Debug, Clone, Default)]
