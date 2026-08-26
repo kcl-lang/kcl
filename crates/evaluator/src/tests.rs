@@ -1266,6 +1266,61 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::thread;
 
+/// Regression test for kcl-lang/kcl#1769: a config entry inside a schema must
+/// shadow a same-named attribute of the enclosing schema for the entries that
+/// follow it. Without the fix, `q: p + 1` resolved `p` against the enclosing
+/// `Outer.p` (100) instead of the just-assigned `Item.p` (101) and produced
+/// `q: 101`. With the fix the inner assignment shadows the outer name and
+/// `q: 102` is observed, matching the golden output in
+/// `tests/grammar/schema/config_entry_scope/stdout.golden`.
+#[test]
+fn test_config_entry_shadows_enclosing_schema_attr() {
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"
+schema Item:
+    p: int
+    q: int
+
+schema Outer:
+    p: int
+    item: any = Item {
+        p: p + 1
+        q: p + 1
+    }
+    after: int = p
+
+outer = Outer { p: 100 }
+"#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator.run().unwrap();
+    assert!(
+        output.contains(r#""p": 101"#),
+        "expected item.p = 101, got: {}",
+        output
+    );
+    assert!(
+        output.contains(r#""q": 102"#),
+        "expected item.q = 102 (shadowing of outer p by inner p), got: {}",
+        output
+    );
+    assert!(
+        output.contains(r#""after": 100"#),
+        "expected outer.after = 100 (shadowing must not outlive the config), got: {}",
+        output
+    );
+}
+
 const MULTI_THREAD_SOURCE: &str = r#"
 import regex
 foo = option("foo")
