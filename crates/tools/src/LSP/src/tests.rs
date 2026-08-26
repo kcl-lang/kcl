@@ -1231,7 +1231,8 @@ fn formatting_unsaved_test() {
 
 // TODO: wait for fix `kcl mod metadata` to read only. Otherwise it will lead to an infinite loop
 #[allow(dead_code)]
-// #[test]
+#[test]
+#[ignore = "requires network access to fetch dependencies"]
 fn mod_file_watcher_test() {
     let path = PathBuf::from(".")
         .join("src")
@@ -1980,6 +1981,36 @@ fn collect_watch_paths_skips_gitignored_dirs() {
     assert!(!names.iter().any(|n| n == "target"));
 
     let _ = std::fs::remove_dir_all(&base);
+}
+
+#[test]
+fn mod_change_debouncer_dedupes_bursts() {
+    use crate::state::ModChangeDebouncer;
+    use std::path::PathBuf;
+
+    let mut d = ModChangeDebouncer::default();
+    let mod_a = PathBuf::from("/repo/kcl.mod");
+    let mod_b = PathBuf::from("/repo/sub/kcl.mod");
+
+    // Fresh state: nothing is recent.
+    assert!(!d.should_skip(&[mod_a.clone()]));
+    assert!(!d.should_skip(&[mod_b.clone()]));
+
+    // After marking, the same path is reported as recent.
+    d.mark(&[mod_a.clone()]);
+    assert!(d.should_skip(&[mod_a.clone()]));
+    assert!(!d.should_skip(&[mod_b.clone()]));
+
+    // A second mark for the same path keeps it recent (debounce window
+    // renews on each forward).
+    d.mark(&[mod_a.clone()]);
+    assert!(d.should_skip(&[mod_a.clone()]));
+
+    // Either input path being recent is enough to declare the batch debounced.
+    let both = vec![mod_b.clone(), mod_a.clone()];
+    assert!(d.should_skip(&both));
+    // But a path on its own that was never marked stays clean.
+    assert!(!d.should_skip(&[mod_b.clone()]));
 }
 
 #[test]
