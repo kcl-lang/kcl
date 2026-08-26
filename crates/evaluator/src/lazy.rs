@@ -385,6 +385,29 @@ impl<'ctx> Evaluator<'ctx> {
         }
     }
 
+    /// If `key` was already resolved earlier through backtracking (for example
+    /// forced by a forward reference) and it has a single setter, return its
+    /// cached value. This lets the top-level eager walk reuse the value instead
+    /// of evaluating the right-hand side a second time (see issue #1759).
+    ///
+    /// The single-setter guard keeps conditional or in-place reassignments
+    /// (`if` overrides, `+=`, subscript stores, ...) on the normal evaluation
+    /// path, where every setter must still run in order.
+    #[inline]
+    pub(crate) fn get_resolved_single_setter_value(
+        &self,
+        pkgpath: &str,
+        key: &str,
+    ) -> Option<ValueRef> {
+        let lazy_scopes = self.lazy_scopes.borrow();
+        let scope = lazy_scopes.get(pkgpath)?;
+        if scope.resolved.contains(key) && scope.setter_len(key) == 1 {
+            scope.cache.get(key).cloned()
+        } else {
+            None
+        }
+    }
+
     /// Set value to the context.
     #[inline]
     pub(crate) fn set_value_to_lazy_scope(&self, pkgpath: &str, key: &str, value: &ValueRef) {

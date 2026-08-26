@@ -4,4 +4,4 @@ my_resource:
   kind: ConfigMap
   metadata:
     name: test-resource
-instances_count: 2
+instances_count: 1

@@ -1558,3 +1558,57 @@ c = C()
         yaml_output
     );
 }
+
+#[test]
+fn assign_no_double_eval_on_forward_reference() {
+    // Regression test for issue #1759: a top-level field whose value is forced
+    // early by a forward reference must not be evaluated a second time during
+    // the eager walk. The `print` side effect makes the extra evaluation
+    // observable: `_foo` is referenced before its declaration (forward), while
+    // `_bar` is referenced after. Each `show(...)` must run exactly once.
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"show = lambda s: str -> str {
+    print("show: ${s}")
+    s
+}
+
+# `_foo` used before declaration (forward reference)
+foo = _foo
+
+_foo = {
+    name: "foo"
+    value: show("foo")
+}
+
+_bar = {
+    name: "bar"
+    value: show("bar")
+}
+
+# `_bar` used after declaration
+bar = _bar
+"#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    evaluator
+        .run()
+        .expect("forward-reference program must evaluate successfully");
+    // Before the fix the log was "show: foo\nshow: foo\nshow: bar\n" because the
+    // forward reference forced `_foo` once and the eager walk evaluated it again.
+    let log = evaluator.runtime_ctx.borrow().log_message.clone();
+    assert_eq!(
+        log, "show: foo\nshow: bar\n",
+        "each field value must be evaluated exactly once; got log:\n{}",
+        log
+    );
+}
