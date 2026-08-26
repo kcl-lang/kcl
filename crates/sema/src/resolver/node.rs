@@ -420,16 +420,34 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
             },
         );
         if let Some(value) = &schema_attr.value {
-            let value_ty = if let TypeKind::Schema(ty) = &expected_ty.kind {
-                let (start, end) = value.get_span_pos();
-                let obj =
-                    self.new_config_expr_context_item(&ty.name, expected_ty.clone(), start, end);
-                let init_stack_depth = self.switch_config_expr_context(Some(obj));
-                let value_ty = self.expr(value);
-                self.clear_config_expr_context(init_stack_depth as usize, false);
-                value_ty
-            } else {
-                self.expr(value)
+            let value_ty = match &expected_ty.kind {
+                TypeKind::Schema(ty) => {
+                    let (start, end) = value.get_span_pos();
+                    let obj = self.new_config_expr_context_item(
+                        &ty.name,
+                        expected_ty.clone(),
+                        start,
+                        end,
+                    );
+                    let init_stack_depth = self.switch_config_expr_context(Some(obj));
+                    let value_ty = self.expr(value);
+                    self.clear_config_expr_context(init_stack_depth as usize, false);
+                    value_ty
+                }
+                // Propagate the expected container type into the default value so
+                // config literals nested in a list/dict/union attribute default are
+                // still checked against their schema element type at compile time
+                // (see issue #1737), matching `upgrade_type_for_expr`.
+                TypeKind::List(_) | TypeKind::Dict(_) | TypeKind::Union(_) => {
+                    let (start, end) = value.get_span_pos();
+                    let obj =
+                        self.new_config_expr_context_item("[]", expected_ty.clone(), start, end);
+                    let init_stack_depth = self.switch_config_expr_context(Some(obj));
+                    let value_ty = self.expr(value);
+                    self.clear_config_expr_context(init_stack_depth as usize, false);
+                    value_ty
+                }
+                _ => self.expr(value),
             };
             match &schema_attr.op {
                 // Union operator

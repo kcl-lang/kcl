@@ -188,6 +188,7 @@ fn test_resolve_program_fail() {
         "unmatched_schema_attr_1.k",
         "unmatched_schema_attr_2.k",
         "unmatched_schema_attr_3.k",
+        "unmatched_schema_attr_list_default.k",
     ];
     for case in cases {
         let path = Path::new(work_dir).join(case);
