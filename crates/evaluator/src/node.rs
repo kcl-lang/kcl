@@ -124,6 +124,28 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
     }
 
     fn walk_assign_stmt(&self, assign_stmt: &'ctx ast::AssignStmt) -> Self::Result {
+        // Reuse the value of a top-level field that was already resolved early
+        // by a forward reference, instead of evaluating its right-hand side a
+        // second time during the eager walk (see issue #1759). This is limited
+        // to a single plain-name target at the global scope while not executing
+        // a setter, so conditional/in-place reassignments keep their normal
+        // ordered evaluation.
+        if assign_stmt.targets.len() == 1
+            && assign_stmt.targets[0].node.paths.is_empty()
+            && self.scope_level() == GLOBAL_LEVEL
+            && self.backtrack_meta.borrow().is_empty()
+        {
+            let name = assign_stmt.targets[0].node.name.node.as_str();
+            let pkgpath = self.current_pkgpath();
+            if let Some(cached) = self.get_resolved_single_setter_value(&pkgpath, name) {
+                // The value is already computed and cached; make sure the global
+                // variable holds it (the early backtracking may have produced the
+                // value without leaving it in the global scope) and skip the
+                // redundant right-hand side evaluation.
+                self.add_or_update_global_variable(name, cached.clone(), false);
+                return Ok(cached);
+            }
+        }
         self.clear_local_vars();
         // Set target vars.
         for name in &assign_stmt.targets {
