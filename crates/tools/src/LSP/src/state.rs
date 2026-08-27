@@ -306,7 +306,7 @@ impl LanguageServerState {
     }
 
     /// Process vfs changed file. Update db cache when create(did_open_file), modify(did_change) or delete(did_close_file) vfs files.
-    fn process_changed_file(&mut self, file: ChangedFile) {
+    pub(crate) fn process_changed_file(&mut self, file: ChangedFile) {
         match file.change_kind {
             // open file
             ChangeKind::Create => {
@@ -325,9 +325,26 @@ impl LanguageServerState {
                             match state {
                                 DBState::Ready(db) => {
                                     if db.prog.modules.contains_key(&filename) {
+                                        // The file may be present in a workspace's compiled
+                                        // modules without being tracked in `opened_files` when
+                                        // it was created externally (e.g. by `kcl import` or a
+                                        // build step) and never received a `did_open`
+                                        // notification from the editor. Skip the per-workspace
+                                        // tracking in that case instead of panicking — the
+                                        // outer `may_contain = true` still records that the
+                                        // workspace already knows about the file.
                                         let mut openfiles = self.opened_files.write();
-                                        let file_info = openfiles.get_mut(&file.file_id).unwrap();
-                                        file_info.workspaces.insert(workspace.clone());
+                                        match openfiles.get_mut(&file.file_id) {
+                                            Some(file_info) => {
+                                                file_info.workspaces.insert(workspace.clone());
+                                            }
+                                            None => {
+                                                self.log_message(format!(
+                                                    "File {:?} (file_id {:?}) is in workspace {:?} modules but not in opened_files; skipping per-workspace tracking",
+                                                    filename, file.file_id, workspace
+                                                ));
+                                            }
+                                        }
                                         drop(openfiles);
                                         may_contain = true;
                                     }
