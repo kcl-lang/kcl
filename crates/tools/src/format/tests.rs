@@ -229,6 +229,34 @@ fn test_format_leaves_source_unchanged_on_parse_error() {
     );
 }
 
+/// Regression test for #2140: with `omit_errors: true`, the formatter must
+/// only bail out on actual syntax errors. Semantic errors such as
+/// `CannotFindModule` (e.g. an import that can't be resolved on disk)
+/// don't corrupt the AST, and the pretty-printer can still re-render it.
+#[test]
+fn test_format_proceeds_with_semantic_errors() {
+    let opts = FormatOptions {
+        is_stdout: false,
+        recursively: false,
+        omit_errors: true,
+        ..Default::default()
+    };
+    // `a` does not exist on disk, so the parser reports `CannotFindModule`,
+    // but the source itself is syntactically valid KCL. The input is
+    // intentionally mis-formatted (extra blank lines, no blank line before
+    // `a=1`) so the formatter has something to do.
+    let src = "import a\n\n\n\na=1\n";
+    let (formatted, changed) = format_source("semantic_only.k", src, &opts).unwrap();
+    assert!(
+        changed,
+        "format_source should still reformat when only semantic errors are present; got {formatted:?}"
+    );
+    assert_ne!(
+        formatted, src,
+        "format_source should still reformat when only semantic errors are present"
+    );
+}
+
 #[test]
 fn test_format_integration_konfig() -> Result<()> {
     let konfig_path = Path::new(".")
