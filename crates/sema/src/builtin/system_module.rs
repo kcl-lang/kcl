@@ -929,8 +929,15 @@ register_datetime_member! {
                 default_value: None,
                 range: dummy_range(),
             },
+            Parameter {
+                name: "ticks".to_string(),
+                ty: Type::float_ref(),
+                has_default: true,
+                default_value: None,
+                range: dummy_range(),
+            },
         ],
-        r#"Return the local time format. e.g. 'Sat Jun 06 16:26:11 1998' or format the combined date and time per the specified format string, and the default date format is "%a %b %d %H:%M:%S %Y"."#,
+        r#"Return the local time format. e.g. 'Sat Jun 06 16:26:11 1998' or format the combined date and time per the specified format string, and the default date format is "%a %b %d %H:%M:%S %Y". When the optional `ticks` argument (seconds since the Unix epoch) is provided, that instant is formatted instead of the current time."#,
         false,
         None,
     )
