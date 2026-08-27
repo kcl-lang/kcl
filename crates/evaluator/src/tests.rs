@@ -1669,6 +1669,116 @@ bar = _bar
 }
 
 #[test]
+fn test_issue_1835_mixin_if_elif_unsetting() {
+    // Regression test for issue https://github.com/kcl-lang/kcl/issues/1835
+    //
+    // An `if ... elif ...` chain inside a mixin emits two setters for the
+    // shared outer statement: one `If` and one `OrElse`. When the first
+    // branch's condition is true, the `OrElse` replay is a no-op (the
+    // `backtrack_only_or_else` walk returns immediately). The original
+    // `SchemaEvalContext::get_value` then cached the still-`Undefined`
+    // value from the lazy-scope default instead of continuing to walk the
+    // setter on the `If` branch, so reads of the variable resolved to
+    // `Undefined` (or to the `or` fallback) instead of the accumulated
+    // list.
+    //
+    // The simpler `OneCondMixin` (one `if`, no `elif`) does not trip the
+    // bug because it has one fewer setter, so the `If` replay is the
+    // backtrack entry-point and the `Undefined` is never cached.
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"mixin OneCondMixin:
+    _a: [str] = []
+    _a += ["text1"]
+    if mod == "m":
+        _a += ["text2"]
+
+mixin TwoCondMixin:
+    _a: [str] = []
+    _a += ["text1"]
+    if mod == "m":
+        _a += ["text2"]
+    elif mod == "n":
+        _a += ["text3"]
+
+schema OneCondSchema:
+    mixin [OneCondMixin]
+    mod: str
+    a: [str] = _a or ["dummy"]
+
+schema TwoCondSchema:
+    mixin [TwoCondMixin]
+    mod: str
+    a: [str] = _a or ["dummy"]
+
+ocs = OneCondSchema { mod = "m" }
+tcs = TwoCondSchema { mod = "m" }
+"#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator.run().expect("program must evaluate successfully");
+    // Both schemas must produce the accumulated list, not the `or`
+    // fallback. Before the fix `tcs.a` was `["dummy"]`.
+    assert_eq!(
+        output,
+        r#"{"ocs": {"mod": "m", "a": ["text1", "text2"]}, "tcs": {"mod": "m", "a": ["text1", "text2"]}}"#
+    );
+}
+
+#[test]
+fn test_issue_1835_mixin_if_elif_unsetting_else_branch() {
+    // Companion: when the *first* branch is false and the elif branch
+    // picks the value, the `If` replay is the no-op and the `OrElse`
+    // replay must drive the value. This exercises the path where the
+    // no-op detector has to skip an `If` setter, not an `OrElse` setter.
+    // When neither branch matches, the accumulated default list remains.
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"mixin TwoCondMixin:
+    _a: [str] = []
+    _a += ["text1"]
+    if mod == "m":
+        _a += ["text2"]
+    elif mod == "n":
+        _a += ["text3"]
+
+schema TwoCondSchema:
+    mixin [TwoCondMixin]
+    mod: str
+    a: [str] = _a or ["dummy"]
+
+tcs_m = TwoCondSchema { mod = "m" }
+tcs_n = TwoCondSchema { mod = "n" }
+tcs_z = TwoCondSchema { mod = "z" }
+"#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator.run().expect("program must evaluate successfully");
+    assert_eq!(
+        output,
+        r#"{"tcs_m": {"mod": "m", "a": ["text1", "text2"]}, "tcs_n": {"mod": "n", "a": ["text1", "text3"]}, "tcs_z": {"mod": "z", "a": ["text1"]}}"#
+    );
+}
+
+#[test]
 fn test_issue_1833_nested_if_else_no_replayed_side_effects() {
     // Regression test for issue https://github.com/kcl-lang/kcl/issues/1833
     // An `if`/`else` nested inside an outer `if` emits one setter per branch,
