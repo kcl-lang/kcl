@@ -1667,3 +1667,118 @@ bar = _bar
         log
     );
 }
+
+#[test]
+fn test_issue_1833_nested_if_else_no_replayed_side_effects() {
+    // Regression test for issue https://github.com/kcl-lang/kcl/issues/1833
+    // An `if`/`else` nested inside an outer `if` emits one setter per branch,
+    // both pointing at the same outer statement, yet only one branch can ever
+    // run. The per-assignment counter therefore never reached the setter count,
+    // the value was never cached, and every read of `_namespace` / `_items`
+    // replayed the whole outer statement — re-running the `print` calls.
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"_oxr: {str:} = {
+    metadata = {name = "fastapi-gateway"}
+    spec = {}
+}
+print("running main")
+if _oxr.spec.values == Undefined:
+    print("In if")
+    if not _oxr.metadata.labels:
+        _namespace = "default_namespace"
+    else:
+        _namespace = _oxr.metadata.labels["crossplane.io/claim-namespace"]
+    print(_namespace)
+    _items = [{"namespace": _namespace}]
+else:
+    print("in else")
+    _items = []
+
+items = _items
+"#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator.run().expect("program must evaluate successfully");
+    // Before the fix the log repeated "In if" three times and "default_namespace" twice.
+    let log = evaluator.runtime_ctx.borrow().log_message.clone();
+    assert_eq!(
+        log, "running main\nIn if\ndefault_namespace\n",
+        "each statement must run exactly once; got log:\n{}",
+        log
+    );
+    assert_eq!(output, r#"{"items": [{"namespace": "default_namespace"}]}"#);
+}
+
+#[test]
+fn test_issue_1833_read_inside_if_does_not_replay_aug_assign() {
+    // Regression test for issue https://github.com/kcl-lang/kcl/issues/1833
+    // Reading a variable in the middle of the `if` statement that owns its
+    // setters used to replay that statement, applying `_a += 1` twice and
+    // yielding `b = 3` instead of `b = 2` (and printing "mid" twice).
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"if True:
+    _a = 1
+    print("mid ${_a}")
+    _a += 1
+b = _a
+"#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator.run().expect("program must evaluate successfully");
+    let log = evaluator.runtime_ctx.borrow().log_message.clone();
+    assert_eq!(
+        log, "mid 1\n",
+        "the `if` body must run exactly once; got log:\n{}",
+        log
+    );
+    assert_eq!(output, r#"{"b": 2}"#);
+}
+
+#[test]
+fn test_issue_1833_forward_reference_still_backtracks() {
+    // Companion to the tests above: a genuine forward reference (the read
+    // happens before any setter assigned the key) must keep using the
+    // backtracking path, otherwise it would resolve to `Undefined`.
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"if True:
+    if True:
+        _x = 1
+    else:
+        _x = 2
+b = _x
+"#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator.run().expect("program must evaluate successfully");
+    assert_eq!(output, r#"{"b": 1}"#);
+}

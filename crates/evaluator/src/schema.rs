@@ -154,6 +154,7 @@ impl SchemaEvalContext {
                     cal_times: other.cal_times.clone(),
                     setters: other.setters.clone(),
                     resolved: other.resolved.clone(),
+                    entered_stmts: other.entered_stmts.clone(),
                 })))
             }
         }

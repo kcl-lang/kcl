@@ -54,9 +54,42 @@ pub struct LazyEvalScope {
     /// Keys whose cached value was resolved from a later setter via backtracking.
     /// An earlier-precedence setter must not overwrite such a resolved entry.
     pub resolved: IndexSet<String>,
+    /// AST ids of the statements the eager (non-backtracking) walk has already
+    /// entered. Used by [`Self::setters_already_run`].
+    pub entered_stmts: IndexSet<AstIndex>,
 }
 
 impl LazyEvalScope {
+    /// Whether every setter of `key` belongs to a statement that the eager walk
+    /// has already entered, and `key` has already been assigned at least once.
+    ///
+    /// When that holds, the variable in scope already carries the value produced
+    /// by every setter that can still run, so backtracking would only replay
+    /// statements whose effect is already applied — duplicating their side
+    /// effects (`print` output, `+=` accumulation, ...). See issue #1833.
+    ///
+    /// A single statement routinely contributes several setters for the same
+    /// key: an `if`/`else` nested inside an outer `if` emits one setter per
+    /// branch, both pointing at the same outer statement, yet only one branch
+    /// can ever run. The per-assignment counter in [`Self::cal_increment`] then
+    /// never reaches the setter count and the value is never cached, so every
+    /// read triggers a replay.
+    ///
+    /// The `cal_times` guard keeps genuine forward references (a read that
+    /// happens before any setter assigned the key) on the normal backtracking
+    /// path, where the replay is what produces the value in the first place.
+    pub fn setters_already_run(&self, key: &str) -> bool {
+        if *self.cal_times.get(key).unwrap_or(&0) == 0 {
+            return false;
+        }
+        match self.setters.get(key) {
+            Some(setters) if !setters.is_empty() => setters
+                .iter()
+                .all(|setter| self.entered_stmts.contains(&setter.stmt_id)),
+            _ => false,
+        }
+    }
+
     #[inline]
     pub fn is_backtracking(&self, key: &str) -> bool {
         let level = self.levels.get(key).unwrap_or(&0);
@@ -341,7 +374,20 @@ impl<'ctx> Evaluator<'ctx> {
                         let scope = lazy_scopes.get(pkgpath).expect(INTERNAL_ERROR_MSG);
                         scope.setters.get(key).cloned()
                     };
+                    let already_run = {
+                        let lazy_scopes = self.lazy_scopes.borrow();
+                        let scope = lazy_scopes.get(pkgpath).expect(INTERNAL_ERROR_MSG);
+                        scope.setters_already_run(key)
+                    };
                     match &setters {
+                        // Every setter that can still run has already run, so the
+                        // variable holds the value the reader expects. Replaying
+                        // them would only duplicate side effects. See issue #1833.
+                        // The value is deliberately not cached: later setters of
+                        // the same statement may still refine it.
+                        Some(setters) if !setters.is_empty() && already_run => {
+                            self.get_variable_in_pkgpath(key, pkgpath)
+                        }
                         Some(setters) if !setters.is_empty() => {
                             // Call all setters function to calculate the value recursively.
                             let level = {
@@ -417,6 +463,22 @@ impl<'ctx> Evaluator<'ctx> {
             && scope.cache.get(key).is_none()
         {
             scope.cache.insert(key.to_string(), value.clone());
+        }
+    }
+
+    /// Record that the eager (non-backtracking) walk has entered the statement
+    /// `stmt_id`, so [`LazyEvalScope::setters_already_run`] can tell that its
+    /// setters no longer need to be replayed.
+    #[inline]
+    pub(crate) fn mark_stmt_entered(&self, stmt_id: &AstIndex) {
+        // Only the eager pass establishes values; replays must not count.
+        if !self.backtrack_meta.borrow().is_empty() {
+            return;
+        }
+        let pkgpath = self.current_pkgpath();
+        let mut lazy_scopes = self.lazy_scopes.borrow_mut();
+        if let Some(scope) = lazy_scopes.get_mut(&pkgpath) {
+            scope.entered_stmts.insert(stmt_id.clone());
         }
     }
 
