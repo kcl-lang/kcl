@@ -992,7 +992,9 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
     #[inline]
     fn walk_config_expr(&self, config_expr: &'ctx ast::ConfigExpr) -> Self::Result {
         self.enter_scope();
+        self.enter_config_entry_scope();
         defer! {
+            self.leave_config_entry_scope();
             self.leave_scope();
         }
 
@@ -1766,6 +1768,9 @@ impl<'ctx> Evaluator<'ctx> {
     pub(crate) fn walk_config_entries(&self, items: &'ctx [NodeRef<ConfigEntry>]) -> EvalResult {
         let mut config_value = self.dict_value();
         for item in items {
+            // Nested schema bodies clear the local variable marks, so re-assert
+            // the ones owned by this config scope before reading the next entry.
+            self.restore_config_entry_vars();
             let value = self.walk_expr(&item.node.value)?;
             if let Some(key_node) = &item.node.key {
                 let mut insert_index = None;
@@ -1812,6 +1817,12 @@ impl<'ctx> Evaluator<'ctx> {
                 if let Some(name) = &optional_name {
                     let value = self.dict_get_value(&config_value, name);
                     self.add_or_update_local_variable_within_scope(name, value);
+                    // The entry is now bound in the current config scope, so the
+                    // following sibling entries must read it from there. Without
+                    // this mark, a name that also exists as an attribute of an
+                    // enclosing schema would be resolved against that schema
+                    // instead of the value just assigned here.
+                    self.mark_config_entry_var(name);
                 }
             } else {
                 // If the key does not exist, execute the logic of unpacking expression `**expr` here.
