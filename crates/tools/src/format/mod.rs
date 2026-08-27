@@ -7,6 +7,7 @@
 //! to print it as source code string.
 use anyhow::Result;
 use kcl_ast_pretty::print_ast_module_with_config;
+use kcl_error::{DiagnosticId, ErrorKind};
 use kcl_parser::get_kcl_files;
 use std::path::Path;
 
@@ -102,8 +103,23 @@ pub fn format_source(file: &str, src: &str, opts: &FormatOptions) -> Result<(Str
         // `import gateway\n\napi.v1 as x`). Returning the original source
         // matches what most formatters do on syntax errors and avoids
         // silently rewriting a user's broken file. See issue #1882.
+        //
+        // Only bail on actual syntax errors. Other diagnostics the parser
+        // can produce alongside a valid AST (e.g. `CannotFindModule` for an
+        // unresolved import) do not corrupt the pretty-printer's output, so
+        // we still format the file in those cases.
         let result = parse_single_file(file, Some(src.to_string()))?;
-        if !result.errors.is_empty() {
+        if result.errors.iter().any(|e| {
+            matches!(
+                e.code,
+                Some(DiagnosticId::Error(
+                    ErrorKind::InvalidSyntax
+                        | ErrorKind::TabError
+                        | ErrorKind::IndentationError
+                        | ErrorKind::IllegalArgumentSyntax
+                ))
+            )
+        }) {
             return Ok((src.to_string(), false));
         }
         result.module
