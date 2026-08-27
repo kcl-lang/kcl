@@ -112,6 +112,50 @@ pub(crate) struct LanguageServerState {
     /// Actively monitor file system changes. These changes will not be notified through lsp,
     /// e.g., execute `kcl mod add xxx`, `kcl fmt xxx`
     pub fs_event_watcher: Option<FSEventWatcher>,
+    /// Last time (per path) we forwarded a `kcl.mod` / `kcl.yaml` Modify
+    /// event to the file-watcher pipeline. Used to debounce rapid bursts
+    /// of Modify events (editors flush several writes per save, and a
+    /// `kcl mod` invocation may modify kcl.mod multiple times before the
+    /// vendor files land on disk). Without this guard, a future
+    /// self-induced write to kcl.mod could trigger an infinite recompile
+    /// loop; with it, only a single ingest pass runs per debounce
+    /// window. See issue #1623.
+    last_mod_change: Arc<RwLock<ModChangeDebouncer>>,
+}
+
+/// Debounce window for `kcl.mod` / `kcl.yaml` Modify events.
+const MOD_CHANGE_DEBOUNCE: Duration = Duration::from_millis(500);
+
+/// Per-path timestamp tracker used to coalesce `kcl.mod` / `kcl.yaml`
+/// Modify events that arrive close together. Wrapped in its own tiny
+/// type so it is trivially unit-testable.
+#[derive(Default)]
+pub(crate) struct ModChangeDebouncer {
+    last: HashMap<PathBuf, Instant>,
+}
+
+impl ModChangeDebouncer {
+    /// Returns `true` when at least one of `paths` was seen within the
+    /// debounce window. The caller should drop the Modify event in that
+    /// case.
+    pub(crate) fn should_skip(&self, paths: &[PathBuf]) -> bool {
+        let now = Instant::now();
+        paths.iter().any(|p| {
+            self.last
+                .get(p)
+                .map(|t| now.duration_since(*t) < MOD_CHANGE_DEBOUNCE)
+                .unwrap_or(false)
+        })
+    }
+
+    /// Record the current instant for every `path` so subsequent
+    /// [`Self::should_skip`] calls report them as recently handled.
+    pub(crate) fn mark(&mut self, paths: &[PathBuf]) {
+        let now = Instant::now();
+        for p in paths {
+            self.last.insert(p.clone(), now);
+        }
+    }
 }
 
 /// A snapshot of the state of the language server
@@ -190,6 +234,7 @@ impl LanguageServerState {
             temporary_workspace: Arc::new(RwLock::new(HashMap::new())),
             workspace_folders: initialize_params.workspace_folders.clone(),
             fs_event_watcher,
+            last_mod_change: Arc::new(RwLock::new(ModChangeDebouncer::default())),
         };
 
         state.init_workspaces();
@@ -209,11 +254,13 @@ impl LanguageServerState {
                         {
                             let paths = e.paths;
                             let kcl_config_file: Vec<PathBuf> = filter_kcl_config_file(&paths);
-                            if !kcl_config_file.is_empty() {
-                                // TODO: wait for fix `kcl mod metadata` to read only. Otherwise it will lead to an infinite loop
-                                // return Some(Event::FileWatcher(
-                                //     FileWatcherEvent::ChangedConfigFile(kcl_config_file),
-                                // ));
+                            if !kcl_config_file.is_empty()
+                                && !self.skip_recent_mod_change(&kcl_config_file)
+                            {
+                                self.mark_mod_change_handled(&kcl_config_file);
+                                return Some(Event::FileWatcher(FileWatcherEvent::Changed(
+                                    kcl_config_file,
+                                )));
                             }
                         }
                     }
@@ -245,6 +292,21 @@ impl LanguageServerState {
             recv(receiver) -> msg => msg.ok().map(Event::Lsp),
             recv(self.task_receiver) -> task => Some(Event::Task(task.unwrap())),
         }
+    }
+
+    /// Returns `true` when at least one of `paths` is a `kcl.mod` /
+    /// `kcl.yaml` Modify event that arrived inside the debounce window
+    /// tracked by [`Self::mark_mod_change_handled`]. Used to dedupe
+    /// editor flushes and avoid the self-recompile concern from #1623.
+    fn skip_recent_mod_change(&self, paths: &[PathBuf]) -> bool {
+        self.last_mod_change.read().should_skip(paths)
+    }
+
+    /// Record that we are about to handle a Modify event for the given
+    /// config paths so that any subsequent Modify events within the
+    /// debounce window are coalesced.
+    fn mark_mod_change_handled(&self, paths: &[PathBuf]) {
+        self.last_mod_change.write().mark(paths)
     }
 
     /// Runs the language server to completion
@@ -306,7 +368,7 @@ impl LanguageServerState {
     }
 
     /// Process vfs changed file. Update db cache when create(did_open_file), modify(did_change) or delete(did_close_file) vfs files.
-    fn process_changed_file(&mut self, file: ChangedFile) {
+    pub(crate) fn process_changed_file(&mut self, file: ChangedFile) {
         match file.change_kind {
             // open file
             ChangeKind::Create => {
@@ -325,9 +387,26 @@ impl LanguageServerState {
                             match state {
                                 DBState::Ready(db) => {
                                     if db.prog.modules.contains_key(&filename) {
+                                        // The file may be present in a workspace's compiled
+                                        // modules without being tracked in `opened_files` when
+                                        // it was created externally (e.g. by `kcl import` or a
+                                        // build step) and never received a `did_open`
+                                        // notification from the editor. Skip the per-workspace
+                                        // tracking in that case instead of panicking — the
+                                        // outer `may_contain = true` still records that the
+                                        // workspace already knows about the file.
                                         let mut openfiles = self.opened_files.write();
-                                        let file_info = openfiles.get_mut(&file.file_id).unwrap();
-                                        file_info.workspaces.insert(workspace.clone());
+                                        match openfiles.get_mut(&file.file_id) {
+                                            Some(file_info) => {
+                                                file_info.workspaces.insert(workspace.clone());
+                                            }
+                                            None => {
+                                                self.log_message(format!(
+                                                    "File {:?} (file_id {:?}) is in workspace {:?} modules but not in opened_files; skipping per-workspace tracking",
+                                                    filename, file.file_id, workspace
+                                                ));
+                                            }
+                                        }
                                         drop(openfiles);
                                         may_contain = true;
                                     }

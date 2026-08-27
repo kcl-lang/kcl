@@ -2,7 +2,7 @@
 
 extern crate chrono;
 
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime, prelude::Local};
+use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, prelude::Local};
 
 use crate::*;
 
@@ -24,7 +24,12 @@ pub unsafe extern "C-unwind" fn kcl_datetime_today(
 
 /// Return the local time format. e.g. 'Sat Jun 06 16:26:11 1998' or format the combined date and time per the specified format string,
 /// and the default date format is "%a %b %d %H:%M:%S %Y".
-/// `now() -> str`
+///
+/// When the optional `ticks` argument (seconds since the Unix epoch, as returned
+/// by `ticks()`) is provided, that instant is formatted instead of the current
+/// time. This allows rendering arbitrary past or future dates. The instant is
+/// rendered in the local time zone, matching the no-argument behavior.
+/// `now(format: str = "%a %b %d %H:%M:%S %Y", ticks: float = None) -> str`
 /// # Safety
 /// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
@@ -33,13 +38,29 @@ pub unsafe extern "C-unwind" fn kcl_datetime_now(
     args: *const kcl_value_ref_t,
     kwargs: *const kcl_value_ref_t,
 ) -> *const kcl_value_ref_t {
-    let s = Local::now();
     let ctx = unsafe { mut_ptr_as_ref(ctx) };
     let args = unsafe { ptr_as_ref(args) };
     let kwargs = unsafe { ptr_as_ref(kwargs) };
     let format = get_call_arg_str(args, kwargs, 0, Some("format"))
         .unwrap_or_else(|| "%a %b %d %H:%M:%S %Y".to_string());
-    ValueRef::str(&s.format(&format).to_string()).into_raw(ctx)
+    let formatted = match get_call_arg_num(args, kwargs, 1, Some("ticks")) {
+        Some(ticks) => match ticks_to_local(ticks) {
+            Some(dt) => dt.format(&format).to_string(),
+            None => panic!("now() got an out-of-range 'ticks' value: {ticks}"),
+        },
+        None => Local::now().format(&format).to_string(),
+    };
+    ValueRef::str(&formatted).into_raw(ctx)
+}
+
+/// Convert `ticks` (seconds since the Unix epoch, with optional fractional
+/// seconds) into a local-time `DateTime`. Returns `None` when the value cannot
+/// be represented as a valid date-time.
+#[inline]
+fn ticks_to_local(ticks: f64) -> Option<DateTime<Local>> {
+    let secs = ticks.trunc() as i64;
+    let nsecs = (ticks.fract().abs() * 1_000_000_000.0).round() as u32;
+    DateTime::from_timestamp(secs, nsecs).map(|dt| dt.with_timezone(&Local))
 }
 
 /// Return the current time in seconds since the Epoch. Fractions of a second may be present if the system clock provides them.
@@ -158,4 +179,26 @@ pub unsafe extern "C-unwind" fn kcl_datetime_is_iso8601(
         return ValueRef::bool(is_valid).into_raw(ctx);
     }
     panic!("is_iso8601() missing 1 required positional argument: 'date'");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ticks_to_local;
+
+    #[test]
+    fn test_ticks_to_local_roundtrips_epoch() {
+        // `timestamp()` is the absolute instant (UTC epoch), independent of the
+        // local time zone, so this assertion is deterministic on any machine.
+        for ticks in [0.0_f64, 1_000_000_000.0, 1_700_000_000.0] {
+            let dt = ticks_to_local(ticks).expect("valid epoch must convert");
+            assert_eq!(dt.timestamp(), ticks as i64);
+        }
+    }
+
+    #[test]
+    fn test_ticks_to_local_fractional_seconds() {
+        let dt = ticks_to_local(1_000_000_000.5).expect("valid epoch must convert");
+        assert_eq!(dt.timestamp(), 1_000_000_000);
+        assert_eq!(dt.timestamp_subsec_millis(), 500);
+    }
 }
