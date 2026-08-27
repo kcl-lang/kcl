@@ -128,6 +128,7 @@ impl<'ctx> Resolver<'_> {
                         }),
                         index_signature: None,
                         decorators: vec![],
+                        body_has_stmts: false,
                     };
                     self.insert_object(
                         name,
@@ -679,6 +680,13 @@ impl<'ctx> Resolver<'_> {
                 .map(|doc| doc.node.clone())
                 .unwrap_or_default(),
         );
+        // Track whether the schema body contains any statement other than
+        // attribute definitions. Such statements (e.g. `if/elif/else`, schema
+        // attribute reassignments) may compute values for otherwise "required"
+        // attributes, so the resolver cannot statically determine whether an
+        // attribute is genuinely missing. This signal is consumed by
+        // `check_schema_required_attrs` to skip overly-aggressive diagnostics.
+        let mut body_has_stmts = false;
         for stmt in &schema_stmt.body {
             let (name, ty, is_optional, default, decorators, range) = match &stmt.node {
                 ast::Stmt::Unification(unification_stmt) => {
@@ -726,7 +734,10 @@ impl<'ctx> Resolver<'_> {
                         stmt.get_span_pos(),
                     )
                 }
-                _ => continue,
+                _ => {
+                    body_has_stmts = true;
+                    continue;
+                }
             };
             let base_attr_ty = match &parent_ty {
                 Some(ty) => ty.get_type_of_attr(&name).map_or(self.any_ty(), |ty| ty),
@@ -942,6 +953,7 @@ impl<'ctx> Resolver<'_> {
             }),
             index_signature,
             decorators,
+            body_has_stmts,
         };
         let schema_runtime_ty = kcl_runtime::schema_runtime_type(name, &self.ctx.pkgpath);
         self.ctx
@@ -1096,6 +1108,7 @@ impl<'ctx> Resolver<'_> {
             }),
             index_signature,
             decorators,
+            body_has_stmts: false,
         }
     }
 }

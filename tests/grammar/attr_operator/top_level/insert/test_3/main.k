@@ -23,6 +23,7 @@ config: Config {
 config: Config {
     main.name: "main"
     main: Main {
+        name = "main"
         env += [
             Env {name: "ENV_2", value: "2"}
         ]

@@ -1,6 +1,5 @@
-error[E3M38]: EvaluationError
- --> ${CWD}/main.k:5:1
+error[E2L23]: CompileError
+ --> ${CWD}/main.k:5:18
   |
 5 | person1 = Person {}
-  |  attribute 'name' of Person is required and can't be None or Undefined
-  |
+  |                  ^ attribute 'name'

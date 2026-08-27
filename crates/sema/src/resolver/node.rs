@@ -964,6 +964,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
                     def_ty.clone(),
                 );
                 self.clear_config_expr_context(init_stack_depth as usize, false);
+                // Surface missing required schema attributes as a compile-time
+                // diagnostic so editors (LSP) can flag them before runtime. See
+                // issue kcl-lang/kcl#2138.
+                self.check_schema_required_attrs(schema_expr, schema_ty);
                 if schema_ty.is_instance {
                     if !schema_expr.args.is_empty() || !schema_expr.kwargs.is_empty() {
                         self.handler.add_compile_error(

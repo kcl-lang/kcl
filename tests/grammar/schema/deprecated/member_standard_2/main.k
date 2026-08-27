@@ -5,5 +5,6 @@ schema Person:
     name: str = "default_deprecated"
 
 JohnDoe = Person {
+    lastName = "Doe"
     name = "override_deprecated"
 }

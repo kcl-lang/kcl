@@ -6,5 +6,5 @@ schema WithComponents:
     [name: str]: WithComponent = {name: name}
 
 components: WithComponents {
-    ws: WithComponent {}
+    ws: {}
 }

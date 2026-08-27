@@ -264,6 +264,12 @@ pub struct SchemaType {
     pub index_signature: Option<Box<SchemaIndexSignature>>,
     /// Schema decorators including self and attribute decorators.
     pub decorators: Vec<Decorator>,
+    /// Whether the schema body contains statements other than attribute
+    /// definitions (e.g. `if/elif/else`, expression statements, schema attribute
+    /// reassignments). Such statements may compute values for otherwise
+    /// "required" attributes, so the resolver cannot statically determine whether
+    /// an attribute is genuinely missing.
+    pub body_has_stmts: bool,
 }
 
 impl SchemaType {

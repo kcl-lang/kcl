@@ -1,6 +1,5 @@
-error[E3M38]: EvaluationError
-  --> ${CWD}/main.k:12:1
+error[E2L23]: CompileError
+  --> ${CWD}/main.k:11:17
    |
-12 |     spec.value = "value"
-   |  attribute 'name' of Config is required and can't be None or Undefined
-   |
+11 | config = Config {
+   |                 ^ attribute 'name'
