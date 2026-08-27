@@ -62,6 +62,8 @@ use kcl_ast::ast::Program;
 use kcl_error::Diagnostic as KCLDiagnostic;
 use kcl_parser::KCLModuleCache;
 
+use crate::analysis::{AnalysisDatabase, DBState};
+
 use lsp_types::Diagnostic;
 use lsp_types::DiagnosticRelatedInformation;
 use lsp_types::DiagnosticSeverity;
@@ -2046,4 +2048,96 @@ fn init_workspaces_with_ignored_dir_does_not_panic() {
     });
 
     let _ = std::fs::remove_dir_all(&base);
+}
+
+/// Regression test for kcl-lang/kcl#1830.
+///
+/// `process_changed_file` panicked with `Option::unwrap()` on a `None` value
+/// at `state.rs:329` (commit-era line `state.rs:323:90`) when VFS reported a
+/// `ChangeKind::Create` event for a file that was present in a workspace's
+/// compiled modules but had not been registered in `opened_files`. This
+/// happens in the wild when an external tool (e.g. `kcl import` writing into
+/// a generated `models/` tree) creates a `.k` file on disk after the LSP is
+/// already running, and the file happens to also be referenced from an
+/// already-compiled module.
+///
+/// The test wires up that exact mismatch (file in VFS + workspace modules,
+/// but NOT in `opened_files`) and asserts the create event is processed
+/// without panicking.
+#[test]
+fn process_changed_file_create_without_opened_file_does_not_panic() {
+    use crate::state::LanguageServerState;
+    use crossbeam_channel::unbounded;
+    use ra_ap_vfs::{ChangeKind, ChangedFile, FileId};
+    use std::sync::Arc;
+
+    // `Program.modules` uses `std::sync::RwLock` (see `kcl_ast::ast::Program`),
+    // so alias it explicitly to avoid clashing with the parking_lot RwLock
+    // already imported at the top of this file.
+    use std::sync::RwLock as StdRwLock;
+
+    // 1. Build a LanguageServerState without any workspace folders so
+    //    `init_workspaces` is a no-op and we control the state below.
+    let (tx, _rx) = unbounded::<lsp_server::Message>();
+    let mut state = LanguageServerState::new(tx, InitializeParams::default());
+
+    // 2. Add a file to VFS via `set_file_contents`, but DO NOT call
+    //    `on_did_open_text_document`, so it stays out of `opened_files`.
+    let tmp_dir = std::env::temp_dir().join(format!(
+        "kcl-lsp-1830-{}-{}",
+        std::process::id(),
+        chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+    ));
+    std::fs::create_dir_all(&tmp_dir).unwrap();
+    let filename = tmp_dir.join("generated.k");
+    std::fs::write(&filename, "x = 1\n").unwrap();
+
+    let file_id: FileId = {
+        let mut vfs = state.vfs.write();
+        let abs_path = ra_ap_vfs::AbsPathBuf::try_from(filename.clone()).unwrap();
+        let vfs_path: ra_ap_vfs::VfsPath = abs_path.into();
+        vfs.set_file_contents(vfs_path.clone(), Some(b"x = 1\n".to_vec()));
+        vfs.file_id(&vfs_path).expect("file just added to VFS")
+    };
+
+    // 3. Build an AnalysisDatabase whose `prog.modules` contains the same
+    //    path — that's what `db.prog.modules.contains_key(&filename)` checks
+    //    inside `process_changed_file`.
+    let mut prog = Program::default();
+    let mut module = kcl_ast::ast::Module::default();
+    module.filename = filename.to_string_lossy().into_owned();
+    let key = filename.to_string_lossy().into_owned();
+    prog.modules.insert(key, Arc::new(StdRwLock::new(module)));
+    let db = Arc::new(AnalysisDatabase {
+        prog,
+        gs: Default::default(),
+        diags: Default::default(),
+        schema_map: Default::default(),
+    });
+
+    // 4. Register it as a Ready workspace so the inner branch fires.
+    let workspace_kind = WorkSpaceKind::Folder(tmp_dir.clone());
+    state
+        .analysis
+        .workspaces
+        .write()
+        .insert(workspace_kind, DBState::Ready(db));
+
+    // 5. Sanity check: opened_files must NOT have this file_id, otherwise
+    //    the test isn't exercising the bug path.
+    assert!(
+        !state.opened_files.read().contains_key(&file_id),
+        "precondition: file_id {:?} must NOT be in opened_files to exercise #1830",
+        file_id
+    );
+
+    // 6. The actual regression check: this used to panic with
+    //    "called `Option::unwrap()` on a `None` value".
+    state.process_changed_file(ChangedFile {
+        file_id,
+        change_kind: ChangeKind::Create,
+    });
+
+    // 7. Clean up.
+    let _ = std::fs::remove_dir_all(&tmp_dir);
 }
