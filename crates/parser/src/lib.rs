@@ -532,7 +532,17 @@ fn find_packages(
     let is_external = is_external_pkg(pkg_path, opts, load_cache)?;
 
     // 3. Internal and external packages cannot be duplicated
-    if is_external.is_some() && is_internal.is_some() {
+    if let (Some(int), Some(ext)) = (&is_internal, &is_external) {
+        let int_files = if int.k_files.is_empty() {
+            String::new()
+        } else {
+            format!(" ({})", int.k_files.join(", "))
+        };
+        let ext_files = if ext.k_files.is_empty() {
+            String::new()
+        } else {
+            format!(" ({})", ext.k_files.join(", "))
+        };
         sess.1.write().add_error(
             ErrorKind::CannotFindModule,
             &[Message {
@@ -542,7 +552,10 @@ fn find_packages(
                     "the `{}` is found multiple times in the current package and vendor package",
                     pkg_path
                 ),
-                note: None,
+                note: Some(format!(
+                    "current package: {}{}\nvendor package: {}{}",
+                    int.pkg_root, int_files, ext.pkg_root, ext_files
+                )),
                 suggested_replacement: None,
             }],
         );

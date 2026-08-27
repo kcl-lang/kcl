@@ -470,6 +470,15 @@ fn test_import_vendor_with_same_internal_pkg() {
             assert_eq!(errors.len(), msgs.len());
             for (diag, m) in errors.iter().zip(msgs.iter()) {
                 assert_eq!(diag.messages[0].message, m.to_string());
+                // The diagnostic note must point to both conflicting packages (issue #1620).
+                let note = diag.messages[0]
+                    .note
+                    .as_deref()
+                    .expect("missing note on duplicate-package diagnostic");
+                assert!(
+                    note.contains("current package:") && note.contains("vendor package:"),
+                    "expected note to contain both paths, got: {note}"
+                );
             }
         }
         Err(_) => {
