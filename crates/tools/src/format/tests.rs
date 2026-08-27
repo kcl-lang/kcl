@@ -204,6 +204,31 @@ a: {
     }
 }
 
+/// When the file contains a syntax error (here: `-` is not a valid character
+/// in an import path), the parser's error recovery still produces a partial
+/// AST, but the pretty-printer re-renders it into well-formed but wrong code.
+/// The formatter must leave the source unchanged in that case so we don't
+/// silently corrupt the user's file. See issue #1882.
+#[test]
+fn test_format_leaves_source_unchanged_on_parse_error() {
+    let opts = FormatOptions {
+        is_stdout: false,
+        recursively: false,
+        omit_errors: true,
+        ..Default::default()
+    };
+    let src = "import gateway-api.v1 as gatewayApi_v1\n\n\nmyGateway = gatewayApi.Gateway {\n    spec = {}\n}\n";
+    let (formatted, changed) = format_source("issue1882.k", src, &opts).unwrap();
+    assert!(
+        !changed,
+        "format_source must report unchanged on syntax error"
+    );
+    assert_eq!(
+        formatted, src,
+        "format_source must leave the source unchanged on syntax error"
+    );
+}
+
 #[test]
 fn test_format_integration_konfig() -> Result<()> {
     let konfig_path = Path::new(".")
