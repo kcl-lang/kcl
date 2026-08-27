@@ -2076,8 +2076,7 @@ fn process_changed_file_create_without_opened_file_does_not_panic() {
     let mut module = kcl_ast::ast::Module::default();
     module.filename = filename.to_string_lossy().into_owned();
     let key = filename.to_string_lossy().into_owned();
-    prog.modules
-        .insert(key, Arc::new(StdRwLock::new(module)));
+    prog.modules.insert(key, Arc::new(StdRwLock::new(module)));
     let db = Arc::new(AnalysisDatabase {
         prog,
         gs: Default::default(),
