@@ -7,6 +7,7 @@
 //! to print it as source code string.
 use anyhow::Result;
 use kcl_ast_pretty::print_ast_module_with_config;
+use kcl_error::{DiagnosticId, ErrorKind};
 use kcl_parser::get_kcl_files;
 use std::path::Path;
 
@@ -95,7 +96,33 @@ pub fn format_file(file: &str, opts: &FormatOptions) -> Result<bool> {
 /// whether the source is changed.
 pub fn format_source(file: &str, src: &str, opts: &FormatOptions) -> Result<(String, bool)> {
     let module = if opts.omit_errors {
-        parse_single_file(file, Some(src.to_string()))?.module
+        // Even with `omit_errors`, surface any parse errors by leaving the
+        // source unchanged. The parser's error recovery still produces a
+        // partial AST, but the pretty-printer re-renders it into well-formed
+        // but wrong code (e.g. `import gateway-api.v1 as x` becomes
+        // `import gateway\n\napi.v1 as x`). Returning the original source
+        // matches what most formatters do on syntax errors and avoids
+        // silently rewriting a user's broken file. See issue #1882.
+        //
+        // Only bail on actual syntax errors. Other diagnostics the parser
+        // can produce alongside a valid AST (e.g. `CannotFindModule` for an
+        // unresolved import) do not corrupt the pretty-printer's output, so
+        // we still format the file in those cases.
+        let result = parse_single_file(file, Some(src.to_string()))?;
+        if result.errors.iter().any(|e| {
+            matches!(
+                e.code,
+                Some(DiagnosticId::Error(
+                    ErrorKind::InvalidSyntax
+                        | ErrorKind::TabError
+                        | ErrorKind::IndentationError
+                        | ErrorKind::IllegalArgumentSyntax
+                ))
+            )
+        }) {
+            return Ok((src.to_string(), false));
+        }
+        result.module
     } else {
         parse_file_force_errors(file, Some(src.to_string()))?
     };
