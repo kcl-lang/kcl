@@ -35,7 +35,6 @@ use kcl_sema::core::scope::{LocalSymbolScopeKind, ScopeKind};
 use kcl_sema::core::symbol::SymbolKind;
 use kcl_sema::resolver::doc::{SchemaDoc, parse_schema_doc_string};
 use kcl_sema::ty::{FunctionType, SchemaType, Type, TypeKind};
-use kcl_utils::path::PathPrefix;
 use lsp_types::{CompletionItem, CompletionItemKind, InsertTextFormat};
 
 use crate::util::{inner_most_expr_in_stmt, is_in_docstring};
