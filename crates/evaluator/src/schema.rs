@@ -454,28 +454,44 @@ impl SchemaEvalContext {
                         };
                         match &setters {
                             Some(setters) if !setters.is_empty() => {
-                                // Call all setters function to calculate the value recursively.
+                                // Backtrack through the setter list until a setter that
+                                // actually assigns `key` is found. A single statement can
+                                // emit several setters for the same key — most notably an
+                                // `if ... elif ...` chain emits one `If` and one `OrElse`
+                                // setter, both pointing at the outer statement. When the
+                                // outer `if` branch's condition is true, replaying the
+                                // `OrElse` setter is a no-op (the
+                                // `backtrack_only_or_else` walk returns immediately), but
+                                // the loop originally still cached the still-`Undefined`
+                                // default value — losing the value the `If` setter would
+                                // have produced. See issue #1835.
+                                //
+                                // Instead of caching whatever `self.value[key]` happens
+                                // to be after a single setter walk, walk successive setters
+                                // (in reverse, i.e. from the latest to the earliest) until
+                                // one actually writes to `key`. If every setter turns out
+                                // to be a no-op, fall back to the pre-backtrack `value`.
                                 let level = {
                                     let scope = scope.borrow();
                                     *scope.levels.get(key).unwrap_or(&0)
                                 };
-                                let next_level = level + 1;
-                                {
-                                    let mut scope = scope.borrow_mut();
-                                    scope.levels.insert(key.to_string(), next_level);
-                                }
                                 let n = setters.len();
-                                // Guard the subtraction: when the backtrack has exhausted
-                                // every setter for this key, fall back to the cached value
-                                // rather than panicking on a `usize` underflow.
-                                if next_level > n {
-                                    value
-                                } else {
-                                    let index = n - next_level;
+                                let mut current_level = level + 1;
+                                let mut resolved_value: ValueRef = value.clone();
+                                loop {
+                                    // Guard the subtraction: when the backtrack has
+                                    // exhausted every setter for this key, fall back to
+                                    // the cached value rather than panicking on a `usize`
+                                    // underflow.
+                                    if current_level > n {
+                                        break;
+                                    }
+                                    let index = n - current_level;
                                     // Track this lazy-replay so the eager `call_schema_body`
                                     // loop in `schema_body` can skip it instead of applying
-                                    // the same mixin setter a second time. Only count setters
-                                    // whose origin frame is one of this host's mixins.
+                                    // the same mixin setter a second time. Only count
+                                    // setters whose origin frame is one of this host's
+                                    // mixins.
                                     if let Some(mixin_idx) = setters[index].index {
                                         if let Some(name) = self.mixin_name_by_frame(mixin_idx) {
                                             let mut applied = self.applied_mixins.borrow_mut();
@@ -483,22 +499,36 @@ impl SchemaEvalContext {
                                             *entry += 1;
                                         }
                                     }
+                                    {
+                                        let mut scope = scope.borrow_mut();
+                                        scope.levels.insert(key.to_string(), current_level);
+                                    }
                                     // Call setter function
                                     s.walk_schema_stmts_with_setter(
                                         &self.node.body,
                                         &setters[index],
                                     )
                                     .expect(kcl_error::INTERNAL_ERROR_MSG);
-                                    {
-                                        let mut scope = scope.borrow_mut();
-                                        scope.levels.insert(key.to_string(), level);
-                                        let value = match self.value.get_by_key(key) {
-                                            Some(value) => value.clone(),
-                                            None => s.undefined_value(),
-                                        };
-                                        scope.cache.insert(key.to_string(), value.clone());
-                                        value
+                                    let new_value = match self.value.get_by_key(key) {
+                                        Some(value) => value.clone(),
+                                        None => s.undefined_value(),
+                                    };
+                                    // Did the setter actually assign the key? Only then
+                                    // is this the value we want to cache. An `Undefined`
+                                    // here means the walk was a no-op (e.g. an `OrElse`
+                                    // replay whose `if` condition was truth) and we
+                                    // must keep backtracking to the next setter.
+                                    if !new_value.is_undefined() {
+                                        resolved_value = new_value;
+                                        break;
                                     }
+                                    current_level += 1;
+                                }
+                                {
+                                    let mut scope = scope.borrow_mut();
+                                    scope.levels.insert(key.to_string(), level);
+                                    scope.cache.insert(key.to_string(), resolved_value.clone());
+                                    resolved_value
                                 }
                             }
                             _ => value,
