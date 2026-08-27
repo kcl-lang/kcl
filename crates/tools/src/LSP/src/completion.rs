@@ -480,56 +480,38 @@ fn completion_import_builtin_pkg() -> IndexSet<KCLCompletionItem> {
 
 fn completion_import_internal_pkg(
     program: &Program,
-    line_start_pos: &KCLPos,
+    _line_start_pos: &KCLPos,
 ) -> IndexSet<KCLCompletionItem> {
     let mut completions: IndexSet<KCLCompletionItem> = Default::default();
     if let Ok(entries) = fs::read_dir(program.root.clone()) {
         for entry in entries {
+            // KCL `import` statements always target a *package* (a directory),
+            // never a single `.k` file. A sibling file like `main.k` is therefore
+            // never a valid completion for `import …`, and previously slipped in
+            // here as a wrong completion suggestion (see kcl-lang/kcl#1736).
+            // Only suggest directories that contain at least one `.k` file — those
+            // are the sub-packages the user can actually `import`.
             if let Ok(entry) = entry
                 && let Ok(file_type) = entry.file_type()
+                && file_type.is_dir()
             {
-                // internal pkgs
-                if file_type.is_dir() {
-                    if let Ok(files) = get_kcl_files(entry.path(), true) {
-                        // skip folder if without kcl file
-                        if files.is_empty() {
-                            continue;
-                        }
-                    } else {
+                if let Ok(files) = get_kcl_files(entry.path(), true) {
+                    // skip folder if without kcl file
+                    if files.is_empty() {
                         continue;
-                    }
-                    if let Some(name) = entry.file_name().to_str() {
-                        completions.insert(KCLCompletionItem {
-                            label: name.to_string(),
-                            detail: None,
-                            documentation: None,
-                            kind: Some(KCLCompletionItemKind::Dir),
-                            insert_text: None,
-                            additional_text_edits: None,
-                        });
                     }
                 } else {
-                    // internal module
-                    let path = entry.path();
-                    if path.to_str().unwrap_or("").adjust_canonicalization()
-                        == line_start_pos.filename.adjust_canonicalization()
-                    {
-                        continue;
-                    }
-                    if let Some(extension) = path.extension()
-                        && extension == KCL_FILE_EXTENSION
-                        && let Some(name) = path.file_stem()
-                        && let Some(name) = name.to_str()
-                    {
-                        completions.insert(KCLCompletionItem {
-                            label: name.to_string(),
-                            detail: None,
-                            documentation: None,
-                            kind: Some(KCLCompletionItemKind::Module),
-                            insert_text: None,
-                            additional_text_edits: None,
-                        });
-                    }
+                    continue;
+                }
+                if let Some(name) = entry.file_name().to_str() {
+                    completions.insert(KCLCompletionItem {
+                        label: name.to_string(),
+                        detail: None,
+                        documentation: None,
+                        kind: Some(KCLCompletionItemKind::Dir),
+                        insert_text: None,
+                        additional_text_edits: None,
+                    });
                 }
             }
         }

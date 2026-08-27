@@ -1578,4 +1578,39 @@ mod tests {
         let node_ty_map = resolver::resolve_program(&mut program).node_ty_map;
         AdvancedResolver::resolve_program(&program, &mut gs, node_ty_map).unwrap();
     }
+
+    /// Regression test for issue #1736: when the legacy resolver fails to record a
+    /// type for a schema in `node_ty_map` (e.g., due to incremental cache
+    /// invalidation or a partial resolution failure), the advanced resolver used to
+    /// abort the entire program with `schema_ty not found`, taking down the LSP
+    /// until the user restarted it. The advanced resolver must instead skip
+    /// semantic enrichment for the affected schema and let the rest of the program
+    /// resolve normally.
+    #[test]
+    fn test_missing_schema_ty_does_not_abort_resolve_program() {
+        let sess = Arc::new(ParseSession::default());
+
+        let path = "src/advanced_resolver/test_data/schema_def_scope.k"
+            .to_string()
+            .replace("/", std::path::MAIN_SEPARATOR_STR);
+        let mut program = load_program(sess.clone(), &[&path], None, None)
+            .unwrap()
+            .program;
+        let mut gs = GlobalState::default();
+        Namer::find_symbols(&program, &mut gs);
+        let node_ty_map = resolver::resolve_program(&mut program).node_ty_map;
+
+        // Simulate the cache state that triggered the original bug: drop every
+        // entry from `node_ty_map` so neither `walk_schema_stmt` nor
+        // `walk_schema_expr` can find a type for any schema in the program.
+        {
+            let mut map = node_ty_map.borrow_mut();
+            map.clear();
+        }
+
+        // Before the fix this call propagated an `anyhow!` error from
+        // `walk_schema_stmt` and the LSP marked the workspace as `Failed`. With the
+        // fix the advanced resolver degrades gracefully and returns Ok.
+        AdvancedResolver::resolve_program(&program, &mut gs, node_ty_map).unwrap();
+    }
 }

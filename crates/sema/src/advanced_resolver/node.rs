@@ -228,16 +228,21 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'_> {
 
     fn walk_schema_stmt(&mut self, schema_stmt: &'ctx ast::SchemaStmt) -> Self::Result {
         let (start, end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
-        let schema_ty = self
+        // The legacy resolver populates node_ty_map for every schema name it processes,
+        // but in rare cases (incremental invalidation, cyclic imports, or partially-failed
+        // resolution) the entry may be missing. Treat that as a degraded resolution for
+        // this schema and skip semantic enrichment rather than aborting the entire
+        // program — the LSP must keep working even when a single schema cannot be
+        // resolved.
+        let Some(schema_ty) = self
             .ctx
             .node_ty_map
             .borrow()
             .get(&self.ctx.get_node_key(&schema_stmt.name.id)?)
-            .ok_or(anyhow!(
-                "schema_ty not found when walk schema stmt {:?}",
-                schema_stmt
-            ))?
-            .clone();
+            .cloned()
+        else {
+            return Ok(None);
+        };
         let schema_symbol = self
             .gs
             .get_symbols()
@@ -883,16 +888,18 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'_> {
 
     fn walk_schema_expr(&mut self, schema_expr: &'ctx ast::SchemaExpr) -> Self::Result {
         self.walk_identifier_expr(&schema_expr.name)?;
-        let schema_ty = self
+        // See `walk_schema_stmt` — if the legacy resolver did not record a type for
+        // this schema reference, skip semantic resolution for this expression rather
+        // than aborting.
+        let Some(schema_ty) = self
             .ctx
             .node_ty_map
             .borrow()
             .get(&self.ctx.get_node_key(&schema_expr.name.id)?)
-            .ok_or(anyhow!(
-                "schema_ty not found when walk schema expr {:?}",
-                schema_expr
-            ))?
-            .clone();
+            .cloned()
+        else {
+            return Ok(None);
+        };
         match schema_ty.kind {
             TypeKind::Schema(_) => {
                 self.expr(&schema_expr.config)?;
