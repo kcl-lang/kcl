@@ -1,0 +1,5 @@
+output:
+  child:
+    labels:
+      app: myapp
+      env: prod
