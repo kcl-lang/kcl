@@ -1892,3 +1892,76 @@ b = _x
     let (output, _) = evaluator.run().expect("program must evaluate successfully");
     assert_eq!(output, r#"{"b": 1}"#);
 }
+
+#[test]
+fn test_issue_1979_nested_schema_default_does_not_misfire_check() {
+    // Issue kcl-lang/kcl#1979: a parent schema attribute typed as a nested
+    // schema with an `= {}` default used to run the child's check block on
+    // the (empty) default before the user-supplied entry was merged,
+    // producing a spurious "len(labels) > 0" failure.
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"schema ParentObject:
+    child: ChildObject = {}
+
+schema ChildObject:
+    labels: {str:str}
+    check:
+        len(labels) > 0
+
+output = ParentObject{
+    child: {
+        labels = {"app": "myapp", "env": "prod"}
+    }
+}
+"#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator
+        .run()
+        .expect("program with nested schema default must not fail its check");
+    assert_eq!(
+        output,
+        r#"{"output": {"child": {"labels": {"app": "myapp", "env": "prod"}}}}"#
+    );
+}
+
+#[test]
+fn test_issue_1979_user_entry_replaces_default_for_list_attr() {
+    // Companion to the test above: when the user supplies an entry for a
+    // list-typed attribute, the supplied entry fully replaces the default.
+    // The fix removes the eager type-driven schema conversion on the
+    // default, but for plain list types the conversion was a no-op, so
+    // override behaviour must be preserved.
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"schema Foo:
+    items: [int] = [1, 2, 3]
+
+x = Foo{
+    items = [4, 5]
+}
+"#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator.run().expect("program must evaluate successfully");
+    assert_eq!(output, r#"{"x": {"items": [4, 5]}}"#);
+}

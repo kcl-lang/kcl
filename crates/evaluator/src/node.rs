@@ -543,35 +543,34 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                 is_override_op && without_index
             };
             if !is_override_attr {
-                let value = match &schema_attr.value {
-                    Some(value) => self.walk_expr(value)?,
-                    None => self.undefined_value(),
-                };
-                if let Some(op) = &schema_attr.op {
-                    match op {
-                        // Union
-                        ast::AugOp::BitOr => {
+                // The user supplied an entry for this attribute. Apply the
+                // default value as a fallback without running type-driven
+                // schema construction: the entry will be unioned next, and
+                // `value_union` already performs the necessary type
+                // conversion on the merged value. The eager type conversion
+                // in `schema_dict_merge` would otherwise build a schema
+                // instance from the (possibly empty or partial) default
+                // and run its check blocks before the entry is merged,
+                // producing spurious failures (issue kcl-lang/kcl#1979).
+                if let Some(default_expr) = &schema_attr.value {
+                    let default_value = self.walk_expr(default_expr)?;
+                    let value = match &schema_attr.op {
+                        Some(ast::AugOp::BitOr) => {
                             let org_value = schema_value
                                 .dict_get_value(name)
                                 .unwrap_or(self.undefined_value());
-                            let value = self.bit_or(org_value, value);
-                            self.schema_dict_merge(
-                                &mut schema_value,
-                                name,
-                                &value,
-                                &ast::ConfigEntryOperation::Override,
-                                None,
-                            );
+                            self.bit_or(org_value, default_value)
                         }
-                        // Assign
-                        _ => self.schema_dict_merge(
-                            &mut schema_value,
-                            name,
-                            &value,
-                            &ast::ConfigEntryOperation::Override,
-                            None,
-                        ),
-                    }
+                        _ => default_value,
+                    };
+                    self.dict_merge_key_value_pair(
+                        &mut schema_value,
+                        name,
+                        &value,
+                        ConfigEntryOperationKind::Override,
+                        None,
+                        false,
+                    );
                 }
             }
             self.value_union(&mut schema_value, &entry);
