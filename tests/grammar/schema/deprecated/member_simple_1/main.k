@@ -6,5 +6,6 @@ schema Person:
     name: str
 
 JohnDoe = Person {
+    lastName = "Doe"
     name: "deprecated"
 }

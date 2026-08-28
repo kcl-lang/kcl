@@ -951,6 +951,25 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
                         self.add_type_alias(&name, &ty_annotation_str);
                     }
                 }
+                // Surface missing required schema attributes as a compile-time
+                // diagnostic so editors (LSP) can flag them before runtime. See
+                // issue kcl-lang/kcl#2138.
+                //
+                // The check is skipped when the enclosing parent frame is a
+                // schema with an index signature, because the index signature
+                // default expression is not visible to the resolver and the
+                // runtime check at val_schema.rs:213-249 covers those cases
+                // (issue kcl-lang/kcl#2143, Case C).
+                let parent_has_index_signature =
+                    self.ctx.config_expr_context.iter().rev().nth(1).is_some_and(|frame| {
+                        frame.as_ref().is_some_and(|obj| {
+                            matches!(&obj.ty.kind, TypeKind::Schema(s) if s.index_signature.is_some())
+                        })
+                    });
+                let inherited_provided = self.ctx.current_schema_inherited_provided.clone();
+                if !parent_has_index_signature {
+                    self.check_schema_required_attrs(schema_expr, schema_ty, inherited_provided.as_ref());
+                }
                 let obj = self.new_config_expr_context_item(
                     &schema_ty.name,
                     def_ty.clone(),

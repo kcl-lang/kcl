@@ -1213,3 +1213,135 @@ fn test_resolve_program_invalid_mixin_error_count() {
         msgs
     );
 }
+
+#[test]
+fn test_resolve_program_missing_required_attr() {
+    let sess = Arc::new(ParseSession::default());
+
+    // Missing required attribute should surface a compile-time diagnostic.
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_fail_data/missing_required_attr_0.k"],
+        None,
+        None,
+    )
+    .unwrap()
+    .program;
+    let scope = resolve_program(&mut program);
+    assert_eq!(scope.handler.diagnostics.len(), 1);
+    let diag = &scope.handler.diagnostics[0];
+    assert_eq!(
+        diag.code,
+        Some(DiagnosticId::Error(ErrorKind::CompileError))
+    );
+    assert_eq!(
+        diag.messages[0].message,
+        "attribute 'name' of Person is required and can't be None or Undefined"
+    );
+
+    // Providing the attribute should produce no errors.
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_fail_data/missing_required_attr_1.k"],
+        None,
+        None,
+    )
+    .unwrap()
+    .program;
+    let scope = resolve_program(&mut program);
+    assert!(
+        scope.handler.diagnostics.is_empty(),
+        "{:?}",
+        scope.handler.diagnostics
+    );
+
+    // `**expr` unpacking is checked conservatively at runtime, so the
+    // resolver should not emit a false positive here.
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_fail_data/missing_required_attr_2.k"],
+        None,
+        None,
+    )
+    .unwrap()
+    .program;
+    let scope = resolve_program(&mut program);
+    assert!(
+        scope.handler.diagnostics.is_empty(),
+        "{:?}",
+        scope.handler.diagnostics
+    );
+
+    // Issue kcl-lang/kcl#2143, Case A: top-level unification across
+    // statements. After merge_program, both `age` and `name` end up in the
+    // same ConfigExpr.items list, so no diagnostic should be reported.
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_fail_data/missing_required_attr_top_unif_0.k"],
+        None,
+        None,
+    )
+    .unwrap()
+    .program;
+    let scope = resolve_program(&mut program);
+    assert!(
+        scope.handler.diagnostics.is_empty(),
+        "{:?}",
+        scope.handler.diagnostics
+    );
+
+    // Issue kcl-lang/kcl#2143, Case B: dotted-path keys. The pre-processor
+    // desugars `main.name` into a sibling `main: {name = "main"}` entry; the
+    // merge-aware check unions the provided attrs from siblings with the
+    // same key.
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_fail_data/missing_required_attr_dotted_0.k"],
+        None,
+        None,
+    )
+    .unwrap()
+    .program;
+    let scope = resolve_program(&mut program);
+    assert!(
+        scope.handler.diagnostics.is_empty(),
+        "{:?}",
+        scope.handler.diagnostics
+    );
+
+    // Issue kcl-lang/kcl#2143, Case D: nested unification inside a parent
+    // schema. After merge_program, both `age` and `name` end up in the same
+    // inner ConfigExpr.
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_fail_data/missing_required_attr_nested_unif_0.k"],
+        None,
+        None,
+    )
+    .unwrap()
+    .program;
+    let scope = resolve_program(&mut program);
+    assert!(
+        scope.handler.diagnostics.is_empty(),
+        "{:?}",
+        scope.handler.diagnostics
+    );
+
+    // Issue kcl-lang/kcl#2143, Case C: index-signature default. The parent
+    // schema has an index signature whose default expression is opaque to
+    // the resolver, so the static check should skip the inner schema expr.
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_fail_data/missing_required_attr_index_sig_0.k"],
+        None,
+        None,
+    )
+    .unwrap()
+    .program;
+    let scope = resolve_program(&mut program);
+    assert!(
+        scope.handler.diagnostics.is_empty(),
+        "{:?}",
+        scope.handler.diagnostics
+    );
+}

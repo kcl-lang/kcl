@@ -1,6 +1,5 @@
-error[E3M38]: EvaluationError
-  --> ${CWD}/main.k:12:1
+error[E2L23]: CompileError
+  --> ${CWD}/main.k:11:22
    |
-12 |         city: "NYC"
-   |  attribute 'street' of Address is required and can't be None or Undefined
-   |
+11 |     address: Address {
+   |                      ^ attribute 'street'

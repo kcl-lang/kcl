@@ -171,6 +171,15 @@ pub struct Context {
     /// callee resolves to `any` (the default installed before the
     /// lambda is processed in source order).
     pub global_lambda_tys: IndexMap<String, IndexMap<String, FunctionType>>,
+    /// Set of attribute names contributed by sibling config entries that
+    /// share the same first-name key as the schema expression currently
+    /// being type-checked. Populated by `walk_config_entries` and consumed
+    /// by `check_schema_required_attrs` so the static check understands
+    /// KCL's config-merge semantics (issue #2143). `None` means the
+    /// resolver has not computed an inherited set for the current schema
+    /// expression; the check then falls back to its conservative
+    /// pre-existing behaviour.
+    pub current_schema_inherited_provided: Option<IndexSet<String>>,
 }
 
 /// Resolve options.

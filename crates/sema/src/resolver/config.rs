@@ -1,4 +1,5 @@
-use std::{collections::HashSet, sync::Arc};
+use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 use super::{
     Resolver,
@@ -10,7 +11,7 @@ use crate::ty::{Type, TypeKind};
 use kcl_ast::ast;
 use kcl_ast::pos::GetPos;
 use kcl_error::{ErrorKind, Message, Position, Style, diagnostic::Range};
-use kcl_primitives::IndexMap;
+use kcl_primitives::{IndexMap, IndexSet};
 
 /// Config Expr type check state.
 ///
@@ -685,11 +686,43 @@ impl<'ctx> Resolver<'_> {
         let mut key_types: Vec<TypeRef> = vec![];
         let mut val_types: Vec<TypeRef> = vec![];
         let mut attrs: IndexMap<String, Attr> = Default::default();
+        // Pre-pass: for every entry whose key is a plain identifier or string
+        // literal, collect the first-name keys it provides (when its value is
+        // a SchemaExpr/ConfigExpr). This lets sibling entries that share the
+        // same first-name key contribute their attributes to a schema check
+        // (issue #2143). Keys we cannot reason about statically (subscripts,
+        // `**` unpacking) contribute nothing.
+        let mut provided_by_key: HashMap<String, IndexSet<String>> = HashMap::new();
+        let mut entry_first_key: Vec<Option<String>> = Vec::with_capacity(entries.len());
         for item in entries {
+            let entry_key = config_entry_first_name(&item.node.key);
+            entry_first_key.push(entry_key.clone());
+            if let Some(name) = entry_key {
+                let mut provided: IndexSet<String> = IndexSet::default();
+                collect_provided_from_value(&item.node.value.node, &mut provided);
+                if !provided.is_empty() {
+                    provided_by_key
+                        .entry(name)
+                        .or_default()
+                        .extend(provided);
+                }
+            }
+        }
+        for (idx, item) in entries.iter().enumerate() {
             let key = &item.node.key;
             let value = &item.node.value;
             let op = &item.node.operation;
             let mut stack_depth: usize = 0;
+            // Publish the union of provided-attribute names from sibling
+            // entries sharing the same first-name key so that a nested
+            // `check_schema_required_attrs` (invoked while walking `value`,
+            // either by `check_config_entry` below or by `self.expr(value)`
+            // in the per-key arms) can see them. This implements
+            // config-merge awareness for the static check (issue #2143).
+            let prev_inherited = self.ctx.current_schema_inherited_provided.take();
+            self.ctx.current_schema_inherited_provided = entry_first_key[idx]
+                .as_ref()
+                .and_then(|name| provided_by_key.get(name).cloned());
             let value_ty = self.check_config_entry(key, value);
             stack_depth += self.switch_config_expr_context_by_key(key);
             let val_ty = match key {
@@ -867,10 +900,191 @@ impl<'ctx> Resolver<'_> {
                 );
             }
             self.clear_config_expr_context(stack_depth, false);
+            // Restore the caller's inherited-provided context so that a
+            // sibling entry (which may run its own schema check) starts from
+            // the right baseline.
+            self.ctx.current_schema_inherited_provided = prev_inherited;
         }
         self.leave_scope();
         let key_ty = sup(&key_types);
         let val_ty = sup(&val_types);
         Type::dict_ref_with_attrs(key_ty, val_ty, attrs)
+    }
+
+    /// Check that every required schema attribute (non-optional and without a
+    /// default) is provided by the schema instance expression. This surfaces a
+    /// compile-time diagnostic so editors (LSP) can flag missing required
+    /// attributes before the program runs. The runtime check still fires for
+    /// cases the resolver cannot see through, e.g. `**` unpacking with an
+    /// untyped operand.
+    ///
+    /// The check is intentionally conservative and returns early (without
+    /// reporting) for several well-defined cases where the missing attribute
+    /// may be supplied through a mechanism the resolver cannot see through
+    /// statically:
+    /// - `is_instance` schema expressions (`existing { ... }`), which modify
+    ///   an existing instance that already provides every attribute.
+    /// - Schemas that declare mixins, which may inject the missing attribute.
+    /// - Schemas that inherit from a base schema, which may supply the
+    ///   attribute via the parent definition.
+    /// - Schema literals nested inside another schema body (e.g. as a default
+    ///   value expression), where the literal can be partially overridden
+    ///   later via attribute setting syntax (`attr.x = ...`).
+    /// - Schemas whose body contains statements that may compute attribute
+    ///   values (`if/elif/else`, body assignments, etc.).
+    /// - When `inherited_provided` is `None` and the schema body has an
+    ///   index signature, the resolver cannot know which attributes the
+    ///   runtime will inject via the index signature default expression.
+    pub(crate) fn check_schema_required_attrs(
+        &mut self,
+        schema_expr: &'ctx ast::SchemaExpr,
+        schema_ty: &SchemaType,
+        inherited_provided: Option<&IndexSet<String>>,
+    ) {
+        // Skip mixin schemas - their attribute set is open-ended.
+        if schema_ty.is_mixin {
+            return;
+        }
+        // If the schema has an index signature, additional keys may be
+        // supplied at runtime, so we cannot guarantee a missing required
+        // attribute is unrecoverable here.
+        if schema_ty.index_signature.is_some() {
+            return;
+        }
+        // Skip schema-instance expressions - they are modifications of
+        // existing instances that already provide all attrs.
+        if schema_ty.is_instance {
+            return;
+        }
+        // Mixins may inject the missing attributes.
+        if !schema_ty.mixins.is_empty() {
+            return;
+        }
+        // Inherited attributes may be provided by the base schema.
+        if schema_ty.base.is_some() {
+            return;
+        }
+        // Inside another schema body (e.g. `attr: Type = Schema { ... }` as
+        // a default value), the schema literal can be partially overridden
+        // later via attribute setting syntax (`attr.x = ...`).
+        if self.ctx.schema.is_some() {
+            return;
+        }
+        // If the schema body itself contains statements that may compute
+        // attribute values (if/else, body assignments, etc.), the resolver
+        // cannot decide statically whether an attribute is genuinely missing.
+        if schema_ty.body_has_stmts {
+            return;
+        }
+        let mut provided: IndexSet<String> = IndexSet::default();
+        // Attributes bound to positional args (e.g. `Person("Alice")`) match
+        // schema parameters by position.
+        for (i, _arg) in schema_expr.args.iter().enumerate() {
+            if let Some(param) = schema_ty.func.params.get(i) {
+                provided.insert(param.name.clone());
+            }
+        }
+        // Attributes bound to keyword args (e.g. `Person(name="Alice")`).
+        for kw in &schema_expr.kwargs {
+            let names = &kw.node.arg.node.names;
+            if !names.is_empty() {
+                provided.insert(names[0].node.clone());
+            }
+        }
+        // Attributes explicitly written in the config block.
+        if let ast::Expr::Config(config_expr) = &schema_expr.config.node {
+            for item in &config_expr.items {
+                match &item.node.key {
+                    Some(key) => match &key.node {
+                        ast::Expr::Identifier(identifier) => {
+                            if let Some(first) = identifier.names.first() {
+                                provided.insert(first.node.clone());
+                            }
+                        }
+                        ast::Expr::StringLit(string_lit) => {
+                            provided.insert(string_lit.value.clone());
+                        }
+                        // Unknown key forms are equivalent to `**` unpacking:
+                        // we cannot know which attribute names will be
+                        // supplied, so conservatively skip the check.
+                        _ => return,
+                    },
+                    // `**expr` unpacking - we cannot know which keys it will
+                    // supply without evaluating it, so conservatively skip.
+                    None => return,
+                }
+            }
+        } else {
+            return;
+        }
+        // Union in attributes provided by sibling entries that share the
+        // same first-name key (issue #2143). These are computed by
+        // `walk_config_entries` and stashed on the resolver context.
+        if let Some(inherited) = inherited_provided {
+            for name in inherited {
+                provided.insert(name.clone());
+            }
+        }
+        for (attr_name, attr) in &schema_ty.attrs {
+            if !attr.is_optional && !attr.has_default && !provided.contains(attr_name) {
+                let msg = format!(
+                    "attribute '{}' of {} is required and can't be None or Undefined",
+                    attr_name, schema_ty.name
+                );
+                self.handler
+                    .add_compile_error(&msg, schema_expr.config.get_span_pos());
+            }
+        }
+    }
+}
+
+/// Extract the first-name key from a config entry's key expression.
+///
+/// Returns:
+/// - `Some(name)` if the key is a plain identifier (e.g. `foo`) or string
+///   literal (e.g. `"foo"`).
+/// - `None` for subscripts, `**` unpacking, and any other shape that the
+///   resolver cannot reason about statically.
+fn config_entry_first_name(key: &Option<kcl_ast::ast::NodeRef<ast::Expr>>) -> Option<String> {
+    match key {
+        Some(key) => match &key.node {
+            ast::Expr::Identifier(identifier) => identifier
+                .names
+                .first()
+                .map(|n| n.node.clone()),
+            ast::Expr::StringLit(string_lit) => Some(string_lit.value.clone()),
+            _ => None,
+        },
+        None => None,
+    }
+}
+
+/// Collect the first-name keys provided by a config entry's value into `out`.
+///
+/// Only handles `Schema` and `Config` values; all other shapes are treated as
+/// opaque and contribute nothing. This mirrors the analysis in
+/// `check_schema_required_attrs` so the two stay in sync.
+fn collect_provided_from_value(value: &ast::Expr, out: &mut IndexSet<String>) {
+    match value {
+        ast::Expr::Schema(schema_expr) => {
+            if let ast::Expr::Config(config_expr) = &schema_expr.config.node {
+                collect_provided_from_config_items(&config_expr.items, out);
+            }
+        }
+        ast::Expr::Config(config_expr) => {
+            collect_provided_from_config_items(&config_expr.items, out);
+        }
+        _ => {}
+    }
+}
+
+fn collect_provided_from_config_items(
+    items: &[kcl_ast::ast::NodeRef<ast::ConfigEntry>],
+    out: &mut IndexSet<String>,
+) {
+    for item in items {
+        if let Some(name) = config_entry_first_name(&item.node.key) {
+            out.insert(name);
+        }
     }
 }
