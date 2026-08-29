@@ -1,0 +1,12 @@
+correct:
+  x: 1
+  'y': null
+from_json:
+  x: 1
+  'y': null
+from_yaml:
+  x: 1
+  'y': null
+nested:
+  x: 1
+  'y': null
