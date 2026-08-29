@@ -30,6 +30,38 @@ pub unsafe extern "C-unwind" fn kcl_file_read(
     panic!("read() takes exactly one argument (0 given)");
 }
 
+/// Read a file as raw bytes and return the contents encoded as a base64
+/// string. This is the binary-safe counterpart to [`kcl_file_read`]:
+/// while `read()` is a thin wrapper around `fs::read_to_string` and
+/// will fail on non-UTF-8 input, `readbase64()` accepts any byte
+/// sequence and round-trips it losslessly through the standard
+/// alphabet (RFC 4648 §4).
+///
+/// # Safety
+/// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers.
+#[unsafe(no_mangle)]
+pub unsafe extern "C-unwind" fn kcl_file_readbase64(
+    ctx: *mut kcl_context_t,
+    args: *const kcl_value_ref_t,
+    kwargs: *const kcl_value_ref_t,
+) -> *const kcl_value_ref_t {
+    let args = unsafe { ptr_as_ref(args) };
+    let kwargs = unsafe { ptr_as_ref(kwargs) };
+    let ctx = unsafe { mut_ptr_as_ref(ctx) };
+
+    if let Some(x) = get_call_arg_str(args, kwargs, 0, Some("filepath")) {
+        let bytes =
+            fs::read(&x).unwrap_or_else(|e| panic!("failed to access the file '{}': {}", x, e));
+        // Use the fully-qualified path so we don't collide with the
+        // local `kcl_runtime::base64` re-export that the runtime ships.
+        let encoded = ::base64::encode(&bytes);
+        let s = ValueRef::str(&encoded);
+        return s.into_raw(ctx);
+    }
+
+    panic!("readbase64() takes exactly one argument (0 given)");
+}
+
 /// # Safety
 /// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
 #[unsafe(no_mangle)]
