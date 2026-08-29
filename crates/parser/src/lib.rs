@@ -630,6 +630,92 @@ fn pkg_exists_in_path(path: &str, pkgpath: &str, load_cache: &mut ParseLoadCache
     exists
 }
 
+/// Compute the canonical [`pkgpath`] for [`pkgpath`] under [`pkgroot`].
+///
+/// KCL allows importing a single file via its dotted path (e.g. `import a.b.c`
+/// where the file is `a/b/c.k`). When the file also lives inside a directory
+/// that itself acts as a package (i.e. the directory `a/b/` contains other
+/// `.k` files), importing the file via either the directory form (`import
+/// a.b`) or the single-file form (`import a.b.c`) must yield the same
+/// canonical package. Otherwise the same [`SchemaType`] is registered twice
+/// under different pkgpaths and the type checker fails with confusing
+/// "expected X, got X" errors (see issue #1970).
+///
+/// This function returns the directory pkgpath when the single-file form
+/// would resolve to exactly the same file set as the directory form. That
+/// is the case only when the parent directory contains exactly one `.k`
+/// file: the file being imported. Otherwise the directory and single-file
+/// forms refer to genuinely different sets of files, and we leave the
+/// original pkgpath untouched to preserve the existing semantics.
+fn canonical_pkg_path(pkgroot: &str, pkgpath: &str) -> String {
+    let mut pathbuf = PathBuf::from(pkgroot);
+    for s in pkgpath.split('.') {
+        pathbuf.push(s);
+    }
+    // Already a directory package: nothing to canonicalize.
+    if pathbuf.is_dir() {
+        return pkgpath.to_string();
+    }
+    // Must resolve to a single .k file for the rewrite to apply.
+    let as_k_file = pathbuf.with_extension(KCL_FILE_EXTENSION);
+    if !as_k_file.is_file() {
+        return pkgpath.to_string();
+    }
+    // Walk up to the parent directory.
+    let parent = match pathbuf.parent() {
+        Some(p) => p,
+        None => return pkgpath.to_string(),
+    };
+    if !parent.is_dir() {
+        return pkgpath.to_string();
+    }
+    // The parent must itself be a package directory, i.e. it must contain
+    // at least one .k file. Otherwise the rewrite would unexpectedly pull
+    // in unrelated files.
+    //
+    // To preserve the original semantics where the directory form may load
+    // a strictly larger set of files than the single-file form, we only
+    // canonicalize when the parent contains *exactly* one .k file: the file
+    // being imported. In that case the two forms always reference the same
+    // file set, so collapsing the pkgpath is safe.
+    let mut k_count = 0usize;
+    let mut only_file_is_target = false;
+    if let Ok(entries) = std::fs::read_dir(parent) {
+        for entry in entries.flatten() {
+            let name = match entry.file_name().to_str() {
+                Some(n) => n.to_string(),
+                None => continue,
+            };
+            if !name.ends_with(KCL_FILE_SUFFIX) || name.ends_with("_test.k") {
+                continue;
+            }
+            k_count += 1;
+            if entry.path() == as_k_file {
+                only_file_is_target = true;
+            }
+        }
+    }
+    if k_count == 0 || k_count > 1 || !only_file_is_target {
+        return pkgpath.to_string();
+    }
+    // Translate the parent path back to a dotted pkgpath relative to
+    // [`pkgroot`]. The result must be non-empty.
+    let rel = match parent.strip_prefix(pkgroot).ok() {
+        Some(p) => p,
+        None => return pkgpath.to_string(),
+    };
+    let mut canonical = rel
+        .to_string_lossy()
+        .replace(std::path::MAIN_SEPARATOR, ".");
+    while canonical.ends_with('.') {
+        canonical.pop();
+    }
+    if canonical.is_empty() || canonical == pkgpath {
+        return pkgpath.to_string();
+    }
+    canonical
+}
+
 /// Look for [`pkgpath`] in the current package's [`pkgroot`].
 /// If found, return to the [`PkgInfo`]， else return [`None`]
 ///
@@ -643,12 +729,18 @@ fn is_internal_pkg(
     load_cache: &mut ParseLoadCache,
 ) -> Result<Option<PkgInfo>> {
     if pkg_exists_in_path(pkg_root, pkg_path, load_cache) {
+        // Canonicalize the pkgpath so that `import a.b` (directory) and
+        // `import a.b.c` (single file) refer to the same package when both
+        // forms resolve to overlapping files. Without this, the same schema
+        // would be registered under two different pkgpaths, breaking
+        // assignability checks (issue #1970).
+        let canonical_pkg_path = canonical_pkg_path(pkg_root, pkg_path);
         let fullpath = if pkg_name == kcl_ast::MAIN_PKG {
-            pkg_path.to_string()
+            canonical_pkg_path.clone()
         } else {
-            format!("{}.{}", pkg_name, pkg_path)
+            format!("{}.{}", pkg_name, canonical_pkg_path)
         };
-        let k_files = get_pkg_kfile_list(pkg_root, pkg_path, load_cache)?;
+        let k_files = get_pkg_kfile_list(pkg_root, &canonical_pkg_path, load_cache)?;
         Ok(Some(PkgInfo::new(
             pkg_name.to_string(),
             pkg_root.to_string(),
