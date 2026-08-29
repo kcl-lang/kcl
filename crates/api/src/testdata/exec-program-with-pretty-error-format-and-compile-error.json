@@ -1,0 +1,10 @@
+{
+	"work_dir" : "./src/testdata",
+	"k_filename_list": [
+		"main.k"
+	],
+	"k_code_list": [
+		"a: int = \"str\"\n"
+	],
+	"error_format": "pretty"
+}

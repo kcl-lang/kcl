@@ -1,10 +1,37 @@
 use prost::Message;
 
 use crate::gpyrpc::*;
-use crate::service::service_impl::KclServiceImpl;
+use crate::service::service_impl::{
+    HasErrorFormat, KclServiceImpl, format_anyhow_error, resolve_error_format,
+};
 use std::ffi::CString;
 use std::os::raw::c_char;
 use std::slice;
+
+// All request arg types used by `call!` must impl `HasErrorFormat` so the
+// macro can ask them for an `error_format` override. Only
+// `ExecProgramArgs` actually carries the field today; every other arg
+// type uses the trait's default (which returns `""`, i.e. "no override,
+// render pretty"). Listing them here keeps the macro free of per-call
+// boilerplate and makes it obvious where a future `error_format` field
+// would need to be wired up.
+impl HasErrorFormat for PingArgs {}
+impl HasErrorFormat for GetVersionArgs {}
+impl HasErrorFormat for ParseFileArgs {}
+impl HasErrorFormat for ParseProgramArgs {}
+impl HasErrorFormat for LoadPackageArgs {}
+impl HasErrorFormat for ListVariablesArgs {}
+impl HasErrorFormat for OverrideFileArgs {}
+impl HasErrorFormat for GetSchemaTypeMappingArgs {}
+impl HasErrorFormat for FormatCodeArgs {}
+impl HasErrorFormat for FormatPathArgs {}
+impl HasErrorFormat for LintPathArgs {}
+impl HasErrorFormat for ValidateCodeArgs {}
+impl HasErrorFormat for LoadSettingsFilesArgs {}
+impl HasErrorFormat for RenameArgs {}
+impl HasErrorFormat for RenameCodeArgs {}
+impl HasErrorFormat for TestArgs {}
+impl HasErrorFormat for UpdateDependenciesArgs {}
 
 #[allow(non_camel_case_types)]
 type kcl_service = KclServiceImpl;
@@ -65,7 +92,17 @@ macro_rules! call {
             let res = serv_ref.$serv_name(&args);
             let result_byte = match res {
                 Ok(res) => res.encode_to_vec(),
-                Err(err) => format!("ERROR:{}", err.to_string()).into_bytes(),
+                Err(err) => {
+                    // Resolve the caller's requested diagnostic format
+                    // (falling back to pretty on any failure here so a
+                    // mis-formed `error_format` doesn't take down the
+                    // service call — `resolve_error_format` already
+                    // surfaces a hard panic for invalid values earlier in
+                    // the call chain, so this is just a safety net).
+                    let format = resolve_error_format(args.error_format())
+                        .unwrap_or(kcl_error::format::DiagnosticFormat::Pretty);
+                    format!("ERROR:{}", format_anyhow_error(&err, format)).into_bytes()
+                }
             };
             *$result_len = result_byte.len();
             CString::from_vec_unchecked(result_byte).into_raw()
