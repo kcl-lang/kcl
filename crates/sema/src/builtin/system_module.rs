@@ -2124,6 +2124,22 @@ register_file_member! {
         false,
         None,
     )
+    readbase64 => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "filepath".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Read the file at `filepath` as raw bytes and return the contents encoded as a base64 string (RFC 4648 §4 standard alphabet, with padding). Unlike `read()`, which only accepts UTF-8 text, `readbase64()` round-trips any byte sequence losslessly, so it is the right tool for binary files (images, archives, certificates, …)."#,
+        false,
+        None,
+    )
     glob => Type::function(
         None,
         Type::list_ref(Type::str_ref()),
