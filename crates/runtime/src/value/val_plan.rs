@@ -257,11 +257,10 @@ impl ValueRef {
                 // For config/dict, use the filtered result
                 (
                     results[0].to_json_string_with_options(&json_opts),
-                    results[0]
-                        .to_yaml_string_with_options(&yaml_opts)
-                        .strip_suffix('\n')
-                        .unwrap()
-                        .to_string(),
+                    crate::ValueRef::strip_yaml_trailing_newline(
+                        &results[0].to_yaml_string_with_options(&yaml_opts),
+                    )
+                    .to_string(),
                 )
             } else {
                 // Fallback to original value (shouldn't happen normally)
@@ -274,10 +273,10 @@ impl ValueRef {
                 let yaml_result = results
                     .iter()
                     .map(|r| {
-                        r.to_yaml_string_with_options(&yaml_opts)
-                            .strip_suffix('\n')
-                            .unwrap()
-                            .to_string()
+                        crate::ValueRef::strip_yaml_trailing_newline(
+                            &r.to_yaml_string_with_options(&yaml_opts),
+                        )
+                        .to_string()
                     })
                     .collect::<Vec<String>>()
                     .join(&format!("\n{}\n", sep));
@@ -292,11 +291,10 @@ impl ValueRef {
         } else {
             (
                 value.to_json_string_with_options(&json_opts),
-                value
-                    .to_yaml_string_with_options(&yaml_opts)
-                    .strip_suffix('\n')
-                    .unwrap()
-                    .to_string(),
+                crate::ValueRef::strip_yaml_trailing_newline(
+                    &value.to_yaml_string_with_options(&yaml_opts),
+                )
+                .to_string(),
             )
         }
     }

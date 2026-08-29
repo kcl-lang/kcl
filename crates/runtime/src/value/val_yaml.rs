@@ -97,6 +97,70 @@ impl ValueRef {
         }
     }
 
+    /// Drop the trailing newline that `serde_yaml::to_string` always emits,
+    /// but only when doing so does not change the meaning of the document.
+    ///
+    /// `serde_yaml::to_string` always appends exactly one `\n` to the end of
+    /// the output. When the last emitted scalar is a normal `key: value`
+    /// mapping that newline is a separator and can be removed safely. When
+    /// the last emitted value is a block scalar (`|`, `|-`, `|+`, `>`, ...)
+    /// however that newline is the block scalar's own terminator: stripping
+    /// it changes the round-tripped value from `"line1\nline2\nline3\n"` to
+    /// `"line1\nline2\nline3"` and breaks KCL's documented `"""\...\"\"`
+    /// rendering (issue kcl-lang/kcl#1894).
+    ///
+    /// Heuristic:
+    /// - Top-level last line: a `key: value` line at indent 0 is a regular
+    ///   mapping - strip the trailing newline.
+    /// - Indented last line: walk backwards until we find a line whose
+    ///   indentation is strictly less than the last line's indentation.
+    ///   That line is the parent mapping/block-scalar header. If the
+    ///   parent header value is one of `|`, `|-`, `|+`, `>`, `>-`, `>+`
+    ///   the trailing newline(s) belong to that block scalar and we keep
+    ///   them; otherwise we strip a single trailing newline.
+    pub(crate) fn strip_yaml_trailing_newline(s: &str) -> &str {
+        if !s.ends_with('\n') {
+            return s;
+        }
+        let trimmed = s.trim_end_matches('\n');
+        if trimmed.is_empty() {
+            return s;
+        }
+        let lines: Vec<&str> = trimmed.split('\n').collect();
+        let last = lines.last().copied().unwrap_or("");
+        let last_indent = indent_len(last);
+        if last_indent == 0 {
+            // Top-level last line. If it is itself a block-scalar header
+            // (no body, e.g. `key: |`) the trailing newline has no semantic
+            // content; strip it. If it is `key: value` (a normal scalar),
+            // the trailing newline is a separator; strip it.
+            return s.strip_suffix('\n').unwrap_or(s);
+        }
+        // Walk backwards until we hit a non-empty line whose indentation
+        // is strictly less than `last_indent`. That line is the parent.
+        for prev in lines.iter().rev().skip(1) {
+            if prev.trim().is_empty() {
+                continue;
+            }
+            let prev_indent = indent_len(prev);
+            if prev_indent < last_indent {
+                let header_value = prev
+                    .find(':')
+                    .map(|i| prev[i + 1..].trim_start())
+                    .unwrap_or("");
+                let is_block_scalar_header =
+                    matches!(header_value, "|" | "|-" | "|+" | ">" | ">-" | ">+");
+                return if is_block_scalar_header {
+                    s
+                } else {
+                    s.strip_suffix('\n').unwrap_or(s)
+                };
+            }
+        }
+        // No less-indented parent found; preserve to be safe.
+        s
+    }
+
     pub fn to_yaml_string(&self) -> String {
         let json = self.to_json_string();
         let yaml_value: serde_yaml::Value = serde_json::from_str(json.as_ref()).unwrap();
@@ -225,6 +289,10 @@ fn unescape_json_string(s: &str) -> String {
         }
     }
     out
+}
+
+fn indent_len(line: &str) -> usize {
+    line.len() - line.trim_start().len()
 }
 
 #[cfg(test)]
@@ -467,5 +535,54 @@ mod test_value_yaml {
             },
         );
         assert_eq!(result, "field: hello world\n");
+    }
+
+    #[test]
+    fn test_strip_yaml_trailing_newline() {
+        // Plain `key: value` mapping at the end: the trailing newline is
+        // just a separator and may be stripped.
+        assert_eq!(
+            ValueRef::strip_yaml_trailing_newline("a: 1\nb: 2\n"),
+            "a: 1\nb: 2"
+        );
+        // Single key/value: trailing newline is a separator.
+        assert_eq!(ValueRef::strip_yaml_trailing_newline("a: 1\n"), "a: 1");
+        // Block scalar (`|`) is the last value. The trailing newline belongs
+        // to the block scalar's content and must be preserved so the
+        // round-tripped value still ends with `\n` (issue kcl-lang/kcl#1894).
+        assert_eq!(
+            ValueRef::strip_yaml_trailing_newline("a: |\n  line1\n  line2\n"),
+            "a: |\n  line1\n  line2\n"
+        );
+        // Nested block scalar (last field of a mapping).
+        assert_eq!(
+            ValueRef::strip_yaml_trailing_newline("outer:\n  inner: |\n    line1\n    line2\n"),
+            "outer:\n  inner: |\n    line1\n    line2\n"
+        );
+        // Block scalar with strip-chomp indicator `|-`.
+        assert_eq!(
+            ValueRef::strip_yaml_trailing_newline("a: |-\n  line1\n  line2\n"),
+            "a: |-\n  line1\n  line2\n"
+        );
+        // Folded block scalar `>`.
+        assert_eq!(
+            ValueRef::strip_yaml_trailing_newline("a: >\n  line1\n  line2\n"),
+            "a: >\n  line1\n  line2\n"
+        );
+        // Block scalar followed by a normal key: the trailing newline is a
+        // separator and may be stripped.
+        assert_eq!(
+            ValueRef::strip_yaml_trailing_newline("block: |\n  line1\nkey: value\n"),
+            "block: |\n  line1\nkey: value"
+        );
+        // Nested mapping (no block scalar): the indented last line is a
+        // mapping value, so the trailing newline is a separator and may
+        // be stripped.
+        assert_eq!(
+            ValueRef::strip_yaml_trailing_newline("data:\n  _type: Data\n"),
+            "data:\n  _type: Data"
+        );
+        // Already without trailing newline: returned untouched.
+        assert_eq!(ValueRef::strip_yaml_trailing_newline("a: 1"), "a: 1");
     }
 }

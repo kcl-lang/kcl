@@ -1,0 +1,13 @@
+multi_line_string: |
+  line1
+  line2
+  line3
+foo:
+  multi_line_string_1: |
+    line1
+    line2
+    line3
+  multi_line_string_2: |
+    line1
+    line2
+    line3
