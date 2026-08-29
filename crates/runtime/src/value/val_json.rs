@@ -368,13 +368,19 @@ impl ValueRef {
                 let mut dict = Self::dict(None);
                 for (name, value) in values {
                     let v = Self::parse_json(ctx, value);
-                    dict.dict_insert(
-                        ctx,
-                        name.as_ref(),
-                        &v,
-                        ConfigEntryOperationKind::Union,
-                        None,
-                    );
+                    // Insert JSON `null` as an override so explicit `None`
+                    // values decoded from JSON/YAML win against the merged
+                    // base value (issue kcl-lang/kcl#1763). Treating null
+                    // as a Union merge would let `value_union`'s
+                    // `x.is_none_or_undefined()` short-circuit drop the
+                    // explicit null in favour of a schema attribute's
+                    // default.
+                    let op = if v.is_none() {
+                        ConfigEntryOperationKind::Override
+                    } else {
+                        ConfigEntryOperationKind::Union
+                    };
+                    dict.dict_insert(ctx, name.as_ref(), &v, op, None);
                 }
                 dict
             }
@@ -578,6 +584,27 @@ mod test_value_json {
             let result = ValueRef::from_json(&mut ctx, json_str).unwrap();
             assert_eq!(result, expected);
         }
+    }
+
+    #[test]
+    fn test_value_from_json_null_uses_override_op() {
+        // Issue kcl-lang/kcl#1763: JSON `null` decoded into a dict should be
+        // stored with `Override` so that schema construction treats the
+        // explicit null as overriding the attribute's default rather than
+        // being silently dropped by `value_union`'s `is_none_or_undefined`
+        // short-circuit.
+        let mut ctx = Context::new();
+        let decoded = ValueRef::from_json(&mut ctx, "{\"y\": null}").unwrap();
+        assert_eq!(
+            decoded.dict_get_attr_operator("y"),
+            Some(crate::ConfigEntryOperationKind::Override)
+        );
+        // Non-null values stay on the Union op.
+        let decoded = ValueRef::from_json(&mut ctx, "{\"y\": 1}").unwrap();
+        assert_eq!(
+            decoded.dict_get_attr_operator("y"),
+            Some(crate::ConfigEntryOperationKind::Union)
+        );
     }
 
     #[test]
