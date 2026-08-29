@@ -29,6 +29,11 @@ pub struct YamlEncodeOptions {
     pub ignore_private: bool,
     pub ignore_none: bool,
     pub sep: String,
+    /// When true, strings containing literal escape sequences such as `\n` or
+    /// `\t` are emitted using YAML block scalar (`|`) style with real
+    /// newlines/tabs, instead of leaving the escapes unquoted in the output.
+    /// Defaults to false to preserve the historical escaping behaviour.
+    pub multiline_string: bool,
 }
 
 impl Default for YamlEncodeOptions {
@@ -38,6 +43,7 @@ impl Default for YamlEncodeOptions {
             ignore_private: false,
             ignore_none: false,
             sep: "---".to_string(),
+            multiline_string: false,
         }
     }
 }
@@ -113,7 +119,16 @@ impl ValueRef {
             ignore_none: opts.ignore_none,
         };
         let json = self.to_json_string_with_options(&json_opts);
-        let yaml_value: serde_yaml::Value = serde_json::from_str(json.as_ref()).unwrap();
+        let yaml_value: serde_yaml::Value = if opts.multiline_string {
+            // When the caller opts in, convert literal escape sequences inside
+            // string values (e.g. the two characters `\n` that appear after the
+            // JSON round-trip) into their real character form so that the YAML
+            // emitter picks block-scalar style for multi-line content.
+            let json_value: serde_json::Value = serde_json::from_str(json.as_ref()).unwrap();
+            json_to_yaml_value_with_real_escapes(json_value)
+        } else {
+            serde_json::from_str(json.as_ref()).unwrap()
+        };
         match serde_yaml::to_string(&yaml_value) {
             Ok(s) => {
                 let s = s.strip_prefix("---\n").unwrap_or_else(|| s.as_ref());
@@ -122,6 +137,94 @@ impl ValueRef {
             Err(err) => panic!("{}", err),
         }
     }
+}
+
+/// Walk a `serde_json::Value` and convert every string entry so that the JSON
+/// escape sequences (`\n`, `\t`, `\r`, `\\`, `\"`, `\uXXXX`) are emitted as their
+/// real characters. This lets the YAML serializer downstream pick block-scalar
+/// (`|`) style for strings that span multiple lines.
+fn json_to_yaml_value_with_real_escapes(value: serde_json::Value) -> serde_yaml::Value {
+    match value {
+        serde_json::Value::Null => serde_yaml::Value::Null,
+        serde_json::Value::Bool(b) => serde_yaml::Value::Bool(b),
+        serde_json::Value::Number(n) => {
+            if let Some(i) = n.as_i64() {
+                serde_yaml::Value::Number(i.into())
+            } else if let Some(u) = n.as_u64() {
+                serde_yaml::Value::Number(u.into())
+            } else if let Some(f) = n.as_f64() {
+                serde_yaml::Value::Number(f.into())
+            } else {
+                serde_yaml::Value::Null
+            }
+        }
+        serde_json::Value::String(s) => serde_yaml::Value::String(unescape_json_string(&s)),
+        serde_json::Value::Array(items) => {
+            let mapped = items
+                .into_iter()
+                .map(json_to_yaml_value_with_real_escapes)
+                .collect();
+            serde_yaml::Value::Sequence(mapped)
+        }
+        serde_json::Value::Object(map) => {
+            let mut mapped = serde_yaml::Mapping::with_capacity(map.len());
+            for (k, v) in map {
+                mapped.insert(
+                    serde_yaml::Value::String(k),
+                    json_to_yaml_value_with_real_escapes(v),
+                );
+            }
+            serde_yaml::Value::Mapping(mapped)
+        }
+    }
+}
+
+/// Replace the common JSON escape sequences in `s` with their real character
+/// equivalents. Any backslash followed by a character that is not a recognised
+/// escape is left untouched (the trailing `\` is dropped, matching the lenient
+/// behaviour of `serde_json` when decoding strings).
+fn unescape_json_string(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut chars = s.chars();
+    while let Some(c) = chars.next() {
+        if c == '\\' {
+            match chars.next() {
+                Some('n') => out.push('\n'),
+                Some('t') => out.push('\t'),
+                Some('r') => out.push('\r'),
+                Some('b') => out.push('\u{0008}'),
+                Some('f') => out.push('\u{000C}'),
+                Some('"') => out.push('"'),
+                Some('\\') => out.push('\\'),
+                Some('/') => out.push('/'),
+                Some('u') => {
+                    let mut hex = String::with_capacity(4);
+                    for _ in 0..4 {
+                        match chars.next() {
+                            Some(c) => hex.push(c),
+                            None => break,
+                        }
+                    }
+                    if let Ok(code) = u32::from_str_radix(&hex, 16) {
+                        if let Some(ch) = char::from_u32(code) {
+                            out.push(ch);
+                        }
+                    }
+                }
+                Some(other) => {
+                    // Unknown escape: keep the character as-is and drop the
+                    // backslash so that, for example, `\x` becomes `x`.
+                    out.push(other);
+                }
+                None => {
+                    // Trailing backslash with nothing after it: drop it.
+                }
+            }
+        } else {
+            out.push(c);
+        }
+    }
+    out
 }
 
 #[cfg(test)]
@@ -258,6 +361,7 @@ mod test_value_yaml {
                     ignore_private: false,
                     ignore_none: false,
                     sep: "---".to_string(),
+                    multiline_string: false,
                 },
             ),
             (
@@ -268,6 +372,7 @@ mod test_value_yaml {
                     ignore_private: false,
                     ignore_none: false,
                     sep: "---".to_string(),
+                    multiline_string: false,
                 },
             ),
             (
@@ -278,6 +383,7 @@ mod test_value_yaml {
                     ignore_private: true,
                     ignore_none: false,
                     sep: "---".to_string(),
+                    multiline_string: false,
                 },
             ),
             (
@@ -288,6 +394,7 @@ mod test_value_yaml {
                     ignore_private: true,
                     ignore_none: true,
                     sep: "---".to_string(),
+                    multiline_string: false,
                 },
             ),
             (
@@ -301,6 +408,7 @@ mod test_value_yaml {
                     ignore_private: false,
                     ignore_none: false,
                     sep: "---".to_string(),
+                    multiline_string: false,
                 },
             ),
         ];
@@ -308,5 +416,56 @@ mod test_value_yaml {
             let result = ValueRef::to_yaml_string_with_options(&value, &opts);
             assert_eq!(result, expected);
         }
+    }
+
+    #[test]
+    fn test_value_to_yaml_string_with_multiline_string_option() {
+        // Without the option, literal `\n` sequences in strings remain escaped
+        // (the historical behaviour).
+        let value = ValueRef::dict(Some(&[("field", &ValueRef::str("a\\nb\\nc"))]));
+        let result = ValueRef::to_yaml_string_with_options(
+            &value,
+            &YamlEncodeOptions {
+                multiline_string: false,
+                ..Default::default()
+            },
+        );
+        assert_eq!(result, "field: a\\nb\\nc\n");
+
+        // With the option enabled, the embedded `\n` sequences become real
+        // newlines and the YAML emitter picks block-scalar style.
+        let result = ValueRef::to_yaml_string_with_options(
+            &value,
+            &YamlEncodeOptions {
+                multiline_string: true,
+                ..Default::default()
+            },
+        );
+        assert_eq!(result, "field: |-\n  a\n  b\n  c\n");
+
+        // Nested values get the same treatment.
+        let value = ValueRef::dict(Some(&[(
+            "obj",
+            &ValueRef::dict(Some(&[("field", &ValueRef::str("a\\nb"))])),
+        )]));
+        let result = ValueRef::to_yaml_string_with_options(
+            &value,
+            &YamlEncodeOptions {
+                multiline_string: true,
+                ..Default::default()
+            },
+        );
+        assert_eq!(result, "obj:\n  field: |-\n    a\n    b\n");
+
+        // Strings without escape sequences are unaffected by the option.
+        let value = ValueRef::dict(Some(&[("field", &ValueRef::str("hello world"))]));
+        let result = ValueRef::to_yaml_string_with_options(
+            &value,
+            &YamlEncodeOptions {
+                multiline_string: true,
+                ..Default::default()
+            },
+        );
+        assert_eq!(result, "field: hello world\n");
     }
 }

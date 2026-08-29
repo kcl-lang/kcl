@@ -194,5 +194,10 @@ fn args_to_opts(args: &ValueRef, kwargs: &ValueRef, index: usize) -> YamlEncodeO
     if let Some(ignore_none) = get_call_arg_bool(args, kwargs, index + 2, Some("ignore_none")) {
         opts.ignore_none = ignore_none;
     }
+    if let Some(multiline_string) =
+        get_call_arg_bool(args, kwargs, index + 3, Some("multiline_string"))
+    {
+        opts.multiline_string = multiline_string;
+    }
     opts
 }
