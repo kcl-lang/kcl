@@ -438,7 +438,9 @@ impl<'p> Printer<'p> {
     }
 
     pub(crate) fn current_expr_start_line(&self) -> Option<u64> {
-        self.expr_span_stack.last().map(|(start_line, _)| *start_line)
+        self.expr_span_stack
+            .last()
+            .map(|(start_line, _)| *start_line)
     }
 
     /// Pop the next pending comment if it lives on `start_line` and emit it

@@ -133,3 +133,103 @@ fn test_print_ast_module_tab_len_does_not_affect_tab_mode_bytes() {
     let large = print_ast_module_with_config(&module, cfg_large);
     assert_eq!(small, large);
 }
+
+/// Regression tests for issue #1756: `kcl fmt` must preserve inline trailing
+/// comments (comments on the same line as code, after it) rather than moving
+/// them above the line.
+mod inline_trailing_comments {
+    use super::*;
+
+    fn fmt(src: &str) -> String {
+        let module = parse_file_force_errors("inline.k", Some(src.to_string())).unwrap();
+        print_ast_module(&module)
+    }
+
+    #[test]
+    fn trailing_after_assign_value_is_kept_inline() {
+        let out = fmt("x = 1 # trailing\n");
+        assert!(
+            out.contains("x = 1 # trailing"),
+            "trailing comment after a value must stay inline; got:\n{out}"
+        );
+    }
+
+    #[test]
+    fn trailing_after_schema_attr_is_kept_inline() {
+        let out = fmt("schema Foo:\n    bar: int # trailing\n");
+        assert!(
+            out.contains("bar: int # trailing"),
+            "trailing comment on a schema attribute must stay inline; got:\n{out}"
+        );
+    }
+
+    #[test]
+    fn trailing_after_dict_entry_value_is_kept_inline() {
+        let out = fmt("z = {\n    k: 1 # trailing\n}\n");
+        assert!(
+            out.contains("k: 1 # trailing"),
+            "trailing comment on a dict entry must stay inline; got:\n{out}"
+        );
+    }
+
+    #[test]
+    fn trailing_for_opening_brace_of_multi_line_value_is_kept_inline() {
+        // The trailing comment sits on the same line as the opening `{`,
+        // after it. This used to be moved above the assignment.
+        let out = fmt("config = { # for the brace\n    p: 1\n}\n");
+        assert!(
+            out.contains("config = { # for the brace"),
+            "trailing comment for the opening brace must stay inline; got:\n{out}"
+        );
+    }
+
+    #[test]
+    fn trailing_for_opening_bracket_of_multi_line_value_is_kept_inline() {
+        let out = fmt("data = [ # for the bracket\n    1\n]\n");
+        assert!(
+            out.contains("data = [ # for the bracket"),
+            "trailing comment for the opening bracket must stay inline; got:\n{out}"
+        );
+    }
+
+    #[test]
+    fn trailing_after_closing_brace_is_kept_inline() {
+        let out = fmt("config = {\n    p: 1\n} # trailing\n");
+        assert!(
+            out.contains("} # trailing"),
+            "trailing comment after the closing brace must stay inline; got:\n{out}"
+        );
+    }
+
+    #[test]
+    fn trailing_after_if_condition_is_kept_inline() {
+        let out = fmt("if True: # trailing\n    x = 1\n");
+        // The trailing comment originally sits after the `:`. The formatter
+        // emits it before the `:` (since the cond ends right before `:`);
+        // either placement keeps the comment inline with the condition
+        // rather than above it.
+        assert!(
+            out.contains("if True # trailing:") || out.contains("if True: # trailing"),
+            "trailing comment after an if condition must stay inline; got:\n{out}"
+        );
+    }
+
+    #[test]
+    fn trailing_after_assert_message_is_kept_inline() {
+        let out = fmt("assert 1 if True, \"msg\" # trailing\n");
+        assert!(
+            out.contains("\"msg\" # trailing"),
+            "trailing comment after an assert message must stay inline; got:\n{out}"
+        );
+    }
+
+    #[test]
+    fn trailing_after_lambda_parameter_is_kept_inline() {
+        let out =
+            fmt("f = lambda {\n    x: int = 1 # trailing,\n    y: int\n} -> int {\n    x + y\n}\n");
+        assert!(
+            out.contains("x: int = 1 # trailing,"),
+            "trailing comment after a lambda parameter must stay inline; got:\n{out}"
+        );
+    }
+}

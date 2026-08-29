@@ -502,7 +502,8 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         // when no element shares the start line — otherwise the comment
         // may be trailing for the first element, which the per-element
         // path handles.
-        if !in_one_line && !list_expr.elts.is_empty()
+        if !in_one_line
+            && !list_expr.elts.is_empty()
             && let Some(start_line) = self.current_expr_start_line()
         {
             let first_on_start = list_expr
@@ -709,7 +710,8 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         // when no entry shares the start line — otherwise the comment may
         // actually be trailing for the first entry, which `write_entry`
         // already handles via `write_inline_trailing_comments`.
-        if !in_one_line && !config_expr.items.is_empty()
+        if !in_one_line
+            && !config_expr.items.is_empty()
             && let Some(start_line) = self.current_expr_start_line()
         {
             let first_on_start = config_expr

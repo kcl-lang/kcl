@@ -1,0 +1,43 @@
+# Regression test for issue #1756: kcl fmt must preserve inline trailing
+# comments on the same line as code, rather than moving them above the
+# statement.
+
+# 1. Trailing comment after a simple assignment value.
+x = 1 # trailing after value
+
+# 2. Trailing comment on a schema attribute.
+schema Foo:
+    bar: int # trailing on attr
+
+# 3. Trailing comment on a dict entry value.
+z = {
+    k: 1 # trailing on entry
+}
+
+# 4. Trailing comment on the opening brace of a multi-line value.
+a = { # trailing on opening {
+    p: 1
+}
+
+# 5. Trailing comment on the opening bracket of a multi-line list.
+b = [ # trailing on opening [
+    1
+]
+
+# 6. Trailing comment after the closing brace.
+c = {
+    q: 2
+} # trailing after closing }
+
+# 7. Trailing comment after the closing bracket.
+d = [
+    2
+] # trailing after closing ]
+
+# 8. Trailing comment on a lambda parameter.
+e = lambda {
+    m: int = 3 # trailing on param
+    n: int
+} -> int {
+    m + n
+}
