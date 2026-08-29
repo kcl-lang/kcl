@@ -1,0 +1,11 @@
+[
+  {
+    "Char": 1,
+    "Code": "error[E3M38]",
+    "Description": "\nerror[E2G22]: TypeError\n---> File main.k:1:1: expected int, got str(str)\n\n",
+    "Line": 1,
+    "Name": "EvaluationError",
+    "OriginalText": "",
+    "Path": ""
+  }
+]

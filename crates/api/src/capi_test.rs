@@ -202,6 +202,121 @@ fn test_c_api_call_exec_program_with_arcanist_error_format_and_bad_kcl() {
     );
 }
 
+/// Invoke a service call from a JSON fixture and return the raw bytes
+/// the C API hands back. Unlike `test_c_api`, this doesn't assume the
+/// payload is a protobuf-encoded `ExecProgramResult`; it captures the
+/// raw byte buffer so callers can inspect `ERROR:` payloads directly.
+fn call_c_api_raw(svc_name: &str, input: &str) -> Vec<u8> {
+    let _test_lock = TEST_MUTEX.lock().unwrap_or_else(|p| p.into_inner());
+    let serv = unsafe { kcl_service_new(0) };
+    let input_path = Path::new(TEST_DATA_PATH).join(input);
+    let input = fs::read_to_string(&input_path)
+        .unwrap_or_else(|_| panic!("Something went wrong reading {}", input_path.display()));
+    let args: ExecProgramArgs = serde_json::from_str(&input).unwrap();
+    let args_vec = args.encode_to_vec();
+    let args_cstr = unsafe { CString::from_vec_unchecked(args_vec.clone()) };
+    let call = CString::new(svc_name).unwrap();
+    let mut result_len: usize = 0;
+    let src_ptr = unsafe {
+        kcl_service_call_with_length(
+            serv,
+            call.as_ptr(),
+            args_cstr.as_ptr(),
+            args_vec.len(),
+            &mut result_len,
+        )
+    };
+    let mut dest_data: Vec<u8> = Vec::with_capacity(result_len);
+    unsafe {
+        let dest_ptr: *mut u8 = dest_data.as_mut_ptr();
+        std::ptr::copy_nonoverlapping(src_ptr as *const u8, dest_ptr, result_len);
+        dest_data.set_len(result_len);
+    }
+    unsafe {
+        kcl_service_delete(serv);
+        kcl_service_free_string(src_ptr as *mut c_char);
+    }
+    dest_data
+}
+
+/// Call a service from a JSON fixture and verify the `ERROR:<body>`
+/// payload matches `<input>.response.error` byte-for-byte. Mirrors
+/// `test_c_api` / `test_c_api_panic` but for the `ERROR:` envelope —
+/// the C API returns this instead of a protobuf-encoded result when
+/// the service itself reports failure (e.g. a KCL compile error).
+///
+/// `expected_error_file` is read as plain text; the trailing newline
+/// (if any) is significant and compared verbatim so the fixture
+/// round-trips exactly.
+///
+/// Both sides are normalised before comparison so the test passes
+/// regardless of how line endings end up in each side:
+///
+/// 1. `\r\n` → `\n` covers CRLF bytes (Windows-side text output, or
+///    fixtures checked out with autocrlf on Windows).
+/// 2. The JSON-escape form `\r\n` (i.e. the four bytes `\` `r` `\` `n`,
+///    not actual CR+LF) → `\n` (the two bytes `\` `n`) covers the
+///    SARIF/arcanist payloads, which `serde_json` writes out as their
+///    canonical escape sequence — and which can differ between host
+///    and fixture when the underlying message contains CRLF on Windows.
+fn test_c_api_error(svc_name: &str, input: &str, expected_error_file: &str) {
+    let payload = call_c_api_raw(svc_name, input);
+    let s = std::str::from_utf8(&payload).expect("ERROR payload is not valid UTF-8");
+    let body = s
+        .strip_prefix("ERROR:")
+        .unwrap_or_else(|| panic!("payload missing ERROR: prefix: {s:?}"));
+    let expected_path = Path::new(TEST_DATA_PATH).join(expected_error_file);
+    let expected_raw = fs::read(&expected_path)
+        .unwrap_or_else(|_| panic!("Something went wrong reading {}", expected_path.display()));
+    let expected = std::str::from_utf8(&expected_raw)
+        .unwrap_or_else(|_| panic!("{} is not valid UTF-8", expected_path.display()));
+    let normalize = |s: &str| s.replace("\r\n", "\n").replace("\\r\\n", "\\n");
+    assert_eq!(
+        normalize(body),
+        normalize(expected),
+        "\n--- expected ({}) ---\n{}\n--- actual ---\n{}",
+        expected_path.display(),
+        expected,
+        body
+    );
+}
+
+#[test]
+fn test_c_api_call_exec_program_with_pretty_error_format_and_compile_error() {
+    test_c_api_error(
+        "KclService.ExecProgram",
+        "exec-program-with-pretty-error-format-and-compile-error.json",
+        "exec-program-with-pretty-error-format-and-compile-error.response.error",
+    );
+}
+
+#[test]
+fn test_c_api_call_exec_program_with_short_error_format_and_compile_error() {
+    test_c_api_error(
+        "KclService.ExecProgram",
+        "exec-program-with-short-error-format-and-compile-error.json",
+        "exec-program-with-short-error-format-and-compile-error.response.error",
+    );
+}
+
+#[test]
+fn test_c_api_call_exec_program_with_arcanist_error_format_and_compile_error() {
+    test_c_api_error(
+        "KclService.ExecProgram",
+        "exec-program-with-arcanist-error-format-and-compile-error.json",
+        "exec-program-with-arcanist-error-format-and-compile-error.response.error",
+    );
+}
+
+#[test]
+fn test_c_api_call_exec_program_with_sarif_error_format_and_compile_error() {
+    test_c_api_error(
+        "KclService.ExecProgram",
+        "exec-program-with-sarif-error-format-and-compile-error.json",
+        "exec-program-with-sarif-error-format-and-compile-error.response.error",
+    );
+}
+
 #[test]
 fn test_c_api_call_exec_program_with_invalid_error_format() {
     test_c_api_panic::<ExecProgramArgs>(

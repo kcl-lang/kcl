@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "kcl",
+          "informationUri": "https://kcl-lang.io/",
+          "rules": [
+            {
+              "id": "E3M38",
+              "name": "EvaluationError",
+              "shortDescription": {
+                "text": "EvaluationError"
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "E3M38",
+          "level": "error",
+          "message": {
+            "text": "\nerror[E2G22]: TypeError\n---> File main.k:1:1: expected int, got str(str)\n\n"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": ""
+                },
+                "region": {
+                  "startLine": 1,
+                  "startColumn": 1
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

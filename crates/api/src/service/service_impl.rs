@@ -103,6 +103,57 @@ pub(crate) fn emit_machine_readable_error(
     Ok(())
 }
 
+/// Format `err` for the C API / language-binding return channel.
+///
+/// The native service returns its result-or-error to embedders as a single
+/// byte buffer (see `capi.rs`): on success the protobuf-encoded result, on
+/// failure an `ERROR:<msg>` payload. Before this helper existed the failure
+/// branch emitted `anyhow::Error::to_string()` directly, which is always the
+/// pretty renderer — making the `error_format` request of the caller (e.g.
+/// short / arcanist / sarif for machine consumption) silently ignored on the
+/// transport error path.
+///
+/// Now: when the caller asked for `Pretty` (the default) we keep the existing
+/// pretty rendering so the wire text is byte-compatible with the previous
+/// behaviour; for the other formats we wrap the pretty text in a
+/// `Diagnostic` and re-dispatch to `render_machine_readable_error`. If
+/// re-rendering itself fails (extremely rare — only if the renderer can't
+/// construct a `Diagnostic` for the given input) we fall back to the raw
+/// pretty text so the caller never sees an empty error message.
+pub(crate) fn format_anyhow_error(err: &anyhow::Error, format: DiagnosticFormat) -> String {
+    let pretty = err.to_string();
+    if format == DiagnosticFormat::Pretty {
+        return pretty;
+    }
+    match render_machine_readable_error(&pretty, format) {
+        Ok(rendered) if !rendered.is_empty() => rendered,
+        // Renderer returned empty (input was empty) or failed: never
+        // drop the message on the floor.
+        Ok(_) => pretty,
+        Err(_) => pretty,
+    }
+}
+
+/// Trait implemented by request argument types that carry an explicit
+/// `error_format` override. The C API uses this to pick the right
+/// rendering when a service call returns `Err`.
+///
+/// The default implementation returns `""`, which `resolve_error_format`
+/// interprets as "no override" — so existing arg types (PingArgs,
+/// GetVersionArgs, ...) keep their pre-existing pretty output without
+/// any per-type plumbing.
+pub trait HasErrorFormat {
+    fn error_format(&self) -> &str {
+        ""
+    }
+}
+
+impl HasErrorFormat for ExecProgramArgs {
+    fn error_format(&self) -> &str {
+        &self.error_format
+    }
+}
+
 /// Force the allocator to release freed memory back to the OS.
 ///
 /// On Linux **glibc** this calls `malloc_trim(0)`, which returns the top
