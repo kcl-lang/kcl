@@ -16,6 +16,7 @@ const TEST_CASES: &[&str] = &[
     "collection_if",
     "comment",
     "index_sign",
+    "inline_trailing_comment",
     "joined_str",
     "lambda",
     "orelse",
