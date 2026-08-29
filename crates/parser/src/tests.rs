@@ -881,3 +881,59 @@ fn parse_all_file_under_path() {
 
     assert_eq!(res.paths.len(), 1);
 }
+
+#[test]
+#[cfg(not(windows))]
+fn test_canonical_pkg_path() {
+    use std::fs;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn fresh_tmp(label: &str) -> std::path::PathBuf {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!("kcl-canonical-pkg-path-{label}-{nanos}"));
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    // Layout 1: parent directory contains exactly one .k file (the
+    // single-file target). `pkg.path` resolves to that file and the
+    // canonicalization should rewrite the pkgpath to the parent.
+    let single = fresh_tmp("single");
+    let parent = single.join("pkg");
+    fs::create_dir_all(&parent).unwrap();
+    fs::write(parent.join("path.k"), "schema S: x: int\n").unwrap();
+    assert_eq!(
+        canonical_pkg_path(single.to_str().unwrap(), "pkg.path"),
+        "pkg"
+    );
+
+    // Layout 2: parent directory contains multiple .k files. The directory
+    // and single-file forms refer to different file sets, so we must leave
+    // the pkgpath untouched to preserve existing semantics.
+    let multi = fresh_tmp("multi");
+    let multi_parent = multi.join("pkg");
+    fs::create_dir_all(&multi_parent).unwrap();
+    fs::write(multi_parent.join("path.k"), "").unwrap();
+    fs::write(multi_parent.join("other.k"), "").unwrap();
+    assert_eq!(
+        canonical_pkg_path(multi.to_str().unwrap(), "pkg.path"),
+        "pkg.path"
+    );
+
+    // Layout 3: pkgpath resolves to a directory. Nothing to canonicalize.
+    let dir = fresh_tmp("dir");
+    let dir_pkg = dir.join("pkg");
+    fs::create_dir_all(&dir_pkg).unwrap();
+    fs::write(dir_pkg.join("foo.k"), "").unwrap();
+    assert_eq!(canonical_pkg_path(dir.to_str().unwrap(), "pkg"), "pkg");
+
+    // Layout 4: pkgpath does not resolve to anything. Returned unchanged.
+    let missing = fresh_tmp("missing");
+    assert_eq!(
+        canonical_pkg_path(missing.to_str().unwrap(), "does.not.exist"),
+        "does.not.exist"
+    );
+}
