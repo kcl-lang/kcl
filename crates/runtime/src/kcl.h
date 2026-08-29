@@ -333,6 +333,8 @@ kcl_value_ref_t* kcl_file_read(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_va
 
 kcl_value_ref_t* kcl_file_read_env(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
 
+kcl_value_ref_t* kcl_file_readbase64(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
 kcl_value_ref_t* kcl_file_size(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
 
 kcl_value_ref_t* kcl_file_workdir(kcl_context_t* ctx, kcl_value_ref_t* _args, kcl_value_ref_t* _kwargs);
