@@ -402,18 +402,6 @@ impl ValueRef {
     }
 
     /// Dict insert unpack value e.g., data = {**v}
-    ///
-    /// Per the parser (`crates/parser/src/parser/expr.rs`), the `**` syntax in a
-    /// config entry is recorded with `ConfigEntryOperation::Override`. Each key
-    /// carried by the unpacked dict therefore corresponds to a distinct
-    /// override-style assignment, not to a per-key union. Prior to this change
-    /// the runtime always forwarded the per-key ops from the unpacked dict,
-    /// which produced element-wise list merges instead of the expected
-    /// override (`MyXRD{**{sizes: ["Large"]}}` was returning
-    /// `sizes = ["Large", "Medium"]` rather than replacing the schema default).
-    /// Force every entry to `Override` before merging so the user-provided
-    /// values replace defaults rather than merging with them. See
-    /// crossplane-contrib/function-kcl#275.
     pub fn dict_insert_unpack(&mut self, ctx: &mut Context, v: &ValueRef) {
         let mut union = false;
         match (&*self.rc.borrow(), &*v.rc.borrow()) {
@@ -432,15 +420,7 @@ impl ValueRef {
             ),
         }
         if union {
-            let mut copy = v.schema_to_dict().deep_copy();
-            // Promote every per-key op to `Override` so unpacked values replace
-            // existing entries instead of being unioned (see doc comment above).
-            if let Value::dict_value(ref mut dict) = *copy.rc.borrow_mut() {
-                for op in dict.ops.values_mut() {
-                    *op = ConfigEntryOperationKind::Override;
-                }
-            }
-            self.bin_aug_bit_or(ctx, &copy);
+            self.bin_aug_bit_or(ctx, &v.schema_to_dict().deep_copy());
         }
     }
 
