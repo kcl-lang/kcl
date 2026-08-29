@@ -5,6 +5,12 @@ error[E2D34]: IllegalInheritError
   |                ^ invalid schema inherit object type, expect schema, got 'FullnameMixin'
   |
 error[E2L23]: CompileError
+  --> ${CWD}/main.k:11:19
+   |
+11 | JohnDoe = Scholar {
+   |                   ^ attribute 'school' of Scholar is required and can't be None or Undefined
+   |
+error[E2L23]: CompileError
   --> ${CWD}/main.k:12:5
    |
 12 |     "firstName": "Jon",

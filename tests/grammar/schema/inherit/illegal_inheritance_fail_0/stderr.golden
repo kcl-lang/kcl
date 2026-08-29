@@ -5,6 +5,12 @@ error[E2D34]: IllegalInheritError
   |            ^ invalid schema inherit object type, expect schema, got 'int'
   |
 error[E2L23]: CompileError
+ --> ${CWD}/main.k:6:9
+  |
+6 | p = Son {
+  |         ^ attribute 'field' of Son is required and can't be None or Undefined
+  |
+error[E2L23]: CompileError
  --> ${CWD}/main.k:7:5
   |
 7 |     fields: "asa"

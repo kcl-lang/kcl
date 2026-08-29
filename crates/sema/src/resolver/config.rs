@@ -701,10 +701,7 @@ impl<'ctx> Resolver<'_> {
                 let mut provided: IndexSet<String> = IndexSet::default();
                 collect_provided_from_value(&item.node.value.node, &mut provided);
                 if !provided.is_empty() {
-                    provided_by_key
-                        .entry(name)
-                        .or_default()
-                        .extend(provided);
+                    provided_by_key.entry(name).or_default().extend(provided);
                 }
             }
         }
@@ -1048,10 +1045,7 @@ impl<'ctx> Resolver<'_> {
 fn config_entry_first_name(key: &Option<kcl_ast::ast::NodeRef<ast::Expr>>) -> Option<String> {
     match key {
         Some(key) => match &key.node {
-            ast::Expr::Identifier(identifier) => identifier
-                .names
-                .first()
-                .map(|n| n.node.clone()),
+            ast::Expr::Identifier(identifier) => identifier.names.first().map(|n| n.node.clone()),
             ast::Expr::StringLit(string_lit) => Some(string_lit.value.clone()),
             _ => None,
         },

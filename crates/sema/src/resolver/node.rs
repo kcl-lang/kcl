@@ -968,7 +968,11 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
                     });
                 let inherited_provided = self.ctx.current_schema_inherited_provided.clone();
                 if !parent_has_index_signature {
-                    self.check_schema_required_attrs(schema_expr, schema_ty, inherited_provided.as_ref());
+                    self.check_schema_required_attrs(
+                        schema_expr,
+                        schema_ty,
+                        inherited_provided.as_ref(),
+                    );
                 }
                 let obj = self.new_config_expr_context_item(
                     &schema_ty.name,
