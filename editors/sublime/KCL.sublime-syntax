@@ -1,0 +1,150 @@
+%YAML 1.2
+---
+# KCL (KCL Constraint-based Record & Functional Language) syntax definition
+# for Sublime Text. Compatible with tools that consume TextMate grammars,
+# such as `bat` and `delta`.
+#
+# https://kcl-lang.io/
+
+name: KCL
+file_extensions:
+  - k
+  - kcl
+scope: source.kcl
+version: 2
+
+contexts:
+  main:
+    - include: comments
+    - include: strings
+    - include: numbers
+    - include: keywords
+    - include: constants
+    - include: types
+    - include: functions
+    - include: operators
+    - include: punctuation
+    - include: identifiers
+
+  comments:
+    - match: '#+'
+      scope: punctuation.definition.comment.kcl
+      push:
+        - meta_scope: comment.line.number-sign.kcl
+        - match: $
+          pop: true
+
+  docstrings:
+    - match: '"""'
+      scope: punctuation.definition.string.begin.kcl
+      push:
+        - meta_scope: string.quoted.double.block.kcl
+        - match: '"""'
+          scope: punctuation.definition.string.end.kcl
+          pop: true
+        - match: '\\(?:[\\''"abfnrtv0]|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4})'
+          scope: constant.character.escape.kcl
+
+  raw_strings:
+    - match: 'r"[^"\n]*"'
+      scope: string.quoted.double.raw.kcl
+    - match: "r'[^'\n]*'"
+      scope: string.quoted.single.raw.kcl
+    - match: 'r"""'
+      scope: punctuation.definition.string.begin.kcl
+      push:
+        - meta_scope: string.quoted.double.raw.block.kcl
+        - match: '"""'
+          scope: punctuation.definition.string.end.kcl
+          pop: true
+    - match: "r'''"
+      scope: punctuation.definition.string.begin.kcl
+      push:
+        - meta_scope: string.quoted.single.raw.block.kcl
+        - match: "'''"
+          scope: punctuation.definition.string.end.kcl
+          pop: true
+
+  strings:
+    - include: raw_strings
+    - include: docstrings
+    - match: '"'
+      scope: punctuation.definition.string.begin.kcl
+      push:
+        - meta_scope: string.quoted.double.kcl
+        - match: '"'
+          scope: punctuation.definition.string.end.kcl
+          pop: true
+        - match: '\\(?:[\\''"abfnrtv0]|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4})'
+          scope: constant.character.escape.kcl
+    - match: "'"
+      scope: punctuation.definition.string.begin.kcl
+      push:
+        - meta_scope: string.quoted.single.kcl
+        - match: "'"
+          scope: punctuation.definition.string.end.kcl
+          pop: true
+        - match: '\\(?:[\\''"abfnrtv0]|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4})'
+          scope: constant.character.escape.kcl
+
+  numbers:
+    - match: '\b0[xX][0-9a-fA-F](?:_?[0-9a-fA-F])*\b'
+      scope: constant.numeric.hexadecimal.kcl
+    - match: '\b0[oO][0-7](?:_?[0-7])*\b'
+      scope: constant.numeric.octal.kcl
+    - match: '\b0[bB][01](?:_?[01])*\b'
+      scope: constant.numeric.binary.kcl
+    - match: '\b[0-9](?:_?[0-9])*(?:\.[0-9](?:_?[0-9])*)?(?:[eE][+-]?[0-9]+)?[kKmMgG]?\b'
+      scope: constant.numeric.kcl
+
+  keywords:
+    - match: '\b(?:as|import|rule|schema|mixin|protocol|check|for|assert|if|elif|else|or|and|not|in|is|lambda|all|any|filter|map|type)\b'
+      scope: keyword.control.kcl
+
+  constants:
+    - match: '\b(?:True|False|None|Undefined)\b'
+      scope: constant.language.kcl
+
+  types:
+    - match: '\b(?:any|bool|int|float|str|bytes)\b'
+      scope: storage.type.kcl
+
+  functions:
+    - match: '\b(?:abs|concat|dict|isinstance|len|list|max|min|print|range|sorted|sum|zip)\b'
+      scope: support.function.builtin.kcl
+
+  operators:
+    - match: '\+|-|\*|\*\*|//?|%|&|\||\^|~|<<|>>'
+      scope: keyword.operator.arithmetic.kcl
+    - match: '==|!=|<|>|<=|>='
+      scope: keyword.operator.comparison.kcl
+    - match: '=|\+=|-=|\*=|/=|//=|%=|&=|\|=|\^=|<<=|>>='
+      scope: keyword.operator.assignment.kcl
+    - match: '->|=>'
+      scope: keyword.operator.arrow.kcl
+
+  punctuation:
+    - match: '\{|\['
+      scope: punctuation.section.bracket.open.kcl
+    - match: '\}|\]'
+      scope: punctuation.section.bracket.close.kcl
+    - match: '\('
+      scope: punctuation.section.parens.open.kcl
+    - match: '\)'
+      scope: punctuation.section.parens.close.kcl
+    - match: ','
+      scope: punctuation.separator.comma.kcl
+    - match: ':'
+      scope: punctuation.separator.colon.kcl
+    - match: '\.\.\.'
+      scope: punctuation.definition.variadic.kcl
+    - match: '\.'
+      scope: punctuation.accessor.dot.kcl
+    - match: '\$'
+      scope: punctuation.dollar.kcl
+    - match: '@'
+      scope: punctuation.decorator.kcl
+
+  identifiers:
+    - match: '\b[a-zA-Z_][a-zA-Z0-9_]*\b'
+      scope: variable.other.kcl
