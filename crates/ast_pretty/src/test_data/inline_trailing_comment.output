@@ -1,0 +1,42 @@
+schema Foo:
+    bar: int # inline trailing comment
+
+x = 1 # another trailing
+
+# A standalone leading comment
+y = 2
+
+# Comment between blocks
+z = {
+    # Leading comment for entry
+    k: 1 # Trailing comment for entry
+    l: 2 # Another trailing
+}
+
+# Comment for next
+a = [
+    1
+    2
+] # trailing for list
+
+# Trailing comment for the opening brace of a multi-line value
+b = { # opening comment
+    p: 1
+    q: 2
+}
+
+# Trailing comment for the opening bracket of a multi-line value
+c = [ # opening comment
+    1
+    2
+]
+
+# Trailing for closing brace
+d = {
+    e: 1
+} # trailing for }
+
+# Trailing for closing bracket
+f = [
+    1
+] # trailing for ]

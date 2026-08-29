@@ -1,8 +1,7 @@
 import math as alias_math
 
 schema Person(Base):
-    # inline comment
-    name: str
+    name: str # inline comment
     age: int
 
     check:
