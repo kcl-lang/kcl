@@ -1,9 +1,0 @@
-input:
-  name: test-oxr
-  sizes:
-  - Large
-oxr:
-  type: MyXRD
-  name: test-oxr
-  sizes:
-  - Large
