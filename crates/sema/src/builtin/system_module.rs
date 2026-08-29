@@ -1228,8 +1228,15 @@ register_yaml_member! {
                 default_value: None,
                 range: dummy_range(),
             },
+            Parameter {
+                name: "multiline_string".to_string(),
+                ty: Type::bool_ref(),
+                has_default: true,
+                default_value: None,
+                range: dummy_range(),
+            },
         ],
-        r#"Serialize a KCL object `data` to a YAML formatted str."#,
+        r#"Serialize a KCL object `data` to a YAML formatted str. When `multiline_string` is true, strings containing literal escape sequences such as `\n` are emitted using YAML block-scalar (`|`) style with real newlines instead of leaving the escapes in the output."#,
         false,
         Some(1),
     )

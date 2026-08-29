@@ -1,0 +1,7 @@
+plain: |
+  field: line1\nline2\nline3
+block: |
+  field: |-
+    line1
+    line2
+    line3

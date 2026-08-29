@@ -83,6 +83,10 @@ pub unsafe extern "C-unwind" fn kcl_manifests_yaml_stream(
                         .get_by_key("sep")
                         .unwrap_or_else(|| ValueRef::str("---"))
                         .as_str(),
+                    multiline_string: opts
+                        .get_by_key("multiline_string")
+                        .unwrap_or_else(|| ValueRef::bool(false))
+                        .as_bool(),
                 }
             } else {
                 panic!(
