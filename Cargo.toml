@@ -44,7 +44,7 @@ kcl-version = { path = "crates/version" }
 serde_yaml = { path = "3rdparty/serde_yaml" }
 
 [workspace.package]
-version = "0.12.4"
+version = "0.12.5"
 edition = "2024"
 rust-version = "1.83"
 exclude = [".github/"]
