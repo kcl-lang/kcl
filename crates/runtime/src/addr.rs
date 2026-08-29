@@ -145,6 +145,7 @@ pub fn kcl_get_fn_ptr_by_name(name: &str) -> u64 {
         "kcl_file_mv" => crate::kcl_file_mv as *const () as u64,
         "kcl_file_read" => crate::kcl_file_read as *const () as u64,
         "kcl_file_read_env" => crate::kcl_file_read_env as *const () as u64,
+        "kcl_file_readbase64" => crate::kcl_file_readbase64 as *const () as u64,
         "kcl_file_size" => crate::kcl_file_size as *const () as u64,
         "kcl_file_workdir" => crate::kcl_file_workdir as *const () as u64,
         "kcl_file_write" => crate::kcl_file_write as *const () as u64,
