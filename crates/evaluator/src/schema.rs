@@ -584,6 +584,26 @@ pub(crate) fn schema_body(
     kwargs: &ValueRef,
 ) -> ValueRef {
     init_lazy_scope(s, &mut ctx.borrow_mut());
+    // Pre-populate `attr_map` with this schema's attribute types *before*
+    // calling the parent's schema body. The parent schema's body walks the
+    // shared dict via `walk_schema_attr` and calls `value_union` for any
+    // user-provided entries; that `value_union` reads the type from
+    // `attr_map` and recursively converts the value. Without this
+    // pre-population, `attr_map` only reflects the parent's (base) types,
+    // so a child that overrides an attribute with a more-specific schema
+    // (e.g. extending a `[...str]: BaseX` with `[...str]: NewX`) would
+    // trigger recursive conversion against `BaseX`, which can reject
+    // attributes only present in the override (`NewX`). See
+    // kcl-lang/kcl#1707.
+    if ctx.borrow().node.parent_name.is_some() {
+        let ctx_ref = ctx.borrow();
+        let mut schema_value = ctx_ref.value.clone();
+        for stmt in &ctx_ref.node.body {
+            if let ast::Stmt::SchemaAttr(sa) = &stmt.node {
+                schema_value.update_attr_map(&sa.name.node, &sa.ty.node.to_string());
+            }
+        }
+    }
     // Schema self value or parent schema value;
     let mut schema_ctx_value = if let Some(parent_name) = &ctx.borrow().node.parent_name {
         let base_constructor_func = s.load_global_value(

@@ -525,6 +525,18 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         self.clear_local_vars();
         let name = schema_attr.name.node.as_str();
         self.add_target_var(name);
+        // If this walk happens while processing the body of a parent schema
+        // on behalf of a child (`is_sub_schema == false`), the child has
+        // already pre-populated `attr_map` in `schema_body` with the
+        // most-derived type for any attribute it overrides. We must keep
+        // that type (it drives recursive conversion in `value_union`), but
+        // we still need to apply the parent's default value when the child
+        // redeclares the attribute without one and the user did not supply
+        // a value. See kcl-lang/kcl#1707.
+        let attr_already_claimed = self
+            .get_schema_eval_context()
+            .map(|c| !c.borrow().is_sub_schema && c.borrow().value.attr_map_get(name).is_some())
+            .unwrap_or(false);
         for decorator in &schema_attr.decorators {
             self.walk_decorator_with_name(&decorator.node, Some(name), false)
                 .expect(kcl_error::INTERNAL_ERROR_MSG);
@@ -532,7 +544,9 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         let (mut schema_value, config_value, _) = self
             .get_schema_or_rule_config_info()
             .expect(kcl_error::INTERNAL_ERROR_MSG);
-        schema_value.update_attr_map(name, &schema_attr.ty.node.to_string());
+        if !attr_already_claimed {
+            schema_value.update_attr_map(name, &schema_attr.ty.node.to_string());
+        }
         if let Some(entry) = config_value.dict_get_entry(name) {
             let is_override_attr = {
                 let is_override_op = matches!(
