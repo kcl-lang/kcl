@@ -678,6 +678,7 @@ impl KclServiceImpl {
             yaml_result: result.yaml_result,
             log_message: result.log_message,
             err_message: result.err_message,
+            sourcemap: result.sourcemap,
         })
     }
 

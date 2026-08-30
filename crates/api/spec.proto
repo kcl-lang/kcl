@@ -1046,6 +1046,10 @@ message ExecProgramResult {
 	string log_message = 3;
 	// Error message from execution.
 	string err_message = 4;
+	// Source Map v3 (tc39.es/source-map) JSON mapping the generated YAML
+	// back to the originating KCL source. Populated only when the caller
+	// requests a source map; empty otherwise.
+	optional string sourcemap = 5;
 }
 
 // Message for build program request arguments.
