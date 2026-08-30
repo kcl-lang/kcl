@@ -1588,7 +1588,7 @@ fn rename_test() {
     };
     let server = Project {}.server(initialize_params);
 
-    wait_async!();
+    wait_async!(1000);
 
     let url = Url::from_file_path(path).unwrap();
     let main_url = Url::from_file_path(main_path).unwrap();
