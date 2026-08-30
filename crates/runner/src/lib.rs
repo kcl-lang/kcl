@@ -161,8 +161,13 @@ pub fn execute(
     let scope = resolve_program(&mut program);
     // Emit parse and resolve errors if exists.
     emit_compile_diag_to_string(sess, &scope, false)?;
+    // Build the set of user packages actually referenced from the
+    // entry-point program so that the evaluator can skip pass-3 for
+    // unused imports (issue #1758).
+    let referenced_pkgs = Some(kcl_sema::resolver::collect_referenced_pkgs(&scope));
     FastRunner::new(Some(RunnerOptions {
         plugin_agent_ptr: args.plugin_agent,
+        referenced_pkgs,
     }))
     .run(&program, args)
 }

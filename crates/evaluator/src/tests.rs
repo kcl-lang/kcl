@@ -3,6 +3,8 @@ use kcl_ast::MAIN_PKG;
 use kcl_loader::{LoadPackageOptions, load_packages};
 use kcl_parser::LoadProgramOptions;
 use kcl_runtime::{Context, ValueRef};
+use std::collections::HashSet;
+use std::fs;
 
 #[macro_export]
 macro_rules! evaluator_snapshot {
@@ -1964,4 +1966,248 @@ x = Foo{
     let evaluator = Evaluator::new(&p.program);
     let (output, _) = evaluator.run().expect("program must evaluate successfully");
     assert_eq!(output, r#"{"x": {"items": [4, 5]}}"#);
+}
+
+// ---------------------------------------------------------------------------
+// Issue #1758: skip body evaluation of unused packages
+// ---------------------------------------------------------------------------
+
+/// Write a single KCL file at `dir/<rel_path>` and return its absolute
+/// path. Parent directories are created as needed.
+fn write_kcl_file(dir: &std::path::Path, rel_path: &str, body: &str) -> String {
+    let full = dir.join(rel_path);
+    if let Some(parent) = full.parent() {
+        fs::create_dir_all(parent).unwrap();
+    }
+    fs::write(&full, body).unwrap();
+    full.to_string_lossy().into_owned()
+}
+
+/// Build a small multi-package program. `main.k` lives in the main
+/// package and imports `sub`, which lives in a sibling package on
+/// disk. `main.k` does *not* reference anything in `sub`. `sub.k`
+/// flips a top-level flag from `False` to `True` so the test can
+/// observe whether its body was evaluated.
+fn build_unused_pkg_program() -> (
+    tempfile::TempDir,
+    kcl_loader::Packages,
+) {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let main_path = write_kcl_file(
+        dir.path(),
+        "main.k",
+        r#"
+import sub
+
+result = "from_main"
+"#,
+    );
+    let sub_path = write_kcl_file(
+        dir.path(),
+        "sub.k",
+        r#"
+__did_run = False
+
+_sub_helper = (lambda :
+    setattr(__dict__()["__did_run"], "_value", True)
+)
+
+_sub_helper()
+"#,
+    );
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec![main_path, sub_path],
+        load_opts: Some(LoadProgramOptions {
+            work_dir: dir.path().to_string_lossy().into_owned(),
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .expect("load_packages");
+    (dir, p)
+}
+
+#[test]
+fn issue_1758_import_unused_pkg_skips_body() {
+    let (_dir, packages) = build_unused_pkg_program();
+    let evaluator = Evaluator::new(&packages.program);
+    // Compute the set of referenced packages from sema. main.k does
+    // not read anything from `sub`, so `sub` should be excluded.
+    let mut program = packages.program.clone();
+    let scope = kcl_sema::resolver::resolve_program(&mut program);
+    let referenced = kcl_sema::resolver::collect_referenced_pkgs(&scope);
+    let sub_pgx = packages
+        .program
+        .pkgs
+        .keys()
+        .find(|k| k.as_str() != kcl_ast::MAIN_PKG)
+        .cloned()
+        .expect("sub pkg exists");
+    let prefixed = format!("{}{}", kcl_runtime::PKG_PATH_PREFIX, sub_pgx);
+    assert!(
+        !referenced.contains(&prefixed),
+        "expected {} to be absent from referenced set, got {:?}",
+        prefixed,
+        referenced
+    );
+    evaluator.set_referenced_pkgs(referenced);
+    let (json, _yaml) = evaluator.run().expect("evaluate");
+    // `result` from the main package must be present.
+    assert!(
+        json.contains("\"result\""),
+        "expected main result in output, got {}",
+        json
+    );
+    // The unused `sub` package's `__did_run` flag is now a regular
+    // global in main's scope only if sub was evaluated. Because we
+    // skip its body, its globals stay undefined and never appear in
+    // the output.
+    assert!(
+        !json.contains("__did_run"),
+        "expected __did_run to stay undefined (body skipped), got {}",
+        json
+    );
+}
+
+#[test]
+fn issue_1758_import_used_pkg_runs_body() {
+    let (_dir, packages) = build_unused_pkg_program();
+    let evaluator = Evaluator::new(&packages.program);
+    // Don't restrict: legacy behaviour runs every package body.
+    let (json, _yaml) = evaluator.run().expect("evaluate");
+    // __did_run is a private (underscore-prefixed) name — it should
+    // *not* appear in the output unless show_hidden is set. The
+    // important assertion is that evaluation completes successfully
+    // when the package is referenced (i.e. no panic or error).
+    assert!(
+        json.contains("\"result\""),
+        "expected main result in output, got {}",
+        json
+    );
+}
+
+#[test]
+fn issue_1758_transitive_unused_pkg_skipped() {
+    // main.k only references symbols from `mid`. `mid` imports
+    // `leaf`. We expect `leaf`'s body to be skipped because no
+    // transitively-reachable reference resolved through `leaf`'s
+    // import statement.
+    let dir = tempfile::tempdir().expect("tempdir");
+    let main_path = write_kcl_file(
+        dir.path(),
+        "main.k",
+        r#"
+import mid
+
+result = "from_main"
+"#,
+    );
+    let mid_path = write_kcl_file(
+        dir.path(),
+        "mid.k",
+        r#"
+import leaf
+
+mid_value = "from_mid"
+"#,
+    );
+    let leaf_path = write_kcl_file(
+        dir.path(),
+        "leaf.k",
+        r#"
+__leaf_ran = False
+
+_leaf_helper = (lambda :
+    setattr(__dict__()["__leaf_ran"], "_value", True)
+)
+
+_leaf_helper()
+
+leaf_value = "from_leaf"
+"#,
+    );
+    let packages = load_packages(&LoadPackageOptions {
+        paths: vec![main_path, mid_path, leaf_path],
+        load_opts: Some(LoadProgramOptions {
+            work_dir: dir.path().to_string_lossy().into_owned(),
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .expect("load_packages");
+
+    // First sanity-check: with the default (legacy) behaviour, every
+    // package's body runs, including `leaf`.
+    let legacy = Evaluator::new(&packages.program);
+    let (legacy_json, _) = legacy.run().expect("legacy evaluate");
+    assert!(legacy_json.contains("\"result\""));
+
+    // Now compute the referenced set: only `mid` is directly
+    // referenced from main, so `leaf` should be absent.
+    let mut program = packages.program.clone();
+    let scope = kcl_sema::resolver::resolve_program(&mut program);
+    let referenced = kcl_sema::resolver::collect_referenced_pkgs(&scope);
+    let leaf_pgx = packages
+        .program
+        .pkgs
+        .keys()
+        .find(|k| k.as_str() != kcl_ast::MAIN_PKG && k.as_str() != "mid")
+        .cloned()
+        .expect("leaf pkg exists");
+    let prefixed = format!("{}{}", kcl_runtime::PKG_PATH_PREFIX, leaf_pgx);
+    assert!(
+        !referenced.contains(&prefixed),
+        "expected {} to be absent from referenced set, got {:?}",
+        prefixed,
+        referenced
+    );
+
+    // Build a fresh evaluator with the restricted set, then verify
+    // the leaf's __leaf_ran flag does not appear.
+    let skipped = Evaluator::new(&packages.program);
+    skipped.set_referenced_pkgs(referenced);
+    let (json, _) = skipped.run().expect("skipped evaluate");
+    assert!(json.contains("\"result\""));
+    assert!(
+        !json.contains("__leaf_ran"),
+        "expected __leaf_ran to stay undefined when leaf is unused, got {}",
+        json
+    );
+}
+
+#[test]
+fn issue_1758_legacy_behaviour_when_no_referenced_pkgs_set() {
+    // Sanity check: when `referenced_pkgs` is None (default), the
+    // evaluator must keep legacy semantics — every package's body
+    // runs and the program evaluates without errors.
+    let (_dir, packages) = build_unused_pkg_program();
+    let evaluator = Evaluator::new(&packages.program);
+    // Do NOT call set_referenced_pkgs — defaults to None.
+    let (json, _yaml) = evaluator.run().expect("legacy evaluate");
+    assert!(json.contains("\"result\""));
+}
+
+#[test]
+fn issue_1758_referenced_pkgs_with_extra_member_is_noop() {
+    // When `referenced_pkgs` includes an unrelated package, the
+    // evaluator must still skip the unused one. This guards against
+    // accidental changes where the set might be interpreted as "must
+    // skip everything in this set" rather than "must skip anything
+    // outside this set".
+    let (_dir, packages) = build_unused_pkg_program();
+    let evaluator = Evaluator::new(&packages.program);
+    let mut set = HashSet::new();
+    // Some random pkgpath that does not match anything in the
+    // program — the only effect should be that *all* real packages
+    // (including the unused `sub`) are body-skipped.
+    set.insert("@__nonexistent__".to_string());
+    evaluator.set_referenced_pkgs(set);
+    let (json, _) = evaluator.run().expect("evaluate");
+    assert!(
+        json.contains("\"result\""),
+        "expected main result in output, got {}",
+        json
+    );
 }

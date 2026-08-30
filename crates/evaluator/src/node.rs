@@ -328,6 +328,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         } else {
             let pkgpath = format!("{}{}", PKG_PATH_PREFIX, import_stmt.path.node);
             if let Some(modules) = self.program.pkgs.get(&import_stmt.path.node) {
+                let skip_body = self.should_skip_pkg_body(&pkgpath);
                 self.push_pkgpath(&pkgpath);
                 self.init_scope(&pkgpath);
                 let modules: Vec<Arc<RwLock<Module>>> = modules
@@ -338,7 +339,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
                             .unwrap_or_else(|| panic!("module {:?} not found in program", m))
                     })
                     .collect();
-                self.compile_ast_modules(&modules);
+                self.compile_ast_modules_with_skip(&modules, skip_body);
                 self.pop_pkgpath();
             }
         }
@@ -1247,6 +1248,18 @@ impl<'ctx> Evaluator<'ctx> {
             }
         }
         result
+    }
+
+    /// Returns `true` when pass-3 (statement evaluation) should be
+    /// skipped for the given package path. Conservative: when the
+    /// `referenced_pkgs` set is `None` (the default, e.g. for tests
+    /// and embedders that build an [`Evaluator`] directly), legacy
+    /// behaviour is preserved and the body is always evaluated.
+    pub(crate) fn should_skip_pkg_body(&self, pkgpath: &str) -> bool {
+        match self.referenced_pkgs.borrow().as_ref() {
+            None => false,
+            Some(set) => !set.contains(pkgpath),
+        }
     }
 
     pub fn walk_stmts(&self, stmts: &'ctx [Box<ast::Node<ast::Stmt>>]) -> EvalResult {
