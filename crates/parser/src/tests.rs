@@ -637,6 +637,51 @@ fn test_import_vendor_by_external_arguments() {
 }
 
 #[test]
+fn test_get_compile_entries_from_k_code_list_only() {
+    // kcl-lang/lib#217: a caller passing only `k_code_list` (no on-disk
+    // paths) should still produce a compilable entry, with each code
+    // snippet attached to a synthetic filename so error spans remain
+    // addressable.
+    let mut opts = LoadProgramOptions::default();
+    opts.work_dir = "/tmp/lib217".to_string();
+    opts.k_code_list = vec!["a = 1".to_string(), "b = 2".to_string()];
+
+    let entries = get_compile_entries_from_paths(&[], &opts).unwrap();
+
+    assert_eq!(entries.len(), 1);
+    let entry = entries.get_nth_entry(0).unwrap();
+    assert_eq!(entry.name(), "__main__");
+    assert_eq!(entry.path(), "/tmp/lib217");
+    assert_eq!(entry.get_k_files().len(), 2);
+    assert_eq!(entry.get_k_codes().len(), 2);
+    assert_eq!(
+        entry.get_k_files()[0],
+        "/tmp/lib217/__main__.k".to_string()
+    );
+    assert_eq!(
+        entry.get_k_files()[1],
+        "/tmp/lib217/__main__1.k".to_string()
+    );
+    assert_eq!(entry.get_k_codes()[0].as_deref(), Some("a = 1"));
+    assert_eq!(entry.get_k_codes()[1].as_deref(), Some("b = 2"));
+
+    // Both file_paths and k_code_list empty must still surface the
+    // original "No input KCL files or paths" error.
+    let err = get_compile_entries_from_paths(
+        &[],
+        &LoadProgramOptions {
+            work_dir: "/tmp".to_string(),
+            ..Default::default()
+        },
+    )
+    .unwrap_err();
+    assert!(
+        err.to_string().contains("No input KCL files or paths"),
+        "{err}"
+    );
+}
+
+#[test]
 fn test_get_compile_entries_from_paths() {
     let testpath = PathBuf::from("./src/testdata/multimods")
         .canonicalize()
