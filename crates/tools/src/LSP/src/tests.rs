@@ -1384,7 +1384,7 @@ fn find_refs_test() {
     let server = Project {}.server(initialize_params);
 
     // Wait for async build word_index_map
-    wait_async!();
+    wait_async!(1000);
 
     let url = Url::from_file_path(path).unwrap();
 
