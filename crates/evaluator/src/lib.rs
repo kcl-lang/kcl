@@ -26,6 +26,9 @@ use func::FunctionEvalContextRef;
 use generational_arena::{Arena, Index};
 use kcl_primitives::IndexMap;
 use kcl_runtime::val_plan::KCL_PRIVATE_VAR_PREFIX;
+use kcl_runtime::value::kcl_sourcemap::{
+    SourceMapBuilder, SourceMapV3, record_yaml_top_level_keys,
+};
 use lazy::{BacktrackMeta, LazyEvalScope};
 use proxy::{Frame, Proxy};
 use rule::RuleEvalContextRef;
@@ -101,6 +104,10 @@ pub struct Evaluator<'ctx> {
     pub backtrack_meta: RefCell<Vec<BacktrackMeta>>,
     /// Current AST id for the evaluator walker.
     pub ast_id: RefCell<AstIndex>,
+    /// Source positions `name -> (filename, line, column)` of top-level
+    /// assignments, collected while walking the main package. Feeds the
+    /// Source Map v3 output; only filled for global-scope statements.
+    pub source_positions: RefCell<IndexMap<String, (String, u32, u32)>>,
 }
 
 #[derive(Clone)]
@@ -169,6 +176,7 @@ impl<'ctx> Evaluator<'ctx> {
             backtrack_meta: RefCell::new(Default::default()),
             ast_id: RefCell::new(AstIndex::default()),
             ctx_stack: RefCell::new(Default::default()),
+            source_positions: RefCell::new(Default::default()),
         }
     }
 
@@ -178,6 +186,37 @@ impl<'ctx> Evaluator<'ctx> {
         self.init_scope(kcl_ast::MAIN_PKG);
         self.compile_ast_modules(&modules);
         Ok(self.plan_globals_to_string())
+    }
+
+    /// Build the Source Map v3 for a planned YAML string produced by
+    /// [`Evaluator::run`], mapping each top-level key back to the `.k`
+    /// statement that defined it.
+    ///
+    /// `file` names the generated artifact the map accompanies. Call this
+    /// after `run`; before that the position table is empty and the result
+    /// is a valid but empty map.
+    pub fn source_map(&self, yaml: &str, file: &str) -> SourceMapV3 {
+        let mut builder =
+            SourceMapBuilder::new().with_positions(self.source_positions.borrow().clone());
+        record_yaml_top_level_keys(yaml, &mut builder);
+        builder.finish(file)
+    }
+
+    /// Record the source position of a top-level assignment target so a
+    /// Source Map v3 entry can be emitted for it later.
+    ///
+    /// Only global-scope, non-private names are recorded: anything deeper
+    /// never becomes a top-level key in the planned output. The first
+    /// position wins, so a name reassigned later still maps back to where
+    /// it was originally defined.
+    pub(crate) fn record_source_position<T>(&self, name: &str, node: &ast::Node<T>) {
+        if self.scope_level() != GLOBAL_LEVEL || name.starts_with(KCL_PRIVATE_VAR_PREFIX) {
+            return;
+        }
+        self.source_positions
+            .borrow_mut()
+            .entry(name.to_string())
+            .or_insert_with(|| (node.filename.clone(), node.line as u32, node.column as u32));
     }
 
     /// Evaluate the program with the function mode and return the JSON and YAML result,

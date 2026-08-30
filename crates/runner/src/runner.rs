@@ -74,6 +74,11 @@ pub struct ExecProgramArgs {
     /// did not specify a format).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub format: Option<String>,
+    /// Name recorded in the `file` field of the emitted Source Map v3
+    /// document, i.e. the generated artifact the map accompanies. When
+    /// `None`, no source map is generated.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sourcemap_output: Option<String>,
 }
 
 impl ExecProgramArgs {
@@ -105,6 +110,10 @@ pub struct ExecProgramResult {
     pub yaml_result: String,
     pub log_message: String,
     pub err_message: String,
+    /// Source Map v3 JSON mapping generated YAML lines back to the `.k`
+    /// statements that produced them. Only populated when the caller sets
+    /// [`ExecProgramArgs::sourcemap_output`].
+    pub sourcemap: Option<String>,
 }
 
 pub trait MapErrorResult {
@@ -192,6 +201,10 @@ impl TryFrom<SettingsFile> for ExecProgramArgs {
             args.include_schema_type_path =
                 cli_configs.include_schema_type_path.unwrap_or_default();
             args.format = cli_configs.format.clone().filter(|s| !s.is_empty());
+            args.sourcemap_output = cli_configs
+                .sourcemap_output
+                .clone()
+                .filter(|s| !s.is_empty());
             for override_str in cli_configs.overrides.unwrap_or_default() {
                 args.overrides.push(override_str);
             }
@@ -343,6 +356,16 @@ impl FastRunner {
                             result.json_result = json;
                             result.yaml_result = yaml;
                         }
+                    }
+                    // The map indexes generated YAML lines, so it is only
+                    // meaningful when the YAML encoder actually ran.
+                    if let Some(file) = &args.sourcemap_output
+                        && !result.yaml_result.is_empty()
+                    {
+                        result.sourcemap = evaluator
+                            .source_map(&result.yaml_result, file)
+                            .to_json()
+                            .ok();
                     }
                 }
                 Err(err) => {
