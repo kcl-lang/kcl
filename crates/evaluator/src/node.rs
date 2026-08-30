@@ -101,6 +101,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
     fn walk_unification_stmt(&self, unification_stmt: &'ctx ast::UnificationStmt) -> Self::Result {
         self.clear_local_vars();
         let name = &unification_stmt.target.node.names[0].node;
+        self.record_source_position(name, &unification_stmt.target);
         self.add_target_var(name);
         // The right value of the unification_stmt is a schema_expr.
         let value = self.walk_schema_expr(&unification_stmt.value.node)?;
@@ -125,6 +126,13 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
     }
 
     fn walk_assign_stmt(&self, assign_stmt: &'ctx ast::AssignStmt) -> Self::Result {
+        // Record positions before the cached-value fast path below, which
+        // can return early and would otherwise lose the mapping.
+        for target in &assign_stmt.targets {
+            if target.node.paths.is_empty() {
+                self.record_source_position(target.node.name.node.as_str(), target);
+            }
+        }
         // Reuse the value of a top-level field that was already resolved early
         // by a forward reference, instead of evaluating its right-hand side a
         // second time during the eager walk (see issue #1759). This is limited
