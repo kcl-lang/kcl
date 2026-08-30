@@ -295,12 +295,44 @@ pub fn get_compile_entries_from_paths(
     file_paths: &[String],
     opts: &LoadProgramOptions,
 ) -> Result<Entries> {
-    if file_paths.is_empty() {
+    // When neither file paths nor inline code is supplied there is nothing to
+    // compile; reject with a clear error in that case only.
+    if file_paths.is_empty() && opts.k_code_list.is_empty() {
         return Err(anyhow::anyhow!("No input KCL files or paths"));
     }
     let mut result = Entries::default();
     let mut k_code_queue = VecDeque::from(opts.k_code_list.clone());
     let file_paths = expand_input_files(file_paths);
+
+    // When only inline `k_code_list` strings are supplied (no on-disk paths),
+    // synthesize a virtual `__main__` entry whose k_files list is built from
+    // the inline code snippets. Each snippet is paired with a synthetic
+    // filename of the form `<root>/__main__.k`, `<root>/__main__1.k`, ... so
+    // parse errors still report a path the caller can correlate to the
+    // corresponding snippet (see kcl-lang/lib#217).
+    if file_paths.is_empty() {
+        let root = if opts.work_dir.is_empty() {
+            ".".to_string()
+        } else {
+            opts.work_dir.clone()
+        };
+        let mut entry = Entry::new(kcl_ast::MAIN_PKG.to_string(), root.clone());
+        let mut idx = 0usize;
+        for code in k_code_queue.drain(..) {
+            let synthetic = if idx == 0 {
+                format!("{}/__main__.k", root)
+            } else {
+                format!("{}/__main__{}.k", root, idx)
+            };
+            entry.push_k_code(Some(code));
+            entry.extend_k_files(vec![synthetic]);
+            idx += 1;
+        }
+        result.push_entry(entry);
+        result.root_path = root;
+        return Ok(result);
+    }
+
     for file in &file_paths {
         let file = canonicalize_input_file(file, &opts.work_dir, opts.preserve_symlink_paths);
         let path = ModRelativePath::from(file.to_string());
