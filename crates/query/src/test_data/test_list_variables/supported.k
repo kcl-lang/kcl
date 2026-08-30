@@ -92,6 +92,22 @@ _part2 = {
 
 _list0 = [1, 2, 3]
 _list1 = [4, 5, 6]
-union_list = [*_list0, *_list1] 
+union_list = [*_list0, *_list1]
 
 a_dict = {**_part1, **_part2}  # {"a: "b", "c": "d"}
+
+# Schema attribute whose value is a union (`+`) of two list literals.
+# Regression for kcl-lang/kcl#2026 — `list_variables` must still report
+# the union as a list of items, not as an opaque string.
+schema Container:
+    env: [str]
+    item: {str: int}
+
+main = Container {
+    env: ["a", "b"] + ["c", "d"]
+    item: {"a": 1} + {"b": 2}
+}
+
+# Top-level binary expression whose left and right are both lists.
+# The selector should still treat the result as a list of items.
+mixed_list = ["x", "y"] + _list0

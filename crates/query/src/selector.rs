@@ -254,6 +254,30 @@ impl Selector {
                     variable.dict_entries = variables;
                 }
             }
+            // A union (`+`) of two lists (`[a, b] + [c, d]`) parses to
+            // a `Binary` expression rather than a literal `List`. Without
+            // this branch `list_variables` would fall through to the source
+            // string and lose every child item — see kcl-lang/kcl#2026.
+            ast::Expr::Binary(bin) if matches!(bin.op, ast::BinOp::Add) => {
+                // Recurse into both sides *before* we overwrite the parent
+                // `value` field, so the rendered source string keeps
+                // representing the whole union rather than just the LHS.
+                let mut lhs = Variable::default();
+                self.fill_variable_value(&mut lhs, &bin.left.node);
+                let mut rhs = Variable::default();
+                self.fill_variable_value(&mut rhs, &bin.right.node);
+
+                if !lhs.list_items.is_empty() || !rhs.list_items.is_empty() {
+                    let mut items = lhs.list_items;
+                    items.extend(rhs.list_items);
+                    variable.list_items = items;
+                }
+                if !lhs.dict_entries.is_empty() || !rhs.dict_entries.is_empty() {
+                    let mut entries = lhs.dict_entries;
+                    entries.extend(rhs.dict_entries);
+                    variable.dict_entries = entries;
+                }
+            }
             _ => (),
         }
     }

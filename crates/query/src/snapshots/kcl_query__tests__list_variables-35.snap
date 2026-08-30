@@ -1,0 +1,49 @@
+---
+source: crates/query/src/tests.rs
+expression: got_json
+---
+{
+  "main.env": [
+    {
+      "name": "env",
+      "type_name": "",
+      "op_sym": ":",
+      "value": "[\"a\", \"b\"] + [\"c\", \"d\"]",
+      "list_items": [
+        {
+          "name": "",
+          "type_name": "",
+          "op_sym": "",
+          "value": "\"a\"",
+          "list_items": [],
+          "dict_entries": []
+        },
+        {
+          "name": "",
+          "type_name": "",
+          "op_sym": "",
+          "value": "\"b\"",
+          "list_items": [],
+          "dict_entries": []
+        },
+        {
+          "name": "",
+          "type_name": "",
+          "op_sym": "",
+          "value": "\"c\"",
+          "list_items": [],
+          "dict_entries": []
+        },
+        {
+          "name": "",
+          "type_name": "",
+          "op_sym": "",
+          "value": "\"d\"",
+          "list_items": [],
+          "dict_entries": []
+        }
+      ],
+      "dict_entries": []
+    }
+  ]
+}

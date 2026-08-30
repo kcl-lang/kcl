@@ -428,6 +428,122 @@ expression: got_json
       ]
     }
   ],
+  "main": [
+    {
+      "name": "main",
+      "type_name": "Container",
+      "op_sym": "=",
+      "value": "Container {\n    env: [\"a\", \"b\"] + [\"c\", \"d\"]\n    item: {\"a\": 1} + {\"b\": 2}\n}",
+      "list_items": [],
+      "dict_entries": [
+        {
+          "key": "env",
+          "value": {
+            "name": "env",
+            "type_name": "",
+            "op_sym": ":",
+            "value": "[\"a\", \"b\"] + [\"c\", \"d\"]",
+            "list_items": [
+              {
+                "name": "",
+                "type_name": "",
+                "op_sym": "",
+                "value": "\"a\"",
+                "list_items": [],
+                "dict_entries": []
+              },
+              {
+                "name": "",
+                "type_name": "",
+                "op_sym": "",
+                "value": "\"b\"",
+                "list_items": [],
+                "dict_entries": []
+              },
+              {
+                "name": "",
+                "type_name": "",
+                "op_sym": "",
+                "value": "\"c\"",
+                "list_items": [],
+                "dict_entries": []
+              },
+              {
+                "name": "",
+                "type_name": "",
+                "op_sym": "",
+                "value": "\"d\"",
+                "list_items": [],
+                "dict_entries": []
+              }
+            ],
+            "dict_entries": []
+          }
+        },
+        {
+          "key": "item",
+          "value": {
+            "name": "item",
+            "type_name": "",
+            "op_sym": ":",
+            "value": "{\"a\": 1} + {\"b\": 2}",
+            "list_items": [],
+            "dict_entries": [
+              {
+                "key": "a",
+                "value": {
+                  "name": "a",
+                  "type_name": "",
+                  "op_sym": ":",
+                  "value": "1",
+                  "list_items": [],
+                  "dict_entries": []
+                }
+              },
+              {
+                "key": "b",
+                "value": {
+                  "name": "b",
+                  "type_name": "",
+                  "op_sym": ":",
+                  "value": "2",
+                  "list_items": [],
+                  "dict_entries": []
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "mixed_list": [
+    {
+      "name": "mixed_list",
+      "type_name": "",
+      "op_sym": "=",
+      "value": "[\"x\", \"y\"] + _list0",
+      "list_items": [
+        {
+          "name": "",
+          "type_name": "",
+          "op_sym": "",
+          "value": "\"x\"",
+          "list_items": [],
+          "dict_entries": []
+        },
+        {
+          "name": "",
+          "type_name": "",
+          "op_sym": "",
+          "value": "\"y\"",
+          "list_items": [],
+          "dict_entries": []
+        }
+      ],
+      "dict_entries": []
+    }
+  ],
   "s1": [
     {
       "name": "s1",
