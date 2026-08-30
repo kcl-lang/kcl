@@ -654,10 +654,7 @@ fn test_get_compile_entries_from_k_code_list_only() {
     assert_eq!(entry.path(), "/tmp/lib217");
     assert_eq!(entry.get_k_files().len(), 2);
     assert_eq!(entry.get_k_codes().len(), 2);
-    assert_eq!(
-        entry.get_k_files()[0],
-        "/tmp/lib217/__main__.k".to_string()
-    );
+    assert_eq!(entry.get_k_files()[0], "/tmp/lib217/__main__.k".to_string());
     assert_eq!(
         entry.get_k_files()[1],
         "/tmp/lib217/__main__1.k".to_string()
