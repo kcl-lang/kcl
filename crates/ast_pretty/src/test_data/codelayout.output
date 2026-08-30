@@ -168,5 +168,4 @@ list_if_item = [
         2
 ]
 
-longString = "Too long expression " + "Too long expression " + "Too long expression "
-# recommended
+longString = "Too long expression " + "Too long expression " + "Too long expression " # recommended

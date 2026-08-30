@@ -251,10 +251,23 @@ impl<'p> Printer<'p> {
             self.last_ast_line = node.line;
             let mut index = None;
             for (i, comment) in self.comments.iter().enumerate() {
-                if comment.line <= node.line {
+                if comment.line > node.line {
+                    break;
+                }
+                if comment.line < node.line {
+                    // Strictly before this node — emit as a leading comment.
                     index = Some(i);
                 } else {
-                    break;
+                    // Same line as the node. A same-line leading comment
+                    // (`# foo\nbar = 1` where `# foo` is positioned before
+                    // `bar`) is still a leading comment, so emit it. An
+                    // inline trailing comment (`bar = 1  # foo`) starts
+                    // after the node's column and must be emitted later
+                    // by `write_inline_trailing_comments`; leave it in
+                    // the queue here.
+                    if comment.column <= node.column {
+                        index = Some(i);
+                    }
                 }
             }
             if let Some(index) = index {
@@ -275,6 +288,78 @@ impl<'p> Printer<'p> {
                     count -= 1;
                 }
             }
+        }
+    }
+
+    /// Emit any pending inline trailing comments for `node`.
+    ///
+    /// An inline trailing comment is a comment that shares the same line
+    /// as the node's end and starts at or after the node's end column,
+    /// e.g. `bar: int  # comment` or `}# comment`. These are skipped by
+    /// [`Self::write_comments_before_node`] (so they are not popped into
+    /// a leading comment) and emitted here on the same line as the node
+    /// content, preserving the original source layout from issue
+    /// kcl-lang/kcl#1756.
+    ///
+    /// Note on the column comparison: the parser reports `end_column` as
+    /// the column where the *next* non-whitespace token begins — not
+    /// strictly one past the last byte of the node. So when the user
+    /// writes `value# comment` (no separating space), `comment.column`
+    /// equals `node.end_column` and we still need to treat the comment
+    /// as inline trailing. Hence the `>=` rather than `>`.
+    ///
+    /// This helper is tolerant of being called either before or after
+    /// the trailing newline that ends the node's line has been emitted.
+    /// If the buffer currently ends with `\n`, that newline is popped so
+    /// the comment lands on the same line as the node; after all trailing
+    /// comments have been emitted, the newline is restored. Callers do
+    /// not need to know the exact state of the buffer.
+    pub fn write_inline_trailing_comments<T>(&mut self, node: &ast::NodeRef<T>) {
+        if !self.cfg.write_comments {
+            return;
+        }
+        if node.end_line == 0 {
+            return;
+        }
+        // Count any trailing newlines at the end of the buffer so we can
+        // restore them after popping one for the comment. There may be
+        // more than one (e.g. a blank line between two statements), in
+        // which case the comment belongs on the *node's* line, not the
+        // blank one — so we restore all of them except the first.
+        let trailing_newlines = self.out.len() - self.out.trim_end_matches('\n').len();
+        let had_trailing_newline = trailing_newlines > 0;
+        let mut wrote_any = false;
+        while let Some(comment) = self.comments.front() {
+            // A trailing comment for this node lives either on the same
+            // line as the node's *end* (e.g. `bar: int  # foo`) or on
+            // the same line as the node's *start* (e.g.
+            // `config = { # foo` where `{` opens a multi-line value).
+            let on_start_line = comment.line == node.line;
+            let on_end_line = comment.line == node.end_line;
+            if !on_start_line && !on_end_line {
+                break;
+            }
+            if comment.column < node.end_column {
+                break;
+            }
+            let comment = self.comments.pop_front().unwrap();
+            if !wrote_any && had_trailing_newline {
+                for _ in 1..trailing_newlines {
+                    self.out.pop();
+                }
+                self.out.pop();
+            }
+            self.write_space();
+            self.write(&comment.node.text);
+            wrote_any = true;
+        }
+        if wrote_any && had_trailing_newline {
+            // Restore all but one of the popped newlines so any blank
+            // line(s) the caller inserted between stmts are preserved.
+            for _ in 1..trailing_newlines {
+                self.write_string(NEWLINE);
+            }
+            self.write_string(NEWLINE);
         }
     }
 
@@ -350,6 +435,36 @@ impl<'p> Printer<'p> {
 
     pub(crate) fn current_expr_end_line(&self) -> Option<u64> {
         self.expr_span_stack.last().map(|(_, end_line)| *end_line)
+    }
+
+    pub(crate) fn current_expr_start_line(&self) -> Option<u64> {
+        self.expr_span_stack
+            .last()
+            .map(|(start_line, _)| *start_line)
+    }
+
+    /// Pop the next pending comment if it lives on `start_line` and emit it
+    /// inline (with a leading space). Used by walkers that open a multi-line
+    /// block (config `{`, list `[`) to preserve trailing comments that sit
+    /// on the same line as the opening delimiter, e.g.
+    ///
+    /// ```text
+    /// config = { # comment for the opening brace
+    ///     key1: 1
+    /// }
+    /// ```
+    ///
+    /// Callers must ensure the next comment cannot belong to a child node
+    /// on the same line (e.g. only call this when the first child entry is
+    /// on a later line than `start_line`).
+    pub(crate) fn pop_inline_trailing_comment_on_start_line(&mut self, start_line: u64) {
+        if let Some(comment) = self.comments.front()
+            && comment.line == start_line
+        {
+            let comment = self.comments.pop_front().unwrap();
+            self.write_space();
+            self.write(&comment.node.text);
+        }
     }
 }
 

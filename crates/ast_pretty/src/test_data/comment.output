@@ -16,8 +16,7 @@ schema AppConfiguration:
 appConfiguration = AppConfiguration {
     # Comment Four
     appName: "kusion"
-    # Comment Five
-    image: "test-image:v1"
+    image: "test-image:v1" # Comment Five
     resource: {
         cpu: "4"
         disk: "50Gi"
@@ -32,9 +31,7 @@ appConfiguration = AppConfiguration {
     # Comment Six
     mainContainer: Main {
         name: "kusion_override"
-    }
-    # Comment Seven
-    
+    } # Comment Seven
     # Comment Eight
     overQuota: True
 }
@@ -45,8 +42,8 @@ appConfiguration = AppConfiguration {
 @Deprecated()
 schema Foo:
     mixin [
-        # AMixin
         AMixin,
+        # AMixin
         # BMixin
         BMixin
     ]
@@ -56,43 +53,40 @@ schema Foo:
     x: int
 
     check:
-        # x > 0
         x > 0
+        # x > 0
         # x < 0
         x < 0
 
-# Comment One
-config = {
+config = { # Comment One
     # Comment Two
-    # Comment Three
-    key1 = "value1"
+    key1 = "value1" # Comment Three
     # Comment Four
-    key2 = "value2"
-    # Comment Five
+    key2 = "value2" # Comment Five
     key3 = "value3"
     # Comment Six
     "key4" = "value4"
     # Comment Seven
     key5.v = "value5"
-    # Comment Eight
-    **key6
-    # Comment Nine
+    **key6 # Comment Eight
     if True:
-        # Comment Ten
-        key7 = "value7"
+        # Comment Nine
+        key7 = "value7" # Comment Ten
 }
-# Comment One
-data = [
+data = [ # Comment One
     # Comment Two
-    # Comment Three
     1
-    # Comment Four
+    # Comment Three
     if True:
-        # Comment Five
+        # Comment Four
         2
+    # Comment Five
     # Comment Six
+    *[
+        3
+        4
+    ]
     # Comment Seven
-    *[3, 4]
 ]
 
 # This is a comment

@@ -86,6 +86,8 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             self.write(" = ");
         }
         self.expr(&assign_stmt.value);
+        // Inline trailing comment for the assignment (e.g. `x = 1  # foo`).
+        self.write_inline_trailing_comments(&assign_stmt.value);
         self.write_newline_without_fill();
     }
 
@@ -95,6 +97,7 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         self.write(aug_assign_stmt.op.symbol());
         self.write_space();
         self.expr(&aug_assign_stmt.value);
+        self.write_inline_trailing_comments(&aug_assign_stmt.value);
         self.write_newline_without_fill();
     }
 
@@ -108,6 +111,10 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         if let Some(msg) = &assert_stmt.msg {
             self.write(COMMA_WHITESPACE);
             self.expr(msg);
+            // Trailing comment for the optional message string.
+            self.write_inline_trailing_comments(msg);
+        } else {
+            self.write_inline_trailing_comments(&assert_stmt.test);
         }
         self.write_newline_without_fill();
     }
@@ -115,6 +122,8 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
     fn walk_if_stmt(&mut self, if_stmt: &'ctx ast::IfStmt) -> Self::Result {
         self.write("if ");
         self.expr(&if_stmt.cond);
+        // Inline trailing comment for the condition (e.g. `if cond:  # foo`).
+        self.write_inline_trailing_comments(&if_stmt.cond);
         self.write_token(TokenKind::Colon);
         self.write_newline_without_fill();
         self.write_indentation(Indentation::Indent);
@@ -383,6 +392,12 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
         }
         if let Some(value) = &schema_attr.value {
             self.expr(value);
+            // Trailing comment for the default value (e.g. `x: int = 1  # foo`).
+            self.write_inline_trailing_comments(value);
+        } else {
+            // No default value — the trailing comment (if any) lives on
+            // the type's end column.
+            self.write_inline_trailing_comments(&schema_attr.ty);
         }
         self.write_newline_without_fill();
     }
@@ -482,6 +497,24 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             in_one_line = false;
         }
         self.write_token(TokenKind::OpenDelim(DelimToken::Bracket));
+        // Preserve an inline trailing comment that lives on the same line
+        // as the opening `[` (e.g. `data = [ # foo`). Only emit it here
+        // when no element shares the start line — otherwise the comment
+        // may be trailing for the first element, which the per-element
+        // path handles.
+        if !in_one_line
+            && !list_expr.elts.is_empty()
+            && let Some(start_line) = self.current_expr_start_line()
+        {
+            let first_on_start = list_expr
+                .elts
+                .first()
+                .map(|e| e.line == start_line)
+                .unwrap_or(false);
+            if !first_on_start {
+                self.pop_inline_trailing_comment_on_start_line(start_line);
+            }
+        }
         if !in_one_line {
             self.write_indentation(Indentation::IndentWithNewline);
         }
@@ -672,6 +705,24 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
             in_one_line = false;
         }
         self.write_token(TokenKind::OpenDelim(DelimToken::Brace));
+        // Preserve an inline trailing comment that lives on the same line
+        // as the opening `{` (e.g. `config = { # foo`). Only emit it here
+        // when no entry shares the start line — otherwise the comment may
+        // actually be trailing for the first entry, which `write_entry`
+        // already handles via `write_inline_trailing_comments`.
+        if !in_one_line
+            && !config_expr.items.is_empty()
+            && let Some(start_line) = self.current_expr_start_line()
+        {
+            let first_on_start = config_expr
+                .items
+                .first()
+                .map(|e| e.line == start_line)
+                .unwrap_or(false);
+            if !first_on_start {
+                self.pop_inline_trailing_comment_on_start_line(start_line);
+            }
+        }
         if !config_expr.items.is_empty() {
             if !in_one_line {
                 self.write_indentation(Indentation::IndentWithNewline);
@@ -772,6 +823,12 @@ impl<'p, 'ctx> MutSelfTypedResultWalker<'ctx> for Printer<'p> {
                     self.write(" = ");
                     self.expr(default);
                 }
+                // Inline trailing comment on the parameter (e.g. `x, # foo`).
+                // The `arg` NodeRef's column is the start of the identifier;
+                // its end_column is right after the identifier. Any comment
+                // on the same line at column >= end_column lives on the
+                // parameter's line and belongs here, not to a later node.
+                self.write_inline_trailing_comments(arg);
             },
             parameter_zip_list
         );
@@ -910,13 +967,17 @@ impl<'p> Printer<'p> {
                 self.write_space();
                 self.expr(&item.node.value);
                 self.write(&"}".repeat(print_right_brace_count));
+                // Inline trailing comment on the entry (e.g. `k: 1  # foo`).
+                self.write_inline_trailing_comments(&item.node.value);
             }
             None => {
                 self.write_comments_before_node(item);
                 if !matches!(&item.node.value.node, ast::Expr::ConfigIfEntry(_)) {
                     self.write("**");
                 }
-                self.expr(&item.node.value)
+                self.expr(&item.node.value);
+                // Inline trailing comment on the entry.
+                self.write_inline_trailing_comments(&item.node.value);
             }
         };
     }
@@ -1016,6 +1077,12 @@ impl<'p> Printer<'p> {
                         self.write(" = ");
                         self.expr(default);
                     }
+                    // Inline trailing comment on the parameter (e.g.
+                    // `x, # foo`). The arg NodeRef's end_column sits right
+                    // after the identifier, so any comment on the same
+                    // line at column >= end_column belongs to the
+                    // parameter, not to a later parameter.
+                    self.write_inline_trailing_comments(arg);
                 },
                 parameter_zip_list
             );
@@ -1056,6 +1123,13 @@ impl<'p> Printer<'p> {
         self.fill("");
         self.write_comments_before_node(stmt);
         self.walk_stmt(&stmt.node);
+        // Inline trailing comments are emitted by the specific walker
+        // (walk_assign_stmt, walk_schema_stmt, …) before they write their
+        // own trailing newline. We do NOT call write_inline_trailing_comments
+        // here with the outer stmt NodeRef, because for multi-line stmts
+        // (schemas, if statements) the stmt's `end_line` is unreliable and
+        // would cause us to steal trailing comments belonging to a later
+        // statement.
         self.hook.post(self, super::ASTNode::Stmt(stmt));
     }
 

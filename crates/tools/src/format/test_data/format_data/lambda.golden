@@ -33,16 +33,13 @@ f5 = lambda x: any = {y = 1} -> any {
     y + x + z + 1
 }
 f6 = lambda {
-    # some comment
-    x,
-    # some other comment
-    y,
+    x # some comment,
+    y # some other comment,
 } -> any {
     y + x + z + 1
 }
 f7 = lambda {
-    # some comment
-    x: int = 5,
+    x: int = 5 # some comment,
 } -> any {
     1
 }
