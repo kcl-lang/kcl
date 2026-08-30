@@ -571,6 +571,16 @@ impl KclServiceImpl {
     ///
     /// let args = &ExecProgramArgs {
     ///     k_filename_list: vec![],
+    ///     k_code_list: vec!["alice = {age = 18}".to_string()],
+    ///     ..Default::default()
+    /// };
+    /// let exec_result = serv.exec_program(args).unwrap();
+    /// assert_eq!(exec_result.yaml_result, "alice:\n  age: 18");
+    ///
+    /// // Both empty still produces the original error.
+    /// let args = &ExecProgramArgs {
+    ///     k_filename_list: vec![],
+    ///     k_code_list: vec![],
     ///     ..Default::default()
     /// };
     /// let error = serv.exec_program(args).unwrap_err();
