@@ -210,11 +210,11 @@ pub fn encode_mappings(mappings: &[Mapping]) -> String {
 
     for m in mappings {
         let row = m.gen_line;
-        if let Some(prev_row) = last_emitted_row {
-            if row > prev_row {
-                for _ in 0..(row - prev_row) {
-                    out.push(';');
-                }
+        if let Some(prev_row) = last_emitted_row
+            && row > prev_row
+        {
+            for _ in 0..(row - prev_row) {
+                out.push(';');
             }
         }
         last_emitted_row = Some(row);
