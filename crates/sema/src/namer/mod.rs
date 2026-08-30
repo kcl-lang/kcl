@@ -123,7 +123,16 @@ impl<'ctx> Namer<'ctx> {
             namer.walk_pkg(name, modules);
         }
 
-        namer.define_symbols();
+        // `walk_pkg` inserts the package name into `new_or_invalidate_pkgs`
+        // whenever it actually traverses a package (either an invalidated one
+        // or a newly-discovered one). The set therefore remains empty when
+        // every package was skipped — exactly the case where no new symbols
+        // were allocated and the existing FQN map/cache is still authoritative.
+        // Skipping `define_symbols()` in that case makes repeated LSP compiles
+        // with no source changes near-free on the namer hot path.
+        if !namer.gs.new_or_invalidate_pkgs.is_empty() {
+            namer.define_symbols();
+        }
     }
 
     fn walk_pkg(&mut self, name: &str, modules: &[String]) {
