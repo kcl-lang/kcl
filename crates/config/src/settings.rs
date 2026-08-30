@@ -71,6 +71,10 @@ pub struct Config {
     /// Requested output format selector ("yaml", "json", or `None` for
     /// both — the legacy behaviour).
     pub format: Option<String>,
+    /// When `true`, the planner emits the `__kcl_xml_attrs__`
+    /// side-channel marker so XML emitters can render decorated
+    /// schema fields as attributes (vs. child elements).
+    pub emit_attribute_metadata: Option<bool>,
 }
 
 impl SettingsFile {
@@ -92,6 +96,7 @@ impl SettingsFile {
                 include_schema_type_path: Some(false),
                 package_maps: Some(HashMap::default()),
                 format: None,
+                emit_attribute_metadata: Some(false),
             }),
             kcl_options: Some(vec![]),
         }
@@ -399,6 +404,11 @@ pub fn merge_settings(settings: &[SettingsFile]) -> SettingsFile {
                 );
                 set_if!(result_kcl_cli_configs, package_maps, kcl_cli_configs);
                 set_if!(result_kcl_cli_configs, format, kcl_cli_configs);
+                set_if!(
+                    result_kcl_cli_configs,
+                    emit_attribute_metadata,
+                    kcl_cli_configs
+                );
             }
         }
         if let Some(kcl_options) = &setting.kcl_options {

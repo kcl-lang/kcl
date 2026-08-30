@@ -352,6 +352,12 @@ pub struct Context {
     pub instances: IndexMap<String, IndexMap<String, Vec<ValueRef>>>,
     /// All schema types
     pub all_schemas: HashMap<String, SchemaType>,
+    /// Per-schema attribute decorator metadata, keyed by schema local name
+    /// then attribute name, value is the decorator role string (e.g.
+    /// `"attr"` for `@info(type="attr")`). Populated during decorator
+    /// evaluation and consumed by the planner to emit the
+    /// `__kcl_xml_attrs__` side-channel marker.
+    pub attr_decorator_meta: IndexMap<String, IndexMap<String, String>>,
     /// Import graph
     pub import_names: IndexMap<String, IndexMap<String, String>>,
     /// A buffer to store plugin or hooks function calling results.

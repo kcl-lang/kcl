@@ -74,6 +74,16 @@ pub struct ExecProgramArgs {
     /// did not specify a format).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub format: Option<String>,
+    /// When `true`, the planner emits the `__kcl_xml_attrs__`
+    /// side-channel marker so XML emitters can render decorated
+    /// schema fields as attributes (vs. child elements).
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub emit_attribute_metadata: bool,
+}
+
+#[inline]
+fn is_false(b: &bool) -> bool {
+    !*b
 }
 
 impl ExecProgramArgs {
@@ -192,6 +202,8 @@ impl TryFrom<SettingsFile> for ExecProgramArgs {
             args.include_schema_type_path =
                 cli_configs.include_schema_type_path.unwrap_or_default();
             args.format = cli_configs.format.clone().filter(|s| !s.is_empty());
+            args.emit_attribute_metadata =
+                cli_configs.emit_attribute_metadata.unwrap_or_default();
             for override_str in cli_configs.overrides.unwrap_or_default() {
                 args.overrides.push(override_str);
             }
@@ -388,6 +400,7 @@ pub(crate) fn args_to_ctx(program: &ast::Program, args: &ExecProgramArgs) -> Con
     ctx.plan_opts.include_schema_type_path = args.include_schema_type_path;
     ctx.plan_opts.query_paths = args.path_selector.clone();
     ctx.plan_opts.format = args.format.clone();
+    ctx.plan_opts.emit_attribute_metadata = args.emit_attribute_metadata;
     for arg in &args.args {
         ctx.builtin_option_init(&arg.name, &arg.value);
     }

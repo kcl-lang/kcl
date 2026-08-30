@@ -1556,9 +1556,19 @@ impl<'ctx> Evaluator<'ctx> {
             _ => panic!("invalid decorator name, expect single identifier"),
         };
         let attr_name = attr_name.unwrap_or_default();
+        // Derive the enclosing schema name from the current schema
+        // evaluation context so `@info(type="attr")` can be keyed under
+        // the schema it decorates. Empty when the decorator runs at
+        // schema top-level (the `is_schema_target == true` branch in
+        // the caller) or inside a rule context.
+        let schema_name = self
+            .get_schema_eval_context()
+            .map(|schema_ctx| schema_ctx.borrow().node.name.node.to_string())
+            .unwrap_or_default();
         DecoratorValue::new(&name.node, &list_value, &dict_value).run(
             &mut self.runtime_ctx.borrow_mut(),
-            attr_name,
+            &attr_name,
+            &schema_name,
             is_schema_target,
             &config_value,
             &config_meta,
