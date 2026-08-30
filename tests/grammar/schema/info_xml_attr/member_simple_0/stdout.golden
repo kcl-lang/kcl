@@ -1,0 +1,4 @@
+view:
+  android:id: '@+id/userNameTextView'
+  android:text: 用户名
+  description: Username field

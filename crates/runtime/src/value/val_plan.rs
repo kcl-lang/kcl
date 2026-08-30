@@ -5,6 +5,12 @@ use crate::*;
 pub const KCL_PRIVATE_VAR_PREFIX: &str = "_";
 const LIST_DICT_TEMP_KEY: &str = "$";
 const SCHEMA_TYPE_META_ATTR: &str = "_type";
+/// Side-channel marker emitted alongside the planned YAML/JSON when
+/// `PlanOptions::emit_attribute_metadata` is set. The marker is a
+/// sibling key whose value is a list of schema attribute names that
+/// should be rendered as XML attributes (vs. child elements) by
+/// downstream XML emitters (CLI `--format xml`, kcl-go `XAMLString`).
+pub const XML_ATTRS_META_ATTR: &str = "__kcl_xml_attrs__";
 
 /// PlanOptions denotes the configuration required to execute the KCL
 /// program and the JSON/YAML planning.
@@ -28,6 +34,12 @@ pub struct PlanOptions {
     /// When set, `ValueRef::plan` skips the un-requested encoder so the
     /// runtime never produces a string that will be discarded.
     pub format: Option<String>,
+    /// When `true`, the planner appends the `__kcl_xml_attrs__` marker
+    /// to schema instances whose attributes are decorated with
+    /// `@info(type="attr")` (see `val_decorator::INFO_ROLE_XML_ATTR`).
+    /// Defaults to `false` to keep `-o json` and `-o yaml` output
+    /// byte-identical to pre-change.
+    pub emit_attribute_metadata: bool,
 }
 
 /// Filter list or config results with context options.
@@ -195,7 +207,51 @@ fn handle_schema(ctx: &Context, value: &ValueRef) -> Vec<ValueRef> {
             ValueRef::str(&value_type_path(value, true)),
         );
     }
+    // When the caller opts into XML-attribute metadata emission, append
+    // the `__kcl_xml_attrs__` marker naming the attributes that should
+    // be rendered as XML attributes. Only attributes still present
+    // after filtering (`disable_none`, `query_paths`, …) are listed, so
+    // the marker can never reference an absent key.
+    if ctx.plan_opts.emit_attribute_metadata
+        && let Some(v) = filtered.get_mut(0)
+        && v.is_config()
+    {
+        let schema_meta_key = schema_meta_key(value);
+        if let Some(attrs) = ctx.attr_decorator_meta.get(&schema_meta_key) {
+            let mut name_strs: Vec<String> = Vec::new();
+            for (attr_name, role) in attrs.iter() {
+                if role != INFO_ROLE_XML_ATTR {
+                    continue;
+                }
+                if v.get_by_key(attr_name).is_some() {
+                    name_strs.push(attr_name.clone());
+                }
+            }
+            if !name_strs.is_empty() {
+                let str_items: Vec<ValueRef> = name_strs
+                    .iter()
+                    .map(|s| ValueRef::str(s))
+                    .collect();
+                let item_refs: Vec<&ValueRef> = str_items.iter().collect();
+                let marker = ValueRef::list(Some(&item_refs));
+                v.dict_update_key_value(XML_ATTRS_META_ATTR, marker);
+            }
+        }
+    }
     filtered
+}
+
+/// Returns the key under which `handle_schema` looks up the
+/// `attr_decorator_meta` registry. The registry is keyed by the
+/// schema's AST-level local name (what the user writes), but the
+/// planner observes runtime types (which carry the package prefix).
+/// Strip the package prefix so the two keys line up.
+fn schema_meta_key(v: &ValueRef) -> String {
+    let raw = value_type_path(v, true);
+    match raw.strip_prefix(&format!("{MAIN_PKG_PATH}.")) {
+        Some(stripped) => stripped.to_string(),
+        None => raw,
+    }
 }
 
 /// Returns the type path of the runtime value `v`.
@@ -373,9 +429,12 @@ impl ValueRef {
 
 #[cfg(test)]
 mod test_value_plan {
-    use crate::{Context, MAIN_PKG_PATH, ValueRef, schema_runtime_type, val_plan::PlanOptions};
+    use crate::{
+        Context, INFO_ROLE_XML_ATTR, MAIN_PKG_PATH, ValueRef, schema_runtime_type,
+        val_plan::{PlanOptions, XML_ATTRS_META_ATTR},
+    };
 
-    use super::filter_results;
+    use super::{filter_results, slice_last_marker_section, slice_marker_section};
 
     const TEST_SCHEMA_NAME: &str = "Data";
 
@@ -405,6 +464,16 @@ mod test_value_plan {
         );
         schema.set_potential_schema_type(&schema_runtime_type(TEST_SCHEMA_NAME, MAIN_PKG_PATH));
         schema
+    }
+
+    /// Helper: register a `@info(type="attr")` decorator metadata entry
+    /// for `schema_name.attr_name`. Mirrors what the decorator runtime
+    /// populates when `walk_decorator_with_name` runs.
+    fn mark_attr_as_xml(ctx: &mut Context, schema_name: &str, attr_name: &str) {
+        ctx.attr_decorator_meta
+            .entry(schema_name.to_string())
+            .or_default()
+            .insert(attr_name.to_string(), INFO_ROLE_XML_ATTR.to_string());
     }
 
     #[test]
@@ -532,4 +601,226 @@ mod test_value_plan {
         assert_eq!(json_string, "{}");
         assert_eq!(yaml_string, "{}");
     }
+
+    /// Regression: when `emit_attribute_metadata` is `false`, the
+    /// planned output must be byte-identical to pre-change.
+    #[test]
+    fn test_xml_attrs_marker_absent_when_flag_off() {
+        let mut ctx = Context::new();
+        let mut config = ValueRef::dict(None);
+        let mut schema = get_test_schema_value();
+        schema.dict_update_key_value("id", ValueRef::str("v1"));
+        mark_attr_as_xml(&mut ctx, TEST_SCHEMA_NAME, "id");
+        config.dict_update_key_value("data", schema);
+        let (json_string, yaml_string) = config.plan(&ctx);
+        assert!(!json_string.contains(XML_ATTRS_META_ATTR));
+        assert!(!yaml_string.contains(XML_ATTRS_META_ATTR));
+    }
+
+    /// When the flag is on, the marker must list every `@info`-marked
+    /// attribute that survived filtering.
+    #[test]
+    fn test_xml_attrs_marker_present_when_flag_on() {
+        let mut ctx = Context::new();
+        ctx.plan_opts.emit_attribute_metadata = true;
+        mark_attr_as_xml(&mut ctx, TEST_SCHEMA_NAME, "id");
+        mark_attr_as_xml(&mut ctx, TEST_SCHEMA_NAME, "name");
+
+        let mut config = ValueRef::dict(None);
+        let mut schema = get_test_schema_value();
+        schema.dict_update_key_value("id", ValueRef::str("v1"));
+        schema.dict_update_key_value("name", ValueRef::str("n"));
+        schema.dict_update_key_value("desc", ValueRef::str("d"));
+        config.dict_update_key_value("data", schema);
+        let (json_string, yaml_string) = config.plan(&ctx);
+
+        // Slice out the JSON marker section so the assertions only see
+        // the list of attribute names, not the rest of the document
+        // where `desc` legitimately appears as a regular field.
+        // For YAML the document has only one marker section, so a
+        // direct substring check is sufficient: `desc: d` is the
+        // regular field while `- id` / `- name` only appear inside
+        // the marker list.
+        let marker_section_json = slice_marker_section(&json_string, XML_ATTRS_META_ATTR);
+        assert!(json_string.contains(XML_ATTRS_META_ATTR));
+        assert!(marker_section_json.contains("\"id\""));
+        assert!(marker_section_json.contains("\"name\""));
+        assert!(!marker_section_json.contains("\"desc\""));
+        assert!(yaml_string.contains(XML_ATTRS_META_ATTR));
+        assert!(yaml_string.contains("- id"));
+        assert!(yaml_string.contains("- name"));
+        assert!(!yaml_string.contains("- desc"));
+    }
+
+    /// The marker must omit attributes that were filtered out
+    /// (`disable_none`, `query_paths`, …) so it never points at an
+    /// absent key.
+    #[test]
+    fn test_xml_attrs_marker_omits_filtered_attrs() {
+        let mut ctx = Context::new();
+        ctx.plan_opts.emit_attribute_metadata = true;
+        ctx.plan_opts.disable_none = true;
+        mark_attr_as_xml(&mut ctx, TEST_SCHEMA_NAME, "id");
+        mark_attr_as_xml(&mut ctx, TEST_SCHEMA_NAME, "name");
+
+        let mut config = ValueRef::dict(None);
+        let mut schema = get_test_schema_value();
+        // `name` is explicitly None and should be filtered out.
+        schema.dict_update_key_value("id", ValueRef::str("v1"));
+        schema.dict_update_key_value("name", ValueRef::none());
+        config.dict_update_key_value("data", schema);
+        let (json_string, _) = config.plan(&ctx);
+        assert!(json_string.contains(XML_ATTRS_META_ATTR));
+        assert!(json_string.contains("\"id\""));
+        assert!(!json_string.contains("\"name\""));
+    }
+
+    /// When the registry is empty for a schema, no marker should be
+    /// emitted (sanity check for D1 keying).
+    #[test]
+    fn test_xml_attrs_marker_no_marker_when_registry_empty() {
+        let mut ctx = Context::new();
+        ctx.plan_opts.emit_attribute_metadata = true;
+        let mut config = ValueRef::dict(None);
+        let mut schema = get_test_schema_value();
+        schema.dict_update_key_value("id", ValueRef::str("v1"));
+        config.dict_update_key_value("data", schema);
+        let (json_string, yaml_string) = config.plan(&ctx);
+        assert!(!json_string.contains(XML_ATTRS_META_ATTR));
+        assert!(!yaml_string.contains(XML_ATTRS_META_ATTR));
+    }
+
+    /// Unknown role entries in the registry must be ignored.
+    #[test]
+    fn test_xml_attrs_marker_unknown_role_is_ignored() {
+        let mut ctx = Context::new();
+        ctx.plan_opts.emit_attribute_metadata = true;
+        ctx.attr_decorator_meta
+            .entry(TEST_SCHEMA_NAME.to_string())
+            .or_default()
+            .insert("id".to_string(), "not-an-xml-attr-role".to_string());
+
+        let mut config = ValueRef::dict(None);
+        let mut schema = get_test_schema_value();
+        schema.dict_update_key_value("id", ValueRef::str("v1"));
+        config.dict_update_key_value("data", schema);
+        let (json_string, yaml_string) = config.plan(&ctx);
+        assert!(!json_string.contains(XML_ATTRS_META_ATTR));
+        assert!(!yaml_string.contains(XML_ATTRS_META_ATTR));
+    }
+
+    /// A nested schema instance carries its own marker independently
+    /// of its parent.
+    #[test]
+    fn test_xml_attrs_marker_nested_schema() {
+        let mut ctx = Context::new();
+        ctx.plan_opts.emit_attribute_metadata = true;
+        mark_attr_as_xml(&mut ctx, TEST_SCHEMA_NAME, "id");
+        mark_attr_as_xml(&mut ctx, "Inner", "name");
+
+        let mut outer = get_test_schema_value();
+        let mut inner_schema = ValueRef::dict(None).dict_to_schema(
+            "Inner",
+            MAIN_PKG_PATH,
+            &[],
+            &ValueRef::dict(None),
+            &ValueRef::dict(None),
+            None,
+            None,
+        );
+        inner_schema.set_potential_schema_type(&schema_runtime_type("Inner", MAIN_PKG_PATH));
+        inner_schema.dict_update_key_value("name", ValueRef::str("n"));
+
+        outer.dict_update_key_value("id", ValueRef::str("v1"));
+        outer.dict_update_key_value("inner", inner_schema);
+        let mut config = ValueRef::dict(None);
+        config.dict_update_key_value("data", outer);
+        let (json_string, _) = config.plan(&ctx);
+        assert!(json_string.contains(XML_ATTRS_META_ATTR));
+        // The outer schema's marker is appended last (its `handle_schema`
+        // runs after the inner schema is recursively processed), so it
+        // appears AFTER the inner schema's marker in the JSON output.
+        // Slice each by its distinct position to assert they name the
+        // right attribute.
+        let inner_marker = slice_marker_section(&json_string, XML_ATTRS_META_ATTR);
+        let outer_marker = slice_last_marker_section(&json_string, XML_ATTRS_META_ATTR);
+        assert!(inner_marker.contains("\"name\""));
+        assert!(!inner_marker.contains("\"id\""));
+        assert!(outer_marker.contains("\"id\""));
+        assert!(!outer_marker.contains("\"name\""));
+    }
+}
+
+/// Returns the substring of `s` that follows the first occurrence of
+/// `key` up to its matching `]`. Used by tests to isolate the marker
+/// list from the rest of the JSON output. In a document with a single
+/// marker, returns that marker. In a document with nested markers,
+/// returns the innermost marker (which is emitted first because the
+/// inner schema is processed before its parent picks up its own marker).
+fn slice_marker_section(s: &str, key: &str) -> String {
+    let start = match s.find(key) {
+        Some(idx) => idx,
+        None => return String::new(),
+    };
+    let rest = &s[start..];
+    // Find the `[` that opens the marker list, then walk to its
+    // matching `]`. This is required for nested-marker documents:
+    // without it we would walk past the inner marker's `]` and end up
+    // capturing both markers.
+    let open_idx = match rest.find('[') {
+        Some(idx) => idx,
+        None => return String::new(),
+    };
+    let mut depth: i32 = 0;
+    let mut end = rest.len();
+    for (i, ch) in rest[open_idx..].char_indices() {
+        match ch {
+            '[' => depth += 1,
+            ']' => {
+                depth -= 1;
+                if depth == 0 {
+                    end = open_idx + i + 1;
+                    break;
+                }
+            }
+            _ => {}
+        }
+    }
+    rest[..end].to_string()
+}
+
+/// Returns the substring of `s` that follows the LAST occurrence of
+/// `key` up to its matching `]`. In a document with nested markers,
+/// returns the outermost marker (which is emitted last because the
+/// parent schema's marker is added after all its children have been
+/// recursively processed).
+fn slice_last_marker_section(s: &str, key: &str) -> String {
+    let start = match s.rfind(key) {
+        Some(idx) => idx,
+        None => return String::new(),
+    };
+    let rest = &s[start..];
+    // Find the `[` that opens the marker list, then walk to its
+    // matching `]`. See `slice_marker_section` for why we anchor on
+    // the opening bracket rather than starting from the key.
+    let open_idx = match rest.find('[') {
+        Some(idx) => idx,
+        None => return String::new(),
+    };
+    let mut depth: i32 = 0;
+    let mut end = rest.len();
+    for (i, ch) in rest[open_idx..].char_indices() {
+        match ch {
+            '[' => depth += 1,
+            ']' => {
+                depth -= 1;
+                if depth == 0 {
+                    end = open_idx + i + 1;
+                    break;
+                }
+            }
+            _ => {}
+        }
+    }
+    rest[..end].to_string()
 }
