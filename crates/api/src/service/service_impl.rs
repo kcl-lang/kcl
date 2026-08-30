@@ -707,6 +707,37 @@ impl KclServiceImpl {
     ///     ..Default::default()
     /// }).unwrap();
     /// assert_eq!(result.schema_type_mapping.len(), 1);
+    ///
+    /// // Index-signature schemas expose `[name: ty]: val_ty` via
+    /// // `kcl_type.index_signature` — see kcl-lang/lib#187. Both the named
+    /// // key form (`[foo: str]: Foo`) and the open form (`[...str]: int`)
+    /// // round-trip; regular properties are not polluted with the index.
+    /// let args = ExecProgramArgs {
+    ///     k_code_list: vec![
+    ///         "schema Foo:\n".to_string(),
+    ///         "schema IndexSchema:\n    [foo: str]: Foo\n".to_string(),
+    ///     ],
+    ///     ..Default::default()
+    /// };
+    /// let result = serv.get_schema_type_mapping(&GetSchemaTypeMappingArgs {
+    ///     exec_args: Some(args),
+    ///     schema_name: "IndexSchema".to_string(),
+    ///     ..Default::default()
+    /// }).unwrap();
+    /// let s = result
+    ///     .schema_type_mapping
+    ///     .get("IndexSchema")
+    ///     .expect("IndexSchema must be present");
+    /// assert!(s.properties.is_empty(), "no regular properties on index-only schema");
+    /// assert!(s.required.is_empty());
+    /// let sig = s
+    ///     .index_signature
+    ///     .as_ref()
+    ///     .expect("index_signature must be populated");
+    /// assert_eq!(sig.key_name.as_deref(), Some("foo"));
+    /// assert_eq!(sig.key.as_ref().unwrap().r#type, "str");
+    /// assert_eq!(sig.val.as_ref().unwrap().schema_name, "Foo");
+    /// assert!(!sig.any_other);
     /// ```
     pub fn get_schema_type_mapping(
         &self,
