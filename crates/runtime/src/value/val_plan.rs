@@ -24,6 +24,10 @@ pub struct PlanOptions {
     pub query_paths: Vec<String>,
     /// YAML plan separator string, default is `---`.
     pub sep: Option<String>,
+    /// Requested output format ("yaml", "json", or `None` for both).
+    /// When set, `ValueRef::plan` skips the un-requested encoder so the
+    /// runtime never produces a string that will be discarded.
+    pub format: Option<String>,
 }
 
 /// Filter list or config results with context options.
@@ -231,6 +235,11 @@ pub fn type_of(v: &ValueRef, full_name: bool) -> String {
 
 impl ValueRef {
     /// Plan the value to JSON and YAML strings.
+    ///
+    /// When `ctx.plan_opts.format` is set to `"yaml"` or `"json"`, the
+    /// un-requested side is returned as an empty string so the caller
+    /// can detect "not generated" without inspecting the value. When
+    /// the format is `None`, both encoders run (legacy behaviour).
     pub fn plan(&self, ctx: &Context) -> (String, String) {
         // Encoding options
         let json_opts = JsonEncodeOptions {
@@ -248,6 +257,26 @@ impl ValueRef {
             self.filter_by_path(&ctx.plan_opts.query_paths)
                 .unwrap_or_else(|e| panic!("{e}"))
         };
+        // Helper closures so each branch below can independently choose
+        // whether to run the JSON or YAML encoder.
+        let encode_json = |v: &ValueRef| -> String { v.to_json_string_with_options(&json_opts) };
+        let encode_yaml = |v: &ValueRef| -> String {
+            crate::ValueRef::strip_yaml_trailing_newline(&v.to_yaml_string_with_options(&yaml_opts))
+                .to_string()
+        };
+        // Honour the requested format. Anything other than the explicit
+        // "yaml" / "json" strings falls back to legacy "both" behaviour
+        // (the runtime accepts the value as-is and the caller decides).
+        let want_json = match ctx.plan_opts.format.as_deref() {
+            Some("json") => true,
+            Some("yaml") => false,
+            _ => true,
+        };
+        let want_yaml = match ctx.plan_opts.format.as_deref() {
+            Some("yaml") => true,
+            Some("json") => false,
+            _ => true,
+        };
         if value.is_list_or_config() {
             let results = filter_results(ctx, &value);
 
@@ -255,13 +284,17 @@ impl ValueRef {
             // Serialize the whole filtered value instead of using stream format
             if results.len() == 1 {
                 // For config/dict, use the filtered result
-                (
-                    results[0].to_json_string_with_options(&json_opts),
-                    crate::ValueRef::strip_yaml_trailing_newline(
-                        &results[0].to_yaml_string_with_options(&yaml_opts),
-                    )
-                    .to_string(),
-                )
+                let json_string = if want_json {
+                    encode_json(&results[0])
+                } else {
+                    String::new()
+                };
+                let yaml_string = if want_yaml {
+                    encode_yaml(&results[0])
+                } else {
+                    String::new()
+                };
+                (json_string, yaml_string)
             } else {
                 // Fallback to original value (shouldn't happen normally)
                 let sep = ctx
@@ -270,32 +303,39 @@ impl ValueRef {
                     .clone()
                     .unwrap_or_else(|| "---".to_string());
                 // Plan YAML array results
-                let yaml_result = results
-                    .iter()
-                    .map(|r| {
-                        crate::ValueRef::strip_yaml_trailing_newline(
-                            &r.to_yaml_string_with_options(&yaml_opts),
-                        )
-                        .to_string()
-                    })
-                    .collect::<Vec<String>>()
-                    .join(&format!("\n{}\n", sep));
+                let yaml_result = if want_yaml {
+                    results
+                        .iter()
+                        .map(|r| encode_yaml(r))
+                        .collect::<Vec<String>>()
+                        .join(&format!("\n{}\n", sep))
+                } else {
+                    String::new()
+                };
                 // Plan JSON array results
-                let json_result = results
-                    .iter()
-                    .map(|r| r.to_json_string_with_options(&json_opts))
-                    .collect::<Vec<String>>()
-                    .join(JSON_STREAM_SEP);
+                let json_result = if want_json {
+                    results
+                        .iter()
+                        .map(|r| encode_json(r))
+                        .collect::<Vec<String>>()
+                        .join(JSON_STREAM_SEP)
+                } else {
+                    String::new()
+                };
                 (json_result, yaml_result)
             }
         } else {
-            (
-                value.to_json_string_with_options(&json_opts),
-                crate::ValueRef::strip_yaml_trailing_newline(
-                    &value.to_yaml_string_with_options(&yaml_opts),
-                )
-                .to_string(),
-            )
+            let json_string = if want_json {
+                encode_json(&value)
+            } else {
+                String::new()
+            };
+            let yaml_string = if want_yaml {
+                encode_yaml(&value)
+            } else {
+                String::new()
+            };
+            (json_string, yaml_string)
         }
     }
 

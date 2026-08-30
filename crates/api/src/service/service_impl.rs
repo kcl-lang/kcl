@@ -612,6 +612,17 @@ impl KclServiceImpl {
     /// let exec_result = serv.exec_program(args).unwrap();
     /// assert_eq!(exec_result.yaml_result, "alice:\n  age: 18");
     ///
+    /// // JSON-only request: the YAML encoder is skipped, leaving yaml_result empty.
+    /// let args = &ExecProgramArgs {
+    ///     k_filename_list: vec!["file.k".to_string()],
+    ///     k_code_list: vec!["alice = {age = 18}".to_string()],
+    ///     format: "json".to_string(),
+    ///     ..Default::default()
+    /// };
+    /// let exec_result = serv.exec_program(args).unwrap();
+    /// assert_eq!(exec_result.json_result, "{\"alice\": {\"age\": 18}}");
+    /// assert!(exec_result.yaml_result.is_empty());
+    ///
     /// // Error case
     /// let args = &ExecProgramArgs {
     ///     k_filename_list: vec!["invalid_file.k".to_string()],

@@ -69,6 +69,11 @@ pub struct ExecProgramArgs {
     /// the result without any form of compilation.
     #[serde(skip)]
     pub fast_eval: bool,
+    /// Output format selector ("yaml" or "json"). When `None`, both
+    /// formats are generated (legacy behaviour, used when the caller
+    /// did not specify a format).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub format: Option<String>,
 }
 
 impl ExecProgramArgs {
@@ -186,6 +191,7 @@ impl TryFrom<SettingsFile> for ExecProgramArgs {
             args.fast_eval = cli_configs.fast_eval.unwrap_or_default();
             args.include_schema_type_path =
                 cli_configs.include_schema_type_path.unwrap_or_default();
+            args.format = cli_configs.format.clone().filter(|s| !s.is_empty());
             for override_str in cli_configs.overrides.unwrap_or_default() {
                 args.overrides.push(override_str);
             }
@@ -326,8 +332,18 @@ impl FastRunner {
         match evaluator_result {
             Ok(r) => match r {
                 Ok((json, yaml)) => {
-                    result.json_result = json;
-                    result.yaml_result = yaml;
+                    // Honour the requested output format: only the requested
+                    // encoder ran; the other side stays empty. When the
+                    // caller didn't ask for a specific format, both fields
+                    // are populated (legacy behaviour).
+                    match args.format.as_deref() {
+                        Some("json") => result.json_result = json,
+                        Some("yaml") => result.yaml_result = yaml,
+                        _ => {
+                            result.json_result = json;
+                            result.yaml_result = yaml;
+                        }
+                    }
                 }
                 Err(err) => {
                     result.err_message = err.to_string();
@@ -371,6 +387,7 @@ pub(crate) fn args_to_ctx(program: &ast::Program, args: &ExecProgramArgs) -> Con
     ctx.plan_opts.sort_keys = args.sort_keys;
     ctx.plan_opts.include_schema_type_path = args.include_schema_type_path;
     ctx.plan_opts.query_paths = args.path_selector.clone();
+    ctx.plan_opts.format = args.format.clone();
     for arg in &args.args {
         ctx.builtin_option_init(&arg.name, &arg.value);
     }

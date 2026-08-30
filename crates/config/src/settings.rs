@@ -68,6 +68,9 @@ pub struct Config {
     pub package_maps: Option<HashMap<String, String>>,
     /// Use the evaluator to execute the AST program instead of AOT.
     pub fast_eval: Option<bool>,
+    /// Requested output format selector ("yaml", "json", or `None` for
+    /// both — the legacy behaviour).
+    pub format: Option<String>,
 }
 
 impl SettingsFile {
@@ -88,6 +91,7 @@ impl SettingsFile {
                 fast_eval: Some(false),
                 include_schema_type_path: Some(false),
                 package_maps: Some(HashMap::default()),
+                format: None,
             }),
             kcl_options: Some(vec![]),
         }
@@ -394,6 +398,7 @@ pub fn merge_settings(settings: &[SettingsFile]) -> SettingsFile {
                     kcl_cli_configs
                 );
                 set_if!(result_kcl_cli_configs, package_maps, kcl_cli_configs);
+                set_if!(result_kcl_cli_configs, format, kcl_cli_configs);
             }
         }
         if let Some(kcl_options) = &setting.kcl_options {
