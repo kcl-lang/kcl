@@ -1,6 +1,6 @@
 use lsp_types::{
     ClientCapabilities, CodeActionKind, CodeActionOptions, CodeActionProviderCapability,
-    CompletionOptions, HoverProviderCapability, OneOf, SemanticTokensFullOptions,
+    CodeLensOptions, CompletionOptions, HoverProviderCapability, OneOf, SemanticTokensFullOptions,
     SemanticTokensLegend, SemanticTokensOptions, ServerCapabilities, SignatureHelpOptions,
     TextDocumentSyncCapability, TextDocumentSyncKind, WorkDoneProgressOptions,
 };
@@ -69,6 +69,9 @@ pub fn server_capabilities(client_caps: &ClientCapabilities) -> ServerCapabiliti
             work_done_progress_options: WorkDoneProgressOptions {
                 work_done_progress: None,
             },
+        }),
+        code_lens_provider: Some(CodeLensOptions {
+            resolve_provider: Some(false),
         }),
         ..Default::default()
     }
