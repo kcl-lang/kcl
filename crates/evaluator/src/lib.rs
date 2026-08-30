@@ -255,6 +255,10 @@ impl<'ctx> Evaluator<'ctx> {
                 (json_string, yaml_string)
             }
             None => {
+                // `plan()` already returns "" for the un-requested format
+                // (driven by `ctx.plan_opts.format`); the `clone()` of an
+                // empty string is cheap and keeps the surrounding code shape
+                // stable.
                 let (json_string, yaml_string) = value.plan(&ctx);
                 ctx.json_result = json_string.clone();
                 ctx.yaml_result = yaml_string.clone();

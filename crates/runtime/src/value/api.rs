@@ -459,9 +459,12 @@ pub unsafe extern "C-unwind" fn kcl_value_plan_to_json(
         ctx.json_result = json_string.clone();
         new_mut_ptr(ctx, ValueRef::str(&ctx.json_result))
     } else {
+        // `plan()` already returns "" for the un-requested format
+        // (driven by `ctx.plan_opts.format`), so assigning both is safe
+        // even when only one is wanted.
         let (json_string, yaml_string) = p.plan(ctx);
         ctx.json_result = json_string.clone();
-        ctx.yaml_result = yaml_string.clone();
+        ctx.yaml_result = yaml_string;
         new_mut_ptr(ctx, ValueRef::str(&ctx.json_result))
     }
 }
@@ -483,8 +486,11 @@ pub unsafe extern "C-unwind" fn kcl_value_plan_to_yaml(
         ctx.json_result = json_string;
         new_mut_ptr(ctx, ValueRef::str(&ctx.yaml_result))
     } else {
+        // `plan()` already returns "" for the un-requested format
+        // (driven by `ctx.plan_opts.format`), so assigning both is safe
+        // even when only one is wanted.
         let (json_string, yaml_string) = p.plan(ctx);
-        ctx.json_result = json_string.clone();
+        ctx.json_result = json_string;
         ctx.yaml_result = yaml_string.clone();
         new_mut_ptr(ctx, ValueRef::str(&yaml_string))
     }

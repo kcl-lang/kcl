@@ -1031,6 +1031,9 @@ message ExecProgramArgs {
 	// emitted to stderr in the chosen machine-readable format. Falls back
 	// to the `KCL_ERROR_FORMAT` environment variable when empty.
 	string error_format = 19;
+	// Output format selector. One of: yaml, json.
+	// When empty the runtime generates both formats (legacy behaviour).
+	string format = 20;
 }
 
 // Message for execute program response.

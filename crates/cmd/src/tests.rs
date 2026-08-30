@@ -716,3 +716,83 @@ fn error_format_invalid_env_value_reports_error() {
     let err = resolve_error_format(sub).unwrap_err();
     assert!(format!("{err}").contains("bogus"));
 }
+
+/// When `--format yaml` is passed, the runtime should skip the JSON
+/// encoder entirely, leaving `json_result` empty. The CLI's existing
+/// output-selection logic already tolerates an empty `json_result`, so
+/// no other plumbing is needed.
+#[test]
+fn format_yaml_only_skips_json_encoder() {
+    let _lock = error_format_env_lock().lock().unwrap();
+    let test_case_path = PathBuf::from("./src/test_data/multimod");
+    let matches = app().arg_required_else_help(true).get_matches_from([
+        ROOT_CMD,
+        "run",
+        "-f",
+        "yaml",
+        &test_case_path.join("kcl1").display().to_string(),
+        &test_case_path.join("kcl2").display().to_string(),
+    ]);
+    let settings = must_build_settings(matches.subcommand_matches("run").unwrap());
+    let sess = Arc::new(ParseSession::default());
+    let res = exec_program(sess.clone(), &settings.try_into().unwrap())
+        .expect("--format yaml should succeed");
+    assert_eq!(res.yaml_result, "kcl1: hello 1\nkcl2: hello 2");
+    assert!(
+        res.json_result.is_empty(),
+        "json_result should be empty when --format yaml is set, got {:?}",
+        res.json_result
+    );
+}
+
+/// When `--format json` is passed, the runtime should skip the YAML
+/// encoder entirely, leaving `yaml_result` empty.
+#[test]
+fn format_json_only_skips_yaml_encoder() {
+    let _lock = error_format_env_lock().lock().unwrap();
+    let test_case_path = PathBuf::from("./src/test_data/multimod");
+    let matches = app().arg_required_else_help(true).get_matches_from([
+        ROOT_CMD,
+        "run",
+        "-f",
+        "json",
+        &test_case_path.join("kcl1").display().to_string(),
+        &test_case_path.join("kcl2").display().to_string(),
+    ]);
+    let settings = must_build_settings(matches.subcommand_matches("run").unwrap());
+    let sess = Arc::new(ParseSession::default());
+    let res = exec_program(sess.clone(), &settings.try_into().unwrap())
+        .expect("--format json should succeed");
+    assert_eq!(
+        res.json_result,
+        "{\"kcl1\": \"hello 1\", \"kcl2\": \"hello 2\"}"
+    );
+    assert!(
+        res.yaml_result.is_empty(),
+        "yaml_result should be empty when --format json is set, got {:?}",
+        res.yaml_result
+    );
+}
+
+/// Without a `--format` flag the runtime produces both representations
+/// — this is the legacy behaviour existing SDK consumers rely on.
+#[test]
+fn format_default_emits_both() {
+    let _lock = error_format_env_lock().lock().unwrap();
+    let test_case_path = PathBuf::from("./src/test_data/multimod");
+    let matches = app().arg_required_else_help(true).get_matches_from([
+        ROOT_CMD,
+        "run",
+        &test_case_path.join("kcl1").display().to_string(),
+        &test_case_path.join("kcl2").display().to_string(),
+    ]);
+    let settings = must_build_settings(matches.subcommand_matches("run").unwrap());
+    let sess = Arc::new(ParseSession::default());
+    let res = exec_program(sess.clone(), &settings.try_into().unwrap())
+        .expect("default run should succeed");
+    assert_eq!(res.yaml_result, "kcl1: hello 1\nkcl2: hello 2");
+    assert_eq!(
+        res.json_result,
+        "{\"kcl1\": \"hello 1\", \"kcl2\": \"hello 2\"}"
+    );
+}
