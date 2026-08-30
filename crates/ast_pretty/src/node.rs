@@ -957,6 +957,17 @@ impl<'p> Printer<'p> {
     }
 
     pub fn write_entry(&mut self, item: &ast::NodeRef<ast::ConfigEntry>) {
+        // Shorthand `{name}` — emit just the key (which doubles as the value).
+        // We never rewrite `name = name` into shorthand: this guard only
+        // round-trips the form the parser actually produced.
+        if item.node.is_shorthand {
+            if let Some(key) = item.node.key.as_ref() {
+                self.write_comments_before_node(item);
+                self.expr(key);
+                self.write_inline_trailing_comments(key);
+            }
+            return;
+        }
         match &item.node.key {
             Some(key) => {
                 let print_right_brace_count = self.write_config_key(key);

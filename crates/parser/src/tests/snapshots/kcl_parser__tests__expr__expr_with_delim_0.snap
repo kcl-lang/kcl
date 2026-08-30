@@ -52,6 +52,7 @@ Node {
                                         end_column: 5,
                                     },
                                     operation: Override,
+                                    is_shorthand: false,
                                 },
                                 filename: "",
                                 line: 1,

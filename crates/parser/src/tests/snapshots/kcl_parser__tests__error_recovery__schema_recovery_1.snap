@@ -75,6 +75,7 @@ Node {
                                         end_column: 6,
                                     },
                                     operation: Override,
+                                    is_shorthand: false,
                                 },
                                 filename: "",
                                 line: 1,

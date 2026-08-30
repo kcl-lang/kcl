@@ -1,6 +1,5 @@
 ---
 source: crates/parser/src/tests/expr.rs
-assertion_line: 105
 expression: "$crate :: tests ::\nparsing_expr_string(r####\"lambda { x = { y = 5 } } -> int {x.y}\"####)"
 ---
 Node {
@@ -81,6 +80,7 @@ Node {
                                                             end_column: 20,
                                                         },
                                                         operation: Override,
+                                                        is_shorthand: false,
                                                     },
                                                     filename: "",
                                                     line: 1,

@@ -1235,6 +1235,21 @@ pub struct ConfigEntry {
     pub key: Option<NodeRef<Expr>>,
     pub value: NodeRef<Expr>,
     pub operation: ConfigEntryOperation,
+    /// `true` for the ES6-style `{name}` shorthand form, equivalent
+    /// to `key = value` where both sides resolve to the same
+    /// identifier. The formatter and diagnostics use this flag to
+    /// round-trip the shorthand. `false` for every entry that
+    /// carried an explicit `:`/`=`/`+=`.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub is_shorthand: bool,
+}
+
+/// `serde` helper used by `ConfigEntry::is_shorthand`'s
+/// `skip_serializing_if`. Returns `true` for the default value so
+/// existing AST-JSON fixtures continue to deserialize.
+#[inline]
+fn is_false(b: &bool) -> bool {
+    !*b
 }
 
 /// CheckExpr, e.g.
