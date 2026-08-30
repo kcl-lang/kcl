@@ -233,10 +233,7 @@ fn handle_schema(ctx: &Context, value: &ValueRef) -> Vec<ValueRef> {
                 }
             }
             if !name_strs.is_empty() {
-                let str_items: Vec<ValueRef> = name_strs
-                    .iter()
-                    .map(|s| ValueRef::str(s))
-                    .collect();
+                let str_items: Vec<ValueRef> = name_strs.iter().map(|s| ValueRef::str(s)).collect();
                 let item_refs: Vec<&ValueRef> = str_items.iter().collect();
                 let marker = ValueRef::list(Some(&item_refs));
                 v.dict_update_key_value(INFO_META_ATTR, marker);
@@ -436,7 +433,7 @@ impl ValueRef {
 mod test_value_plan {
     use crate::{
         Context, INFO_ROLE_XML_ATTR, MAIN_PKG_PATH, ValueRef, schema_runtime_type,
-        val_plan::{PlanOptions, INFO_META_ATTR},
+        val_plan::{INFO_META_ATTR, PlanOptions},
     };
 
     use super::{filter_results, slice_last_marker_section, slice_marker_section};

@@ -135,7 +135,14 @@ mod test_value_decorator {
         let schema_name = "Data";
         let config_meta = ValueRef::dict(None);
         let config_value = ValueRef::dict_str(&[("key1", "value1")]);
-        test_deprecated_decorator.run(&mut ctx, "attr1", schema_name, true, &config_value, &config_meta);
+        test_deprecated_decorator.run(
+            &mut ctx,
+            "attr1",
+            schema_name,
+            true,
+            &config_value,
+            &config_meta,
+        );
     }
 
     #[test]
@@ -149,7 +156,14 @@ mod test_value_decorator {
             let schema_name = "Data";
             let config_meta = ValueRef::dict(None);
             let config_value = ValueRef::dict_str(&[("key1", "value1")]);
-            test_deprecated_decorator.run(&mut ctx, "attr1", schema_name, true, &config_value, &config_meta);
+            test_deprecated_decorator.run(
+                &mut ctx,
+                "attr1",
+                schema_name,
+                true,
+                &config_value,
+                &config_meta,
+            );
         });
     }
 
@@ -174,7 +188,10 @@ mod test_value_decorator {
             .attr_decorator_meta
             .get("TextView")
             .expect("registry must contain TextView");
-        assert_eq!(attrs.get("android:id").map(|s| s.as_str()), Some(INFO_ROLE_XML_ATTR));
+        assert_eq!(
+            attrs.get("android:id").map(|s| s.as_str()),
+            Some(INFO_ROLE_XML_ATTR)
+        );
     }
 
     #[test]
@@ -219,7 +236,10 @@ mod test_value_decorator {
         // outer map's storage slot; the slots must be distinct, so two
         // different schemas pointing at the same attribute name do not
         // share storage.
-        assert!(!std::ptr::eq(a, b), "per-schema maps must be distinct storage slots");
+        assert!(
+            !std::ptr::eq(a, b),
+            "per-schema maps must be distinct storage slots"
+        );
 
         // And a write to one must not leak into the other.
         ctx.attr_decorator_meta

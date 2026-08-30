@@ -216,8 +216,7 @@ impl TryFrom<SettingsFile> for ExecProgramArgs {
                 .sourcemap_output
                 .clone()
                 .filter(|s| !s.is_empty());
-            args.emit_attribute_metadata =
-                cli_configs.emit_attribute_metadata.unwrap_or_default();
+            args.emit_attribute_metadata = cli_configs.emit_attribute_metadata.unwrap_or_default();
             for override_str in cli_configs.overrides.unwrap_or_default() {
                 args.overrides.push(override_str);
             }
