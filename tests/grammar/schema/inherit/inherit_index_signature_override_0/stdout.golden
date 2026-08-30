@@ -1,0 +1,11 @@
+a:
+  vdeployments:
+    deploy_a:
+      container_a:
+        maxReplicas: 4
+b:
+  vdeployments:
+    deploy_b:
+      container_b:
+        maxReplicas: 3
+        minReplicas: 2
