@@ -29,6 +29,15 @@ impl SettingsPathBuf {
         }
     }
 
+    /// Get the source map output setting.
+    #[inline]
+    pub fn sourcemap_output(&self) -> Option<String> {
+        match &self.1.kcl_cli_configs {
+            Some(c) => c.sourcemap_output.clone(),
+            None => None,
+        }
+    }
+
     /// Get the path.
     #[inline]
     pub fn path(&self) -> &Option<PathBuf> {
@@ -71,6 +80,9 @@ pub struct Config {
     /// Requested output format selector ("yaml", "json", or `None` for
     /// both — the legacy behaviour).
     pub format: Option<String>,
+    /// Path to write the Source Map v3 document to. `None` disables
+    /// source map generation.
+    pub sourcemap_output: Option<String>,
 }
 
 impl SettingsFile {
@@ -92,6 +104,7 @@ impl SettingsFile {
                 include_schema_type_path: Some(false),
                 package_maps: Some(HashMap::default()),
                 format: None,
+                sourcemap_output: None,
             }),
             kcl_options: Some(vec![]),
         }
@@ -102,6 +115,15 @@ impl SettingsFile {
     pub fn output(&self) -> Option<String> {
         match &self.kcl_cli_configs {
             Some(c) => c.output.clone(),
+            None => None,
+        }
+    }
+
+    /// Get the source map output setting.
+    #[inline]
+    pub fn sourcemap_output(&self) -> Option<String> {
+        match &self.kcl_cli_configs {
+            Some(c) => c.sourcemap_output.clone(),
             None => None,
         }
     }
@@ -399,6 +421,7 @@ pub fn merge_settings(settings: &[SettingsFile]) -> SettingsFile {
                 );
                 set_if!(result_kcl_cli_configs, package_maps, kcl_cli_configs);
                 set_if!(result_kcl_cli_configs, format, kcl_cli_configs);
+                set_if!(result_kcl_cli_configs, sourcemap_output, kcl_cli_configs);
             }
         }
         if let Some(kcl_options) = &setting.kcl_options {

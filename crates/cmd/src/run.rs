@@ -66,6 +66,7 @@ pub fn run_command<W: Write>(matches: &ArgMatches, writer: &mut W) -> Result<()>
     // Config settings building
     let settings = must_build_settings(matches);
     let output = settings.output();
+    let sourcemap_output = settings.sourcemap_output();
     let format_opt = matches.get_one::<String>("format").map(|s| s.as_str());
     let error_format = resolve_error_format(matches)?;
     let sess = Arc::new(ParseSession::default());
@@ -106,6 +107,10 @@ pub fn run_command<W: Write>(matches: &ArgMatches, writer: &mut W) -> Result<()>
                     // using [`writeln`] can be better to redirect the output.
                     None => writeln!(writer, "{}", output_str)?,
                 }
+            }
+            if let (Some(map), Some(json)) = (sourcemap_output.as_ref(), result.sourcemap.as_ref())
+            {
+                std::fs::write(map, json)?;
             }
         }
         // Other error message

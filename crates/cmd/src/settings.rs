@@ -56,6 +56,9 @@ pub(crate) fn build_settings(matches: &ArgMatches) -> Result<SettingsPathBuf> {
                 fast_eval: bool_from_matches(matches, "fast_eval"),
                 package_maps,
                 format: matches.get_one::<String>("format").map(|v| v.to_string()),
+                sourcemap_output: matches
+                    .get_one::<String>("sourcemap")
+                    .map(|v| v.to_string()),
                 ..Default::default()
             }),
             kcl_options: if arguments.is_some() {

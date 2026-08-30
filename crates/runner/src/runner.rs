@@ -201,6 +201,10 @@ impl TryFrom<SettingsFile> for ExecProgramArgs {
             args.include_schema_type_path =
                 cli_configs.include_schema_type_path.unwrap_or_default();
             args.format = cli_configs.format.clone().filter(|s| !s.is_empty());
+            args.sourcemap_output = cli_configs
+                .sourcemap_output
+                .clone()
+                .filter(|s| !s.is_empty());
             for override_str in cli_configs.overrides.unwrap_or_default() {
                 args.overrides.push(override_str);
             }
