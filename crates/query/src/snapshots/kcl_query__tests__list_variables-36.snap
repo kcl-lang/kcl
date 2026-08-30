@@ -1,0 +1,33 @@
+---
+source: crates/query/src/tests.rs
+expression: got_json
+---
+{
+  "mixed_list": [
+    {
+      "name": "mixed_list",
+      "type_name": "",
+      "op_sym": "=",
+      "value": "[\"x\", \"y\"] + _list0",
+      "list_items": [
+        {
+          "name": "",
+          "type_name": "",
+          "op_sym": "",
+          "value": "\"x\"",
+          "list_items": [],
+          "dict_entries": []
+        },
+        {
+          "name": "",
+          "type_name": "",
+          "op_sym": "",
+          "value": "\"y\"",
+          "list_items": [],
+          "dict_entries": []
+        }
+      ],
+      "dict_entries": []
+    }
+  ]
+}

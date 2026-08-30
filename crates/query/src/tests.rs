@@ -509,6 +509,14 @@ fn test_list_variables() {
             "",
             "=",
         ),
+        // Schema attribute whose value is a union (`+`) of two list literals.
+        // Regression for kcl-lang/kcl#2026 — the selector must still report
+        // the result as a list of items rather than as an opaque string.
+        ("main.env", r#"["a", "b"] + ["c", "d"]"#, "", ":"),
+        // Top-level binary expression whose left and right are both lists.
+        ("mixed_list", r#"["x", "y"] + _list0"#, "", "="),
+        // Schema attribute whose value is a union (`+`) of two dict literals.
+        ("main.item", r#"{"a": 1} + {"b": 2}"#, "", ":"),
     ];
 
     for (spec, expected, expected_name, op_sym) in test_cases {
@@ -654,6 +662,10 @@ fn test_list_all_variables() {
             "",
             "=",
         ),
+        // Top-level binary expression whose left and right are both lists.
+        // Regression for kcl-lang/kcl#2026 — the selector must still report
+        // the result as a list of items rather than as an opaque string.
+        ("mixed_list", r#"["x", "y"] + _list0"#, "", "="),
     ];
 
     for (spec, expected, expected_name, op_sym) in test_cases {
