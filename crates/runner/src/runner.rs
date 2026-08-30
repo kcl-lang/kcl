@@ -85,6 +85,14 @@ pub struct ExecProgramArgs {
     /// XML attributes (vs. child elements).
     #[serde(default, skip_serializing_if = "is_false")]
     pub emit_attribute_metadata: bool,
+    /// When true, the evaluator records `(filename, line)` hits for every
+    /// top-level statement it walks and the runner drains those hits into
+    /// [`ExecProgramResult::coverage`]. Default false — recording has a
+    /// small cost so callers must opt in. Used by `kcl test --coverage`.
+    /// `serde(default)` keeps older JSON fixtures (which predate this
+    /// field) compatible with the current deserializer.
+    #[serde(default)]
+    pub coverage: bool,
 }
 
 #[inline]
@@ -125,6 +133,10 @@ pub struct ExecProgramResult {
     /// statements that produced them. Only populated when the caller sets
     /// [`ExecProgramArgs::sourcemap_output`].
     pub sourcemap: Option<String>,
+    /// Per-run line hits collected when [`ExecProgramArgs::coverage`] was
+    /// `true`. Maps `filename -> line -> hits`. Empty otherwise.
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    pub coverage: HashMap<String, HashMap<u64, u64>>,
 }
 
 pub trait MapErrorResult {
@@ -301,7 +313,18 @@ impl FastRunner {
     /// Run kcl library with exec arguments.
     pub fn run(&self, program: &ast::Program, args: &ExecProgramArgs) -> Result<ExecProgramResult> {
         let ctx = Rc::new(RefCell::new(args_to_ctx(program, args)));
-        let evaluator = Evaluator::new_with_runtime_ctx(program, ctx.clone());
+        // Coverage state is created up front so it can outlive the
+        // `catch_unwind` closure — the closure moves the evaluator by value,
+        // so we drain the shared state after the closure returns. When
+        // `args.coverage` is false the state is `None` and the evaluator
+        // short-circuits on its own.
+        let coverage_state = if args.coverage {
+            Some(kcl_evaluator::CoverageState::new())
+        } else {
+            None
+        };
+        let mut evaluator = Evaluator::new_with_runtime_ctx(program, ctx.clone());
+        evaluator.set_coverage_state(coverage_state.clone());
         #[cfg(target_arch = "wasm32")]
         // Ensure the panic hook is set (this will only happen once) for the WASM target,
         // because it is single threaded.
@@ -409,6 +432,18 @@ impl FastRunner {
         // Free all value references at runtime. This is because the runtime context marks
         // all KCL objects and holds their copies, so it is necessary to actively GC them.
         ctx.borrow().gc();
+        // Drain collected coverage hits into the result. We snapshot the
+        // recorded `(filename, line, hits)` triples, group by filename, and
+        // merge counts so multiple test runs that share a file sum
+        // correctly. This runs after `ctx.borrow().gc()` so it observes
+        // only what the evaluator actually walked.
+        if let Some(state) = coverage_state.as_ref() {
+            let mut by_file: HashMap<String, HashMap<u64, u64>> = HashMap::new();
+            for (filename, line, hits) in state.drain() {
+                by_file.entry(filename).or_default().insert(line, hits);
+            }
+            result.coverage = by_file;
+        }
         Ok(result)
     }
 }
