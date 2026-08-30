@@ -207,6 +207,14 @@ impl TestCoverageReport {
 /// into the `<file>:<line>` key convention used by
 /// [`TestCoverageReport::merge`]. The conversion is intentionally
 /// conservative: empty filenames are skipped, lines must be non-zero.
+///
+/// Filenames are run through [`normalize_coverage_key`] so the resulting
+/// keys match the executable-line map (which is also keyed by the
+/// normalized form). Without this, on Windows the evaluator-reported
+/// `D:\a\kcl\kcl\...\lib.k` would not match the canonicalize-side
+/// `\\?\D:\a\kcl\kcl\...\lib.k` and the executable-line back-fill in
+/// [`TestCoverageReport::finalize`] would silently produce empty
+/// `executable_lines`.
 pub fn flatten_case_coverage(
     per_file: &std::collections::HashMap<String, std::collections::HashMap<u64, u64>>,
 ) -> BTreeMap<String, u64> {
@@ -215,12 +223,32 @@ pub fn flatten_case_coverage(
         if filename.is_empty() {
             continue;
         }
+        let canonical = normalize_coverage_key(filename);
         for (line, hits) in lines {
             if *line == 0 {
                 continue;
             }
-            out.insert(format!("{}:{}", filename, line), *hits);
+            out.insert(format!("{canonical}:{line}"), *hits);
         }
     }
     out
+}
+
+/// Cross-platform normalization used as a coverage report key
+/// normalizer. Strips the Windows extended-length `\\?\` prefix (the
+/// one produced by [`std::fs::canonicalize`] on Windows) and converts
+/// all separators to `/` so report keys are byte-identical between
+/// Linux, macOS, and Windows. The `replace('\\', "/")` runs on every
+/// platform — even POSIX systems can receive `\`-laden paths when a
+/// KCL run is launched by a Windows-side CI step or shared across a
+/// heterogeneous dev environment.
+pub(super) fn normalize_coverage_key(s: &str) -> String {
+    let stripped = if cfg!(windows) {
+        s.strip_prefix(r"\\?\")
+            .map(str::to_string)
+            .unwrap_or_else(|| s.to_string())
+    } else {
+        s.to_string()
+    };
+    stripped.replace('\\', "/")
 }

@@ -125,25 +125,11 @@ fn coverage_on_collects_per_file_and_summary() {
     // The fixture declares `lib.k` and `lib_test.k`. Both should appear
     // because both contribute statements that get walked. Path keys
     // can come back as either absolute or relative depending on how
-    // each module was loaded, so we match by suffix.
-    let lib_path_str = Path::new("src")
-        .join("testing")
-        .join("test_data")
-        .join("coverage")
-        .join("pkg")
-        .join("lib.k")
-        .to_str()
-        .unwrap()
-        .to_string();
-    let lib_test_path_str = Path::new("src")
-        .join("testing")
-        .join("test_data")
-        .join("coverage")
-        .join("pkg")
-        .join("lib_test.k")
-        .to_str()
-        .unwrap()
-        .to_string();
+    // each module was loaded, so we match by suffix. Suffixes are
+    // hardcoded with `/` separators because `canonicalize_for_coverage`
+    // normalizes report keys to that form on every platform.
+    let lib_path_str = "src/testing/test_data/coverage/pkg/lib.k".to_string();
+    let lib_test_path_str = "src/testing/test_data/coverage/pkg/lib_test.k".to_string();
     let find_matching = |suffix: &str| -> Option<&super::FileCoverage> {
         result
             .coverage
@@ -200,4 +186,48 @@ fn flatten_case_coverage_basic() {
     assert_eq!(flat.get("foo.k:3").copied(), Some(2));
     assert_eq!(flat.get("foo.k:7").copied(), Some(1));
     assert_eq!(flat.len(), 2);
+}
+
+/// `normalize_coverage_key` is the join between the executable-line
+/// scan (which calls `canonicalize_for_coverage`) and the per-case
+/// coverage hits (which go through `flatten_case_coverage`). Both must
+/// agree on separator style or `TestCoverageReport::finalize` will
+/// silently drop executable lines on Windows. Pin the contract here.
+#[test]
+fn normalize_coverage_key_strips_backslashes() {
+    // Whatever the platform produces, the result must never contain
+    // backslashes — that's the cross-platform invariant the report
+    // keys depend on.
+    let result = super::normalize_coverage_key("dir\\sub\\file.k");
+    assert!(
+        !result.contains('\\'),
+        "normalize_coverage_key must not leave backslashes in result, got {result:?}"
+    );
+
+    // On POSIX platforms the function is the identity for already-
+    // normalized input. On Windows it must collapse separators to `/`.
+    let posix = super::normalize_coverage_key("dir/sub/file.k");
+    if cfg!(windows) {
+        assert!(posix.contains('/'));
+    } else {
+        assert_eq!(posix, "dir/sub/file.k");
+    }
+}
+
+/// `flatten_case_coverage` should normalize the file keys it receives
+/// so they line up with the executable-line map. Without normalization
+/// the report's `executable_lines` would be empty on Windows.
+#[test]
+fn flatten_case_coverage_normalizes_keys() {
+    use std::collections::HashMap;
+    let mut lines = HashMap::new();
+    lines.insert(1u64, 1u64);
+    let mut per_file = HashMap::new();
+    per_file.insert("foo.k".to_string(), lines);
+    let flat = flatten_case_coverage(&per_file);
+    let expected_key = format!("{}:1", super::normalize_coverage_key("foo.k"));
+    assert!(
+        flat.contains_key(&expected_key),
+        "flatten_case_coverage should use normalized key, expected {expected_key:?} in {flat:?}"
+    );
 }
