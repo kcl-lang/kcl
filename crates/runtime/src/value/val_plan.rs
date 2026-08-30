@@ -8,9 +8,12 @@ const SCHEMA_TYPE_META_ATTR: &str = "_type";
 /// Side-channel marker emitted alongside the planned YAML/JSON when
 /// `PlanOptions::emit_attribute_metadata` is set. The marker is a
 /// sibling key whose value is a list of schema attribute names that
-/// should be rendered as XML attributes (vs. child elements) by
-/// downstream XML emitters (CLI `--format xml`, kcl-go `XAMLString`).
-pub const XML_ATTRS_META_ATTR: &str = "__kcl_xml_attrs__";
+/// carry the `@info(type="attr")` role. Downstream emitters (CLI
+/// `--format xml`, kcl-go `XAMLString()`) translate the role into
+/// their target format — XML attributes today, but the marker itself
+/// is named after the `@info` decorator so future roles (CDATA,
+/// comments, protobuf tags, …) can reuse the same channel.
+pub const INFO_META_ATTR: &str = "__kcl_info_meta__";
 
 /// PlanOptions denotes the configuration required to execute the KCL
 /// program and the JSON/YAML planning.
@@ -34,7 +37,7 @@ pub struct PlanOptions {
     /// When set, `ValueRef::plan` skips the un-requested encoder so the
     /// runtime never produces a string that will be discarded.
     pub format: Option<String>,
-    /// When `true`, the planner appends the `__kcl_xml_attrs__` marker
+    /// When `true`, the planner appends the `__kcl_info_meta__` marker
     /// to schema instances whose attributes are decorated with
     /// `@info(type="attr")` (see `val_decorator::INFO_ROLE_XML_ATTR`).
     /// Defaults to `false` to keep `-o json` and `-o yaml` output
@@ -207,11 +210,13 @@ fn handle_schema(ctx: &Context, value: &ValueRef) -> Vec<ValueRef> {
             ValueRef::str(&value_type_path(value, true)),
         );
     }
-    // When the caller opts into XML-attribute metadata emission, append
-    // the `__kcl_xml_attrs__` marker naming the attributes that should
-    // be rendered as XML attributes. Only attributes still present
-    // after filtering (`disable_none`, `query_paths`, …) are listed, so
-    // the marker can never reference an absent key.
+    // When the caller opts into info-metadata emission, append the
+    // `__kcl_info_meta__` marker naming the schema fields that carry
+    // the `@info(type="attr")` role. Downstream emitters translate
+    // the role into their target format (XML attribute today). Only
+    // attributes still present after filtering (`disable_none`,
+    // `query_paths`, …) are listed, so the marker can never reference
+    // an absent key.
     if ctx.plan_opts.emit_attribute_metadata
         && let Some(v) = filtered.get_mut(0)
         && v.is_config()
@@ -234,7 +239,7 @@ fn handle_schema(ctx: &Context, value: &ValueRef) -> Vec<ValueRef> {
                     .collect();
                 let item_refs: Vec<&ValueRef> = str_items.iter().collect();
                 let marker = ValueRef::list(Some(&item_refs));
-                v.dict_update_key_value(XML_ATTRS_META_ATTR, marker);
+                v.dict_update_key_value(INFO_META_ATTR, marker);
             }
         }
     }
@@ -431,7 +436,7 @@ impl ValueRef {
 mod test_value_plan {
     use crate::{
         Context, INFO_ROLE_XML_ATTR, MAIN_PKG_PATH, ValueRef, schema_runtime_type,
-        val_plan::{PlanOptions, XML_ATTRS_META_ATTR},
+        val_plan::{PlanOptions, INFO_META_ATTR},
     };
 
     use super::{filter_results, slice_last_marker_section, slice_marker_section};
@@ -613,8 +618,8 @@ mod test_value_plan {
         mark_attr_as_xml(&mut ctx, TEST_SCHEMA_NAME, "id");
         config.dict_update_key_value("data", schema);
         let (json_string, yaml_string) = config.plan(&ctx);
-        assert!(!json_string.contains(XML_ATTRS_META_ATTR));
-        assert!(!yaml_string.contains(XML_ATTRS_META_ATTR));
+        assert!(!json_string.contains(INFO_META_ATTR));
+        assert!(!yaml_string.contains(INFO_META_ATTR));
     }
 
     /// When the flag is on, the marker must list every `@info`-marked
@@ -641,12 +646,12 @@ mod test_value_plan {
         // direct substring check is sufficient: `desc: d` is the
         // regular field while `- id` / `- name` only appear inside
         // the marker list.
-        let marker_section_json = slice_marker_section(&json_string, XML_ATTRS_META_ATTR);
-        assert!(json_string.contains(XML_ATTRS_META_ATTR));
+        let marker_section_json = slice_marker_section(&json_string, INFO_META_ATTR);
+        assert!(json_string.contains(INFO_META_ATTR));
         assert!(marker_section_json.contains("\"id\""));
         assert!(marker_section_json.contains("\"name\""));
         assert!(!marker_section_json.contains("\"desc\""));
-        assert!(yaml_string.contains(XML_ATTRS_META_ATTR));
+        assert!(yaml_string.contains(INFO_META_ATTR));
         assert!(yaml_string.contains("- id"));
         assert!(yaml_string.contains("- name"));
         assert!(!yaml_string.contains("- desc"));
@@ -670,7 +675,7 @@ mod test_value_plan {
         schema.dict_update_key_value("name", ValueRef::none());
         config.dict_update_key_value("data", schema);
         let (json_string, _) = config.plan(&ctx);
-        assert!(json_string.contains(XML_ATTRS_META_ATTR));
+        assert!(json_string.contains(INFO_META_ATTR));
         assert!(json_string.contains("\"id\""));
         assert!(!json_string.contains("\"name\""));
     }
@@ -686,8 +691,8 @@ mod test_value_plan {
         schema.dict_update_key_value("id", ValueRef::str("v1"));
         config.dict_update_key_value("data", schema);
         let (json_string, yaml_string) = config.plan(&ctx);
-        assert!(!json_string.contains(XML_ATTRS_META_ATTR));
-        assert!(!yaml_string.contains(XML_ATTRS_META_ATTR));
+        assert!(!json_string.contains(INFO_META_ATTR));
+        assert!(!yaml_string.contains(INFO_META_ATTR));
     }
 
     /// Unknown role entries in the registry must be ignored.
@@ -705,8 +710,8 @@ mod test_value_plan {
         schema.dict_update_key_value("id", ValueRef::str("v1"));
         config.dict_update_key_value("data", schema);
         let (json_string, yaml_string) = config.plan(&ctx);
-        assert!(!json_string.contains(XML_ATTRS_META_ATTR));
-        assert!(!yaml_string.contains(XML_ATTRS_META_ATTR));
+        assert!(!json_string.contains(INFO_META_ATTR));
+        assert!(!yaml_string.contains(INFO_META_ATTR));
     }
 
     /// A nested schema instance carries its own marker independently
@@ -736,14 +741,14 @@ mod test_value_plan {
         let mut config = ValueRef::dict(None);
         config.dict_update_key_value("data", outer);
         let (json_string, _) = config.plan(&ctx);
-        assert!(json_string.contains(XML_ATTRS_META_ATTR));
+        assert!(json_string.contains(INFO_META_ATTR));
         // The outer schema's marker is appended last (its `handle_schema`
         // runs after the inner schema is recursively processed), so it
         // appears AFTER the inner schema's marker in the JSON output.
         // Slice each by its distinct position to assert they name the
         // right attribute.
-        let inner_marker = slice_marker_section(&json_string, XML_ATTRS_META_ATTR);
-        let outer_marker = slice_last_marker_section(&json_string, XML_ATTRS_META_ATTR);
+        let inner_marker = slice_marker_section(&json_string, INFO_META_ATTR);
+        let outer_marker = slice_last_marker_section(&json_string, INFO_META_ATTR);
         assert!(inner_marker.contains("\"name\""));
         assert!(!inner_marker.contains("\"id\""));
         assert!(outer_marker.contains("\"id\""));

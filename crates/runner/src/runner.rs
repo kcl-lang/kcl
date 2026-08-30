@@ -79,9 +79,10 @@ pub struct ExecProgramArgs {
     /// `None`, no source map is generated.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sourcemap_output: Option<String>,
-    /// When `true`, the planner emits the `__kcl_xml_attrs__`
-    /// side-channel marker so XML emitters can render decorated
-    /// schema fields as attributes (vs. child elements).
+    /// When `true`, the planner emits the `__kcl_info_meta__`
+    /// side-channel marker so downstream emitters (CLI `--format xml`,
+    /// kcl-go `XAMLString()`) can render decorated schema fields as
+    /// XML attributes (vs. child elements).
     #[serde(default, skip_serializing_if = "is_false")]
     pub emit_attribute_metadata: bool,
 }
