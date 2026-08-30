@@ -1,5 +1,7 @@
 //! Copyright The KCL Authors. All rights reserved.
 
+pub mod kcl_sourcemap;
+
 pub mod val_panic;
 
 pub mod val_overflow;
