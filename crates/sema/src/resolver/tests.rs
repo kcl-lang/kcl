@@ -501,7 +501,11 @@ fn test_resolve_schema_doc() {
         .borrow_mut()
         .clone();
 
-    let schema_scope_obj = &main_scope.find_obj_recursive("Server").unwrap().borrow().clone();
+    let schema_scope_obj = &main_scope
+        .find_obj_recursive("Server")
+        .unwrap()
+        .borrow()
+        .clone();
     let schema_summary = match &schema_scope_obj.ty.kind {
         TypeKind::Schema(schema_ty) => schema_ty.doc.clone(),
         _ => "".to_string(),

@@ -94,11 +94,7 @@ impl<'ctx> Resolver<'ctx> {
                 // land in the file's own scope, alongside imports and
                 // global initializations.
                 let file_span = scope::module_file_span(&module);
-                self.enter_file_scope(
-                    &module.filename,
-                    &file_span.0,
-                    &file_span.1,
-                );
+                self.enter_file_scope(&module.filename, &file_span.0, &file_span.1);
                 for stmt in &module.body {
                     self.stmt(stmt);
                 }
