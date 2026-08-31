@@ -1452,6 +1452,7 @@ impl<'a> Parser<'a> {
         let key;
         let value;
         let operation;
+        let mut is_shorthand = false;
 
         match self.token.kind {
             TokenKind::BinOp(BinOpToken::StarStar) => {
@@ -1470,27 +1471,46 @@ impl<'a> Parser<'a> {
                     match self.token.kind {
                         TokenKind::Colon => {
                             operation = ConfigEntryOperation::Union;
+                            self.bump();
+                            value = self.parse_expr();
                         }
                         TokenKind::Assign => {
                             operation = ConfigEntryOperation::Override;
+                            self.bump();
+                            value = self.parse_expr();
                         }
                         TokenKind::BinOpEq(BinOpToken::Plus) => {
                             operation = ConfigEntryOperation::Insert;
+                            self.bump();
+                            value = self.parse_expr();
                         }
                         _ => {
-                            self.sess.struct_token_error(
-                                &[
-                                    TokenKind::Colon.into(),
-                                    TokenKind::Assign.into(),
-                                    TokenKind::BinOpEq(BinOpToken::Plus).into(),
-                                ],
-                                self.token,
-                            );
-                            operation = ConfigEntryOperation::Override;
+                            // Shorthand `{name}` — reuse the parsed identifier as
+                            // both key and value. Only fires for single-segment
+                            // identifiers; `{a.b}` is still rejected with the
+                            // existing diagnostic so dotted-key flattening keeps
+                            // its current error semantics.
+                            if let Some(parsed_key) = key.as_ref()
+                                && matches!(&parsed_key.node, Expr::Identifier(id) if id.names.len() == 1)
+                            {
+                                is_shorthand = true;
+                                operation = ConfigEntryOperation::Override;
+                                value = parsed_key.clone();
+                            } else {
+                                self.sess.struct_token_error(
+                                    &[
+                                        TokenKind::Colon.into(),
+                                        TokenKind::Assign.into(),
+                                        TokenKind::BinOpEq(BinOpToken::Plus).into(),
+                                    ],
+                                    self.token,
+                                );
+                                operation = ConfigEntryOperation::Override;
+                                self.bump();
+                                value = self.parse_expr();
+                            }
                         }
                     }
-                    self.bump();
-                    value = self.parse_expr();
                 }
             }
         }
@@ -1500,6 +1520,7 @@ impl<'a> Parser<'a> {
                 key,
                 value,
                 operation,
+                is_shorthand,
             },
             self.sess.struct_token_loc(token, self.prev_token),
         ))
@@ -1797,6 +1818,7 @@ impl<'a> Parser<'a> {
                         key: expr0,
                         value: expr1,
                         operation: op,
+                        is_shorthand: false,
                     },
                     pos
                 ));
@@ -1826,6 +1848,7 @@ impl<'a> Parser<'a> {
                         key: expr0,
                         value: expr1,
                         operation: op,
+                        is_shorthand: false,
                     },
                     pos
                 ));
@@ -1886,6 +1909,7 @@ impl<'a> Parser<'a> {
                         key: expr0,
                         value: expr1,
                         operation: op,
+                        is_shorthand: false,
                     },
                     pos
                 ));

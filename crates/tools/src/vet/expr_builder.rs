@@ -147,6 +147,7 @@ impl ExprGenerator<serde_yaml::Value> for ExprBuilder {
                         key: Some(k),
                         value: v,
                         operation: ConfigEntryOperation::Union,
+                        is_shorthand: false,
                     });
                     config_entries.push(config_entry);
                 }
@@ -281,6 +282,7 @@ impl ExprGenerator<located_yaml::Yaml> for ExprBuilder {
                             key: Some(k),
                             value: v,
                             operation: ConfigEntryOperation::Union,
+                            is_shorthand: false,
                         },
                         loc.clone()
                     );
@@ -439,6 +441,7 @@ impl ExprGenerator<json_spanned_value::Spanned<json_spanned_value::Value>> for E
                             )),
                             value: v,
                             operation: ConfigEntryOperation::Union,
+                            is_shorthand: false,
                         },
                         loc.clone()
                     );
@@ -568,6 +571,7 @@ impl ExprGenerator<serde_json::Value> for ExprBuilder {
                         key: Some(node_ref!(Expr::StringLit(k))),
                         value: v,
                         operation: ConfigEntryOperation::Union,
+                        is_shorthand: false,
                     });
                     config_entries.push(config_entry);
                 }

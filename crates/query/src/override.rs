@@ -542,6 +542,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                                 )))),
                                 value: self.clone_override_value(),
                                 operation: self.operation.clone(),
+                                is_shorthand: false,
                             }))],
                         })))
                     };
@@ -681,6 +682,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for OverrideTransformer {
                             )))),
                             value: self.clone_override_value(),
                             operation: self.operation.clone(),
+                            is_shorthand: false,
                         })));
                     self.has_override = true;
                 }
@@ -930,6 +932,7 @@ fn replace_config_with_path_parts(
                 key: Some(Box::new(ast::Node::dummy_node(ast::Expr::Identifier(key)))),
                 value: value.clone(),
                 operation: operation.clone(),
+                is_shorthand: false,
             })));
         changed = true;
     }

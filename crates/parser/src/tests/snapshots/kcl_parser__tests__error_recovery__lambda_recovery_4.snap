@@ -35,6 +35,7 @@ Node {
                             end_column: 9,
                         },
                         operation: Override,
+                        is_shorthand: false,
                     },
                     filename: "",
                     line: 1,

@@ -145,6 +145,11 @@ parse_expr_snapshot!(
     "gender" = "female"
 }"####
 );
+// Shorthand entries — `{name}` parses to `ConfigEntry { key = Identifier(name), value = Identifier(name), is_shorthand = true }`.
+parse_expr_snapshot!(config_shorthand_stmt_0, r####"{ name, age }"####);
+parse_expr_snapshot!(config_shorthand_stmt_1, r####"{ name, age = 5 }"####);
+parse_expr_snapshot!(config_shorthand_stmt_2, r####"{ name = name, age = 5 }"####);
+parse_expr_snapshot!(config_shorthand_stmt_3, r####"{}"####);
 parse_expr_snapshot!(
     config_if_expr_0,
     r####"{

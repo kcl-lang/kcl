@@ -34,16 +34,30 @@ Node {
                             },
                         ),
                         value: Node {
-                            node: Missing(
-                                MissingExpr,
+                            node: Identifier(
+                                Identifier {
+                                    names: [
+                                        Node {
+                                            node: "你好",
+                                            filename: "",
+                                            line: 1,
+                                            column: 1,
+                                            end_line: 1,
+                                            end_column: 3,
+                                        },
+                                    ],
+                                    pkgpath: "",
+                                    ctx: Load,
+                                },
                             ),
                             filename: "",
                             line: 1,
-                            column: 3,
+                            column: 1,
                             end_line: 1,
                             end_column: 3,
                         },
                         operation: Override,
+                        is_shorthand: true,
                     },
                     filename: "",
                     line: 1,

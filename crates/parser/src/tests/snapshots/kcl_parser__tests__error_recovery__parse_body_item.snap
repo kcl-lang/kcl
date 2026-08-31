@@ -63,6 +63,7 @@ Module {
                                                 end_column: 0,
                                             },
                                             operation: Union,
+                                            is_shorthand: false,
                                         },
                                         filename: "",
                                         line: 3,

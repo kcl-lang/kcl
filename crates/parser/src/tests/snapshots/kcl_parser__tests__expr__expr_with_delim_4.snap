@@ -66,6 +66,7 @@ Node {
                                         end_column: 7,
                                     },
                                     operation: Override,
+                                    is_shorthand: false,
                                 },
                                 filename: "",
                                 line: 1,

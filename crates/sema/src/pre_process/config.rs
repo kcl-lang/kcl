@@ -61,6 +61,7 @@ impl ConfigNestAttrTransformer {
                         } else {
                             ast::ConfigEntryOperation::Union
                         },
+                        is_shorthand: false,
                     };
                     let config_expr = ast::ConfigExpr {
                         items: vec![Box::new(ast::Node::new(

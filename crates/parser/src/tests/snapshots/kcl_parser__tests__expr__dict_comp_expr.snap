@@ -82,6 +82,7 @@ Node {
                     end_column: 9,
                 },
                 operation: Union,
+                is_shorthand: false,
             },
             generators: [
                 Node {
@@ -177,6 +178,7 @@ Node {
                                                     end_column: 29,
                                                 },
                                                 operation: Override,
+                                                is_shorthand: false,
                                             },
                                             filename: "",
                                             line: 1,
@@ -227,6 +229,7 @@ Node {
                                                     end_column: 37,
                                                 },
                                                 operation: Override,
+                                                is_shorthand: false,
                                             },
                                             filename: "",
                                             line: 1,
