@@ -3,12 +3,15 @@
         {
             "name": "test_func_0",
             "error": "",
-            "log_message": ""
+            "log_message": "",
+            "line_hits": {}
         },
         {
             "name": "test_func_1",
             "error": "",
-            "log_message": ""
+            "log_message": "",
+            "line_hits": {}
         }
-    ]
+    ],
+    "coverage": {}
 }

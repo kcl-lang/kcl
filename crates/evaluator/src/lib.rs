@@ -5,6 +5,7 @@ mod tests;
 
 mod calculation;
 mod context;
+mod coverage;
 mod error;
 mod func;
 #[macro_use]
@@ -19,6 +20,8 @@ mod scope;
 mod ty;
 mod union;
 mod value;
+
+pub use coverage::CoverageState;
 
 extern crate kcl_error;
 
@@ -108,6 +111,11 @@ pub struct Evaluator<'ctx> {
     /// assignments, collected while walking the main package. Feeds the
     /// Source Map v3 output; only filled for global-scope statements.
     pub source_positions: RefCell<IndexMap<String, (String, u32, u32)>>,
+    /// Optional line-coverage sink. When `Some`, the eager `walk_stmt` pass
+    /// records the source `(filename, line)` of every statement it enters so
+    /// callers (notably the `kcl test` tool) can compute a coverage report.
+    /// `None` disables recording entirely so non-coverage callers pay no cost.
+    pub coverage_state: Option<CoverageState>,
 }
 
 #[derive(Clone)]
@@ -177,7 +185,16 @@ impl<'ctx> Evaluator<'ctx> {
             ast_id: RefCell::new(AstIndex::default()),
             ctx_stack: RefCell::new(Default::default()),
             source_positions: RefCell::new(Default::default()),
+            coverage_state: None,
         }
+    }
+
+    /// Attach a shared [`CoverageState`] to this evaluator. Subsequent
+    /// statement walks will record `(filename, line)` hits into the shared
+    /// state. Pass `None` to disable coverage recording.
+    #[inline]
+    pub fn set_coverage_state(&mut self, state: Option<CoverageState>) {
+        self.coverage_state = state;
     }
 
     /// Evaluate the program and return the JSON and YAML result.

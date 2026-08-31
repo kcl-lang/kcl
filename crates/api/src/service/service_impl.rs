@@ -103,6 +103,97 @@ pub(crate) fn emit_machine_readable_error(
     Ok(())
 }
 
+/// Convert an internal [`kcl_tools::testing::TestCoverageReport`] into the
+/// protobuf [`gpyrpc::TestCoverageReport`] shape. Used by the service layer
+/// to surface coverage data through the gRPC / C API.
+fn into_proto_coverage_report(report: &testing::TestCoverageReport) -> gpyrpc::TestCoverageReport {
+    let mut files = std::collections::HashMap::new();
+    for (filename, file_cov) in &report.files {
+        let line_hits: std::collections::HashMap<u64, u64> =
+            file_cov.line_hits.iter().map(|(k, v)| (*k, *v)).collect();
+        files.insert(
+            filename.clone(),
+            gpyrpc::FileCoverage {
+                filename: filename.clone(),
+                covered_lines: file_cov.covered_lines.clone(),
+                executable_lines: file_cov.executable_lines.clone(),
+                line_hits,
+            },
+        );
+    }
+    gpyrpc::TestCoverageReport {
+        files,
+        summary: Some(gpyrpc::CoverageSummary {
+            covered: report.summary.covered,
+            executable: report.summary.executable,
+            percent: report.summary.percent,
+        }),
+    }
+}
+
+/// Merge the contents of an internal coverage report into a protobuf
+/// [`gpyrpc::TestCoverageReport`]. Used to roll up per-package coverage
+/// into a single report across all packages in a request. The protobuf
+/// map is updated in place; counts for the same `(filename, line)` are
+/// summed.
+fn merge_coverage(target: &mut gpyrpc::TestCoverageReport, src: &testing::TestCoverageReport) {
+    if src.files.is_empty() && src.summary.executable == 0 {
+        return;
+    }
+    let proto = into_proto_coverage_report(src);
+    for (filename, file_cov) in proto.files {
+        let entry = target
+            .files
+            .entry(filename.clone())
+            .or_insert_with(|| gpyrpc::FileCoverage {
+                filename,
+                covered_lines: vec![],
+                executable_lines: vec![],
+                line_hits: Default::default(),
+            });
+        // Merge line hits additively. `HashMap<u64, u64>` doesn't have an
+        // `entry().or_insert() +=` shorthand, so we do it explicitly.
+        for (line, hits) in file_cov.line_hits {
+            *entry.line_hits.entry(line).or_insert(0) += hits;
+        }
+        // Union the covered/executable line sets. Both sides are sorted
+        // and deduplicated by the producer (`kcl_tools::testing`), so we
+        // just append and re-sort here.
+        let mut covered_lines: std::collections::BTreeSet<u64> =
+            entry.covered_lines.iter().copied().collect();
+        covered_lines.extend(file_cov.covered_lines.iter().copied());
+        let mut covered_lines: Vec<u64> = covered_lines.into_iter().collect();
+        covered_lines.sort_unstable();
+        covered_lines.dedup();
+        entry.covered_lines = covered_lines;
+        let mut executable_lines: std::collections::BTreeSet<u64> =
+            entry.executable_lines.iter().copied().collect();
+        executable_lines.extend(file_cov.executable_lines.iter().copied());
+        let mut executable_lines: Vec<u64> = executable_lines.into_iter().collect();
+        executable_lines.sort_unstable();
+        executable_lines.dedup();
+        entry.executable_lines = executable_lines;
+    }
+    // Roll up the summary fields from scratch — easier than tracking
+    // which lines moved and avoiding double-counts.
+    let mut covered = 0u64;
+    let mut executable = 0u64;
+    for file_cov in target.files.values() {
+        covered += file_cov.covered_lines.len() as u64;
+        executable += file_cov.executable_lines.len() as u64;
+    }
+    let percent = if executable == 0 {
+        0.0
+    } else {
+        (covered as f64) * 100.0 / (executable as f64)
+    };
+    target.summary = Some(gpyrpc::CoverageSummary {
+        covered,
+        executable,
+        percent,
+    });
+}
+
 /// Format `err` for the C API / language-binding return channel.
 ///
 /// The native service returns its result-or-error to embedders as a single
@@ -1233,6 +1324,7 @@ impl KclServiceImpl {
             exec_args,
             run_regexp: args.run_regexp.clone(),
             fail_fast: args.fail_fast,
+            coverage: args.coverage,
         };
         for pkg in &args.pkg_list {
             let suites = testing::load_test_suites(pkg, &opts)?;
@@ -1252,8 +1344,20 @@ impl KclServiceImpl {
                         error: err_text,
                         duration: info.duration.as_micros() as u64,
                         log_message: info.log_message.clone(),
+                        line_hits: info
+                            .line_hits
+                            .iter()
+                            .map(|(k, v)| (k.clone(), *v))
+                            .collect(),
                     })
                 }
+                // Merge coverage across all packages in this request so
+                // the user gets a single roll-up rather than one report
+                // per package. `result.coverage` is `Option` in the proto
+                // (so absent == empty), but `merge_coverage` works on the
+                // concrete value — materialize it once and keep using it.
+                let report = result.coverage.get_or_insert_with(Default::default);
+                merge_coverage(report, &suite_result.coverage);
             }
         }
         Ok(result)

@@ -1397,12 +1397,20 @@ message TestArgs {
 	string run_regexp = 3;
 	// Flag to stop the test run on the first failure.
 	bool fail_fast = 4;
+	// Flag to collect line-level coverage data while running tests. When true,
+	// the test tool records, for every top-level KCL statement that executes,
+	// the source file path and line number. The aggregated result is returned
+	// in [TestResult.coverage]. Defaults to false.
+	bool coverage = 5;
 }
 
 // Message for test response.
 message TestResult {
 	// List of test case information.
 	repeated TestCaseInfo info = 2;
+	// Aggregated coverage report. Populated only when
+	// [TestArgs.coverage] is true; empty otherwise.
+	TestCoverageReport coverage = 3;
 }
 
 // Message representing information about a single test case.
@@ -1415,6 +1423,44 @@ message TestCaseInfo {
 	uint64 duration = 3;
 	// Log message from the test case.
 	string log_message = 4;
+	// Per-case line coverage. Populated only when [TestArgs.coverage]
+	// is true; empty otherwise. Each entry maps "filename:line" to the
+	// number of times that line was entered while running this case.
+	map<string, uint64> line_hits = 5;
+}
+
+// Message describing aggregated coverage data for a single source file.
+message FileCoverage {
+	// Source file path, relative to the package root when possible.
+	string filename = 1;
+	// Sorted list of lines that executed at least once across all tests
+	// that covered this file.
+	repeated uint64 covered_lines = 2;
+	// Sorted list of lines in this file that contain an executable
+	// statement (i.e. lines that *could* be covered). Lines that contain
+	// only blank lines, comments or non-executable tokens are excluded.
+	repeated uint64 executable_lines = 3;
+	// Per-line execution count across all tests that covered this file.
+	// Keys are line numbers (1-based); values are hit counts.
+	map<uint64, uint64> line_hits = 4;
+}
+
+// Message describing aggregated coverage across the entire test run.
+message TestCoverageReport {
+	// Per-file coverage keyed by source file path.
+	map<string, FileCoverage> files = 1;
+	// Roll-up of all files in [TestCoverageReport.files].
+	CoverageSummary summary = 2;
+}
+
+// Roll-up coverage metrics.
+message CoverageSummary {
+	// Number of executable lines that were hit by at least one test.
+	uint64 covered = 1;
+	// Total number of executable lines discovered.
+	uint64 executable = 2;
+	// Coverage percentage in the inclusive range [0.0, 100.0].
+	double percent = 3;
 }
 
 // ---------------------------------------------------------------------------------

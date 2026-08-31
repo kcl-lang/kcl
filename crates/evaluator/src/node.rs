@@ -66,6 +66,17 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         }
         self.update_ast_id(stmt);
         self.mark_stmt_entered(&stmt.id);
+        // Record a coverage hit when the caller has opted in via
+        // `set_coverage_state`. Skip recording during backtracking replays —
+        // those replays walk the same statements for value updates and would
+        // inflate hit counts without exercising any new lines. Backtracking
+        // replays also cannot carry fresh filename/line information from the
+        // caller, so the recorded line would be a stale entry.
+        if self.backtrack_meta.borrow().is_empty()
+            && let Some(state) = &self.coverage_state
+        {
+            state.record_hit(&stmt.filename, stmt.line);
+        }
         let value = match &stmt.node {
             ast::Stmt::TypeAlias(type_alias) => self.walk_type_alias_stmt(type_alias),
             ast::Stmt::Expr(expr_stmt) => self.walk_expr_stmt(expr_stmt),
