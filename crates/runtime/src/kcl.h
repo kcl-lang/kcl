@@ -555,7 +555,7 @@ kcl_value_ref_t* kcl_units_to_u(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_v
 
 kcl_value_ref_t* kcl_value_Bool(kcl_context_t* ctx, kcl_bool_t v);
 
-kcl_decorator_value_t* kcl_value_Decorator(kcl_context_t* ctx, kcl_char_t* name, kcl_value_ref_t* args, kcl_value_ref_t* kwargs, kcl_value_ref_t* config_meta, kcl_char_t* attr_name, kcl_value_ref_t* config_value, kcl_value_ref_t* is_schema_target);
+kcl_decorator_value_t* kcl_value_Decorator(kcl_context_t* ctx, kcl_char_t* name, kcl_value_ref_t* args, kcl_value_ref_t* kwargs, kcl_value_ref_t* config_meta, kcl_char_t* attr_name, kcl_char_t* schema_name, kcl_value_ref_t* config_value, kcl_value_ref_t* is_schema_target);
 
 kcl_value_ref_t* kcl_value_Dict(kcl_context_t* ctx);
 

@@ -83,6 +83,11 @@ pub struct Config {
     /// Path to write the Source Map v3 document to. `None` disables
     /// source map generation.
     pub sourcemap_output: Option<String>,
+    /// When `true`, the planner emits the `__kcl_info_meta__`
+    /// side-channel marker so downstream emitters (CLI `--format xml`,
+    /// kcl-go `XAMLString()`) can render decorated schema fields as
+    /// XML attributes (vs. child elements).
+    pub emit_attribute_metadata: Option<bool>,
 }
 
 impl SettingsFile {
@@ -105,6 +110,7 @@ impl SettingsFile {
                 package_maps: Some(HashMap::default()),
                 format: None,
                 sourcemap_output: None,
+                emit_attribute_metadata: Some(false),
             }),
             kcl_options: Some(vec![]),
         }
@@ -422,6 +428,11 @@ pub fn merge_settings(settings: &[SettingsFile]) -> SettingsFile {
                 set_if!(result_kcl_cli_configs, package_maps, kcl_cli_configs);
                 set_if!(result_kcl_cli_configs, format, kcl_cli_configs);
                 set_if!(result_kcl_cli_configs, sourcemap_output, kcl_cli_configs);
+                set_if!(
+                    result_kcl_cli_configs,
+                    emit_attribute_metadata,
+                    kcl_cli_configs
+                );
             }
         }
         if let Some(kcl_options) = &setting.kcl_options {

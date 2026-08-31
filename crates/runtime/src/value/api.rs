@@ -2394,6 +2394,7 @@ pub unsafe extern "C-unwind" fn kcl_value_Decorator(
     kwargs: *const kcl_value_ref_t,
     config_meta: *const kcl_value_ref_t,
     attr_name: *const kcl_char_t,
+    schema_name: *const kcl_char_t,
     config_value: *const kcl_value_ref_t,
     is_schema_target: *const kcl_value_ref_t,
 ) -> *const kcl_decorator_value_t {
@@ -2402,12 +2403,14 @@ pub unsafe extern "C-unwind" fn kcl_value_Decorator(
     let kwargs = unsafe { ptr_as_ref(kwargs) };
     let config_meta = unsafe { ptr_as_ref(config_meta) };
     let attr_name = unsafe { c2str(attr_name) };
+    let schema_name = unsafe { c2str(schema_name) };
     let config_value = unsafe { ptr_as_ref(config_value) };
     let is_schema_target = unsafe { ptr_as_ref(is_schema_target) };
     let decorator = DecoratorValue::new(name, args, kwargs);
     decorator.run(
         unsafe { mut_ptr_as_ref(ctx) },
-        attr_name,
+        &attr_name,
+        &schema_name,
         is_schema_target.as_bool(),
         config_value,
         config_meta,

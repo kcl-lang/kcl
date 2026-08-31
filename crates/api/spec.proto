@@ -1034,6 +1034,14 @@ message ExecProgramArgs {
 	// Output format selector. One of: yaml, json.
 	// When empty the runtime generates both formats (legacy behaviour).
 	string format = 20;
+	// Emit a side-channel marker in the planned YAML/JSON that names
+	// schema attributes to be carried over to downstream emitters. The
+	// marker is the sibling key `__kcl_info_meta__` whose value is a
+	// list of attribute names (e.g. those decorated with
+	// `@info(type="attr")`). Consumers (CLI/kcl-go) interpret it when
+	// emitting XML. Defaults to false to keep `-o json` / `-o yaml`
+	// output byte-identical to pre-change.
+	bool emit_attribute_metadata = 21;
 }
 
 // Message for execute program response.
