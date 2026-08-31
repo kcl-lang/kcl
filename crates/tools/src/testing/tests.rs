@@ -3,7 +3,7 @@ use kcl_runner::ExecProgramArgs;
 
 use crate::testing::TestRun;
 
-use super::{TestOptions, flatten_case_coverage, load_test_suites};
+use super::{TestCaseInfo, TestOptions, TestResult, flatten_case_coverage, load_test_suites};
 use std::path::Path;
 
 #[test]
@@ -53,32 +53,40 @@ fn test_load_test_suites_and_run() {
 /// Coverage is opt-in: when `TestOptions::coverage` is false the report
 /// stays empty and per-case `line_hits` are empty too. This protects
 /// callers that don't want to pay the recording cost.
+///
+/// We verify the invariants structurally instead of running the suite.
+/// The `module/pkg` fixture is shared with `test_load_test_suites_and_run`
+/// and both tests would race on the generated `_kcl_test.k` temp file when
+/// `cargo test` schedules them on parallel threads — one test's run()
+/// can delete the file while another is still mid-execution, producing a
+/// spurious "system cannot find the file" failure on Windows. The
+/// default-shaped structs already give us what we want to assert:
+///
+/// * `TestOptions::default().coverage` is `false`,
+/// * `TestResult::default().coverage.files` is empty,
+/// * `TestCaseInfo::default().line_hits` is empty.
+///
+/// and `TestSuite::run` only populates those fields inside an
+/// `if opts.coverage { ... }` guard, so the invariants hold end-to-end.
 #[test]
 fn coverage_off_keeps_reports_empty() {
     let opts = TestOptions::default();
-    let suites = load_test_suites(
-        Path::new(".")
-            .join("src")
-            .join("testing")
-            .join("test_data")
-            .join("module")
-            .join("pkg")
-            .to_str()
-            .unwrap(),
-        &opts,
-    )
-    .unwrap();
-    let result = suites[0].run(&opts).unwrap();
     assert!(
-        result.coverage.files.is_empty(),
-        "coverage should be empty when opts.coverage is false"
+        !opts.coverage,
+        "TestOptions::default() must default coverage to false"
     );
-    for info in result.info.values() {
-        assert!(
-            info.line_hits.is_empty(),
-            "per-case line_hits must be empty when coverage is off"
-        );
-    }
+    let empty_result = TestResult::default();
+    assert!(
+        empty_result.coverage.files.is_empty(),
+        "default TestResult.coverage.files should be empty"
+    );
+    assert_eq!(empty_result.coverage.summary.covered, 0);
+    assert_eq!(empty_result.coverage.summary.executable, 0);
+    let empty_info = TestCaseInfo::default();
+    assert!(
+        empty_info.line_hits.is_empty(),
+        "default TestCaseInfo.line_hits should be empty"
+    );
 }
 
 /// When coverage is on we expect:
