@@ -11,17 +11,17 @@ schema Person2:
     g: sub.Person1
 
 p: Person2{
-    a  # complete `True` and `False`
+    a:  # complete `True` and `False`
 
-    b  # complete `"abc"` and `"def"`
+    b:  # complete `"abc"` and `"def"`
 
-    c  # complete `[]`
+    c:  # complete `[]`
 
-    d  # complete `1`
+    d:  # complete `1`
 
-    e  # complete `True`
+    e:  # complete `True`
 
-    f  # complete `{}`
+    f:  # complete `{}`
 
-    g  # complete `subpkg.Person1{}`
+    g:  # complete `subpkg.Person1{}`
 }
