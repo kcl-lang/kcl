@@ -68,3 +68,63 @@ fn test_unused_check_for_each_file() {
         path.to_str().unwrap().to_string()
     );
 }
+
+#[test]
+fn test_lint_all_packages() {
+    let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    root.push("src");
+    root.push("lint");
+    root.push("test_data");
+    root.push("lint_all");
+    let pattern = format!("{}/...", root.to_str().unwrap());
+    let (errors, warnings) = lint_files(&[pattern.as_str()], None);
+    // Every package is linted on its own, so `S` defined both in the root
+    // package and in `pkg_dup` is not a redefinition, and `pkg/sub/orphan.k`,
+    // which no entry file imports, is still checked.
+    assert_eq!(
+        errors.len(),
+        0,
+        "{:?}",
+        errors
+            .iter()
+            .map(|e| e.messages[0].message.clone())
+            .collect::<Vec<String>>()
+    );
+    let msgs = [
+        ("Module 'math' imported but unused", "lint_all/main.k"),
+        (
+            "Module 'math' imported but unused",
+            "lint_all/pkg/sub/orphan.k",
+        ),
+    ];
+    assert_eq!(warnings.len(), msgs.len());
+    for (diag, (m, file)) in warnings.iter().zip(msgs.iter()) {
+        assert_eq!(diag.messages[0].message, m.to_string());
+        assert!(diag.messages[0].range.0.filename.ends_with(file));
+    }
+}
+
+#[test]
+fn test_lint_dir_checks_root_package_only() {
+    let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    root.push("src");
+    root.push("lint");
+    root.push("test_data");
+    root.push("lint_all");
+    let (errors, warnings) = lint_files(&[root.to_str().unwrap()], None);
+    // A plain directory keeps its existing meaning: only the root package
+    // (the files directly in it) takes part in the lint.
+    assert_eq!(errors.len(), 0);
+    assert_eq!(warnings.len(), 1);
+    assert_eq!(
+        warnings[0].messages[0].message,
+        "Module 'math' imported but unused".to_string()
+    );
+    assert!(
+        warnings[0].messages[0]
+            .range
+            .0
+            .filename
+            .ends_with("lint_all/main.k")
+    );
+}
