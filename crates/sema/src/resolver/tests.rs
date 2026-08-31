@@ -503,7 +503,25 @@ fn test_resolve_schema_doc() {
         _ => "".to_string(),
     };
 
-    let schema_scope = &main_scope.children[0];
+    // The schema's body scope is a child of the per-file scope introduced
+    // for issue #1740, not a direct child of the package scope.
+    let mut schema_scope = None;
+    for child in main_scope.children.iter() {
+        if matches!(child.borrow().kind, ScopeKind::Schema(_)) {
+            schema_scope = Some(child.clone());
+            break;
+        }
+        for grand in child.borrow().children.iter() {
+            if matches!(grand.borrow().kind, ScopeKind::Schema(_)) {
+                schema_scope = Some(grand.clone());
+                break;
+            }
+        }
+        if schema_scope.is_some() {
+            break;
+        }
+    }
+    let schema_scope = schema_scope.expect("schema scope should exist");
     let attrs_scope = &schema_scope.borrow().elems;
     assert_eq!("Server is the common user interface for long-running services adopting the best practice of Kubernetes.".to_string(), schema_summary);
     assert_eq!(
@@ -605,10 +623,21 @@ fn test_system_package() {
         .borrow_mut()
         .clone();
 
-    assert!(main_scope.lookup("base64").unwrap().borrow().ty.is_module());
+    // Issue #1740 moved imports into the per-file scope that is a direct
+    // child of the package scope; look them up through the recursive
+    // helper so the test continues to assert behaviour rather than
+    // internal scope layout.
     assert!(
         main_scope
-            .lookup("base64_encode")
+            .find_obj_recursive("base64")
+            .unwrap()
+            .borrow()
+            .ty
+            .is_module()
+    );
+    assert!(
+        main_scope
+            .find_obj_recursive("base64_encode")
             .unwrap()
             .borrow()
             .ty
@@ -616,7 +645,7 @@ fn test_system_package() {
     );
     assert!(
         main_scope
-            .lookup("base64_decode")
+            .find_obj_recursive("base64_decode")
             .unwrap()
             .borrow()
             .ty
@@ -624,10 +653,17 @@ fn test_system_package() {
     );
 
     // Add assertions for base32 module
-    assert!(main_scope.lookup("base32").unwrap().borrow().ty.is_module());
     assert!(
         main_scope
-            .lookup("base32_encode")
+            .find_obj_recursive("base32")
+            .unwrap()
+            .borrow()
+            .ty
+            .is_module()
+    );
+    assert!(
+        main_scope
+            .find_obj_recursive("base32_encode")
             .unwrap()
             .borrow()
             .ty
@@ -635,7 +671,7 @@ fn test_system_package() {
     );
     assert!(
         main_scope
-            .lookup("base32_decode")
+            .find_obj_recursive("base32_decode")
             .unwrap()
             .borrow()
             .ty
@@ -681,8 +717,26 @@ fn test_resolve_assignment_in_lambda() {
     .program;
     let scope = resolve_program(&mut program);
     let main_scope = scope.scope_map.get("__main__").unwrap().clone();
-    assert_eq!(main_scope.borrow().children.len(), 1);
-    let lambda_scope = main_scope.borrow().children[0].clone();
+    // The file scope introduced for issue #1740 sits between the package
+    // scope and any in-file lexical scopes; the top-level `lambda` is a
+    // direct child of that file scope.
+    let mut lambda_scope = None;
+    for child in main_scope.borrow().children.iter() {
+        if matches!(child.borrow().kind, ScopeKind::Lambda) {
+            lambda_scope = Some(child.clone());
+            break;
+        }
+        for grand in child.borrow().children.iter() {
+            if matches!(grand.borrow().kind, ScopeKind::Lambda) {
+                lambda_scope = Some(grand.clone());
+                break;
+            }
+        }
+        if lambda_scope.is_some() {
+            break;
+        }
+    }
+    let lambda_scope = lambda_scope.expect("lambda scope should exist");
     assert_eq!(lambda_scope.borrow().elems.len(), 2);
     let images_scope_obj = lambda_scope.borrow().elems.get("images").unwrap().clone();
     assert_eq!(images_scope_obj.borrow().ty.ty_str(), "[str]");
