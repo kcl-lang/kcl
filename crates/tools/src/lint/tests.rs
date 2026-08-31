@@ -100,7 +100,8 @@ fn test_lint_all_packages() {
     assert_eq!(warnings.len(), msgs.len());
     for (diag, (m, file)) in warnings.iter().zip(msgs.iter()) {
         assert_eq!(diag.messages[0].message, m.to_string());
-        assert!(diag.messages[0].range.0.filename.ends_with(file));
+        // Compare path components, the separator differs between platforms.
+        assert!(std::path::Path::new(&diag.messages[0].range.0.filename).ends_with(file));
     }
 }
 
@@ -121,10 +122,7 @@ fn test_lint_dir_checks_root_package_only() {
         "Module 'math' imported but unused".to_string()
     );
     assert!(
-        warnings[0].messages[0]
-            .range
-            .0
-            .filename
+        std::path::Path::new(&warnings[0].messages[0].range.0.filename)
             .ends_with("lint_all/main.k")
     );
 }
