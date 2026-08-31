@@ -1,9 +1,11 @@
+name: next
+age: 30
 p:
   name: next
   age: 30
 m:
   name: next
   age: 30
-n:
+'n':
   name: next
   age: 99
