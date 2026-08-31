@@ -1988,10 +1988,7 @@ fn write_kcl_file(dir: &std::path::Path, rel_path: &str, body: &str) -> String {
 /// disk. `main.k` does *not* reference anything in `sub`. `sub.k`
 /// flips a top-level flag from `False` to `True` so the test can
 /// observe whether its body was evaluated.
-fn build_unused_pkg_program() -> (
-    tempfile::TempDir,
-    kcl_loader::Packages,
-) {
+fn build_unused_pkg_program() -> (tempfile::TempDir, kcl_loader::Packages) {
     let dir = tempfile::tempdir().expect("tempdir");
     let main_path = write_kcl_file(
         dir.path(),
