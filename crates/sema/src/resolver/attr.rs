@@ -95,7 +95,7 @@ impl<'ctx> Resolver<'_> {
             TypeKind::Module(module_ty) => {
                 match &module_ty.kind {
                     crate::ty::ModuleKind::User => match self.scope_map.get(&module_ty.pkgpath) {
-                        Some(scope) => match scope.borrow().elems.get(attr) {
+                        Some(scope) => match scope.borrow().find_obj_recursive(attr) {
                             Some(v) => {
                                 if v.borrow().ty.is_module() {
                                     self.handler

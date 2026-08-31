@@ -215,12 +215,15 @@ impl<'ctx> Resolver<'_> {
                 let annotation_ty =
                     self.parse_ty_with_scope(Some(ty_annotation), ty_annotation.get_span_pos());
                 // If the target defined in the scope, check the type of value and the type annotation of target
-                let target_ty = if let Some(obj) = self.scope.borrow().elems.get(name) {
-                    let obj = obj.borrow();
-                    if obj.ty.is_any() {
+                // Walk the parent chain so the package-scope binding that
+                // `init_global_var_types` pre-registered is honoured even
+                // when the call site is in the per-file scope added for
+                // issue #1740.
+                let target_ty = if let Some(ty) = self.find_type_in_scope(name) {
+                    if ty.is_any() {
                         annotation_ty
                     } else {
-                        if !is_upper_bound(annotation_ty.clone(), obj.ty.clone()) {
+                        if !is_upper_bound(annotation_ty.clone(), ty.clone()) {
                             self.handler.add_error(
                                 ErrorKind::TypeError,
                                 &[
@@ -236,16 +239,24 @@ impl<'ctx> Resolver<'_> {
                                         suggested_replacement: None,
                                     },
                                     Message {
-                                        range: obj.get_span_pos(),
+                                        range: self
+                                            .scope
+                                            .borrow()
+                                            .lookup(name)
+                                            .unwrap_or_else(|| {
+                                                panic!("scope object for '{}' not found", name)
+                                            })
+                                            .borrow()
+                                            .get_span_pos(),
                                         style: Style::LineAndColumn,
-                                        message: format!("expected {}", obj.ty.ty_str()),
+                                        message: format!("expected {}", ty.ty_str()),
                                         note: None,
                                         suggested_replacement: None,
                                     },
                                 ],
                             );
                         }
-                        obj.ty.clone()
+                        ty
                     }
                 } else {
                     annotation_ty
