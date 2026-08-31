@@ -561,39 +561,55 @@ impl<'ctx> Resolver<'ctx> {
     }
 
     /// Set type to the scope exited object, if not found, emit a compile error.
+    ///
+    /// A per-file scope (issue #1740) forwards to its parent — the
+    /// package scope — because that is where `init_global_var_types`
+    /// pre-registered the top-level binding and it is the entry sibling
+    /// files see, so it must be updated in place rather than shadowed by
+    /// a fresh file-scope copy. Every other scope only consults its own
+    /// elements: a binding assigned inside a nested scope (lambda, loop,
+    /// ...) is local to it and must never mutate an outer binding of the
+    /// same name.
     pub fn set_infer_type_to_scope<T>(&mut self, name: &str, ty: TypeRef, node: &ast::Node<T>) {
-        // Walk up the scope chain so we update the binding visible to the
-        // call site, which may live in a per-file scope that was entered
-        // for issue #1740 while the underlying definition sits in the
-        // enclosing package scope (where `init_global_var_types` and the
-        // schema scan register top-level bindings). The package scope
-        // entry is what siblings see, so we must update it in place.
         let mut current = Some(Rc::clone(&self.scope));
+        let mut found = false;
         while let Some(scope) = current {
-            let mut scope_ref = scope.borrow_mut();
-            if let Some(obj) = scope_ref.elems.get_mut(name) {
-                let mut obj = obj.borrow_mut();
-                let infer_ty = self.ctx.ty_ctx.infer_to_variable_type(ty);
-                self.node_ty_map
-                    .borrow_mut()
-                    .insert(self.get_node_key(node.id.clone()), infer_ty.clone());
-                obj.ty = infer_ty;
-                return;
-            }
-            current = match &scope_ref.parent {
-                Some(parent) => parent.upgrade(),
-                None => None,
+            let next = {
+                let mut scope_ref = scope.borrow_mut();
+                if let Some(obj) = scope_ref.elems.get_mut(name) {
+                    let mut obj = obj.borrow_mut();
+                    let infer_ty = self.ctx.ty_ctx.infer_to_variable_type(ty.clone());
+                    self.node_ty_map
+                        .borrow_mut()
+                        .insert(self.get_node_key(node.id.clone()), infer_ty.clone());
+                    obj.ty = infer_ty;
+                    found = true;
+                    None
+                } else if matches!(scope_ref.kind, ScopeKind::File(_)) {
+                    scope_ref
+                        .parent
+                        .as_ref()
+                        .and_then(|parent| parent.upgrade())
+                } else {
+                    None
+                }
             };
+            match next {
+                Some(parent) => current = Some(parent),
+                None => break,
+            }
         }
-        self.handler.add_compile_error(
-            &format!("name '{}' is not defined", name.replace('@', "")),
-            node.get_span_pos(),
-        );
+        if !found {
+            self.handler.add_compile_error(
+                &format!("name '{}' is not defined", name.replace('@', "")),
+                node.get_span_pos(),
+            );
+        }
     }
 
     /// Set type to the scope exited object, if not found, emit a compile error.
     ///
-    /// Walks the parent chain for the same reason as
+    /// Walks to the package scope for the same reason as
     /// [`set_infer_type_to_scope`]: after the per-file scope introduced
     /// for issue #1740, the package-scope binding that
     /// `init_global_var_types` pre-registered is the canonical home for
@@ -602,25 +618,38 @@ impl<'ctx> Resolver<'ctx> {
     /// than re-creating a per-file copy.
     pub fn set_type_to_scope<T>(&mut self, name: &str, ty: TypeRef, node: &ast::Node<T>) {
         let mut current = Some(Rc::clone(&self.scope));
+        let mut found = false;
         while let Some(scope) = current {
-            let mut scope_ref = scope.borrow_mut();
-            if let Some(obj) = scope_ref.elems.get_mut(name) {
-                let mut obj = obj.borrow_mut();
-                self.node_ty_map
-                    .borrow_mut()
-                    .insert(self.get_node_key(node.id.clone()), ty.clone());
-                obj.ty = ty;
-                return;
-            }
-            current = match &scope_ref.parent {
-                Some(parent) => parent.upgrade(),
-                None => None,
+            let next = {
+                let mut scope_ref = scope.borrow_mut();
+                if let Some(obj) = scope_ref.elems.get_mut(name) {
+                    let mut obj = obj.borrow_mut();
+                    self.node_ty_map
+                        .borrow_mut()
+                        .insert(self.get_node_key(node.id.clone()), ty.clone());
+                    obj.ty = ty.clone();
+                    found = true;
+                    None
+                } else if matches!(scope_ref.kind, ScopeKind::File(_)) {
+                    scope_ref
+                        .parent
+                        .as_ref()
+                        .and_then(|parent| parent.upgrade())
+                } else {
+                    None
+                }
             };
+            match next {
+                Some(parent) => current = Some(parent),
+                None => break,
+            }
         }
-        self.handler.add_compile_error(
-            &format!("name '{}' is not defined", name.replace('@', "")),
-            node.get_span_pos(),
-        );
+        if !found {
+            self.handler.add_compile_error(
+                &format!("name '{}' is not defined", name.replace('@', "")),
+                node.get_span_pos(),
+            );
+        }
     }
 
     /// Insert object into the current scope.
@@ -632,29 +661,36 @@ impl<'ctx> Resolver<'ctx> {
             .insert(name.to_string(), Rc::new(RefCell::new(obj)));
     }
 
-    /// Contains object in the current scope or any of its ancestors.
+    /// Contains object in the current scope or, when the current scope is
+    /// a per-file scope (issue #1740), in its package-scope parent.
     ///
-    /// Walks the parent chain so that, after the per-file scope
-    /// introduced for issue #1740 is entered, a top-level assignment in
-    /// the file still sees the package-scope binding that
-    /// `init_global_var_types` pre-registered. Without the walk, callers
-    /// like `resolve_var` (for l-value targets) and the schema/rule
-    /// unique-key check would mistake a package-scope name for a new
-    /// binding and either re-insert it in the file scope (shadowing the
-    /// package entry from `find_obj_recursive`) or report a spurious
-    /// "name is not defined" error when the type checker later walks
-    /// the parent chain via `lookup`.
+    /// Only file scopes walk to their parent: a top-level assignment in a
+    /// file must see the package-scope binding that
+    /// `init_global_var_types` pre-registered instead of shadowing it
+    /// with a fresh file-scope entry. Every other scope keeps consulting
+    /// only its own elements — nested scopes (lambda, schema, loop, ...)
+    /// own their local bindings, and the package scope must not consult
+    /// the builtin scope, otherwise a variable named after a builtin
+    /// (e.g. `list = [...]`) would falsely trip the immutability check
+    /// in `init_scope_with_assign_stmt`.
     #[inline]
     pub fn contains_object(&mut self, name: &str) -> bool {
         let mut current = Some(Rc::clone(&self.scope));
         while let Some(scope) = current {
-            if scope.borrow().elems.contains_key(name) {
-                return true;
-            }
-            current = match &scope.borrow().parent {
-                Some(parent) => parent.upgrade(),
-                None => None,
+            let next = {
+                let scope_ref = scope.borrow();
+                if scope_ref.elems.contains_key(name) {
+                    return true;
+                }
+                if !matches!(scope_ref.kind, ScopeKind::File(_)) {
+                    return false;
+                }
+                scope_ref
+                    .parent
+                    .as_ref()
+                    .and_then(|parent| parent.upgrade())
             };
+            current = next;
         }
         false
     }
