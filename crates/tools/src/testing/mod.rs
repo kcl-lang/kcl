@@ -13,7 +13,7 @@
 //! line-level coverage for every KCL statement that executes during the run. The
 //! aggregated [`TestCoverageReport`] is returned alongside the usual
 //! [`TestResult`] so callers can render it in their preferred format.
-pub use crate::testing::suite::{TestSuite, load_test_suites};
+pub use crate::testing::suite::{TEST_FILE_SUFFIX, TEST_SUITE_PREFIX, TestSuite, load_test_suites};
 use anyhow::{Error, Result};
 use kcl_primitives::IndexMap;
 use kcl_runner::ExecProgramArgs;

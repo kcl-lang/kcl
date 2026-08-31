@@ -1,6 +1,7 @@
 mod analysis;
 mod app;
 mod capabilities;
+mod code_lens;
 mod compile;
 mod completion;
 mod dispatcher;

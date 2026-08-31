@@ -13,6 +13,8 @@ use kcl_utils::path::PathPrefix;
 use kcl_sema::resolver::scope::KCLScopeCache;
 use lsp_server::RequestId;
 use lsp_server::Response;
+use lsp_types::CodeLens;
+use lsp_types::CodeLensParams;
 use lsp_types::CompletionContext;
 use lsp_types::CompletionItem;
 use lsp_types::CompletionItemKind;
@@ -817,6 +819,60 @@ fn goto_def_test() {
         }))
         .unwrap()
     );
+}
+
+#[test]
+fn code_lens_test() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("src")
+        .join("test_data")
+        .join("code_lens")
+        .join("code_lens_test.k");
+
+    let path = path.to_str().unwrap();
+    let src = std::fs::read_to_string(path).unwrap();
+    let server = Project {}.server(InitializeParams::default());
+
+    // Mock open file
+    server.notification::<lsp_types::notification::DidOpenTextDocument>(
+        lsp_types::DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: Url::from_file_path(path).unwrap(),
+                language_id: "KCL".to_string(),
+                version: 0,
+                text: src,
+            },
+        },
+    );
+
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+
+    let r: Request = Request::new(
+        id.into(),
+        "textDocument/codeLens".to_string(),
+        CodeLensParams {
+            text_document: TextDocumentIdentifier {
+                uri: Url::from_file_path(path).unwrap(),
+            },
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+        },
+    );
+
+    // Send request and wait for it's response
+    let res = server.send_and_receive(r);
+    let lens: Vec<CodeLens> = serde_json::from_value(res.result.unwrap()).unwrap();
+
+    assert_eq!(lens.len(), 2);
+    for (lens, name) in lens.iter().zip(["test_func_0", "test_func_1"]) {
+        let command = lens.command.as_ref().unwrap();
+        assert_eq!(command.command, "kcl.runTest");
+        assert_eq!(
+            command.arguments.as_ref().unwrap()[1].as_str().unwrap(),
+            name
+        );
+    }
 }
 
 #[test]

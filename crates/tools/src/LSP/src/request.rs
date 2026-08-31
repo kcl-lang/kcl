@@ -11,6 +11,7 @@ use std::time::Instant;
 
 use crate::{
     analysis::{AnalysisDatabase, DBState},
+    code_lens::code_lens,
     completion::completion,
     dispatcher::RequestDispatcher,
     document_symbol::document_symbol,
@@ -63,6 +64,7 @@ impl LanguageServerState {
             .on::<lsp_types::request::SemanticTokensFullRequest>(handle_semantic_tokens_full)?
             .on::<lsp_types::request::InlayHintRequest>(handle_inlay_hint)?
             .on::<lsp_types::request::SignatureHelpRequest>(handle_signature_help)?
+            .on::<lsp_types::request::CodeLensRequest>(handle_code_lens)?
             .on_maybe_retry::<lsp_types::request::Completion>(handle_completion)?
             .finish();
 
@@ -234,6 +236,25 @@ pub(crate) fn handle_range_formatting(
     } else {
         Ok(None)
     }
+}
+
+/// Called when a `textDocument/codeLens` request was received.
+pub(crate) fn handle_code_lens(
+    snapshot: LanguageServerSnapshot,
+    params: lsp_types::CodeLensParams,
+    _sender: Sender<Task>,
+) -> anyhow::Result<Option<Vec<lsp_types::CodeLens>>> {
+    let file = file_path_from_url(&params.text_document.uri)?;
+    let path = from_lsp::abs_path(&params.text_document.uri)?;
+    let src = {
+        let vfs = snapshot.vfs.read();
+        match vfs.file_id(&path.into()) {
+            Some(file_id) => String::from_utf8(vfs.file_contents(file_id).to_vec())?,
+            None => return Ok(None),
+        }
+    };
+
+    Ok(code_lens(&file, &src))
 }
 
 /// Called when a `textDocument/codeAction` request was received.

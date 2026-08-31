@@ -1,5 +1,6 @@
 pub mod analysis;
 pub mod capabilities;
+pub mod code_lens;
 pub mod completion;
 pub mod document_symbol;
 pub mod find_refs;
