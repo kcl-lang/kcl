@@ -1,6 +1,6 @@
 use anyhow::{Result, anyhow};
 use kcl_evaluator::Evaluator;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::{cell::RefCell, rc::Rc};
 
 use kcl_ast::ast;
@@ -262,6 +262,22 @@ impl TryFrom<SettingsPathBuf> for ExecProgramArgs {
 #[derive(Debug, Default)]
 pub struct RunnerOptions {
     pub plugin_agent_ptr: u64,
+    /// When set, packages absent from this set skip pass-3 statement
+    /// evaluation during import (issue #1758). `None` preserves legacy
+    /// behaviour where every imported package's body is evaluated.
+    /// Each entry is a pkgpath prefixed with `'@'` (i.e.
+    /// `kcl_runtime::PKG_PATH_PREFIX`) so it can be compared against
+    /// the prefix-stripped strings the evaluator carries internally.
+    pub referenced_pkgs: Option<HashSet<String>>,
+}
+
+impl RunnerOptions {
+    /// Clone the configured referenced-packages set, if any. `None`
+    /// here means the evaluator should fall back to legacy behaviour
+    /// (every imported package's body is evaluated).
+    pub(crate) fn referenced_pkgs_set(&self) -> Option<HashSet<String>> {
+        self.referenced_pkgs.clone()
+    }
 }
 
 pub trait ProgramRunner {
@@ -325,6 +341,9 @@ impl FastRunner {
         };
         let mut evaluator = Evaluator::new_with_runtime_ctx(program, ctx.clone());
         evaluator.set_coverage_state(coverage_state.clone());
+        if let Some(pkgs) = self.opts.referenced_pkgs_set() {
+            evaluator.set_referenced_pkgs(pkgs);
+        }
         #[cfg(target_arch = "wasm32")]
         // Ensure the panic hook is set (this will only happen once) for the WASM target,
         // because it is single threaded.

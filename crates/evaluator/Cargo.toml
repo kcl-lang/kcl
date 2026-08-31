@@ -18,4 +18,6 @@ scopeguard = "1.2.0"
 [dev-dependencies]
 kcl-parser = { path = "../parser" }
 kcl-loader = { path = "../loader" }
+kcl-runtime = { path = "../runtime" }
 insta = "1.8.0"
+tempfile = "3.5.0"

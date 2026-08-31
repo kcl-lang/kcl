@@ -84,6 +84,20 @@ impl<'ctx> Evaluator<'_> {
     /// 2. build all user-defined schema/rule types.
     /// 3. evaluate all codes for the third time.
     pub(crate) fn compile_ast_modules(&self, modules: &[Arc<RwLock<ast::Module>>]) -> ValueRef {
+        self.compile_ast_modules_with_skip(modules, false)
+    }
+
+    /// Like [`compile_ast_modules`], but allows the caller to skip
+    /// pass-3 (statement evaluation). Passes 1 (predefine global
+    /// variables) and 2 (build schema/rule types) always run so that
+    /// undefined-name errors and type lookups remain correct for
+    /// referenced names; only the heavy statement bodies are skipped
+    /// when `skip_body` is `true`.
+    pub(crate) fn compile_ast_modules_with_skip(
+        &self,
+        modules: &[Arc<RwLock<ast::Module>>],
+        skip_body: bool,
+    ) -> ValueRef {
         // Scan global variables
         for ast_module in modules {
             let ast_module = ast_module.read().expect("Failed to acquire module lock");
@@ -94,6 +108,12 @@ impl<'ctx> Evaluator<'_> {
         for ast_module in modules {
             let ast_module = ast_module.read().expect("Failed to acquire module lock");
             self.compile_module_import_and_types(&ast_module);
+        }
+        // Gate pass-3 (statement evaluation). When skipping, we still
+        // need the schemas declared in this module to be visible to
+        // *referenced* packages; pass-2 already populates that graph.
+        if skip_body {
+            return ValueRef::undefined();
         }
         let mut result = ValueRef::undefined();
         // Compile the ast module in the pkgpath.

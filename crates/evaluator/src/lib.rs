@@ -116,6 +116,14 @@ pub struct Evaluator<'ctx> {
     /// callers (notably the `kcl test` tool) can compute a coverage report.
     /// `None` disables recording entirely so non-coverage callers pay no cost.
     pub coverage_state: Option<CoverageState>,
+    /// When `Some`, packages whose pkgpath (with the `PKG_PATH_PREFIX`
+    /// prefix) is not in this set skip pass-3 statement evaluation
+    /// during import. Passes 1 (predefine globals) and 2 (build types)
+    /// always run so the schema/type graph stays intact. When `None`
+    /// (the default), every imported package's body is evaluated —
+    /// legacy behaviour, preserved for embedders that build an
+    /// `Evaluator` directly.
+    pub(crate) referenced_pkgs: RefCell<Option<HashSet<String>>>,
 }
 
 #[derive(Clone)]
@@ -186,6 +194,7 @@ impl<'ctx> Evaluator<'ctx> {
             ctx_stack: RefCell::new(Default::default()),
             source_positions: RefCell::new(Default::default()),
             coverage_state: None,
+            referenced_pkgs: RefCell::new(None),
         }
     }
 
@@ -195,6 +204,17 @@ impl<'ctx> Evaluator<'ctx> {
     #[inline]
     pub fn set_coverage_state(&mut self, state: Option<CoverageState>) {
         self.coverage_state = state;
+    }
+
+    /// Configure the set of package paths whose bodies must be evaluated
+    /// during import. Packages whose `@pkgpath` is *not* in this set have
+    /// their pass-3 (statement evaluation) skipped; passes 1 and 2 still
+    /// run so the schema/type graph stays intact.
+    ///
+    /// Passing `None` (or never calling this method) restores the
+    /// legacy behaviour where every imported package's body is evaluated.
+    pub fn set_referenced_pkgs(&self, pkgs: HashSet<String>) {
+        *self.referenced_pkgs.borrow_mut() = Some(pkgs);
     }
 
     /// Evaluate the program and return the JSON and YAML result.

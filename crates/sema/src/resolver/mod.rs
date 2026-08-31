@@ -21,15 +21,18 @@ mod tests;
 
 use kcl_error::diagnostic::Range;
 use kcl_primitives::{IndexMap, IndexSet};
+use std::collections::HashSet;
 use std::sync::Arc;
 use std::{cell::RefCell, rc::Rc};
 
 use crate::lint::{CombinedLintPass, Linter};
 use crate::pre_process::pre_process_program;
 use crate::resolver::scope::ScopeObject;
+use crate::resolver::scope::ScopeObjectKind;
 use crate::resolver::ty_alias::type_alias_pass;
 use crate::resolver::ty_erasure::type_func_erasure_pass;
 use crate::ty::TypeContext;
+use crate::ty::TypeKind;
 use crate::{resolver::scope::Scope, ty::FunctionType, ty::SchemaType};
 use kcl_ast::ast::Program;
 use kcl_error::*;
@@ -208,6 +211,39 @@ impl Default for Options {
 #[inline]
 pub fn resolve_program(program: &mut Program) -> ProgramScope {
     resolve_program_with_opts(program, Options::default(), None)
+}
+
+/// Collect the set of user-package pkgpaths whose top-level names were
+/// resolved through the entry-point program. The returned pkgpaths are
+/// prefixed with `kcl_runtime::PKG_PATH_PREFIX` (`'@'`) so the evaluator
+/// can compare them against the prefix-stripped strings it carries in
+/// `Scope::pkgpath`.
+///
+/// This walks every package scope in [`ProgramScope`] looking at the
+/// `import_stmts` recorded on each module-level [`ScopeObject`] and
+/// includes the module's pkgpath whenever at least one of its import
+/// statements was resolved (i.e. `has_used == true`).
+pub fn collect_referenced_pkgs(program_scope: &ProgramScope) -> HashSet<String> {
+    let mut set = HashSet::new();
+    for (_, scope) in &program_scope.scope_map {
+        for (_, scope_obj) in &scope.borrow().elems {
+            let scope_obj = scope_obj.borrow();
+            if let ScopeObjectKind::Module(m) = &scope_obj.kind
+                && let TypeKind::Module(module_ty) = &scope_obj.ty.kind
+            {
+                for (_, has_used) in &m.import_stmts {
+                    if *has_used {
+                        set.insert(format!(
+                            "{}{}",
+                            kcl_runtime::PKG_PATH_PREFIX,
+                            module_ty.pkgpath
+                        ));
+                    }
+                }
+            }
+        }
+    }
+    set
 }
 
 /// Resolve program with options. See [Options]
