@@ -56,6 +56,7 @@ use kcl_ast::ast::Program;
 use kcl_ast::walker::MutSelfTypedResultWalker;
 use kcl_error::Position;
 use kcl_primitives::IndexSet;
+use std::collections::HashSet;
 mod node;
 
 pub const BUILTIN_SYMBOL_PKG_PATH: &str = "@builtin";
@@ -297,7 +298,25 @@ impl<'ctx> Namer<'ctx> {
     }
 
     fn define_symbols(&mut self) {
-        self.gs.get_symbols_mut().build_fully_qualified_name_map();
+        // Build the incremental invalidate set. Anything in
+        // `new_or_invalidate_pkgs` is touched this pass (it contains the
+        // packages whose bodies were walked above). On the LSP hot path
+        // that set is typically a single package; we still include
+        // `@builtin` and the standard system modules because the
+        // resolver/loader consults their FQNs (see #1237, #1545).
+        let mut invalidate_pkgs: HashSet<String> =
+            self.gs.new_or_invalidate_pkgs.iter().cloned().collect();
+        if invalidate_pkgs.is_empty() {
+            invalidate_pkgs = self.ctx.program.pkgs.keys().cloned().collect();
+        }
+        invalidate_pkgs.insert(BUILTIN_SYMBOL_PKG_PATH.to_string());
+        invalidate_pkgs.insert(BUILTIN_STR_PACKAGE.to_string());
+        for system_pkg in STANDARD_SYSTEM_MODULES {
+            invalidate_pkgs.insert((*system_pkg).to_string());
+        }
+        self.gs
+            .get_symbols_mut()
+            .build_fully_qualified_name_map(&invalidate_pkgs);
     }
 }
 
