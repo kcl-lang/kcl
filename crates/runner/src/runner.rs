@@ -329,7 +329,6 @@ impl FastRunner {
     /// Run kcl library with exec arguments.
     pub fn run(&self, program: &ast::Program, args: &ExecProgramArgs) -> Result<ExecProgramResult> {
         let ctx = Rc::new(RefCell::new(args_to_ctx(program, args)));
-<<<<<<< HEAD
         // Coverage state is created up front so it can outlive the
         // `catch_unwind` closure — the closure moves the evaluator by value,
         // so we drain the shared state after the closure returns. When

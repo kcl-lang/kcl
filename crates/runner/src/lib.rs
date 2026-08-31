@@ -1,17 +1,19 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     sync::{Arc, RwLock},
 };
 
 use anyhow::{Result, bail};
 use kcl_ast::{
     MAIN_PKG,
-    ast::{Module, Program},
+    ast::{Module, Program, Stmt},
 };
 use kcl_parser::{KCLModuleCache, ParseSessionRef, load_program};
 use kcl_query::apply_overrides;
+use kcl_runtime::PKG_PATH_PREFIX;
 use kcl_sema::resolver::{
-    Options, resolve_program, resolve_program_with_opts, scope::ProgramScope,
+    Options, collect_referenced_pkgs, resolve_program, resolve_program_with_opts,
+    scope::ProgramScope,
 };
 pub use runner::{ExecProgramArgs, ExecProgramResult, MapErrorResult};
 use runner::{FastRunner, RunnerOptions};
@@ -158,18 +160,107 @@ pub fn execute(
         return Ok(ExecProgramResult::default());
     }
     // Resolve ast
-    let scope = resolve_program(&mut program);
-    // Emit parse and resolve errors if exists.
-    emit_compile_diag_to_string(sess, &scope, false)?;
+    let mut scope = resolve_program(&mut program);
     // Build the set of user packages actually referenced from the
     // entry-point program so that the evaluator can skip pass-3 for
-    // unused imports (issue #1758).
-    let referenced_pkgs = Some(kcl_sema::resolver::collect_referenced_pkgs(&scope));
+    // unused imports (issue #1758). Compute this *before* emitting
+    // diagnostics so we can also drop resolve errors that come from
+    // packages the entry point never touches — the user's program
+    // shouldn't see them.
+    let referenced_pkgs = collect_referenced_pkgs(&scope);
+    suppress_unreferenced_pkg_diags(&mut scope, &program, &referenced_pkgs);
+    // Emit parse and resolve errors if exists.
+    emit_compile_diag_to_string(sess, &scope, false)?;
+    let referenced_pkgs = Some(referenced_pkgs);
     FastRunner::new(Some(RunnerOptions {
         plugin_agent_ptr: args.plugin_agent,
         referenced_pkgs,
     }))
     .run(&program, args)
+}
+
+/// Drop diagnostics from packages that the entry point never
+/// references AND that do not import anything themselves (i.e. leaves
+/// in the import graph). `scope` is the result of `resolve_program`
+/// and carries all resolve-time errors. With pass-3 skipping enabled
+/// (see `Evaluator::should_skip_pkg_body`) the evaluator already avoids
+/// walking unused packages' bodies — the resolve phase still visits
+/// them, so we need to drop their errors here or `kcl run` would
+/// surface compile errors from imports the user never used.
+///
+/// We deliberately keep errors from non-leaf packages: a package that
+/// imports other modules is actively participating in the dependency
+/// graph, and a cycle with `main` (e.g. `import_main_file_fail_0`)
+/// must still surface its "circular reference" diagnostic on both sides
+/// of the cycle even though main never *uses* any imported symbols.
+///
+/// Diagnostics whose filename we can't map to a package are kept
+/// untouched (defensive: spurious drop would hide real issues).
+fn suppress_unreferenced_pkg_diags(
+    scope: &mut ProgramScope,
+    program: &Program,
+    referenced_pkgs: &HashSet<String>,
+) {
+    // filename -> pkgpath. `program.pkgs` is `pkgpath -> Vec<filename>`,
+    // so iterate it directly — no need to dereference each Module.
+    let mut filename_to_pkg: HashMap<String, String> = HashMap::new();
+    for (pkgpath, filenames) in &program.pkgs {
+        for filename in filenames {
+            filename_to_pkg.insert(filename.clone(), pkgpath.clone());
+        }
+    }
+    // pkgpath -> has any `import` statement in any of its modules?
+    // Leaves of the import graph (no imports of their own) are the
+    // only candidates for diagnostic suppression: if a package imports
+    // something, its errors describe graph-level structure that the
+    // user almost certainly wants to see.
+    let mut pkg_has_import: HashMap<String, bool> = HashMap::new();
+    for (pkgpath, filenames) in &program.pkgs {
+        let mut has_import = false;
+        for filename in filenames {
+            if let Some(module) = program.get_module_ref(filename) {
+                for stmt in &module.read().unwrap().body {
+                    if let Stmt::Import(_) = &stmt.node {
+                        has_import = true;
+                        break;
+                    }
+                }
+            }
+            if has_import {
+                break;
+            }
+        }
+        pkg_has_import.insert(pkgpath.clone(), has_import);
+    }
+    let unreferenced: HashSet<String> = program
+        .pkgs
+        .keys()
+        .filter(|k| {
+            // Don't drop diagnostics from packages the entry point
+            // referenced (`collect_referenced_pkgs` reports them with
+            // the `PKG_PATH_PREFIX` prefix) or from packages that are
+            // part of the import graph themselves. `MAIN_PKG` is the
+            // program root, never filtered.
+            k.as_str() != MAIN_PKG
+                && !referenced_pkgs.contains(&format!("{PKG_PATH_PREFIX}{k}"))
+                // A leaf package with no imports: drop its diagnostics.
+                // A package that imports something: keep its diagnostics.
+                && !pkg_has_import.get(*k).copied().unwrap_or(false)
+        })
+        .cloned()
+        .collect();
+    scope.handler.diagnostics.retain(|diag| {
+        // Keep the diagnostic if *any* message lives outside the
+        // unreferenced set. We only drop when every message targets
+        // a file we mapped to an unreferenced package.
+        diag.messages.iter().any(|msg| {
+            let filename = &msg.range.0.filename;
+            match filename_to_pkg.get(filename) {
+                Some(pkg) => !unreferenced.contains(pkg),
+                None => true,
+            }
+        })
+    });
 }
 
 /// `execute_module` can directly execute the ast `Module`.
