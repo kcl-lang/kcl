@@ -536,7 +536,7 @@ impl SymbolData {
         self.symbols_info.fully_qualified_name_map.get(fqn).cloned()
     }
 
-pub fn get_fully_qualified_name(&mut self, symbol_ref: SymbolRef) -> Option<String> {
+    pub fn get_fully_qualified_name(&mut self, symbol_ref: SymbolRef) -> Option<String> {
         // Fast path: the FQN for this symbol was already computed in a prior
         // `find_symbols` run (or earlier in this run). Returning the cached
         // `String` avoids re-walking the owner chain and re-allocating.
