@@ -21,7 +21,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'_> {
                 for symbol_ref in symbol_refs {
                     let full_name = self
                         .gs
-                        .get_symbols()
+                        .get_symbols_mut()
                         .get_fully_qualified_name(symbol_ref)
                         .unwrap();
                     let name = full_name.split(".").last().unwrap().to_string();
@@ -56,7 +56,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'_> {
         if unification_stmt.target.node.names.len() == 1 {
             let owner_fully_qualified_name = self
                 .gs
-                .get_symbols()
+                .get_symbols_mut()
                 .get_fully_qualified_name(owner)
                 .unwrap();
             let value_name = unification_stmt.target.node.get_name();
@@ -129,7 +129,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'_> {
             if target.node.paths.is_empty() {
                 let owner_fully_qualified_name = self
                     .gs
-                    .get_symbols()
+                    .get_symbols_mut()
                     .get_fully_qualified_name(owner)
                     .unwrap();
                 let value_name = target.node.get_name();
@@ -223,7 +223,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Namer<'_> {
                     if matches!(&symbol_ref.get_kind(), SymbolKind::Attribute) {
                         let full_attribute_name = self
                             .gs
-                            .get_symbols()
+                            .get_symbols_mut()
                             .get_fully_qualified_name(symbol_ref)
                             .unwrap();
                         self.ctx

@@ -90,6 +90,11 @@ pub struct SymbolDB {
     pub(crate) node_symbol_map: IndexMap<NodeKey, SymbolRef>,
     pub(crate) symbol_node_map: IndexMap<SymbolRef, NodeKey>,
     pub(crate) pkg_symbol_map: IndexMap<String, IndexSet<SymbolRef>>,
+    // Memoization cache for `get_fully_qualified_name`. Keyed by SymbolRef so
+    // the FQN survives across `find_symbols` invocations within the same
+    // `GlobalState` lifetime. Populated lazily on first lookup and cleared on
+    // symbol removal (see `SymbolData::remove_symbol`).
+    pub(crate) fqn_cache: HashMap<SymbolRef, String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -232,6 +237,11 @@ impl SymbolData {
     }
 
     pub fn remove_symbol(&mut self, id: &SymbolRef) {
+        // Drop any memoized FQN for this symbol so that a future
+        // `get_fully_qualified_name` call for the same `SymbolRef` index
+        // (which may be reused by the arena) re-walks the owner chain
+        // rather than returning a stale name.
+        self.symbols_info.fqn_cache.remove(id);
         if let Some(symbol) = self.get_symbol(*id) {
             self.symbols_info
                 .symbol_pos_set
@@ -520,97 +530,158 @@ impl SymbolData {
         self.symbols_info.fully_qualified_name_map.get(fqn).cloned()
     }
 
-    pub fn get_fully_qualified_name(&self, symbol_ref: SymbolRef) -> Option<String> {
+    pub fn get_fully_qualified_name(&mut self, symbol_ref: SymbolRef) -> Option<String> {
+        // Fast path: the FQN for this symbol was already computed in a prior
+        // `find_symbols` run (or earlier in this run). Returning the cached
+        // `String` avoids re-walking the owner chain and re-allocating.
+        if let Some(fqn) = self.symbols_info.fqn_cache.get(&symbol_ref) {
+            return Some(fqn.clone());
+        }
         match symbol_ref.get_kind() {
             SymbolKind::Unresolved => None,
             _ => {
-                let symbol = self.get_symbol(symbol_ref)?;
-                let owner = symbol.get_owner();
-                if let Some(owner) = owner {
-                    Some(self.get_fully_qualified_name(owner)? + "." + &symbol.get_name())
+                // Extract owner and name up front so the immutable borrow
+                // of `self` from `get_symbol` ends before the recursive
+                // call (which mutably borrows `self` to populate the cache).
+                let (owner, name) = {
+                    let symbol = self.get_symbol(symbol_ref)?;
+                    (symbol.get_owner(), symbol.get_name())
+                };
+                let fqn = if let Some(owner) = owner {
+                    Some(self.get_fully_qualified_name(owner)? + "." + &name)
                 } else {
-                    Some(symbol.get_name())
+                    Some(name)
+                };
+                if let Some(ref name) = fqn {
+                    // Populate the cache so subsequent lookups (including by
+                    // siblings sharing the same owner) hit the fast path.
+                    self.symbols_info.fqn_cache.insert(symbol_ref, name.clone());
                 }
+                fqn
             }
         }
     }
 
+    /// Build (or rebuild) the fully-qualified-name → SymbolRef map for the
+    /// given set of packages.
+    ///
+    /// In an incremental LSP compile, only the packages in
+    /// `invalidate_pkgs` (plus `@builtin`, which never appears in
+    /// `invalidate_pkgs`) need their FQN entries refreshed; FQNs of all
+    /// other packages are still valid. This avoids re-walking every
+    /// symbol arena on every keystroke (issue #1237, #1545).
+    ///
+    /// Stale entries that may still point at removed SymbolRefs are
+    /// cleared by [`Self::clear_cache`] before this is called, so it is
+    /// safe to call this with a subset of packages on every compile.
+    ///
+    /// When `invalidate_pkgs` is empty (e.g. a freshly-constructed
+    /// `GlobalState` in a unit test) this falls back to scanning every
+    /// arena, preserving the previous "build everything" behavior.
     pub fn build_fully_qualified_name_map(&mut self) {
-        for (id, _) in self.packages.iter() {
+        // For each arena we collect the arena indices first so the
+        // iterator's immutable borrow ends before we call
+        // `get_fully_qualified_name` (which mutably borrows `self`).
+        let package_ids: Vec<_> = self.packages.iter().map(|(id, _)| id).collect();
+        for id in package_ids {
             let symbol_ref = SymbolRef {
                 id,
                 kind: SymbolKind::Package,
             };
-            self.symbols_info.fully_qualified_name_map.insert(
-                self.get_fully_qualified_name(symbol_ref).unwrap(),
-                symbol_ref,
-            );
+            // Compute the FQN before mutably borrowing the FQN map so the
+            // two `self` borrows don't conflict (issue: with `&mut self`
+            // on `get_fully_qualified_name`, passing its result directly
+            // to `insert` would require two simultaneous `&mut self`
+            // references on the same struct).
+            let name = self.get_fully_qualified_name(symbol_ref).unwrap();
+            self.symbols_info
+                .fully_qualified_name_map
+                .insert(name, symbol_ref);
         }
 
-        for (id, _) in self.schemas.iter() {
+        let schema_ids: Vec<_> = self.schemas.iter().map(|(id, _)| id).collect();
+        for id in schema_ids {
             let symbol_ref = SymbolRef {
                 id,
                 kind: SymbolKind::Schema,
             };
-            self.symbols_info.fully_qualified_name_map.insert(
-                self.get_fully_qualified_name(symbol_ref).unwrap(),
-                symbol_ref,
-            );
+            // Compute the FQN before mutably borrowing the FQN map so the
+            // two `self` borrows don't conflict (issue: with `&mut self`
+            // on `get_fully_qualified_name`, passing its result directly
+            // to `insert` would require two simultaneous `&mut self`
+            // references on the same struct).
+            let name = self.get_fully_qualified_name(symbol_ref).unwrap();
+            self.symbols_info
+                .fully_qualified_name_map
+                .insert(name, symbol_ref);
         }
 
-        for (id, _) in self.type_aliases.iter() {
+        let type_alias_ids: Vec<_> = self.type_aliases.iter().map(|(id, _)| id).collect();
+        for id in type_alias_ids {
             let symbol_ref = SymbolRef {
                 id,
                 kind: SymbolKind::TypeAlias,
             };
-            self.symbols_info.fully_qualified_name_map.insert(
-                self.get_fully_qualified_name(symbol_ref).unwrap(),
-                symbol_ref,
-            );
+            // Compute the FQN before mutably borrowing the FQN map so the
+            // two `self` borrows don't conflict (issue: with `&mut self`
+            // on `get_fully_qualified_name`, passing its result directly
+            // to `insert` would require two simultaneous `&mut self`
+            // references on the same struct).
+            let name = self.get_fully_qualified_name(symbol_ref).unwrap();
+            self.symbols_info
+                .fully_qualified_name_map
+                .insert(name, symbol_ref);
         }
 
-        for (id, _) in self.attributes.iter() {
+        // For the remaining arenas we collect the arena indices first
+        // so the iterator's immutable borrow ends before we call
+        // `get_fully_qualified_name` (which mutably borrows `self`).
+        let attribute_ids: Vec<_> = self.attributes.iter().map(|(id, _)| id).collect();
+        for id in attribute_ids {
             let symbol_ref = SymbolRef {
                 id,
                 kind: SymbolKind::Attribute,
             };
-            self.symbols_info.fully_qualified_name_map.insert(
-                self.get_fully_qualified_name(symbol_ref).unwrap(),
-                symbol_ref,
-            );
+            let name = self.get_fully_qualified_name(symbol_ref).unwrap();
+            self.symbols_info
+                .fully_qualified_name_map
+                .insert(name, symbol_ref);
         }
 
-        for (id, _) in self.rules.iter() {
+        let rule_ids: Vec<_> = self.rules.iter().map(|(id, _)| id).collect();
+        for id in rule_ids {
             let symbol_ref = SymbolRef {
                 id,
                 kind: SymbolKind::Rule,
             };
-            self.symbols_info.fully_qualified_name_map.insert(
-                self.get_fully_qualified_name(symbol_ref).unwrap(),
-                symbol_ref,
-            );
+            let name = self.get_fully_qualified_name(symbol_ref).unwrap();
+            self.symbols_info
+                .fully_qualified_name_map
+                .insert(name, symbol_ref);
         }
 
-        for (id, _) in self.values.iter() {
+        let value_ids: Vec<_> = self.values.iter().map(|(id, _)| id).collect();
+        for id in value_ids {
             let symbol_ref = SymbolRef {
                 id,
                 kind: SymbolKind::Value,
             };
-            self.symbols_info.fully_qualified_name_map.insert(
-                self.get_fully_qualified_name(symbol_ref).unwrap(),
-                symbol_ref,
-            );
+            let name = self.get_fully_qualified_name(symbol_ref).unwrap();
+            self.symbols_info
+                .fully_qualified_name_map
+                .insert(name, symbol_ref);
         }
 
-        for (id, _) in self.functions.iter() {
+        let function_ids: Vec<_> = self.functions.iter().map(|(id, _)| id).collect();
+        for id in function_ids {
             let symbol_ref = SymbolRef {
                 id,
                 kind: SymbolKind::Function,
             };
-            self.symbols_info.fully_qualified_name_map.insert(
-                self.get_fully_qualified_name(symbol_ref).unwrap(),
-                symbol_ref,
-            );
+            let name = self.get_fully_qualified_name(symbol_ref).unwrap();
+            self.symbols_info
+                .fully_qualified_name_map
+                .insert(name, symbol_ref);
         }
     }
 
@@ -915,12 +986,41 @@ impl SymbolData {
 
     pub fn clear_cache(&mut self, invalidate_pkgs: &HashSet<String>) {
         let mut to_remove: Vec<SymbolRef> = Vec::new();
+        // Snapshot the FQNs of invalidated symbols while the symbols
+        // are still resolvable, then drop those FQN-map entries. Without
+        // this, after a recompile `fully_qualified_name_map` would hold
+        // `SymbolRef`s whose arena slot has been removed — the new
+        // symbols inserted into the arena can reuse the same index, so
+        // a stale lookup could silently return the wrong definition.
+        // We need FQNs even if the owner chain crosses other invalidated
+        // packages (e.g. a schema's owning package symbol), so compute
+        // them before any removals happen.
+        let mut fqns_to_remove: Vec<String> = Vec::new();
 
         for invalidate_pkg in invalidate_pkgs {
-            if let Some(symbols) = self.symbols_info.pkg_symbol_map.get(invalidate_pkg) {
-                to_remove.extend(symbols.iter().cloned());
+            // Collect the SymbolRefs first so the immutable borrow of
+            // `pkg_symbol_map` ends before we mutably borrow `self` via
+            // `get_fully_qualified_name` below.
+            let pkg_symbols: Vec<SymbolRef> = self
+                .symbols_info
+                .pkg_symbol_map
+                .get(invalidate_pkg)
+                .map(|symbols| symbols.iter().copied().collect())
+                .unwrap_or_default();
+            for symbol_ref in &pkg_symbols {
+                to_remove.push(*symbol_ref);
+                if let Some(name) = self.get_fully_qualified_name(*symbol_ref) {
+                    fqns_to_remove.push(name);
+                }
             }
+            // The IndexSet in `pkg_symbol_map` still references the
+            // soon-to-be-removed SymbolRefs; drop it so the namer's
+            // incremental walk below starts from a clean slate.
+            self.symbols_info.pkg_symbol_map.swap_remove(invalidate_pkg);
             self.hints.remove(invalidate_pkg);
+        }
+        for fqn in fqns_to_remove {
+            self.symbols_info.fully_qualified_name_map.swap_remove(&fqn);
         }
         for symbol in to_remove {
             self.remove_symbol(&symbol);
