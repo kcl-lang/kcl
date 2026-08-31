@@ -167,6 +167,27 @@ impl Scope {
             None => false,
         }
     }
+
+    /// Find a scope object named `name` anywhere in the tree rooted at
+    /// `self`. The normal [`Scope::lookup`] only walks parents (so imports
+    /// kept in a per-file child scope are not visible from the package
+    /// scope). Tests that previously asserted on direct `elems` access from
+    /// the package scope can use this to locate items that have moved into
+    /// the per-file child introduced by issue #1740. The first match (BFS)
+    /// is returned.
+    pub fn find_obj_recursive(&self, name: &str) -> Option<Rc<RefCell<ScopeObject>>> {
+        let mut queue = vec![Rc::new(RefCell::new(self.clone()))];
+        while let Some(scope) = queue.pop() {
+            let s = scope.borrow();
+            if let Some(obj) = s.elems.get(name) {
+                return Some(obj.clone());
+            }
+            for child in &s.children {
+                queue.push(Rc::clone(child));
+            }
+        }
+        None
+    }
 }
 
 impl ContainsPos for Scope {
@@ -174,6 +195,7 @@ impl ContainsPos for Scope {
     fn contains_pos(&self, pos: &Position) -> bool {
         match &self.kind {
             ScopeKind::Package(files) => files.contains(&pos.filename),
+            ScopeKind::File(filename) => filename == &pos.filename,
             _ => self.start.less_equal(pos) && pos.less_equal(&self.end),
         }
     }
@@ -183,6 +205,11 @@ impl ContainsPos for Scope {
 pub enum ScopeKind {
     /// Package scope.
     Package(IndexSet<String>),
+    /// File scope. Each source file in a package gets its own file scope as a
+    /// child of the package scope; the file scope holds per-file bindings
+    /// (notably imports) so they are not leaked to sibling files in the
+    /// same package. See issue #1740.
+    File(String),
     /// Builtin scope.
     Builtin,
     /// Schema name string.
@@ -277,6 +304,18 @@ impl Scope {
             res.append(&mut objs);
         }
         res
+    }
+}
+
+/// Compute the start/end position for a module so we can build a file
+/// scope that mirrors the file's AST extent. The `ast::Module` struct
+/// does not implement `GetPos`; derive positions from the first and last
+/// statements of the module body, falling back to dummy positions for an
+/// empty file. Used by [`Resolver::enter_file_scope`] for issue #1740.
+pub(crate) fn module_file_span(module: &ast::Module) -> (Position, Position) {
+    match (module.body.first(), module.body.last()) {
+        (Some(first), Some(last)) => (first.get_pos(), last.get_end_pos()),
+        _ => (Position::dummy_pos(), Position::dummy_pos()),
     }
 }
 
@@ -410,6 +449,74 @@ impl<'ctx> Resolver<'ctx> {
         };
         self.scope_level -= 1;
         self.scope = Rc::clone(&parent);
+    }
+
+    /// Enter a per-file scope as a child of the current scope. The file
+    /// scope hosts per-file bindings — primarily imports collected by
+    /// `check_import` — so they are not visible in sibling files in the
+    /// same package. See issue #1740.
+    ///
+    /// If a file scope for the same filename already exists as a direct
+    /// child of the current scope, reuse it. This happens when the import
+    /// collection pass (`init_import_list`) has already created the file
+    /// scope to host its imports; re-using avoids creating a parallel
+    /// empty file scope that would shadow the import bindings.
+    ///
+    /// `start` and `end` describe the AST extent of the file and are used
+    /// only when a new file scope is allocated; existing file scopes
+    /// retain the start/end recorded at their original creation.
+    ///
+    /// `scope_level` is intentionally not incremented when entering a
+    /// file scope: the file scope is a structural container for per-file
+    /// imports, not a new lexical binding depth. Global-name checks such
+    /// as [`Resolver::resolve_unique_key`] and the global-name insertion
+    /// in [`walk_assign_stmt`] therefore continue to treat file scope as
+    /// the top-level ("scope_level == 0") of the file, preserving the
+    /// behaviour callers relied on before the per-file scope was added.
+    pub fn enter_file_scope(&mut self, filename: &str, start: &Position, end: &Position) {
+        if let Some(existing) = self.find_child_file_scope(filename) {
+            self.scope = existing;
+            return;
+        }
+        self.enter_scope(
+            start.clone(),
+            end.clone(),
+            ScopeKind::File(filename.to_string()),
+        );
+        // Roll back the increment `enter_scope` performed: file scope
+        // is not a new lexical depth.
+        self.scope_level -= 1;
+    }
+
+    /// Leave the file scope entered via [`enter_file_scope`].
+    pub fn leave_file_scope(&mut self) {
+        debug_assert!(
+            matches!(self.scope.borrow().kind, ScopeKind::File(_)),
+            "leave_file_scope called when current scope is not a file scope"
+        );
+        // Mirror `enter_file_scope`: the matching `enter_scope` did not
+        // bump scope_level, so neither do we. Otherwise `leave_scope`
+        // would underflow.
+        let parent = match &self.scope.borrow().parent {
+            Some(parent) => parent.upgrade().unwrap(),
+            None => bug!("the scope parent is empty, can't leave the scope"),
+        };
+        self.ctx.local_vars.clear();
+        self.scope = Rc::clone(&parent);
+    }
+
+    /// Look up a direct child of the current scope whose kind is
+    /// `ScopeKind::File` and whose filename matches.
+    fn find_child_file_scope(&self, filename: &str) -> Option<Rc<RefCell<Scope>>> {
+        for child in self.scope.borrow().children.iter() {
+            let child_ref = child.borrow();
+            if let ScopeKind::File(name) = &child_ref.kind
+                && name == filename
+            {
+                return Some(Rc::clone(child));
+            }
+        }
+        None
     }
 
     /// Find scope object type by name.

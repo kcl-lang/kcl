@@ -368,9 +368,8 @@ impl<'ctx> Resolver<'_> {
                             range: self
                                 .scope
                                 .borrow()
-                                .elems
-                                .get(name)
-                                .unwrap()
+                                .lookup(name)
+                                .unwrap_or_else(|| panic!("scope object for '{}' not found", name))
                                 .borrow()
                                 .get_span_pos(),
                             style: Style::LineAndColumn,
