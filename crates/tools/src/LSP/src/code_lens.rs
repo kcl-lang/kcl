@@ -23,7 +23,14 @@ pub fn code_lens(file: &str, src: &str) -> Option<Vec<CodeLens>> {
     let module =
         parse_file_with_global_session(ParseSessionRef::default(), file, Some(src.to_string()))
             .ok()?;
-    let uri = crate::to_lsp::url_from_path(file).ok()?;
+    // `url_from_path` can fail on Windows when `file` is a Unix-style
+    // absolute path (no drive letter, e.g. test fixtures). We don't
+    // want that to mask the parser result — the URL only feeds the
+    // command arguments, so fall back to an empty string instead of
+    // dropping the whole lens list.
+    let uri = crate::to_lsp::url_from_path(file)
+        .map(|u| u.to_string())
+        .unwrap_or_default();
 
     let mut lens = vec![];
     for stmt in &module.body {
