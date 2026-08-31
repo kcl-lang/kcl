@@ -73,8 +73,10 @@ fn test_resolve_program() {
     assert_eq!(scope.pkgpaths(), vec!["__main__".to_string()]);
     let main_scope = scope.main_scope().unwrap();
     let main_scope = main_scope.borrow_mut();
-    assert!(main_scope.lookup("a").is_some());
-    assert!(main_scope.lookup("b").is_some());
+    // `a` and `b` live in the per-file scope introduced for issue #1740,
+    // so reach into it via the recursive helper.
+    assert!(main_scope.find_obj_recursive("a").is_some());
+    assert!(main_scope.find_obj_recursive("b").is_some());
     assert!(main_scope.lookup("print").is_none());
 }
 
@@ -104,8 +106,10 @@ fn test_resolve_program_with_cache() {
     assert_eq!(scope.pkgpaths(), vec!["__main__".to_string()]);
     let main_scope = scope.main_scope().unwrap();
     let main_scope = main_scope.borrow_mut();
-    assert!(main_scope.lookup("a").is_some());
-    assert!(main_scope.lookup("b").is_some());
+    // `a` and `b` live in the per-file scope introduced for issue #1740,
+    // so reach into it via the recursive helper.
+    assert!(main_scope.find_obj_recursive("a").is_some());
+    assert!(main_scope.find_obj_recursive("b").is_some());
     assert!(main_scope.lookup("print").is_none());
 }
 
@@ -497,7 +501,7 @@ fn test_resolve_schema_doc() {
         .borrow_mut()
         .clone();
 
-    let schema_scope_obj = &main_scope.elems[0].borrow().clone();
+    let schema_scope_obj = &main_scope.find_obj_recursive("Server").unwrap().borrow().clone();
     let schema_summary = match &schema_scope_obj.ty.kind {
         TypeKind::Schema(schema_ty) => schema_ty.doc.clone(),
         _ => "".to_string(),
@@ -756,7 +760,8 @@ fn test_resolve_function_with_default_values() {
     let scope = resolve_program(&mut program);
     assert!(!scope.handler.has_errors());
     let main_scope = scope.main_scope().unwrap();
-    let func = main_scope.borrow().lookup("is_alpha").unwrap();
+    let main_scope = main_scope.borrow();
+    let func = main_scope.find_obj_recursive("is_alpha").unwrap();
     assert!(func.borrow().ty.is_func());
     let func_ty = func.borrow().ty.into_func_type();
     assert_eq!(func_ty.params.len(), 3);
@@ -935,7 +940,7 @@ fn test_set_ty_in_lambda() {
             .main_scope()
             .unwrap()
             .borrow()
-            .lookup("result")
+            .find_obj_recursive("result")
             .unwrap()
             .borrow()
             .ty

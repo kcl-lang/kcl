@@ -597,10 +597,16 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
                 && identifier.pkgpath.is_empty()
             {
                 let name = &identifier.names[0].node;
+                // Top-level lambdas live in the per-file scope introduced
+                // for issue #1740, so reach into the file-scope children
+                // (BFS) when locating the package-level binding. The
+                // `Rc::ptr_eq` check below still ensures we only match the
+                // package-level lambda and never a nested closure or
+                // local variable that happens to share the name.
                 let package_obj = self
                     .scope_map
                     .get(&self.ctx.pkgpath)
-                    .and_then(|scope| scope.borrow().elems.get(name).cloned());
+                    .and_then(|scope| scope.borrow().find_obj_recursive(name));
                 let resolved_obj = self.scope.borrow().lookup(name);
                 if let (Some(package_obj), Some(resolved_obj)) = (package_obj, resolved_obj)
                     && Rc::ptr_eq(&package_obj, &resolved_obj)

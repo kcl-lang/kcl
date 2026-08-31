@@ -562,43 +562,65 @@ impl<'ctx> Resolver<'ctx> {
 
     /// Set type to the scope exited object, if not found, emit a compile error.
     pub fn set_infer_type_to_scope<T>(&mut self, name: &str, ty: TypeRef, node: &ast::Node<T>) {
-        let mut scope = self.scope.borrow_mut();
-        match scope.elems.get_mut(name) {
-            Some(obj) => {
+        // Walk up the scope chain so we update the binding visible to the
+        // call site, which may live in a per-file scope that was entered
+        // for issue #1740 while the underlying definition sits in the
+        // enclosing package scope (where `init_global_var_types` and the
+        // schema scan register top-level bindings). The package scope
+        // entry is what siblings see, so we must update it in place.
+        let mut current = Some(Rc::clone(&self.scope));
+        while let Some(scope) = current {
+            let mut scope_ref = scope.borrow_mut();
+            if let Some(obj) = scope_ref.elems.get_mut(name) {
                 let mut obj = obj.borrow_mut();
                 let infer_ty = self.ctx.ty_ctx.infer_to_variable_type(ty);
                 self.node_ty_map
                     .borrow_mut()
                     .insert(self.get_node_key(node.id.clone()), infer_ty.clone());
                 obj.ty = infer_ty;
+                return;
             }
-            None => {
-                self.handler.add_compile_error(
-                    &format!("name '{}' is not defined", name.replace('@', "")),
-                    node.get_span_pos(),
-                );
-            }
+            current = match &scope_ref.parent {
+                Some(parent) => parent.upgrade(),
+                None => None,
+            };
         }
+        self.handler.add_compile_error(
+            &format!("name '{}' is not defined", name.replace('@', "")),
+            node.get_span_pos(),
+        );
     }
 
     /// Set type to the scope exited object, if not found, emit a compile error.
+    ///
+    /// Walks the parent chain for the same reason as
+    /// [`set_infer_type_to_scope`]: after the per-file scope introduced
+    /// for issue #1740, the package-scope binding that
+    /// `init_global_var_types` pre-registered is the canonical home for
+    /// the name, and the type-annotation check in
+    /// `check_assignment_type_annotation` updates it in place rather
+    /// than re-creating a per-file copy.
     pub fn set_type_to_scope<T>(&mut self, name: &str, ty: TypeRef, node: &ast::Node<T>) {
-        let mut scope = self.scope.borrow_mut();
-        match scope.elems.get_mut(name) {
-            Some(obj) => {
+        let mut current = Some(Rc::clone(&self.scope));
+        while let Some(scope) = current {
+            let mut scope_ref = scope.borrow_mut();
+            if let Some(obj) = scope_ref.elems.get_mut(name) {
                 let mut obj = obj.borrow_mut();
                 self.node_ty_map
                     .borrow_mut()
                     .insert(self.get_node_key(node.id.clone()), ty.clone());
                 obj.ty = ty;
+                return;
             }
-            None => {
-                self.handler.add_compile_error(
-                    &format!("name '{}' is not defined", name.replace('@', "")),
-                    node.get_span_pos(),
-                );
-            }
+            current = match &scope_ref.parent {
+                Some(parent) => parent.upgrade(),
+                None => None,
+            };
         }
+        self.handler.add_compile_error(
+            &format!("name '{}' is not defined", name.replace('@', "")),
+            node.get_span_pos(),
+        );
     }
 
     /// Insert object into the current scope.
@@ -610,10 +632,31 @@ impl<'ctx> Resolver<'ctx> {
             .insert(name.to_string(), Rc::new(RefCell::new(obj)));
     }
 
-    /// Contains object into the current scope.
+    /// Contains object in the current scope or any of its ancestors.
+    ///
+    /// Walks the parent chain so that, after the per-file scope
+    /// introduced for issue #1740 is entered, a top-level assignment in
+    /// the file still sees the package-scope binding that
+    /// `init_global_var_types` pre-registered. Without the walk, callers
+    /// like `resolve_var` (for l-value targets) and the schema/rule
+    /// unique-key check would mistake a package-scope name for a new
+    /// binding and either re-insert it in the file scope (shadowing the
+    /// package entry from `find_obj_recursive`) or report a spurious
+    /// "name is not defined" error when the type checker later walks
+    /// the parent chain via `lookup`.
     #[inline]
     pub fn contains_object(&mut self, name: &str) -> bool {
-        self.scope.borrow().elems.contains_key(name)
+        let mut current = Some(Rc::clone(&self.scope));
+        while let Some(scope) = current {
+            if scope.borrow().elems.contains_key(name) {
+                return true;
+            }
+            current = match &scope.borrow().parent {
+                Some(parent) => parent.upgrade(),
+                None => None,
+            };
+        }
+        false
     }
 
     pub fn get_node_key(&self, id: AstIndex) -> NodeKey {

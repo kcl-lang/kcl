@@ -90,9 +90,19 @@ impl<'ctx> Resolver<'ctx> {
                 if let scope::ScopeKind::Package(files) = &mut self.scope.borrow_mut().kind {
                     files.insert(module.filename.to_string());
                 }
+                // Enter the per-file scope (issue #1740) so statements
+                // land in the file's own scope, alongside imports and
+                // global initializations.
+                let file_span = scope::module_file_span(&module);
+                self.enter_file_scope(
+                    &module.filename,
+                    &file_span.0,
+                    &file_span.1,
+                );
                 for stmt in &module.body {
                     self.stmt(stmt);
                 }
+                self.leave_file_scope();
                 if self.options.lint_check {
                     self.lint_check_module(&module);
                 }
