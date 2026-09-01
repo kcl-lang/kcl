@@ -1,3 +1,8 @@
 a: Hello World
 b: '1'
 c: 1.0 2
+d: '[    ab]'
+e: '[ab    ]'
+f: '[  ab  ]'
+g: '[****ab]'
+h: '[abc]'
