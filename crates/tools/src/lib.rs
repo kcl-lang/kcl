@@ -1,3 +1,4 @@
+pub mod bundle;
 pub mod fix;
 pub mod format;
 pub mod lint;

@@ -1,0 +1,2 @@
+schema Box:
+    size: int
