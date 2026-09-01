@@ -19,14 +19,16 @@ use crate::goto_def::{find_def, find_symbol};
 use crate::to_lsp::lsp_pos;
 use kcl_ast::MAIN_PKG;
 use kcl_ast::ast::{self, ImportStmt, Program, Stmt};
-use kcl_config::modfile::KCL_FILE_EXTENSION;
+use kcl_config::modfile::{KCL_FILE_EXTENSION, KCL_FILE_SUFFIX};
 use kcl_driver::toolchain::{Metadata, Toolchain, get_real_path_from_external};
 use kcl_error::diagnostic::Range;
-use kcl_parser::get_kcl_files;
 use kcl_primitives::{DefaultHashBuilder, IndexMap, IndexSet};
 use kcl_sema::core::global_state::GlobalState;
+use kcl_utils::pkgpath::rm_external_pkg_name;
 use std::io;
+use std::path::PathBuf;
 use std::{fs, path::Path};
+use walkdir::WalkDir;
 
 use kcl_error::Position as KCLPos;
 use kcl_sema::builtin::{BUILTIN_FUNCTIONS, STANDARD_SYSTEM_MODULES};
@@ -96,7 +98,7 @@ pub fn completion(
 ) -> Option<lsp_types::CompletionResponse> {
     match trigger_character {
         Some(c) => match c {
-            '.' => completion_dot(program, pos, gs, tool),
+            '.' => completion_dot(program, pos, gs, tool, metadata.as_ref()),
             '=' | ':' => completion_assign(pos, gs),
             '\n' => completion_newline(program, pos, gs),
             _ => None,
@@ -226,6 +228,7 @@ fn completion_dot(
     pos: &KCLPos,
     gs: &GlobalState,
     tool: &dyn Toolchain,
+    metadata: Option<&Metadata>,
 ) -> Option<lsp_types::CompletionResponse> {
     let mut items: IndexSet<KCLCompletionItem> = Default::default();
 
@@ -238,7 +241,9 @@ fn completion_dot(
 
     if let Some(stmt) = program.pos_to_stmt(&pre_pos) {
         match stmt.node {
-            Stmt::Import(stmt) => return dot_completion_in_import_stmt(&stmt, pos, program, tool),
+            Stmt::Import(stmt) => {
+                return dot_completion_in_import_stmt(&stmt, pos, program, tool, metadata);
+            }
             _ => {
                 let (expr, _) = inner_most_expr_in_stmt(&stmt.node, pos, None);
                 if let Some(node) = expr {
@@ -491,32 +496,57 @@ fn completion_import_internal_pkg(
             // here as a wrong completion suggestion (see kcl-lang/kcl#1736).
             // Only suggest directories that contain at least one `.k` file — those
             // are the sub-packages the user can actually `import`.
+            //
+            // Hidden directories (`.git`, `.vscode`, …) are never importable
+            // packages, and scanning them for `.k` files on every completion
+            // request is pure waste (`.git` alone can hold tens of thousands
+            // of entries), so they are skipped outright.
             if let Ok(entry) = entry
                 && let Ok(file_type) = entry.file_type()
                 && file_type.is_dir()
+                && entry
+                    .file_name()
+                    .to_str()
+                    .is_some_and(|name| !name.starts_with('.'))
+                && dir_contains_kcl_file(&entry.path())
+                && let Some(name) = entry.file_name().to_str()
             {
-                if let Ok(files) = get_kcl_files(entry.path(), true) {
-                    // skip folder if without kcl file
-                    if files.is_empty() {
-                        continue;
-                    }
-                } else {
-                    continue;
-                }
-                if let Some(name) = entry.file_name().to_str() {
-                    completions.insert(KCLCompletionItem {
-                        label: name.to_string(),
-                        detail: None,
-                        documentation: None,
-                        kind: Some(KCLCompletionItemKind::Dir),
-                        insert_text: None,
-                        additional_text_edits: None,
-                    });
-                }
+                completions.insert(KCLCompletionItem {
+                    label: name.to_string(),
+                    detail: None,
+                    documentation: None,
+                    kind: Some(KCLCompletionItemKind::Dir),
+                    insert_text: None,
+                    additional_text_edits: None,
+                });
             }
         }
     }
     completions
+}
+
+/// Returns whether the directory tree rooted at `path` contains at least one
+/// `.k` file. Unlike collecting every file with `get_kcl_files(path, true)`,
+/// this stops at the first match and never descends into hidden directories,
+/// so import completion stays cheap on every keystroke even in workspaces
+/// with large sibling directories.
+fn dir_contains_kcl_file(path: &Path) -> bool {
+    WalkDir::new(path)
+        .into_iter()
+        .filter_entry(|e| !is_hidden_entry(e))
+        .filter_map(|e| e.ok())
+        .any(|e| e.path().is_file() && e.file_name().to_str().is_some_and(is_kcl_file_name))
+}
+
+fn is_hidden_entry(entry: &walkdir::DirEntry) -> bool {
+    entry
+        .file_name()
+        .to_str()
+        .is_some_and(|name| name.starts_with('.'))
+}
+
+fn is_kcl_file_name(file_name: &str) -> bool {
+    file_name.ends_with(KCL_FILE_SUFFIX)
 }
 
 fn completion_import_external_pkg(metadata: Option<Metadata>) -> IndexSet<KCLCompletionItem> {
@@ -686,14 +716,27 @@ fn dot_completion_in_import_stmt(
     _pos: &KCLPos,
     program: &Program,
     tool: &dyn Toolchain,
+    metadata: Option<&Metadata>,
 ) -> Option<lsp_types::CompletionResponse> {
     let mut items: IndexSet<KCLCompletionItem> = Default::default();
     let pkgpath = &stmt.path.node;
     let mut real_path =
         Path::new(&program.root).join(pkgpath.replace('.', std::path::MAIN_SEPARATOR_STR));
     if !real_path.exists() {
-        real_path =
-            get_real_path_from_external(tool, &stmt.pkg_name, pkgpath, program.root.clone().into());
+        // Prefer the workspace metadata cached by the compilation pipeline:
+        // resolving via the toolchain runs `kcl mod metadata` (a subprocess)
+        // synchronously in the completion request, which is far too slow to
+        // repeat on every keystroke.
+        real_path = metadata
+            .and_then(|m| external_pkg_real_path(m, &stmt.pkg_name, pkgpath))
+            .unwrap_or_else(|| {
+                get_real_path_from_external(
+                    tool,
+                    &stmt.pkg_name,
+                    pkgpath,
+                    program.root.clone().into(),
+                )
+            });
     }
     if real_path.is_dir()
         && let Ok(entries) = fs::read_dir(real_path)
@@ -736,6 +779,17 @@ fn dot_completion_in_import_stmt(
         }
     }
     Some(into_completion_items(&items).into())
+}
+
+/// Resolves the on-disk path of `pkgpath` (e.g. `my_pkg.sub.dir`) inside the
+/// external package `pkg_name`, using the metadata cached for the current
+/// workspace. Returns `None` when the metadata knows nothing about
+/// `pkg_name`, so the caller can fall back to querying the toolchain.
+fn external_pkg_real_path(metadata: &Metadata, pkg_name: &str, pkgpath: &str) -> Option<PathBuf> {
+    let mut real_path = metadata.packages.get(pkg_name)?.manifest_path.clone();
+    let sub_path = rm_external_pkg_name(pkgpath).unwrap_or_default();
+    sub_path.split('.').for_each(|s| real_path.push(s));
+    Some(real_path)
 }
 
 fn ty_complete_label_and_inser_text(
@@ -912,7 +966,8 @@ mod tests {
         },
         tests::{compile_test_file, compile_test_file_and_metadata},
     };
-    use kcl_driver::toolchain;
+    use kcl_ast::ast::{self, ImportStmt, Program};
+    use kcl_driver::toolchain::{self, Metadata, Package, Toolchain};
     use kcl_error::Position as KCLPos;
     use kcl_primitives::IndexSet;
     use kcl_sema::builtin::{
@@ -2260,4 +2315,159 @@ mod tests {
         1,
         None
     );
+
+    fn unique_temp_dir(prefix: &str) -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!(
+            "{}-{}-{}",
+            prefix,
+            std::process::id(),
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    fn import_stmt_node(path: &str) -> ImportStmt {
+        ImportStmt {
+            path: ast::Node {
+                id: Default::default(),
+                node: path.to_string(),
+                filename: String::new(),
+                line: 1,
+                column: 1,
+                end_line: 1,
+                end_column: 1,
+            },
+            rawpath: path.to_string(),
+            name: path.to_string(),
+            asname: None,
+            pkg_name: path.split('.').next().unwrap().to_string(),
+        }
+    }
+
+    /// Import completion must only suggest importable sub-packages: directories
+    /// holding at least one `.k` file (at any depth). Hidden directories such as
+    /// `.git` are never importable and must be skipped without being walked.
+    #[test]
+    fn import_internal_pkg_completion_skips_hidden_and_empty_dirs() {
+        let base = unique_temp_dir("kcl-lsp-import-completion");
+
+        // pkg_a: a `.k` file at the top level -> importable.
+        std::fs::create_dir_all(base.join("pkg_a")).unwrap();
+        std::fs::write(base.join("pkg_a/main.k"), "x = 1\n").unwrap();
+        // pkg_b: a `.k` file only at a deeper level -> still importable.
+        std::fs::create_dir_all(base.join("pkg_b/nested")).unwrap();
+        std::fs::write(base.join("pkg_b/nested/deep.k"), "x = 1\n").unwrap();
+        // pkg_c: no `.k` file at all -> not importable.
+        std::fs::create_dir_all(base.join("pkg_c")).unwrap();
+        std::fs::write(base.join("pkg_c/readme.txt"), "not kcl\n").unwrap();
+        // Hidden directories, even with `.k` files, are never importable.
+        std::fs::create_dir_all(base.join(".hidden")).unwrap();
+        std::fs::write(base.join(".hidden/secret.k"), "x = 1\n").unwrap();
+        std::fs::create_dir_all(base.join(".git/objects")).unwrap();
+        std::fs::write(base.join(".git/objects/abcd"), "blob\n").unwrap();
+
+        let program = Program {
+            root: base.display().to_string(),
+            ..Default::default()
+        };
+        let pos = KCLPos {
+            filename: String::new(),
+            line: 1,
+            column: Some(0),
+        };
+        let mut labels: Vec<String> = super::completion_import_internal_pkg(&program, &pos)
+            .iter()
+            .map(|item| item.label.clone())
+            .collect();
+        labels.sort();
+
+        assert_eq!(labels, vec!["pkg_a".to_string(), "pkg_b".to_string()]);
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    /// A `Toolchain` that fails every call: completion must never reach it when
+    /// the workspace metadata is already cached (a real call would spawn
+    /// `kcl mod metadata` as a subprocess inside the request handler).
+    struct NoCallToolchain;
+
+    impl Toolchain for NoCallToolchain {
+        fn fetch_metadata(&self, _manifest_path: std::path::PathBuf) -> anyhow::Result<Metadata> {
+            panic!("fetch_metadata must not be called when the metadata cache is available");
+        }
+
+        fn update_dependencies(&self, _manifest_path: std::path::PathBuf) -> anyhow::Result<()> {
+            panic!("update_dependencies must not be called during completion");
+        }
+    }
+
+    /// Dot completion inside an `import external_pkg.<cursor>` statement must
+    /// resolve the package location from the cached workspace metadata instead
+    /// of querying the toolchain on every keystroke.
+    #[test]
+    fn import_dot_completion_resolves_external_pkg_from_cached_metadata() {
+        let ws_root = unique_temp_dir("kcl-lsp-import-ws");
+        let pkg_root = unique_temp_dir("kcl-lsp-import-external");
+        std::fs::create_dir_all(pkg_root.join("sub")).unwrap();
+        std::fs::write(pkg_root.join("sub/model.k"), "x = 1\n").unwrap();
+        std::fs::write(pkg_root.join("util.k"), "x = 1\n").unwrap();
+
+        let metadata = Metadata {
+            packages: [(
+                "my_pkg".to_string(),
+                Package {
+                    name: "my_pkg".to_string(),
+                    manifest_path: pkg_root.clone(),
+                },
+            )]
+            .into_iter()
+            .collect(),
+        };
+        let program = Program {
+            root: ws_root.display().to_string(),
+            ..Default::default()
+        };
+        let pos = KCLPos {
+            filename: String::new(),
+            line: 1,
+            column: Some(0),
+        };
+
+        // `import my_pkg.<cursor>`: completes the sub-packages/modules of my_pkg.
+        let stmt = import_stmt_node("my_pkg");
+        let res = super::dot_completion_in_import_stmt(
+            &stmt,
+            &pos,
+            &program,
+            &NoCallToolchain,
+            Some(&metadata),
+        )
+        .unwrap();
+        let mut labels: Vec<String> = match res {
+            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+        labels.sort();
+        assert_eq!(labels, vec!["sub".to_string(), "util".to_string()]);
+
+        // `import my_pkg.sub.<cursor>`: resolves the sub-package directory from
+        // the cached metadata and completes its modules.
+        let stmt = import_stmt_node("my_pkg.sub");
+        let res = super::dot_completion_in_import_stmt(
+            &stmt,
+            &pos,
+            &program,
+            &NoCallToolchain,
+            Some(&metadata),
+        )
+        .unwrap();
+        let labels: Vec<String> = match res {
+            CompletionResponse::Array(arr) => arr.iter().map(|item| item.label.clone()).collect(),
+            CompletionResponse::List(_) => panic!("test failed"),
+        };
+        assert_eq!(labels, vec!["model".to_string()]);
+
+        let _ = std::fs::remove_dir_all(&ws_root);
+        let _ = std::fs::remove_dir_all(&pkg_root);
+    }
 }
