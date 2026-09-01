@@ -1,7 +1,9 @@
+use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use kcl_error::{Diagnostic, Handler};
-use kcl_parser::{LoadProgramOptions, ParseSession, load_program};
+use kcl_parser::{LoadProgramOptions, ParseSession, get_kcl_files, load_program};
 use kcl_primitives::IndexSet;
 use kcl_runtime::PanicInfo;
 use kcl_sema::resolver::resolve_program_with_opts;
@@ -13,7 +15,12 @@ mod tests;
 /// # Parameters
 ///
 /// `file`: [&str]
-///     The File that need to be check
+///     The File that need to be check. A path ending with `/...` (e.g. `./...`)
+///     recursively lints every package under the root directory, like
+///     `go build ./...`: all `.k` files are collected, grouped by their
+///     directory (one directory is one package) and each package is linted
+///     as its own program, so packages that are not imported by the entry
+///     file are also checked and name clashes between packages are allowed.
 ///
 /// `opts`: Option<LoadProgramOptions>
 ///     The compilation parameters of KCL, same as the compilation process
@@ -65,8 +72,89 @@ mod tests;
 ///     }
 /// ]
 /// ```
-#[allow(clippy::arc_with_non_send_sync)]
 pub fn lint_files(
+    files: &[&str],
+    opts: Option<LoadProgramOptions>,
+) -> (IndexSet<Diagnostic>, IndexSet<Diagnostic>) {
+    if files.iter().any(|f| recursive_root(f).is_some()) {
+        return lint_all_packages(files, opts);
+    }
+    lint_package(files, opts)
+}
+
+/// Expand `./...`-style patterns and lint every package found under their roots.
+///
+/// All the `.k` files collected from the patterns (plus the plain paths given
+/// alongside them) are grouped by parent directory, since one directory is one
+/// KCL package, and each group is linted as its own program. This mirrors
+/// `go build ./...`: packages unreachable from any entry file are still
+/// checked, while symbols defined in distinct packages never collide.
+fn lint_all_packages(
+    files: &[&str],
+    opts: Option<LoadProgramOptions>,
+) -> (IndexSet<Diagnostic>, IndexSet<Diagnostic>) {
+    let mut packages: BTreeMap<PathBuf, Vec<String>> = BTreeMap::new();
+    for file in files {
+        match recursive_root(file) {
+            Some(root) => match get_kcl_files(root, true) {
+                Ok(kcl_files) => {
+                    for kcl_file in kcl_files {
+                        packages
+                            .entry(
+                                Path::new(&kcl_file)
+                                    .parent()
+                                    .unwrap_or(Path::new(""))
+                                    .to_path_buf(),
+                            )
+                            .or_default()
+                            .push(kcl_file);
+                    }
+                }
+                Err(err) => {
+                    return Handler::default()
+                        .add_panic_info(&PanicInfo::from(err.to_string()))
+                        .classification();
+                }
+            },
+            None => {
+                packages
+                    .entry(
+                        Path::new(file)
+                            .parent()
+                            .unwrap_or(Path::new(""))
+                            .to_path_buf(),
+                    )
+                    .or_default()
+                    .push(file.to_string());
+            }
+        }
+    }
+    let mut errors = IndexSet::default();
+    let mut warnings = IndexSet::default();
+    for (_, package) in packages.iter_mut() {
+        package.sort();
+        package.dedup();
+        let entries: Vec<&str> = package.iter().map(|f| f.as_str()).collect();
+        let (errs, warns) = lint_package(&entries, opts.clone());
+        errors.extend(errs);
+        warnings.extend(warns);
+    }
+    (errors, warnings)
+}
+
+/// For a `./...`-style path, return the root directory the pattern scans;
+/// return `None` for ordinary paths.
+fn recursive_root(path: &str) -> Option<&str> {
+    if Path::new(path).file_name()? == "..." {
+        let root = Path::new(path).parent()?.to_str()?;
+        Some(if root.is_empty() { "." } else { root })
+    } else {
+        None
+    }
+}
+
+#[allow(clippy::arc_with_non_send_sync)]
+fn lint_package(
     files: &[&str],
     opts: Option<LoadProgramOptions>,
 ) -> (IndexSet<Diagnostic>, IndexSet<Diagnostic>) {
