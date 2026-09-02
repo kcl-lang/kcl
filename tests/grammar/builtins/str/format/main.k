@@ -1,3 +1,8 @@
 a = "{} {}".format("Hello", "World")
 b = "{:.0f}".format(1.0)
 c = "{:.1f} {:.0f}".format(1.0, 2.0)
+d = "[{:>6}]".format("ab")
+e = "[{:<6}]".format("ab")
+f = "[{:^6}]".format("ab")
+g = "[{:*>6}]".format("ab")
+h = "[{:.3}]".format("abcdef")

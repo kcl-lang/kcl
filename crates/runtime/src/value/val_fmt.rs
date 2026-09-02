@@ -643,6 +643,64 @@ impl FormatSpec {
             }
         })
     }
+
+    /// Format a string value according to the format spec. Strings support the
+    /// `[[fill]align][width][.precision][s]` fields. Unlike numbers they default
+    /// to left alignment, and `precision` is treated as a maximum length that
+    /// truncates the string, matching Python's `str.format` behavior.
+    pub(crate) fn format_str(&self, s: &str) -> Result<String, &'static str> {
+        // Only the string presentation type (or none) applies to strings.
+        match self.format_type {
+            None | Some(FormatType::String) => {}
+            _ => return Err("Unknown format code for object of type 'str'"),
+        }
+        if self.sign.is_some() {
+            return Err("Sign not allowed in string format specifier");
+        }
+        if self.alternate_form {
+            return Err("Alternate form (#) not allowed in string format specifier");
+        }
+        if let Some(FormatAlign::AfterSign) = self.align {
+            return Err("'=' alignment not allowed in string format specifier");
+        }
+        // `precision` truncates the string to at most that many characters.
+        let truncated: String = match self.precision {
+            Some(precision) => s.chars().take(precision).collect(),
+            None => s.to_string(),
+        };
+        let align = self.align.unwrap_or(FormatAlign::Left);
+        // Count characters (code points), not bytes, so widths are correct for
+        // multi-byte content.
+        let num_chars = truncated.chars().count();
+        let fill_char = self.fill.unwrap_or(' ');
+        let fill_chars_needed: i32 = self
+            .width
+            .map_or(0, |w| cmp::max(0, (w as i32) - (num_chars as i32)));
+        Ok(match align {
+            FormatAlign::Left => format!(
+                "{}{}",
+                truncated,
+                FormatSpec::compute_fill_string(fill_char, fill_chars_needed)
+            ),
+            FormatAlign::Right => format!(
+                "{}{}",
+                FormatSpec::compute_fill_string(fill_char, fill_chars_needed),
+                truncated
+            ),
+            FormatAlign::Center => {
+                let left_fill_chars_needed = fill_chars_needed / 2;
+                let right_fill_chars_needed = fill_chars_needed - left_fill_chars_needed;
+                format!(
+                    "{}{}{}",
+                    FormatSpec::compute_fill_string(fill_char, left_fill_chars_needed),
+                    truncated,
+                    FormatSpec::compute_fill_string(fill_char, right_fill_chars_needed)
+                )
+            }
+            // Rejected above for strings.
+            FormatAlign::AfterSign => unreachable!(),
+        })
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -1042,6 +1100,12 @@ impl ValueRef {
                     Err(err) => panic!("{}", err),
                 }
             }
+            Value::str_value(v) => {
+                match FormatSpec::parse(spec).and_then(|format_spec| format_spec.format_str(v)) {
+                    Ok(string) => string,
+                    Err(err) => panic!("{}", err),
+                }
+            }
             _ => self.to_string(),
         }
     }
@@ -1063,6 +1127,18 @@ mod test_value_fmt {
                 r#"[["0","1"],{ "Hello": "World" }]"#,
                 "\"00, 11, HelloWorld\"",
             ),
+            // String field width, alignment, fill and precision (issue: the
+            // format spec was previously ignored for string arguments).
+            (r#""{:>6}""#, r#"["ab"]"#, "\"    ab\""),
+            (r#""{:<6}""#, r#"["ab"]"#, "\"ab    \""),
+            (r#""{:^6}""#, r#"["ab"]"#, "\"  ab  \""),
+            (r#""{:*>6}""#, r#"["ab"]"#, "\"****ab\""),
+            (r#""{:-^7}""#, r#"["ab"]"#, "\"--ab---\""),
+            // Strings default to left alignment when only a width is given.
+            (r#""{:6}""#, r#"["ab"]"#, "\"ab    \""),
+            // Precision truncates a string to at most that many characters.
+            (r#""{:.3}""#, r#"["abcdef"]"#, "\"abc\""),
+            (r#""{:>8.3}""#, r#"["abcdef"]"#, "\"     abc\""),
         ];
         for (format_string, args, expected) in cases {
             let format_string = FormatString::from_str(format_string).unwrap();
