@@ -2,7 +2,7 @@ use crate::{kcl, lookup_the_nearest_file_dir};
 use anyhow::{Result, bail};
 use kcl_config::modfile::KCL_MOD_FILE;
 use kcl_parser::LoadProgramOptions;
-use kcl_utils::pkgpath::{pkgpath_to_rel_path_buf, rm_external_pkg_name};
+use kcl_utils::pkgpath::external_pkgpath_to_rel_path_buf;
 use serde::{Deserialize, Serialize};
 use std::ffi::OsStr;
 use std::{collections::HashMap, path::PathBuf, process::Command};
@@ -219,7 +219,6 @@ pub fn get_real_path_from_external(
         .unwrap_or_else(|_| PathBuf::new());
     real_path = real_path.join(pkg_root);
 
-    let pkgpath = rm_external_pkg_name(pkgpath).unwrap_or_default();
-    real_path.push(pkgpath_to_rel_path_buf(&pkgpath));
+    real_path.push(external_pkgpath_to_rel_path_buf(pkgpath));
     real_path
 }

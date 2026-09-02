@@ -15,6 +15,7 @@
 //! the main package are printed.
 
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::{Result, anyhow};
@@ -23,6 +24,7 @@ use kcl_ast::walker::MutSelfMutWalker;
 use kcl_ast_pretty::print_ast_module;
 use kcl_config::vfs::fix_import_path;
 use kcl_parser::{LoadProgramOptions, ParseSession, load_program};
+use kcl_utils::pkgpath::pkgpath_to_path_buf;
 #[cfg(test)]
 mod tests;
 
@@ -252,22 +254,15 @@ fn import_target(root: &str, file: &str, rawpath: &str) -> Option<String> {
     if target.is_empty() {
         return None;
     }
-    let segments: Vec<&str> = target.split('.').collect();
-    let mut dir = std::path::PathBuf::from(root);
-    for segment in &segments {
-        dir.push(segment);
-    }
+    let dir = pkgpath_to_path_buf(Path::new(root), &target);
     if dir.is_dir() {
         return Some(target);
     }
-    if segments.len() > 1 {
-        let mut module = std::path::PathBuf::from(root);
-        for segment in &segments[..segments.len() - 1] {
-            module.push(segment);
-        }
-        module.push(format!("{}.k", segments[segments.len() - 1]));
+    if let Some((parent_pkgpath, last_segment)) = target.rsplit_once('.') {
+        let mut module = pkgpath_to_path_buf(Path::new(root), parent_pkgpath);
+        module.push(format!("{last_segment}.k"));
         if module.is_file() {
-            return Some(segments[..segments.len() - 1].join("."));
+            return Some(parent_pkgpath.to_string());
         }
     }
     Some(target)

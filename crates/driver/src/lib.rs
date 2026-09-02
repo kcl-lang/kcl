@@ -363,7 +363,14 @@ pub fn get_pkg_list(pkgpath: &str) -> Result<Vec<String>> {
         return Ok(Vec::new());
     }
 
-    match pkgpath.chars().next() {
+    // Restore the missing `let` binding that was lost in early history
+    // (#2178 follow-up): without it, the cwd-join for relative paths and
+    // the dotted-pkgpath → filesystem-path conversion below are computed
+    // and immediately thrown away, leaving `pkgpath` as the raw input
+    // string (e.g. `./...`, `a.b.c`). Callers like the test loader need
+    // the resolved directory path to enumerate test files, so wire the
+    // match result through.
+    let pkgpath = match pkgpath.chars().next() {
         Some('.') => {
             let pkgpath = Path::new(&cwd).join(&pkgpath);
             pkgpath.to_string_lossy().to_string()

@@ -164,9 +164,29 @@ fn test_native_fetch_metadata_invalid() {
 
 #[test]
 fn test_get_pkg_list() {
-    assert_eq!(get_pkg_list("./src/test_data/pkg_list/").unwrap().len(), 1);
-    assert_eq!(
-        get_pkg_list("./src/test_data/pkg_list/...").unwrap().len(),
-        3
+    // Single package: the binding fix in `get_pkg_list` should resolve
+    // the relative input to an absolute directory and return it as-is.
+    let single = get_pkg_list("./src/test_data/pkg_list/").unwrap();
+    assert_eq!(single.len(), 1);
+    assert!(
+        PathBuf::from(&single[0]).is_absolute(),
+        "expected absolute path, got {:?}",
+        single[0]
     );
+    let expected_single = std::fs::canonicalize("./src/test_data/pkg_list").unwrap();
+    assert_eq!(std::fs::canonicalize(&single[0]).unwrap(), expected_single);
+
+    // Recursive walk: the returned entries must all be absolute and
+    // resolve to real directories.
+    let recursive = get_pkg_list("./src/test_data/pkg_list/...").unwrap();
+    assert_eq!(recursive.len(), 3);
+    for entry in &recursive {
+        let p = PathBuf::from(entry);
+        assert!(p.is_absolute(), "expected absolute path, got {:?}", entry);
+        assert!(
+            std::fs::canonicalize(&p).unwrap().is_dir(),
+            "{:?} is not a directory",
+            entry
+        );
+    }
 }
