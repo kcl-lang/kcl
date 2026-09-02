@@ -173,12 +173,8 @@ fn test_get_pkg_list() {
         "expected absolute path, got {:?}",
         single[0]
     );
-    let expected_single =
-        std::fs::canonicalize("./src/test_data/pkg_list").unwrap();
-    assert_eq!(
-        std::fs::canonicalize(&single[0]).unwrap(),
-        expected_single
-    );
+    let expected_single = std::fs::canonicalize("./src/test_data/pkg_list").unwrap();
+    assert_eq!(std::fs::canonicalize(&single[0]).unwrap(), expected_single);
 
     // Recursive walk: the returned entries must all be absolute and
     // resolve to real directories.
