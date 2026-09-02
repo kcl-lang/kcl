@@ -3,7 +3,7 @@ extern crate chrono;
 use super::modfile::KCL_FILE_SUFFIX;
 use anyhow::Result;
 use kcl_utils::fslock::open_lock_file;
-use kcl_utils::pkgpath::{parse_external_pkg_name, rm_external_pkg_name};
+use kcl_utils::pkgpath::{parse_external_pkg_name, pkgpath_to_path_buf, rm_external_pkg_name};
 use md5::{Digest, Md5};
 use serde::{Serialize, de::DeserializeOwned};
 use std::collections::HashMap;
@@ -235,12 +235,15 @@ fn get_cache_info(path_str: &str) -> CacheInfo {
 }
 
 pub fn get_pkg_realpath_from_pkgpath(root: &str, pkgpath: &str) -> String {
-    let filepath = format!("{}/{}", root, pkgpath.replace('.', "/"));
-    let filepath_with_suffix = format!("{}{}", filepath, KCL_FILE_SUFFIX);
-    if Path::new(&filepath_with_suffix).is_file() {
-        filepath_with_suffix
+    let filepath = pkgpath_to_path_buf(Path::new(root), pkgpath);
+    let mut filepath_with_suffix = filepath.clone();
+    filepath_with_suffix
+        .as_mut_os_string()
+        .push(KCL_FILE_SUFFIX);
+    if filepath_with_suffix.is_file() {
+        filepath_with_suffix.to_string_lossy().to_string()
     } else {
-        filepath
+        filepath.to_string_lossy().to_string()
     }
 }
 

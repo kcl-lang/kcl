@@ -15,7 +15,7 @@ use std::{cell::RefCell, path::Path};
 
 use super::scope::{Scope, ScopeKind, ScopeObject, ScopeObjectKind};
 use kcl_ast::pos::GetPos;
-use kcl_utils::pkgpath::parse_external_pkg_name;
+use kcl_utils::pkgpath::{parse_external_pkg_name, pkgpath_to_path_buf};
 
 impl<'ctx> Resolver<'ctx> {
     /// Check import error
@@ -39,8 +39,7 @@ impl<'ctx> Resolver<'ctx> {
                         if pkgpath.starts_with(PLUGIN_MODULE_PREFIX) {
                             continue;
                         }
-                        let real_path =
-                            Path::new(&self.program.root).join(pkgpath.replace('.', "/"));
+                        let real_path = pkgpath_to_path_buf(Path::new(&self.program.root), pkgpath);
                         if !self.program.pkgs.contains_key(pkgpath) {
                             self.ctx.invalid_pkg_scope.insert(pkgpath.to_string());
                             if real_path.exists() {

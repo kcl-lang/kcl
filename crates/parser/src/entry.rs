@@ -320,10 +320,11 @@ pub fn get_compile_entries_from_paths(
         let mut idx = 0usize;
         for code in k_code_queue.drain(..) {
             let synthetic = if idx == 0 {
-                format!("{}/__main__.k", root)
+                Path::new(&root).join("__main__.k")
             } else {
-                format!("{}/__main__{}.k", root, idx)
+                Path::new(&root).join(format!("__main__{}.k", idx))
             };
+            let synthetic = synthetic.to_string_lossy().to_string();
             entry.push_k_code(Some(code));
             entry.extend_k_files(vec![synthetic]);
             idx += 1;

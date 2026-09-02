@@ -654,10 +654,19 @@ fn test_get_compile_entries_from_k_code_list_only() {
     assert_eq!(entry.path(), "/tmp/lib217");
     assert_eq!(entry.get_k_files().len(), 2);
     assert_eq!(entry.get_k_codes().len(), 2);
-    assert_eq!(entry.get_k_files()[0], "/tmp/lib217/__main__.k".to_string());
+    assert_eq!(
+        entry.get_k_files()[0],
+        Path::new("/tmp/lib217")
+            .join("__main__.k")
+            .to_string_lossy()
+            .to_string()
+    );
     assert_eq!(
         entry.get_k_files()[1],
-        "/tmp/lib217/__main__1.k".to_string()
+        Path::new("/tmp/lib217")
+            .join("__main__1.k")
+            .to_string_lossy()
+            .to_string()
     );
     assert_eq!(entry.get_k_codes()[0].as_deref(), Some("a = 1"));
     assert_eq!(entry.get_k_codes()[1].as_deref(), Some("b = 2"));

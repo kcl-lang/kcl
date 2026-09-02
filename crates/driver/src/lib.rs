@@ -14,6 +14,7 @@ use kcl_config::{
 };
 use kcl_parser::{LoadProgramOptions, get_kcl_files};
 use kcl_utils::path::PathPrefix;
+use kcl_utils::pkgpath::pkgpath_to_rel_path_buf;
 use std::iter;
 use std::{collections::HashMap, env};
 use std::{
@@ -341,9 +342,15 @@ pub fn get_pkg_list(pkgpath: &str) -> Result<Vec<String>> {
         pkgpath.to_string()
     };
 
-    let include_sub_pkg = pkgpath.ends_with("/...");
+    // Accept both `/...` and `\...` so Windows-style inputs (e.g. `.\...`)
+    // enable sub-package walking as well.
+    let include_sub_pkg = pkgpath.ends_with("/...") || pkgpath.ends_with("\\...");
     let pkgpath = if include_sub_pkg {
-        pkgpath.trim_end_matches("/...").to_string()
+        let trimmed = pkgpath
+            .strip_suffix("...")
+            .map(|p| p.strip_suffix(['/', '\\']).unwrap_or(p))
+            .unwrap_or(pkgpath.as_str());
+        trimmed.to_string()
     } else {
         pkgpath
     };
@@ -365,7 +372,9 @@ pub fn get_pkg_list(pkgpath: &str) -> Result<Vec<String>> {
             if Path::new(&pkgpath).is_absolute() {
                 pkgpath.clone()
             } else if !pkgpath.contains('/') && !pkgpath.contains('\\') {
-                pkgpath.replace('.', "/")
+                pkgpath_to_rel_path_buf(&pkgpath)
+                    .to_string_lossy()
+                    .to_string()
             } else {
                 let pkgroot =
                     get_pkg_root(cwd.to_str().ok_or(anyhow::anyhow!("cwd path not found"))?)
