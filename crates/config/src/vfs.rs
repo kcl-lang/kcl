@@ -40,15 +40,17 @@ pub fn fix_import_path(root: &str, filepath: &str, import_path: &str) -> String 
     // abspath: import path.to.sub
     // fix_import_path(root, "path/to/app/file.k", "path.to.sub") => path.to.sub
 
+    // Absolute import paths are returned as-is; no need to canonicalize
+    // the file paths below.
+    if !import_path.starts_with('.') {
+        return import_path.to_string();
+    }
+
     // Use canonicalize to convert the path to absolute path
     // avoid the symbolic link issue caused the file not found
 
     let filepath = Path::new(filepath).adjust_canonicalization();
     let root = Path::new(root).adjust_canonicalization();
-
-    if !import_path.starts_with('.') {
-        return import_path.to_string();
-    }
 
     // Filepath to pkgpath
     let pkgpath = {

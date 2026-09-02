@@ -28,6 +28,7 @@ use kcl_primitives::IndexMap;
 use kcl_sema::plugin::PLUGIN_MODULE_PREFIX;
 use kcl_utils::path::PathPrefix;
 use kcl_utils::pkgpath::parse_external_pkg_name;
+use kcl_utils::pkgpath::pkgpath_to_path_buf;
 use kcl_utils::pkgpath::rm_external_pkg_name;
 
 use anyhow::Result;
@@ -623,8 +624,7 @@ fn pkg_exists_in_path(path: &str, pkgpath: &str, load_cache: &mut ParseLoadCache
     if let Some(exists) = load_cache.pkg_exists_in_path.get(&cache_key) {
         return *exists;
     }
-    let mut pathbuf = PathBuf::from(path);
-    pkgpath.split('.').for_each(|s| pathbuf.push(s));
+    let pathbuf = pkgpath_to_path_buf(Path::new(path), pkgpath);
     let exists = pathbuf.exists() || pathbuf.with_extension(KCL_FILE_EXTENSION).exists();
     load_cache.pkg_exists_in_path.insert(cache_key, exists);
     exists
@@ -648,10 +648,7 @@ fn pkg_exists_in_path(path: &str, pkgpath: &str, load_cache: &mut ParseLoadCache
 /// forms refer to genuinely different sets of files, and we leave the
 /// original pkgpath untouched to preserve the existing semantics.
 fn canonical_pkg_path(pkgroot: &str, pkgpath: &str) -> String {
-    let mut pathbuf = PathBuf::from(pkgroot);
-    for s in pkgpath.split('.') {
-        pathbuf.push(s);
-    }
+    let pathbuf = pkgpath_to_path_buf(Path::new(pkgroot), pkgpath);
     // Already a directory package: nothing to canonicalize.
     if pathbuf.is_dir() {
         return pkgpath.to_string();
@@ -776,12 +773,7 @@ fn get_pkg_kfile_list(
         return Ok(k_files.clone());
     }
 
-    let mut pathbuf = std::path::PathBuf::new();
-    pathbuf.push(pkgroot);
-
-    for s in pkgpath.split('.') {
-        pathbuf.push(s);
-    }
+    let pathbuf = pkgpath_to_path_buf(std::path::Path::new(pkgroot), pkgpath);
 
     let abspath = canonicalize_path_cached(pathbuf.as_path(), load_cache);
     if abspath.exists() {
