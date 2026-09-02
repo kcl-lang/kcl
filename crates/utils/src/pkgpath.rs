@@ -56,6 +56,18 @@ pub fn pkgpath_to_path_buf(root: &Path, pkgpath: &str) -> PathBuf {
     path
 }
 
+/// Strip the external package name prefix from a dotted pkgpath (e.g.
+/// `my_pkg.sub.dir` → `sub.dir`) and convert the remainder to a relative
+/// filesystem path with the platform-correct separator (e.g. `sub/dir`).
+///
+/// Empty input yields an empty path. Callers should pass valid external
+/// pkgpaths (no leading dot) and can push the package's manifest root on
+/// top to get a full filesystem path.
+pub fn external_pkgpath_to_rel_path_buf(pkgpath: &str) -> PathBuf {
+    let sub_path = rm_external_pkg_name(pkgpath).unwrap_or_default();
+    pkgpath_to_rel_path_buf(&sub_path)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -100,6 +112,29 @@ mod tests {
         assert_eq!(
             pkgpath_to_path_buf(Path::new(abs), "a.b"),
             Path::new(abs).join(["a", "b"].join(sep))
+        );
+    }
+
+    #[test]
+    fn test_external_pkgpath_to_rel_path_buf() {
+        let sep = MAIN_SEPARATOR_STR;
+        // External prefix is stripped; remaining dotted segments become
+        // a relative path using the platform separator.
+        assert_eq!(
+            external_pkgpath_to_rel_path_buf("my_pkg.sub.dir"),
+            PathBuf::from(["sub", "dir"].join(sep))
+        );
+        // Bare external name (no dotted suffix) yields an empty path.
+        assert_eq!(external_pkgpath_to_rel_path_buf("my_pkg"), PathBuf::new());
+        // Empty input also yields an empty path.
+        assert_eq!(external_pkgpath_to_rel_path_buf(""), PathBuf::new());
+        // A leading dot yields an empty first segment that
+        // `parse_external_pkg_name` returns as Ok(""), so the strip is a
+        // no-op and the rest of the dotted path is joined normally.
+        // Callers should not pass non-external inputs.
+        assert_eq!(
+            external_pkgpath_to_rel_path_buf(".local.path"),
+            PathBuf::from(["local", "path"].join(sep))
         );
     }
 }

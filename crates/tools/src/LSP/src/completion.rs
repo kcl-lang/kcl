@@ -24,7 +24,7 @@ use kcl_driver::toolchain::{Metadata, Toolchain, get_real_path_from_external};
 use kcl_error::diagnostic::Range;
 use kcl_primitives::{DefaultHashBuilder, IndexMap, IndexSet};
 use kcl_sema::core::global_state::GlobalState;
-use kcl_utils::pkgpath::{pkgpath_to_rel_path_buf, rm_external_pkg_name};
+use kcl_utils::pkgpath::external_pkgpath_to_rel_path_buf;
 use std::io;
 use std::path::PathBuf;
 use std::{fs, path::Path};
@@ -787,8 +787,7 @@ fn dot_completion_in_import_stmt(
 /// `pkg_name`, so the caller can fall back to querying the toolchain.
 fn external_pkg_real_path(metadata: &Metadata, pkg_name: &str, pkgpath: &str) -> Option<PathBuf> {
     let mut real_path = metadata.packages.get(pkg_name)?.manifest_path.clone();
-    let sub_path = rm_external_pkg_name(pkgpath).unwrap_or_default();
-    real_path.push(pkgpath_to_rel_path_buf(&sub_path));
+    real_path.push(external_pkgpath_to_rel_path_buf(pkgpath));
     Some(real_path)
 }
 
