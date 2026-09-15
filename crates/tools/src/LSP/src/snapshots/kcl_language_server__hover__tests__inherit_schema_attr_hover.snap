@@ -1,0 +1,22 @@
+---
+source: crates/tools/src/LSP/src/hover.rs
+expression: "format! (\"{:#?}\", res)"
+---
+Some(
+    Hover {
+        contents: Array(
+            [
+                String(
+                    "__main__",
+                ),
+                LanguageString(
+                    LanguageString {
+                        language: "KCL",
+                        value: "schema Data1[m: {str:str}](Data):\n    name: str = \"1\"\n    age: int",
+                    },
+                ),
+            ],
+        ),
+        range: None,
+    },
+)

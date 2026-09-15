@@ -1,0 +1,22 @@
+---
+source: crates/tools/src/LSP/src/hover.rs
+expression: "format! (\"{:#?}\", res)"
+---
+Some(
+    Hover {
+        contents: Array(
+            [
+                LanguageString(
+                    LanguageString {
+                        language: "KCL",
+                        value: "function f(x: int = 1) -> int",
+                    },
+                ),
+                String(
+                    "lambda documents",
+                ),
+            ],
+        ),
+        range: None,
+    },
+)

@@ -1,0 +1,25 @@
+---
+source: crates/tools/src/LSP/src/hover.rs
+expression: "format! (\"{:#?}\", res)"
+---
+Some(
+    Hover {
+        contents: Array(
+            [
+                String(
+                    "str\n\n",
+                ),
+                LanguageString(
+                    LanguageString {
+                        language: "KCL",
+                        value: "function capitalize() -> str",
+                    },
+                ),
+                String(
+                    "Return a copy of the string with its first character capitalized and the rest lowercased.",
+                ),
+            ],
+        ),
+        range: None,
+    },
+)

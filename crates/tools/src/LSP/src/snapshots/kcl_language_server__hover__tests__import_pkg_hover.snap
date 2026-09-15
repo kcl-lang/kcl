@@ -1,0 +1,22 @@
+---
+source: crates/tools/src/LSP/src/hover.rs
+expression: "format! (\"{:#?}\", res)"
+---
+Some(
+    Hover {
+        contents: Array(
+            [
+                String(
+                    "fib",
+                ),
+                LanguageString(
+                    LanguageString {
+                        language: "KCL",
+                        value: "schema Fib:\n    n: int\n    value: int",
+                    },
+                ),
+            ],
+        ),
+        range: None,
+    },
+)
