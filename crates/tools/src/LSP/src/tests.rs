@@ -473,13 +473,11 @@ impl Server {
         id
     }
 
-    /// Sends a request to the language server without waiting for its response,
-    /// returning the id of the request
-    pub fn send_request<R: lsp_types::request::Request>(&self, params: R::Params) -> i32 {
+    /// Sends a request to the language server without waiting for its response
+    pub fn send_request<R: lsp_types::request::Request>(&self, params: R::Params) {
         let id = self.alloc_request_id();
         let r = Request::new(id.into(), R::METHOD.to_string(), params);
         self.client.sender.send(r.into()).unwrap();
-        id
     }
 
     /// Sends an LSP notification to the main loop.
@@ -827,11 +825,17 @@ fn cancel_test() {
 
     server.open_file(path, src);
 
-    let id = server.send_request::<lsp_types::request::GotoDefinition>(GotoDefinitionParams {
+    let id = server.next_request_id.get();
+    server.next_request_id.set(id.wrapping_add(1));
+
+    // send request
+    server.send_request::<lsp_types::request::GotoDefinition>(GotoDefinitionParams {
         text_document_position_params: text_document_position(path, Position::new(23, 9)),
         work_done_progress_params: Default::default(),
         partial_result_params: Default::default(),
     });
+
+    // cancel request
     server.cancel_request(id);
 
     assert!(server.receive_response(id.into()).is_none());
