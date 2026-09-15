@@ -30,7 +30,6 @@ use lsp_types::HoverContents;
 use lsp_types::HoverParams;
 use lsp_types::InitializeParams;
 use lsp_types::MarkedString;
-use lsp_types::PartialResultParams;
 use lsp_types::PublishDiagnosticsParams;
 use lsp_types::ReferenceContext;
 use lsp_types::ReferenceParams;
@@ -41,7 +40,6 @@ use lsp_types::TextDocumentItem;
 use lsp_types::TextDocumentPositionParams;
 use lsp_types::TextEdit;
 use lsp_types::Url;
-use lsp_types::WorkDoneProgressParams;
 use lsp_types::WorkspaceEdit;
 use lsp_types::WorkspaceFolder;
 use lsp_types::notification::Exit;
@@ -53,6 +51,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::env;
+use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -467,10 +466,16 @@ impl Server {
         }
     }
 
-    /// Sends a request to the language server, returning the response
-    pub fn send_request<R: lsp_types::request::Request>(&self, params: R::Params) {
+    /// Allocates the id of the next request sent to the language server
+    fn alloc_request_id(&self) -> i32 {
         let id = self.next_request_id.get();
         self.next_request_id.set(id.wrapping_add(1));
+        id
+    }
+
+    /// Sends a request to the language server without waiting for its response
+    pub fn send_request<R: lsp_types::request::Request>(&self, params: R::Params) {
+        let id = self.alloc_request_id();
         let r = Request::new(id.into(), R::METHOD.to_string(), params);
         self.client.sender.send(r.into()).unwrap();
     }
@@ -567,6 +572,161 @@ impl Server {
         }
         None
     }
+
+    /// Sends a request to the language server and waits for its response
+    fn request<R: lsp_types::request::Request>(&self, params: R::Params) -> Response {
+        let id = self.alloc_request_id();
+        self.send_and_receive(Request::new(id.into(), R::METHOD.to_string(), params))
+    }
+
+    /// Mocks the client opening `path` with `text` as its content
+    fn open_file(&self, path: impl AsRef<Path>, text: impl Into<String>) {
+        self.notification::<lsp_types::notification::DidOpenTextDocument>(
+            lsp_types::DidOpenTextDocumentParams {
+                text_document: TextDocumentItem {
+                    uri: Url::from_file_path(path).unwrap(),
+                    language_id: "KCL".to_string(),
+                    version: 0,
+                    text: text.into(),
+                },
+            },
+        );
+    }
+
+    /// Mocks the client editing the opened file `path`
+    fn change_file(
+        &self,
+        path: impl AsRef<Path>,
+        version: i32,
+        content_changes: Vec<TextDocumentContentChangeEvent>,
+    ) {
+        self.notification::<lsp_types::notification::DidChangeTextDocument>(
+            lsp_types::DidChangeTextDocumentParams {
+                text_document: lsp_types::VersionedTextDocumentIdentifier {
+                    uri: Url::from_file_path(path).unwrap(),
+                    version,
+                },
+                content_changes,
+            },
+        );
+    }
+
+    /// Mocks the client closing `path`
+    fn close_file(&self, path: impl AsRef<Path>) {
+        self.notification::<lsp_types::notification::DidCloseTextDocument>(
+            lsp_types::DidCloseTextDocumentParams {
+                text_document: text_document(path),
+            },
+        );
+    }
+
+    /// Mocks the client canceling the request with the given id
+    fn cancel_request(&self, id: i32) {
+        self.notification::<lsp_types::notification::Cancel>(lsp_types::CancelParams {
+            id: NumberOrString::Number(id),
+        });
+    }
+
+    fn goto_def(&self, path: impl AsRef<Path>, position: Position) -> Response {
+        self.request::<lsp_types::request::GotoDefinition>(GotoDefinitionParams {
+            text_document_position_params: text_document_position(path, position),
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+        })
+    }
+
+    fn hover(&self, path: impl AsRef<Path>, position: Position) -> Response {
+        self.request::<lsp_types::request::HoverRequest>(HoverParams {
+            text_document_position_params: text_document_position(path, position),
+            work_done_progress_params: Default::default(),
+        })
+    }
+
+    /// Requests completion items at `position`, as if `trigger_character` was just typed
+    fn complete(
+        &self,
+        path: impl AsRef<Path>,
+        position: Position,
+        trigger_character: &str,
+    ) -> Response {
+        self.request::<lsp_types::request::Completion>(CompletionParams {
+            text_document_position: text_document_position(path, position),
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+            context: Some(CompletionContext {
+                trigger_kind: CompletionTriggerKind::TRIGGER_CHARACTER,
+                trigger_character: Some(trigger_character.to_string()),
+            }),
+        })
+    }
+
+    /// Requests the references of the symbol at `position`, including its declaration
+    fn find_refs(&self, path: impl AsRef<Path>, position: Position) -> Response {
+        self.request::<lsp_types::request::References>(ReferenceParams {
+            text_document_position: text_document_position(path, position),
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+            context: ReferenceContext {
+                include_declaration: true,
+            },
+        })
+    }
+
+    fn rename(&self, path: impl AsRef<Path>, position: Position, new_name: &str) -> Response {
+        self.request::<lsp_types::request::Rename>(RenameParams {
+            text_document_position: text_document_position(path, position),
+            new_name: new_name.to_string(),
+            work_done_progress_params: Default::default(),
+        })
+    }
+
+    fn formatting(&self, path: impl AsRef<Path>) -> Response {
+        self.request::<lsp_types::request::Formatting>(DocumentFormattingParams {
+            text_document: text_document(path),
+            options: Default::default(),
+            work_done_progress_params: Default::default(),
+        })
+    }
+
+    fn code_lens(&self, path: impl AsRef<Path>) -> Response {
+        self.request::<lsp_types::request::CodeLensRequest>(CodeLensParams {
+            text_document: text_document(path),
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+        })
+    }
+
+    fn document_symbol(&self, path: impl AsRef<Path>) -> Response {
+        self.request::<lsp_types::request::DocumentSymbolRequest>(DocumentSymbolParams {
+            text_document: text_document(path),
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+        })
+    }
+
+    fn semantic_tokens_full(&self, path: impl AsRef<Path>) -> Response {
+        self.request::<lsp_types::request::SemanticTokensFullRequest>(SemanticTokensParams {
+            text_document: text_document(path),
+            work_done_progress_params: Default::default(),
+            partial_result_params: Default::default(),
+        })
+    }
+}
+
+fn text_document(path: impl AsRef<Path>) -> TextDocumentIdentifier {
+    TextDocumentIdentifier {
+        uri: Url::from_file_path(path).unwrap(),
+    }
+}
+
+fn text_document_position(
+    path: impl AsRef<Path>,
+    position: Position,
+) -> TextDocumentPositionParams {
+    TextDocumentPositionParams {
+        text_document: text_document(path),
+        position,
+    }
 }
 
 impl Drop for Server {
@@ -592,17 +752,7 @@ fn notification_test() {
     let src = std::fs::read_to_string(path).unwrap();
     let server = Project {}.server(InitializeParams::default());
 
-    // Mock open file
-    server.notification::<lsp_types::notification::DidOpenTextDocument>(
-        lsp_types::DidOpenTextDocumentParams {
-            text_document: TextDocumentItem {
-                uri: Url::from_file_path(path).unwrap(),
-                language_id: "KCL".to_string(),
-                version: 0,
-                text: src,
-            },
-        },
-    );
+    server.open_file(path, src);
 
     // Wait for first "textDocument/publishDiagnostics" notification
     server.wait_for_message_cond(1, &|msg: &Message| match msg {
@@ -641,38 +791,10 @@ fn close_file_test() {
     let src = std::fs::read_to_string(path).unwrap();
     let server = Project {}.server(InitializeParams::default());
 
-    // Mock open file
-    server.notification::<lsp_types::notification::DidOpenTextDocument>(
-        lsp_types::DidOpenTextDocumentParams {
-            text_document: TextDocumentItem {
-                uri: Url::from_file_path(path).unwrap(),
-                language_id: "KCL".to_string(),
-                version: 0,
-                text: src.clone(),
-            },
-        },
-    );
-
-    // Mock close file
-    server.notification::<lsp_types::notification::DidCloseTextDocument>(
-        lsp_types::DidCloseTextDocumentParams {
-            text_document: TextDocumentIdentifier {
-                uri: Url::from_file_path(path).unwrap(),
-            },
-        },
-    );
-
-    // Mock reopen file
-    server.notification::<lsp_types::notification::DidOpenTextDocument>(
-        lsp_types::DidOpenTextDocumentParams {
-            text_document: TextDocumentItem {
-                uri: Url::from_file_path(path).unwrap(),
-                language_id: "KCL".to_string(),
-                version: 0,
-                text: src,
-            },
-        },
-    );
+    server.open_file(path, src.clone());
+    server.close_file(path);
+    // Reopen the file after closing it
+    server.open_file(path, src);
 }
 
 #[test]
@@ -684,34 +806,9 @@ fn non_kcl_file_test() {
     path.push("src/test_data/diagnostics.kcl");
 
     // Mock open a Non-KCL file
-    server.notification::<lsp_types::notification::DidOpenTextDocument>(
-        lsp_types::DidOpenTextDocumentParams {
-            text_document: TextDocumentItem {
-                uri: Url::from_file_path(path.clone()).unwrap(),
-                language_id: "KCL".to_string(),
-                version: 0,
-                text: "".to_string(),
-            },
-        },
-    );
+    server.open_file(&path, "");
 
-    let id = server.next_request_id.get();
-    server.next_request_id.set(id.wrapping_add(1));
-
-    let r: Request = Request::new(
-        id.into(),
-        "textDocument/documentSymbol".to_string(),
-        DocumentSymbolParams {
-            text_document: TextDocumentIdentifier {
-                uri: Url::from_file_path(path).unwrap(),
-            },
-            work_done_progress_params: Default::default(),
-            partial_result_params: Default::default(),
-        },
-    );
-
-    // Send request and wait for it's response
-    let res = server.send_and_receive(r);
+    let res = server.document_symbol(&path);
     assert!(res.result.is_some());
 }
 
@@ -726,37 +823,20 @@ fn cancel_test() {
     let src = std::fs::read_to_string(path).unwrap();
     let server = Project {}.server(InitializeParams::default());
 
-    // Mock open file
-    server.notification::<lsp_types::notification::DidOpenTextDocument>(
-        lsp_types::DidOpenTextDocumentParams {
-            text_document: TextDocumentItem {
-                uri: Url::from_file_path(path).unwrap(),
-                language_id: "KCL".to_string(),
-                version: 0,
-                text: src,
-            },
-        },
-    );
+    server.open_file(path, src);
 
     let id = server.next_request_id.get();
     server.next_request_id.set(id.wrapping_add(1));
 
     // send request
     server.send_request::<lsp_types::request::GotoDefinition>(GotoDefinitionParams {
-        text_document_position_params: TextDocumentPositionParams {
-            text_document: TextDocumentIdentifier {
-                uri: Url::from_file_path(path).unwrap(),
-            },
-            position: Position::new(23, 9),
-        },
+        text_document_position_params: text_document_position(path, Position::new(23, 9)),
         work_done_progress_params: Default::default(),
         partial_result_params: Default::default(),
     });
 
     // cancel request
-    server.notification::<lsp_types::notification::Cancel>(lsp_types::CancelParams {
-        id: NumberOrString::Number(id),
-    });
+    server.cancel_request(id);
 
     assert!(server.receive_response(id.into()).is_none());
 }
@@ -775,38 +855,9 @@ fn goto_def_test() {
     let src = std::fs::read_to_string(path).unwrap();
     let server = Project {}.server(InitializeParams::default());
 
-    // Mock open file
-    server.notification::<lsp_types::notification::DidOpenTextDocument>(
-        lsp_types::DidOpenTextDocumentParams {
-            text_document: TextDocumentItem {
-                uri: Url::from_file_path(path).unwrap(),
-                language_id: "KCL".to_string(),
-                version: 0,
-                text: src,
-            },
-        },
-    );
+    server.open_file(path, src);
 
-    let id = server.next_request_id.get();
-    server.next_request_id.set(id.wrapping_add(1));
-
-    let r: Request = Request::new(
-        id.into(),
-        "textDocument/definition".to_string(),
-        GotoDefinitionParams {
-            text_document_position_params: TextDocumentPositionParams {
-                text_document: TextDocumentIdentifier {
-                    uri: Url::from_file_path(path).unwrap(),
-                },
-                position: Position::new(23, 9),
-            },
-            work_done_progress_params: Default::default(),
-            partial_result_params: Default::default(),
-        },
-    );
-
-    // Send request and wait for it's response
-    let res = server.send_and_receive(r);
+    let res = server.goto_def(path, Position::new(23, 9));
 
     assert_eq!(
         res.result.unwrap(),
@@ -833,35 +884,9 @@ fn code_lens_test() {
     let src = std::fs::read_to_string(path).unwrap();
     let server = Project {}.server(InitializeParams::default());
 
-    // Mock open file
-    server.notification::<lsp_types::notification::DidOpenTextDocument>(
-        lsp_types::DidOpenTextDocumentParams {
-            text_document: TextDocumentItem {
-                uri: Url::from_file_path(path).unwrap(),
-                language_id: "KCL".to_string(),
-                version: 0,
-                text: src,
-            },
-        },
-    );
+    server.open_file(path, src);
 
-    let id = server.next_request_id.get();
-    server.next_request_id.set(id.wrapping_add(1));
-
-    let r: Request = Request::new(
-        id.into(),
-        "textDocument/codeLens".to_string(),
-        CodeLensParams {
-            text_document: TextDocumentIdentifier {
-                uri: Url::from_file_path(path).unwrap(),
-            },
-            work_done_progress_params: Default::default(),
-            partial_result_params: Default::default(),
-        },
-    );
-
-    // Send request and wait for it's response
-    let res = server.send_and_receive(r);
+    let res = server.code_lens(path);
     let lens: Vec<CodeLens> = serde_json::from_value(res.result.unwrap()).unwrap();
 
     assert_eq!(lens.len(), 2);
@@ -891,42 +916,9 @@ fn complete_test() {
     let src = std::fs::read_to_string(path).unwrap();
     let server = Project {}.server(InitializeParams::default());
 
-    // Mock open file
-    server.notification::<lsp_types::notification::DidOpenTextDocument>(
-        lsp_types::DidOpenTextDocumentParams {
-            text_document: TextDocumentItem {
-                uri: Url::from_file_path(path).unwrap(),
-                language_id: "KCL".to_string(),
-                version: 0,
-                text: src,
-            },
-        },
-    );
+    server.open_file(path, src);
 
-    let id = server.next_request_id.get();
-    server.next_request_id.set(id.wrapping_add(1));
-
-    let r: Request = Request::new(
-        id.into(),
-        "textDocument/completion".to_string(),
-        CompletionParams {
-            text_document_position: TextDocumentPositionParams {
-                text_document: TextDocumentIdentifier {
-                    uri: Url::from_file_path(path).unwrap(),
-                },
-                position: Position::new(11, 7),
-            },
-            work_done_progress_params: Default::default(),
-            partial_result_params: Default::default(),
-            context: Some(CompletionContext {
-                trigger_kind: CompletionTriggerKind::TRIGGER_CHARACTER,
-                trigger_character: Some(".".to_string()),
-            }),
-        },
-    );
-
-    // Send request and wait for it's response
-    let res = server.send_and_receive(r);
+    let res = server.complete(path, Position::new(11, 7), ".");
 
     assert_eq!(
         res.result.unwrap(),
@@ -963,80 +955,29 @@ fn complete_with_version_test() {
     let src = std::fs::read_to_string(path).unwrap();
     let server = Project {}.server(InitializeParams::default());
 
-    // Mock open file
-    server.notification::<lsp_types::notification::DidOpenTextDocument>(
-        lsp_types::DidOpenTextDocumentParams {
-            text_document: TextDocumentItem {
-                uri: Url::from_file_path(path).unwrap(),
-                language_id: "KCL".to_string(),
-                version: 0,
-                text: src,
-            },
-        },
+    server.open_file(path, src);
+    server.change_file(
+        path,
+        1,
+        vec![TextDocumentContentChangeEvent {
+            range: None,
+            range_length: None,
+            text: "schema Name:\n    name: str\n\nname1 = \"\"\n\nname: Name{\n    \n}".to_string(),
+        }],
     );
 
-    server.notification::<lsp_types::notification::DidChangeTextDocument>(
-        lsp_types::DidChangeTextDocumentParams {
-            text_document: lsp_types::VersionedTextDocumentIdentifier {
-                uri: Url::from_file_path(path).unwrap(),
-                version: 1,
-            },
-            content_changes: vec![TextDocumentContentChangeEvent {
-                range: None,
-                range_length: None,
-                text: "schema Name:\n    name: str\n\nname1 = \"\"\n\nname: Name{\n    \n}"
-                    .to_string(),
-            }],
-        },
+    let res = server.complete(path, Position::new(6, 4), "\n");
+
+    assert_eq!(
+        res.result.unwrap(),
+        to_json(CompletionResponse::Array(vec![CompletionItem {
+            label: "name".to_string(),
+            kind: Some(CompletionItemKind::FIELD),
+            detail: Some("name: str".to_string()),
+            ..Default::default()
+        },]))
+        .unwrap()
     );
-
-    let id = server.next_request_id.get();
-    server.next_request_id.set(id.wrapping_add(1));
-
-    let r: Request = Request::new(
-        id.into(),
-        "textDocument/completion".to_string(),
-        CompletionParams {
-            text_document_position: TextDocumentPositionParams {
-                text_document: TextDocumentIdentifier {
-                    uri: Url::from_file_path(path).unwrap(),
-                },
-                position: Position::new(6, 4),
-            },
-            work_done_progress_params: Default::default(),
-            partial_result_params: Default::default(),
-            context: Some(CompletionContext {
-                trigger_kind: CompletionTriggerKind::TRIGGER_CHARACTER,
-                trigger_character: Some("\n".to_string()),
-            }),
-        },
-    );
-
-    let id = r.id.clone();
-    server.client.sender.send(r.into()).unwrap();
-
-    while let Some(msg) = server.recv() {
-        match msg {
-            Message::Request(req) => {
-                panic!("did not expect a request as a response to a request: {req:?}")
-            }
-            Message::Notification(_) => (),
-            Message::Response(res) => {
-                assert_eq!(res.id, id);
-                assert_eq!(
-                    res.result.unwrap(),
-                    to_json(CompletionResponse::Array(vec![CompletionItem {
-                        label: "name".to_string(),
-                        kind: Some(CompletionItemKind::FIELD),
-                        detail: Some("name: str".to_string()),
-                        ..Default::default()
-                    },]))
-                    .unwrap()
-                );
-                break;
-            }
-        }
-    }
 }
 
 #[test]
@@ -1052,37 +993,9 @@ fn hover_test() {
     let src = std::fs::read_to_string(path).unwrap();
     let server = Project {}.server(InitializeParams::default());
 
-    // Mock open file
-    server.notification::<lsp_types::notification::DidOpenTextDocument>(
-        lsp_types::DidOpenTextDocumentParams {
-            text_document: TextDocumentItem {
-                uri: Url::from_file_path(path).unwrap(),
-                language_id: "KCL".to_string(),
-                version: 0,
-                text: src,
-            },
-        },
-    );
+    server.open_file(path, src);
 
-    let id = server.next_request_id.get();
-    server.next_request_id.set(id.wrapping_add(1));
-
-    let r: Request = Request::new(
-        id.into(),
-        "textDocument/hover".to_string(),
-        HoverParams {
-            text_document_position_params: TextDocumentPositionParams {
-                text_document: TextDocumentIdentifier {
-                    uri: Url::from_file_path(path).unwrap(),
-                },
-                position: Position::new(15, 7),
-            },
-            work_done_progress_params: Default::default(),
-        },
-    );
-
-    // Send request and wait for it's response
-    let res = server.send_and_receive(r);
+    let res = server.hover(path, Position::new(15, 7));
 
     assert_eq!(
         res.result.unwrap(),
@@ -1112,37 +1025,9 @@ fn hover_assign_in_lambda_test() {
     let src = std::fs::read_to_string(path).unwrap();
     let server = Project {}.server(InitializeParams::default());
 
-    // Mock open file
-    server.notification::<lsp_types::notification::DidOpenTextDocument>(
-        lsp_types::DidOpenTextDocumentParams {
-            text_document: TextDocumentItem {
-                uri: Url::from_file_path(path).unwrap(),
-                language_id: "KCL".to_string(),
-                version: 0,
-                text: src,
-            },
-        },
-    );
+    server.open_file(path, src);
 
-    let id = server.next_request_id.get();
-    server.next_request_id.set(id.wrapping_add(1));
-
-    let r: Request = Request::new(
-        id.into(),
-        "textDocument/hover".to_string(),
-        HoverParams {
-            text_document_position_params: TextDocumentPositionParams {
-                text_document: TextDocumentIdentifier {
-                    uri: Url::from_file_path(path).unwrap(),
-                },
-                position: Position::new(4, 7),
-            },
-            work_done_progress_params: Default::default(),
-        },
-    );
-
-    // Send request and wait for it's response
-    let res = server.send_and_receive(r);
+    let res = server.hover(path, Position::new(4, 7));
 
     assert_eq!(
         res.result.unwrap(),
@@ -1170,35 +1055,9 @@ fn formatting_test() {
     let src = std::fs::read_to_string(path).unwrap();
     let server = Project {}.server(InitializeParams::default());
 
-    // Mock open file
-    server.notification::<lsp_types::notification::DidOpenTextDocument>(
-        lsp_types::DidOpenTextDocumentParams {
-            text_document: TextDocumentItem {
-                uri: Url::from_file_path(path).unwrap(),
-                language_id: "KCL".to_string(),
-                version: 0,
-                text: src,
-            },
-        },
-    );
+    server.open_file(path, src);
 
-    let id = server.next_request_id.get();
-    server.next_request_id.set(id.wrapping_add(1));
-
-    let r: Request = Request::new(
-        id.into(),
-        "textDocument/formatting".to_string(),
-        DocumentFormattingParams {
-            text_document: TextDocumentIdentifier {
-                uri: Url::from_file_path(path).unwrap(),
-            },
-            options: Default::default(),
-            work_done_progress_params: Default::default(),
-        },
-    );
-
-    // Send request and wait for it's response
-    let res = server.send_and_receive(r);
+    let res = server.formatting(path);
 
     assert_eq!(
         res.result.unwrap(),
@@ -1224,55 +1083,20 @@ fn formatting_unsaved_test() {
     let src = std::fs::read_to_string(path).unwrap();
     let server = Project {}.server(InitializeParams::default());
 
-    let uri = Url::from_file_path(path).unwrap();
-
-    // Mock open file
-    server.notification::<lsp_types::notification::DidOpenTextDocument>(
-        lsp_types::DidOpenTextDocumentParams {
-            text_document: TextDocumentItem {
-                uri: uri.clone(),
-                language_id: "KCL".to_string(),
-                version: 0,
-                text: src,
-            },
-        },
-    );
+    server.open_file(path, src);
 
     // Mock edit file
-    server.notification::<lsp_types::notification::DidChangeTextDocument>(
-        lsp_types::DidChangeTextDocumentParams {
-            text_document: lsp_types::VersionedTextDocumentIdentifier {
-                uri: uri.clone(),
-                version: 1,
-            },
-            content_changes: vec![lsp_types::TextDocumentContentChangeEvent {
-                range: Some(lsp_types::Range::new(
-                    lsp_types::Position::new(0, 0),
-                    lsp_types::Position::new(0, 0),
-                )),
-                range_length: Some(0),
-                text: String::from("unsaved = 0\n"),
-            }],
-        },
+    server.change_file(
+        path,
+        1,
+        vec![TextDocumentContentChangeEvent {
+            range: Some(Range::new(Position::new(0, 0), Position::new(0, 0))),
+            range_length: Some(0),
+            text: String::from("unsaved = 0\n"),
+        }],
     );
 
-    let id = server.next_request_id.get();
-    server.next_request_id.set(id.wrapping_add(1));
-
-    let r: Request = Request::new(
-        id.into(),
-        "textDocument/formatting".to_string(),
-        DocumentFormattingParams {
-            text_document: TextDocumentIdentifier {
-                uri: Url::from_file_path(path).unwrap(),
-            },
-            options: Default::default(),
-            work_done_progress_params: Default::default(),
-        },
-    );
-
-    // Send request and wait for it's response
-    let res = server.send_and_receive(r);
+    let res = server.formatting(path);
 
     assert_eq!(
         res.result.unwrap(),
@@ -1315,17 +1139,7 @@ fn mod_file_watcher_test() {
     };
     let server = Project {}.server(initialize_params);
 
-    // Mock open file
-    server.notification::<lsp_types::notification::DidOpenTextDocument>(
-        lsp_types::DidOpenTextDocumentParams {
-            text_document: TextDocumentItem {
-                uri: Url::from_file_path(main_path.clone()).unwrap(),
-                language_id: "KCL".to_string(),
-                version: 0,
-                text: main_src,
-            },
-        },
-    );
+    server.open_file(&main_path, main_src);
 
     let _ = Command::new("kcl")
         .arg("mod")
@@ -1338,25 +1152,7 @@ fn mod_file_watcher_test() {
     // wait for download dependence
     wait_async!(2000);
 
-    let id = server.next_request_id.get();
-    server.next_request_id.set(id.wrapping_add(1));
-
-    let r: Request = Request::new(
-        id.into(),
-        "textDocument/hover".to_string(),
-        HoverParams {
-            text_document_position_params: TextDocumentPositionParams {
-                text_document: TextDocumentIdentifier {
-                    uri: Url::from_file_path(main_path).unwrap(),
-                },
-                position: Position::new(0, 8),
-            },
-            work_done_progress_params: Default::default(),
-        },
-    );
-
-    // Send request and wait for it's response
-    let res = server.send_and_receive(r);
+    let res = server.hover(&main_path, Position::new(0, 8));
 
     std::fs::write(mod_file_path, mod_src_bac).unwrap();
     assert_eq!(
@@ -1444,39 +1240,9 @@ fn find_refs_test() {
 
     let url = Url::from_file_path(path).unwrap();
 
-    // Mock open file
-    server.notification::<lsp_types::notification::DidOpenTextDocument>(
-        lsp_types::DidOpenTextDocumentParams {
-            text_document: TextDocumentItem {
-                uri: url.clone(),
-                language_id: "KCL".to_string(),
-                version: 0,
-                text: src,
-            },
-        },
-    );
+    server.open_file(path, src);
 
-    let id = server.next_request_id.get();
-    server.next_request_id.set(id.wrapping_add(1));
-
-    let r: Request = Request::new(
-        id.into(),
-        "textDocument/references".to_string(),
-        ReferenceParams {
-            text_document_position: TextDocumentPositionParams {
-                text_document: TextDocumentIdentifier { uri: url.clone() },
-                position: Position::new(0, 1),
-            },
-            work_done_progress_params: Default::default(),
-            partial_result_params: Default::default(),
-            context: ReferenceContext {
-                include_declaration: true,
-            },
-        },
-    );
-
-    // Send request and wait for it's response
-    let res = server.send_and_receive(r);
+    let res = server.find_refs(path, Position::new(0, 1));
 
     assert_eq!(
         res.result.unwrap(),
@@ -1539,29 +1305,16 @@ fn find_refs_with_file_change_test() {
 
     let url = Url::from_file_path(path).unwrap();
 
-    // Mock open file
-    server.notification::<lsp_types::notification::DidOpenTextDocument>(
-        lsp_types::DidOpenTextDocumentParams {
-            text_document: TextDocumentItem {
-                uri: url.clone(),
-                language_id: "KCL".to_string(),
-                version: 0,
-                text: src,
-            },
-        },
-    );
+    server.open_file(path, src);
 
     // Mock change file content
-    server.notification::<lsp_types::notification::DidChangeTextDocument>(
-        lsp_types::DidChangeTextDocumentParams {
-            text_document: lsp_types::VersionedTextDocumentIdentifier {
-                uri: url.clone(),
-                version: 1,
-            },
-            content_changes: vec![lsp_types::TextDocumentContentChangeEvent {
-                range: None,
-                range_length: None,
-                text: r#"a = "demo"
+    server.change_file(
+        path,
+        1,
+        vec![TextDocumentContentChangeEvent {
+            range: None,
+            range_length: None,
+            text: r#"a = "demo"
 
 schema Name:
     name: str
@@ -1574,32 +1327,12 @@ p2 = Person {
         name: a
     }
 }"#
-                .to_string(),
-            }],
-        },
+            .to_string(),
+        }],
     );
 
-    let id = server.next_request_id.get();
-    server.next_request_id.set(id.wrapping_add(1));
     // Mock trigger find references
-    let r: Request = Request::new(
-        id.into(),
-        "textDocument/references".to_string(),
-        ReferenceParams {
-            text_document_position: TextDocumentPositionParams {
-                text_document: TextDocumentIdentifier { uri: url.clone() },
-                position: Position::new(0, 1),
-            },
-            work_done_progress_params: Default::default(),
-            partial_result_params: Default::default(),
-            context: ReferenceContext {
-                include_declaration: true,
-            },
-        },
-    );
-
-    // Send request and wait for it's response
-    let res = server.send_and_receive(r);
+    let res = server.find_refs(path, Position::new(0, 1));
     assert_eq!(
         res.result.unwrap(),
         to_json(vec![
@@ -1649,37 +1382,10 @@ fn rename_test() {
     let url = Url::from_file_path(path).unwrap();
     let main_url = Url::from_file_path(main_path).unwrap();
 
-    // Mock open file
-    server.notification::<lsp_types::notification::DidOpenTextDocument>(
-        lsp_types::DidOpenTextDocumentParams {
-            text_document: TextDocumentItem {
-                uri: url.clone(),
-                language_id: "KCL".to_string(),
-                version: 0,
-                text: src,
-            },
-        },
-    );
-
-    let id = server.next_request_id.get();
-    server.next_request_id.set(id.wrapping_add(1));
+    server.open_file(path, src);
 
     let new_name = String::from("Person2");
-    let r: Request = Request::new(
-        id.into(),
-        "textDocument/rename".to_string(),
-        RenameParams {
-            text_document_position: TextDocumentPositionParams {
-                text_document: TextDocumentIdentifier { uri: url.clone() },
-                position: Position::new(0, 7),
-            },
-            new_name: new_name.clone(),
-            work_done_progress_params: Default::default(),
-        },
-    );
-
-    // Send request and wait for it's response
-    let res = server.send_and_receive(r);
+    let res = server.rename(path, Position::new(0, 7), &new_name);
     let expect = WorkspaceEdit {
         changes: Some(HashMap::from_iter(vec![
             (
@@ -1921,71 +1627,16 @@ fn init_workspace_sema_token_test() {
     };
     let server = Project {}.server(initialize_params);
 
-    let a_url = Url::from_file_path(a_path).unwrap();
-    let c_url = Url::from_file_path(c_path).unwrap();
-
     // Mock open file in init workspace
-    server.notification::<lsp_types::notification::DidOpenTextDocument>(
-        lsp_types::DidOpenTextDocumentParams {
-            text_document: TextDocumentItem {
-                uri: a_url.clone(),
-                language_id: "KCL".to_string(),
-                version: 0,
-                text: a_src,
-            },
-        },
-    );
+    server.open_file(a_path, a_src);
 
-    let id = server.next_request_id.get();
-    server.next_request_id.set(id.wrapping_add(1));
-
-    let r: Request = Request::new(
-        id.into(),
-        "textDocument/semanticTokens/full".to_string(),
-        SemanticTokensParams {
-            text_document: TextDocumentIdentifier { uri: a_url },
-            work_done_progress_params: WorkDoneProgressParams {
-                work_done_token: None,
-            },
-            partial_result_params: PartialResultParams {
-                partial_result_token: None,
-            },
-        },
-    );
-
-    let res = server.send_and_receive(r);
+    let res = server.semantic_tokens_full(a_path);
     assert!(res.result.is_some());
 
     // Mock open file not in init workspace
-    server.notification::<lsp_types::notification::DidOpenTextDocument>(
-        lsp_types::DidOpenTextDocumentParams {
-            text_document: TextDocumentItem {
-                uri: c_url.clone(),
-                language_id: "KCL".to_string(),
-                version: 0,
-                text: c_src,
-            },
-        },
-    );
+    server.open_file(c_path, c_src);
 
-    let id = server.next_request_id.get();
-    server.next_request_id.set(id.wrapping_add(1));
-
-    let r: Request = Request::new(
-        id.into(),
-        "textDocument/semanticTokens/full".to_string(),
-        SemanticTokensParams {
-            text_document: TextDocumentIdentifier { uri: c_url },
-            work_done_progress_params: WorkDoneProgressParams {
-                work_done_token: None,
-            },
-            partial_result_params: PartialResultParams {
-                partial_result_token: None,
-            },
-        },
-    );
-
-    let res = server.send_and_receive(r);
+    let res = server.semantic_tokens_full(c_path);
     assert!(res.result.is_some());
 }
 
