@@ -1,0 +1,25 @@
+---
+source: crates/tools/src/LSP/src/hover.rs
+expression: "format! (\"{:#?}\", res)"
+---
+Some(
+    Hover {
+        contents: Array(
+            [
+                String(
+                    "str\n\n",
+                ),
+                LanguageString(
+                    LanguageString {
+                        language: "KCL",
+                        value: "function count(sub: str, start: int, end: int) -> int",
+                    },
+                ),
+                String(
+                    "Return the number of non-overlapping occurrences of substring sub in the range [start, end]. Optional arguments start and end are interpreted as in slice notation.",
+                ),
+            ],
+        ),
+        range: None,
+    },
+)

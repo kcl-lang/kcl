@@ -1,0 +1,22 @@
+---
+source: crates/tools/src/LSP/src/hover.rs
+expression: "format! (\"{:#?}\", res)"
+---
+Some(
+    Hover {
+        contents: Array(
+            [
+                LanguageString(
+                    LanguageString {
+                        language: "KCL",
+                        value: "function encode(value: str, encoding: str) -> str",
+                    },
+                ),
+                String(
+                    "Encode the string `value` using the codec registered for encoding.",
+                ),
+            ],
+        ),
+        range: None,
+    },
+)

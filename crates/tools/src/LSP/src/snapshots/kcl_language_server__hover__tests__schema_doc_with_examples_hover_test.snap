@@ -1,0 +1,31 @@
+---
+source: crates/tools/src/LSP/src/hover.rs
+expression: "format! (\"{:#?}\", res)"
+---
+Some(
+    Hover {
+        contents: Array(
+            [
+                String(
+                    "__main__",
+                ),
+                LanguageString(
+                    LanguageString {
+                        language: "KCL",
+                        value: "schema Server:\n    workloadType: str = \"Deployment\"\n    name: str\n    labels?: {str:str}",
+                    },
+                ),
+                String(
+                    "Server is an abstraction of Deployment and StatefulSet.",
+                ),
+                LanguageString(
+                    LanguageString {
+                        language: "KCL",
+                        value: "import models.kube.frontend\nimport models.kube.frontend.container\nimport models.kube.templates.resource as res_tpl\n\nappConfiguration: frontend.Server {\n    mainContainer = container.Main {\n        name = \"php-redis\"\n        env: {\n            \"GET_HOSTS_FROM\": {value = \"dns\"}\n        }\n    }\n}\n",
+                    },
+                ),
+            ],
+        ),
+        range: None,
+    },
+)

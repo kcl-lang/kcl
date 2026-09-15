@@ -1,0 +1,22 @@
+---
+source: crates/tools/src/LSP/src/hover.rs
+expression: "format! (\"{:#?}\", res)"
+---
+Some(
+    Hover {
+        contents: Array(
+            [
+                LanguageString(
+                    LanguageString {
+                        language: "KCL",
+                        value: "function deprecated(version: str, reason: str, strict: bool) -> any",
+                    },
+                ),
+                String(
+                    "This decorator is used to get the deprecation message according to the wrapped key-value pair.",
+                ),
+            ],
+        ),
+        range: None,
+    },
+)

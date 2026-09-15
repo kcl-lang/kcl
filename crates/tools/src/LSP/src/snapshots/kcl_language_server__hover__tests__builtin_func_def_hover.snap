@@ -1,0 +1,22 @@
+---
+source: crates/tools/src/LSP/src/hover.rs
+expression: "format! (\"{:#?}\", res)"
+---
+Some(
+    Hover {
+        contents: Array(
+            [
+                LanguageString(
+                    LanguageString {
+                        language: "KCL",
+                        value: "function print() -> NoneType",
+                    },
+                ),
+                String(
+                    "Prints the values to a stream, or to the system stdout by default.\n\nOptional keyword arguments:\n\nsep:   string inserted between values, default a space.\n\nend:   string appended after the last value, default a newline.",
+                ),
+            ],
+        ),
+        range: None,
+    },
+)
