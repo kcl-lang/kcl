@@ -63,6 +63,8 @@ A detailed feature and scenario comparison is [here](https://kcl-lang.io/docs/us
 
 For more information about installation, please check the [Installation Guide](https://kcl-lang.io/docs/user_docs/getting-started/install/) on the KCL official website.
 
+Alternatively, you can follow the interactive [KubeStellar Console Guided Install Mission](https://console.kubestellar.io/missions/install-kcl) for step-by-step installation with automated pre-flight checks and cluster validation.
+
 ## Documentation
 
 Detailed documentation is available at [KCL Website](https://kcl-lang.io/)

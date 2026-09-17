@@ -62,7 +62,9 @@ KCL 是一个开源的基于约束的记录及函数语言并通过成熟的编�
 
 ## 安装
 
-有关安装的更多信息，请查看 KCL 官网的[安装指南](https://kcl-lang.io/docs/user_docs/getting-started/install/)
+有关安装的更多信息，请查看 KCL 官网的[安装指南](https://kcl-lang.io/docs/user_docs/getting-started/install/)。
+
+此外，你也可以通过交互式的 [KubeStellar Console 引导式安装任务](https://console.kubestellar.io/missions/install-kcl) 体验带有前置检查与结果验证的分步安装。
 
 ## 文档
 
