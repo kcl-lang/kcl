@@ -254,7 +254,10 @@ mod tests {
             "unexpected error message: {err}"
         );
 
-        let err = tool.fetch_metadata(PathBuf::from(".")).unwrap_err().to_string();
+        let err = tool
+            .fetch_metadata(PathBuf::from("."))
+            .unwrap_err()
+            .to_string();
         assert!(
             err.contains("not found in PATH"),
             "unexpected error message: {err}"
