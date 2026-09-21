@@ -1,10 +1,14 @@
 use std::collections::HashMap;
 
+use kcl_config::modfile::get_pkg_root;
 use kcl_error::{DiagnosticId, ErrorKind, WarningKind};
 use lsp_types::{
-    CodeAction, CodeActionKind, CodeActionOrCommand, Diagnostic, NumberOrString, TextEdit, Url,
+    CodeAction, CodeActionKind, CodeActionOrCommand, Command, Diagnostic, NumberOrString, TextEdit,
+    Url,
 };
 use serde_json::Value;
+
+use crate::mod_update::UPDATE_DEPENDENCIES_COMMAND;
 
 pub fn quick_fix(uri: &Url, diags: &[Diagnostic]) -> Vec<lsp_types::CodeActionOrCommand> {
     let mut code_actions: Vec<lsp_types::CodeActionOrCommand> = vec![];
@@ -68,6 +72,24 @@ pub fn quick_fix(uri: &Url, diags: &[Diagnostic]) -> Vec<lsp_types::CodeActionOr
                                     ..Default::default()
                                 }),
                                 ..Default::default()
+                            }));
+                        }
+                    }
+                    ErrorKind::CannotFindModule => {
+                        // The imported package may not be downloaded yet —
+                        // offer to update the dependencies through `kcl mod update`.
+                        let mod_dir = crate::from_lsp::abs_path(uri).ok().and_then(|path| {
+                            let std_path: &std::path::Path = path.as_ref();
+                            std_path
+                                .to_str()
+                                .and_then(get_pkg_root)
+                                .map(std::path::PathBuf::from)
+                        });
+                        if let Some(dir) = mod_dir {
+                            code_actions.push(CodeActionOrCommand::Command(Command {
+                                title: "Update dependencies (kcl mod update)".to_string(),
+                                command: UPDATE_DEPENDENCIES_COMMAND.to_string(),
+                                arguments: Some(vec![Value::String(dir.display().to_string())]),
                             }));
                         }
                     }
@@ -148,6 +170,7 @@ pub(crate) fn convert_code_to_kcl_diag_id(code: &NumberOrString) -> Option<Diagn
             "ReimportWarning" => Some(DiagnosticId::Warning(WarningKind::ReimportWarning)),
             "CompileError" => Some(DiagnosticId::Error(ErrorKind::CompileError)),
             "InvalidSyntax" => Some(DiagnosticId::Error(ErrorKind::InvalidSyntax)),
+            "CannotFindModule" => Some(DiagnosticId::Error(ErrorKind::CannotFindModule)),
             "ImportPositionWarning" => {
                 Some(DiagnosticId::Warning(WarningKind::ImportPositionWarning))
             }
@@ -159,13 +182,15 @@ pub(crate) fn convert_code_to_kcl_diag_id(code: &NumberOrString) -> Option<Diagn
 #[cfg(test)]
 mod tests {
     use lsp_types::{
-        CodeAction, CodeActionKind, CodeActionOrCommand, Diagnostic, Position, Range, TextEdit,
-        Url, WorkspaceEdit,
+        CodeAction, CodeActionKind, CodeActionOrCommand, Diagnostic, DiagnosticSeverity,
+        NumberOrString, Position, Range, TextEdit, Url, WorkspaceEdit,
     };
     use proc_macro_crate::bench_test;
     use std::path::PathBuf;
 
-    use super::quick_fix;
+    use kcl_utils::path::PathPrefix;
+
+    use super::{UPDATE_DEPENDENCIES_COMMAND, quick_fix};
     use crate::{
         compile::{Params, compile_with_params},
         state::KCLVfs,
@@ -269,5 +294,66 @@ mod tests {
 
         assert_eq!(expected[0], code_actions[0]);
         assert_eq!(expected[1], code_actions[1]);
+    }
+
+    #[test]
+    #[bench_test]
+    fn cannot_find_module_quick_fix_test() {
+        let dir = std::env::temp_dir().join(format!(
+            "kcl-lsp-quick-fix-{}-{}",
+            std::process::id(),
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("kcl.mod"),
+            "[package]\nname = \"quick_fix_test\"\n",
+        )
+        .unwrap();
+        let test_file = dir.join("main.k");
+        std::fs::write(&test_file, "import nonexistent_pkg\n").unwrap();
+
+        let diag = Diagnostic {
+            range: Range {
+                start: Position {
+                    line: 0,
+                    character: 0,
+                },
+                end: Position {
+                    line: 0,
+                    character: 5,
+                },
+            },
+            severity: Some(DiagnosticSeverity::ERROR),
+            code: Some(NumberOrString::String("CannotFindModule".to_string())),
+            code_description: None,
+            source: Some("kcl".to_string()),
+            message: "Cannot find the module nonexistent_pkg".to_string(),
+            related_information: None,
+            tags: None,
+            data: None,
+        };
+
+        let uri = Url::from_file_path(&test_file).unwrap();
+        let code_actions = quick_fix(&uri, &[diag]);
+
+        assert_eq!(code_actions.len(), 1);
+        match &code_actions[0] {
+            CodeActionOrCommand::Command(command) => {
+                assert_eq!(command.title, "Update dependencies (kcl mod update)");
+                assert_eq!(command.command, UPDATE_DEPENDENCIES_COMMAND);
+                let arguments = command.arguments.as_ref().unwrap();
+                // The argument comes from `get_pkg_root`, which normalizes
+                // the canonicalized path (strips the `\\?\` UNC prefix on
+                // Windows).
+                assert_eq!(
+                    PathBuf::from(arguments[0].as_str().unwrap()),
+                    PathBuf::from(dir.canonicalize().unwrap().adjust_canonicalization())
+                );
+            }
+            _ => panic!("expected a command quick fix, got {:?}", code_actions[0]),
+        }
+
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

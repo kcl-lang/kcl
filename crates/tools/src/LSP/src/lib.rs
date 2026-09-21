@@ -8,6 +8,7 @@ pub mod formatting;
 pub mod goto_def;
 pub mod hover;
 pub mod inlay_hints;
+pub mod mod_update;
 pub mod quick_fix;
 pub mod rename;
 pub mod request;

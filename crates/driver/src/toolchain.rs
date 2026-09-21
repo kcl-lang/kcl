@@ -1,5 +1,5 @@
 use crate::{kcl, lookup_the_nearest_file_dir};
-use anyhow::{Result, bail};
+use anyhow::{Result, anyhow, bail};
 use kcl_config::modfile::KCL_MOD_FILE;
 use kcl_parser::LoadProgramOptions;
 use kcl_utils::pkgpath::external_pkgpath_to_rel_path_buf;
@@ -54,6 +54,19 @@ impl Default for CommandToolchain<PathBuf> {
     }
 }
 
+/// Builds a helpful error when the `kcl` executable cannot be spawned,
+/// e.g. when the CLI is not installed or not on `PATH`.
+fn command_spawn_error(operation: &str, err: std::io::Error) -> anyhow::Error {
+    if err.kind() == std::io::ErrorKind::NotFound {
+        anyhow!(
+            "failed to {operation}: the `kcl` CLI executable was not found in PATH. \
+             Install it from https://kcl-lang.io/docs/user_docs/getting-started/install"
+        )
+    } else {
+        anyhow!("failed to {operation} with error: {err}")
+    }
+}
+
 impl<S: AsRef<OsStr> + Send + Sync> Toolchain for CommandToolchain<S> {
     fn fetch_metadata(&self, manifest_path: PathBuf) -> Result<Metadata> {
         match Command::new(&self.path)
@@ -74,7 +87,7 @@ impl<S: AsRef<OsStr> + Send + Sync> Toolchain for CommandToolchain<S> {
                     String::from_utf8_lossy(&output.stdout).to_string(),
                 )?)
             }
-            Err(err) => bail!("fetch metadata failed with error: {}", err),
+            Err(err) => Err(command_spawn_error("fetch metadata", err)),
         }
     }
 
@@ -94,7 +107,7 @@ impl<S: AsRef<OsStr> + Send + Sync> Toolchain for CommandToolchain<S> {
                 }
                 Ok(())
             }
-            Err(err) => bail!("update failed with error: {}", err),
+            Err(err) => Err(command_spawn_error("update dependencies", err)),
         }
     }
 }
@@ -221,4 +234,33 @@ pub fn get_real_path_from_external(
 
     real_path.push(external_pkgpath_to_rel_path_buf(pkgpath));
     real_path
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn missing_cli_reports_install_hint() {
+        let tool = CommandToolchain {
+            path: PathBuf::from("kcl-binary-that-does-not-exist"),
+        };
+        let err = tool
+            .update_dependencies(PathBuf::from("."))
+            .unwrap_err()
+            .to_string();
+        assert!(
+            err.contains("not found in PATH"),
+            "unexpected error message: {err}"
+        );
+
+        let err = tool
+            .fetch_metadata(PathBuf::from("."))
+            .unwrap_err()
+            .to_string();
+        assert!(
+            err.contains("not found in PATH"),
+            "unexpected error message: {err}"
+        );
+    }
 }

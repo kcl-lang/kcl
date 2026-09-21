@@ -4,6 +4,11 @@ use lsp_types::notification::{
 };
 use std::collections::HashSet;
 
+use kcl_config::modfile::KCL_MOD_FILE;
+use kcl_driver::WorkSpaceKind;
+use kcl_utils::path::PathPrefix;
+
+use crate::mod_update::{self, UpdateTrigger};
 use crate::util::apply_document_changes;
 use crate::{
     analysis::OpenFileInfo, dispatcher::NotificationDispatcher, from_lsp,
@@ -71,6 +76,42 @@ impl LanguageServerState {
 
         let path = from_lsp::abs_path(&text_document.uri)?;
         self.log_message(format!("on did save file: {:?}", path));
+
+        // Saving `kcl.mod` may have changed the dependency requirements —
+        // update the dependencies of every workspace rooted at it.
+        if path.file_name().is_some_and(|name| name == KCL_MOD_FILE)
+            && let Some(saved_dir) = {
+                let std_path: &std::path::Path = path.as_ref();
+                std_path
+                    .parent()
+                    .and_then(|parent| parent.canonicalize().ok())
+                    // `canonicalize` returns a `\\?\` UNC path on Windows;
+                    // normalize it (and convert the resulting `String`) to
+                    // match `workspace_mod_dir` (via `get_pkg_root`).
+                    .map(|parent| std::path::PathBuf::from(parent.adjust_canonicalization()))
+            }
+        {
+            let workspaces: Vec<WorkSpaceKind> =
+                self.analysis.workspaces.read().keys().cloned().collect();
+            let temporary_workspaces: Vec<WorkSpaceKind> = self
+                .temporary_workspace
+                .read()
+                .values()
+                .flatten()
+                .cloned()
+                .collect();
+            for workspace in
+                workspaces
+                    .into_iter()
+                    .chain(temporary_workspaces)
+                    .filter(|workspace| {
+                        mod_update::workspace_mod_dir(workspace).as_deref()
+                            == Some(saved_dir.as_path())
+                    })
+            {
+                self.schedule_update_dependencies(workspace, UpdateTrigger::Manual);
+            }
+        }
         Ok(())
     }
 

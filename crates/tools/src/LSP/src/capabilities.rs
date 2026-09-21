@@ -1,11 +1,12 @@
 use lsp_types::{
     ClientCapabilities, CodeActionKind, CodeActionOptions, CodeActionProviderCapability,
-    CodeLensOptions, CompletionOptions, HoverProviderCapability, OneOf, SemanticTokensFullOptions,
-    SemanticTokensLegend, SemanticTokensOptions, ServerCapabilities, SignatureHelpOptions,
-    TextDocumentSyncCapability, TextDocumentSyncKind, WorkDoneProgressOptions,
+    CodeLensOptions, CompletionOptions, ExecuteCommandOptions, HoverProviderCapability, OneOf,
+    SemanticTokensFullOptions, SemanticTokensLegend, SemanticTokensOptions, ServerCapabilities,
+    SignatureHelpOptions, TextDocumentSyncCapability, TextDocumentSyncKind,
+    WorkDoneProgressOptions,
 };
 
-use crate::semantic_token::LEGEND_TYPE;
+use crate::{mod_update::UPDATE_DEPENDENCIES_COMMAND, semantic_token::LEGEND_TYPE};
 
 /// Returns the capabilities of this LSP server implementation given the capabilities of the client.
 pub fn server_capabilities(client_caps: &ClientCapabilities) -> ServerCapabilities {
@@ -72,6 +73,10 @@ pub fn server_capabilities(client_caps: &ClientCapabilities) -> ServerCapabiliti
         }),
         code_lens_provider: Some(CodeLensOptions {
             resolve_provider: Some(false),
+        }),
+        execute_command_provider: Some(ExecuteCommandOptions {
+            commands: vec![UPDATE_DEPENDENCIES_COMMAND.to_string()],
+            ..Default::default()
         }),
         ..Default::default()
     }

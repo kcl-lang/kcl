@@ -3,6 +3,7 @@ use crossbeam_channel::Sender;
 
 use kcl_driver::WorkSpaceKind;
 use kcl_sema::info::is_valid_kcl_name;
+use kcl_utils::path::PathPrefix;
 use lsp_types::{Location, SemanticTokensResult, TextEdit};
 use ra_ap_vfs::VfsPath;
 use std::collections::HashMap;
@@ -22,7 +23,7 @@ use crate::{
     goto_def::goto_def,
     hover,
     inlay_hints::inlay_hints,
-    quick_fix,
+    mod_update, quick_fix,
     semantic_token::semantic_tokens_full,
     signature_help::signature_help,
     state::{LanguageServerSnapshot, LanguageServerState, Task, log_message},
@@ -65,6 +66,7 @@ impl LanguageServerState {
             .on::<lsp_types::request::InlayHintRequest>(handle_inlay_hint)?
             .on::<lsp_types::request::SignatureHelpRequest>(handle_signature_help)?
             .on::<lsp_types::request::CodeLensRequest>(handle_code_lens)?
+            .on::<lsp_types::request::ExecuteCommand>(handle_execute_command)?
             .on_maybe_retry::<lsp_types::request::Completion>(handle_completion)?
             .finish();
 
@@ -255,6 +257,33 @@ pub(crate) fn handle_code_lens(
     };
 
     Ok(code_lens(&file, &src))
+}
+
+/// Called when a `workspace/executeCommand` request was received.
+pub(crate) fn handle_execute_command(
+    _snapshot: LanguageServerSnapshot,
+    params: lsp_types::ExecuteCommandParams,
+    sender: Sender<Task>,
+) -> anyhow::Result<Option<serde_json::Value>> {
+    if params.command == mod_update::UPDATE_DEPENDENCIES_COMMAND {
+        // The single argument is the directory containing the workspace's
+        // `kcl.mod`. The update itself is scheduled back on the main loop.
+        // Normalize the argument (canonicalize + UNC-strip on Windows) so it
+        // matches `workspace_mod_dir` however the client constructed it;
+        // fall back to the raw argument if it cannot be canonicalized.
+        let mod_dir = params
+            .arguments
+            .first()
+            .and_then(|value| value.as_str())
+            .map(std::path::PathBuf::from)
+            .map(|dir| {
+                dir.canonicalize()
+                    .map(|canonical| std::path::PathBuf::from(canonical.adjust_canonicalization()))
+                    .unwrap_or(dir)
+            });
+        let _ = sender.send(Task::RequestUpdateDependencies(mod_dir));
+    }
+    Ok(None)
 }
 
 /// Called when a `textDocument/codeAction` request was received.
