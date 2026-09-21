@@ -13,6 +13,7 @@ mod from_lsp;
 mod goto_def;
 mod hover;
 mod inlay_hints;
+mod mod_update;
 mod notification;
 mod quick_fix;
 mod request;

@@ -1,6 +1,7 @@
 use crate::analysis::{Analysis, AnalysisDatabase, DBState, OpenFileInfo};
 use crate::compile::{Params, compile};
 use crate::from_lsp::file_path_from_url;
+use crate::mod_update::{self, DependencyUpdater, UpdateTrigger};
 use crate::to_lsp::{kcl_diag_to_lsp_diags, url_from_path};
 use crate::util::{filter_kcl_config_file, get_file_name, to_json};
 use crossbeam_channel::{Receiver, Sender, select, unbounded};
@@ -8,6 +9,7 @@ use kcl_driver::toolchain::{self, Toolchain};
 use kcl_driver::{
     CompileUnitOptions, WorkSpaceKind, lookup_compile_workspace, lookup_compile_workspaces,
 };
+use kcl_error::{DiagnosticId, ErrorKind};
 use kcl_parser::KCLModuleCache;
 use kcl_sema::core::global_state::GlobalState;
 use kcl_sema::resolver::scope::KCLScopeCache;
@@ -39,6 +41,17 @@ pub(crate) enum Task {
     Retry(Request),
     ChangedFile(FileId, ChangeKind),
     ReOpenFile(FileId, ChangeKind),
+    /// The compile of this workspace reported `CannotFindModule` — consider
+    /// automatically updating its dependencies. See `mod_update`.
+    MissingDependencies(WorkSpaceKind),
+    /// Schedule a dependency update for every workspace whose `kcl.mod` lives
+    /// in the given directory (all workspaces with a `kcl.mod` when `None`).
+    RequestUpdateDependencies(Option<PathBuf>),
+    /// Result of a `Toolchain::update_dependencies` run from the thread pool.
+    DependenciesUpdated {
+        workspace: WorkSpaceKind,
+        result: Result<(), String>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -121,6 +134,12 @@ pub(crate) struct LanguageServerState {
     /// loop; with it, only a single ingest pass runs per debounce
     /// window. See issue #1623.
     last_mod_change: Arc<RwLock<ModChangeDebouncer>>,
+    /// Guards and records dependency-update attempts per workspace.
+    pub(crate) dep_updater: DependencyUpdater,
+    /// Whether a missing-module compile result automatically triggers
+    /// `kcl mod update` for the workspace. Controlled by the client
+    /// initialization option `kcl.mod.autoUpdate` (default: true).
+    pub(crate) mod_auto_update: bool,
 }
 
 /// Debounce window for `kcl.mod` / `kcl.yaml` Modify events.
@@ -235,6 +254,13 @@ impl LanguageServerState {
             workspace_folders: initialize_params.workspace_folders.clone(),
             fs_event_watcher,
             last_mod_change: Arc::new(RwLock::new(ModChangeDebouncer::default())),
+            dep_updater: DependencyUpdater::default(),
+            mod_auto_update: initialize_params
+                .initialization_options
+                .as_ref()
+                .and_then(|options| options.pointer("/kcl/mod/autoUpdate"))
+                .and_then(|value| value.as_bool())
+                .unwrap_or(true),
         };
 
         state.init_workspaces();
@@ -552,6 +578,49 @@ impl LanguageServerState {
         }
     }
 
+    /// Schedules a dependency update (`kcl mod update`) for the workspace
+    /// through the configured toolchain, unless an attempt is already in
+    /// flight or an automatic attempt was already made for the current
+    /// `kcl.mod` generation. The update runs on the thread pool; its result
+    /// comes back as `Task::DependenciesUpdated`.
+    pub(crate) fn schedule_update_dependencies(
+        &mut self,
+        workspace: WorkSpaceKind,
+        trigger: UpdateTrigger,
+    ) {
+        let Some(anchor) = mod_update::workspace_anchor(&workspace) else {
+            return;
+        };
+        let Some((mod_dir, generation)) = mod_update::resolve_mod_dir(&anchor) else {
+            self.log_message(format!(
+                "Skip dependency update, no kcl.mod found for workspace {:?}",
+                workspace
+            ));
+            return;
+        };
+        if !self.dep_updater.try_begin(&workspace, generation, trigger) {
+            return;
+        }
+        self.log_message(format!(
+            "Updating dependencies for workspace {:?} with `kcl mod update` in {:?}",
+            workspace, mod_dir
+        ));
+        let tool = Arc::clone(&self.tool);
+        let sender = self.task_sender.clone();
+        self.thread_pool.execute(move || {
+            // Catch panics (e.g. from the native toolchain) so the updater
+            // guard never stays stuck in `InFlight` and the failure is still
+            // surfaced to the user.
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                tool.read()
+                    .update_dependencies(mod_dir.clone())
+                    .map_err(|err| err.to_string())
+            }))
+            .unwrap_or_else(|_| Err("kcl mod update panicked".to_string()));
+            let _ = sender.send(Task::DependenciesUpdated { workspace, result });
+        });
+    }
+
     /// Handles a task sent by another async task
     #[allow(clippy::unnecessary_wraps)]
     fn handle_task(&mut self, task: Task, request_received: Instant) -> anyhow::Result<()> {
@@ -576,6 +645,87 @@ impl LanguageServerState {
                 file_id,
                 change_kind,
             }),
+            Task::MissingDependencies(workspace) => {
+                if self.mod_auto_update {
+                    self.schedule_update_dependencies(workspace, UpdateTrigger::Auto);
+                }
+            }
+            Task::RequestUpdateDependencies(mod_dir) => {
+                let mut targets: Vec<WorkSpaceKind> = Vec::new();
+                let workspaces: Vec<WorkSpaceKind> =
+                    self.analysis.workspaces.read().keys().cloned().collect();
+                let temporary_workspaces: Vec<WorkSpaceKind> = self
+                    .temporary_workspace
+                    .read()
+                    .values()
+                    .flatten()
+                    .cloned()
+                    .collect();
+                for workspace in workspaces.into_iter().chain(temporary_workspaces) {
+                    if targets.contains(&workspace) {
+                        continue;
+                    }
+                    let matches = match &mod_dir {
+                        Some(dir) => {
+                            mod_update::workspace_mod_dir(&workspace).as_deref()
+                                == Some(dir.as_path())
+                        }
+                        None => mod_update::workspace_mod_dir(&workspace).is_some(),
+                    };
+                    if matches {
+                        targets.push(workspace);
+                    }
+                }
+                if targets.is_empty() {
+                    self.log_message(format!(
+                        "No workspace with a kcl.mod matched dependency update request {:?}",
+                        mod_dir
+                    ));
+                }
+                for workspace in targets {
+                    self.schedule_update_dependencies(workspace, UpdateTrigger::Manual);
+                }
+            }
+            Task::DependenciesUpdated { workspace, result } => match result {
+                Ok(()) => {
+                    self.dep_updater.mark_done(&workspace);
+                    self.log_message(format!(
+                        "Dependencies updated for workspace {:?}",
+                        workspace
+                    ));
+                    // Refresh the workspace metadata and recompile so that the
+                    // newly downloaded dependencies are picked up.
+                    if let Some(anchor) = mod_update::workspace_anchor(&workspace) {
+                        let opts = lookup_compile_workspace(
+                            &*self.tool.read(),
+                            anchor.to_string_lossy().as_ref(),
+                            true,
+                        );
+                        self.async_compile(workspace, opts, None, false);
+                    }
+                }
+                Err(err) => {
+                    self.dep_updater.mark_failed(&workspace);
+                    self.log_message(format!(
+                        "Failed to update dependencies for workspace {:?}: {}",
+                        workspace, err
+                    ));
+                    // Toolchain stderr can be long — keep the toast to the
+                    // most recent part; the full output stays in the log.
+                    let tail: String = err
+                        .chars()
+                        .rev()
+                        .take(300)
+                        .collect::<Vec<char>>()
+                        .into_iter()
+                        .rev()
+                        .collect();
+                    self.show_message(
+                        MessageType::WARNING,
+                        format!("Failed to update KCL dependencies: {tail}"),
+                    );
+                }
+            },
         }
         Ok(())
     }
@@ -885,6 +1035,19 @@ impl LanguageServerState {
                             .unwrap(),
                         }));
                     }
+                }
+
+                // If the workspace imports a module that cannot be found, its
+                // dependencies may not be updated yet. Ask the main loop to
+                // schedule a `kcl mod update` (guarded against repeated
+                // attempts, see `mod_update`).
+                if diags.iter().any(|diag| {
+                    matches!(
+                        &diag.code,
+                        Some(DiagnosticId::Error(ErrorKind::CannotFindModule))
+                    )
+                }) {
+                    let _ = sender.send(Task::MissingDependencies(workspace.clone()));
                 }
 
                 match compile_res {
