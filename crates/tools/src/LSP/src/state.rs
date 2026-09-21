@@ -712,6 +712,8 @@ impl LanguageServerState {
                     ));
                     // Toolchain stderr can be long — keep the toast to the
                     // most recent part; the full output stays in the log.
+                    // Prepend `...` only when truncation actually happened so
+                    // short messages stay verbatim.
                     let tail: String = err
                         .chars()
                         .rev()
@@ -720,6 +722,11 @@ impl LanguageServerState {
                         .into_iter()
                         .rev()
                         .collect();
+                    let tail = if tail.chars().count() < err.chars().count() {
+                        format!("...{tail}")
+                    } else {
+                        tail
+                    };
                     self.show_message(
                         MessageType::WARNING,
                         format!("Failed to update KCL dependencies: {tail}"),

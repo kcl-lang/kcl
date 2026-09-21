@@ -126,14 +126,17 @@ mod tests {
     use crate::util::to_json;
     use crossbeam_channel::{Receiver, Sender, unbounded};
     use kcl_driver::toolchain::{Metadata, Toolchain};
+    use lsp_server::RequestId;
     use lsp_types::notification::{
         DidOpenTextDocument, DidSaveTextDocument, LogMessage, Notification as _,
     };
+    use lsp_types::request::{ExecuteCommand, Request as _};
     use lsp_types::{
-        DidOpenTextDocumentParams, DidSaveTextDocumentParams, InitializeParams,
-        TextDocumentIdentifier, TextDocumentItem, Url,
+        DidOpenTextDocumentParams, DidSaveTextDocumentParams, ExecuteCommandParams,
+        InitializeParams, TextDocumentIdentifier, TextDocumentItem, Url,
     };
     use parking_lot::RwLock;
+    use serde_json::Value;
     use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::time::Duration;
@@ -258,6 +261,45 @@ mod tests {
                 && serde_json::from_value::<lsp_types::LogMessageParams>(not.params.clone())
                     .map(|params| params.message.contains(needle))
                     .unwrap_or(false)
+        }
+    }
+
+    /// Send a `workspace/executeCommand` request as the client. The single
+    /// `argument` is forwarded to the handler as `arguments: [argument]`.
+    fn send_execute_command(
+        client_tx: &Sender<lsp_server::Message>,
+        request_id: i32,
+        command: &str,
+        argument: &str,
+    ) {
+        let params = ExecuteCommandParams {
+            command: command.to_string(),
+            arguments: vec![Value::String(argument.to_string())],
+            ..Default::default()
+        };
+        client_tx
+            .send(lsp_server::Message::Request(lsp_server::Request {
+                id: RequestId::from(request_id),
+                method: ExecuteCommand::METHOD.to_string(),
+                params: to_json(&params).unwrap(),
+            }))
+            .unwrap();
+    }
+
+    /// Wait for the response to a previously sent request. Notifications
+    /// that arrive on the same channel are skipped.
+    fn wait_for_response(
+        rx: &Receiver<lsp_server::Message>,
+        request_id: RequestId,
+    ) -> lsp_server::Response {
+        let deadline = std::time::Instant::now() + Duration::from_secs(30);
+        loop {
+            let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+            match rx.recv_timeout(remaining) {
+                Ok(lsp_server::Message::Response(resp)) if resp.id == request_id => return resp,
+                Ok(_) => {}
+                Err(_) => panic!("timed out waiting for response to request {request_id:?}"),
+            }
         }
     }
 
@@ -407,6 +449,58 @@ mod tests {
         save_file(&client_tx, &dir.join(KCL_MOD_FILE));
         wait_for_notification(&server_rx, is_log_containing("Dependencies updated"));
         assert_eq!(updates.load(Ordering::SeqCst), 2);
+
+        drop(client_tx);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn execute_command_kcl_update_dependencies_runs_update() {
+        let dir = temp_workspace();
+        let (server_rx, client_tx, updates) = spawn_state(
+            UpdateCountingToolchain {
+                updates: Arc::new(AtomicUsize::new(0)),
+                fail: false,
+            },
+            InitializeParams::default(),
+        );
+
+        // Open the file so the workspace is registered with a matching
+        // `mod_dir` before the executeCommand request lands. The
+        // `CannotFindModule` import also exercises the automatic update
+        // path so we know the workspace is settled before we send the
+        // manual command.
+        open_file(&client_tx, &dir.join("main.k"));
+        wait_for_notification(&server_rx, is_log_containing("Dependencies updated"));
+        let baseline = updates.load(Ordering::SeqCst);
+        assert!(
+            baseline >= 1,
+            "auto-trigger should have run once before the manual command",
+        );
+
+        // The `workspace/executeCommand` request schedules a Manual update
+        // for the workspace rooted at the given `kcl.mod` directory.
+        let request_id = 1;
+        send_execute_command(
+            &client_tx,
+            request_id,
+            UPDATE_DEPENDENCIES_COMMAND,
+            &dir.canonicalize().unwrap().to_string_lossy(),
+        );
+
+        // The handler returns `Ok(None)` so the response carries no error;
+        // assert the LSP machinery actually answered without error.
+        let response = wait_for_response(&server_rx, RequestId::from(request_id));
+        assert!(
+            response.error.is_none(),
+            "executeCommand response should be error-free, got {:?}",
+            response.error,
+        );
+
+        // Manual triggers always bypass the guard, so the counter must
+        // advance by exactly one for this command.
+        wait_for_notification(&server_rx, is_log_containing("Dependencies updated"));
+        assert_eq!(updates.load(Ordering::SeqCst), baseline + 1);
 
         drop(client_tx);
         let _ = std::fs::remove_dir_all(&dir);
