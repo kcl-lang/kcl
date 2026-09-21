@@ -7,7 +7,8 @@ use crate::util::{filter_kcl_config_file, get_file_name, to_json};
 use crossbeam_channel::{Receiver, Sender, select, unbounded};
 use kcl_driver::toolchain::{self, Toolchain};
 use kcl_driver::{
-    CompileUnitOptions, WorkSpaceKind, lookup_compile_workspace, lookup_compile_workspaces,
+    CompileUnitOptions, WorkSpaceKind, lookup_compile_workspace, lookup_compile_workspace_bounded,
+    lookup_compile_workspaces_bounded,
 };
 use kcl_error::{DiagnosticId, ErrorKind};
 use kcl_parser::KCLModuleCache;
@@ -251,7 +252,23 @@ impl LanguageServerState {
             request_retry: Arc::new(RwLock::new(HashMap::new())),
             workspace_config_cache: KCLWorkSpaceConfigCache::default(),
             temporary_workspace: Arc::new(RwLock::new(HashMap::new())),
-            workspace_folders: initialize_params.workspace_folders.clone(),
+            workspace_folders: initialize_params
+                .workspace_folders
+                .clone()
+                .filter(|folders| !folders.is_empty())
+                .or_else(|| {
+                    initialize_params.root_uri.as_ref().map(|uri| {
+                        vec![WorkspaceFolder {
+                            name: uri
+                                .path()
+                                .rsplit('/')
+                                .next()
+                                .unwrap_or_default()
+                                .to_string(),
+                            uri: uri.clone(),
+                        }]
+                    })
+                }),
             fs_event_watcher,
             last_mod_change: Arc::new(RwLock::new(ModChangeDebouncer::default())),
             dep_updater: DependencyUpdater::default(),
@@ -447,29 +464,30 @@ impl LanguageServerState {
                             }
                         }
 
-                        // If all workspaces do not contain the current file, get files workspace and store in temporary_workspace
                         if !may_contain {
                             self.log_message(format!(
                                 "Not contains in any workspace, compile: {:?}",
                                 filename
                             ));
 
+                            let max_root = self.workspace_folders.as_ref().and_then(|folders| {
+                                let file_path = Path::new(&filename);
+                                folders
+                                    .iter()
+                                    .filter_map(|folder| file_path_from_url(&folder.uri).ok())
+                                    .map(PathBuf::from)
+                                    .filter(|folder_path| file_path.starts_with(folder_path))
+                                    .max_by_key(|folder_path| folder_path.components().count())
+                            });
+
                             let tool = Arc::clone(&self.tool);
-                            let (workspaces, failed) = match Path::new(&filename).parent() {
-                                Some(parent_dir) => {
-                                    let (workspaces, failed) = lookup_compile_workspaces(
-                                        &*tool.read(),
-                                        parent_dir.to_str().unwrap(),
-                                        true,
-                                    );
-                                    if workspaces.is_empty() {
-                                        lookup_compile_workspaces(&*tool.read(), &filename, true)
-                                    } else {
-                                        (workspaces, failed)
-                                    }
-                                }
-                                None => lookup_compile_workspaces(&*tool.read(), &filename, true),
-                            };
+                            let workspaces = lookup_compile_workspace_bounded(
+                                &*tool.read(),
+                                &filename,
+                                true,
+                                max_root.as_deref(),
+                            )
+                            .unwrap_or_default();
 
                             if workspaces.is_empty() {
                                 self.temporary_workspace.write().remove(&file.file_id);
@@ -478,8 +496,40 @@ impl LanguageServerState {
                                     filename
                                 ));
                             } else {
-                                for (workspace, opts) in workspaces {
-                                    self.async_compile(workspace, opts, Some(file.file_id), true);
+                                for (mut workspace, opts) in workspaces {
+                                    if matches!(workspace, WorkSpaceKind::NotFound)
+                                        && let Some(parent) = Path::new(&filename).parent()
+                                    {
+                                        workspace = WorkSpaceKind::Folder(parent.to_path_buf());
+                                    }
+                                    match self.analysis.workspaces.read().get(&workspace).cloned() {
+                                        Some(DBState::Ready(_)) => {
+                                            let mut openfiles = self.opened_files.write();
+                                            if let Some(file_info) =
+                                                openfiles.get_mut(&file.file_id)
+                                            {
+                                                file_info.workspaces.insert(workspace.clone());
+                                            }
+                                            drop(openfiles);
+                                            self.temporary_workspace.write().remove(&file.file_id);
+                                        }
+                                        Some(DBState::Compiling(_)) => {
+                                            self.task_sender
+                                                .send(Task::ChangedFile(
+                                                    file.file_id,
+                                                    file.change_kind,
+                                                ))
+                                                .unwrap();
+                                        }
+                                        Some(DBState::Init) | Some(DBState::Failed(_)) | None => {
+                                            self.async_compile(
+                                                workspace,
+                                                opts,
+                                                Some(file.file_id),
+                                                true,
+                                            );
+                                        }
+                                    }
                                 }
                             }
                         } else {
@@ -904,9 +954,13 @@ impl LanguageServerState {
                     self.handle_watch_error_toast(&p);
                 }
 
-                // Compile unit discovery — unchanged from the original code.
                 let tool = Arc::clone(&self.tool);
-                let (workspaces, failed) = lookup_compile_workspaces(&*tool.read(), &path, true);
+                let (workspaces, failed) = lookup_compile_workspaces_bounded(
+                    &*tool.read(),
+                    &path,
+                    true,
+                    Some(Path::new(&path)),
+                );
 
                 if let Some(failed) = failed {
                     for (key, err) in failed {
