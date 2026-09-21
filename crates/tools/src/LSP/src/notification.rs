@@ -6,6 +6,7 @@ use std::collections::HashSet;
 
 use kcl_config::modfile::KCL_MOD_FILE;
 use kcl_driver::WorkSpaceKind;
+use kcl_utils::path::PathPrefix;
 
 use crate::mod_update::{self, UpdateTrigger};
 use crate::util::apply_document_changes;
@@ -84,6 +85,10 @@ impl LanguageServerState {
                 std_path
                     .parent()
                     .and_then(|parent| parent.canonicalize().ok())
+                    // `canonicalize` returns a `\\?\` UNC path on Windows;
+                    // normalize it (and convert the resulting `String`) to
+                    // match `workspace_mod_dir` (via `get_pkg_root`).
+                    .map(|parent| std::path::PathBuf::from(parent.adjust_canonicalization()))
             }
         {
             let workspaces: Vec<WorkSpaceKind> =

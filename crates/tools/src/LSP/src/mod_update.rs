@@ -126,6 +126,7 @@ mod tests {
     use crate::util::to_json;
     use crossbeam_channel::{Receiver, Sender, unbounded};
     use kcl_driver::toolchain::{Metadata, Toolchain};
+    use kcl_utils::path::PathPrefix;
     use lsp_server::RequestId;
     use lsp_types::notification::{
         DidOpenTextDocument, DidSaveTextDocument, LogMessage, Notification as _,
@@ -341,7 +342,12 @@ mod tests {
         std::fs::write(sub.join("main.k"), "a = 1\n").unwrap();
 
         let (dir, generation) = resolve_mod_dir(&sub.join("main.k")).unwrap();
-        assert_eq!(dir, base.canonicalize().unwrap());
+        // `get_pkg_root` normalizes the canonicalized path (strips the
+        // `\\?\` UNC prefix on Windows).
+        assert_eq!(
+            dir,
+            PathBuf::from(base.canonicalize().unwrap().adjust_canonicalization())
+        );
         let (_, generation_again) = resolve_mod_dir(&sub.join("main.k")).unwrap();
         assert_eq!(generation, generation_again);
 
@@ -413,14 +419,16 @@ mod tests {
         open_file(&client_tx, &dir.join("main.k"));
 
         // Wait until the compile has finished and reported diagnostics, then
-        // give a potential (unwanted) update time to run.
-        // The published diagnostics URI is canonicalized (macOS `/var` ->
-        // `/private/var`), so compare against the canonicalized file URL.
-        let main_uri = Url::from_file_path(dir.join("main.k").canonicalize().unwrap()).unwrap();
-        wait_for_notification(&server_rx, move |not| {
+        // give a potential (unwanted) update time to run. The published
+        // diagnostics URI is canonicalized (macOS `/var` -> `/private/var`),
+        // so compare the path tail instead of exact URL equality.
+        wait_for_notification(&server_rx, |not| {
             not.method == lsp_types::notification::PublishDiagnostics::METHOD
                 && serde_json::from_value::<lsp_types::PublishDiagnosticsParams>(not.params.clone())
-                    .map(|params| params.uri == main_uri && !params.diagnostics.is_empty())
+                    .map(|params| {
+                        params.uri.as_str().replace('\\', "/").ends_with("/main.k")
+                            && !params.diagnostics.is_empty()
+                    })
                     .unwrap_or(false)
         });
         std::thread::sleep(Duration::from_millis(1000));
@@ -479,13 +487,16 @@ mod tests {
         );
 
         // The `workspace/executeCommand` request schedules a Manual update
-        // for the workspace rooted at the given `kcl.mod` directory.
+        // for the workspace rooted at the given `kcl.mod` directory. The
+        // handler normalizes the argument, so either the plain or the
+        // canonicalized directory string works here.
         let request_id = 1;
         send_execute_command(
             &client_tx,
             request_id,
             UPDATE_DEPENDENCIES_COMMAND,
-            &dir.canonicalize().unwrap().to_string_lossy(),
+            // `adjust_canonicalization` returns a `String`.
+            &dir.canonicalize().unwrap().adjust_canonicalization(),
         );
 
         // The handler returns `Ok(None)` so the response carries no error;

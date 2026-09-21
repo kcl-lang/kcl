@@ -188,6 +188,8 @@ mod tests {
     use proc_macro_crate::bench_test;
     use std::path::PathBuf;
 
+    use kcl_utils::path::PathPrefix;
+
     use super::{UPDATE_DEPENDENCIES_COMMAND, quick_fix};
     use crate::{
         compile::{Params, compile_with_params},
@@ -341,9 +343,12 @@ mod tests {
                 assert_eq!(command.title, "Update dependencies (kcl mod update)");
                 assert_eq!(command.command, UPDATE_DEPENDENCIES_COMMAND);
                 let arguments = command.arguments.as_ref().unwrap();
+                // The argument comes from `get_pkg_root`, which normalizes
+                // the canonicalized path (strips the `\\?\` UNC prefix on
+                // Windows).
                 assert_eq!(
                     PathBuf::from(arguments[0].as_str().unwrap()),
-                    dir.canonicalize().unwrap()
+                    PathBuf::from(dir.canonicalize().unwrap().adjust_canonicalization())
                 );
             }
             _ => panic!("expected a command quick fix, got {:?}", code_actions[0]),
