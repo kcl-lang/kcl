@@ -505,6 +505,54 @@ service KclService {
 	/// ```
 	rpc GetSchemaTypeMapping(GetSchemaTypeMappingArgs) returns (GetSchemaTypeMappingResult);
 
+	/// Get schema type mapping under the input paths, including all of their
+	/// external dependency packages. Different from `GetSchemaTypeMapping`,
+	/// the result is keyed by package name (e.g. "__main__", "pkg") and each
+	/// value holds the schema list of that package, so schemas defined in
+	/// kcl.mod `[dependencies]` keep their own pkgpath and base schema.
+	/// See https://github.com/kcl-lang/kcl/issues/1546.
+	///
+	/// # Examples
+	///
+	/// ```jsonrpc
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "GetSchemaTypeMappingUnderPath",
+	///     "params": {
+	///         "exec_args": {
+	///             "work_dir": "./src/testdata",
+	///             "k_filename_list": ["main.k"]
+	///         },
+	///         "schema_name": ""
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "schema_type_mapping": {
+	///             "__main__": {
+	///                 "schema_type": [
+	///                     {
+	///                         "type": "schema",
+	///                         "schema_name": "Person",
+	///                         "properties": {
+	///                             "name": { "type": "str" }
+	///                         },
+	///                         "required": ["name"]
+	///                     }
+	///                 ]
+	///             }
+	///         }
+	///     },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc GetSchemaTypeMappingUnderPath(GetSchemaTypeMappingArgs) returns (GetSchemaTypeMappingUnderPathResult);
+
 	/// Format code source.
 	///
 	/// # Examples
