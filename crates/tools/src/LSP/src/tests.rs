@@ -83,6 +83,7 @@ use crate::app::main_loop;
 use crate::compile::Params;
 use crate::state::KCLGlobalStateCache;
 use crate::state::KCLVfs;
+use crate::state::LanguageServerState;
 use crate::to_lsp::kcl_diag_to_lsp_diags_by_file;
 use crate::util::apply_document_changes;
 use crate::util::to_json;
@@ -1431,6 +1432,51 @@ fn rename_test() {
 }
 
 #[test]
+fn rename_debug_test() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("src")
+        .join("test_data")
+        .join("rename_test");
+    let path = root.clone().join("pkg").join("vars.k");
+
+    let path = path.to_str().unwrap();
+    let src = std::fs::read_to_string(path).unwrap();
+    let initialize_params = InitializeParams {
+        workspace_folders: Some(vec![WorkspaceFolder {
+            uri: Url::from_file_path(root.clone()).unwrap(),
+            name: "test".to_string(),
+        }]),
+        ..Default::default()
+    };
+    let server = Project {}.server(initialize_params);
+
+    wait_async!(1000);
+
+    server.open_file(path, src);
+
+    let res = server.rename(path, Position::new(0, 7), "Person2");
+    if res.result.is_none() || res.result == Some(serde_json::Value::Null) {
+        for _ in 0..40 {
+            if server.recv_without_timeout().is_none() {
+                break;
+            }
+        }
+        for msg in server.messages.borrow().iter() {
+            match msg {
+                Message::Notification(not) => {
+                    eprintln!("NOTIFY {}: {}", not.method, not.params);
+                }
+                Message::Response(resp) => {
+                    eprintln!("RESPONSE {}: {:?}", resp.id, resp);
+                }
+                _ => {}
+            }
+        }
+        panic!("rename returned null");
+    }
+}
+
+#[test]
 fn kcl_workspace_init_kclwork_test() {
     let tool: crate::state::KCLToolChain = Arc::new(RwLock::new(toolchain::default()));
     let tool = Arc::clone(&tool);
@@ -1773,7 +1819,6 @@ fn init_workspaces_with_ignored_dir_does_not_panic() {
 /// without panicking.
 #[test]
 fn process_changed_file_create_without_opened_file_does_not_panic() {
-    use crate::state::LanguageServerState;
     use crossbeam_channel::unbounded;
     use ra_ap_vfs::{ChangeKind, ChangedFile, FileId};
     use std::sync::Arc;
@@ -1847,4 +1892,151 @@ fn process_changed_file_create_without_opened_file_does_not_panic() {
 
     // 7. Clean up.
     let _ = std::fs::remove_dir_all(&tmp_dir);
+}
+
+fn wait_workspace_ready(
+    state: &LanguageServerState,
+    kind: &WorkSpaceKind,
+) -> Arc<AnalysisDatabase> {
+    for _ in 0..100 {
+        if let Some(DBState::Ready(db)) = state.analysis.workspaces.read().get(kind) {
+            return db.clone();
+        }
+        wait_async!(50);
+    }
+    panic!("workspace {:?} is not ready", kind);
+}
+
+fn lookup_walkup_kpm_pkg_root() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("src")
+        .join("test_data")
+        .join("lookup_walkup")
+        .join("kpm_pkg")
+}
+
+#[test]
+fn open_inner_file_walks_up_to_root_kcl_mod_workspace() {
+    use crossbeam_channel::unbounded;
+    use lsp_types::notification::{DidOpenTextDocument, Notification as _};
+
+    let root = lookup_walkup_kpm_pkg_root();
+    let mod_kind = WorkSpaceKind::ModFile(root.join("kcl.mod"));
+    let a_path = root.join("pkg").join("a.k");
+
+    let (tx, _rx) = unbounded::<lsp_server::Message>();
+    let mut state = LanguageServerState::new(
+        tx,
+        InitializeParams {
+            workspace_folders: Some(vec![WorkspaceFolder {
+                uri: Url::from_file_path(&root).unwrap(),
+                name: "test".to_string(),
+            }]),
+            ..Default::default()
+        },
+    );
+
+    let db_before = wait_workspace_ready(&state, &mod_kind);
+
+    let a_src = std::fs::read_to_string(&a_path).unwrap();
+    state
+        .on_notification(lsp_server::Notification::new(
+            DidOpenTextDocument::METHOD.to_string(),
+            to_json(lsp_types::DidOpenTextDocumentParams {
+                text_document: TextDocumentItem {
+                    uri: Url::from_file_path(&a_path).unwrap(),
+                    language_id: "KCL".to_string(),
+                    version: 0,
+                    text: a_src,
+                },
+            })
+            .unwrap(),
+        ))
+        .unwrap();
+    state.process_vfs_changes();
+
+    let a_id = state
+        .vfs
+        .read()
+        .file_id(&ra_ap_vfs::VfsPath::from(
+            ra_ap_vfs::AbsPathBuf::try_from(a_path.clone()).unwrap(),
+        ))
+        .unwrap();
+
+    let file_workspaces = state
+        .opened_files
+        .read()
+        .get(&a_id)
+        .unwrap()
+        .workspaces
+        .clone();
+    assert_eq!(file_workspaces, HashSet::from_iter([mod_kind.clone()]));
+    assert!(state.temporary_workspace.read().get(&a_id).is_none());
+
+    let workspaces = state.analysis.workspaces.read();
+    assert_eq!(workspaces.len(), 1);
+    let db_after = match workspaces.get(&mod_kind) {
+        Some(DBState::Ready(db)) => db.clone(),
+        _ => panic!("expected ready workspace {:?}", mod_kind),
+    };
+    assert!(Arc::ptr_eq(&db_before, &db_after));
+}
+
+#[test]
+fn init_workspaces_falls_back_to_root_uri() {
+    use crossbeam_channel::unbounded;
+
+    let root = lookup_walkup_kpm_pkg_root();
+    let mod_kind = WorkSpaceKind::ModFile(root.join("kcl.mod"));
+
+    let (tx, _rx) = unbounded::<lsp_server::Message>();
+    let state = LanguageServerState::new(
+        tx,
+        InitializeParams {
+            workspace_folders: None,
+            root_uri: Some(Url::from_file_path(&root).unwrap()),
+            ..Default::default()
+        },
+    );
+
+    let folders = state.workspace_folders.as_ref().unwrap();
+    assert_eq!(folders.len(), 1);
+    assert_eq!(folders[0].uri, Url::from_file_path(&root).unwrap());
+
+    wait_workspace_ready(&state, &mod_kind);
+}
+
+#[test]
+fn root_uri_only_init_and_open_main_file_test() {
+    let root = lookup_walkup_kpm_pkg_root();
+    let main_path = root.join("main.k");
+    let main_src = std::fs::read_to_string(&main_path).unwrap();
+
+    let initialize_params = InitializeParams {
+        workspace_folders: None,
+        root_uri: Some(Url::from_file_path(&root).unwrap()),
+        ..Default::default()
+    };
+    let server = Project {}.server(initialize_params);
+
+    server.wait_for_message_cond(1, &|msg: &Message| match msg {
+        Message::Notification(not) => {
+            not.method == "window/logMessage"
+                && not
+                    .params
+                    .get("message")
+                    .and_then(|message| message.as_str())
+                    .is_some_and(|message| {
+                        message.contains("compile success") && message.contains("kcl.mod")
+                    })
+        }
+        _ => false,
+    });
+
+    let main_path = main_path.to_str().unwrap();
+    server.open_file(main_path, main_src);
+    wait_async!(100);
+
+    let res = server.semantic_tokens_full(main_path);
+    assert!(res.result.is_some());
 }

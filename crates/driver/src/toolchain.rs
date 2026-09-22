@@ -1,10 +1,11 @@
 use crate::{kcl, lookup_the_nearest_file_dir};
 use anyhow::{Result, anyhow, bail};
-use kcl_config::modfile::KCL_MOD_FILE;
+use kcl_config::modfile::{KCL_MOD_FILE, KCL_MOD_LOCK_FILE, load_mod_file, load_mod_lock_file};
 use kcl_parser::LoadProgramOptions;
 use kcl_utils::pkgpath::external_pkgpath_to_rel_path_buf;
 use serde::{Deserialize, Serialize};
 use std::ffi::OsStr;
+use std::path::Path;
 use std::{collections::HashMap, path::PathBuf, process::Command};
 #[cfg(not(target_arch = "wasm32"))]
 use {crate::client::ModClient, parking_lot::Mutex, std::sync::Arc};
@@ -193,17 +194,94 @@ pub(crate) fn fill_pkg_maps_for_k_file(
 ) -> Result<Option<Metadata>> {
     match lookup_the_nearest_file_dir(k_file_path, KCL_MOD_FILE) {
         Some(mod_dir) => {
-            let metadata = tool.fetch_metadata(mod_dir.canonicalize()?)?;
-            let maps: HashMap<String, String> = metadata
-                .packages
-                .iter()
-                .map(|(name, pkg)| (name.clone(), pkg.manifest_path.display().to_string()))
-                .collect();
-            opts.package_maps.extend(maps);
-            Ok(Some(metadata))
+            let mod_dir = mod_dir.canonicalize()?;
+            // Prefer the toolchain-provided metadata (which may pull in OCI/Git
+            // packages) and fall back to reading `kcl.mod` + `kcl.mod.lock`
+            // directly when the toolchain is unavailable (e.g. the `kcl` CLI is
+            // not installed in a test/CI environment).
+            match tool.fetch_metadata(mod_dir.clone()) {
+                Ok(metadata) => {
+                    extend_pkg_maps_from_metadata(&metadata, opts);
+                    Ok(Some(metadata))
+                }
+                Err(_) => match fill_pkg_maps_from_lock_file(&mod_dir, opts) {
+                    Ok(Some(metadata)) => Ok(Some(metadata)),
+                    Ok(None) => Ok(None),
+                    Err(_) => Ok(None),
+                },
+            }
         }
         None => Ok(None),
     }
+}
+
+fn extend_pkg_maps_from_metadata(metadata: &Metadata, opts: &mut LoadProgramOptions) {
+    let maps: HashMap<String, String> = metadata
+        .packages
+        .iter()
+        .map(|(name, pkg)| (name.clone(), pkg.manifest_path.display().to_string()))
+        .collect();
+    opts.package_maps.extend(maps);
+}
+
+/// Fallback implementation that builds the package map directly from
+/// `kcl.mod` and `kcl.mod.lock` when the `kcl` CLI toolchain is unavailable.
+///
+/// Only local-path dependencies can be resolved without the CLI (we have
+/// neither the OCI registry nor the Git cache); any non-local dependency is
+/// silently skipped because the compile step has no way to find it.
+fn fill_pkg_maps_from_lock_file(
+    mod_dir: &Path,
+    opts: &mut LoadProgramOptions,
+) -> Result<Option<Metadata>> {
+    if !mod_dir.join(KCL_MOD_LOCK_FILE).is_file() {
+        return Ok(None);
+    }
+    let mod_lock = match load_mod_lock_file(mod_dir) {
+        Ok(m) => m,
+        Err(_) => return Ok(None),
+    };
+    let mod_file = match load_mod_file(mod_dir) {
+        Ok(m) => m,
+        Err(_) => return Ok(None),
+    };
+    let deps = match (&mod_lock.dependencies, &mod_file.dependencies) {
+        (Some(lock), Some(mod_deps)) => (lock.clone(), mod_deps.clone()),
+        _ => return Ok(None),
+    };
+
+    let mut metadata = Metadata::default();
+    for (name, lock_dep) in deps.0.iter() {
+        let Some(mod_dep) = deps.1.get(name) else {
+            continue;
+        };
+        let kcl_config::modfile::Dependency::Local(local) = mod_dep else {
+            continue;
+        };
+        let local_path = PathBuf::from(&local.path);
+        let manifest_path = if local_path.is_absolute() {
+            local.path.clone()
+        } else {
+            mod_dir
+                .join(&local.path)
+                .canonicalize()
+                .map(|p| p.to_string_lossy().to_string())
+                .unwrap_or_else(|_| mod_dir.join(&local.path).to_string_lossy().to_string())
+        };
+        // The map key is the on-disk package name (`name` with hyphens
+        // replaced by underscores), which is what the parser uses to look
+        // up packages. `full_name` is only relevant for vendored copies.
+        let map_key = lock_dep.name.replace('-', "_");
+        metadata.packages.insert(
+            map_key.clone(),
+            Package {
+                name: lock_dep.name.clone(),
+                manifest_path: PathBuf::from(&manifest_path),
+            },
+        );
+        opts.package_maps.insert(map_key, manifest_path);
+    }
+    Ok(Some(metadata))
 }
 
 /// [`get_real_path_from_external`] will ask for the local path for [`pkg_name`] with subdir [`pkgpath`].

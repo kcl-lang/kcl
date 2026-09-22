@@ -26,9 +26,179 @@ use std::{
 use toolchain::{Metadata, Toolchain, fill_pkg_maps_for_k_file};
 use walkdir::WalkDir;
 
+fn default_compile_unit_res(
+    tool: &dyn Toolchain,
+    file: &str,
+    load_pkg: bool,
+) -> CompileUnitOptions {
+    let mut default_res: CompileUnitOptions = (vec![], None, None);
+    let mut load_opt = kcl_parser::LoadProgramOptions::default();
+    let metadata = fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt).unwrap_or(None);
+    let path = Path::new(file);
+    if let Some(ext) = path.extension() {
+        if load_pkg {
+            if let Some(parent) = path.parent()
+                && let Ok(files) = get_kcl_files(parent, false)
+            {
+                default_res = (files, Some(load_opt), metadata);
+            }
+        } else if ext == KCL_FILE_EXTENSION && path.is_file() {
+            default_res = (vec![file.to_string()], Some(load_opt), metadata);
+        }
+    }
+    default_res
+}
+
+fn lookup_setting_file_compile_unit(
+    tool: &dyn Toolchain,
+    file: &str,
+    load_pkg: bool,
+    dir: &Path,
+) -> CompileUnitOptions {
+    let settings_files = lookup_setting_files(dir);
+    let files = if settings_files.is_empty() {
+        default_compile_unit_res(tool, file, load_pkg).0.to_vec()
+    } else {
+        vec![]
+    };
+    let files: Vec<&str> = files.iter().map(|s| s.as_str()).collect();
+    let settings_files: Vec<&str> = settings_files.iter().map(|f| f.to_str().unwrap()).collect();
+    match build_settings_pathbuf(&files, Some(settings_files), None) {
+        Ok(setting_buf) => {
+            let setting = setting_buf.settings();
+            let files = setting.input();
+
+            let work_dir = setting_buf
+                .path()
+                .clone()
+                .map(|p| p.to_string_lossy().to_string())
+                .unwrap_or_default();
+
+            let mut load_opt = kcl_parser::LoadProgramOptions {
+                work_dir: work_dir.clone(),
+                ..Default::default()
+            };
+            let metadata =
+                fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt).unwrap_or(None);
+            if files.is_empty() {
+                default_compile_unit_res(tool, file, load_pkg)
+            } else {
+                (files, Some(load_opt), metadata)
+            }
+        }
+        Err(_) => default_compile_unit_res(tool, file, load_pkg),
+    }
+}
+
+fn lookup_mod_file_compile_unit(
+    tool: &dyn Toolchain,
+    file: &str,
+    load_pkg: bool,
+    dir: &Path,
+) -> CompileUnitOptions {
+    match load_mod_file(dir) {
+        Ok(mod_file) => {
+            let mut load_opt = kcl_parser::LoadProgramOptions::default();
+            let metadata =
+                fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt).unwrap_or(None);
+            if let Some(files) = mod_file.get_entries() {
+                let work_dir = dir.to_string_lossy().to_string();
+                load_opt.work_dir = work_dir.clone();
+                (files, Some(load_opt), metadata)
+            } else {
+                default_compile_unit_res(tool, file, load_pkg)
+            }
+        }
+        Err(_) => default_compile_unit_res(tool, file, load_pkg),
+    }
+}
+
+fn compile_unit_contains_file(opts: &CompileUnitOptions, file: &Path) -> bool {
+    opts.0.iter().any(|f| {
+        let path = PathBuf::from(f);
+        let path = if path.is_absolute() {
+            path
+        } else {
+            opts.1
+                .as_ref()
+                .map(|o| PathBuf::from(&o.work_dir).join(&path))
+                .unwrap_or(path)
+        };
+        path.canonicalize().unwrap_or(path) == file
+    })
+}
+
+fn reduce_compile_workspaces(
+    tool: &dyn Toolchain,
+    file: &str,
+    load_pkg: bool,
+    workspaces: HashMap<WorkSpaceKind, CompileUnitOptions>,
+) -> CompileUnitOptions {
+    let mut config_defined = None;
+    let target = Path::new(file)
+        .canonicalize()
+        .unwrap_or_else(|_| Path::new(file).to_path_buf());
+    for (kind, opts) in workspaces {
+        match kind {
+            WorkSpaceKind::SettingFile(_) | WorkSpaceKind::ModFile(_) => {
+                config_defined = Some(opts)
+            }
+            WorkSpaceKind::File(_) => {
+                if compile_unit_contains_file(&opts, &target) {
+                    return opts;
+                }
+            }
+            _ => {}
+        }
+    }
+    config_defined.unwrap_or_else(|| default_compile_unit_res(tool, file, load_pkg))
+}
+
+/// Look up the compile unit of `file` walking up for `kcl.mod` and `kcl.yaml`
+/// only, without expanding `kcl.work` files.
+fn lookup_compile_unit_no_work(
+    tool: &dyn Toolchain,
+    file: &str,
+    load_pkg: bool,
+) -> CompileUnitOptions {
+    match lookup_compile_unit_path_internal(file, None, false) {
+        Ok(CompileUnitPath::SettingFile(dir)) => {
+            lookup_setting_file_compile_unit(tool, file, load_pkg, &dir)
+        }
+        Ok(CompileUnitPath::ModFile(dir)) => {
+            lookup_mod_file_compile_unit(tool, file, load_pkg, &dir)
+        }
+        _ => default_compile_unit_res(tool, file, load_pkg),
+    }
+}
+
+/// Expand a `kcl.work` file into the workspaces it lists and return the
+/// failed workspace map if the work file was loaded successfully.
+fn expand_work_file(
+    tool: &dyn Toolchain,
+    load_pkg: bool,
+    work_file_path: &Path,
+    workspaces: &mut HashMap<WorkSpaceKind, CompileUnitOptions>,
+) -> Option<HashMap<String, String>> {
+    if let Ok(mut workfile) = load_work_file(work_file_path) {
+        let root = work_file_path.parent().unwrap();
+        workfile.canonicalize(root.to_path_buf());
+        for work in workfile.workspaces {
+            if let Ok(workspace) = lookup_workspace(&work.abs_path) {
+                workspaces.insert(
+                    workspace.clone(),
+                    lookup_compile_unit_no_work(tool, &work.abs_path, load_pkg),
+                );
+            }
+        }
+        return Some(workfile.failed.clone());
+    }
+    None
+}
+
 /// Get compile workspace(files and options) from a single file input.
-/// 1. Lookup entry files in kcl.yaml
-/// 2. Lookup entry files in kcl.mod
+/// 1. Lookup entry files in kcl.mod
+/// 2. Lookup entry files in kcl.yaml
 /// 3. If not found, consider the path or folder where the file is
 ///    located as the compilation entry point
 pub fn lookup_compile_workspace(
@@ -36,79 +206,45 @@ pub fn lookup_compile_workspace(
     file: &str,
     load_pkg: bool,
 ) -> CompileUnitOptions {
-    fn default_res(tool: &dyn Toolchain, file: &str, load_pkg: bool) -> CompileUnitOptions {
-        let mut default_res: CompileUnitOptions = (vec![], None, None);
-        let mut load_opt = kcl_parser::LoadProgramOptions::default();
-        let metadata = fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt).unwrap_or(None);
-        let path = Path::new(file);
-        if let Some(ext) = path.extension() {
-            if load_pkg {
-                if let Some(parent) = path.parent()
-                    && let Ok(files) = get_kcl_files(parent, false)
-                {
-                    default_res = (files, Some(load_opt), metadata);
-                }
-            } else if ext == KCL_FILE_EXTENSION && path.is_file() {
-                default_res = (vec![file.to_string()], Some(load_opt), metadata);
-            }
-        }
-        default_res
+    match lookup_compile_workspace_bounded(tool, file, load_pkg, None) {
+        Ok(workspaces) => reduce_compile_workspaces(tool, file, load_pkg, workspaces),
+        Err(_) => default_compile_unit_res(tool, file, load_pkg),
     }
+}
 
-    match lookup_compile_unit_path(file) {
-        Ok(CompileUnitPath::SettingFile(dir)) => {
-            let settings_files = lookup_setting_files(&dir);
-            let files = if settings_files.is_empty() {
-                default_res(tool, file, load_pkg).0.to_vec()
-            } else {
-                vec![]
-            };
-            let files: Vec<&str> = files.iter().map(|s| s.as_str()).collect();
-            let settings_files: Vec<&str> =
-                settings_files.iter().map(|f| f.to_str().unwrap()).collect();
-            match build_settings_pathbuf(&files, Some(settings_files), None) {
-                Ok(setting_buf) => {
-                    let setting = setting_buf.settings();
-                    let files = setting.input();
-
-                    let work_dir = setting_buf
-                        .path()
-                        .clone()
-                        .map(|p| p.to_string_lossy().to_string())
-                        .unwrap_or_default();
-
-                    let mut load_opt = kcl_parser::LoadProgramOptions {
-                        work_dir: work_dir.clone(),
-                        ..Default::default()
-                    };
-                    let metadata =
-                        fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt).unwrap_or(None);
-                    if files.is_empty() {
-                        default_res(tool, file, load_pkg)
-                    } else {
-                        (files, Some(load_opt), metadata)
-                    }
-                }
-                Err(_) => default_res(tool, file, load_pkg),
-            }
+/// The bounded version of [`lookup_compile_workspace`]. Walks up from the
+/// directory containing `file` and stops at `max_root` if it is given,
+/// otherwise walks up to the filesystem root.
+pub fn lookup_compile_workspace_bounded(
+    tool: &dyn Toolchain,
+    file: &str,
+    load_pkg: bool,
+    max_root: Option<&Path>,
+) -> anyhow::Result<HashMap<WorkSpaceKind, CompileUnitOptions>> {
+    let mut workspaces = HashMap::new();
+    match lookup_compile_unit_path_bounded(file, max_root)? {
+        CompileUnitPath::SettingFile(dir) => {
+            let opts = lookup_setting_file_compile_unit(tool, file, load_pkg, &dir);
+            workspaces.insert(
+                WorkSpaceKind::SettingFile(dir.join(DEFAULT_SETTING_FILE)),
+                opts,
+            );
         }
-        Ok(CompileUnitPath::ModFile(dir)) => match load_mod_file(&dir) {
-            Ok(mod_file) => {
-                let mut load_opt = kcl_parser::LoadProgramOptions::default();
-                let metadata =
-                    fill_pkg_maps_for_k_file(tool, file.into(), &mut load_opt).unwrap_or(None);
-                if let Some(files) = mod_file.get_entries() {
-                    let work_dir = dir.to_string_lossy().to_string();
-                    load_opt.work_dir = work_dir.clone();
-                    (files, Some(load_opt), metadata)
-                } else {
-                    default_res(tool, file, load_pkg)
-                }
-            }
-            Err(_) => default_res(tool, file, load_pkg),
-        },
-        Ok(CompileUnitPath::NotFound) | Err(_) => default_res(tool, file, load_pkg),
+        CompileUnitPath::ModFile(dir) => {
+            let opts = lookup_mod_file_compile_unit(tool, file, load_pkg, &dir);
+            workspaces.insert(WorkSpaceKind::ModFile(dir.join(KCL_MOD_FILE)), opts);
+        }
+        CompileUnitPath::WorkFile(work_file_path) => {
+            expand_work_file(tool, load_pkg, &work_file_path, &mut workspaces);
+        }
+        CompileUnitPath::NotFound => {
+            workspaces.insert(
+                WorkSpaceKind::NotFound,
+                default_compile_unit_res(tool, file, load_pkg),
+            );
+        }
     }
+    Ok(workspaces)
 }
 
 pub fn lookup_compile_workspaces(
@@ -119,22 +255,29 @@ pub fn lookup_compile_workspaces(
     HashMap<WorkSpaceKind, CompileUnitOptions>,
     Option<HashMap<String, String>>,
 ) {
+    lookup_compile_workspaces_bounded(tool, path, load_pkg, None)
+}
+
+/// The bounded version of [`lookup_compile_workspaces`]. Walks up from `path`
+/// and stops at `max_root` if it is given, otherwise walks up to the
+/// filesystem root.
+pub fn lookup_compile_workspaces_bounded(
+    tool: &dyn Toolchain,
+    path: &str,
+    load_pkg: bool,
+    max_root: Option<&Path>,
+) -> (
+    HashMap<WorkSpaceKind, CompileUnitOptions>,
+    Option<HashMap<String, String>>,
+) {
     let mut workspaces = HashMap::new();
-    if let Ok(workspace) = lookup_workspace(path) {
+    if let Ok(workspace) = lookup_workspace_bounded(path, max_root) {
         match &workspace {
             WorkSpaceKind::WorkFile(work_file_path) => {
-                if let Ok(mut workfile) = load_work_file(work_file_path) {
-                    let root = work_file_path.parent().unwrap();
-                    workfile.canonicalize(root.to_path_buf());
-                    for work in workfile.workspaces {
-                        if let Ok(workspace) = lookup_workspace(&work.abs_path) {
-                            workspaces.insert(
-                                workspace.clone(),
-                                lookup_compile_workspace(tool, &work.abs_path, load_pkg),
-                            );
-                        }
-                    }
-                    return (workspaces, Some(workfile.failed.clone()));
+                if let Some(failed) =
+                    expand_work_file(tool, load_pkg, work_file_path, &mut workspaces)
+                {
+                    return (workspaces, Some(failed));
                 }
             }
             WorkSpaceKind::Folder(folder) => {
@@ -227,6 +370,7 @@ pub type CompileUnitOptions = (Vec<String>, Option<LoadProgramOptions>, Option<M
 /// in the config files.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum CompileUnitPath {
+    WorkFile(PathBuf),
     SettingFile(PathBuf),
     ModFile(PathBuf),
     NotFound,
@@ -245,11 +389,12 @@ pub enum WorkSpaceKind {
 
 /// For the KCL project, some definitions may be introduced through multi-file
 /// compilation (kcl.yaml). This function is used to start from a single file and try
-/// to find a `compile unit` that contains all definitions
-/// Given a file path, search for the nearest "kcl.yaml" file or the nearest "kcl.mod" file.
-/// If a "kcl.yaml" file is found, return the path of the directory containing the file.
-/// If a "kcl.mod" file is found, return the path of the directory containing the file.
-/// If none of these files are found, return an error indicating that the files were not found.
+/// to find the nearest `compile unit` that contains all definitions.
+/// Given a file path, search from the directory containing the file upwards for
+/// the nearest "kcl.work", "kcl.mod" or "kcl.yaml" file, where the priority of
+/// "kcl.mod" is higher than that of "kcl.yaml" at the same level.
+/// If such a file is found, return the path of the directory containing the file.
+/// If none of these files are found, return [`CompileUnitPath::NotFound`].
 ///
 /// Example:
 /// +-- project
@@ -266,23 +411,79 @@ pub enum WorkSpaceKind {
 /// If the input file is project/prod/main.k or project/test/main.k, it will return
 /// Path("project/prod") or Path("project/test")
 pub fn lookup_compile_unit_path(file: &str) -> io::Result<CompileUnitPath> {
+    lookup_compile_unit_path_bounded(file, None)
+}
+
+/// The bounded version of [`lookup_compile_unit_path`]. The walk-up stops at
+/// `max_root` if it is given, otherwise walks up to the filesystem root.
+pub fn lookup_compile_unit_path_bounded(
+    file: &str,
+    max_root: Option<&Path>,
+) -> io::Result<CompileUnitPath> {
+    lookup_compile_unit_path_internal(file, max_root, true)
+}
+
+fn lookup_compile_unit_path_internal(
+    file: &str,
+    max_root: Option<&Path>,
+    follow_work_file: bool,
+) -> io::Result<CompileUnitPath> {
     let path = PathBuf::from(file);
-    let current_dir_path = path.as_path().parent().unwrap();
-    let entries = read_dir(current_dir_path)?;
-    for entry in entries {
-        let entry = entry?;
-        // The entry priority of `kcl.yaml`` is higher than that of `kcl.mod`.
-        if entry.file_name() == *DEFAULT_SETTING_FILE {
-            // If find "kcl.yaml", the input file is in a compile stack, return the
-            // path of this compile stack
-            return Ok(CompileUnitPath::SettingFile(PathBuf::from(
-                current_dir_path,
-            )));
-        } else if entry.file_name() == *KCL_MOD_FILE {
-            return Ok(CompileUnitPath::ModFile(PathBuf::from(current_dir_path)));
+    let start_dir = if path.is_dir() {
+        path
+    } else {
+        match path.parent() {
+            Some(parent) => parent.to_path_buf(),
+            None => path,
+        }
+    };
+    let start_dir = start_dir.canonicalize().unwrap_or(start_dir);
+    let max_root = max_root.map(|p| p.canonicalize().unwrap_or_else(|_| p.to_path_buf()));
+    // Strip the `\\?\` verbatim prefix that `canonicalize` adds on Windows
+    // so the returned paths match the form other code paths (e.g.
+    // `WorkFile::canonicalize`) use.
+    let start_dir = PathBuf::from(start_dir.adjust_canonicalization());
+    let max_root = max_root.map(|p| PathBuf::from(p.adjust_canonicalization()));
+    let mut current_dir = start_dir;
+    loop {
+        if let Some(bound) = &max_root
+            && !current_dir.starts_with(bound)
+        {
+            break;
+        }
+        if follow_work_file {
+            let work_file = current_dir.join(KCL_WORK_FILE);
+            if work_file.is_file() {
+                return Ok(CompileUnitPath::WorkFile(work_file));
+            }
+        }
+        let mod_file = current_dir.join(KCL_MOD_FILE);
+        if mod_file.is_file() && is_valid_compile_unit_mod(&current_dir) {
+            return Ok(CompileUnitPath::ModFile(current_dir));
+        }
+        let setting_file = current_dir.join(DEFAULT_SETTING_FILE);
+        if setting_file.is_file() {
+            return Ok(CompileUnitPath::SettingFile(current_dir));
+        }
+        match current_dir.parent() {
+            Some(parent) if parent != current_dir.as_path() => {
+                current_dir = parent.to_path_buf();
+            }
+            _ => break,
         }
     }
     Ok(CompileUnitPath::NotFound)
+}
+
+/// A `kcl.mod` file is only considered a compile unit root when it parses
+/// successfully and declares either a `[package]` section or the
+/// `[profile].entries` field, otherwise it is skipped and the walk-up
+/// continues.
+fn is_valid_compile_unit_mod(dir: &Path) -> bool {
+    match load_mod_file(dir) {
+        Ok(mod_file) => mod_file.package.is_some() || mod_file.get_entries().is_some(),
+        Err(_) => false,
+    }
 }
 
 /// It will replace lookup_compile_unit_path()
@@ -312,6 +513,59 @@ pub fn lookup_workspace(path: &str) -> io::Result<WorkSpaceKind> {
         }
 
         return Ok(WorkSpaceKind::Folder(PathBuf::from(path)));
+    }
+    if path.is_file()
+        && let Some(ext) = path.extension()
+        && ext.to_str().unwrap() == KCL_FILE_EXTENSION
+    {
+        return Ok(WorkSpaceKind::File(PathBuf::from(path)));
+    }
+    Ok(WorkSpaceKind::NotFound)
+}
+
+/// The bounded version of [`lookup_workspace`]. For a directory input, search
+/// from the directory upwards for the nearest "kcl.work", "kcl.mod" or
+/// "kcl.yaml" file and stop at `max_root` if it is given, otherwise walk up
+/// to the filesystem root. If nothing is found, the directory itself is
+/// returned as a [`WorkSpaceKind::Folder`].
+pub fn lookup_workspace_bounded(path: &str, max_root: Option<&Path>) -> io::Result<WorkSpaceKind> {
+    let pathbuf = PathBuf::from(path);
+    let path = pathbuf.as_path();
+    if path.is_dir() {
+        let start_dir = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+        let max_root = max_root.map(|p| p.canonicalize().unwrap_or_else(|_| p.to_path_buf()));
+        // Strip the `\\?\` verbatim prefix that `canonicalize` adds on
+        // Windows so the returned paths match the form
+        // `WorkFile::canonicalize` uses.
+        let start_dir = PathBuf::from(start_dir.adjust_canonicalization());
+        let max_root = max_root.map(|p| PathBuf::from(p.adjust_canonicalization()));
+        let mut current_dir = start_dir.clone();
+        loop {
+            if let Some(bound) = &max_root
+                && !current_dir.starts_with(bound)
+            {
+                break;
+            }
+            let work_file = current_dir.join(KCL_WORK_FILE);
+            if work_file.is_file() {
+                return Ok(WorkSpaceKind::WorkFile(work_file));
+            }
+            let mod_file = current_dir.join(KCL_MOD_FILE);
+            if mod_file.is_file() && is_valid_compile_unit_mod(&current_dir) {
+                return Ok(WorkSpaceKind::ModFile(mod_file));
+            }
+            let setting_file = current_dir.join(DEFAULT_SETTING_FILE);
+            if setting_file.is_file() {
+                return Ok(WorkSpaceKind::SettingFile(setting_file));
+            }
+            match current_dir.parent() {
+                Some(parent) if parent != current_dir.as_path() => {
+                    current_dir = parent.to_path_buf();
+                }
+                _ => break,
+            }
+        }
+        return Ok(WorkSpaceKind::Folder(start_dir));
     }
     if path.is_file()
         && let Some(ext) = path.extension()

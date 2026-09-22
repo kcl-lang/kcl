@@ -138,38 +138,52 @@ impl LanguageServerSnapshot {
                 Some(file_id) => {
                     let open_file = self.opened_files.read();
                     let file_info = open_file.get(&file_id).unwrap();
-                    match self.temporary_workspace.read().get(&file_id) {
-                        Some(option_workspace) => match option_workspace {
-                            Some(work_space) => match self.workspaces.try_read() {
-                                Some(workspaces) => match workspaces.get(work_space) {
-                                    Some(db) => Ok(Some((work_space.clone(), db.clone()))),
-                                    None => Err(anyhow::anyhow!(
-                                        LSPError::AnalysisDatabaseNotFound(path.clone())
-                                    )),
-                                },
-                                None => Ok(None),
-                            },
-                            None => Ok(None),
-                        },
 
-                        None => {
-                            if file_info.workspaces.is_empty() {
-                                return Err(anyhow::anyhow!(LSPError::WorkSpaceIsEmpty(
-                                    path.clone()
-                                )));
+                    let temporary_workspace = self.temporary_workspace.read();
+                    if matches!(temporary_workspace.get(&file_id), Some(None)) {
+                        return Ok(None);
+                    }
+                    let temporary = temporary_workspace.get(&file_id).cloned().flatten();
+                    drop(temporary_workspace);
+
+                    let mut candidates: Vec<WorkSpaceKind> =
+                        file_info.workspaces.iter().cloned().collect();
+                    if let Some(workspace) = &temporary
+                        && !candidates.contains(workspace)
+                    {
+                        candidates.push(workspace.clone());
+                    }
+                    drop(open_file);
+
+                    if candidates.is_empty() {
+                        return Err(anyhow::anyhow!(LSPError::WorkSpaceIsEmpty(path.clone())));
+                    }
+                    candidates
+                        .sort_by_key(|workspace| db_candidate_rank(workspace, temporary.as_ref()));
+
+                    match self.workspaces.try_read() {
+                        Some(workspaces) => {
+                            let mut fallback: Option<(WorkSpaceKind, DBState)> = None;
+                            for workspace in candidates {
+                                let state = match workspaces.get(&workspace) {
+                                    Some(state) => state,
+                                    None => continue,
+                                };
+                                if matches!(state, DBState::Ready(_)) {
+                                    return Ok(Some((workspace, state.clone())));
+                                }
+                                if fallback.is_none() {
+                                    fallback = Some((workspace, state.clone()));
+                                }
                             }
-                            // todo: now just get first, need get all workspaces
-                            let work_space = file_info.workspaces.iter().next().unwrap();
-                            match self.workspaces.try_read() {
-                                Some(workspaces) => match workspaces.get(work_space) {
-                                    Some(db) => Ok(Some((work_space.clone(), db.clone()))),
-                                    None => Err(anyhow::anyhow!(
-                                        LSPError::AnalysisDatabaseNotFound(path.clone())
-                                    )),
-                                },
-                                None => Ok(None),
+                            match fallback {
+                                Some(res) => Ok(Some(res)),
+                                None => Err(anyhow::anyhow!(LSPError::AnalysisDatabaseNotFound(
+                                    path.clone()
+                                ))),
                             }
                         }
+                        None => Ok(None),
                     }
                 }
 
@@ -544,4 +558,14 @@ pub(crate) fn handle_signature_help(
     let res = signature_help(&pos, &db.gs, trigger_character);
 
     Ok(res)
+}
+
+fn db_candidate_rank(workspace: &WorkSpaceKind, temporary: Option<&WorkSpaceKind>) -> (u8, u8) {
+    let is_temporary = temporary.is_some_and(|temp| temp == workspace) as u8;
+    let kind_rank = match workspace {
+        WorkSpaceKind::ModFile(_) | WorkSpaceKind::SettingFile(_) | WorkSpaceKind::WorkFile(_) => 0,
+        WorkSpaceKind::Folder(_) => 1,
+        WorkSpaceKind::File(_) | WorkSpaceKind::NotFound => 2,
+    };
+    (is_temporary, kind_rank)
 }

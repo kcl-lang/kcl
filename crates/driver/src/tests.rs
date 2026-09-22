@@ -2,11 +2,28 @@ use std::panic;
 use std::path::PathBuf;
 
 use kcl_config::settings::KeyValuePair;
+use kcl_utils::path::PathPrefix;
 
 use crate::arguments::parse_key_value_pair;
 use crate::toolchain::NativeToolchain;
 use crate::toolchain::Toolchain;
-use crate::{get_pkg_list, lookup_the_nearest_file_dir, toolchain};
+use crate::{
+    CompileUnitPath, WorkSpaceKind, get_pkg_list, lookup_compile_unit_path,
+    lookup_compile_unit_path_bounded, lookup_compile_workspace, lookup_compile_workspace_bounded,
+    lookup_the_nearest_file_dir, toolchain,
+};
+
+fn lookup_walkup_dir(rel: &str) -> PathBuf {
+    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("src")
+        .join("test_data")
+        .join("lookup_walkup")
+        .join(rel);
+    // Strip the Windows `\\?\` prefix that `canonicalize` adds so the
+    // returned path matches the form produced by
+    // `lookup_compile_unit_path_internal` and `lookup_workspace_bounded`.
+    PathBuf::from(dir.canonicalize().unwrap().adjust_canonicalization())
+}
 
 #[test]
 fn test_parse_key_value_pair() {
@@ -189,4 +206,199 @@ fn test_get_pkg_list() {
             entry
         );
     }
+}
+
+#[test]
+fn test_lookup_walkup_kpm_pkg() {
+    let root = lookup_walkup_dir("kpm_pkg");
+    let a_k = root.join("pkg").join("a.k");
+    let tool = toolchain::default();
+
+    assert_eq!(
+        lookup_compile_unit_path(a_k.to_str().unwrap()).unwrap(),
+        CompileUnitPath::ModFile(root.clone())
+    );
+
+    let (files, opts, _) = lookup_compile_workspace(&tool, a_k.to_str().unwrap(), true);
+    assert_eq!(files, vec!["main.k".to_string()]);
+    assert_eq!(
+        opts.map(|o| o.work_dir).unwrap_or_default(),
+        root.to_string_lossy().to_string()
+    );
+
+    let workspaces =
+        lookup_compile_workspace_bounded(&tool, a_k.to_str().unwrap(), true, None).unwrap();
+    assert_eq!(workspaces.len(), 1);
+    let (kind, (files, _, _)) = workspaces.into_iter().next().unwrap();
+    assert_eq!(kind, WorkSpaceKind::ModFile(root.join("kcl.mod")));
+    assert_eq!(files, vec!["main.k".to_string()]);
+}
+
+#[test]
+fn test_lookup_walkup_konfig_like() {
+    let root = lookup_walkup_dir("konfig_like");
+    let base_a_k = root.join("base").join("pkg1").join("a.k");
+    let prod_main_k = root.join("prog").join("prod").join("main.k");
+    let tool = toolchain::default();
+
+    // The old format root kcl.mod is not a compile unit root, so the lookup
+    // walks past it and falls back to the directory containing the file.
+    assert_eq!(
+        lookup_compile_unit_path(base_a_k.to_str().unwrap()).unwrap(),
+        CompileUnitPath::NotFound
+    );
+
+    let (files, _, _) = lookup_compile_workspace(&tool, base_a_k.to_str().unwrap(), true);
+    assert_eq!(files, vec![base_a_k.to_string_lossy().to_string()]);
+
+    let workspaces =
+        lookup_compile_workspace_bounded(&tool, base_a_k.to_str().unwrap(), true, None).unwrap();
+    assert_eq!(workspaces.len(), 1);
+    let (kind, _) = workspaces.into_iter().next().unwrap();
+    assert_eq!(kind, WorkSpaceKind::NotFound);
+
+    // The kcl.yaml in the same directory as the file is hit before the
+    // invalid root kcl.mod.
+    assert_eq!(
+        lookup_compile_unit_path(prod_main_k.to_str().unwrap()).unwrap(),
+        CompileUnitPath::SettingFile(root.join("prog").join("prod"))
+    );
+
+    let (files, _, _) = lookup_compile_workspace(&tool, prod_main_k.to_str().unwrap(), true);
+    assert_eq!(files, vec!["main.k".to_string()]);
+
+    let workspaces =
+        lookup_compile_workspace_bounded(&tool, prod_main_k.to_str().unwrap(), true, None).unwrap();
+    assert_eq!(workspaces.len(), 1);
+    let (kind, _) = workspaces.into_iter().next().unwrap();
+    assert_eq!(
+        kind,
+        WorkSpaceKind::SettingFile(root.join("prog").join("prod").join("kcl.yaml"))
+    );
+}
+
+#[test]
+fn test_lookup_walkup_plain() {
+    let root = lookup_walkup_dir("plain");
+    let c_k = root.join("sub").join("c.k");
+    let d_k = root.join("sub").join("d.k");
+    let tool = toolchain::default();
+
+    assert_eq!(
+        lookup_compile_unit_path(c_k.to_str().unwrap()).unwrap(),
+        CompileUnitPath::NotFound
+    );
+
+    let (mut files, _, _) = lookup_compile_workspace(&tool, c_k.to_str().unwrap(), true);
+    files.sort();
+    assert_eq!(
+        files,
+        vec![
+            c_k.to_string_lossy().to_string(),
+            d_k.to_string_lossy().to_string()
+        ]
+    );
+
+    let (files, _, _) = lookup_compile_workspace(&tool, c_k.to_str().unwrap(), false);
+    assert_eq!(files, vec![c_k.to_string_lossy().to_string()]);
+}
+
+#[test]
+fn test_lookup_walkup_nested_bound() {
+    let root = lookup_walkup_dir("nested_bound");
+    let sub = root.join("sub");
+    let inner_main_k = sub.join("inner").join("main.k");
+    let tool = toolchain::default();
+
+    // Without a bound, the walk-up reaches the root kcl.mod.
+    assert_eq!(
+        lookup_compile_unit_path(inner_main_k.to_str().unwrap()).unwrap(),
+        CompileUnitPath::ModFile(root.clone())
+    );
+    let (files, _, _) = lookup_compile_workspace(&tool, inner_main_k.to_str().unwrap(), true);
+    assert_eq!(files, vec!["main.k".to_string()]);
+
+    // A bound below the kcl.mod truncates the walk-up and falls back to the
+    // directory containing the file.
+    assert_eq!(
+        lookup_compile_unit_path_bounded(inner_main_k.to_str().unwrap(), Some(sub.as_path()))
+            .unwrap(),
+        CompileUnitPath::NotFound
+    );
+    let workspaces = lookup_compile_workspace_bounded(
+        &tool,
+        inner_main_k.to_str().unwrap(),
+        true,
+        Some(sub.as_path()),
+    )
+    .unwrap();
+    assert_eq!(workspaces.len(), 1);
+    let (kind, (files, _, _)) = workspaces.into_iter().next().unwrap();
+    assert_eq!(kind, WorkSpaceKind::NotFound);
+    assert_eq!(files, vec![inner_main_k.to_string_lossy().to_string()]);
+
+    // A bound at the kcl.mod directory itself still hits the kcl.mod.
+    assert_eq!(
+        lookup_compile_unit_path_bounded(inner_main_k.to_str().unwrap(), Some(root.as_path()))
+            .unwrap(),
+        CompileUnitPath::ModFile(root.clone())
+    );
+    let workspaces = lookup_compile_workspace_bounded(
+        &tool,
+        inner_main_k.to_str().unwrap(),
+        true,
+        Some(root.as_path()),
+    )
+    .unwrap();
+    assert_eq!(workspaces.len(), 1);
+    let (kind, (files, _, _)) = workspaces.into_iter().next().unwrap();
+    assert_eq!(kind, WorkSpaceKind::ModFile(root.join("kcl.mod")));
+    assert_eq!(files, vec!["main.k".to_string()]);
+}
+
+#[test]
+fn test_lookup_walkup_mod_yaml_priority() {
+    let root = lookup_walkup_dir("mod_yaml_priority");
+    let plain_k = root.join("plain_file.k");
+    let tool = toolchain::default();
+
+    // A valid kcl.mod has higher priority than a kcl.yaml in the same
+    // directory.
+    assert_eq!(
+        lookup_compile_unit_path(plain_k.to_str().unwrap()).unwrap(),
+        CompileUnitPath::ModFile(root.clone())
+    );
+
+    let (files, _, _) = lookup_compile_workspace(&tool, plain_k.to_str().unwrap(), true);
+    assert_eq!(files, vec!["mod_main.k".to_string()]);
+}
+
+#[test]
+fn test_lookup_walkup_kcl_work() {
+    let root = lookup_walkup_dir("kcl_work_proj");
+    let main_k = root.join("a").join("main.k");
+    let sub_b_k = root.join("a").join("sub").join("b.k");
+    let tool = toolchain::default();
+
+    assert_eq!(
+        lookup_compile_unit_path(sub_b_k.to_str().unwrap()).unwrap(),
+        CompileUnitPath::WorkFile(root.join("kcl.work"))
+    );
+
+    let workspaces =
+        lookup_compile_workspace_bounded(&tool, main_k.to_str().unwrap(), true, None).unwrap();
+    assert_eq!(workspaces.len(), 1);
+    let (kind, (files, _, _)) = workspaces.into_iter().next().unwrap();
+    assert_eq!(kind, WorkSpaceKind::Folder(root.join("a")));
+    assert!(files.is_empty());
+
+    // A file directly in a listed workspace falls back to the directory
+    // containing the file, as before the walk-up change.
+    let (files, _, _) = lookup_compile_workspace(&tool, main_k.to_str().unwrap(), true);
+    assert_eq!(files, vec![main_k.to_string_lossy().to_string()]);
+
+    // A file not in any listed workspace falls back to the directory
+    // containing the file instead of expanding the work file forever.
+    let (files, _, _) = lookup_compile_workspace(&tool, sub_b_k.to_str().unwrap(), true);
+    assert_eq!(files, vec![sub_b_k.to_string_lossy().to_string()]);
 }
