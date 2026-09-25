@@ -1,6 +1,7 @@
 use std::{
     fs,
     path::{Component, Path, PathBuf},
+    process::Command,
 };
 
 pub(crate) fn copy_directory(src: &Path, dst: &Path) -> std::io::Result<()> {
@@ -49,8 +50,8 @@ pub(crate) fn resolve_scoped_path<P: AsRef<Path>>(
         }
     }
 
-    // Reject obvious traversal attempts up-front so we don't depend on the
-    // target existing (the caller's `fs::*` call will surface that error
+    // Reject obvious traversal attempts up-front so we don't depend on
+    // the target existing (the caller's `fs::*` call will surface that error
     // itself). This check is purely syntactic and deliberately runs before
     // any filesystem access: `canonicalize` on the module root can fail
     // transiently (observed on the Windows CI runners for freshly created
@@ -147,11 +148,170 @@ pub(crate) fn scope_enabled() -> bool {
     }
 }
 
+/// Split a `filepath[:ref]` argument into its path and (optional) git
+/// ref parts.
+///
+/// The supported grammar is `path:ref` where:
+/// * `path` is any string accepted by `fs::read_to_string`, including
+///   absolute paths and POSIX/Windows paths,
+/// * `ref` is a git ref (branch, tag, commit SHA, or `HEAD`) — i.e. it
+///   only contains `[A-Za-z0-9_./-]` characters and never begins with
+///   `.`, `/`, or contains a `..` segment.
+///
+/// Windows drive letters (`C:foo`) are skipped when searching for the
+/// separator so `C:\path\to\file.txt` is left untouched.
+pub(crate) fn split_path_ref(input: &str) -> (&str, Option<&str>) {
+    let bytes = input.as_bytes();
+
+    // Skip a leading Windows drive letter ("C:" followed by a path
+    // separator or end of string) so we don't split on it. Real drive
+    // letters are always followed by `\` or `/`, never by an
+    // alphanumeric — which keeps `x:HEAD` from being misread.
+    let scan_start = if bytes.len() >= 3
+        && bytes[0].is_ascii_alphabetic()
+        && bytes[1] == b':'
+        && (bytes[2] == b'\\' || bytes[2] == b'/')
+    {
+        2
+    } else {
+        0
+    };
+
+    let Some(rel_idx) = input[scan_start..].rfind(':') else {
+        return (input, None);
+    };
+    let sep_idx = scan_start + rel_idx;
+    let rest = &input[sep_idx + 1..];
+
+    // Empty ref ("path:") is treated as no ref — fall back to fs::read.
+    if rest.is_empty() {
+        return (input, None);
+    }
+
+    let first = rest.as_bytes()[0];
+    if first == b'.' || first == b'/' || first == b'\\' {
+        return (input, None);
+    }
+
+    // A ref is made of safe, ref-name characters only.
+    if !rest
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-' | '/'))
+    {
+        return (input, None);
+    }
+
+    if rest.contains("..") {
+        return (input, None);
+    }
+
+    (&input[..sep_idx], Some(rest))
+}
+
+/// Walk up from `start` looking for a directory that contains `.git`.
+/// Returns the absolute path to the git working tree root, or `None`
+/// if no git repository is found.
+pub(crate) fn find_git_root(start: &Path) -> Option<PathBuf> {
+    let mut current = Some(start.to_path_buf());
+    while let Some(dir) = current {
+        if dir.join(".git").exists() {
+            return Some(dir);
+        }
+        current = dir.parent().map(Path::to_path_buf);
+    }
+    None
+}
+
+/// Express the absolute `abs` path relative to `git_root`. Errors out if
+/// the path escapes the repo. `original` is the user-supplied path, used
+/// for error messages.
+pub(crate) fn path_relative_to_git_root(
+    abs: &Path,
+    git_root: &Path,
+    original: &str,
+) -> Result<String, String> {
+    let rel = abs
+        .strip_prefix(git_root)
+        .map_err(|_| format!("file '{}' is not inside the git repository", original))?;
+    // `git show <ref>:<path>` wants forward slashes even on Windows.
+    Ok(rel.to_string_lossy().replace('\\', "/"))
+}
+
+/// Run `git show <ref>:<repo_rel_path>` inside the git working tree
+/// `repo` and return its stdout as a `String`. Running with the repo as
+/// the child cwd keeps the lookup anchored to the repository discovered
+/// by `find_git_root` instead of the process-wide current working
+/// directory (which tests and embedders may relocate). Any failure (git
+/// missing, bad ref, bad path, non-zero exit) is reported as an error
+/// string.
+pub(crate) fn git_show(repo: &Path, repo_rel_path: &str, ref_name: &str) -> Result<String, String> {
+    let spec = format!("{}:{}", ref_name, repo_rel_path);
+    let output = Command::new("git")
+        .args(["show", &spec])
+        .current_dir(repo)
+        .output()
+        .map_err(|e| format!("failed to invoke git: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let trimmed = stderr.trim();
+        return Err(if trimmed.is_empty() {
+            format!("git show '{}' exited with status {}", spec, output.status)
+        } else {
+            format!("git show '{}' failed: {}", spec, trimmed)
+        });
+    }
+
+    Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+}
+
+/// Read the contents of the already scope-resolved `filepath` pinned to
+/// the git revision `ref_name`, by walking up from the resolved path to
+/// the enclosing git repository and running `git show <ref>:<path>`.
+/// `filepath` is the original user-supplied string, used for error
+/// messages.
+pub(crate) fn read_git_ref(
+    filepath: &str,
+    resolved: &Path,
+    ref_name: &str,
+) -> Result<String, String> {
+    let abs = absolutize(resolved)?;
+    let git_root = find_git_root(abs.parent().unwrap_or(&abs)).ok_or_else(|| {
+        format!(
+            "file '{}' uses ':ref' but no git repository was found",
+            filepath
+        )
+    })?;
+    let rel = path_relative_to_git_root(&abs, &git_root, filepath)?;
+    git_show(&git_root, &rel, ref_name)
+}
+
+/// Byte-oriented counterpart of [`read_git_ref`] for `readbase64`.
+pub(crate) fn read_git_ref_bytes(
+    filepath: &str,
+    resolved: &Path,
+    ref_name: &str,
+) -> Result<Vec<u8>, String> {
+    Ok(read_git_ref(filepath, resolved, ref_name)?.into_bytes())
+}
+
+/// Join a still-relative `resolved` path (scope check skipped or no
+/// module root was found) onto the process working directory.
+fn absolutize(resolved: &Path) -> Result<PathBuf, String> {
+    if resolved.is_absolute() {
+        Ok(resolved.to_path_buf())
+    } else {
+        std::env::current_dir()
+            .map(|cwd| cwd.join(resolved))
+            .map_err(|e| format!("failed to get cwd: {}", e))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::collections::HashMap;
-    use std::sync::Mutex;
+    use std::sync::{Mutex, OnceLock};
 
     /// Serialize tests that mutate the process-global `KCL_FILE_SCOPE`
     /// environment variable. Cargo runs tests on multiple threads by default,
@@ -308,5 +468,160 @@ mod tests {
             assert!(err.is_ok());
             assert_eq!(path, PathBuf::from("../escape.txt"));
         });
+    }
+
+    #[test]
+    fn split_path_ref_no_colon_is_just_path() {
+        assert_eq!(split_path_ref("foo.txt"), ("foo.txt", None));
+        assert_eq!(split_path_ref("/abs/path.txt"), ("/abs/path.txt", None));
+        assert_eq!(split_path_ref(""), ("", None));
+    }
+
+    #[test]
+    fn split_path_ref_with_ref() {
+        assert_eq!(
+            split_path_ref("assets/x.lua:07bf1e2ee"),
+            ("assets/x.lua", Some("07bf1e2ee"))
+        );
+        assert_eq!(split_path_ref("x:HEAD"), ("x", Some("HEAD")));
+        assert_eq!(split_path_ref("x:1.2"), ("x", Some("1.2")));
+        assert_eq!(split_path_ref("x:my/branch"), ("x", Some("my/branch")));
+    }
+
+    #[test]
+    fn split_path_ref_skips_windows_drive_letter() {
+        assert_eq!(
+            split_path_ref(r"C:\path\to\file.txt"),
+            (r"C:\path\to\file.txt", None)
+        );
+        assert_eq!(
+            split_path_ref(r"C:\path\file.txt:HEAD"),
+            (r"C:\path\file.txt", Some("HEAD"))
+        );
+    }
+
+    #[test]
+    fn split_path_ref_rejects_unsafe_suffixes() {
+        // Trailing colon with empty ref.
+        assert_eq!(split_path_ref("foo:"), ("foo:", None));
+        // Ref starting with a dot / slash / backslash.
+        assert_eq!(split_path_ref("foo:.hidden"), ("foo:.hidden", None));
+        assert_eq!(split_path_ref("foo:/abs"), ("foo:/abs", None));
+        // Path traversal markers.
+        assert_eq!(split_path_ref("foo:../etc"), ("foo:../etc", None));
+        // Disallowed characters.
+        assert_eq!(split_path_ref("foo:bad ref"), ("foo:bad ref", None));
+        assert_eq!(split_path_ref("foo:bad$ref"), ("foo:bad$ref", None));
+    }
+
+    /// Serialises tests that mutate the process-wide current working
+    /// directory. Cargo runs tests in parallel by default, so without
+    /// this lock the `set_current_dir` calls here would race and
+    /// produce flaky failures.
+    fn cwd_lock() -> &'static Mutex<()> {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| Mutex::new(()))
+    }
+
+    /// Build a two-commit git repo with `hello.txt` in a temp dir; the
+    /// first commit is tagged `v1.0` and HEAD has the second revision.
+    /// `tag` makes the directory name unique per caller.
+    fn build_two_commit_repo(tag: &str) -> PathBuf {
+        let dir =
+            std::env::temp_dir().join(format!("kcl_file_git_test_{tag}_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("hello.txt");
+        fs::write(&file, "v1\n").unwrap();
+
+        let run = |args: &[&str]| {
+            Command::new("git")
+                .args(args)
+                .current_dir(&dir)
+                .env("GIT_AUTHOR_NAME", "test")
+                .env("GIT_AUTHOR_EMAIL", "test@example.com")
+                .env("GIT_COMMITTER_NAME", "test")
+                .env("GIT_COMMITTER_EMAIL", "test@example.com")
+                .output()
+                .unwrap()
+        };
+        assert!(run(&["init", "-q"]).status.success());
+        assert!(run(&["add", "hello.txt"]).status.success());
+        assert!(run(&["commit", "-q", "-m", "v1"]).status.success());
+        assert!(run(&["tag", "v1.0"]).status.success());
+
+        fs::write(&file, "v2\n").unwrap();
+        assert!(run(&["add", "hello.txt"]).status.success());
+        assert!(run(&["commit", "-q", "-m", "v2"]).status.success());
+        dir
+    }
+
+    #[test]
+    fn read_git_ref_resolves_relative_to_cwd() {
+        let _guard = cwd_lock().lock().unwrap();
+        let dir = build_two_commit_repo("rel");
+        let cwd = std::env::current_dir().unwrap();
+        std::env::set_current_dir(&dir).unwrap();
+        let head_result = read_git_ref("hello.txt:HEAD", Path::new("hello.txt"), "HEAD");
+        let pinned_result = read_git_ref("hello.txt:v1.0", Path::new("hello.txt"), "v1.0");
+        std::env::set_current_dir(&cwd).unwrap();
+        let _ = fs::remove_dir_all(&dir);
+
+        assert_eq!(head_result.unwrap(), "v2\n");
+        assert_eq!(pinned_result.unwrap(), "v1\n");
+    }
+
+    #[test]
+    fn read_git_ref_uses_resolved_path_regardless_of_cwd() {
+        // With an absolute resolved path the enclosing repository is
+        // found next to the file, not next to the process cwd.
+        let dir = build_two_commit_repo("abs");
+        let resolved = dir.join("hello.txt");
+        let pinned = read_git_ref("hello.txt:v1.0", &resolved, "v1.0");
+        let _ = fs::remove_dir_all(&dir);
+
+        assert_eq!(pinned.unwrap(), "v1\n");
+    }
+
+    #[test]
+    fn read_git_ref_errors_outside_repo() {
+        let _guard = cwd_lock().lock().unwrap();
+        // A temp directory that is *not* a git repo should make the
+        // ref-style call fail with a clear message.
+        let dir = std::env::temp_dir().join(format!("kcl_file_nogit_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        fs::write(dir.join("hello.txt"), "v1").unwrap();
+
+        let cwd = std::env::current_dir().unwrap();
+        std::env::set_current_dir(&dir).unwrap();
+        let result = read_git_ref("hello.txt:HEAD", Path::new("hello.txt"), "HEAD");
+        std::env::set_current_dir(&cwd).unwrap();
+        let _ = fs::remove_dir_all(&dir);
+
+        let err = result.unwrap_err();
+        assert!(
+            err.contains("no git repository"),
+            "expected 'no git repository' in error, got: {}",
+            err
+        );
+    }
+
+    #[test]
+    fn path_relative_to_git_root_rejects_escape() {
+        // A resolved path that does not live under the discovered git
+        // root cannot be expressed repo-relatively. This is a pure
+        // path computation, exercised directly for determinism.
+        let err = path_relative_to_git_root(
+            Path::new("/other/dir/file.txt"),
+            Path::new("/repo"),
+            "../dir/file.txt",
+        )
+        .unwrap_err();
+        assert!(
+            err.contains("is not inside the git repository"),
+            "expected 'not inside the git repository' in error, got: {}",
+            err
+        );
     }
 }
