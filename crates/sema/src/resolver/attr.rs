@@ -108,8 +108,7 @@ impl<'ctx> Resolver<'_> {
                                 // rest of the program still gets a type (Any)
                                 // and downstream symbol registration is not
                                 // short-circuited.
-                                if is_private_field(attr) && module_ty.pkgpath != self.ctx.pkgpath
-                                {
+                                if is_private_field(attr) && module_ty.pkgpath != self.ctx.pkgpath {
                                     self.handler.add_compile_error(
                                         &format!(
                                             "cannot reference private member '{}' from module '{}'",
