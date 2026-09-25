@@ -22,7 +22,9 @@ jobs:
             lib_target: x86_64-unknown-linux-gnu.2.17
             lib_subpath: x86_64-unknown-linux-gnu
             lib_name: libkcl.so
-            lsp_build: native
+            lsp_build: zigbuild
+            lsp_target: x86_64-unknown-linux-gnu.2.17
+            lsp_subpath: x86_64-unknown-linux-gnu
             lsp_bin: kcl-language-server
           - target: linux-arm64
             os: ubuntu-22.04-arm
@@ -30,7 +32,9 @@ jobs:
             lib_target: aarch64-unknown-linux-gnu.2.17
             lib_subpath: aarch64-unknown-linux-gnu
             lib_name: libkcl.so
-            lsp_build: native
+            lsp_build: zigbuild
+            lsp_target: aarch64-unknown-linux-gnu.2.17
+            lsp_subpath: aarch64-unknown-linux-gnu
             lsp_bin: kcl-language-server
           # Linux musl (staticlib)
           - target: linux-musl-amd64
@@ -92,12 +96,13 @@ jobs:
           override: true
 
       - name: Install cargo-zigbuild (Linux glibc / musl)
-        if: matrix.lib_build == 'zigbuild'
+        if: matrix.lib_build == 'zigbuild' || matrix.lsp_build == 'zigbuild'
         shell: bash
         run: |
           pip3 install ziglang
           cargo install --locked cargo-zigbuild
-          rustup target add ${{ matrix.lib_subpath }}
+          [ -n "${{ matrix.lib_subpath }}" ] && rustup target add ${{ matrix.lib_subpath }}
+          [ -n "${{ matrix.lsp_subpath }}" ] && rustup target add ${{ matrix.lsp_subpath }}
 
       - name: Set up MSVC dev command prompt (Windows)
         if: matrix.os == 'windows-latest'
@@ -137,7 +142,16 @@ jobs:
           mkdir -p release/lib
           cp -f target/wasm32-wasip1/release/${{ matrix.lib_name }} release/lib/
 
-      - name: Build kcl-language-server (Linux / macOS)
+      - name: "Build kcl-language-server (zigbuild: Linux glibc)"
+        if: matrix.lsp_build == 'zigbuild'
+        shell: bash
+        run: |
+          cargo zigbuild --target ${{ matrix.lsp_target }} -r \
+            --manifest-path crates/tools/src/LSP/Cargo.toml
+          mkdir -p release/language-server
+          cp -f target/${{ matrix.lsp_subpath }}/release/${{ matrix.lsp_bin }} release/language-server/
+
+      - name: "Build kcl-language-server (native: macOS)"
         if: matrix.lsp_build == 'native' && matrix.os != 'windows-latest'
         shell: bash
         run: |
@@ -170,7 +184,7 @@ jobs:
           Compress-Archive -Path release/lib/* -DestinationPath "kcl-lib-${tag}-${{ matrix.target }}.zip" -Force
 
       - name: Package kcl-language-server (Linux / macOS)
-        if: matrix.lsp_build == 'native' && matrix.os != 'windows-latest'
+        if: (matrix.lsp_build == 'native' || matrix.lsp_build == 'zigbuild') && matrix.os != 'windows-latest'
         shell: bash
         run: |
           TAG="${{ github.ref_name }}"
@@ -202,7 +216,7 @@ jobs:
           path: kcl-lib-${{ github.ref_name }}-${{ matrix.target }}.*
 
       - uses: actions/upload-artifact@v4
-        if: matrix.lsp_build == 'native'
+        if: matrix.lsp_build != 'none'
         with:
           name: kcl-language-server-${{ matrix.target }}
           if-no-files-found: error

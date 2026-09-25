@@ -420,7 +420,7 @@ impl LanguageServerState {
                 match filename {
                     Ok(filename) => {
                         let uri = url_from_path(&filename).unwrap();
-                        let mut state_workspaces = self.analysis.workspaces.read();
+                        let state_workspaces = self.analysis.workspaces.read();
                         self.temporary_workspace.write().insert(file.file_id, None);
 
                         let mut may_contain = false;
@@ -463,6 +463,12 @@ impl LanguageServerState {
                                 DBState::Failed(_) => continue,
                             }
                         }
+                        // Release the workspaces read guard before the fresh
+                        // `workspaces.read()` below: parking_lot read locks
+                        // are not reentrant, so a compile thread waiting for
+                        // the write lock in between would turn the second
+                        // read into a self-deadlock.
+                        drop(state_workspaces);
 
                         if !may_contain {
                             self.log_message(format!(
