@@ -20,6 +20,7 @@ jobs:
             os: ubuntu-latest
             lib_build: zigbuild
             lib_target: x86_64-unknown-linux-gnu.2.17
+            lib_subpath: x86_64-unknown-linux-gnu
             lib_name: libkcl.so
             lsp_build: native
             lsp_bin: kcl-language-server
@@ -27,6 +28,7 @@ jobs:
             os: ubuntu-22.04-arm
             lib_build: zigbuild
             lib_target: aarch64-unknown-linux-gnu.2.17
+            lib_subpath: aarch64-unknown-linux-gnu
             lib_name: libkcl.so
             lsp_build: native
             lsp_bin: kcl-language-server
@@ -35,12 +37,14 @@ jobs:
             os: ubuntu-latest
             lib_build: zigbuild
             lib_target: x86_64-unknown-linux-musl
+            lib_subpath: x86_64-unknown-linux-musl
             lib_name: libkcl.a
             lsp_build: none
           - target: linux-musl-arm64
             os: ubuntu-22.04-arm
             lib_build: zigbuild
             lib_target: aarch64-unknown-linux-musl
+            lib_subpath: aarch64-unknown-linux-musl
             lib_name: libkcl.a
             lsp_build: none
           # macOS
@@ -69,7 +73,7 @@ jobs:
           - target: wasm32-wasip1
             os: ubuntu-latest
             lib_build: wasm
-            lib_target: wasm32-wasip1
+            lib_subpath: wasm32-wasip1
             lib_name: kcl.wasm
             lsp_build: none
     runs-on: ${{ matrix.os }}
@@ -104,15 +108,23 @@ jobs:
         run: |
           cargo zigbuild --target ${{ matrix.lib_target }} -r -p kcl-lib
           mkdir -p release/lib
-          cp -f target/${{ matrix.lib_target }}/release/${{ matrix.lib_name }} release/lib/
+          cp -f target/${{ matrix.lib_subpath }}/release/${{ matrix.lib_name }} release/lib/
 
-      - name: "Build kcl-lib (native: macOS / Windows)"
-        if: matrix.lib_build == 'native'
+      - name: "Build kcl-lib (native: macOS)"
+        if: matrix.lib_build == 'native' && matrix.os != 'windows-latest'
         shell: bash
         run: |
           cargo build --release -p kcl-lib
           mkdir -p release/lib
           cp -f target/release/${{ matrix.lib_name }} release/lib/
+
+      - name: "Build kcl-lib (native: Windows MSVC)"
+        if: matrix.lib_build == 'native' && matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          cargo build --release -p kcl-lib
+          New-Item -ItemType Directory -Force -Path release/lib | Out-Null
+          Copy-Item -Force "target/release/${{ matrix.lib_name }}" release/lib/
 
       - name: Build kcl-lib (WASM)
         if: matrix.lib_build == 'wasm'
@@ -124,15 +136,24 @@ jobs:
           mkdir -p release/lib
           cp -f target/wasm32-wasip1/release/${{ matrix.lib_name }} release/lib/
 
-      - name: Build kcl-language-server
-        if: matrix.lsp_build == 'native'
+      - name: Build kcl-language-server (Linux / macOS)
+        if: matrix.lsp_build == 'native' && matrix.os != 'windows-latest'
         shell: bash
         run: |
           cargo build --release --manifest-path crates/tools/src/LSP/Cargo.toml
           mkdir -p release/language-server
           cp -f target/release/${{ matrix.lsp_bin }} release/language-server/
 
-      - name: Package kcl-lib
+      - name: Build kcl-language-server (Windows)
+        if: matrix.lsp_build == 'native' && matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          cargo build --release --manifest-path crates/tools/src/LSP/Cargo.toml
+          New-Item -ItemType Directory -Force -Path release/language-server | Out-Null
+          Copy-Item -Force "target/release/${{ matrix.lsp_bin }}" release/language-server/
+
+      - name: Package kcl-lib (Linux / macOS / WASM)
+        if: matrix.os != 'windows-latest'
         shell: bash
         run: |
           TAG="${{ github.ref_name }}"
@@ -140,8 +161,15 @@ jobs:
           tar -czvf "../../kcl-lib-${TAG}-${{ matrix.target }}.tar.gz" .
           cd ../..
 
-      - name: Package kcl-language-server
-        if: matrix.lsp_build == 'native'
+      - name: Package kcl-lib (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          Compress-Archive -Path release/lib/* -DestinationPath "kcl-lib-${tag}-${{ matrix.target }}.zip" -Force
+
+      - name: Package kcl-language-server (Linux / macOS)
+        if: matrix.lsp_build == 'native' && matrix.os != 'windows-latest'
         shell: bash
         run: |
           TAG="${{ github.ref_name }}"
@@ -149,22 +177,35 @@ jobs:
           tar -czvf "../../kcl-language-server-${TAG}-${{ matrix.target }}.tar.gz" .
           cd ../..
 
-      - name: List packaged artifacts
+      - name: Package kcl-language-server (Windows)
+        if: matrix.lsp_build == 'native' && matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          Compress-Archive -Path release/language-server/* -DestinationPath "kcl-language-server-${tag}-${{ matrix.target }}.zip" -Force
+
+      - name: List packaged artifacts (Linux / macOS / WASM)
+        if: matrix.os != 'windows-latest'
         shell: bash
         run: ls -la kcl-lib-*.tar.gz kcl-language-server-*.tar.gz 2>/dev/null || true
+
+      - name: List packaged artifacts (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: Get-ChildItem -Name kcl-lib-*.zip, kcl-language-server-*.zip
 
       - uses: actions/upload-artifact@v4
         with:
           name: kcl-lib-${{ matrix.target }}
           if-no-files-found: error
-          path: kcl-lib-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
+          path: kcl-lib-${{ github.ref_name }}-${{ matrix.target }}.*
 
       - uses: actions/upload-artifact@v4
         if: matrix.lsp_build == 'native'
         with:
           name: kcl-language-server-${{ matrix.target }}
           if-no-files-found: error
-          path: kcl-language-server-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
+          path: kcl-language-server-${{ github.ref_name }}-${{ matrix.target }}.*
 
   release:
     name: Publish GitHub Release
@@ -177,7 +218,7 @@ jobs:
           path: artifacts
 
       - name: List downloaded artifacts
-        run: find artifacts -type f -name '*.tar.gz' | sort
+        run: find artifacts -type f | sort
 
       - name: Create release and upload assets
         uses: softprops/action-gh-release@v2
@@ -187,6 +228,6 @@ jobs:
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: |
-              artifacts/**/*.tar.gz
+              artifacts/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
