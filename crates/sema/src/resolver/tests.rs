@@ -288,7 +288,7 @@ fn test_resolve_program_private_cross_pkg_fail() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     let diagnostics = &scope.handler.diagnostics;
     assert!(
         diagnostics.iter().any(|d| d.messages[0]
