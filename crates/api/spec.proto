@@ -661,7 +661,6 @@ service KclService {
 	/// ```
 	rpc ValidateCode(ValidateCodeArgs) returns (ValidateCodeResult);
 
-	rpc ListDepFiles(ListDepFilesArgs) returns (ListDepFilesResult);
 	/// Build setting file config from args.
 	///
 	/// # Examples
@@ -1301,28 +1300,6 @@ message Position {
 	int64 column = 2;
 	// Filename the position refers to.
 	string filename = 3;
-}
-
-// Message for list dependency files request arguments.
-message ListDepFilesArgs {
-	// Working directory.
-	string work_dir = 1;
-	// Flag to use absolute paths.
-	bool use_abs_path = 2;
-	// Flag to include all files.
-	bool include_all = 3;
-	// Flag to use fast parser.
-	bool use_fast_parser = 4;
-}
-
-// Message for list dependency files response.
-message ListDepFilesResult {
-	// Root package path.
-	string pkgroot = 1;
-	// Package path.
-	string pkgpath = 2;
-	// List of file paths in the package.
-	repeated string files = 3;
 }
 
 // ---------------------------------------------------------------------------------
