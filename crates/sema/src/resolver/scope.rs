@@ -768,10 +768,7 @@ impl DependencyGraph {
                 let module = match program.get_module(module) {
                     Ok(Some(m)) => m,
                     Ok(None) => {
-                        return Err(format!(
-                            "module {:?} not found in program",
-                            module
-                        ));
+                        return Err(format!("module {:?} not found in program", module));
                     }
                     Err(e) => {
                         return Err(format!(
@@ -819,10 +816,7 @@ impl DependencyGraph {
                         let module = match program.get_module(module) {
                             Ok(Some(m)) => m,
                             Ok(None) => {
-                                return Err(format!(
-                                    "module {:?} not found in program",
-                                    module
-                                ));
+                                return Err(format!("module {:?} not found in program", module));
                             }
                             Err(e) => {
                                 return Err(format!(

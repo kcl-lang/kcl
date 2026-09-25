@@ -223,15 +223,9 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool> {
                     .program
                     .get_module_mut(module)
                     .map_err(|e| {
-                        anyhow::anyhow!(
-                            "Module lock acquisition failed for {}: {}",
-                            module,
-                            e
-                        )
+                        anyhow::anyhow!("Module lock acquisition failed for {}: {}", module, e)
                     })?
-                    .ok_or_else(|| {
-                        anyhow::anyhow!("module {:?} not found in program", module)
-                    })?;
+                    .ok_or_else(|| anyhow::anyhow!("module {:?} not found in program", module))?;
                 m.body.push(assign_stmt);
             } else {
                 return Err(anyhow::anyhow!("No main module found"));

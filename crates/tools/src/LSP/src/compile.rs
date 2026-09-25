@@ -142,7 +142,10 @@ pub fn compile(
                     .diagnostics
                     .clone(),
             );
-            return (diags, Ok((program, IndexMap::default(), GlobalState::default())));
+            return (
+                diags,
+                Ok((program, IndexMap::default(), GlobalState::default())),
+            );
         }
     };
     let schema_map: IndexMap<String, Vec<SchemaType>> = filter_pkg_schemas(&prog_scope, None, None);

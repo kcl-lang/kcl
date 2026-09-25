@@ -942,7 +942,9 @@ fn test_set_ty_in_lambda() {
     .unwrap()
     .program;
     assert_eq!(
-        resolve_program(&mut program).unwrap().main_scope()
+        resolve_program(&mut program)
+            .unwrap()
+            .main_scope()
             .unwrap()
             .borrow()
             .find_obj_recursive("result")

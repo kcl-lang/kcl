@@ -11,8 +11,8 @@ use crate::ty::{
 use kcl_ast::ast;
 use kcl_ast_pretty::{ASTNode, print_ast_node, print_schema_expr};
 use kcl_error::*;
-use kcl_runtime::PanicInfo;
 use kcl_primitives::IndexMap;
+use kcl_runtime::PanicInfo;
 
 use super::doc::{SchemaDoc, parse_schema_doc_string};
 use super::scope::{ScopeObject, ScopeObjectKind};

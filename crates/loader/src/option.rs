@@ -61,13 +61,7 @@ pub fn list_options(opts: &LoadPackageOptions) -> Result<Vec<OptionHelp>> {
             let module = packages
                 .program
                 .get_module(module)
-                .map_err(|e| {
-                    anyhow!(
-                        "Failed to acquire module lock for {}: {}",
-                        module,
-                        e
-                    )
-                })?
+                .map_err(|e| anyhow!("Failed to acquire module lock for {}: {}", module, e))?
                 .ok_or_else(|| anyhow!("module {:?} not found in program", module))?;
             extractor.walk_module(&module)
         }

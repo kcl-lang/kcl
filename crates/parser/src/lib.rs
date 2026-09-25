@@ -1379,12 +1379,9 @@ pub fn load_all_files_under_paths(
                                     }
                                 };
 
-                                let pkg = loader
-                                    .pkgmap
-                                    .get(&file)
-                                    .ok_or_else(|| {
-                                        anyhow::anyhow!("file not in pkgmap: {:?}", file)
-                                    })?;
+                                let pkg = loader.pkgmap.get(&file).ok_or_else(|| {
+                                    anyhow::anyhow!("file not in pkgmap: {:?}", file)
+                                })?;
                                 let mut m = m_ref.write().unwrap();
                                 fix_rel_import_path_with_file(
                                     &pkg.pkg_root,
@@ -1417,10 +1414,7 @@ pub fn load_all_files_under_paths(
                             .get(file.get_path())
                             .cloned()
                             .ok_or_else(|| {
-                                anyhow::anyhow!(
-                                    "Module not found in module: {:?}",
-                                    file.get_path()
-                                )
+                                anyhow::anyhow!("Module not found in module: {:?}", file.get_path())
                             })?,
                         Err(e) => return Err(anyhow::anyhow!("Parse program failed: {e}")),
                     };

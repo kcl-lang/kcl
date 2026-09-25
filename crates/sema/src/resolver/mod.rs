@@ -92,17 +92,15 @@ impl<'ctx> Resolver<'ctx> {
                         // invariant violation. Surface as a diagnostic and
                         // skip this module so the rest of the check pass
                         // can continue.
-                        self.handler
-                            .add_panic_info(&PanicInfo::from(format!(
-                                "module {module:?} not found in program"
-                            )));
+                        self.handler.add_panic_info(&PanicInfo::from(format!(
+                            "module {module:?} not found in program"
+                        )));
                         continue;
                     }
                     Err(e) => {
-                        self.handler
-                            .add_panic_info(&PanicInfo::from(format!(
-                                "Failed to acquire module lock for {module}: {e}"
-                            )));
+                        self.handler.add_panic_info(&PanicInfo::from(format!(
+                            "Failed to acquire module lock for {module}: {e}"
+                        )));
                         continue;
                     }
                 };

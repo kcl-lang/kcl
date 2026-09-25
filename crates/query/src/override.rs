@@ -54,16 +54,8 @@ pub fn apply_overrides(
                 // more useful than aborting the whole apply-overrides pass.
                 let mut m = prog
                     .get_module_mut(m)
-                    .map_err(|e| {
-                        anyhow!(
-                            "Module lock acquisition failed for {}: {}",
-                            m,
-                            e
-                        )
-                    })?
-                    .ok_or_else(|| {
-                        anyhow!("module {:?} not found in program", m)
-                    })?;
+                    .map_err(|e| anyhow!("Module lock acquisition failed for {}: {}", m, e))?
+                    .ok_or_else(|| anyhow!("module {:?} not found in program", m))?;
                 if apply_override_on_module(&mut m, o, import_paths)? && print_ast {
                     let code_str = print_ast_module(&m);
                     std::fs::write(&m.filename, &code_str)?
