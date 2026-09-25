@@ -6,6 +6,50 @@ use crate::*;
 use glob::glob;
 use std::io::Write;
 use std::path::Path;
+use utils::{resolve_scoped_path, scope_enabled};
+
+/// Return the directory that should be treated as the root for `file.*`
+/// operations issued from this context — i.e. the directory containing the
+/// KCL source file currently being executed. Falls back to the runtime
+/// `workdir` when the current file is not set (which can happen for some
+/// synthetic/test contexts); in that case scope checks still apply, just
+/// with a different root.
+///
+/// Returns `None` if neither is available, in which case the caller should
+/// skip the scope check (the path is returned as-is).
+fn module_root(ctx: &crate::Context) -> Option<std::path::PathBuf> {
+    let file = ctx.panic_info.kcl_file.trim();
+    if !file.is_empty()
+        && let Some(parent) = std::path::Path::new(file).parent()
+        && !parent.as_os_str().is_empty()
+    {
+        return Some(parent.to_path_buf());
+    }
+    let workdir = ctx.workdir.trim();
+    if !workdir.is_empty() {
+        return Some(std::path::PathBuf::from(workdir));
+    }
+    None
+}
+
+/// Resolve `user_path` against the module root, panicking with a clear
+/// scope error if the path would escape the root. Skips the check when no
+/// module root can be determined (we'd rather let the underlying I/O fail
+/// than over-restrict on synthetic contexts) or when the user has opted
+/// out via `KCL_FILE_SCOPE=off`.
+fn scope_or_panic(ctx: &crate::Context, user_path: &str) -> std::path::PathBuf {
+    if !scope_enabled() {
+        return std::path::PathBuf::from(user_path);
+    }
+    let Some(root) = module_root(ctx) else {
+        return std::path::PathBuf::from(user_path);
+    };
+    let (resolved, err) = resolve_scoped_path(&root, user_path);
+    if let Err(msg) = err {
+        panic!("{}", msg);
+    }
+    resolved
+}
 
 /// # Safety
 /// The caller must ensure that `ctx`, `args`, and `kwargs` are valid pointers
@@ -20,8 +64,9 @@ pub unsafe extern "C-unwind" fn kcl_file_read(
     let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(x) = get_call_arg_str(args, kwargs, 0, Some("filepath")) {
+        let x = scope_or_panic(ctx, &x);
         let contents = fs::read_to_string(&x)
-            .unwrap_or_else(|e| panic!("failed to access the file '{}': {}", x, e));
+            .unwrap_or_else(|e| panic!("failed to access the file '{}': {}", x.display(), e));
 
         let s = ValueRef::str(contents.as_ref());
         return s.into_raw(ctx);
@@ -50,8 +95,9 @@ pub unsafe extern "C-unwind" fn kcl_file_readbase64(
     let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(x) = get_call_arg_str(args, kwargs, 0, Some("filepath")) {
-        let bytes =
-            fs::read(&x).unwrap_or_else(|e| panic!("failed to access the file '{}': {}", x, e));
+        let x = scope_or_panic(ctx, &x);
+        let bytes = fs::read(&x)
+            .unwrap_or_else(|e| panic!("failed to access the file '{}': {}", x.display(), e));
         // Use the fully-qualified path so we don't collide with the
         // local `kcl_runtime::base64` re-export that the runtime ships.
         let encoded = ::base64::encode(&bytes);
@@ -76,6 +122,8 @@ pub unsafe extern "C-unwind" fn kcl_file_glob(
 
     let pattern = get_call_arg_str(args, kwargs, 0, Some("pattern"))
         .expect("glob() takes exactly one argument (0 given)");
+
+    let _scoped_pattern = scope_or_panic(ctx, &pattern);
 
     let mut matched_paths = vec![];
     for entry in glob(&pattern).unwrap_or_else(|e| panic!("Failed to read glob pattern: {}", e)) {
@@ -144,6 +192,7 @@ pub unsafe extern "C-unwind" fn kcl_file_exists(
     let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(path) = get_call_arg_str(args, kwargs, 0, Some("filepath")) {
+        let path = scope_or_panic(ctx, &path);
         let exist = Path::new(&path).exists();
         return ValueRef::bool(exist).into_raw(ctx);
     }
@@ -166,10 +215,11 @@ pub unsafe extern "C-unwind" fn kcl_file_abs(
     let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(path) = get_call_arg_str(args, kwargs, 0, Some("filepath")) {
+        let path = scope_or_panic(ctx, &path);
         if let Ok(abs_path) = Path::new(&path).canonicalize() {
             return ValueRef::str(abs_path.to_str().unwrap()).into_raw(ctx);
         } else {
-            panic!("Could not get the absolute path of {path}");
+            panic!("Could not get the absolute path of {}", path.display());
         }
     }
 
@@ -189,13 +239,14 @@ pub unsafe extern "C-unwind" fn kcl_file_mkdir(
     let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(path) = get_call_arg_str(args, kwargs, 0, Some("directory")) {
+        let path = scope_or_panic(ctx, &path);
         let exists = get_call_arg_bool(args, kwargs, 1, Some("exists")).unwrap_or_default();
         if let Err(e) = fs::create_dir_all(&path) {
             // Ignore the file exists error.
             if exists && matches!(e.kind(), ErrorKind::AlreadyExists) {
                 return ValueRef::none().into_raw(ctx);
             }
-            panic!("Failed to create directory '{}': {}", path, e);
+            panic!("Failed to create directory '{}': {}", path.display(), e);
         }
         return ValueRef::none().into_raw(ctx);
     }
@@ -216,16 +267,17 @@ pub unsafe extern "C-unwind" fn kcl_file_delete(
     let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(path) = get_call_arg_str(args, kwargs, 0, Some("filepath")) {
+        let path = scope_or_panic(ctx, &path);
         if let Err(e) = fs::remove_file(&path) {
             match e.kind() {
                 std::io::ErrorKind::NotFound => {
                     // if file not found, try to remove it as a directory
                     if let Err(e) = fs::remove_dir(&path) {
-                        panic!("failed to delete '{}': {}", path, e);
+                        panic!("failed to delete '{}': {}", path.display(), e);
                     }
                 }
                 _ => {
-                    panic!("failed to delete '{}': {}", path, e);
+                    panic!("failed to delete '{}': {}", path.display(), e);
                 }
             }
         }
@@ -249,12 +301,12 @@ pub unsafe extern "C-unwind" fn kcl_file_cp(
 
     if let Some(src_path) = get_call_arg_str(args, kwargs, 0, Some("src")) {
         if let Some(dest_path) = get_call_arg_str(args, kwargs, 1, Some("dest")) {
-            let src_path = Path::new(&src_path);
-            let dest_path = Path::new(&dest_path);
+            let src_path = scope_or_panic(ctx, &src_path);
+            let dest_path = scope_or_panic(ctx, &dest_path);
             let result = if src_path.is_dir() {
-                utils::copy_directory(src_path, dest_path)
+                utils::copy_directory(&src_path, &dest_path)
             } else {
-                fs::copy(src_path, dest_path).map(|_| ())
+                fs::copy(&src_path, &dest_path).map(|_| ())
             };
             if let Err(e) = result {
                 panic!(
@@ -287,8 +339,15 @@ pub unsafe extern "C-unwind" fn kcl_file_mv(
 
     if let Some(src_path) = get_call_arg_str(args, kwargs, 0, Some("src")) {
         if let Some(dest_path) = get_call_arg_str(args, kwargs, 1, Some("dest")) {
+            let src_path = scope_or_panic(ctx, &src_path);
+            let dest_path = scope_or_panic(ctx, &dest_path);
             if let Err(e) = fs::rename(&src_path, &dest_path) {
-                panic!("Failed to move '{}' to '{}': {}", src_path, dest_path, e);
+                panic!(
+                    "Failed to move '{}' to '{}': {}",
+                    src_path.display(),
+                    dest_path.display(),
+                    e
+                );
             }
             ValueRef::none().into_raw(ctx)
         } else {
@@ -312,6 +371,7 @@ pub unsafe extern "C-unwind" fn kcl_file_size(
     let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(path) = get_call_arg_str(args, kwargs, 0, Some("filepath")) {
+        let path = scope_or_panic(ctx, &path);
         let metadata = fs::metadata(&path);
         match metadata {
             Ok(metadata) => {
@@ -320,7 +380,7 @@ pub unsafe extern "C-unwind" fn kcl_file_size(
                 return value.into_raw(ctx);
             }
             Err(e) => {
-                panic!("failed to get size of '{}': {}", path, e);
+                panic!("failed to get size of '{}': {}", path.display(), e);
             }
         }
     }
@@ -342,14 +402,15 @@ pub unsafe extern "C-unwind" fn kcl_file_write(
 
     if let Some(path) = get_call_arg_str(args, kwargs, 0, Some("filepath")) {
         if let Some(content) = get_call_arg_str(args, kwargs, 1, Some("content")) {
+            let path = scope_or_panic(ctx, &path);
             match fs::File::create(&path) {
                 Ok(mut file) => {
                     if let Err(e) = file.write_all(content.as_bytes()) {
-                        panic!("Failed to write to '{}': {}", path, e);
+                        panic!("Failed to write to '{}': {}", path.display(), e);
                     }
                     ValueRef::none().into_raw(ctx)
                 }
-                Err(e) => panic!("Failed to create file '{}': {}", path, e),
+                Err(e) => panic!("Failed to create file '{}': {}", path.display(), e),
             }
         } else {
             panic!("write() missing 'content' argument");
@@ -373,16 +434,17 @@ pub unsafe extern "C-unwind" fn kcl_file_append(
 
     if let Some(path) = get_call_arg_str(args, kwargs, 0, Some("filepath")) {
         if let Some(content) = get_call_arg_str(args, kwargs, 1, Some("content")) {
+            let path = scope_or_panic(ctx, &path);
             // Open the file in append mode, creating it if it doesn't exist
             match fs::OpenOptions::new().append(true).create(true).open(&path) {
                 Ok(mut file) => {
                     if let Err(e) = file.write_all(content.as_bytes()) {
-                        panic!("Failed to append to file '{}': {}", path, e);
+                        panic!("Failed to append to file '{}': {}", path.display(), e);
                     }
                     ValueRef::none().into_raw(ctx)
                 }
                 Err(e) => {
-                    panic!("Failed to open or create file '{}': {}", path, e);
+                    panic!("Failed to open or create file '{}': {}", path.display(), e);
                 }
             }
         } else {
