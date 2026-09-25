@@ -1,0 +1,5 @@
+half_hour_plus_min: '31m'
+overflow: '1d1h'
+with_zero: '1h30m'
+days: '2d'
+full: '2d4h6m8s'

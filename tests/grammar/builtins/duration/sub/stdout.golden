@@ -1,0 +1,5 @@
+half: '30m'
+one_day: '1d'
+zero: '0s'
+with_seconds: '30s'
+full: '1h3m4s'

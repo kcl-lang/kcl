@@ -1,0 +1,5 @@
+zero: '0s'
+plain: '45s'
+mixed: '1h30m'
+full: '1d2h3m4s'
+fractional: '1m30.5s'
