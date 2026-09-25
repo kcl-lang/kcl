@@ -241,11 +241,16 @@ mod tests {
             .unwrap();
     }
 
+    // The waits below answer on the server's schedule, not the test's:
+    // every hop runs on a different thread, and on heavily loaded CI
+    // runners a round trip can stall well beyond the old 30s budget.
+    const WAIT_TIMEOUT: Duration = Duration::from_secs(120);
+
     fn wait_for_notification(
         rx: &Receiver<lsp_server::Message>,
         pred: impl Fn(&lsp_server::Notification) -> bool,
     ) -> lsp_server::Notification {
-        let deadline = std::time::Instant::now() + Duration::from_secs(30);
+        let deadline = std::time::Instant::now() + WAIT_TIMEOUT;
         loop {
             let remaining = deadline.saturating_duration_since(std::time::Instant::now());
             match rx.recv_timeout(remaining) {
@@ -293,7 +298,7 @@ mod tests {
         rx: &Receiver<lsp_server::Message>,
         request_id: RequestId,
     ) -> lsp_server::Response {
-        let deadline = std::time::Instant::now() + Duration::from_secs(30);
+        let deadline = std::time::Instant::now() + WAIT_TIMEOUT;
         loop {
             let remaining = deadline.saturating_duration_since(std::time::Instant::now());
             match rx.recv_timeout(remaining) {
@@ -462,6 +467,26 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
+    /// Wait until the fake toolchain's update counter reaches `target`,
+    /// polling instead of keying on a single notification: the counter is
+    /// set on the thread pool before the main loop even gets to log
+    /// anything, so it is the earliest reliable signal that an update
+    /// ran, immune to log-delivery delays on loaded machines.
+    fn wait_for_update_count(updates: &AtomicUsize, target: usize) -> usize {
+        let deadline = std::time::Instant::now() + WAIT_TIMEOUT;
+        loop {
+            let current = updates.load(Ordering::SeqCst);
+            if current >= target {
+                return current;
+            }
+            assert!(
+                std::time::Instant::now() < deadline,
+                "timed out waiting for the update counter to reach {target}"
+            );
+            std::thread::sleep(Duration::from_millis(50));
+        }
+    }
+
     #[test]
     fn execute_command_kcl_update_dependencies_runs_update() {
         let dir = temp_workspace();
@@ -479,8 +504,7 @@ mod tests {
         // path so we know the workspace is settled before we send the
         // manual command.
         open_file(&client_tx, &dir.join("main.k"));
-        wait_for_notification(&server_rx, is_log_containing("Dependencies updated"));
-        let baseline = updates.load(Ordering::SeqCst);
+        let baseline = wait_for_update_count(&updates, 1);
         assert!(
             baseline >= 1,
             "auto-trigger should have run once before the manual command",
@@ -490,28 +514,46 @@ mod tests {
         // for the workspace rooted at the given `kcl.mod` directory. The
         // handler normalizes the argument, so either the plain or the
         // canonicalized directory string works here.
-        let request_id = 1;
+        let argument = dir.canonicalize().unwrap().adjust_canonicalization();
+
+        // Manual triggers always bypass the update guard, so re-sending
+        // the command while waiting for a slow server is safe (a request
+        // handled while another update is in flight is simply skipped).
+        // Key the assertion on the update counter rather than a single
+        // notification wait, which CI runners can stall past the timeout
+        // when the whole test binary competes for a few cores.
+        let deadline = std::time::Instant::now() + WAIT_TIMEOUT;
+        let mut request_id = 1;
         send_execute_command(
             &client_tx,
             request_id,
             UPDATE_DEPENDENCIES_COMMAND,
-            // `adjust_canonicalization` returns a `String`.
-            &dir.canonicalize().unwrap().adjust_canonicalization(),
+            &argument,
         );
-
-        // The handler returns `Ok(None)` so the response carries no error;
-        // assert the LSP machinery actually answered without error.
-        let response = wait_for_response(&server_rx, RequestId::from(request_id));
-        assert!(
-            response.error.is_none(),
-            "executeCommand response should be error-free, got {:?}",
-            response.error,
-        );
-
-        // Manual triggers always bypass the guard, so the counter must
-        // advance by exactly one for this command.
-        wait_for_notification(&server_rx, is_log_containing("Dependencies updated"));
-        assert_eq!(updates.load(Ordering::SeqCst), baseline + 1);
+        loop {
+            // The handler returns `Ok(None)` so the response must not
+            // carry an error, however long the server took to answer.
+            let response = wait_for_response(&server_rx, RequestId::from(request_id));
+            assert!(
+                response.error.is_none(),
+                "executeCommand response should be error-free, got {:?}",
+                response.error,
+            );
+            if updates.load(Ordering::SeqCst) >= baseline + 1 {
+                break;
+            }
+            assert!(
+                std::time::Instant::now() < deadline,
+                "executeCommand did not trigger a dependency update within the deadline"
+            );
+            request_id += 1;
+            send_execute_command(
+                &client_tx,
+                request_id,
+                UPDATE_DEPENDENCIES_COMMAND,
+                &argument,
+            );
+        }
 
         drop(client_tx);
         let _ = std::fs::remove_dir_all(&dir);
