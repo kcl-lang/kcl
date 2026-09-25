@@ -256,7 +256,7 @@ fn resolve_file(opts: &CompilationOptions) -> Result<Rc<RefCell<Scope>>> {
             return Err(anyhow::anyhow!("{err}"));
         }
     };
-    let scope = resolve_program_with_opts(&mut program, opts.resolve_opts.clone(), None);
+    let scope = resolve_program_with_opts(&mut program, opts.resolve_opts.clone(), None)?;
     match scope.main_scope() {
         Some(scope) => Ok(scope.clone()),
         None => Err(anyhow::anyhow!("main scope is not found")),
@@ -273,11 +273,7 @@ fn resolve_paths(opts: &CompilationOptions) -> Result<ProgramScope> {
         None,
     )?
     .program;
-    Ok(resolve_program_with_opts(
-        &mut program,
-        opts.resolve_opts.clone(),
-        None,
-    ))
+    resolve_program_with_opts(&mut program, opts.resolve_opts.clone(), None)
 }
 
 pub fn filter_pkg_schemas(

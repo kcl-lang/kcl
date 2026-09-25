@@ -179,7 +179,12 @@ impl<'ctx> Namer<'ctx> {
 
         let modules = self.ctx.program.get_modules_for_pkg(name);
         for module in modules.iter() {
-            let module = module.read().expect("Failed to acquire module lock");
+            // Module locks can only be poisoned if another KCL pass panicked
+            // while holding the same lock — that's an internal compiler
+            // bug we should surface clearly so the user can report it.
+            let module = module
+                .read()
+                .expect("Internal error: failed to acquire module lock while resolving names");
             self.ctx
                 .current_package_info
                 .as_mut()

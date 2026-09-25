@@ -2,13 +2,14 @@
 
 use kcl_ast::ast::Program;
 use kcl_driver::{lookup_compile_workspace, toolchain};
-use kcl_error::Diagnostic;
+use kcl_error::{Diagnostic, Handler};
 use kcl_parser::{
     KCLModuleCache, LoadProgramOptions, ParseSessionRef, entry::get_normalized_k_files_from_paths,
     load_all_files_under_paths,
 };
 use kcl_primitives::{IndexMap, IndexSet};
 use kcl_query::query::filter_pkg_schemas;
+use kcl_runtime::PanicInfo;
 use kcl_sema::{
     advanced_resolver::AdvancedResolver,
     core::global_state::GlobalState,
@@ -119,7 +120,7 @@ pub fn compile(
         cached_scope.invalidate_pkg_modules = Some(invalidate_pkg_modules);
     }
 
-    let prog_scope = resolve_program_with_opts(
+    let prog_scope = match resolve_program_with_opts(
         &mut program,
         kcl_sema::resolver::Options {
             merge_program: false,
@@ -127,7 +128,23 @@ pub fn compile(
             ..Default::default()
         },
         params.scope_cache.clone(),
-    );
+    ) {
+        Ok(scope) => scope,
+        Err(err) => {
+            // The resolver contract only yields errors for
+            // "Internal error, please report a bug to us" cases —
+            // surface them as diagnostics and return early so the LSP
+            // can still report progress to the user instead of
+            // aborting the whole compile request.
+            diags.extend(
+                Handler::default()
+                    .add_panic_info(&PanicInfo::from(err.to_string()))
+                    .diagnostics
+                    .clone(),
+            );
+            return (diags, Ok((program, IndexMap::default(), GlobalState::default())));
+        }
+    };
     let schema_map: IndexMap<String, Vec<SchemaType>> = filter_pkg_schemas(&prog_scope, None, None);
     diags.extend(prog_scope.handler.diagnostics);
 
@@ -173,18 +190,39 @@ pub fn compile_with_params(
     IndexSet<kcl_error::Diagnostic>,
     anyhow::Result<(Program, IndexMap<String, Vec<SchemaType>>, GlobalState)>,
 ) {
-    let file = PathBuf::from(params.file.clone().unwrap())
-        .canonicalize()
-        .unwrap_or_else(|e| {
-            panic!(
-                "Failed to canonicalize file path '{}': {:?}",
-                params.file.clone().unwrap(),
-                e
+    let raw_path = match params.file.clone() {
+        Some(p) => p,
+        None => {
+            return (
+                IndexSet::default(),
+                Err(anyhow::anyhow!("Missing file path in compile params")),
             );
-        })
-        .to_str()
-        .unwrap()
-        .to_string();
+        }
+    };
+    let file = match PathBuf::from(raw_path.clone()).canonicalize() {
+        Ok(p) => match p.to_str() {
+            Some(s) => s.to_string(),
+            None => {
+                return (
+                    IndexSet::default(),
+                    Err(anyhow::anyhow!(
+                        "Canonicalized path is not valid UTF-8: {:?}",
+                        p
+                    )),
+                );
+            }
+        },
+        Err(e) => {
+            return (
+                IndexSet::default(),
+                Err(anyhow::anyhow!(
+                    "Failed to canonicalize file path '{}': {:?}",
+                    raw_path,
+                    e
+                )),
+            );
+        }
+    };
     // Lookup compile workspace from the cursor file.
     let (mut files, opts, _) = lookup_compile_workspace(&toolchain::default(), &file, true);
     compile(params, &mut files, opts)

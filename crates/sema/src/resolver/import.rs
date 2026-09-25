@@ -8,6 +8,7 @@ use crate::{
 };
 use kcl_ast::ast;
 use kcl_error::*;
+use kcl_runtime::PanicInfo;
 use kcl_primitives::IndexMap;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -23,11 +24,24 @@ impl<'ctx> Resolver<'ctx> {
         let main_files = self.program.get_main_files();
         for modules in self.program.pkgs.values() {
             for module in modules {
-                let module = self
-                    .program
-                    .get_module(module)
-                    .expect("Failed to acquire module lock")
-                    .unwrap_or_else(|| panic!("module {:?} not found in program", module));
+                let module = match self.program.get_module(module) {
+                    Ok(Some(m)) => m,
+                    Ok(None) => {
+                        // Invariant violation: a registered module is
+                        // missing from the program. Surface as a diagnostic
+                        // and skip rather than abort the whole import pass.
+                        self.handler.add_panic_info(&PanicInfo::from(format!(
+                            "module {module:?} not found in program"
+                        )));
+                        continue;
+                    }
+                    Err(e) => {
+                        self.handler.add_panic_info(&PanicInfo::from(format!(
+                            "Failed to acquire module lock for {module}: {e}"
+                        )));
+                        continue;
+                    }
+                };
                 for stmt in &module.body {
                     if let ast::Stmt::Import(import_stmt) = &stmt.node {
                         let pkgpath = &import_stmt.path.node;
@@ -124,11 +138,21 @@ impl<'ctx> Resolver<'ctx> {
         if let Some(modules) = self.program.pkgs.get(&self.ctx.pkgpath) {
             let mut import_table: IndexMap<String, String> = IndexMap::default();
             for module in modules {
-                let module = self
-                    .program
-                    .get_module(module)
-                    .expect("Failed to acquire module lock")
-                    .unwrap_or_else(|| panic!("module {:?} not found in program", module));
+                let module = match self.program.get_module(module) {
+                    Ok(Some(m)) => m,
+                    Ok(None) => {
+                        self.handler.add_panic_info(&PanicInfo::from(format!(
+                            "module {module:?} not found in program"
+                        )));
+                        continue;
+                    }
+                    Err(e) => {
+                        self.handler.add_panic_info(&PanicInfo::from(format!(
+                            "Failed to acquire module lock for {module}: {e}"
+                        )));
+                        continue;
+                    }
+                };
                 self.ctx.filename = module.filename.clone();
                 for stmt in &module.body {
                     if let ast::Stmt::Import(import_stmt) = &stmt.node {

@@ -148,7 +148,7 @@ pub fn load_packages_with_cache(
                 ..Default::default()
             },
             Some(scope_cache),
-        );
+        )?;
         let node_ty_map = prog_scope.node_ty_map;
         Namer::find_symbols(&program, gs);
         AdvancedResolver::resolve_program(&program, gs, node_ty_map.clone())?;

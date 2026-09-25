@@ -49,7 +49,11 @@ where
     E: Display,
 {
     match val {
-        Ok(val) => Ok(serde_json::to_value(val).unwrap()),
+        Ok(val) => serde_json::to_value(val).map_err(|e| Error {
+            code: ErrorCode::from(KCL_SERVER_ERROR_CODE),
+            message: format!("failed to serialize result: {e}"),
+            data: None,
+        }),
         Err(err) => Err(Error {
             code: ErrorCode::from(KCL_SERVER_ERROR_CODE),
             message: err.to_string(),
@@ -232,7 +236,11 @@ fn register_builtin_service(io: &mut IoHandler) {
     io.add_sync_method("BuiltinService.Ping", |params: Params| {
         let args: PingArgs = params.parse()?;
         let result = PingResult { value: args.value };
-        Ok(serde_json::to_value(result).unwrap())
+        serde_json::to_value(result).map_err(|e| Error {
+            code: ErrorCode::from(KCL_SERVER_ERROR_CODE),
+            message: format!("failed to serialize ping result: {e}"),
+            data: None,
+        })
     });
     io.add_sync_method("BuiltinService.ListMethod", |_params: Params| {
         let result = ListMethodResult {
@@ -261,6 +269,10 @@ fn register_builtin_service(io: &mut IoHandler) {
                 "BuiltinService.PingListMethod".to_owned(),
             ],
         };
-        Ok(serde_json::to_value(result).unwrap())
+        serde_json::to_value(result).map_err(|e| Error {
+            code: ErrorCode::from(KCL_SERVER_ERROR_CODE),
+            message: format!("failed to serialize list-method result: {e}"),
+            data: None,
+        })
     });
 }

@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use kcl_ast::{ast, walker::MutSelfWalker};
 use kcl_sema::builtin::BUILTIN_FUNCTIONS;
 use kcl_sema::{builtin::option::OptionHelp, resolver::scope::NodeKey};
@@ -55,11 +55,20 @@ pub fn list_options(opts: &LoadPackageOptions) -> Result<Vec<OptionHelp>> {
     for (pkgpath, modules) in &packages.program.pkgs {
         extractor.pkgpath = pkgpath.clone();
         for module in modules {
+            // A poisoned lock here would mean a previous panic corrupted
+            // the package; surfacing that as a diagnostic is more useful
+            // than aborting the whole `list_options` call.
             let module = packages
                 .program
                 .get_module(module)
-                .expect("Failed to acquire module lock")
-                .unwrap_or_else(|| panic!("module {:?} not found in program", module));
+                .map_err(|e| {
+                    anyhow!(
+                        "Failed to acquire module lock for {}: {}",
+                        module,
+                        e
+                    )
+                })?
+                .ok_or_else(|| anyhow!("module {:?} not found in program", module))?;
             extractor.walk_module(&module)
         }
     }

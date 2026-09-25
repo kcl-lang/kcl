@@ -3,6 +3,7 @@ mod identifier;
 mod lit_ty_default_value;
 mod multi_assign;
 
+use anyhow::{Context, Result};
 use kcl_ast::ast;
 use kcl_primitives::IndexMap;
 
@@ -17,15 +18,25 @@ pub use multi_assign::transform_multi_assign;
 use crate::resolver::Options;
 
 /// Pre-process AST program.
-pub fn pre_process_program(program: &mut ast::Program, opts: &Options) {
+pub fn pre_process_program(program: &mut ast::Program, opts: &Options) -> Result<()> {
     for (pkgpath, modules) in program.pkgs.iter() {
         let mut import_names = IndexMap::default();
         if pkgpath == kcl_ast::MAIN_PKG {
             for module in modules.iter() {
                 let module = program
                     .get_module(module)
-                    .expect("Failed to acquire module lock")
-                    .unwrap_or_else(|| panic!("module {:?} not found in program", module));
+                    .with_context(|| {
+                        format!(
+                            "Internal error, please report a bug to us: \
+                             failed to acquire module lock for {module:?} during pre-processing"
+                        )
+                    })?
+                    .with_context(|| {
+                        format!(
+                            "Internal error, please report a bug to us: \
+                             module {module:?} not found in program during pre-processing"
+                        )
+                    })?;
                 for stmt in &module.body {
                     if let ast::Stmt::Import(import_stmt) = &stmt.node {
                         import_names
@@ -37,8 +48,18 @@ pub fn pre_process_program(program: &mut ast::Program, opts: &Options) {
         for module in modules.iter() {
             let mut module = program
                 .get_module_mut(module)
-                .expect("Failed to acquire module lock")
-                .unwrap_or_else(|| panic!("module {:?} not found in program", module));
+                .with_context(|| {
+                    format!(
+                        "Internal error, please report a bug to us: \
+                         failed to acquire module lock for {module:?} during pre-processing"
+                    )
+                })?
+                .with_context(|| {
+                    format!(
+                        "Internal error, please report a bug to us: \
+                         module {module:?} not found in program during pre-processing"
+                    )
+                })?;
             if pkgpath != kcl_ast::MAIN_PKG {
                 import_names.clear();
             }
@@ -52,4 +73,5 @@ pub fn pre_process_program(program: &mut ast::Program, opts: &Options) {
     if opts.merge_program {
         merge_program(program);
     }
+    Ok(())
 }

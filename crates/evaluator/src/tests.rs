@@ -2032,7 +2032,7 @@ fn issue_1758_import_unused_pkg_skips_body() {
     // Compute the set of referenced packages from sema. main.k does
     // not read anything from `sub`, so `sub` should be excluded.
     let mut program = packages.program.clone();
-    let scope = kcl_sema::resolver::resolve_program(&mut program);
+    let scope = kcl_sema::resolver::resolve_program(&mut program).unwrap();
     let referenced = kcl_sema::resolver::collect_referenced_pkgs(&scope);
     let sub_pgx = packages
         .program
@@ -2144,7 +2144,7 @@ leaf_value = "from_leaf"
     // Now compute the referenced set: only `mid` is directly
     // referenced from main, so `leaf` should be absent.
     let mut program = packages.program.clone();
-    let scope = kcl_sema::resolver::resolve_program(&mut program);
+    let scope = kcl_sema::resolver::resolve_program(&mut program).unwrap();
     let referenced = kcl_sema::resolver::collect_referenced_pkgs(&scope);
     let leaf_pgx = packages
         .program

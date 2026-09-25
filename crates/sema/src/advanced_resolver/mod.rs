@@ -175,7 +175,9 @@ impl<'ctx> AdvancedResolver<'ctx> {
 
             let modules = self.ctx.program.get_modules_for_pkg(name);
             for module in modules.iter() {
-                let module = module.read().expect("Failed to acquire module lock");
+                let module = module
+                    .read()
+                    .map_err(|e| anyhow::anyhow!("Failed to acquire module lock: {}", e))?;
                 self.ctx.current_filename = Some(module.filename.clone());
                 self.walk_module_schemas(&module)?;
             }
@@ -206,7 +208,9 @@ impl<'ctx> AdvancedResolver<'ctx> {
             self.ctx.scopes.push(scope_ref);
             let modules = self.ctx.program.get_modules_for_pkg(name);
             for module in modules.iter() {
-                let module = module.read().expect("Failed to acquire module lock");
+                let module = module
+                    .read()
+                    .map_err(|e| anyhow::anyhow!("Failed to acquire module lock: {}", e))?;
                 self.ctx.current_filename = Some(module.filename.clone());
                 self.walk_module(&module)?;
             }
@@ -431,6 +435,7 @@ mod tests {
             },
             None,
         )
+        .unwrap()
         .node_ty_map;
         AdvancedResolver::resolve_program(&program, &mut gs, node_ty_map).unwrap();
         let base_path = Path::new(".").canonicalize().unwrap();
@@ -1357,7 +1362,7 @@ mod tests {
             .program;
         let mut gs = GlobalState::default();
         Namer::find_symbols(&program, &mut gs);
-        let node_ty_map = resolver::resolve_program(&mut program).node_ty_map;
+        let node_ty_map = resolver::resolve_program(&mut program).unwrap().node_ty_map;
         AdvancedResolver::resolve_program(&program, &mut gs, node_ty_map).unwrap();
         let base_path = Path::new(".").canonicalize().unwrap();
 
@@ -1434,7 +1439,7 @@ mod tests {
             .program;
         let mut gs = GlobalState::default();
         Namer::find_symbols(&program, &mut gs);
-        let node_ty_map = resolver::resolve_program(&mut program).node_ty_map;
+        let node_ty_map = resolver::resolve_program(&mut program).unwrap().node_ty_map;
         AdvancedResolver::resolve_program(&program, &mut gs, node_ty_map).unwrap();
         let base_path = Path::new(".").canonicalize().unwrap();
 
@@ -1547,7 +1552,7 @@ mod tests {
             .program;
         let mut gs = GlobalState::default();
         Namer::find_symbols(&program, &mut gs);
-        let node_ty_map = resolver::resolve_program(&mut program).node_ty_map;
+        let node_ty_map = resolver::resolve_program(&mut program).unwrap().node_ty_map;
         AdvancedResolver::resolve_program(&program, &mut gs, node_ty_map).unwrap();
         let main_pkg_root_scope = gs
             .get_scopes()
@@ -1575,7 +1580,7 @@ mod tests {
             .program;
         let mut gs = GlobalState::default();
         Namer::find_symbols(&program, &mut gs);
-        let node_ty_map = resolver::resolve_program(&mut program).node_ty_map;
+        let node_ty_map = resolver::resolve_program(&mut program).unwrap().node_ty_map;
         AdvancedResolver::resolve_program(&program, &mut gs, node_ty_map).unwrap();
     }
 
@@ -1598,7 +1603,7 @@ mod tests {
             .program;
         let mut gs = GlobalState::default();
         Namer::find_symbols(&program, &mut gs);
-        let node_ty_map = resolver::resolve_program(&mut program).node_ty_map;
+        let node_ty_map = resolver::resolve_program(&mut program).unwrap().node_ty_map;
 
         // Simulate the cache state that triggered the original bug: drop every
         // entry from `node_ty_map` so neither `walk_schema_stmt` nor

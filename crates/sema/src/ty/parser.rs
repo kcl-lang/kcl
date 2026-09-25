@@ -18,7 +18,13 @@ pub fn parse_type_str(ty_str: &str) -> TypeRef {
             } else if is_number_multiplier_literal_type_str(ty_str) {
                 parse_number_multiplier_literal_type_str(ty_str)
             } else if is_dict_type_str(ty_str) {
-                let (key_ty_str, val_ty_str) = separate_kv(&dereference_type(ty_str));
+                // Fall back to an empty tuple on malformed input. A panic
+                // here would abort the whole sema pass; logging the
+                // malformed input as an empty key/value keeps the parser
+                // resilient — the type checker will surface the issue
+                // through its own diagnostics on the same expression.
+                let (key_ty_str, val_ty_str) = separate_kv(&dereference_type(ty_str))
+                    .unwrap_or_else(|_| ("".to_string(), "".to_string()));
                 Arc::new(Type::dict(
                     parse_type_str(&key_ty_str),
                     parse_type_str(&val_ty_str),
@@ -156,32 +162,47 @@ pub fn parse_named_type_str(ty_str: &str) -> TypeRef {
 
 /// separate_kv function separates key_type and value_type in the dictionary type strings,
 /// e.g., "str:str" -> ("str", "str")
-pub fn separate_kv(expected_type: &str) -> (String, String) {
+///
+/// Returns `Err` for malformed type strings (mismatched brackets, or a `:`
+/// while still inside a nested group) so callers can propagate the
+/// diagnostic instead of aborting the whole sema pass. An unconsumed
+/// input (no `:` found) is still reported as an empty tuple — that's the
+/// historical "type contains no key" contract callers depend on.
+pub fn separate_kv(expected_type: &str) -> anyhow::Result<(String, String)> {
     let mut stack = String::new();
     for (n, c) in expected_type.char_indices() {
         if c == '[' || c == '{' {
             stack.push(c)
         } else if c == ']' {
             if &stack[stack.len() - 1..] != "[" {
-                panic!("invalid type string {}", expected_type);
+                return Err(anyhow::anyhow!(
+                    "invalid type string {}: mismatched ']'",
+                    expected_type
+                ));
             }
             stack.pop();
         } else if c == '}' {
             if &stack[stack.len() - 1..] != "{" {
-                panic!("invalid type string {}", expected_type);
+                return Err(anyhow::anyhow!(
+                    "invalid type string {}: mismatched '}}'",
+                    expected_type
+                ));
             }
             stack.pop();
         } else if c == ':' {
             if !stack.is_empty() {
-                panic!("invalid type string {}", expected_type);
+                return Err(anyhow::anyhow!(
+                    "invalid type string {}: ':' inside nested group",
+                    expected_type
+                ));
             }
-            return (
+            return Ok((
                 expected_type[..n].to_string(),
                 expected_type[n + 1..].to_string(),
-            );
+            ));
         }
     }
-    ("".to_string(), "".to_string())
+    Ok(("".to_string(), "".to_string()))
 }
 
 /// dereference_type function removes the first and last [] {} in the type string

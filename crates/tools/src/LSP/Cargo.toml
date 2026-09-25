@@ -29,6 +29,7 @@ kcl-ast.workspace = true
 kcl-utils.workspace = true
 kcl-version.workspace = true
 kcl-query.workspace = true
+kcl-runtime.workspace = true
 kcl-span.workspace = true
 kcl-primitives.workspace = true
 

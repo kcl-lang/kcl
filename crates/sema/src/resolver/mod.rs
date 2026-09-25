@@ -36,6 +36,7 @@ use crate::ty::TypeKind;
 use crate::{resolver::scope::Scope, ty::FunctionType, ty::SchemaType};
 use kcl_ast::ast::Program;
 use kcl_error::*;
+use kcl_runtime::PanicInfo;
 
 use self::doc::SchemaDoc;
 use self::scope::{KCLScopeCache, NodeTyMap, ProgramScope, builtin_scope};
@@ -84,11 +85,27 @@ impl<'ctx> Resolver<'ctx> {
             .or(self.program.pkgs_not_imported.get(pkgpath))
         {
             for module in modules {
-                let module = self
-                    .program
-                    .get_module(module)
-                    .expect("Failed to acquire module lock")
-                    .unwrap_or_else(|| panic!("module {:?} not found in program", module));
+                let module = match self.program.get_module(module) {
+                    Ok(Some(m)) => m,
+                    Ok(None) => {
+                        // A registered module is missing from the program —
+                        // invariant violation. Surface as a diagnostic and
+                        // skip this module so the rest of the check pass
+                        // can continue.
+                        self.handler
+                            .add_panic_info(&PanicInfo::from(format!(
+                                "module {module:?} not found in program"
+                            )));
+                        continue;
+                    }
+                    Err(e) => {
+                        self.handler
+                            .add_panic_info(&PanicInfo::from(format!(
+                                "Failed to acquire module lock for {module}: {e}"
+                            )));
+                        continue;
+                    }
+                };
                 self.ctx.filename = module.filename.to_string();
                 if let scope::ScopeKind::Package(files) = &mut self.scope.borrow_mut().kind {
                     files.insert(module.filename.to_string());
@@ -215,7 +232,7 @@ impl Default for Options {
 
 /// Resolve program with default options.
 #[inline]
-pub fn resolve_program(program: &mut Program) -> ProgramScope {
+pub fn resolve_program(program: &mut Program) -> anyhow::Result<ProgramScope> {
     resolve_program_with_opts(program, Options::default(), None)
 }
 
@@ -257,8 +274,8 @@ pub fn resolve_program_with_opts(
     program: &mut Program,
     opts: Options,
     cached_scope: Option<KCLScopeCache>,
-) -> ProgramScope {
-    pre_process_program(program, &opts);
+) -> anyhow::Result<ProgramScope> {
+    pre_process_program(program, &opts)?;
     let mut resolver = Resolver::new(program, opts.clone());
     resolver.resolve_import();
     if let Some(cached_scope) = cached_scope.as_ref()
@@ -303,9 +320,9 @@ pub fn resolve_program_with_opts(
     if opts.type_erasure {
         let type_alias_mapping = resolver.ctx.type_alias_mapping.clone();
         // Erase all the function type to a named type "function"
-        type_func_erasure_pass(program);
+        type_func_erasure_pass(program)?;
         // Erase types with their type alias
-        type_alias_pass(program, type_alias_mapping);
+        type_alias_pass(program, type_alias_mapping)?;
     }
-    scope
+    Ok(scope)
 }

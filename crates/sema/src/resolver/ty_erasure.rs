@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use kcl_ast::walker::MutSelfMutWalker;
 use kcl_ast::{ast, walk_if_mut, walk_list_mut};
 
@@ -62,14 +63,25 @@ impl<'ctx> MutSelfMutWalker<'ctx> for TypeErasureTransformer {
 }
 
 /// Run a pass on AST and change the function type to the `Named("function")` type
-pub fn type_func_erasure_pass(program: &mut ast::Program) {
+pub fn type_func_erasure_pass(program: &mut ast::Program) -> Result<()> {
     for (_, modules) in program.pkgs.iter() {
         for module in modules.iter() {
             let mut module = program
                 .get_module_mut(module)
-                .expect("Failed to acquire module lock")
-                .unwrap_or_else(|| panic!("module {:?} not found in program", module));
+                .with_context(|| {
+                    format!(
+                        "Internal error, please report a bug to us: \
+                         failed to acquire module lock for {module:?} during type erasure"
+                    )
+                })?
+                .with_context(|| {
+                    format!(
+                        "Internal error, please report a bug to us: \
+                         module {module:?} not found in program during type erasure"
+                    )
+                })?;
             TypeErasureTransformer.walk_module(&mut module);
         }
     }
+    Ok(())
 }
