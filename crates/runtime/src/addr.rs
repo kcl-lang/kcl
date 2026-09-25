@@ -143,7 +143,9 @@ pub fn kcl_get_fn_ptr_by_name(name: &str) -> u64 {
         "kcl_duration_parse" => crate::kcl_duration_parse as *const () as u64,
         "kcl_duration_second" => crate::kcl_duration_second as *const () as u64,
         "kcl_duration_sub" => crate::kcl_duration_sub as *const () as u64,
-        "kcl_duration_sub_from_datetime" => crate::kcl_duration_sub_from_datetime as *const () as u64,
+        "kcl_duration_sub_from_datetime" => {
+            crate::kcl_duration_sub_from_datetime as *const () as u64
+        }
         "kcl_duration_to_seconds" => crate::kcl_duration_to_seconds as *const () as u64,
         "kcl_file_abs" => crate::kcl_file_abs as *const () as u64,
         "kcl_file_append" => crate::kcl_file_append as *const () as u64,

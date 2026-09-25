@@ -149,8 +149,10 @@ pub(crate) fn sub_durations(a: &str, b: &str) -> Option<String> {
 /// Apply a duration string to an RFC 3339 datetime, returning a new
 /// RFC 3339 string.
 fn apply_duration_to_datetime(dt_str: &str, dur_str: &str, sign: i64) -> String {
-    let dt: DateTime<chrono::FixedOffset> = DateTime::parse_from_rfc3339(dt_str)
-        .unwrap_or_else(|e| panic!("add_to_datetime() expected RFC 3339 input, got {dt_str:?}: {e}"));
+    let dt: DateTime<chrono::FixedOffset> =
+        DateTime::parse_from_rfc3339(dt_str).unwrap_or_else(|e| {
+            panic!("add_to_datetime() expected RFC 3339 input, got {dt_str:?}: {e}")
+        });
     let seconds = parse_seconds(dur_str)
         .unwrap_or_else(|| panic!("add_to_datetime() invalid duration: {dur_str:?}"));
     // TimeDelta::seconds takes whole seconds; sub-second fractions are
@@ -425,7 +427,10 @@ mod tests {
     #[test]
     fn parse_seconds_combined() {
         assert_eq!(parse_seconds("1h30m"), Some(5400.0));
-        assert_eq!(parse_seconds("1d2h3m4s"), Some(86400.0 + 7200.0 + 180.0 + 4.0));
+        assert_eq!(
+            parse_seconds("1d2h3m4s"),
+            Some(86400.0 + 7200.0 + 180.0 + 4.0)
+        );
         assert_eq!(parse_seconds("0s"), Some(0.0));
     }
 
@@ -447,10 +452,7 @@ mod tests {
         assert_eq!(format_compact(45.0), "45s");
         assert_eq!(format_compact(60.0), "1m");
         assert_eq!(format_compact(5400.0), "1h30m");
-        assert_eq!(
-            format_compact(86400.0 + 7200.0 + 180.0 + 4.0),
-            "1d2h3m4s"
-        );
+        assert_eq!(format_compact(86400.0 + 7200.0 + 180.0 + 4.0), "1d2h3m4s");
         assert_eq!(format_compact(3600.0 * 24.0), "1d");
     }
 

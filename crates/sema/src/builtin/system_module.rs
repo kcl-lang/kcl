@@ -2697,22 +2697,8 @@ register_runtime_member! {
 }
 
 pub const STANDARD_SYSTEM_MODULES: &[&str] = &[
-    COLLECTION,
-    NET,
-    MANIFESTS,
-    MATH,
-    DATETIME,
-    DURATION,
-    REGEX,
-    YAML,
-    JSON,
-    CRYPTO,
-    BASE64,
-    UNITS,
-    FILE,
-    TEMPLATE,
-    RUNTIME,
-    BASE32,
+    COLLECTION, NET, MANIFESTS, MATH, DATETIME, DURATION, REGEX, YAML, JSON, CRYPTO, BASE64, UNITS,
+    FILE, TEMPLATE, RUNTIME, BASE32,
 ];
 
 pub const STANDARD_SYSTEM_MODULE_NAMES_WITH_AT: &[&str] = &[
