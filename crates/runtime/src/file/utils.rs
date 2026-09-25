@@ -47,6 +47,24 @@ pub(crate) fn resolve_scoped_path<P: AsRef<Path>>(
         }
     }
 
+    // Reject obvious traversal attempts up-front so we don't depend on the
+    // target existing (the caller's `fs::*` call will surface that error
+    // itself). This check is purely syntactic and deliberately runs before
+    // any filesystem access: `canonicalize` on the module root can fail
+    // transiently (observed on the Windows CI runners for freshly created
+    // directories), and a traversal attempt must not slip through just
+    // because the root could not be canonicalized.
+    if path_has_parent_ref(Path::new(user_path)) {
+        return (
+            PathBuf::from(user_path),
+            Err(format!(
+                "path '{}' escapes module root '{}'",
+                user_path,
+                module_root.display()
+            )),
+        );
+    }
+
     let canonical_root = match fs::canonicalize(module_root) {
         Ok(p) => p,
         Err(_) => return (PathBuf::from(user_path), Ok(())),
@@ -58,24 +76,6 @@ pub(crate) fn resolve_scoped_path<P: AsRef<Path>>(
     } else {
         canonical_root.join(candidate)
     };
-
-    // Reject obvious traversal attempts up-front so we don't depend on the
-    // target existing (the caller's `fs::*` call will surface that error
-    // itself).
-    if path_has_parent_ref(
-        candidate
-            .strip_prefix(&canonical_root)
-            .unwrap_or(&candidate),
-    ) {
-        return (
-            candidate,
-            Err(format!(
-                "path '{}' escapes module root '{}'",
-                user_path,
-                canonical_root.display()
-            )),
-        );
-    }
 
     (candidate, Ok(()))
 }
@@ -157,6 +157,22 @@ mod tests {
             let (_, err) = resolve_scoped_path(&tmp, "subdir/../../escape.txt");
             assert!(err.is_err(), "expected error for subdir/../../escape.txt");
             let _ = fs::remove_dir_all(&tmp);
+        });
+    }
+
+    #[test]
+    fn resolve_scoped_rejects_traversal_when_root_uncanonicalizable() {
+        with_scope(None, || {
+            // The traversal check is syntactic: it must fire even when the
+            // module root does not exist and `fs::canonicalize` would fail
+            // (as has been observed transiently on the Windows CI runners).
+            let tmp = std::env::temp_dir().join(format!(
+                "kcl-file-scope-test-missing-{}",
+                std::process::id()
+            ));
+            let _ = fs::remove_dir_all(&tmp);
+            let (_, err) = resolve_scoped_path(&tmp, "../escape.txt");
+            assert!(err.is_err(), "expected error for ../escape.txt");
         });
     }
 
