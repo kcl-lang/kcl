@@ -1007,6 +1007,230 @@ register_datetime_member! {
 }
 
 // ------------------------------
+// duration system package
+// ------------------------------
+
+pub const DURATION: &str = "duration";
+macro_rules! register_duration_member {
+    ($($name:ident => $ty:expr)*) => (
+        pub static DURATION_FUNCTION_TYPES: Lazy<IndexMap<String, Type>> = Lazy::new(|| {
+            let mut builtin_mapping = IndexMap::default();
+            $( builtin_mapping.insert(stringify!($name).to_string(), $ty); )*
+            builtin_mapping
+        });
+        pub const DURATION_FUNCTION_NAMES: &[&str] = &[
+            $( stringify!($name), )*
+        ];
+    )
+}
+register_duration_member! {
+    second => Type::function(
+        None,
+        Type::str_ref(),
+        &[Parameter {
+            name: "n".to_string(),
+            ty: Type::float_ref(),
+            has_default: false,
+            default_value: None,
+            range: dummy_range(),
+        }],
+        r#"Build a duration string representing `n` seconds (e.g. `second(45)` returns `"45s"`)."#,
+        false,
+        None,
+    )
+    minute => Type::function(
+        None,
+        Type::str_ref(),
+        &[Parameter {
+            name: "n".to_string(),
+            ty: Type::float_ref(),
+            has_default: false,
+            default_value: None,
+            range: dummy_range(),
+        }],
+        r#"Build a duration string representing `n` minutes (e.g. `minute(30)` returns `"30m"`)."#,
+        false,
+        None,
+    )
+    hour => Type::function(
+        None,
+        Type::str_ref(),
+        &[Parameter {
+            name: "n".to_string(),
+            ty: Type::float_ref(),
+            has_default: false,
+            default_value: None,
+            range: dummy_range(),
+        }],
+        r#"Build a duration string representing `n` hours (e.g. `hour(1)` returns `"1h"`)."#,
+        false,
+        None,
+    )
+    day => Type::function(
+        None,
+        Type::str_ref(),
+        &[Parameter {
+            name: "n".to_string(),
+            ty: Type::float_ref(),
+            has_default: false,
+            default_value: None,
+            range: dummy_range(),
+        }],
+        r#"Build a duration string representing `n` days (e.g. `day(2)` returns `"2d"`)."#,
+        false,
+        None,
+    )
+    to_seconds => Type::function(
+        None,
+        Type::float_ref(),
+        &[Parameter {
+            name: "d".to_string(),
+            ty: Type::str_ref(),
+            has_default: false,
+            default_value: None,
+            range: dummy_range(),
+        }],
+        r#"Parse a duration string and return the equivalent number of seconds (e.g. `to_seconds("1h30m")` returns `5400.0`)."#,
+        false,
+        None,
+    )
+    from_seconds => Type::function(
+        None,
+        Type::str_ref(),
+        &[Parameter {
+            name: "n".to_string(),
+            ty: Type::float_ref(),
+            has_default: false,
+            default_value: None,
+            range: dummy_range(),
+        }],
+        r#"Render a number of seconds as a canonical duration string (e.g. `from_seconds(5400)` returns `"1h30m"`)."#,
+        false,
+        None,
+    )
+    parse => Type::function(
+        None,
+        Type::str_ref(),
+        &[Parameter {
+            name: "d".to_string(),
+            ty: Type::str_ref(),
+            has_default: false,
+            default_value: None,
+            range: dummy_range(),
+        }],
+        r#"Validate and re-render a duration string in canonical form (e.g. `parse("60s")` returns `"1m"`). Panics on invalid input."#,
+        false,
+        None,
+    )
+    is_valid => Type::function(
+        None,
+        Type::bool_ref(),
+        &[Parameter {
+            name: "d".to_string(),
+            ty: Type::str_ref(),
+            has_default: false,
+            default_value: None,
+            range: dummy_range(),
+        }],
+        r#"Return true if `d` is a valid duration string (e.g. `is_valid("1h30m")` returns `True`, `is_valid("foo")` returns `False`)."#,
+        false,
+        None,
+    )
+    add => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "a".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+            Parameter {
+                name: "b".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Add two duration strings and return the normalised result (e.g. `add("30m", "60s")` returns `"31m"`). Panics on invalid input."#,
+        false,
+        None,
+    )
+    sub => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "a".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+            Parameter {
+                name: "b".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Subtract duration `b` from `a` and return the normalised result (e.g. `sub("1h", "30m")` returns `"30m"`). Panics if `b > a` or on invalid input."#,
+        false,
+        None,
+    )
+    add_to_datetime => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "dt".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+            Parameter {
+                name: "d".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Add duration `d` to RFC 3339 datetime `dt` and return a new RFC 3339 string. Useful for scheduling: `end = duration.add_to_datetime(start, duration.hour(1))`."#,
+        false,
+        None,
+    )
+    sub_from_datetime => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "dt".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+            Parameter {
+                name: "d".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Subtract duration `d` from RFC 3339 datetime `dt` and return a new RFC 3339 string."#,
+        false,
+        None,
+    )
+}
+
+// ------------------------------
 // regex system package
 // ------------------------------
 
@@ -2473,8 +2697,22 @@ register_runtime_member! {
 }
 
 pub const STANDARD_SYSTEM_MODULES: &[&str] = &[
-    COLLECTION, NET, MANIFESTS, MATH, DATETIME, REGEX, YAML, JSON, CRYPTO, BASE64, UNITS, FILE,
-    TEMPLATE, RUNTIME, BASE32,
+    COLLECTION,
+    NET,
+    MANIFESTS,
+    MATH,
+    DATETIME,
+    DURATION,
+    REGEX,
+    YAML,
+    JSON,
+    CRYPTO,
+    BASE64,
+    UNITS,
+    FILE,
+    TEMPLATE,
+    RUNTIME,
+    BASE32,
 ];
 
 pub const STANDARD_SYSTEM_MODULE_NAMES_WITH_AT: &[&str] = &[
@@ -2483,6 +2721,7 @@ pub const STANDARD_SYSTEM_MODULE_NAMES_WITH_AT: &[&str] = &[
     "@manifests",
     "@math",
     "@datetime",
+    "@duration",
     "@regex",
     "@yaml",
     "@json",
@@ -2504,6 +2743,7 @@ pub fn get_system_module_members(name: &str) -> Vec<&str> {
         MANIFESTS => MANIFESTS_FUNCTION_NAMES.to_vec(),
         MATH => MATH_FUNCTION_NAMES.to_vec(),
         DATETIME => DATETIME_FUNCTION_NAMES.to_vec(),
+        DURATION => DURATION_FUNCTION_NAMES.to_vec(),
         REGEX => REGEX_FUNCTION_NAMES.to_vec(),
         YAML => YAML_FUNCTION_NAMES.to_vec(),
         JSON => JSON_FUNCTION_NAMES.to_vec(),
@@ -2546,6 +2786,10 @@ pub fn get_system_member_function_ty(name: &str, func: &str) -> TypeRef {
         }
         DATETIME => {
             let types = &DATETIME_FUNCTION_TYPES;
+            types.get(func).cloned()
+        }
+        DURATION => {
+            let types = &DURATION_FUNCTION_TYPES;
             types.get(func).cloned()
         }
         REGEX => {
