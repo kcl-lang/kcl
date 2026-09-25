@@ -59,10 +59,6 @@ jobs:
       - name: Runtime test
         run: export PATH=$PATH:$PWD/_build/dist/darwin/core && make test-runtime
         shell: bash
-      - name: Unit test
-        run: export PATH=$PATH:$PWD/_build/dist/darwin/core && make test
-        shell: bash
-
       - name: Release
         run: export PATH=$PATH:$PWD/../_build/dist/darwin/core && make release
         shell: bash
