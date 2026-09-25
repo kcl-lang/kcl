@@ -1,0 +1,100 @@
+---
+source: crates/tools/src/LSP/src/document_symbol.rs
+assertion_line: 152
+expression: "format! (\"{:#?}\", normalised)"
+---
+[
+    DocumentSymbol {
+        name: "p",
+        detail: Some(
+            "Person4",
+        ),
+        kind: Variable,
+        tags: None,
+        deprecated: None,
+        range: Range {
+            start: Position {
+                line: 3,
+                character: 0,
+            },
+            end: Position {
+                line: 3,
+                character: 1,
+            },
+        },
+        selection_range: Range {
+            start: Position {
+                line: 3,
+                character: 0,
+            },
+            end: Position {
+                line: 3,
+                character: 1,
+            },
+        },
+        children: None,
+    },
+    DocumentSymbol {
+        name: "schema Person4",
+        detail: Some(
+            "Person4",
+        ),
+        kind: Struct,
+        tags: None,
+        deprecated: None,
+        range: Range {
+            start: Position {
+                line: 0,
+                character: 7,
+            },
+            end: Position {
+                line: 0,
+                character: 14,
+            },
+        },
+        selection_range: Range {
+            start: Position {
+                line: 0,
+                character: 7,
+            },
+            end: Position {
+                line: 0,
+                character: 14,
+            },
+        },
+        children: Some(
+            [
+                DocumentSymbol {
+                    name: "name",
+                    detail: Some(
+                        "str",
+                    ),
+                    kind: Property,
+                    tags: None,
+                    deprecated: None,
+                    range: Range {
+                        start: Position {
+                            line: 1,
+                            character: 4,
+                        },
+                        end: Position {
+                            line: 1,
+                            character: 8,
+                        },
+                    },
+                    selection_range: Range {
+                        start: Position {
+                            line: 1,
+                            character: 4,
+                        },
+                        end: Position {
+                            line: 1,
+                            character: 8,
+                        },
+                    },
+                    children: None,
+                },
+            ],
+        ),
+    },
+]

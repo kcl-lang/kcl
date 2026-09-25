@@ -113,78 +113,44 @@ fn symbol_kind_to_document_symbol_kind(kind: KCLSymbolKind) -> Option<SymbolKind
 
 #[cfg(test)]
 mod tests {
-    use lsp_types::{DocumentSymbol, DocumentSymbolResponse, Position, Range, SymbolKind};
-    use proc_macro_crate::bench_test;
+    use lsp_types::DocumentSymbolResponse;
 
     use crate::{document_symbol::document_symbol, tests::compile_test_file};
 
-    #[allow(deprecated)]
-    fn build_document_symbol(
-        name: &str,
-        kind: SymbolKind,
-        range: ((u32, u32), (u32, u32)),
-        child: Option<Vec<DocumentSymbol>>,
-        detail: Option<String>,
-    ) -> DocumentSymbol {
-        let range: Range = Range {
-            start: Position {
-                line: range.0.0,
-                character: range.0.1,
-            },
-            end: Position {
-                line: range.1.0,
-                character: range.1.1,
-            },
-        };
-        DocumentSymbol {
-            name: name.to_string(),
-            detail,
-            kind,
-            tags: None,
-            deprecated: None,
-            range,
-            selection_range: range,
-            children: child,
-        }
-    }
-
-    #[test]
-    #[bench_test]
-    fn document_symbol_test() {
-        let (file, _, _, gs, _) =
-            compile_test_file("src/test_data/document_symbol/document_symbol.k");
-
-        let mut res = document_symbol(file.as_str(), &gs).unwrap();
-        let mut expect = vec![
-            build_document_symbol(
-                "schema Person4",
-                SymbolKind::STRUCT,
-                ((0, 7), (0, 14)),
-                Some(vec![build_document_symbol(
-                    "name",
-                    SymbolKind::PROPERTY,
-                    ((1, 4), (1, 8)),
-                    None,
-                    Some("str".to_string()),
-                )]),
-                Some("Person4".to_string()),
-            ),
-            build_document_symbol(
-                "p",
-                SymbolKind::VARIABLE,
-                ((3, 0), (3, 1)),
-                None,
-                Some("Person4".to_string()),
-            ),
-        ];
-        expect.sort_by(|a, b| a.name.cmp(&b.name));
-
-        match &mut res {
-            DocumentSymbolResponse::Flat(_) => panic!("test failed"),
-            DocumentSymbolResponse::Nested(got) => {
-                got.sort_by(|a, b| a.name.cmp(&b.name));
-                assert_eq!(got, &expect)
+    /// Snapshot helper for `document_symbol` tests. Compiles the fixture,
+    /// runs the function, normalises the response so `DocumentSymbol`s are
+    /// sorted by name (the order of the result is not semantically meaningful),
+    /// and asserts against an `insta` snapshot. The macro mirrors the
+    /// `*_test_snapshot!` pattern used by `goto_def`, `hover`, etc. so future
+    /// tests can be added with a single invocation.
+    #[macro_export]
+    macro_rules! document_symbol_test_snapshot {
+        ($name:ident, $file:expr) => {
+            #[test]
+            fn $name() {
+                let (file, _program, _, gs, _) = compile_test_file($file);
+                let mut res = document_symbol(file.as_str(), &gs).unwrap();
+                // Symbol order is not part of the contract, so sort by name to
+                // make the snapshot deterministic.
+                let normalised = match &mut res {
+                    DocumentSymbolResponse::Flat(_) => panic!("unexpected flat response"),
+                    DocumentSymbolResponse::Nested(got) => {
+                        got.sort_by(|a, b| a.name.cmp(&b.name));
+                        for s in got.iter_mut() {
+                            if let Some(children) = s.children.as_mut() {
+                                children.sort_by(|a, b| a.name.cmp(&b.name));
+                            }
+                        }
+                        got.clone()
+                    }
+                };
+                insta::assert_snapshot!(format!("{:#?}", normalised));
             }
-        }
+        };
     }
+
+    document_symbol_test_snapshot!(
+        document_symbol_test,
+        "src/test_data/document_symbol/document_symbol.k"
+    );
 }

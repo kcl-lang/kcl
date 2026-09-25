@@ -38,6 +38,31 @@ mod tests {
 
     use crate::{from_lsp::text_range, tests::compile_test_file};
 
+    /// Snapshot helper for `format()` tests on a single KCL source file. Loads
+    /// the source from disk, slices out `$range`, runs the formatter, and
+    /// asserts the resulting `Vec<TextEdit>` against an `insta` snapshot.
+    /// Mirrors the `*_test_snapshot!` pattern used elsewhere in this crate.
+    #[macro_export]
+    macro_rules! format_test_snapshot {
+        ($name:ident, $file:expr, $range:expr) => {
+            #[test]
+            fn $name() {
+                let file = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join($file);
+                let text = std::fs::read_to_string(&file).unwrap();
+                let lsp_range: lsp_types::Range = $range;
+                let text_range = $crate::from_lsp::text_range(&text, lsp_range);
+                let src = std::ops::Index::index(&text, text_range);
+                let got = format(
+                    file.to_str().unwrap().to_string(),
+                    src.to_owned(),
+                    Some(lsp_range),
+                )
+                .unwrap();
+                insta::assert_snapshot!(format!("{:#?}", got));
+            }
+        };
+    }
+
     #[test]
     fn format_signle_file_test() {
         const FILE_INPUT_SUFFIX: &str = ".input";
@@ -112,24 +137,9 @@ mod tests {
         assert_eq!(got, None)
     }
 
-    #[test]
-    #[bench_test]
-    fn format_range_test() {
-        let (file, _program, _, _gs, _) = compile_test_file("src/test_data/format/format_range.k");
-        let lsp_range = Range::new(Position::new(0, 0), Position::new(11, 0));
-        let text = std::fs::read_to_string(file.clone()).unwrap();
-
-        let range = text_range(&text, lsp_range);
-        let src = text.index(range);
-
-        let got = format(file, src.to_owned(), Some(lsp_range))
-            .unwrap()
-            .unwrap();
-
-        let expected = vec![TextEdit {
-            range: lsp_range,
-            new_text: "a = 1\n\nb = 2\n\nc = 3\n".to_string(),
-        }];
-        assert_eq!(got, expected)
-    }
+    format_test_snapshot!(
+        format_range_test,
+        "src/test_data/format/format_range.k",
+        Range::new(Position::new(0, 0), Position::new(11, 0))
+    );
 }
