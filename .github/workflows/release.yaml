@@ -18,19 +18,27 @@ jobs:
           - target: linux-amd64
             os: ubuntu-latest
             lib_name: libkcl.so
+            lsp_bin: kcl-language-server
             zig_target: x86_64-unknown-linux-gnu.2.17
           - target: linux-arm64
             os: ubuntu-22.04-arm
             lib_name: libkcl.so
+            lsp_bin: kcl-language-server
             zig_target: aarch64-unknown-linux-gnu.2.17
           - target: darwin-amd64
             os: macos-15-intel
             lib_name: libkcl.dylib
+            lsp_bin: kcl-language-server
             macos_deployment_target: '10.13'
           - target: darwin-arm64
             os: macos-latest
             lib_name: libkcl.dylib
+            lsp_bin: kcl-language-server
             macos_deployment_target: '11.0'
+          - target: windows-amd64
+            os: windows-latest
+            lib_name: kcl.dll
+            lsp_bin: kcl-language-server.exe
     runs-on: ${{ matrix.os }}
     env:
       MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macos_deployment_target }}
@@ -53,6 +61,10 @@ jobs:
           pip3 install ziglang
           cargo install --locked cargo-zigbuild
 
+      - name: Set up MSVC dev command prompt (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Build kcl-lib (Linux, GLIBC 2.17)
         if: startsWith(matrix.os, 'ubuntu-')
         shell: bash
@@ -62,8 +74,8 @@ jobs:
           mkdir -p release/lib
           cp -f target/${{ matrix.zig_target }}/release/${{ matrix.lib_name }} release/lib/
 
-      - name: Build kcl-lib (macOS)
-        if: startsWith(matrix.os, 'macos-')
+      - name: Build kcl-lib (macOS / Windows)
+        if: startsWith(matrix.os, 'macos-') || matrix.os == 'windows-latest'
         shell: bash
         run: |
           cargo build --release -p kcl-lib
@@ -75,7 +87,7 @@ jobs:
         run: |
           cargo build --release --manifest-path crates/tools/src/LSP/Cargo.toml
           mkdir -p release/language-server
-          cp -f target/release/kcl-language-server release/language-server/
+          cp -f target/release/${{ matrix.lsp_bin }} release/language-server/
 
       - name: Package kcl-lib
         shell: bash
