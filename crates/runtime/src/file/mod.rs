@@ -123,10 +123,17 @@ pub unsafe extern "C-unwind" fn kcl_file_glob(
     let pattern = get_call_arg_str(args, kwargs, 0, Some("pattern"))
         .expect("glob() takes exactly one argument (0 given)");
 
-    let _scoped_pattern = scope_or_panic(ctx, &pattern);
+    // Resolve the pattern against the module root first so that it cannot
+    // escape the package directory; glob the scoped form (this also makes
+    // relative patterns resolve against the module root rather than the
+    // process working directory).
+    let scoped_pattern = scope_or_panic(ctx, &pattern);
+    let scoped_pattern = scoped_pattern.to_str().unwrap_or(&pattern);
 
     let mut matched_paths = vec![];
-    for entry in glob(&pattern).unwrap_or_else(|e| panic!("Failed to read glob pattern: {}", e)) {
+    for entry in
+        glob(scoped_pattern).unwrap_or_else(|e| panic!("Failed to read glob pattern: {}", e))
+    {
         match entry {
             Ok(path) => matched_paths.push(path.display().to_string()),
             Err(e) => panic!("failed to access the file matching '{}': {}", pattern, e),

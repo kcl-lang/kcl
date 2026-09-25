@@ -22,12 +22,14 @@ pub(crate) fn copy_directory(src: &Path, dst: &Path) -> std::io::Result<()> {
 }
 
 /// Resolve `user_path` against the module root derived from
-/// `module_root` and return the canonicalized absolute path. The result is
-/// guaranteed to be equal to or nested under `module_root` (after
-/// canonicalization). If `module_root` cannot be canonicalized or the input
-/// cannot be resolved, the path is returned unchanged so callers can still
-/// surface a regular filesystem error (instead of a scope error) and avoid
-/// masking real bugs.
+/// `module_root` and return the canonicalized absolute path. Relative paths
+/// are joined onto the canonical root; absolute paths are only accepted when
+/// they lie inside the root (compared after canonicalization, so symlinks
+/// pointing outside the root are rejected as well). Paths that would escape
+/// — via `..` or by targeting a location outside the root — come back with
+/// an error. If `module_root` itself cannot be canonicalized, the path is
+/// returned unchanged with `Ok(())` so callers can still surface a regular
+/// filesystem error (instead of a scope error) and avoid masking real bugs.
 ///
 /// Set the env var `KCL_FILE_SCOPE=off` (or the literal value `"0"`,
 /// `"false"`, `"no"`) to bypass the scope check entirely — useful for
@@ -53,7 +55,9 @@ pub(crate) fn resolve_scoped_path<P: AsRef<Path>>(
     // any filesystem access: `canonicalize` on the module root can fail
     // transiently (observed on the Windows CI runners for freshly created
     // directories), and a traversal attempt must not slip through just
-    // because the root could not be canonicalized.
+    // because the root could not be canonicalized. It is also load-bearing
+    // on Windows, where a `..` inside an otherwise verbatim path is treated
+    // literally by the filesystem.
     if path_has_parent_ref(Path::new(user_path)) {
         return (
             PathBuf::from(user_path),
@@ -77,7 +81,52 @@ pub(crate) fn resolve_scoped_path<P: AsRef<Path>>(
         canonical_root.join(candidate)
     };
 
+    // Absolute paths (and relative paths routed through a symlink that
+    // points outside the root) must not escape either. Compare
+    // canonicalized forms so symlink components are resolved before the
+    // check; paths that don't exist yet are canonicalized through their
+    // nearest existing ancestor so writes to new files still get checked.
+    if !path_within_root(&candidate, &canonical_root) {
+        return (
+            candidate,
+            Err(format!(
+                "path '{}' escapes module root '{}'",
+                user_path,
+                canonical_root.display()
+            )),
+        );
+    }
+
     (candidate, Ok(()))
+}
+
+/// Canonicalize `p`, falling back to the nearest existing ancestor for paths
+/// that do not exist yet (writes to new files), re-appending the missing
+/// trailing components. Returns `None` only when no ancestor can be
+/// canonicalized at all (e.g. a path on a drive that doesn't exist).
+fn canonicalize_existing(p: &Path) -> Option<PathBuf> {
+    let mut missing = Vec::new();
+    let mut cur = p;
+    loop {
+        if let Ok(c) = fs::canonicalize(cur) {
+            let mut out = c;
+            for comp in missing.iter().rev() {
+                out.push(comp);
+            }
+            return Some(out);
+        }
+        missing.push(cur.file_name()?);
+        cur = cur.parent()?;
+    }
+}
+
+fn path_within_root(candidate: &Path, canonical_root: &Path) -> bool {
+    match canonicalize_existing(candidate) {
+        Some(cc) => cc.starts_with(canonical_root),
+        // Nothing exists up to the filesystem root (e.g. a nonexistent
+        // drive): the path cannot be inside the module root.
+        None => false,
+    }
 }
 
 fn path_has_parent_ref(p: &Path) -> bool {
@@ -193,6 +242,60 @@ mod tests {
             let canonical_root = fs::canonicalize(&tmp).unwrap();
             assert_eq!(path, canonical_root.join("sub").join("inside.txt"));
             let _ = fs::remove_dir_all(&tmp);
+        });
+    }
+
+    #[test]
+    fn resolve_scoped_rejects_absolute_path_outside_root() {
+        with_scope(None, || {
+            let tmp = std::env::temp_dir()
+                .join(format!("kcl-file-scope-test-abs-{}", std::process::id()));
+            let _ = fs::create_dir_all(&tmp);
+            // An absolute path without any `..` still escapes the root.
+            let outside = tmp.parent().unwrap().join(format!(
+                "kcl-file-scope-abs-outside-{}.txt",
+                std::process::id()
+            ));
+            let (_, err) = resolve_scoped_path(&tmp, outside.to_str().unwrap());
+            assert!(err.is_err(), "expected error for {outside:?}");
+            let _ = fs::remove_dir_all(&tmp);
+        });
+    }
+
+    #[test]
+    fn resolve_scoped_allows_absolute_path_inside_root() {
+        with_scope(None, || {
+            let tmp = std::env::temp_dir()
+                .join(format!("kcl-file-scope-test-absok-{}", std::process::id()));
+            let _ = fs::create_dir_all(&tmp);
+            // Absolute paths that stay inside the root remain allowed.
+            let inside = tmp.join("inside.txt");
+            let (path, err) = resolve_scoped_path(&tmp, inside.to_str().unwrap());
+            assert!(err.is_ok(), "expected ok, got {err:?}");
+            assert_eq!(path, inside);
+            let _ = fs::remove_dir_all(&tmp);
+        });
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn resolve_scoped_rejects_symlink_escape() {
+        with_scope(None, || {
+            let tmp = std::env::temp_dir()
+                .join(format!("kcl-file-scope-test-sym-{}", std::process::id()));
+            let _ = fs::create_dir_all(&tmp);
+            // A relative path that stays lexically inside the root but reaches
+            // outside through a symlink must be rejected.
+            let outside = tmp
+                .parent()
+                .unwrap()
+                .join(format!("kcl-file-scope-sym-outside-{}", std::process::id()));
+            let _ = fs::create_dir_all(&outside);
+            std::os::unix::fs::symlink(&outside, tmp.join("link")).unwrap();
+            let (_, err) = resolve_scoped_path(&tmp, "link/escape.txt");
+            assert!(err.is_err(), "expected error for symlink escape");
+            let _ = fs::remove_dir_all(&tmp);
+            let _ = fs::remove_dir_all(&outside);
         });
     }
 
