@@ -117,6 +117,13 @@ pub struct LockDependency {
 
 impl LockDependency {
     pub fn gen_filename(&self) -> String {
+        // KCL identifiers do not allow `-`, so the on-disk package name and the
+        // import path derived from it must use `_` instead. Apply the
+        // normalization on every branch (git, oci, and the name fallback) so
+        // that packages whose registry or repo name contains `-` can still be
+        // resolved and imported consistently. See kcl-lang/modules#281.
+        let sanitize = |s: &str| s.replace('-', "_");
+
         if let Some(git_url) = &self.url
             && let Ok(parsed_url) = Url::parse(git_url)
             && let Some(last_segment) = parsed_url
@@ -124,7 +131,7 @@ impl LockDependency {
                 .and_then(|mut segments| segments.next_back())
         {
             let trimmed_segment = last_segment.trim_end_matches(".git");
-            return trimmed_segment.to_string();
+            return sanitize(trimmed_segment);
         }
 
         if let Some(oci_repo) = &self.repo
@@ -133,10 +140,10 @@ impl LockDependency {
                 .path_segments()
                 .and_then(|mut segments| segments.next_back())
         {
-            return last_segment.to_string();
+            return sanitize(last_segment);
         }
 
-        self.name.replace('-', "_")
+        sanitize(&self.name)
     }
 }
 
