@@ -9,7 +9,7 @@ use std::{
 
 use crate::{
     cache::{CacheOption, load_pkg_cache, save_pkg_cache},
-    modfile::{KCL_PKG_PATH, get_vendor_home},
+    modfile::{KCL_PKG_PATH, LockDependency, get_vendor_home},
 };
 
 #[test]
@@ -75,4 +75,80 @@ fn test_pkg_cache() {
         ),
         Some("test_data".to_string())
     )
+}
+
+/// Regression test for kcl-lang/modules#281: importing an OCI / Git package
+/// whose repo or dependency name contains `-` previously failed because
+/// `gen_filename` returned the unsanitized last URL segment. KCL identifiers
+/// disallow `-`, so the on-disk filename must use `_` instead — same as the
+/// `name` fallback branch.
+#[test]
+fn test_gen_filename_sanitizes_hyphens() {
+    // OCI repo with a hyphen in the last segment.
+    let dep = LockDependency {
+        name: "ignored".to_string(),
+        full_name: None,
+        version: None,
+        sum: None,
+        reg: Some("ghcr.io".to_string()),
+        repo: Some("oci://ghcr.io/some-org/hello-world".to_string()),
+        oci_tag: None,
+        url: None,
+        branch: None,
+        commit: None,
+        git_tag: None,
+        path: None,
+    };
+    assert_eq!(dep.gen_filename(), "hello_world");
+
+    // Git URL with a hyphen in the last segment and a `.git` suffix.
+    let dep = LockDependency {
+        name: "ignored".to_string(),
+        full_name: None,
+        version: None,
+        sum: None,
+        reg: None,
+        repo: None,
+        oci_tag: None,
+        url: Some("https://github.com/some-org/hello-world.git".to_string()),
+        branch: None,
+        commit: None,
+        git_tag: None,
+        path: None,
+    };
+    assert_eq!(dep.gen_filename(), "hello_world");
+
+    // No URL/repo → fall back to `name`.
+    let dep = LockDependency {
+        name: "hello-world".to_string(),
+        full_name: None,
+        version: None,
+        sum: None,
+        reg: None,
+        repo: None,
+        oci_tag: None,
+        url: None,
+        branch: None,
+        commit: None,
+        git_tag: None,
+        path: None,
+    };
+    assert_eq!(dep.gen_filename(), "hello_world");
+
+    // Names without hyphens must be unchanged on every branch.
+    let dep = LockDependency {
+        name: "hello_world".to_string(),
+        full_name: None,
+        version: None,
+        sum: None,
+        reg: Some("ghcr.io".to_string()),
+        repo: Some("oci://ghcr.io/some-org/hello_world".to_string()),
+        oci_tag: None,
+        url: None,
+        branch: None,
+        commit: None,
+        git_tag: None,
+        path: None,
+    };
+    assert_eq!(dep.gen_filename(), "hello_world");
 }
