@@ -330,6 +330,42 @@ impl KclServiceImpl {
         })
     }
 
+    /// ListMethod KclService, return the list of KCL service method names
+    /// available in the underlying runtime. Mirrors the JSON-RPC
+    /// `BuiltinService.ListMethod` registration so the C ABI dispatch table
+    /// stays in sync with what callers see over JSON-RPC.
+    pub fn list_method(&self, _args: &ListMethodArgs) -> anyhow::Result<ListMethodResult> {
+        Ok(ListMethodResult {
+            method_name_list: vec![
+                "KclService.Ping".to_owned(),
+                "KclService.GetVersion".to_owned(),
+                "KclService.ParseFile".to_owned(),
+                "KclService.ParseProgram".to_owned(),
+                "KclService.LoadPackage".to_owned(),
+                "KclService.ListOptions".to_owned(),
+                "KclService.ListVariables".to_owned(),
+                "KclService.ListDepFiles".to_owned(),
+                "KclService.ExecProgram".to_owned(),
+                "KclService.BuildProgram".to_owned(),
+                "KclService.ExecArtifact".to_owned(),
+                "KclService.OverrideFile".to_owned(),
+                "KclService.GetSchemaTypeMapping".to_owned(),
+                "KclService.GetSchemaTypeMappingUnderPath".to_owned(),
+                "KclService.FormatCode".to_owned(),
+                "KclService.FormatPath".to_owned(),
+                "KclService.LintPath".to_owned(),
+                "KclService.ValidateCode".to_owned(),
+                "KclService.LoadSettingsFiles".to_owned(),
+                "KclService.Rename".to_owned(),
+                "KclService.RenameCode".to_owned(),
+                "KclService.Test".to_owned(),
+                "KclService.UpdateDependencies".to_owned(),
+                "BuiltinService.Ping".to_owned(),
+                "BuiltinService.ListMethod".to_owned(),
+            ],
+        })
+    }
+
     /// GetVersion KclService, return the kcl service version information
     ///
     /// # Examples
@@ -582,6 +618,76 @@ impl KclServiceImpl {
     /// let result = serv.list_options(args).unwrap();
     /// assert_eq!(result.options.len(), 3);
     /// ```
+    /// ListDepFiles walks the KCL package rooted at `work_dir` and returns the
+    /// package root, the package's path-style identifier, and the list of
+    /// `.k` files reachable from there. When `work_dir` does not point at a
+    /// recognised package (no `kcl.mod`), the call falls back to listing the
+    /// `.k` files directly under `work_dir` itself.
+    pub fn list_dep_files(&self, args: &ListDepFilesArgs) -> anyhow::Result<ListDepFilesResult> {
+        use kcl_config::modfile::{KCL_FILE_SUFFIX, KCL_MOD_FILE};
+
+        let work_dir = PathBuf::from(&args.work_dir);
+        // Try to find a package root (directory containing `kcl.mod`) by
+        // walking up from `work_dir`. Fall back to `work_dir` itself if no
+        // marker file is found.
+        let mut pkgroot: Option<PathBuf> = None;
+        if work_dir.join(KCL_MOD_FILE).is_file() {
+            pkgroot = Some(work_dir.clone());
+        } else if work_dir.is_dir() {
+            // Walk up looking for a `kcl.mod` marker.
+            let mut cursor = work_dir.clone();
+            loop {
+                if cursor.join(KCL_MOD_FILE).is_file() {
+                    pkgroot = Some(cursor);
+                    break;
+                }
+                if !cursor.pop() {
+                    break;
+                }
+            }
+        }
+        let pkgroot = pkgroot.unwrap_or_else(|| work_dir.clone());
+
+        let mut files: Vec<String> = Vec::new();
+        if pkgroot.is_dir() {
+            let entries = std::fs::read_dir(&pkgroot)?;
+            for entry in entries {
+                let entry = entry?;
+                let entry_path = entry.path();
+                if !entry_path.is_file() {
+                    continue;
+                }
+                let name = match entry_path.file_name().and_then(|n| n.to_str()) {
+                    Some(n) => n,
+                    None => continue,
+                };
+                // Skip hidden files and non-KCL sources. Without
+                // `include_all` we also drop test files (`*_test.k`/`*_test/*.k`).
+                if name.starts_with('_') || !name.ends_with(KCL_FILE_SUFFIX) {
+                    continue;
+                }
+                if !args.include_all && (name.ends_with("_test.k") || name == "kcl.mod") {
+                    continue;
+                }
+                let display_path = if args.use_abs_path {
+                    std::fs::canonicalize(&entry_path)
+                        .map(|p| p.to_string_lossy().to_string())
+                        .unwrap_or_else(|_| entry_path.to_string_lossy().to_string())
+                } else {
+                    entry_path.to_string_lossy().to_string()
+                };
+                files.push(display_path);
+            }
+        }
+        files.sort();
+
+        Ok(ListDepFilesResult {
+            pkgroot: pkgroot.to_string_lossy().to_string(),
+            pkgpath: pkgroot.to_string_lossy().to_string(),
+            files,
+        })
+    }
+
     pub fn list_options(&self, args: &ParseProgramArgs) -> anyhow::Result<ListOptionsResult> {
         let mut package_maps = HashMap::new();
         for p in &args.external_pkgs {

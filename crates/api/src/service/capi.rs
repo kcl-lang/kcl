@@ -32,6 +32,8 @@ impl HasErrorFormat for RenameArgs {}
 impl HasErrorFormat for RenameCodeArgs {}
 impl HasErrorFormat for TestArgs {}
 impl HasErrorFormat for UpdateDependenciesArgs {}
+impl HasErrorFormat for ListMethodArgs {}
+impl HasErrorFormat for ListDepFilesArgs {}
 
 #[allow(non_camel_case_types)]
 type kcl_service = KclServiceImpl;
@@ -226,6 +228,11 @@ pub(crate) fn kcl_get_service_fn_ptr_by_name(name: &str) -> u64 {
         "KclService.Test" => test as *const () as u64,
         #[cfg(not(target_arch = "wasm32"))]
         "KclService.UpdateDependencies" => update_dependencies as *const () as u64,
+        // BuiltinService.Ping reuses the KclService.Ping implementation —
+        // both services share the same PingArgs/PingResult message types.
+        "BuiltinService.Ping" => ping as *const () as u64,
+        "BuiltinService.ListMethod" => list_method as *const () as u64,
+        "KclService.ListDepFiles" => list_dep_files as *const () as u64,
         _ => panic!("unknown method name : {name}"),
     }
 }
@@ -678,5 +685,45 @@ pub(crate) fn update_dependencies(
         result_len,
         UpdateDependenciesArgs,
         update_dependencies
+    )
+}
+
+/// list_method returns the list of KCL service method names available in the
+/// underlying runtime, mirroring the JSON-RPC `BuiltinService.ListMethod`
+/// registration. `ListMethodArgs` is empty so the runtime encodes a
+/// zero-byte payload for the universal dispatcher.
+pub(crate) fn list_method(
+    serv: *mut kcl_service,
+    args: *const c_char,
+    args_len: usize,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(
+        serv,
+        args,
+        args_len,
+        result_len,
+        ListMethodArgs,
+        list_method
+    )
+}
+
+/// list_dep_files walks the KCL package rooted at `work_dir` and returns
+/// the package root, the package's path-style identifier, and the list of
+/// `.k` files reachable from there. See `KclServiceImpl::list_dep_files`
+/// for the actual implementation.
+pub(crate) fn list_dep_files(
+    serv: *mut kcl_service,
+    args: *const c_char,
+    args_len: usize,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(
+        serv,
+        args,
+        args_len,
+        result_len,
+        ListDepFilesArgs,
+        list_dep_files
     )
 }
