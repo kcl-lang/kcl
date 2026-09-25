@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::builtin::system_module::{UNITS, UNITS_NUMBER_MULTIPLIER, get_system_module_members};
 use crate::builtin::{STRING_MEMBER_FUNCTIONS, get_system_member_function_ty};
+use crate::info::is_private_field;
 use crate::resolver::Resolver;
 use crate::ty::TypeKind::Schema;
 use crate::ty::{
@@ -100,6 +101,22 @@ impl<'ctx> Resolver<'_> {
                                 if v.borrow().ty.is_module() {
                                     self.handler
                                             .add_compile_error(&format!("can not import the attribute '{}' from the module '{}'", attr, module_ty.pkgpath), range.clone());
+                                }
+                                // Enforce `_`-prefixed top-level declarations as
+                                // module-private (kcl-lang/kcl#1576). The error
+                                // is recorded but resolution continues so the
+                                // rest of the program still gets a type (Any)
+                                // and downstream symbol registration is not
+                                // short-circuited.
+                                if is_private_field(attr) && module_ty.pkgpath != self.ctx.pkgpath
+                                {
+                                    self.handler.add_compile_error(
+                                        &format!(
+                                            "cannot reference private member '{}' from module '{}'",
+                                            attr, module_ty.pkgpath
+                                        ),
+                                        range.clone(),
+                                    );
                                 }
                                 (true, v.borrow().ty.clone())
                             }

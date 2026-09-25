@@ -276,6 +276,29 @@ fn test_resolve_program_cycle_reference_fail() {
 }
 
 #[test]
+fn test_resolve_program_private_cross_pkg_fail() {
+    // kcl-lang/kcl#1576: top-level declarations prefixed with `_` are
+    // module-private and must not be referenced from another package.
+    let sess = Arc::new(ParseSession::default());
+    let mut program = load_program(
+        sess.clone(),
+        &["./src/resolver/test_fail_data/cross_pkg_private/file2.k"],
+        None,
+        None,
+    )
+    .unwrap()
+    .program;
+    let scope = resolve_program(&mut program);
+    let diagnostics = &scope.handler.diagnostics;
+    assert!(
+        diagnostics.iter().any(|d| d.messages[0]
+            .message
+            .contains("cannot reference private member '_internal' from module 'file1'")),
+        "expected the private-member diagnostic, got {diagnostics:?}"
+    );
+}
+
+#[test]
 fn test_record_used_module() {
     let sess = Arc::new(ParseSession::default());
     let mut program = load_program(
