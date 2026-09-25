@@ -7,6 +7,6 @@ schema Person:
     name: str
     age: int
 
-b1 = b._b
+b1 = b.value
 
 import import_test.b  # ImportPosition
