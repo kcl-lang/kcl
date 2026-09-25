@@ -97,6 +97,7 @@ jobs:
         run: |
           pip3 install ziglang
           cargo install --locked cargo-zigbuild
+          rustup target add ${{ matrix.lib_subpath }}
 
       - name: Set up MSVC dev command prompt (Windows)
         if: matrix.os == 'windows-latest'
