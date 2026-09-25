@@ -178,18 +178,22 @@ fn lint_package(
         },
         None,
     );
-    let handler = match resolve_result {
-        Ok(prog_scope) => prog_scope.handler,
+    match resolve_result {
+        Ok(prog_scope) => {
+            sess.append_diagnostic(prog_scope.handler.diagnostics);
+        }
         Err(err) => {
             // The resolver contract only yields errors for
             // "Internal error, please report a bug to us" cases —
             // surface them as diagnostics so the lint pass can keep
             // producing the rest of its output instead of aborting.
-            let mut h = Handler::default();
-            h.add_panic_info(&PanicInfo::from(err.to_string()));
-            h
+            sess.append_diagnostic(
+                Handler::default()
+                    .add_panic_info(&PanicInfo::from(err.to_string()))
+                    .diagnostics
+                    .clone(),
+            );
         }
-    };
-    sess.append_diagnostic(handler.diagnostics.clone());
-    handler.classification()
+    }
+    sess.classification()
 }
