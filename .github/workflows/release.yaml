@@ -1,0 +1,192 @@
+name: Build and Release kcl-lib and kcl-language-server
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write  # Required to create a release and upload assets
+
+jobs:
+  build:
+    name: Build on ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux glibc (cdylib, GLIBC 2.17 for old-system compat)
+          - target: linux-amd64
+            os: ubuntu-latest
+            lib_build: zigbuild
+            lib_target: x86_64-unknown-linux-gnu.2.17
+            lib_name: libkcl.so
+            lsp_build: native
+            lsp_bin: kcl-language-server
+          - target: linux-arm64
+            os: ubuntu-22.04-arm
+            lib_build: zigbuild
+            lib_target: aarch64-unknown-linux-gnu.2.17
+            lib_name: libkcl.so
+            lsp_build: native
+            lsp_bin: kcl-language-server
+          # Linux musl (staticlib)
+          - target: linux-musl-amd64
+            os: ubuntu-latest
+            lib_build: zigbuild
+            lib_target: x86_64-unknown-linux-musl
+            lib_name: libkcl.a
+            lsp_build: none
+          - target: linux-musl-arm64
+            os: ubuntu-22.04-arm
+            lib_build: zigbuild
+            lib_target: aarch64-unknown-linux-musl
+            lib_name: libkcl.a
+            lsp_build: none
+          # macOS
+          - target: darwin-amd64
+            os: macos-15-intel
+            lib_build: native
+            lib_name: libkcl.dylib
+            lsp_build: native
+            lsp_bin: kcl-language-server
+            macos_deployment_target: '10.13'
+          - target: darwin-arm64
+            os: macos-latest
+            lib_build: native
+            lib_name: libkcl.dylib
+            lsp_build: native
+            lsp_bin: kcl-language-server
+            macos_deployment_target: '11.0'
+          # Windows MSVC
+          - target: windows-amd64
+            os: windows-latest
+            lib_build: native
+            lib_name: kcl.dll
+            lsp_build: native
+            lsp_bin: kcl-language-server.exe
+          # WebAssembly (WASI preview1)
+          - target: wasm32-wasip1
+            os: ubuntu-latest
+            lib_build: wasm
+            lib_target: wasm32-wasip1
+            lib_name: kcl.wasm
+            lsp_build: none
+    runs-on: ${{ matrix.os }}
+    env:
+      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.macos_deployment_target }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          submodules: "true"
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.91
+          override: true
+
+      - name: Install cargo-zigbuild (Linux glibc / musl)
+        if: matrix.lib_build == 'zigbuild'
+        shell: bash
+        run: |
+          pip3 install ziglang
+          cargo install --locked cargo-zigbuild
+
+      - name: Set up MSVC dev command prompt (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: "Build kcl-lib (zigbuild: Linux glibc / musl)"
+        if: matrix.lib_build == 'zigbuild'
+        shell: bash
+        run: |
+          cargo zigbuild --target ${{ matrix.lib_target }} -r -p kcl-lib
+          mkdir -p release/lib
+          cp -f target/${{ matrix.lib_target }}/release/${{ matrix.lib_name }} release/lib/
+
+      - name: "Build kcl-lib (native: macOS / Windows)"
+        if: matrix.lib_build == 'native'
+        shell: bash
+        run: |
+          cargo build --release -p kcl-lib
+          mkdir -p release/lib
+          cp -f target/release/${{ matrix.lib_name }} release/lib/
+
+      - name: Build kcl-lib (WASM)
+        if: matrix.lib_build == 'wasm'
+        shell: bash
+        run: |
+          rustup target add wasm32-wasip1
+          RUSTFLAGS="-Cpanic=abort -Cllvm-args=-wasm-use-legacy-eh=false" \
+            cargo build --target=wasm32-wasip1 --release -p kcl-lib
+          mkdir -p release/lib
+          cp -f target/wasm32-wasip1/release/${{ matrix.lib_name }} release/lib/
+
+      - name: Build kcl-language-server
+        if: matrix.lsp_build == 'native'
+        shell: bash
+        run: |
+          cargo build --release --manifest-path crates/tools/src/LSP/Cargo.toml
+          mkdir -p release/language-server
+          cp -f target/release/${{ matrix.lsp_bin }} release/language-server/
+
+      - name: Package kcl-lib
+        shell: bash
+        run: |
+          TAG="${{ github.ref_name }}"
+          cd release/lib
+          tar -czvf "../../kcl-lib-${TAG}-${{ matrix.target }}.tar.gz" .
+          cd ../..
+
+      - name: Package kcl-language-server
+        if: matrix.lsp_build == 'native'
+        shell: bash
+        run: |
+          TAG="${{ github.ref_name }}"
+          cd release/language-server
+          tar -czvf "../../kcl-language-server-${TAG}-${{ matrix.target }}.tar.gz" .
+          cd ../..
+
+      - name: List packaged artifacts
+        shell: bash
+        run: ls -la kcl-lib-*.tar.gz kcl-language-server-*.tar.gz 2>/dev/null || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kcl-lib-${{ matrix.target }}
+          if-no-files-found: error
+          path: kcl-lib-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        if: matrix.lsp_build == 'native'
+        with:
+          name: kcl-language-server-${{ matrix.target }}
+          if-no-files-found: error
+          path: kcl-language-server-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List downloaded artifacts
+        run: find artifacts -type f -name '*.tar.gz' | sort
+
+      - name: Create release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+              artifacts/**/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
