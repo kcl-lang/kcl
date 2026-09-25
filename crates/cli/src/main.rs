@@ -14,7 +14,15 @@ unsafe extern "C-unwind" {
 fn main() -> ExitCode {
     // create a vector of zero terminated strings
     let args = std::env::args()
-        .map(|arg| CString::new(arg).unwrap())
+        .map(|arg| {
+            CString::new(arg).unwrap_or_else(|err| {
+                // argv containing an interior NUL byte is unrecoverable
+                // (libkcl_main takes raw C strings), so report and exit with
+                // a generic non-zero status instead of panicking.
+                eprintln!("kcl: invalid CLI argument (contains NUL byte): {err}");
+                CString::new("kcl").expect("static literal contains no NUL byte")
+            })
+        })
         .collect::<Vec<CString>>();
     // convert the strings to raw pointers
     let c_args = args

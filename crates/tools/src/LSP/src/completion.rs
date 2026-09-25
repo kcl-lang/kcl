@@ -2392,11 +2392,15 @@ mod tests {
 
     impl Toolchain for NoCallToolchain {
         fn fetch_metadata(&self, _manifest_path: std::path::PathBuf) -> anyhow::Result<Metadata> {
-            panic!("fetch_metadata must not be called when the metadata cache is available");
+            Err(anyhow::anyhow!(
+                "fetch_metadata must not be called when the metadata cache is available"
+            ))
         }
 
         fn update_dependencies(&self, _manifest_path: std::path::PathBuf) -> anyhow::Result<()> {
-            panic!("update_dependencies must not be called during completion");
+            Err(anyhow::anyhow!(
+                "update_dependencies must not be called during completion"
+            ))
         }
     }
 

@@ -184,7 +184,7 @@ where
             ..Default::default()
         },
         None,
-    );
+    )?;
 
     let mut gs = GlobalState::default();
     Namer::find_symbols(&program, &mut gs);

@@ -155,12 +155,12 @@ pub fn execute(
             ..Default::default()
         };
         // Resolve ast
-        let scope = resolve_program_with_opts(&mut program, resolve_opts, None);
+        let scope = resolve_program_with_opts(&mut program, resolve_opts, None)?;
         emit_compile_diag_to_string(sess, &scope, args.compile_only)?;
         return Ok(ExecProgramResult::default());
     }
     // Resolve ast
-    let mut scope = resolve_program(&mut program);
+    let mut scope = resolve_program(&mut program)?;
     // Build the set of user packages actually referenced from the
     // entry-point program so that the evaluator can skip pass-3 for
     // unused imports (issue #1758). Compute this *before* emitting

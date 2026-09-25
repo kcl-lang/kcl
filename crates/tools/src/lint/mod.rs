@@ -170,17 +170,30 @@ fn lint_package(
                 .classification();
         }
     };
-    sess.append_diagnostic(
-        resolve_program_with_opts(
-            &mut program,
-            kcl_sema::resolver::Options {
-                merge_program: false,
-                ..Default::default()
-            },
-            None,
-        )
-        .handler
-        .diagnostics,
-    )
-    .classification()
+    let resolve_result = resolve_program_with_opts(
+        &mut program,
+        kcl_sema::resolver::Options {
+            merge_program: false,
+            ..Default::default()
+        },
+        None,
+    );
+    match resolve_result {
+        Ok(prog_scope) => {
+            sess.append_diagnostic(prog_scope.handler.diagnostics);
+        }
+        Err(err) => {
+            // The resolver contract only yields errors for
+            // "Internal error, please report a bug to us" cases —
+            // surface them as diagnostics so the lint pass can keep
+            // producing the rest of its output instead of aborting.
+            sess.append_diagnostic(
+                Handler::default()
+                    .add_panic_info(&PanicInfo::from(err.to_string()))
+                    .diagnostics
+                    .clone(),
+            );
+        }
+    }
+    sess.classification()
 }

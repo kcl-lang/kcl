@@ -205,6 +205,10 @@ where
 /// Returns a list of the direct dependencies of the given file.
 /// (does not include all transitive dependencies)
 /// The file path must be relative to the root of the file graph.
+///
+/// If the file is not in the graph, returns an empty list rather than
+/// panicking. Callers that need to distinguish "missing" from "no
+/// dependencies" can use [`FilePathGraph::contains_file`] first.
 pub fn dependencies_of<T>(
     node: &T,
     graph: &StableDiGraph<T, ()>,
@@ -213,7 +217,9 @@ pub fn dependencies_of<T>(
 where
     T: Clone + Hash + Eq + PartialEq,
 {
-    let node_index = id_map.get(node).expect("node not in graph");
+    let Some(node_index) = id_map.get(node) else {
+        return Vec::new();
+    };
     graph
         .edges(*node_index)
         .map(|edge| &graph[edge.target()])

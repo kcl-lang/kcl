@@ -222,8 +222,10 @@ pub fn validate(val_opt: ValidateOption) -> Result<bool> {
                 let mut m = compile_res
                     .program
                     .get_module_mut(module)
-                    .expect("Failed to acquire module lock")
-                    .unwrap_or_else(|| panic!("module {:?} not found in program", module));
+                    .map_err(|e| {
+                        anyhow::anyhow!("Module lock acquisition failed for {}: {}", module, e)
+                    })?
+                    .ok_or_else(|| anyhow::anyhow!("module {:?} not found in program", module))?;
                 m.body.push(assign_stmt);
             } else {
                 return Err(anyhow::anyhow!("No main module found"));

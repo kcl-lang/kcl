@@ -47,10 +47,15 @@ pub fn apply_overrides(
     for o in overrides {
         if let Some(modules) = prog.pkgs.get(MAIN_PKG) {
             for m in modules.iter() {
+                // The lock on `m` should never be poisoned — `load_program`
+                // is the only writer and panics are caught before this code
+                // runs. A poisoned lock would mean a previous panic
+                // corrupted the program; surfacing that as a diagnostic is
+                // more useful than aborting the whole apply-overrides pass.
                 let mut m = prog
                     .get_module_mut(m)
-                    .expect("Failed to acquire module lock")
-                    .unwrap_or_else(|| panic!("module {:?} not found in program", m));
+                    .map_err(|e| anyhow!("Module lock acquisition failed for {}: {}", m, e))?
+                    .ok_or_else(|| anyhow!("module {:?} not found in program", m))?;
                 if apply_override_on_module(&mut m, o, import_paths)? && print_ast {
                     let code_str = print_ast_module(&m);
                     std::fs::write(&m.filename, &code_str)?

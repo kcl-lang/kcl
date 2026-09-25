@@ -29,8 +29,8 @@ pub(crate) fn cmd_clone_git_repo_to(
         bail!(
             "Failed to clone Git repository {}: stdout: {} stderr: {}",
             url,
-            String::from_utf8(output.stdout).unwrap(),
-            String::from_utf8(output.stderr).unwrap()
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
         );
     }
     if let Some(tag_name) = tag {
@@ -42,8 +42,8 @@ pub(crate) fn cmd_clone_git_repo_to(
             bail!(
                 "Failed to checkout Git tag {}: stdout: {} stderr: {}",
                 tag_name,
-                String::from_utf8(output.stdout).unwrap(),
-                String::from_utf8(output.stderr).unwrap()
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
             );
         }
     } else if let Some(commit_hash) = commit {
@@ -55,8 +55,8 @@ pub(crate) fn cmd_clone_git_repo_to(
             bail!(
                 "Failed to checkout Git commit {}: stdout: {} stderr: {}",
                 commit_hash,
-                String::from_utf8(output.stdout).unwrap(),
-                String::from_utf8(output.stderr).unwrap()
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
             )
         }
     }

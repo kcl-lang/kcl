@@ -441,7 +441,7 @@ fn fix_rel_import_path_with_file(
     load_cache: &mut ParseLoadCache,
     opts: &LoadProgramOptions,
     sess: ParseSessionRef,
-) {
+) -> anyhow::Result<()> {
     for stmt in &mut m.body {
         let pos = stmt.pos().clone();
         if let ast::Stmt::Import(import_spec) = &mut stmt.node {
@@ -452,7 +452,13 @@ fn fix_rel_import_path_with_file(
             );
             import_spec.path.node = fix_path.clone();
 
-            let pkg = pkgmap.get(file).expect("file not in pkgmap");
+            let pkg = pkgmap.get(file).ok_or_else(|| {
+                anyhow::anyhow!(
+                    "Internal error, please report a bug to us: \
+                     file {:?} not in pkgmap while fixing import path",
+                    file
+                )
+            })?;
             import_spec.pkg_name = pkg.pkg_name.clone();
             // Load the import package source code and compile.
             let pkg_info = find_packages(
@@ -472,6 +478,7 @@ fn fix_rel_import_path_with_file(
             }
         }
     }
+    Ok(())
 }
 
 fn is_plugin_pkg(pkgpath: &str) -> bool {
@@ -938,7 +945,10 @@ pub fn get_deps(
     let mut deps = PkgMap::default();
     for stmt in &m.body {
         let pos = stmt.pos().clone();
-        let pkg = pkgmap.get(file).expect("file not in pkgmap").clone();
+        let pkg = pkgmap
+            .get(file)
+            .ok_or_else(|| anyhow::anyhow!("file not in pkgmap: {:?}", file))?
+            .clone();
         if let ast::Stmt::Import(import_spec) = &stmt.node {
             let fix_path = kcl_config::vfs::fix_import_path(
                 &pkg.pkg_root,
@@ -1203,12 +1213,16 @@ pub fn parse_program(
             Ok(module_cache) => module_cache
                 .ast_cache
                 .get(file.get_path())
-                .unwrap_or_else(|| panic!("Module not found in module: {:?}", file.get_path()))
-                .clone(),
+                .cloned()
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Module not found in module: {:?}", file.get_path())
+                })?,
             Err(e) => return Err(anyhow::anyhow!("Parse program failed: {e}")),
         };
         if new_files.contains(file) {
-            let pkg = pkgmap.get(file).expect("file not in pkgmap");
+            let pkg = pkgmap
+                .get(file)
+                .ok_or_else(|| anyhow::anyhow!("file not in pkgmap: {:?}", file))?;
             let mut m = m_ref.write().unwrap();
             fix_rel_import_path_with_file(
                 &pkg.pkg_root,
@@ -1218,7 +1232,7 @@ pub fn parse_program(
                 load_cache,
                 opts,
                 sess.clone(),
-            );
+            )?;
         }
         modules.insert(filename.clone(), m_ref);
         match pkgs.get_mut(&file.pkg_path) {
@@ -1353,19 +1367,21 @@ pub fn load_all_files_under_paths(
                                     Ok(module_cache) => module_cache
                                         .ast_cache
                                         .get(file.get_path())
-                                        .unwrap_or_else(|| {
-                                            panic!(
+                                        .cloned()
+                                        .ok_or_else(|| {
+                                            anyhow::anyhow!(
                                                 "Module not found in module: {:?}",
                                                 file.get_path()
                                             )
-                                        })
-                                        .clone(),
+                                        })?,
                                     Err(e) => {
                                         return Err(anyhow::anyhow!("Parse program failed: {e}"));
                                     }
                                 };
 
-                                let pkg = loader.pkgmap.get(&file).expect("file not in pkgmap");
+                                let pkg = loader.pkgmap.get(&file).ok_or_else(|| {
+                                    anyhow::anyhow!("file not in pkgmap: {:?}", file)
+                                })?;
                                 let mut m = m_ref.write().unwrap();
                                 fix_rel_import_path_with_file(
                                     &pkg.pkg_root,
@@ -1375,7 +1391,7 @@ pub fn load_all_files_under_paths(
                                     &mut loader.load_cache,
                                     &loader.opts,
                                     sess.clone(),
-                                );
+                                )?;
 
                                 for dep in deps {
                                     if loader.parsed_file.insert(dep.clone()) {
@@ -1396,10 +1412,10 @@ pub fn load_all_files_under_paths(
                         Ok(module_cache) => module_cache
                             .ast_cache
                             .get(file.get_path())
-                            .unwrap_or_else(|| {
-                                panic!("Module not found in module: {:?}", file.get_path())
-                            })
-                            .clone(),
+                            .cloned()
+                            .ok_or_else(|| {
+                                anyhow::anyhow!("Module not found in module: {:?}", file.get_path())
+                            })?,
                         Err(e) => return Err(anyhow::anyhow!("Parse program failed: {e}")),
                     };
                     modules_not_imported.insert(filename.clone(), m_ref);

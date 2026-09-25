@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use kcl_ast::ast::Node;
 use kcl_ast::walker::MutSelfMutWalker;
 use kcl_ast::{ast, walk_if_mut, walk_list_mut};
@@ -145,16 +146,27 @@ fn fix_type_alias_identifier(
 pub fn type_alias_pass(
     program: &mut ast::Program,
     type_alias_mapping: IndexMap<String, IndexMap<String, String>>,
-) {
+) -> Result<()> {
     for (pkgpath, modules) in program.pkgs.iter() {
         for module in modules.iter() {
             let mut module = program
                 .get_module_mut(module)
-                .expect("Failed to acquire module lock")
-                .unwrap_or_else(|| panic!("module {:?} not found in program", module));
+                .with_context(|| {
+                    format!(
+                        "Internal error, please report a bug to us: \
+                         failed to acquire module lock for {module:?} during type alias pass"
+                    )
+                })?
+                .with_context(|| {
+                    format!(
+                        "Internal error, please report a bug to us: \
+                         module {module:?} not found in program during type alias pass"
+                    )
+                })?;
             if let Some(type_alias_mapping) = type_alias_mapping.get(pkgpath) {
                 fix_type_alias_identifier(pkgpath, &mut module, type_alias_mapping.clone());
             }
         }
     }
+    Ok(())
 }

@@ -242,6 +242,40 @@ pub unsafe extern "C-unwind" fn kcl_version() -> *const c_char {
     CString::new(kcl_version::VERSION).unwrap().into_raw()
 }
 
+/// Exposes a universal KCL API entry point to the WASM host.
+///
+/// Mirrors the C ABI `call_native` from `kcl-api`: the caller passes
+/// the RPC name (e.g. `KclService.ExecProgram`) and the protobuf
+/// encoded argument bytes; the function returns the protobuf encoded
+/// result bytes as a null-terminated C string that the host is
+/// responsible for freeing with `kcl_free`.
+///
+/// On internal failure the returned string is prefixed with `ERROR:`.
+#[unsafe(no_mangle)]
+pub unsafe extern "C-unwind" fn kcl_call(
+    name_ptr: *const c_char,
+    name_len: usize,
+    args_ptr: *const u8,
+    args_len: usize,
+) -> *const c_char {
+    if name_ptr.is_null() || args_ptr.is_null() {
+        return std::ptr::null();
+    }
+
+    let name_bytes = unsafe { std::slice::from_raw_parts(name_ptr as *const u8, name_len) };
+    let arg_bytes = unsafe { std::slice::from_raw_parts(args_ptr, args_len) };
+
+    let result_bytes = match unsafe { kcl_api::call(name_bytes, arg_bytes) } {
+        Ok(bytes) => bytes,
+        Err(err) => format!("ERROR:{err}").into_bytes(),
+    };
+
+    match CString::new(result_bytes) {
+        Ok(s) => s.into_raw(),
+        Err(_) => std::ptr::null(),
+    }
+}
+
 /// Exposes a normal kcl runtime error function to the WASM host.
 #[unsafe(no_mangle)]
 pub unsafe extern "C-unwind" fn kcl_runtime_err(buffer: *mut u8, length: usize) -> isize {

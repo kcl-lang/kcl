@@ -11,6 +11,7 @@ use kcl_ast::pos::GetPos;
 use kcl_error::diagnostic::Range;
 use kcl_error::*;
 use kcl_primitives::IndexMap;
+use kcl_runtime::PanicInfo;
 
 fn ty_str_to_pkgpath(ty_str: &str) -> &str {
     let splits: Vec<&str> = ty_str.rsplitn(2, '.').collect();
@@ -224,6 +225,23 @@ impl<'ctx> Resolver<'_> {
                         annotation_ty
                     } else {
                         if !is_upper_bound(annotation_ty.clone(), ty.clone()) {
+                            // Look up the declaration site up front so that we
+                            // can attach the correct span to the diagnostic
+                            // when it exists, and fall back to the assignment's
+                            // own span (plus a panic diagnostic) when it does
+                            // not — instead of aborting the whole resolver.
+                            let decl_range = match self.scope.borrow().lookup(name) {
+                                Some(obj) => obj.borrow().get_span_pos(),
+                                None => {
+                                    self.handler.add_panic_info(&PanicInfo::from(format!(
+                                        "Internal error, please report a bug to us: \
+                                         scope object for '{}' not found while \
+                                         reporting type-mismatch",
+                                        name
+                                    )));
+                                    target.get_span_pos()
+                                }
+                            };
                             self.handler.add_error(
                                 ErrorKind::TypeError,
                                 &[
@@ -239,15 +257,7 @@ impl<'ctx> Resolver<'_> {
                                         suggested_replacement: None,
                                     },
                                     Message {
-                                        range: self
-                                            .scope
-                                            .borrow()
-                                            .lookup(name)
-                                            .unwrap_or_else(|| {
-                                                panic!("scope object for '{}' not found", name)
-                                            })
-                                            .borrow()
-                                            .get_span_pos(),
+                                        range: decl_range,
                                         style: Style::LineAndColumn,
                                         message: format!("expected {}", ty.ty_str()),
                                         note: None,

@@ -42,7 +42,9 @@ impl<'a> NotificationDispatcher<'a> {
         let params = match notification.extract::<N::Params>(N::METHOD) {
             Ok(it) => it,
             Err(ExtractError::JsonError { method, error }) => {
-                panic!("Invalid request\nMethod: {method}\n error: {error}",)
+                return Err(anyhow::anyhow!(
+                    "Invalid request\nMethod: {method}\n error: {error}"
+                ));
             }
             Err(ExtractError::MethodMismatch(notification)) => {
                 self.notification = Some(notification);

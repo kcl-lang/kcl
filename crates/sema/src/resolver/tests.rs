@@ -69,7 +69,7 @@ fn test_scope() {
 #[test]
 fn test_resolve_program() {
     let mut program = parse_program("./src/resolver/test_data/assign.k").unwrap();
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert_eq!(scope.pkgpaths(), vec!["__main__".to_string()]);
     let main_scope = scope.main_scope().unwrap();
     let main_scope = main_scope.borrow_mut();
@@ -92,7 +92,8 @@ fn test_resolve_program_with_cache() {
             ..Default::default()
         },
         None,
-    );
+    )
+    .unwrap();
     let cached_scope = Arc::new(RwLock::new(CachedScope::new(&scope, &program)));
     let scope = resolve_program_with_opts(
         &mut program,
@@ -102,7 +103,8 @@ fn test_resolve_program_with_cache() {
             ..Default::default()
         },
         Some(cached_scope),
-    );
+    )
+    .unwrap();
     assert_eq!(scope.pkgpaths(), vec!["__main__".to_string()]);
     let main_scope = scope.main_scope().unwrap();
     let main_scope = main_scope.borrow_mut();
@@ -124,7 +126,7 @@ fn test_pkg_init_in_schema_resolve() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert_eq!(
         scope.pkgpaths(),
         vec!["__main__".to_string(), "pkg".to_string()]
@@ -197,7 +199,7 @@ fn test_resolve_program_fail() {
     for case in cases {
         let path = Path::new(work_dir).join(case);
         let mut program = parse_program(&path.to_string_lossy()).unwrap();
-        let scope = resolve_program(&mut program);
+        let scope = resolve_program(&mut program).unwrap();
         assert!(!scope.handler.diagnostics.is_empty(), "{}", case);
     }
 }
@@ -214,7 +216,7 @@ fn test_resolve_program_redefine() {
     .unwrap()
     .program;
 
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert_eq!(scope.handler.diagnostics.len(), 2);
     let diag = &scope.handler.diagnostics[0];
     assert_eq!(
@@ -231,7 +233,7 @@ fn test_resolve_program_redefine() {
 #[test]
 fn test_resolve_program_mismatch_type_fail() {
     let mut program = parse_program("./src/resolver/test_fail_data/config_expr.k").unwrap();
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert_eq!(scope.handler.diagnostics.len(), 1);
     let diag = &scope.handler.diagnostics[0];
     assert_eq!(diag.code, Some(DiagnosticId::Error(ErrorKind::TypeError)));
@@ -253,7 +255,7 @@ fn test_resolve_program_cycle_reference_fail() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     let err_messages = [
         "There is a circular reference between modules file1, file2",
         "There is a circular reference between modules file1, file2",
@@ -284,7 +286,7 @@ fn test_record_used_module() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     let main_scope = scope
         .scope_map
         .get(kcl_runtime::MAIN_PKG_PATH)
@@ -308,7 +310,7 @@ fn test_record_used_module() {
 #[test]
 fn test_resolve_program_illegal_attr_fail() {
     let mut program = parse_program("./src/resolver/test_fail_data/attr.k").unwrap();
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert_eq!(scope.handler.diagnostics.len(), 2);
     let expect_err_msg = "A attribute must be string type, got 'Data'";
     let diag = &scope.handler.diagnostics[0];
@@ -332,7 +334,7 @@ fn test_resolve_program_illegal_attr_fail() {
 #[test]
 fn test_resolve_program_unmatched_args_fail() {
     let mut program = parse_program("./src/resolver/test_fail_data/unmatched_args.k").unwrap();
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert_eq!(scope.handler.diagnostics.len(), 3);
     let expect_err_msg = "\"Foo\" takes 1 positional argument but 3 were given";
     let diag = &scope.handler.diagnostics[0];
@@ -369,7 +371,7 @@ fn test_resolve_program_unmatched_args_fail() {
 fn test_resolve_program_module_optional_select_fail() {
     let mut program =
         parse_program("./src/resolver/test_fail_data/module_optional_select.k").unwrap();
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert_eq!(scope.handler.diagnostics.len(), 2);
     let expect_err_msg =
         "For the module type, the use of '?.log' is unnecessary and it can be modified as '.log'";
@@ -405,7 +407,7 @@ fn test_lint() {
     .unwrap()
     .program;
     let opts = Options::default();
-    pre_process_program(&mut program, &opts);
+    pre_process_program(&mut program, &opts).unwrap();
     let mut resolver = Resolver::new(&program, opts);
     resolver.resolve_import();
     resolver.check_and_lint_all_pkgs();
@@ -493,7 +495,7 @@ fn test_lint() {
 #[test]
 fn test_resolve_schema_doc() {
     let mut program = parse_program("./src/resolver/test_data/doc.k").unwrap();
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     let main_scope = scope
         .scope_map
         .get(kcl_runtime::MAIN_PKG_PATH)
@@ -572,7 +574,7 @@ fn test_pkg_scope() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
 
     assert_eq!(scope.scope_map.len(), 2);
     let main_scope = scope
@@ -623,7 +625,7 @@ fn test_system_package() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     let main_scope = scope
         .scope_map
         .get(kcl_runtime::MAIN_PKG_PATH)
@@ -698,7 +700,7 @@ fn test_resolve_program_import_suggest() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert_eq!(scope.handler.diagnostics.len(), 2);
     let diag = &scope.handler.diagnostics[0];
     assert_eq!(
@@ -723,7 +725,7 @@ fn test_resolve_assignment_in_lambda() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     let main_scope = scope.scope_map.get("__main__").unwrap().clone();
     // The file scope introduced for issue #1740 sits between the package
     // scope and any in-file lexical scopes; the top-level `lambda` is a
@@ -761,7 +763,7 @@ fn test_resolve_function_with_default_values() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert!(!scope.handler.has_errors());
     let main_scope = scope.main_scope().unwrap();
     let main_scope = main_scope.borrow();
@@ -786,7 +788,7 @@ fn test_assignment_type_annotation_check_in_lambda() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert_eq!(scope.handler.diagnostics.len(), 0);
 }
 
@@ -801,7 +803,7 @@ fn test_resolve_lambda_assignment_diagnostic() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert_eq!(scope.handler.diagnostics.len(), 1);
     let diag = &scope.handler.diagnostics[0];
     assert_eq!(diag.code, Some(DiagnosticId::Error(ErrorKind::TypeError)));
@@ -823,7 +825,7 @@ fn test_ty_check_in_dict_assign_to_schema() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert_eq!(scope.handler.diagnostics.len(), 2);
     let diag = &scope.handler.diagnostics[0];
     assert_eq!(diag.code, Some(DiagnosticId::Error(ErrorKind::TypeError)));
@@ -846,7 +848,7 @@ fn test_pkg_not_found_suggestion() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert_eq!(scope.handler.diagnostics.len(), 4);
     let diag = &scope.handler.diagnostics[1];
     assert_eq!(diag.code, Some(DiagnosticId::Suggestions));
@@ -875,7 +877,7 @@ fn undef_lambda_param() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert_eq!(scope.handler.diagnostics.len(), 1);
 
     let root = &program.root.clone();
@@ -914,7 +916,7 @@ fn test_schema_params_count() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert_eq!(scope.handler.diagnostics.len(), 1);
     let diag = &scope.handler.diagnostics[0];
     assert_eq!(
@@ -941,6 +943,7 @@ fn test_set_ty_in_lambda() {
     .program;
     assert_eq!(
         resolve_program(&mut program)
+            .unwrap()
             .main_scope()
             .unwrap()
             .borrow()
@@ -965,7 +968,7 @@ fn test_pkg_asname() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     let diags = scope.handler.diagnostics;
     assert_eq!(diags.len(), 4);
     assert_eq!(diags[0].messages[0].message, "name 'pkg' is not defined");
@@ -990,7 +993,7 @@ fn test_builtin_file_invalid() {
         let mut program = load_program(sess.clone(), &[file], None, None)
             .unwrap()
             .program;
-        let scope = resolve_program(&mut program);
+        let scope = resolve_program(&mut program).unwrap();
         let diags = scope.handler.diagnostics;
         assert_eq!(diags.len(), 1);
         assert_eq!(diags[0].messages[0].message, *expected_message);
@@ -1008,7 +1011,7 @@ fn test_schema_index_signature_check() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     let diags = scope.handler.diagnostics;
     assert!(diags.is_empty())
 }
@@ -1033,7 +1036,8 @@ fn test_clear_cache_by_module() {
             ..Default::default()
         },
         None,
-    );
+    )
+    .unwrap();
     let cached_scope = Arc::new(RwLock::new(CachedScope::new(&scope, &program)));
     // first compile
     let _ = resolve_program_with_opts(
@@ -1044,7 +1048,8 @@ fn test_clear_cache_by_module() {
             ..Default::default()
         },
         Some(cached_scope.clone()),
-    );
+    )
+    .unwrap();
 
     // recompile and clear cache
     let invalidate_module = std::fs::canonicalize(std::path::PathBuf::from(
@@ -1070,7 +1075,8 @@ fn test_clear_cache_by_module() {
             ..Default::default()
         },
         Some(cached_scope.clone()),
-    );
+    )
+    .unwrap();
     if let Some(cached_scope) = cached_scope.try_write() {
         // main - a
         //      - b - c
@@ -1104,7 +1110,8 @@ fn test_clear_cache_by_module() {
             ..Default::default()
         },
         Some(cached_scope.clone()),
-    );
+    )
+    .unwrap();
 
     if let Some(cached_scope) = cached_scope.try_write() {
         // main - a
@@ -1140,7 +1147,8 @@ fn test_clear_cache_by_module() {
             ..Default::default()
         },
         Some(cached_scope.clone()),
-    );
+    )
+    .unwrap();
 
     if let Some(cached_scope) = cached_scope.try_write() {
         // main - a
@@ -1176,7 +1184,8 @@ fn test_clear_cache_by_module() {
             ..Default::default()
         },
         Some(cached_scope.clone()),
-    );
+    )
+    .unwrap();
 
     if let Some(cached_scope) = cached_scope.try_write() {
         // main - a
@@ -1211,7 +1220,8 @@ fn clear_cache_test() {
             ..Default::default()
         },
         Some(scope_cache.clone()),
-    );
+    )
+    .unwrap();
 
     let mut program = load_program(
         sess.clone(),
@@ -1230,7 +1240,8 @@ fn clear_cache_test() {
             ..Default::default()
         },
         Some(scope_cache.clone()),
-    );
+    )
+    .unwrap();
     let first_node_ty_map_len = first_scope.node_ty_map.borrow().len();
     let second_node_ty_map_len = second_scope.node_ty_map.borrow().len();
     assert_eq!(first_node_ty_map_len, second_node_ty_map_len);
@@ -1245,7 +1256,7 @@ fn clear_cache_test() {
 fn test_resolve_program_valid_mixin_host_attr() {
     let path = "./src/resolver/test_data/valid_mixin_host_attr.k";
     let mut program = parse_program(path).unwrap();
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert!(
         scope.handler.diagnostics.is_empty(),
         "valid mixin host-attr access produced unexpected errors: {:?}",
@@ -1257,7 +1268,7 @@ fn test_resolve_program_valid_mixin_host_attr() {
 fn test_resolve_program_invalid_mixin_error_count() {
     let path = "./src/resolver/test_fail_data/invalid_mixin_1.k";
     let mut program = parse_program(path).unwrap();
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     let msgs: Vec<&str> = scope
         .handler
         .diagnostics
@@ -1290,7 +1301,7 @@ fn test_resolve_program_missing_required_attr() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert_eq!(scope.handler.diagnostics.len(), 1);
     let diag = &scope.handler.diagnostics[0];
     assert_eq!(
@@ -1311,7 +1322,7 @@ fn test_resolve_program_missing_required_attr() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert!(
         scope.handler.diagnostics.is_empty(),
         "{:?}",
@@ -1328,7 +1339,7 @@ fn test_resolve_program_missing_required_attr() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert!(
         scope.handler.diagnostics.is_empty(),
         "{:?}",
@@ -1346,7 +1357,7 @@ fn test_resolve_program_missing_required_attr() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert!(
         scope.handler.diagnostics.is_empty(),
         "{:?}",
@@ -1365,7 +1376,7 @@ fn test_resolve_program_missing_required_attr() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert!(
         scope.handler.diagnostics.is_empty(),
         "{:?}",
@@ -1383,7 +1394,7 @@ fn test_resolve_program_missing_required_attr() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert!(
         scope.handler.diagnostics.is_empty(),
         "{:?}",
@@ -1401,7 +1412,7 @@ fn test_resolve_program_missing_required_attr() {
     )
     .unwrap()
     .program;
-    let scope = resolve_program(&mut program);
+    let scope = resolve_program(&mut program).unwrap();
     assert!(
         scope.handler.diagnostics.is_empty(),
         "{:?}",

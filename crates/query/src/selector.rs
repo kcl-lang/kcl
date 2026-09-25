@@ -1,7 +1,7 @@
 use crate::r#override::build_expr_from_string;
 
 use super::util::{invalid_symbol_selector_spec_error, split_field_path};
-use anyhow::Result;
+use anyhow::{Context, Result};
 use kcl_ast::{ast, path::get_target_path};
 use kcl_error::diagnostic::Errors;
 use kcl_parser::ParseSession;
@@ -719,15 +719,26 @@ pub fn list_variables(
         merge_program: true,
         ..Default::default()
     };
-    pre_process_program(&mut load_result.program, &opts);
+    pre_process_program(&mut load_result.program, &opts)?;
 
     for (_, modules) in load_result.program.pkgs.iter() {
         for module in modules.iter() {
             let module = load_result
                 .program
                 .get_module(module)
-                .expect("Failed to acquire module lock")
-                .unwrap_or_else(|| panic!("module {:?} not found in program", module));
+                .with_context(|| {
+                    format!(
+                        "Internal error, please report a bug to us: \
+                         failed to acquire module lock for {module:?} \
+                         while walking selector"
+                    )
+                })?
+                .with_context(|| {
+                    format!(
+                        "Internal error, please report a bug to us: \
+                         module {module:?} not found in program while walking selector"
+                    )
+                })?;
             selector.walk_module(&module);
         }
     }

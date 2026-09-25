@@ -765,10 +765,18 @@ impl DependencyGraph {
                 );
             }
             for module in modules {
-                let module = program
-                    .get_module(module)
-                    .expect("Failed to acquire module lock")
-                    .unwrap_or_else(|| panic!("module {:?} not found in program", module));
+                let module = match program.get_module(module) {
+                    Ok(Some(m)) => m,
+                    Ok(None) => {
+                        return Err(format!("module {:?} not found in program", module));
+                    }
+                    Err(e) => {
+                        return Err(format!(
+                            "Failed to acquire module lock for {}: {}",
+                            module, e
+                        ));
+                    }
+                };
                 let filename = module.filename.clone();
                 if !self.module_map.contains_key(&filename) {
                     new_modules.insert(filename.clone(), module);
@@ -805,10 +813,18 @@ impl DependencyGraph {
             None => {
                 if let Some(main_modules) = program.pkgs.get(kcl_ast::MAIN_PKG) {
                     for module in main_modules {
-                        let module = program
-                            .get_module(module)
-                            .expect("Failed to acquire module lock")
-                            .unwrap_or_else(|| panic!("module {:?} not found in program", module));
+                        let module = match program.get_module(module) {
+                            Ok(Some(m)) => m,
+                            Ok(None) => {
+                                return Err(format!("module {:?} not found in program", module));
+                            }
+                            Err(e) => {
+                                return Err(format!(
+                                    "Failed to acquire module lock for {}: {}",
+                                    module, e
+                                ));
+                            }
+                        };
                         let result = self.invalidate_module(&module.filename)?;
                         for pkg in result {
                             invalidated_set.insert(pkg);

@@ -401,10 +401,25 @@ impl From<Program> for SerializeProgram {
                         modules
                             .iter()
                             .map(|m| {
+                                // The `From<Program>` impl cannot return a
+                                // `Result`, so true invariant violations
+                                // (poisoned lock or module missing from
+                                // `modules`) have to panic. Surface them
+                                // with the standard "report a bug" prefix
+                                // so they're easy to triage from bug
+                                // reports.
                                 val.get_module(m)
-                                    .expect("Failed to acquire module lock")
+                                    .expect(
+                                        "Internal error, please report a bug to us: \
+                                         failed to acquire module lock while serializing \
+                                         program",
+                                    )
                                     .unwrap_or_else(|| {
-                                        panic!("module {:?} not found in program", m)
+                                        panic!(
+                                            "Internal error, please report a bug to us: \
+                                             module {:?} not found in program while serializing",
+                                            m
+                                        )
                                     })
                                     .clone()
                             })

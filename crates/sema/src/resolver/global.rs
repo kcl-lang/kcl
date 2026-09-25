@@ -12,6 +12,7 @@ use kcl_ast::ast;
 use kcl_ast_pretty::{ASTNode, print_ast_node, print_schema_expr};
 use kcl_error::*;
 use kcl_primitives::IndexMap;
+use kcl_runtime::PanicInfo;
 
 use super::doc::{SchemaDoc, parse_schema_doc_string};
 use super::scope::{ScopeObject, ScopeObjectKind};
@@ -51,11 +52,21 @@ impl<'ctx> Resolver<'_> {
         {
             // 1. Scan all schema and rule type symbol
             for module in modules {
-                let module = self
-                    .program
-                    .get_module(module)
-                    .expect("Failed to acquire module lock")
-                    .unwrap_or_else(|| panic!("module {:?} not found in program", module));
+                let module = match self.program.get_module(module) {
+                    Ok(Some(m)) => m,
+                    Ok(None) => {
+                        self.handler.add_panic_info(&PanicInfo::from(format!(
+                            "module {module:?} not found in program"
+                        )));
+                        continue;
+                    }
+                    Err(e) => {
+                        self.handler.add_panic_info(&PanicInfo::from(format!(
+                            "Failed to acquire module lock for {module}: {e}"
+                        )));
+                        continue;
+                    }
+                };
                 let pkgpath = &self.ctx.pkgpath.clone();
                 let filename = &module.filename;
                 self.change_package_context(pkgpath, filename);
@@ -148,11 +159,21 @@ impl<'ctx> Resolver<'_> {
             // 3. Build all schema types
             for i in 0..MAX_SCOPE_SCAN_COUNT {
                 for module in modules {
-                    let module = self
-                        .program
-                        .get_module(module)
-                        .expect("Failed to acquire module lock")
-                        .unwrap_or_else(|| panic!("module {:?} not found in program", module));
+                    let module = match self.program.get_module(module) {
+                        Ok(Some(m)) => m,
+                        Ok(None) => {
+                            self.handler.add_panic_info(&PanicInfo::from(format!(
+                                "module {module:?} not found in program"
+                            )));
+                            continue;
+                        }
+                        Err(e) => {
+                            self.handler.add_panic_info(&PanicInfo::from(format!(
+                                "Failed to acquire module lock for {module}: {e}"
+                            )));
+                            continue;
+                        }
+                    };
                     let pkgpath = &self.ctx.pkgpath.clone();
                     let filename = &module.filename;
                     self.change_package_context(pkgpath, filename);
@@ -230,11 +251,23 @@ impl<'ctx> Resolver<'_> {
         };
         let mut lambda_tys: IndexMap<String, Option<FunctionType>> = IndexMap::default();
         for module in modules {
-            let module = self
-                .program
-                .get_module(&module)
-                .expect("Failed to acquire module lock")
-                .unwrap_or_else(|| panic!("module {:?} not found in program", module));
+            let module = match self.program.get_module(&module) {
+                Ok(Some(m)) => m,
+                Ok(None) => {
+                    self.handler.add_panic_info(&PanicInfo::from(format!(
+                        "module {:?} not found in program",
+                        module
+                    )));
+                    continue;
+                }
+                Err(e) => {
+                    self.handler.add_panic_info(&PanicInfo::from(format!(
+                        "Failed to acquire module lock for {}: {}",
+                        module, e
+                    )));
+                    continue;
+                }
+            };
             self.ctx.filename = module.filename.clone();
             for stmt in &module.body {
                 let ast::Stmt::Assign(assign_stmt) = &stmt.node else {
@@ -286,11 +319,21 @@ impl<'ctx> Resolver<'_> {
             Some(modules) => {
                 // 1. Scan all schema and rule type symbol
                 for module in modules {
-                    let module = self
-                        .program
-                        .get_module(module)
-                        .expect("Failed to acquire module lock")
-                        .unwrap_or_else(|| panic!("module {:?} not found in program", module));
+                    let module = match self.program.get_module(module) {
+                        Ok(Some(m)) => m,
+                        Ok(None) => {
+                            self.handler.add_panic_info(&PanicInfo::from(format!(
+                                "module {module:?} not found in program"
+                            )));
+                            continue;
+                        }
+                        Err(e) => {
+                            self.handler.add_panic_info(&PanicInfo::from(format!(
+                                "Failed to acquire module lock for {module}: {e}"
+                            )));
+                            continue;
+                        }
+                    };
                     self.ctx.filename = module.filename.to_string();
                     for stmt in &module.body {
                         if matches!(stmt.node, ast::Stmt::TypeAlias(_)) {
@@ -351,6 +394,23 @@ impl<'ctx> Resolver<'_> {
             let name = &target.node.name.node;
             let (start, end) = target.get_span_pos();
             if self.contains_object(name) && !is_private_field(name) && unique_check {
+                // Look up the declaration site up front so that we can
+                // surface a diagnostic with the correct span when it
+                // exists, and fall back to the assignment's own span
+                // (plus a panic diagnostic) when it does not — instead
+                // of aborting the whole resolver.
+                let decl_range = match self.scope.borrow().lookup(name) {
+                    Some(obj) => obj.borrow().get_span_pos(),
+                    None => {
+                        self.handler.add_panic_info(&PanicInfo::from(format!(
+                            "Internal error, please report a bug to us: \
+                             scope object for '{}' not found while \
+                             reporting immutable reassignment",
+                            name
+                        )));
+                        target.get_span_pos()
+                    }
+                };
                 self.handler.add_error(
                     ErrorKind::ImmutableError,
                     &[
@@ -365,13 +425,7 @@ impl<'ctx> Resolver<'_> {
                             suggested_replacement: None,
                         },
                         Message {
-                            range: self
-                                .scope
-                                .borrow()
-                                .lookup(name)
-                                .unwrap_or_else(|| panic!("scope object for '{}' not found", name))
-                                .borrow()
-                                .get_span_pos(),
+                            range: decl_range,
                             style: Style::LineAndColumn,
                             message: format!("The variable '{}' is declared here", name),
                             note: Some(format!(
