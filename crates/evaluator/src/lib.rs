@@ -222,6 +222,13 @@ impl<'ctx> Evaluator<'ctx> {
         let modules = self.program.get_modules_for_pkg(kcl_ast::MAIN_PKG);
         self.init_scope(kcl_ast::MAIN_PKG);
         self.compile_ast_modules(&modules);
+        // On wasm32, runtime errors from check/assert blocks are recorded
+        // into the context instead of panicking (panic=abort would trap the
+        // whole WASI instance); bail out with the recorded error here.
+        #[cfg(target_arch = "wasm32")]
+        if let Some(info) = self.runtime_ctx.borrow().get_panic_info_json_string() {
+            return Err(anyhow::anyhow!(info));
+        }
         Ok(self.plan_globals_to_string())
     }
 

@@ -1171,7 +1171,13 @@ impl KclServiceImpl {
     /// assert_eq!(result.success, true);
     /// ```
     pub fn validate_code(&self, args: &ValidateCodeArgs) -> anyhow::Result<ValidateCodeResult> {
+        // WASI has no temporary directory (`std::env::temp_dir` panics on
+        // wasm32-wasip1), so the data file is created inside the sandbox
+        // working directory instead. The file is removed when `file` drops.
+        #[cfg(not(target_arch = "wasm32"))]
         let mut file = NamedTempFile::new()?;
+        #[cfg(target_arch = "wasm32")]
+        let mut file = NamedTempFile::new_in(".")?;
         let file_path = if args.datafile.is_empty() {
             // Write some test data to the first handle.
             file.write_all(args.data.as_bytes())?;
@@ -1277,14 +1283,13 @@ impl KclServiceImpl {
     /// # fs::remove_file(path.clone()).unwrap();
     /// ```
     pub fn rename(&self, args: &RenameArgs) -> anyhow::Result<RenameResult> {
-        let pkg_root = PathBuf::from(args.package_root.clone())
-            .canonicalize()?
+        let pkg_root = normalize_path(&PathBuf::from(args.package_root.clone()))?
             .display()
             .to_string();
         let symbol_path = args.symbol_path.clone();
         let mut file_paths = vec![];
         for path in args.file_paths.iter() {
-            file_paths.push(PathBuf::from(path).canonicalize()?.display().to_string());
+            file_paths.push(normalize_path(&PathBuf::from(path))?.display().to_string());
         }
         let new_name = args.new_name.clone();
         Ok(RenameResult {
@@ -1447,6 +1452,53 @@ impl KclServiceImpl {
                 .collect(),
         })
     }
+
+    #[cfg(target_arch = "wasm32")]
+    /// update_dependencies is unavailable on WASM/WASI: resolving module
+    /// dependencies requires network access and git subprocesses, which the
+    /// WASI sandbox does not provide. This returns a graceful error (instead
+    /// of the dispatcher panicking on the unknown method name) so the WASM
+    /// instance stays usable.
+    pub fn update_dependencies(
+        &self,
+        _args: &UpdateDependenciesArgs,
+    ) -> anyhow::Result<UpdateDependenciesResult> {
+        anyhow::bail!(
+            "updating dependencies is not supported in the WASM build: the WASI sandbox has no network access or subprocess support to download KCL modules"
+        )
+    }
+}
+
+/// Normalize a path for the rename service.
+///
+/// On native targets this is `fs::canonicalize` (resolving symlinks). On
+/// WASM/WASI `fs::canonicalize` is unsupported, so fall back to a lexical
+/// normalization that resolves `.` and `..` segments against the sandbox
+/// working directory without touching the filesystem (WASI preview1 has no
+/// path resolution against symlinks anyway).
+#[cfg(not(target_arch = "wasm32"))]
+fn normalize_path(path: &std::path::Path) -> anyhow::Result<PathBuf> {
+    Ok(path.canonicalize()?)
+}
+
+#[cfg(target_arch = "wasm32")]
+fn normalize_path(path: &std::path::Path) -> anyhow::Result<PathBuf> {
+    use std::path::Component;
+    let mut normalized = if path.is_absolute() {
+        PathBuf::new()
+    } else {
+        std::env::current_dir()?
+    };
+    for component in path.components() {
+        match component {
+            Component::CurDir => {}
+            Component::ParentDir => {
+                normalized.pop();
+            }
+            other => normalized.push(other.as_os_str()),
+        }
+    }
+    Ok(normalized)
 }
 
 #[cfg(test)]

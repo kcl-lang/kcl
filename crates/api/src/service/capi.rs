@@ -225,7 +225,6 @@ pub(crate) fn kcl_get_service_fn_ptr_by_name(name: &str) -> u64 {
         "KclService.Rename" => rename as *const () as u64,
         "KclService.RenameCode" => rename_code as *const () as u64,
         "KclService.Test" => test as *const () as u64,
-        #[cfg(not(target_arch = "wasm32"))]
         "KclService.UpdateDependencies" => update_dependencies as *const () as u64,
         // BuiltinService.Ping reuses the KclService.Ping implementation —
         // both services share the same PingArgs/PingResult message types.
@@ -652,7 +651,6 @@ pub(crate) fn test(
     call!(serv, args, args_len, result_len, TestArgs, test)
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 /// Service for the dependencies updating
 /// calling information.
 ///

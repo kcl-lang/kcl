@@ -180,6 +180,29 @@ impl crate::Context {
         self.panic_info.rust_col = record.rust_col;
     }
 
+    /// Whether a runtime error was already recorded. The first recorded
+    /// error wins, mirroring the native behavior where the first panic
+    /// unwinds the evaluation and later errors are never evaluated.
+    #[cfg(target_arch = "wasm32")]
+    pub fn has_panic_info(&self) -> bool {
+        self.panic_info.__kcl_PanicInfo__
+    }
+
+    /// Record a runtime error message without panicking. On wasm32 the
+    /// module is built with `panic = abort`, so the panic-based error
+    /// propagation used on native targets would trap and destroy the whole
+    /// WASI instance. The evaluator bails out with the recorded panic info
+    /// after the evaluation finishes instead.
+    #[cfg(target_arch = "wasm32")]
+    pub fn record_runtime_error_message(&mut self, message: String) {
+        let record = RuntimePanicRecord {
+            kcl_panic_info: true,
+            message,
+            ..Default::default()
+        };
+        self.set_panic_info(&record);
+    }
+
     pub fn gc(&self) {
         unsafe {
             for o in &self.objects {
