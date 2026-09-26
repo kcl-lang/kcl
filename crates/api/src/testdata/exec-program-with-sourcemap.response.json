@@ -1,0 +1,7 @@
+{
+    "json_result": "{\"alice\": {\"age\": 18}}",
+    "yaml_result": "alice:\n  age: 18",
+    "log_message": "",
+    "err_message": "",
+    "sourcemap": "{\"file\":\"out.map\",\"mappings\":[{\"gen_line\":0,\"name_index\":0,\"src_col\":0,\"src_index\":0,\"src_line\":4}],\"names\":[\"alice\"],\"sources\":[\"<test.k>\"],\"sourcesContent\":[null],\"version\":3}"
+}
