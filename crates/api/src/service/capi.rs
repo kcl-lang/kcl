@@ -203,7 +203,17 @@ pub unsafe extern "C-unwind" fn kcl_service_call_with_length(
 }
 
 pub(crate) fn kcl_get_service_fn_ptr_by_name(name: &str) -> u64 {
-    match name {
+    lookup_service_fn_ptr(name).unwrap_or_else(|| panic!("unknown method name : {name}"))
+}
+
+/// Look up the native FFI function pointer for a service method name.
+///
+/// Returns `None` for unknown names instead of panicking so the registry
+/// consistency against [`SERVICE_METHODS`](crate::service::SERVICE_METHODS)
+/// can be unit-tested; [`kcl_get_service_fn_ptr_by_name`] wraps this with
+/// the panicking behavior the C ABI expects.
+pub(crate) fn lookup_service_fn_ptr(name: &str) -> Option<u64> {
+    Some(match name {
         "KclService.Ping" => ping as *const () as u64,
         "KclService.GetVersion" => get_version as *const () as u64,
         "KclService.ParseFile" => parse_file as *const () as u64,
@@ -230,8 +240,8 @@ pub(crate) fn kcl_get_service_fn_ptr_by_name(name: &str) -> u64 {
         // both services share the same PingArgs/PingResult message types.
         "BuiltinService.Ping" => ping as *const () as u64,
         "BuiltinService.ListMethod" => list_method as *const () as u64,
-        _ => panic!("unknown method name : {name}"),
-    }
+        _ => return None,
+    })
 }
 
 /// ping is used to test whether kcl service is successfully imported
