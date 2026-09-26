@@ -1,0 +1,17 @@
+# Fixture-side git repository, created by tests/grammar/conftest.py around
+# the pytest session.
+#
+# Each `revisions` entry becomes one commit of `file` (in order); `tag`
+# optionally tags that commit. `worktree` is written to disk after the
+# last commit and stays uncommitted, so within this fixture a plain read
+# (from disk), a ":HEAD" read and a tag-pinned read all return different
+# contents.
+file: asset.txt
+revisions:
+  - content: |
+      version one
+    tag: v1.0
+  - content: |
+      version two
+worktree: |
+  version three (uncommitted)

@@ -1,0 +1,11 @@
+# Fixture-side git repository, created by tests/grammar/conftest.py around
+# the pytest session. See read_git_ref/git_setup.yaml for the format.
+file: asset.txt
+revisions:
+  - content: |
+      version one
+    tag: v1.0
+  - content: |
+      version two
+worktree: |
+  version three (uncommitted)
