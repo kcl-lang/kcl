@@ -1089,6 +1089,12 @@ message ExecProgramArgs {
 	// emitting XML. Defaults to false to keep `-o json` / `-o yaml`
 	// output byte-identical to pre-change.
 	bool emit_attribute_metadata = 21;
+	// Optional path of the Source Map v3 (tc39.es/source-map) document to
+	// emit for the generated YAML. When non-empty, the runtime records the
+	// mapping between generated YAML lines and the originating KCL source
+	// locations, returns it in `ExecProgramResult.sourcemap` and writes it
+	// to the given path. Empty disables source map generation.
+	optional string sourcemap_output = 22;
 }
 
 // Message for execute program response.

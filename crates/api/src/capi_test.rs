@@ -54,6 +54,31 @@ fn test_c_api_call_exec_program_with_path_selector() {
 }
 
 #[test]
+fn test_c_api_call_exec_program_with_sourcemap() {
+    test_c_api::<ExecProgramArgs, ExecProgramResult, _>(
+        "KclService.ExecProgram",
+        "exec-program-with-sourcemap.json",
+        "exec-program-with-sourcemap.response.json",
+        |result| {
+            // The source map records the absolute path of the input file,
+            // which varies across checkouts. Normalize it to a fixed
+            // placeholder before comparing against the golden file, and
+            // assert the structural invariants to catch accidental format
+            // changes.
+            if let Some(sourcemap) = result.sourcemap.as_mut() {
+                let mut map: serde_json::Value =
+                    serde_json::from_str(sourcemap).expect("sourcemap must be valid JSON");
+                assert_eq!(map["version"], 3);
+                assert_eq!(map["file"], "out.map");
+                map["sources"] = serde_json::json!(["<test.k>"]);
+                map["sourcesContent"] = serde_json::json!([None::<String>]);
+                *sourcemap = serde_json::to_string(&map).unwrap();
+            }
+        },
+    );
+}
+
+#[test]
 fn test_c_api_call_exec_program_with_print() {
     test_c_api::<ExecProgramArgs, ExecProgramResult, _>(
         "KclService.ExecProgram",
