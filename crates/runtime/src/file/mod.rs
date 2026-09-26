@@ -64,9 +64,18 @@ pub unsafe extern "C-unwind" fn kcl_file_read(
     let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(x) = get_call_arg_str(args, kwargs, 0, Some("filepath")) {
-        let x = scope_or_panic(ctx, &x);
-        let contents = fs::read_to_string(&x)
-            .unwrap_or_else(|e| panic!("failed to access the file '{}': {}", x.display(), e));
+        // An optional `:ref` suffix (see `utils::split_path_ref`) pins the
+        // read to a git revision; the plain path part is still scoped to
+        // the module root like every other `file.*` operation.
+        let (path, ref_name) = utils::split_path_ref(&x);
+        let resolved = scope_or_panic(ctx, path);
+        let contents = match ref_name {
+            None => fs::read_to_string(&resolved).unwrap_or_else(|e| {
+                panic!("failed to access the file '{}': {}", resolved.display(), e)
+            }),
+            Some(r) => utils::read_git_ref(&x, &resolved, r)
+                .unwrap_or_else(|e| panic!("failed to access the file '{}': {}", x, e)),
+        };
 
         let s = ValueRef::str(contents.as_ref());
         return s.into_raw(ctx);
@@ -95,9 +104,17 @@ pub unsafe extern "C-unwind" fn kcl_file_readbase64(
     let ctx = unsafe { mut_ptr_as_ref(ctx) };
 
     if let Some(x) = get_call_arg_str(args, kwargs, 0, Some("filepath")) {
-        let x = scope_or_panic(ctx, &x);
-        let bytes = fs::read(&x)
-            .unwrap_or_else(|e| panic!("failed to access the file '{}': {}", x.display(), e));
+        // Same `path:ref` handling as `kcl_file_read`, but returns the raw
+        // bytes base64-encoded.
+        let (path, ref_name) = utils::split_path_ref(&x);
+        let resolved = scope_or_panic(ctx, path);
+        let bytes = match ref_name {
+            None => fs::read(&resolved).unwrap_or_else(|e| {
+                panic!("failed to access the file '{}': {}", resolved.display(), e)
+            }),
+            Some(r) => utils::read_git_ref_bytes(&x, &resolved, r)
+                .unwrap_or_else(|e| panic!("failed to access the file '{}': {}", x, e)),
+        };
         // Use the fully-qualified path so we don't collide with the
         // local `kcl_runtime::base64` re-export that the runtime ships.
         let encoded = ::base64::encode(&bytes);

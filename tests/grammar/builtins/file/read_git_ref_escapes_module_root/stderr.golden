@@ -1,0 +1,1 @@
+path '../outside.txt' escapes module root '${CWD}'

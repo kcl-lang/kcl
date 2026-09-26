@@ -1,0 +1,1 @@
+failed to access the file 'asset.txt:NOT_A_REAL_REF': git show 'NOT_A_REAL_REF:asset.txt' failed: fatal: invalid object name 'NOT_A_REAL_REF'

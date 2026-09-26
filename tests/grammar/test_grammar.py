@@ -1,6 +1,7 @@
 """This is a scripts to run KCL grammar test cases with the native target"""
 import pytest
 import os
+import shutil
 import subprocess
 import re
 import pathlib
@@ -97,7 +98,18 @@ def read_settings_file(settings_file_name):
 
 print("##### K Language Grammar Test Suite #####")
 test_path = pathlib.Path(__file__).parent
-test_dirs = find_test_dirs(str(test_path), "")
+# Skip git-ref fixtures when git is unavailable: their setup hook
+# (conftest.py) would fail, and every one of them exercises the
+# `file.read`/`file.readbase64` `path:ref` syntax, which requires git.
+if shutil.which("git") is None:
+    print("git not found on PATH, skipping git-ref fixtures")
+    test_dirs = [
+        d
+        for d in find_test_dirs(str(test_path), "")
+        if not (pathlib.Path(d) / "git_setup.yaml").exists()
+    ]
+else:
+    test_dirs = find_test_dirs(str(test_path), "")
 
 
 def remove_ansi_escape_sequences(text):

@@ -1,0 +1,7 @@
+plain: |
+  version three (uncommitted)
+head: |
+  version two
+pinned: |
+  version one
+
