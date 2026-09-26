@@ -1,1 +1,1 @@
-failed to access the file 'not_exist.txt': No such file or directory
+failed to access the file '${CWD}/not_exist.txt': No such file or directory
