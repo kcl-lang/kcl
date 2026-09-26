@@ -269,9 +269,24 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             };
             if !assert_result.is_truthy() {
                 let mut ctx = self.runtime_ctx.borrow_mut();
-                ctx.set_err_type(&RuntimeErrorType::AssertionError);
                 let msg = msg.as_str();
-                panic!("{}", msg);
+                // On wasm32, record the error instead of panicking: the
+                // build uses panic=abort, so a panic would trap and destroy
+                // the whole WASI instance. The evaluator bails out after
+                // the run finishes.
+                #[cfg(target_arch = "wasm32")]
+                {
+                    if !ctx.has_panic_info() {
+                        ctx.record_runtime_error_message(msg.to_string());
+                    }
+                    ctx.set_err_type(&RuntimeErrorType::AssertionError);
+                    return;
+                }
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    ctx.set_err_type(&RuntimeErrorType::AssertionError);
+                    panic!("{}", msg);
+                }
             }
         };
         if let Some(if_cond) = &assert_stmt.if_cond {

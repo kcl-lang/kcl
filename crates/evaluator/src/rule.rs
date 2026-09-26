@@ -142,8 +142,23 @@ pub fn rule_check(
     }
     // Call self check function
     for check_expr in &ctx.borrow().node.checks {
+        #[cfg(not(target_arch = "wasm32"))]
         s.walk_check_expr(&check_expr.node)
             .expect(kcl_error::RUNTIME_ERROR_MSG);
+        // On wasm32 a panic would trap the whole WASI instance (the build
+        // uses panic=abort); record the error instead and let the evaluator
+        // bail out with it after the run finishes.
+        #[cfg(target_arch = "wasm32")]
+        if let Err(err) = s.walk_check_expr(&check_expr.node) {
+            let mut runtime_ctx = s.runtime_ctx.borrow_mut();
+            if !runtime_ctx.has_panic_info() {
+                runtime_ctx.record_runtime_error_message(format!(
+                    "{}: {}",
+                    kcl_error::RUNTIME_ERROR_MSG,
+                    err
+                ));
+            }
+        }
     }
     ctx.borrow().value.clone()
 }

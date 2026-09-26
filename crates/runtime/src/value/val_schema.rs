@@ -37,6 +37,13 @@ pub fn schema_config_meta(filename: &str, line: u64, column: u64) -> ValueRef {
 
 pub fn schema_assert(ctx: &mut Context, value: &ValueRef, msg: &str, config_meta: &ValueRef) {
     if !value.is_truthy() {
+        // On wasm32, record the error instead of panicking below: the WASM
+        // build uses panic=abort, so a panic would trap and destroy the
+        // whole WASI instance. The evaluator bails out after finishing.
+        #[cfg(target_arch = "wasm32")]
+        if !ctx.has_panic_info() {
+            ctx.record_runtime_error_message(msg.to_string());
+        }
         ctx.set_err_type(&RuntimeErrorType::SchemaCheckFailure);
         if let Some(config_meta_file) = config_meta.get_by_key(CONFIG_META_FILENAME) {
             let config_meta_line = config_meta.get_by_key(CONFIG_META_LINE).unwrap();
@@ -59,6 +66,7 @@ pub fn schema_assert(ctx: &mut Context, value: &ValueRef, msg: &str, config_meta
         );
         ctx.set_kcl_location_info(Some(arg_msg.as_str()), None, None, None);
 
+        #[cfg(not(target_arch = "wasm32"))]
         panic!("{}", msg);
     }
 }
