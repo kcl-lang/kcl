@@ -37,6 +37,7 @@ use kcl_tools::vet::validator::ValidateOption;
 use kcl_tools::vet::validator::validate;
 use tempfile::NamedTempFile;
 
+use super::SERVICE_METHODS;
 use super::into::*;
 use super::ty::kcl_schema_ty_to_pb_ty;
 use super::util::{transform_exec_para, transform_str_para};
@@ -331,37 +332,16 @@ impl KclServiceImpl {
     }
 
     /// ListMethod KclService, return the list of KCL service method names
-    /// available in the underlying runtime. Mirrors the JSON-RPC
-    /// `BuiltinService.ListMethod` registration so the C ABI dispatch table
-    /// stays in sync with what callers see over JSON-RPC.
+    /// available in the underlying runtime. The list is sourced from the
+    /// shared [`SERVICE_METHODS`](crate::service::SERVICE_METHODS) registry
+    /// so it stays in sync with the C ABI dispatch table and the JSON-RPC
+    /// `BuiltinService.ListMethod` registration.
     pub fn list_method(&self, _args: &ListMethodArgs) -> anyhow::Result<ListMethodResult> {
         Ok(ListMethodResult {
-            method_name_list: vec![
-                "KclService.Ping".to_owned(),
-                "KclService.GetVersion".to_owned(),
-                "KclService.ParseFile".to_owned(),
-                "KclService.ParseProgram".to_owned(),
-                "KclService.LoadPackage".to_owned(),
-                "KclService.ListOptions".to_owned(),
-                "KclService.ListVariables".to_owned(),
-                "KclService.ExecProgram".to_owned(),
-                "KclService.BuildProgram".to_owned(),
-                "KclService.ExecArtifact".to_owned(),
-                "KclService.OverrideFile".to_owned(),
-                "KclService.GetSchemaTypeMapping".to_owned(),
-                "KclService.GetSchemaTypeMappingUnderPath".to_owned(),
-                "KclService.FormatCode".to_owned(),
-                "KclService.FormatPath".to_owned(),
-                "KclService.LintPath".to_owned(),
-                "KclService.ValidateCode".to_owned(),
-                "KclService.LoadSettingsFiles".to_owned(),
-                "KclService.Rename".to_owned(),
-                "KclService.RenameCode".to_owned(),
-                "KclService.Test".to_owned(),
-                "KclService.UpdateDependencies".to_owned(),
-                "BuiltinService.Ping".to_owned(),
-                "BuiltinService.ListMethod".to_owned(),
-            ],
+            method_name_list: SERVICE_METHODS
+                .iter()
+                .map(|name| name.to_string())
+                .collect(),
         })
     }
 

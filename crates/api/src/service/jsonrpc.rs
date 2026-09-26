@@ -1,4 +1,5 @@
 use crate::gpyrpc::*;
+use crate::service::SERVICE_METHODS;
 use crate::service::service_impl::KclServiceImpl;
 use core::fmt::Display;
 use jsonrpc_stdio_server::ServerBuilder;
@@ -244,30 +245,10 @@ fn register_builtin_service(io: &mut IoHandler) {
     });
     io.add_sync_method("BuiltinService.ListMethod", |_params: Params| {
         let result = ListMethodResult {
-            method_name_list: vec![
-                "KclService.Ping".to_owned(),
-                "KclService.GetVersion".to_owned(),
-                "KclService.ParseFile".to_owned(),
-                "KclService.ParseProgram".to_owned(),
-                "KclService.ExecProgram".to_owned(),
-                "KclService.BuildProgram".to_owned(),
-                "KclService.ExecArtifact".to_owned(),
-                "KclService.OverrideFile".to_owned(),
-                "KclService.GetSchemaType".to_owned(),
-                "KclService.GetFullSchemaType".to_owned(),
-                "KclService.GetSchemaTypeMapping".to_owned(),
-                "KclService.FormatCode".to_owned(),
-                "KclService.FormatPath".to_owned(),
-                "KclService.LintPath".to_owned(),
-                "KclService.ValidateCode".to_owned(),
-                "KclService.LoadSettingsFiles".to_owned(),
-                "KclService.Rename".to_owned(),
-                "KclService.RenameCode".to_owned(),
-                "KclService.Test".to_owned(),
-                "KclService.UpdateDependencies".to_owned(),
-                "BuiltinService.Ping".to_owned(),
-                "BuiltinService.PingListMethod".to_owned(),
-            ],
+            method_name_list: SERVICE_METHODS
+                .iter()
+                .map(|name| name.to_string())
+                .collect(),
         };
         serde_json::to_value(result).map_err(|e| Error {
             code: ErrorCode::from(KCL_SERVER_ERROR_CODE),
@@ -275,4 +256,25 @@ fn register_builtin_service(io: &mut IoHandler) {
             data: None,
         })
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The JSON-RPC `BuiltinService.ListMethod` response must advertise
+    /// exactly the shared registry.
+    #[test]
+    fn builtin_list_method_matches_registry() {
+        let mut io = IoHandler::default();
+        register_builtin_service(&mut io);
+        let request =
+            r#"{"jsonrpc":"2.0","method":"BuiltinService.ListMethod","params":{},"id":1}"#;
+        let response = io
+            .handle_request_sync(request)
+            .expect("BuiltinService.ListMethod should be registered");
+        let response: serde_json::Value = serde_json::from_str(&response).unwrap();
+        let expected = serde_json::json!({ "method_name_list": SERVICE_METHODS });
+        assert_eq!(response["result"], expected);
+    }
 }
