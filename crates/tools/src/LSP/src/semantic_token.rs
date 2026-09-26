@@ -160,64 +160,44 @@ pub(crate) fn kcl_semantic_tokens_to_semantic_tokens(
 #[cfg(test)]
 mod tests {
     use crate::tests::compile_test_file;
-    use proc_macro_crate::bench_test;
 
     use super::semantic_tokens_full;
 
-    #[test]
-    #[bench_test]
-    fn semantic_tokens_full_test() {
-        let (file, _, _, gs, _) = compile_test_file("src/test_data/sema_token/sema_token.k");
-        let res = semantic_tokens_full(&file, &gs);
-        if let Some(tokens) = res {
-            match &tokens {
-                lsp_types::SemanticTokensResult::Tokens(tokens) => {
-                    let get: Vec<(u32, u32, u32, u32)> = tokens
-                        .data
-                        .iter()
-                        .map(|token| {
-                            (
-                                token.delta_line,
-                                token.delta_start,
-                                token.length,
-                                token.token_type,
-                            )
-                        })
-                        .collect();
-                    // (delta line, delta col(if delta line != 0, from 0), length, kind)
-                    // (0, 15, 1, 3), // m
-                    // (1, 5, 3, 4),  // num
-                    // (1, 7, 7, 1),  // Persons
-                    // (1, 4, 4, 2),  // name
-                    // (2, 0, 2, 0),  // p5
-                    // (0, 4, 7, 1),  // Persons
-                    // (0, 10, 7, 1), // Persons
-                    // (1, 4, 4, 2),  // name
-                    // (2, 0, 1, 0),  // n
-                    // (0, 3, 3, 4),  // num
-                    // (2, 0, 4, 8),  // func
-                    // (0, 14, 1, 0), // x
-                    // (1, 4, 1, 0),  // x
-                    // (3, 0, 1, 0),  // a
-                    // (0, 4, 4, 8),  // func
-                    // (1, 0, 1, 0),  // b
-                    // (0, 4, 4, 8),  // func
-                    // (0, 5, 1, 0)   // x
-                    // (2, 7, 8, 1)   // Manifest
-                    // (1, 5, 4, 0)   // name
-                    // (2, 0, 3, 0)   // aaa
-                    // (0, 5, 3, 4)   // any
-                    // (2, 0, 3, 0)   // bbb
-                    // (0, 10, 4, 0)  // item
-                    // (2, 7, 3, 3), // net
-                    // (2, 0, 1, 0), // c
-                    // (1, 4, 3, 0)  // net
-                    insta::assert_snapshot!(format!("{:?}", get));
-                }
-                lsp_types::SemanticTokensResult::Partial(_) => {
-                    panic!("test failed")
-                }
+    /// Snapshot helper for `semantic_tokens_full` tests. Mirrors the
+    /// `*_test_snapshot!` pattern used elsewhere in this crate (see
+    /// `goto_def::tests`, `hover::tests`).
+    #[macro_export]
+    macro_rules! semantic_tokens_test_snapshot {
+        ($name:ident, $file:expr) => {
+            #[test]
+            fn $name() {
+                let (file, _program, _, gs, _) = compile_test_file($file);
+                let res = semantic_tokens_full(&file, &gs);
+                let tokens = match res {
+                    Some(lsp_types::SemanticTokensResult::Tokens(tokens)) => tokens,
+                    _ => panic!("expected SemanticTokensResult::Tokens"),
+                };
+                // Project the token data into `(delta_line, delta_start, length, token_type)`
+                // so the snapshot only carries the values we actually assert on.
+                let get: Vec<(u32, u32, u32, u32)> = tokens
+                    .data
+                    .iter()
+                    .map(|token| {
+                        (
+                            token.delta_line,
+                            token.delta_start,
+                            token.length,
+                            token.token_type,
+                        )
+                    })
+                    .collect();
+                insta::assert_snapshot!(format!("{:?}", get));
             }
-        }
+        };
     }
+
+    semantic_tokens_test_snapshot!(
+        semantic_tokens_full_test,
+        "src/test_data/sema_token/sema_token.k"
+    );
 }
