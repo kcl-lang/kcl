@@ -1415,6 +1415,7 @@ mod tests {
                 "manifests",
                 "math",
                 "datetime",
+                "duration",
                 "regex",
                 "yaml",
                 "json",

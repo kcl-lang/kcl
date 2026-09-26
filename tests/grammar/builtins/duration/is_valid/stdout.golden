@@ -1,0 +1,6 @@
+valid_combined: true
+valid_day: true
+invalid_unit: false
+missing_unit: false
+out_of_order: false
+not_a_number: false

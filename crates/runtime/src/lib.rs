@@ -82,6 +82,9 @@ pub use self::collection::*;
 pub mod crypto;
 pub use self::crypto::*;
 
+pub mod duration;
+pub use self::duration::*;
+
 mod eval;
 
 pub mod datetime;

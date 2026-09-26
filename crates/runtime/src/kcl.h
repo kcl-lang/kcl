@@ -309,6 +309,30 @@ void kcl_dict_update_key_value(kcl_value_ref_t* p, kcl_value_ref_t* key, kcl_val
 
 kcl_value_ref_t* kcl_dict_values(kcl_context_t* ctx, kcl_value_ref_t* p);
 
+kcl_value_ref_t* kcl_duration_add(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
+kcl_value_ref_t* kcl_duration_add_to_datetime(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
+kcl_value_ref_t* kcl_duration_day(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
+kcl_value_ref_t* kcl_duration_from_seconds(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
+kcl_value_ref_t* kcl_duration_hour(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
+kcl_bool_t kcl_duration_is_valid(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
+kcl_value_ref_t* kcl_duration_minute(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
+kcl_value_ref_t* kcl_duration_parse(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
+kcl_value_ref_t* kcl_duration_second(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
+kcl_value_ref_t* kcl_duration_sub(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
+kcl_value_ref_t* kcl_duration_sub_from_datetime(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
+kcl_value_ref_t* kcl_duration_to_seconds(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
 kcl_value_ref_t* kcl_file_abs(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
 
 kcl_value_ref_t* kcl_file_append(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
