@@ -116,13 +116,37 @@ pub unsafe extern "C-unwind" fn kcl_plugin_invoke_json(
     }
 }
 
-#[cfg(target_arch = "wasm32")]
+// `wasm32-wasip1` expects a wasmtime host (or any WASI host) to link
+// `kcl_plugin_invoke_json_wasm` at instantiation - that's how akua's
+// render worker ferries plugin callouts back to host handlers. On
+// `wasm32-unknown-unknown` (e.g. a JS-loaded SDK bundle) there is no
+// host, so the extern would leave an unresolved `env.*` import that
+// every JS loader stumbles over.
+#[cfg(all(target_arch = "wasm32", target_os = "wasi"))]
 unsafe extern "C-unwind" {
     pub fn kcl_plugin_invoke_json_wasm(
         method: *const c_char,
         args: *const c_char,
         kwargs: *const c_char,
     ) -> *const c_char;
+}
+
+/// Self-contained no-op stub for `wasm32-unknown-unknown`, where there
+/// is no host to link the real `kcl_plugin_invoke_json_wasm` extern.
+/// Callers that need plugins stick with `wasm32-wasip1` + a wasmtime
+/// host.
+#[cfg(all(target_arch = "wasm32", not(target_os = "wasi")))]
+pub unsafe fn kcl_plugin_invoke_json_wasm(
+    _method: *const c_char,
+    _args: *const c_char,
+    _kwargs: *const c_char,
+) -> *const c_char {
+    // `__kcl_PanicInfo__` shape - KCL's plugin-invoke glue treats this
+    // response as a runtime panic, so Packages that call a plugin
+    // surface a clean evaluator error with the message below rather
+    // than a silent misevaluation.
+    c"{\"__kcl_PanicInfo__\":\"plugin callouts are not available in this KCL build (wasm32-unknown-unknown) - use a wasmtime-hosted build for helm.template / kustomize.build / pkg.render\"}"
+        .as_ptr() as *const c_char
 }
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
