@@ -5,10 +5,12 @@ use kcl_utils::path::PathPrefix;
 use lsp_types::{Position, Url};
 use ra_ap_vfs::AbsPathBuf;
 
+use crate::util::url_to_file_path;
+
 /// Converts the specified `uri` to an absolute path. Returns an error if the url could not be
 /// converted to an absolute path.
 pub(crate) fn abs_path(uri: &Url) -> anyhow::Result<AbsPathBuf> {
-    uri.to_file_path()
+    url_to_file_path(uri)
         .ok()
         .and_then(|path| AbsPathBuf::try_from(path).ok())
         .ok_or_else(|| anyhow::anyhow!("invalid uri: {}", uri))
@@ -51,7 +53,7 @@ pub(crate) fn text_range(text: &str, range: lsp_types::Range) -> Range<usize> {
 /// Converts the specified `url` to a utf8 encoded file path string. Returns an error if the url could not be
 /// converted to a valid utf8 encoded file path string.
 pub(crate) fn file_path_from_url(url: &Url) -> anyhow::Result<String> {
-    url.to_file_path()
+    url_to_file_path(url)
         .ok()
         .and_then(|path| {
             path.to_str()
