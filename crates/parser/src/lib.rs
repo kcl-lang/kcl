@@ -632,9 +632,28 @@ fn pkg_exists_in_path(path: &str, pkgpath: &str, load_cache: &mut ParseLoadCache
         return *exists;
     }
     let pathbuf = pkgpath_to_path_buf(Path::new(path), pkgpath);
-    let exists = pathbuf.exists() || pathbuf.with_extension(KCL_FILE_EXTENSION).exists();
+    let exists = path_exists_or_file(&pathbuf)
+        || path_exists_or_file(&pathbuf.with_extension(KCL_FILE_EXTENSION));
     load_cache.pkg_exists_in_path.insert(cache_key, exists);
     exists
+}
+
+/// Check whether a path exists. On `wasm32-wasip1`, `Path::exists()` is
+/// unreliable for absolute paths that traverse WASI preopens - the std
+/// implementation doesn't resolve them through the preopen table for
+/// metadata calls (`path_filestat_get`), so probes against host-mounted
+/// paths spuriously return false. Fall back to an actual read attempt
+/// (`read_dir` for directories, `File::open` for files), which DOES go
+/// through `path_open` and honors the preopens.
+fn path_exists_or_file(path: &std::path::Path) -> bool {
+    #[cfg(target_arch = "wasm32")]
+    {
+        std::fs::read_dir(path).is_ok() || std::fs::File::open(path).is_ok()
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        path.exists()
+    }
 }
 
 /// Compute the canonical [`pkgpath`] for [`pkgpath`] under [`pkgroot`].
@@ -732,6 +751,13 @@ fn is_internal_pkg(
     pkg_path: &str,
     load_cache: &mut ParseLoadCache,
 ) -> Result<Option<PkgInfo>> {
+    // No internal pkg can exist without a pkg_root on disk - skip the
+    // probe. Avoids a bogus get_pkg_kfile_list("", pkg_path) call in
+    // cases (like inline k_code_list compilation) where main has no
+    // kcl.mod anchor.
+    if pkg_root.is_empty() {
+        return Ok(None);
+    }
     if pkg_exists_in_path(pkg_root, pkg_path, load_cache) {
         // Canonicalize the pkgpath so that `import a.b` (directory) and
         // `import a.b.c` (single file) refer to the same package when both
@@ -783,14 +809,19 @@ fn get_pkg_kfile_list(
     let pathbuf = pkgpath_to_path_buf(std::path::Path::new(pkgroot), pkgpath);
 
     let abspath = canonicalize_path_cached(pathbuf.as_path(), load_cache);
-    if abspath.exists() {
-        let k_files = get_dir_files(abspath.to_str().unwrap())?;
-        load_cache.pkg_kfile_list.insert(cache_key, k_files.clone());
-        return Ok(k_files);
+    if path_exists_or_file(abspath.as_path()) {
+        // Only a real directory enumerates k-files; if abspath resolves
+        // to a file (e.g. a `.k` mistakenly passed without extension)
+        // let the next branch handle it.
+        if std::fs::read_dir(abspath.as_path()).is_ok() {
+            let k_files = get_dir_files(abspath.to_str().unwrap())?;
+            load_cache.pkg_kfile_list.insert(cache_key, k_files.clone());
+            return Ok(k_files);
+        }
     }
 
     let as_k_path = format!("{}{}", abspath.display(), KCL_FILE_SUFFIX);
-    if std::path::Path::new(as_k_path.as_str()).exists() {
+    if path_exists_or_file(std::path::Path::new(as_k_path.as_str())) {
         let k_files = vec![as_k_path];
         load_cache.pkg_kfile_list.insert(cache_key, k_files.clone());
         return Ok(k_files);
@@ -802,7 +833,7 @@ fn get_pkg_kfile_list(
 
 /// Get file list in the directory.
 fn get_dir_files(dir: &str) -> Result<Vec<String>> {
-    if !std::path::Path::new(dir).exists() {
+    if !path_exists_or_file(std::path::Path::new(dir)) {
         return Ok(Vec::new());
     }
 
