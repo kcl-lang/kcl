@@ -890,7 +890,10 @@ fn is_external_pkg(
         (PathBuf::from(root).join(KCL_MOD_FILE), true)
     } else {
         match pkg_exists(&opts.vendor_dirs, pkg_path, load_cache) {
-            Some(path) => (PathBuf::from(path).join(&pkg_name).join(KCL_MOD_FILE), false),
+            Some(path) => (
+                PathBuf::from(path).join(&pkg_name).join(KCL_MOD_FILE),
+                false,
+            ),
             None => return Ok(None),
         }
     };
