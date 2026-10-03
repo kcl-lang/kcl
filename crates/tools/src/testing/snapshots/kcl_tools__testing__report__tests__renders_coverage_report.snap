@@ -1,0 +1,15 @@
+---
+source: crates/tools/src/testing/report.rs
+expression: "PrettyReporter::render(&result)"
+---
+test_alpha: PASS (1ms)
+hello from alpha
+test_beta: FAIL (3ms)
+Error: boom
+--------------------------------------------------------------------------------
+PASS: 1/2
+FAIL: 1/2
+Coverage: 50.0% (2/4) lines
+  a.k: 2/3 (66.7%)
+  b.k: 0/1 (0.0%)
+  empty.k: 0/0 (0.0%)
