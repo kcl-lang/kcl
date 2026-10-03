@@ -31,7 +31,13 @@ impl HasErrorFormat for LoadSettingsFilesArgs {}
 impl HasErrorFormat for RenameArgs {}
 impl HasErrorFormat for RenameCodeArgs {}
 impl HasErrorFormat for TestArgs {}
+impl HasErrorFormat for FormatTestReportArgs {}
 impl HasErrorFormat for UpdateDependenciesArgs {}
+impl HasErrorFormat for GenerateTomlArgs {}
+impl HasErrorFormat for GenerateKclArgs {}
+impl HasErrorFormat for GenerateOpenApiArgs {}
+impl HasErrorFormat for GenerateProtoArgs {}
+impl HasErrorFormat for GenerateDocArgs {}
 impl HasErrorFormat for ListMethodArgs {}
 
 #[allow(non_camel_case_types)]
@@ -235,7 +241,13 @@ pub(crate) fn lookup_service_fn_ptr(name: &str) -> Option<u64> {
         "KclService.Rename" => rename as *const () as u64,
         "KclService.RenameCode" => rename_code as *const () as u64,
         "KclService.Test" => test as *const () as u64,
+        "KclService.FormatTestReport" => format_test_report as *const () as u64,
         "KclService.UpdateDependencies" => update_dependencies as *const () as u64,
+        "KclService.GenerateToml" => generate_toml as *const () as u64,
+        "KclService.GenerateKcl" => generate_kcl as *const () as u64,
+        "KclService.GenerateOpenAPI" => generate_openapi as *const () as u64,
+        "KclService.GenerateProto" => generate_proto as *const () as u64,
+        "KclService.GenerateDoc" => generate_doc as *const () as u64,
         // BuiltinService.Ping reuses the KclService.Ping implementation —
         // both services share the same PingArgs/PingResult message types.
         "BuiltinService.Ping" => ping as *const () as u64,
@@ -661,6 +673,23 @@ pub(crate) fn test(
     call!(serv, args, args_len, result_len, TestArgs, test)
 }
 
+/// Service for formatting a test result into a human-readable report.
+pub(crate) fn format_test_report(
+    serv: *mut kcl_service,
+    args: *const c_char,
+    args_len: usize,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(
+        serv,
+        args,
+        args_len,
+        result_len,
+        FormatTestReportArgs,
+        format_test_report
+    )
+}
+
 /// Service for the dependencies updating
 /// calling information.
 ///
@@ -711,5 +740,91 @@ pub(crate) fn list_method(
         result_len,
         ListMethodArgs,
         list_method
+    )
+}
+
+/// Service for generating TOML from the evaluated result of a KCL program.
+pub(crate) fn generate_toml(
+    serv: *mut kcl_service,
+    args: *const c_char,
+    args_len: usize,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(
+        serv,
+        args,
+        args_len,
+        result_len,
+        GenerateTomlArgs,
+        generate_toml
+    )
+}
+
+/// Service for generating KCL source from data content (JSON, YAML or TOML).
+pub(crate) fn generate_kcl(
+    serv: *mut kcl_service,
+    args: *const c_char,
+    args_len: usize,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(
+        serv,
+        args,
+        args_len,
+        result_len,
+        GenerateKclArgs,
+        generate_kcl
+    )
+}
+
+/// Service for generating an OpenAPI spec from the schemas of a KCL package.
+pub(crate) fn generate_openapi(
+    serv: *mut kcl_service,
+    args: *const c_char,
+    args_len: usize,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(
+        serv,
+        args,
+        args_len,
+        result_len,
+        GenerateOpenApiArgs,
+        generate_openapi
+    )
+}
+
+/// Service for generating proto3 definitions from the schemas of a KCL
+/// package.
+pub(crate) fn generate_proto(
+    serv: *mut kcl_service,
+    args: *const c_char,
+    args_len: usize,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(
+        serv,
+        args,
+        args_len,
+        result_len,
+        GenerateProtoArgs,
+        generate_proto
+    )
+}
+
+/// Service for generating documentation from the schemas of a KCL package.
+pub(crate) fn generate_doc(
+    serv: *mut kcl_service,
+    args: *const c_char,
+    args_len: usize,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(
+        serv,
+        args,
+        args_len,
+        result_len,
+        GenerateDocArgs,
+        generate_doc
     )
 }
