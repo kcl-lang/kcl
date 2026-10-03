@@ -1,7 +1,13 @@
 pub mod capi;
+pub(crate) mod gen_doc;
+pub(crate) mod gen_openapi;
+pub(crate) mod gen_proto;
+pub(crate) mod gen_schema;
+pub(crate) mod generator;
 pub(crate) mod into;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod jsonrpc;
+pub(crate) mod pkg_info;
 pub mod service_impl;
 #[cfg(test)]
 pub(crate) mod test_support;
@@ -38,7 +44,13 @@ pub(crate) const SERVICE_METHODS: &[&str] = &[
     "KclService.Rename",
     "KclService.RenameCode",
     "KclService.Test",
+    "KclService.FormatTestReport",
     "KclService.UpdateDependencies",
+    "KclService.GenerateToml",
+    "KclService.GenerateKcl",
+    "KclService.GenerateOpenAPI",
+    "KclService.GenerateProto",
+    "KclService.GenerateDoc",
     "BuiltinService.Ping",
     "BuiltinService.ListMethod",
 ];

@@ -223,6 +223,14 @@ fn register_kcl_service(io: &mut IoHandler) {
         };
         futures::future::ready(catch!(kcl_service_impl, args, test))
     });
+    io.add_method("KclService.FormatTestReport", |params: Params| {
+        let kcl_service_impl = KclServiceImpl::default();
+        let args: FormatTestReportArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kcl_service_impl, args, format_test_report))
+    });
     io.add_method("KclService.UpdateDependencies", |params: Params| {
         let kcl_service_impl = KclServiceImpl::default();
         let args: UpdateDependenciesArgs = match params.parse() {
@@ -230,6 +238,46 @@ fn register_kcl_service(io: &mut IoHandler) {
             Err(err) => return futures::future::ready(Err(err)),
         };
         futures::future::ready(catch!(kcl_service_impl, args, update_dependencies))
+    });
+    io.add_method("KclService.GenerateToml", |params: Params| {
+        let kcl_service_impl = KclServiceImpl::default();
+        let args: GenerateTomlArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kcl_service_impl, args, generate_toml))
+    });
+    io.add_method("KclService.GenerateKcl", |params: Params| {
+        let kcl_service_impl = KclServiceImpl::default();
+        let args: GenerateKclArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kcl_service_impl, args, generate_kcl))
+    });
+    io.add_method("KclService.GenerateOpenAPI", |params: Params| {
+        let kcl_service_impl = KclServiceImpl::default();
+        let args: GenerateOpenApiArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kcl_service_impl, args, generate_openapi))
+    });
+    io.add_method("KclService.GenerateProto", |params: Params| {
+        let kcl_service_impl = KclServiceImpl::default();
+        let args: GenerateProtoArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kcl_service_impl, args, generate_proto))
+    });
+    io.add_method("KclService.GenerateDoc", |params: Params| {
+        let kcl_service_impl = KclServiceImpl::default();
+        let args: GenerateDocArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kcl_service_impl, args, generate_doc))
     });
 }
 
@@ -276,5 +324,57 @@ mod tests {
         let response: serde_json::Value = serde_json::from_str(&response).unwrap();
         let expected = serde_json::json!({ "method_name_list": SERVICE_METHODS });
         assert_eq!(response["result"], expected);
+    }
+
+    /// The generator RPCs must be dispatchable through the JSON-RPC handler,
+    /// end to end from JSON params to JSON result.
+    #[test]
+    fn kcl_service_generate_kcl_dispatches() {
+        let mut io = IoHandler::default();
+        register_kcl_service(&mut io);
+        let request = r#"{"jsonrpc":"2.0","method":"KclService.GenerateKcl","params":{"source":"{\"a\": {\"b\": 1}}","filename":"data.json","format":"json"},"id":1}"#;
+        let response = io
+            .handle_request_sync(request)
+            .expect("KclService.GenerateKcl should be registered");
+        let response: serde_json::Value = serde_json::from_str(&response).unwrap();
+        let expected = serde_json::json!({ "kcl": "a = {\n    b = 1\n}\n" });
+        assert_eq!(response["result"], expected);
+    }
+
+    /// The schema generator RPCs must be dispatchable through the JSON-RPC
+    /// handler, end to end from JSON params to JSON result.
+    #[test]
+    fn kcl_service_generate_doc_dispatches() {
+        let mut io = IoHandler::default();
+        register_kcl_service(&mut io);
+        let main_k = std::path::Path::new(".")
+            .join("src")
+            .join("testdata")
+            .join("gen_openapi")
+            .join("main.k")
+            .canonicalize()
+            .unwrap()
+            .display()
+            .to_string();
+        // Build the request with serde_json so the path is escaped correctly
+        // on Windows (a raw `format!` would emit `\a` and friends as invalid
+        // JSON escapes).
+        let request = serde_json::json!({
+            "jsonrpc": "2.0",
+            "method": "KclService.GenerateDoc",
+            "params": {
+                "parse_args": {"paths": [main_k]},
+                "format": "md"
+            },
+            "id": 1
+        })
+        .to_string();
+        let response = io
+            .handle_request_sync(&request)
+            .expect("KclService.GenerateDoc should be registered");
+        let response: serde_json::Value = serde_json::from_str(&response).unwrap();
+        let content = response["result"]["content"].as_str().unwrap();
+        assert!(content.starts_with("# Schemas\n"));
+        assert!(content.contains("### Person"));
     }
 }

@@ -798,6 +798,62 @@ service KclService {
 	/// ```
 	rpc Test(TestArgs) returns (TestResult);
 
+	/// Format a test result into a human-readable report.
+	///
+	/// The output is byte-identical to the kcl-go `PrettyReporter` format
+	/// and is deterministic for a given result. Every line, including the
+	/// last one, ends with `\n`:
+	///
+	/// - One line per case in result order: `{name}: {STATUS} ({duration_ms}ms)`
+	///   where STATUS is PASS or FAIL (no case can currently be skipped) and
+	///   the duration is the case duration in microseconds truncated to whole
+	///   milliseconds (integer division, e.g. 1500µs renders as `1ms`). When
+	///   a case has a non-empty log message, the log is appended on the next
+	///   line; otherwise a failed case appends its error string as-is (the
+	///   error already carries its own prefix, e.g. `Error: ...`).
+	/// - A separator line of exactly 80 `-` characters.
+	/// - Only for non-zero counts, in this order: `PASS: {p}/{total}`,
+	///   `FAIL: {f}/{total}`, `SKIPPED: {s}/{total}`, where total is the
+	///   number of cases.
+	/// - When the result is empty (no cases and no coverage) the report is
+	///   exactly `no test files\n`.
+	/// - When coverage is populated (files non-empty), after the summary
+	///   lines: one roll-up line `Coverage: {percent:.1}% ({covered}/{executable} lines)`
+	///   using the pre-computed CoverageSummary fields, then one line per
+	///   file sorted by filename, indented two spaces:
+	///   `  {filename}: {covered_lines}/{executable_lines} ({percent:.1}%)`
+	///   where the per-file percent is `100.0 * covered / executable`, or
+	///   `0.0%` when the file has no executable lines.
+	///
+	/// # Examples
+	///
+	///
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "FormatTestReport",
+	///     "params": {
+	///         "result": {
+	///             "info": [
+	///                 {"name": "test_case_1", "error": "", "duration": 1500, "log_message": ""},
+	///                 {"name": "test_case_2", "error": "Error: assert failed", "duration": 2500, "log_message": ""}
+	///             ]
+	///         }
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": {
+	///         "report": "test_case_1: PASS (1ms)\ntest_case_2: FAIL (2ms)\nError: assert failed\n--------------------------------------------------------------------------------\nPASS: 1/2\nFAIL: 1/2\n"
+	///     },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc FormatTestReport(FormatTestReportArgs) returns (FormatTestReportResult);
+
 	/// Download and update dependencies defined in the kcl.mod file.
 	///
 	/// # Examples
@@ -847,6 +903,134 @@ service KclService {
 	/// }
 	/// ```
 	rpc UpdateDependencies(UpdateDependenciesArgs) returns (UpdateDependenciesResult);
+
+	/// Generate TOML from the evaluated result of a KCL program.
+	///
+	/// # Examples
+	///
+	/// ```jsonrpc
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "GenerateToml",
+	///     "params": {
+	///         "exec_args": {
+	///             "k_filename_list": ["file.k"],
+	///             "k_code_list": ["a = {b = 1, c = [1, 2]}"]
+	///         }
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": { "toml": "[a]\nb = 1\nc = [1, 2]\n" },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc GenerateToml(GenerateTomlArgs) returns (GenerateTomlResult);
+
+	/// Generate KCL source from data content (JSON, YAML or TOML).
+	///
+	/// # Examples
+	///
+	/// ```jsonrpc
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "GenerateKcl",
+	///     "params": {
+	///         "source": "{\"a\": {\"b\": 1}}",
+	///         "filename": "data.json",
+	///         "format": "json"
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": { "kcl": "a = {\n    b = 1\n}\n" },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc GenerateKcl(GenerateKclArgs) returns (GenerateKclResult);
+
+	/// Generate an OpenAPI spec from the schemas of a KCL package.
+	///
+	/// # Examples
+	///
+	/// ```jsonrpc
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "GenerateOpenAPI",
+	///     "params": {
+	///         "parse_args": { "paths": ["./src/testdata/gen_openapi/main.k"] },
+	///         "version": "v3"
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": { "spec": "{ \"openapi\": \"3.0.0\", ... }" },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc GenerateOpenAPI(GenerateOpenAPIArgs) returns (GenerateOpenAPIResult);
+
+	/// Generate proto3 definitions from the schemas of a KCL package.
+	///
+	/// # Examples
+	///
+	/// ```jsonrpc
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "GenerateProto",
+	///     "params": {
+	///         "parse_args": { "paths": ["./src/testdata/gen_openapi/main.k"] },
+	///         "package": "example.v1"
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": { "proto": "syntax = \"proto3\"; ..." },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc GenerateProto(GenerateProtoArgs) returns (GenerateProtoResult);
+
+	/// Generate documentation from the schemas of a KCL package.
+	///
+	/// # Examples
+	///
+	/// ```jsonrpc
+	/// // Request
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "method": "GenerateDoc",
+	///     "params": {
+	///         "parse_args": { "paths": ["./src/testdata/gen_openapi/main.k"] },
+	///         "format": "md"
+	///     },
+	///     "id": 1
+	/// }
+	///
+	/// // Response
+	/// {
+	///     "jsonrpc": "2.0",
+	///     "result": { "content": "# Schemas\n\n..." },
+	///     "id": 1
+	/// }
+	/// ```
+	rpc GenerateDoc(GenerateDocArgs) returns (GenerateDocResult);
 }
 
 // Message for ping request arguments.
@@ -963,6 +1147,122 @@ message LoadPackageResult {
 	map<string, SymbolIndex> fully_qualified_name_map = 9;
 	// Map of package scope with package path as key.
 	map<string, ScopeIndex> pkg_scope_map = 10;
+	// Map of direct imports, keyed by the importing file's absolute path.
+	// `path` is the import specifier as written in the source; `resolved` is
+	// the resolved absolute file path (empty for builtins/unresolved imports).
+	// Upstream files = transitive closure; downstream = reverse closure; this
+	// replaces the removed ListDep* RPCs.
+	map<string, FileImports> imports = 11;
+	// Parsed kcl.mod manifest of the package root. Empty when the root has no
+	// kcl.mod.
+	KclMod kcl_mod = 12;
+	// Application directories discovered under the package root: every
+	// directory that directly contains at least one .k file. Sorted by path.
+	repeated AppInfo apps = 13;
+}
+
+// Message representing the direct imports of a single file.
+message FileImports {
+	// List of direct imports of the file.
+	repeated ImportInfo imports = 1;
+}
+
+// Message representing a single direct import of a file.
+message ImportInfo {
+	// Import specifier as written in the source.
+	string path = 1;
+	// Resolved absolute file path of the import.
+	string resolved = 2;
+}
+
+// Message representing a parsed kcl.mod manifest.
+message KclMod {
+	// Package section of the manifest.
+	KclModPackage package = 1;
+	// Profile section of the manifest.
+	KclModProfile profile = 2;
+	// Mirrors the untagged toml dependency: exactly one of version/git/oci/local is set.
+	map<string, KclModDependency> dependencies = 3;
+}
+
+// Message representing the package section of a kcl.mod manifest.
+message KclModPackage {
+	// Name of the package.
+	string name = 1;
+	// KCL compiler edition of the package.
+	string edition = 2;
+	// Version of the package.
+	string version = 3;
+	// Description of the package.
+	string description = 4;
+	// Files to include when publishing.
+	repeated string include = 5;
+	// Files to exclude when publishing.
+	repeated string exclude = 6;
+}
+
+// Message representing the profile section of a kcl.mod manifest.
+message KclModProfile {
+	// List of entry-point files.
+	repeated string entries = 1;
+	// Flag that, when true, disables the emission of the special 'none' value in the output.
+	bool disable_none = 2;
+	// Flag that, when true, ensures keys in maps are sorted.
+	bool sort_keys = 3;
+	// List of attribute selectors for conditional compilation.
+	repeated string selectors = 4;
+	// List of override paths.
+	repeated string overrides = 5;
+	// List of additional options for the KCL compiler.
+	repeated string options = 6;
+}
+
+// Message representing a single dependency of a kcl.mod manifest.
+message KclModDependency {
+	// Version of the dependency, e.g. "1.0.0".
+	string version = 1;
+	// Git source of the dependency.
+	KclModGitSource git = 2;
+	// OCI source of the dependency.
+	KclModOciSource oci = 3;
+	// Local path source of the dependency.
+	KclModLocalSource local = 4;
+}
+
+// Message representing a Git source of a kcl.mod dependency.
+message KclModGitSource {
+	// URL of the Git repository.
+	string git = 1;
+	// Optional branch name within the Git repository.
+	string branch = 2;
+	// Optional commit hash to check out from the Git repository.
+	string commit = 3;
+	// Optional tag name to check out from the Git repository.
+	string tag = 4;
+	// Optional version specification associated with the Git source.
+	string version = 5;
+}
+
+// Message representing an OCI source of a kcl.mod dependency.
+message KclModOciSource {
+	// URI of the OCI repository.
+	string oci = 1;
+	// Optional tag of the OCI package in the registry.
+	string tag = 2;
+}
+
+// Message representing a local path source of a kcl.mod dependency.
+message KclModLocalSource {
+	// Path to the local directory or file.
+	string path = 1;
+}
+
+// Message representing an application directory discovered under a package root.
+message AppInfo {
+	// Absolute path of the application directory.
+	string path = 1;
+	// True when the directory contains a kcl.mod manifest.
+	bool has_kcl_mod = 2;
 }
 
 // Message for list options response.
@@ -1494,6 +1794,18 @@ message CoverageSummary {
 	double percent = 3;
 }
 
+// Message for format test report request arguments.
+message FormatTestReportArgs {
+	// The test result to format, as returned by the Test RPC.
+	TestResult result = 1;
+}
+
+// Message for format test report response.
+message FormatTestReportResult {
+	// The pretty-printed report (see PrettyReporter format docs above).
+	string report = 1;
+}
+
 // ---------------------------------------------------------------------------------
 // UpdateDependencies API
 //	Download and update dependencies defined in the kcl.mod file.
@@ -1511,6 +1823,81 @@ message UpdateDependenciesArgs {
 message UpdateDependenciesResult {
 	// List of external packages updated.
 	repeated ExternalPkg external_pkgs = 3;
+}
+
+// Message for generate TOML request arguments.
+message GenerateTomlArgs {
+	// Arguments for executing the program whose result is serialized to TOML.
+	ExecProgramArgs exec_args = 1;
+	// Flag to sort keys in the TOML output. Defaults to false (source order).
+	bool sort_keys = 2;
+}
+
+// Message for generate TOML response.
+message GenerateTomlResult {
+	// The evaluated result serialized as TOML.
+	string toml = 1;
+}
+
+// Message for generate KCL request arguments.
+message GenerateKclArgs {
+	// The source data content (JSON, YAML or TOML text).
+	string source = 1;
+	// File name hint used for error messages and format detection, e.g. "data.json".
+	string filename = 2;
+	// Data format: "json", "yaml" or "toml". When empty, inferred from the
+	// filename extension, defaulting to "json".
+	string format = 3;
+}
+
+// Message for generate KCL response.
+message GenerateKclResult {
+	// The generated KCL source.
+	string kcl = 1;
+}
+
+// Message for generate OpenAPI request arguments.
+message GenerateOpenAPIArgs {
+	// Arguments for parsing the program whose schemas are exported.
+	ParseProgramArgs parse_args = 1;
+	// Spec version: "v3" (default) or "v2" (Swagger 2.0).
+	string version = 2;
+}
+
+// Message for generate OpenAPI response.
+message GenerateOpenAPIResult {
+	// The generated spec as a JSON string.
+	string spec = 1;
+}
+
+// Message for generate proto request arguments.
+message GenerateProtoArgs {
+	// Arguments for parsing the program whose schemas are exported.
+	ParseProgramArgs parse_args = 1;
+	// Proto package name, e.g. "example.v1". Empty means no package clause.
+	string package = 2;
+}
+
+// Message for generate proto response.
+message GenerateProtoResult {
+	// The generated proto3 definitions.
+	string proto = 1;
+}
+
+// Message for generate doc request arguments.
+message GenerateDocArgs {
+	// Arguments for parsing the program whose schemas are documented.
+	ParseProgramArgs parse_args = 1;
+	// Output format: "md" (default, Markdown), "openapi" (Swagger 2.0 spec)
+	// or "json-schema" (JSON Schema draft for each schema). "html" is not
+	// supported yet.
+	string format = 2;
+}
+
+// Message for generate doc response.
+message GenerateDocResult {
+	// The generated documentation.
+	string content = 1;
 }
 
 // ----------------------------------------------------------------------------
