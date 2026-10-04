@@ -22,7 +22,7 @@ use kcl_parser::parse_single_file;
 use kcl_query::GetSchemaOption;
 use kcl_query::override_file;
 use kcl_query::query::CompilationOptions;
-use kcl_query::query::{get_full_schema_type, get_full_schema_type_under_path};
+use kcl_query::query::get_full_schema_type;
 use kcl_query::selector::{ListOptions, list_variables};
 use kcl_runner::exec_program;
 use kcl_sema::core::global_state::GlobalState;
@@ -35,10 +35,17 @@ use kcl_tools::testing::TestRun;
 use kcl_tools::vet::validator::LoaderKind;
 use kcl_tools::vet::validator::ValidateOption;
 use kcl_tools::vet::validator::validate;
+use kcl_utils::path::PathPrefix;
 use tempfile::NamedTempFile;
 
 use super::SERVICE_METHODS;
+use super::gen_doc;
+use super::gen_openapi;
+use super::gen_proto;
+use super::gen_schema;
+use super::generator;
 use super::into::*;
+use super::pkg_info;
 use super::ty::kcl_schema_ty_to_pb_ty;
 use super::util::{transform_exec_para, transform_str_para};
 
@@ -193,6 +200,63 @@ fn merge_coverage(target: &mut gpyrpc::TestCoverageReport, src: &testing::TestCo
         executable,
         percent,
     });
+}
+
+/// Convert a protobuf [`gpyrpc::TestCoverageReport`] into the native
+/// [`kcl_tools::testing::TestCoverageReport`] shape. Inverse of
+/// [`into_proto_coverage_report`].
+fn from_proto_coverage_report(report: &gpyrpc::TestCoverageReport) -> testing::TestCoverageReport {
+    let mut files = std::collections::BTreeMap::new();
+    for (filename, file_cov) in &report.files {
+        files.insert(
+            filename.clone(),
+            testing::FileCoverage {
+                covered_lines: file_cov.covered_lines.clone(),
+                executable_lines: file_cov.executable_lines.clone(),
+                line_hits: file_cov.line_hits.clone().into_iter().collect(),
+            },
+        );
+    }
+    let summary = report.summary.as_ref();
+    testing::TestCoverageReport {
+        files,
+        summary: testing::CoverageSummary {
+            covered: summary.map(|s| s.covered).unwrap_or_default(),
+            executable: summary.map(|s| s.executable).unwrap_or_default(),
+            percent: summary.map(|s| s.percent).unwrap_or_default(),
+        },
+    }
+}
+
+/// Convert a protobuf [`gpyrpc::TestResult`] back into the native
+/// [`kcl_tools::testing::TestResult`] shape. Inverse of the conversion in
+/// [`KclServiceImpl::test`]; used by the format test report service so the
+/// reporter always renders the native type. A non-empty proto error string
+/// becomes `Some(anyhow!(...))`, the microsecond duration maps back to a
+/// [`std::time::Duration`], and the coverage maps copy over.
+fn from_proto_test_result(result: &gpyrpc::TestResult) -> testing::TestResult {
+    let mut info = kcl_primitives::IndexMap::default();
+    for case in &result.info {
+        info.insert(
+            case.name.clone(),
+            testing::TestCaseInfo {
+                log_message: case.log_message.clone(),
+                error: if case.error.is_empty() {
+                    None
+                } else {
+                    Some(anyhow::anyhow!(case.error.clone()))
+                },
+                duration: std::time::Duration::from_micros(case.duration),
+                line_hits: case.line_hits.clone().into_iter().collect(),
+            },
+        );
+    }
+    let coverage = result
+        .coverage
+        .as_ref()
+        .map(from_proto_coverage_report)
+        .unwrap_or_default();
+    testing::TestResult { info, coverage }
 }
 
 /// Format `err` for the C API / language-binding return channel.
@@ -484,6 +548,22 @@ impl KclServiceImpl {
     /// assert_eq!(result.symbol_node_map.len(), 209);
     /// assert_eq!(result.fully_qualified_name_map.len(), 221);
     /// assert_eq!(result.pkg_scope_map.len(), 3);
+    /// // Import graph: main.k directly imports pkg1 and pkg2 with the
+    /// // specifiers as written in the source and the resolved dep paths.
+    /// let main_k = args.parse_args.as_ref().unwrap().paths[0].clone();
+    /// let file_imports = result.imports.get(&main_k).unwrap();
+    /// assert_eq!(file_imports.imports.len(), 2);
+    /// assert_eq!(file_imports.imports[0].path, "pkg1");
+    /// assert!(file_imports.imports[0].resolved.ends_with("pkg.k"));
+    /// assert_eq!(file_imports.imports[1].path, "pkg2");
+    /// // The parse fixture has an empty kcl.mod, so the parsed manifest is
+    /// // empty and the app scan still finds every directory holding .k files.
+    /// let kcl_mod = result.kcl_mod.as_ref().unwrap();
+    /// assert!(kcl_mod.package.is_none());
+    /// assert!(kcl_mod.profile.is_none());
+    /// assert!(kcl_mod.dependencies.is_empty());
+    /// assert_eq!(result.apps.len(), 3);
+    /// assert!(result.apps[0].has_kcl_mod);
     /// ```
     #[inline]
     pub fn load_package(&self, args: &LoadPackageArgs) -> anyhow::Result<LoadPackageResult> {
@@ -503,6 +583,11 @@ impl KclServiceImpl {
         for p in &parse_args.external_pkgs {
             package_maps.insert(p.pkg_name.to_string(), p.pkg_path.to_string());
         }
+        // Keep an Arc handle on the module cache before handing it to the
+        // loader, so the import graph recorded in `dep_cache` stays readable
+        // after the call.
+        let module_cache_handle = module_cache.clone();
+        let parse_paths = parse_args.paths.clone();
         let packages = load_packages_with_cache(
             &LoadPackageOptions {
                 paths: parse_args.paths,
@@ -523,6 +608,22 @@ impl KclServiceImpl {
             // Thread local options
             kcl_ast::ast::set_should_serialize_id(true);
         }
+        // Build the LoadPackage info fields: the per-file direct import
+        // graph, the parsed kcl.mod manifest of the package root and the
+        // application directories under it. The manifest parse and the app
+        // scan are best-effort and never fail the RPC.
+        let program_files: std::collections::HashSet<String> = packages
+            .paths
+            .iter()
+            .map(|p| p.adjust_canonicalization())
+            .collect();
+        let imports =
+            pkg_info::collect_imports(&module_cache_handle, &packages.program, &program_files);
+        let (pkg_root, kcl_mod) = pkg_info::pkg_root_and_mod(&parse_paths);
+        let apps = pkg_root
+            .as_deref()
+            .map(pkg_info::discover_apps)
+            .unwrap_or_default();
         let serialize_program: SerializeProgram = packages.program.into();
         let program_json = serde_json::to_string(&serialize_program)?;
         let mut node_symbol_map = HashMap::new();
@@ -576,6 +677,9 @@ impl KclServiceImpl {
                 .into_iter()
                 .map(|e| e.into_error())
                 .collect(),
+            imports,
+            kcl_mod: Some(kcl_mod),
+            apps,
         })
     }
 
@@ -976,27 +1080,25 @@ impl KclServiceImpl {
         &self,
         args: &GetSchemaTypeMappingArgs,
     ) -> anyhow::Result<GetSchemaTypeMappingUnderPathResult> {
-        let mut type_mapping = HashMap::new();
-        let exec_args = transform_exec_para(&args.exec_args, self.plugin_agent)?;
-        for (k, schema_tys) in get_full_schema_type_under_path(
-            Some(&args.schema_name),
-            CompilationOptions {
-                paths: exec_args.clone().k_filename_list,
-                loader_opts: Some(exec_args.get_load_program_options()),
-                resolve_opts: Options {
-                    resolve_val: true,
-                    ..Default::default()
-                },
-                get_schema_opts: GetSchemaOption::Definitions,
-            },
-        )? {
-            let mut tys = vec![];
-            for schema_ty in schema_tys {
-                tys.push(kcl_schema_ty_to_pb_ty(&schema_ty));
+        let exec_args = args.exec_args.clone().unwrap_or_default();
+        // The extractor only speaks ParseProgramArgs; the exec-only knobs
+        // (work_dir, plugin agent, ...) do not affect schema collection.
+        let parse_args = ParseProgramArgs {
+            paths: exec_args.k_filename_list,
+            sources: exec_args.k_code_list,
+            external_pkgs: exec_args.external_pkgs,
+        };
+        let mut type_mapping = gen_schema::load_pkg_schema_types(&parse_args)?;
+        if !args.schema_name.is_empty() {
+            // Post-filter by schema name, mirroring the in-loader filter
+            // (packages left without a matching schema drop out entirely).
+            for types in type_mapping.values_mut() {
+                types
+                    .schema_type
+                    .retain(|ty| ty.schema_name == args.schema_name);
             }
-            type_mapping.insert(k, gpyrpc::SchemaTypes { schema_type: tys });
+            type_mapping.retain(|_, types| !types.schema_type.is_empty());
         }
-
         Ok(GetSchemaTypeMappingUnderPathResult {
             schema_type_mapping: type_mapping,
         })
@@ -1383,6 +1485,51 @@ impl KclServiceImpl {
         Ok(result)
     }
 
+    /// Service for formatting a test result into a human-readable report.
+    ///
+    /// The report is byte-identical to the kcl-go `PrettyReporter` output;
+    /// see [`kcl_tools::testing::PrettyReporter`] for the exact format spec.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
+    ///
+    /// let serv = KclServiceImpl::default();
+    /// let result = serv.format_test_report(&FormatTestReportArgs {
+    ///     result: Some(TestResult {
+    ///         info: vec![
+    ///             TestCaseInfo {
+    ///                 name: "test_case_1".to_string(),
+    ///                 duration: 1500,
+    ///                 ..Default::default()
+    ///             },
+    ///             TestCaseInfo {
+    ///                 name: "test_case_2".to_string(),
+    ///                 error: "Error: assert failed".to_string(),
+    ///                 duration: 2500,
+    ///                 ..Default::default()
+    ///             },
+    ///         ],
+    ///         ..Default::default()
+    ///     }),
+    /// }).unwrap();
+    /// assert_eq!(
+    ///     result.report,
+    ///     "test_case_1: PASS (1ms)\ntest_case_2: FAIL (2ms)\nError: assert failed\n--------------------------------------------------------------------------------\nPASS: 1/2\nFAIL: 1/2\n"
+    /// );
+    /// ```
+    pub fn format_test_report(
+        &self,
+        args: &FormatTestReportArgs,
+    ) -> anyhow::Result<FormatTestReportResult> {
+        let result = from_proto_test_result(args.result.as_ref().unwrap_or(&TestResult::default()));
+        Ok(FormatTestReportResult {
+            report: testing::PrettyReporter::render(&result),
+        })
+    }
+
     #[cfg(not(target_arch = "wasm32"))]
     /// update_dependencies provides users with the ability to update kcl module dependencies.
     ///
@@ -1446,6 +1593,205 @@ impl KclServiceImpl {
         anyhow::bail!(
             "updating dependencies is not supported in the WASM build: the WASI sandbox has no network access or subprocess support to download KCL modules"
         )
+    }
+
+    /// Generate TOML from the evaluated result of a KCL program.
+    ///
+    /// The program is executed through the regular [`exec_program`](Self::exec_program)
+    /// path and its YAML intermediate result is converted to a TOML document:
+    /// mappings become TOML tables, arrays of scalars stay inline and nested
+    /// tables are emitted below their values. Key order follows the source
+    /// document, except that within each TOML table non-table values are
+    /// emitted before sub-tables (a requirement of the TOML format).
+    /// `sort_keys: true` sorts mapping keys recursively instead.
+    ///
+    /// TOML has no null: keys holding `None` are dropped from the output.
+    /// A `None` inside a list is an error, since dropping it would shift the
+    /// remaining indices.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
+    ///
+    /// let serv = KclServiceImpl::default();
+    /// let result = serv.generate_toml(&GenerateTomlArgs {
+    ///     exec_args: Some(ExecProgramArgs {
+    ///         k_filename_list: vec!["file.k".to_string()],
+    ///         k_code_list: vec!["a = {b = 1, c = [1, 2]}".to_string()],
+    ///         ..Default::default()
+    ///     }),
+    ///     ..Default::default()
+    /// }).unwrap();
+    /// assert_eq!(result.toml, "[a]\nb = 1\nc = [1, 2]\n");
+    /// ```
+    pub fn generate_toml(&self, args: &GenerateTomlArgs) -> anyhow::Result<GenerateTomlResult> {
+        let exec_args = args
+            .exec_args
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("exec_args must be set to execute a KCL program"))?;
+        let result = self.exec_program(exec_args)?;
+        // Runtime evaluation failures surface through `err_message` (compile
+        // failures already returned `Err` from `exec_program`); either way
+        // there is no result to convert, so propagate the message.
+        if !result.err_message.is_empty() {
+            anyhow::bail!("{}", result.err_message);
+        }
+        let yaml_value: serde_yaml::Value = serde_yaml::from_str(&result.yaml_result)?;
+        let toml_value = generator::yaml_to_toml(&yaml_value, args.sort_keys)?;
+        Ok(GenerateTomlResult {
+            toml: toml::to_string(&toml_value)?,
+        })
+    }
+
+    /// Generate KCL source from data content (JSON, YAML or TOML).
+    ///
+    /// The `format` argument selects the parser (`"json"`, `"yaml"` or
+    /// `"toml"`, case-insensitive); when empty it is inferred from the
+    /// `filename` extension, defaulting to JSON. The data root must be an
+    /// object: it becomes the top-level KCL attributes, rendered with
+    /// 4-space indents. Keys that are not bare KCL identifiers are
+    /// double-quoted, strings use JSON-style escapes, floats keep a trailing
+    /// `.0` (`1.0` stays `1.0`, not `1`), `null` becomes `None`, and arrays
+    /// of scalars stay inline up to 80 columns before going multiline.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
+    ///
+    /// let serv = KclServiceImpl::default();
+    /// let result = serv.generate_kcl(&GenerateKclArgs {
+    ///     source: "{\"a\": {\"b\": 1}}".to_string(),
+    ///     filename: "data.json".to_string(),
+    ///     format: "json".to_string(),
+    /// }).unwrap();
+    /// assert_eq!(result.kcl, "a = {\n    b = 1\n}\n");
+    /// ```
+    pub fn generate_kcl(&self, args: &GenerateKclArgs) -> anyhow::Result<GenerateKclResult> {
+        let format = generator::resolve_data_format(&args.format, &args.filename)?;
+        let value = generator::parse_data(format, &args.source)?;
+        Ok(GenerateKclResult {
+            kcl: generator::value_to_kcl(&value)?,
+        })
+    }
+
+    /// Generate an OpenAPI spec from the schemas of a KCL package.
+    ///
+    /// The program referenced by `parse_args` is loaded and every schema
+    /// definition is exported. `version` selects the document flavor: `"v3"`
+    /// (OpenAPI 3.0.0, the default when empty) or `"v2"` (Swagger 2.0).
+    /// Schemas from other packages keep their own names; cross-package name
+    /// collisions are suffixed with the package name.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
+    /// use std::path::Path;
+    ///
+    /// let serv = KclServiceImpl::default();
+    /// let result = serv.generate_openapi(&GenerateOpenApiArgs {
+    ///     parse_args: Some(ParseProgramArgs {
+    ///         paths: vec![Path::new(".").join("src").join("testdata").join("gen_openapi").join("main.k").canonicalize().unwrap().display().to_string()],
+    ///         ..Default::default()
+    ///     }),
+    ///     version: "v3".to_string(),
+    /// }).unwrap();
+    /// assert!(result.spec.contains("\"openapi\": \"3.0.0\""));
+    /// assert!(result.spec.contains("\"Person\": {"));
+    /// assert!(result.spec.contains("#/components/schemas/Base"));
+    /// ```
+    pub fn generate_openapi(
+        &self,
+        args: &GenerateOpenApiArgs,
+    ) -> anyhow::Result<GenerateOpenApiResult> {
+        let parse_args = args
+            .parse_args
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("parse_args must be set to parse a KCL program"))?;
+        let mapping = gen_schema::load_pkg_schema_types(parse_args)?;
+        Ok(GenerateOpenApiResult {
+            spec: gen_openapi::generate_openapi(&mapping, &args.version)?,
+        })
+    }
+
+    /// Generate proto3 definitions from the schemas of a KCL package.
+    ///
+    /// The program referenced by `parse_args` is loaded and every schema
+    /// definition becomes a proto message. `package` sets the proto package
+    /// clause (e.g. `"example.v1"`); empty means no clause. KCL attribute
+    /// names are snake-cased, union and `any` fields use
+    /// `google.protobuf.Value`, and function-typed fields are skipped.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
+    /// use std::path::Path;
+    ///
+    /// let serv = KclServiceImpl::default();
+    /// let result = serv.generate_proto(&GenerateProtoArgs {
+    ///     parse_args: Some(ParseProgramArgs {
+    ///         paths: vec![Path::new(".").join("src").join("testdata").join("gen_openapi").join("main.k").canonicalize().unwrap().display().to_string()],
+    ///         ..Default::default()
+    ///     }),
+    ///     package: "example.v1".to_string(),
+    /// }).unwrap();
+    /// assert!(result.proto.starts_with("syntax = \"proto3\";\n\npackage example.v1;\n"));
+    /// assert!(result.proto.contains("message Person {"));
+    /// assert!(result.proto.contains("google.protobuf.Value val = 1;"));
+    /// ```
+    pub fn generate_proto(&self, args: &GenerateProtoArgs) -> anyhow::Result<GenerateProtoResult> {
+        let parse_args = args
+            .parse_args
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("parse_args must be set to parse a KCL program"))?;
+        let mapping = gen_schema::load_pkg_schema_types(parse_args)?;
+        Ok(GenerateProtoResult {
+            proto: gen_proto::generate_proto(&mapping, &args.package)?,
+        })
+    }
+
+    /// Generate documentation from the schemas of a KCL package.
+    ///
+    /// The program referenced by `parse_args` is loaded and every schema
+    /// definition is documented. `format` selects the output: `"md"`
+    /// (Markdown, the default when empty), `"openapi"` (Swagger 2.0 spec) or
+    /// `"json-schema"` (standalone JSON Schema definitions). `"html"` is not
+    /// supported yet.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use kcl_api::service::service_impl::KclServiceImpl;
+    /// use kcl_api::gpyrpc::*;
+    /// use std::path::Path;
+    ///
+    /// let serv = KclServiceImpl::default();
+    /// let result = serv.generate_doc(&GenerateDocArgs {
+    ///     parse_args: Some(ParseProgramArgs {
+    ///         paths: vec![Path::new(".").join("src").join("testdata").join("gen_openapi").join("main.k").canonicalize().unwrap().display().to_string()],
+    ///         ..Default::default()
+    ///     }),
+    ///     format: "md".to_string(),
+    /// }).unwrap();
+    /// assert!(result.content.starts_with("# Schemas\n"));
+    /// assert!(result.content.contains("### Person"));
+    /// ```
+    pub fn generate_doc(&self, args: &GenerateDocArgs) -> anyhow::Result<GenerateDocResult> {
+        let parse_args = args
+            .parse_args
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("parse_args must be set to parse a KCL program"))?;
+        let mapping = gen_schema::load_pkg_schema_types(parse_args)?;
+        Ok(GenerateDocResult {
+            content: gen_doc::generate_doc(&mapping, &args.format)?,
+        })
     }
 }
 
@@ -2148,6 +2494,389 @@ mod rss_stability_tests {
         assert!(
             rss_warm0 > 0,
             "baseline RSS was zero — rss_bytes() is broken"
+        );
+    }
+}
+
+#[cfg(test)]
+mod load_package_info_tests {
+    //! Tests for the `LoadPackage` info fields: the per-file direct import
+    //! graph (`imports`), the parsed package manifest (`kcl_mod`) and the
+    //! application directory scan (`apps`).
+    use super::*;
+    use std::path::{Path, PathBuf};
+
+    fn load_pkg_info_dir() -> PathBuf {
+        Path::new(".")
+            .join("src")
+            .join("testdata")
+            .join("load_pkg_info")
+            .canonicalize()
+            .unwrap()
+    }
+
+    fn load_pkg_info_file(name: &str) -> String {
+        load_pkg_info_dir()
+            .join(name)
+            .display()
+            .to_string()
+            .adjust_canonicalization()
+    }
+
+    #[test]
+    fn load_package_reports_imports_kcl_mod_and_apps() {
+        let serv = KclServiceImpl::default();
+        let main_k = load_pkg_info_file("main.k");
+        let sub_main_k = Path::new(&load_pkg_info_file("sub"))
+            .join("main.k")
+            .display()
+            .to_string();
+        let args = &LoadPackageArgs {
+            parse_args: Some(ParseProgramArgs {
+                paths: vec![main_k.clone()],
+                ..Default::default()
+            }),
+            resolve_ast: true,
+            ..Default::default()
+        };
+        let result = serv.load_package(args).unwrap();
+
+        // The import graph records main.k's direct import of `base.base`
+        // with the specifier as written and the resolved dep file path.
+        let file_imports = result.imports.get(&main_k).expect("main.k imports entry");
+        let base_import = file_imports
+            .imports
+            .iter()
+            .find(|i| i.path.contains("base"))
+            .expect("base import");
+        assert_eq!(base_import.path, "base.base");
+        assert!(
+            base_import.resolved.ends_with("base.k"),
+            "resolved = {}",
+            base_import.resolved
+        );
+        // base/base.k is part of the program but imports nothing.
+        let base_k = base_import.resolved.clone();
+        assert!(result.imports.contains_key(&base_k));
+        assert!(result.imports.get(&base_k).unwrap().imports.is_empty());
+        // Files outside the loaded program must not appear.
+        assert!(!result.imports.contains_key(&sub_main_k));
+        for key in result.imports.keys() {
+            assert!(result.paths.contains(key), "foreign imports key {key}");
+        }
+
+        // The kcl.mod manifest of the package root with the two
+        // distinguishable dependency kinds.
+        let kcl_mod = result.kcl_mod.as_ref().expect("kcl_mod must be set");
+        assert_eq!(
+            kcl_mod.package.as_ref().unwrap().name,
+            "load_pkg_info".to_string()
+        );
+        let git_dep = kcl_mod.dependencies.get("kcl_pkg_git").unwrap();
+        assert!(git_dep.version.is_empty());
+        assert_eq!(
+            git_dep.git.as_ref().unwrap().git,
+            "https://example.com/kcl-pkg-git.git".to_string()
+        );
+        let version_dep = kcl_mod.dependencies.get("kcl_pkg_version").unwrap();
+        assert_eq!(version_dep.version, "0.0.1".to_string());
+        assert!(version_dep.git.is_none());
+        assert!(version_dep.oci.is_none());
+        assert!(version_dep.local.is_none());
+
+        // Application directories under the root, sorted by path: the root
+        // itself, the imported base package and the nested sub app.
+        let app_paths: Vec<&str> = result.apps.iter().map(|a| a.path.as_str()).collect();
+        assert!(app_paths.windows(2).all(|w| w[0] <= w[1]));
+        let root_app = result
+            .apps
+            .iter()
+            .find(|a| {
+                a.path
+                    == load_pkg_info_dir()
+                        .display()
+                        .to_string()
+                        .adjust_canonicalization()
+            })
+            .unwrap();
+        assert!(root_app.has_kcl_mod);
+        let sub_app = result
+            .apps
+            .iter()
+            .find(|a| a.path == load_pkg_info_file("sub"))
+            .unwrap();
+        assert!(sub_app.has_kcl_mod);
+        let base_app = result
+            .apps
+            .iter()
+            .find(|a| a.path == load_pkg_info_file("base"))
+            .unwrap();
+        assert!(!base_app.has_kcl_mod);
+        assert_eq!(result.apps.len(), 3);
+    }
+
+    #[test]
+    fn load_package_info_tolerates_missing_kcl_mod() {
+        // A lone .k file without any kcl.mod: the manifest is empty and the
+        // app scan falls back to the file's directory.
+        let serv = KclServiceImpl::default();
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("main.k");
+        std::fs::write(&path, "a = 1").unwrap();
+        let path = path.display().to_string();
+        let args = &LoadPackageArgs {
+            parse_args: Some(ParseProgramArgs {
+                paths: vec![path],
+                ..Default::default()
+            }),
+            resolve_ast: true,
+            ..Default::default()
+        };
+        let result = serv.load_package(args).unwrap();
+        let kcl_mod = result.kcl_mod.as_ref().unwrap();
+        assert!(kcl_mod.package.is_none());
+        assert!(kcl_mod.profile.is_none());
+        assert!(kcl_mod.dependencies.is_empty());
+        let dir = dir
+            .path()
+            .canonicalize()
+            .unwrap()
+            .display()
+            .to_string()
+            .adjust_canonicalization();
+        assert_eq!(result.apps.len(), 1);
+        assert_eq!(result.apps[0].path, dir);
+        assert!(!result.apps[0].has_kcl_mod);
+    }
+}
+
+#[cfg(test)]
+mod format_test_report_tests {
+    //! Tests for the `FormatTestReport` service: the proto TestResult is
+    //! converted back to the native shape and rendered by
+    //! `kcl_tools::testing::PrettyReporter`. The exact expected strings pin
+    //! the wire format; durations are fixed microseconds so the truncated
+    //! millisecond display is deterministic.
+    use super::*;
+
+    #[test]
+    fn formats_known_cases() {
+        let serv = KclServiceImpl::default();
+        let args = FormatTestReportArgs {
+            result: Some(TestResult {
+                info: vec![
+                    TestCaseInfo {
+                        name: "test_ok".to_string(),
+                        duration: 1500,
+                        log_message: "all good".to_string(),
+                        ..Default::default()
+                    },
+                    TestCaseInfo {
+                        name: "test_bad".to_string(),
+                        error: "Error: assert failed".to_string(),
+                        duration: 2048,
+                        ..Default::default()
+                    },
+                ],
+                ..Default::default()
+            }),
+        };
+        let result = serv.format_test_report(&args).unwrap();
+        assert_eq!(
+            result.report,
+            "test_ok: PASS (1ms)\n\
+             all good\n\
+             test_bad: FAIL (2ms)\n\
+             Error: assert failed\n\
+             --------------------------------------------------------------------------------\n\
+             PASS: 1/2\n\
+             FAIL: 1/2\n"
+        );
+    }
+
+    #[test]
+    fn formats_empty_result_as_no_test_files() {
+        let serv = KclServiceImpl::default();
+        // An explicit empty result and an absent result both render the
+        // documented empty-run message.
+        for args in [
+            FormatTestReportArgs {
+                result: Some(TestResult::default()),
+            },
+            FormatTestReportArgs::default(),
+        ] {
+            let result = serv.format_test_report(&args).unwrap();
+            assert_eq!(result.report, "no test files\n");
+        }
+    }
+
+    #[test]
+    fn formats_coverage_lines_after_summary() {
+        let serv = KclServiceImpl::default();
+        let mut files = std::collections::HashMap::new();
+        files.insert(
+            "a.k".to_string(),
+            FileCoverage {
+                filename: "a.k".to_string(),
+                covered_lines: vec![1, 2],
+                executable_lines: vec![1, 2, 3],
+                ..Default::default()
+            },
+        );
+        files.insert(
+            "b.k".to_string(),
+            FileCoverage {
+                filename: "b.k".to_string(),
+                executable_lines: vec![1],
+                ..Default::default()
+            },
+        );
+        let args = FormatTestReportArgs {
+            result: Some(TestResult {
+                coverage: Some(TestCoverageReport {
+                    files,
+                    summary: Some(CoverageSummary {
+                        covered: 2,
+                        executable: 4,
+                        percent: 50.0,
+                    }),
+                }),
+                ..Default::default()
+            }),
+        };
+        let result = serv.format_test_report(&args).unwrap();
+        let expected = "--------------------------------------------------------------------------------\nCoverage: 50.0% (2/4) lines\n  a.k: 2/3 (66.7%)\n  b.k: 0/1 (0.0%)\n";
+        assert_eq!(result.report, expected);
+    }
+}
+
+#[cfg(test)]
+mod generator_tests {
+    //! Tests for the `GenerateToml` and `GenerateKcl` services: exec
+    //! integration, error propagation and format resolution. The pure
+    //! emitter conversions (key ordering, null handling, KCL layout) are
+    //! covered by the `generator` module tests.
+    use super::*;
+
+    fn toml_exec_args(code: &str) -> GenerateTomlArgs {
+        GenerateTomlArgs {
+            exec_args: Some(ExecProgramArgs {
+                k_filename_list: vec!["file.k".to_string()],
+                k_code_list: vec![code.to_string()],
+                ..Default::default()
+            }),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn generate_toml_source_order_and_sort_keys() {
+        let serv = KclServiceImpl::default();
+        let code = "z = 1\na = {y = 2, b = 3}";
+        // Source key order is preserved by default.
+        let result = serv.generate_toml(&toml_exec_args(code)).unwrap();
+        assert_eq!(result.toml, "z = 1\n\n[a]\ny = 2\nb = 3\n");
+        // `sort_keys` sorts mapping keys recursively.
+        let mut args = toml_exec_args(code);
+        args.sort_keys = true;
+        let result = serv.generate_toml(&args).unwrap();
+        assert_eq!(result.toml, "z = 1\n\n[a]\nb = 3\ny = 2\n");
+    }
+
+    #[test]
+    fn generate_toml_drops_none_attributes() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_toml(&toml_exec_args("a = None\nb = 1"))
+            .unwrap();
+        assert_eq!(result.toml, "b = 1\n");
+    }
+
+    #[test]
+    fn generate_toml_requires_exec_args() {
+        let serv = KclServiceImpl::default();
+        let err = serv
+            .generate_toml(&GenerateTomlArgs::default())
+            .unwrap_err();
+        assert!(
+            err.to_string().contains("exec_args must be set"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn generate_toml_surfaces_exec_errors() {
+        let serv = KclServiceImpl::default();
+        // A runtime evaluation failure is reported through `err_message` by
+        // `exec_program`; the generator must surface it as its own error
+        // instead of converting the empty result.
+        let err = serv
+            .generate_toml(&toml_exec_args("x = [1, 2][5]"))
+            .unwrap_err();
+        assert!(
+            err.to_string().contains("out of range"),
+            "unexpected error: {err}"
+        );
+        // A compile failure already fails `exec_program` itself.
+        let err = serv.generate_toml(&toml_exec_args("a = ")).unwrap_err();
+        assert!(!err.to_string().is_empty());
+    }
+
+    #[test]
+    fn generate_kcl_infers_format_from_filename() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_kcl(&GenerateKclArgs {
+                source: "a:\n  b: 1\n".to_string(),
+                filename: "data.yaml".to_string(),
+                ..Default::default()
+            })
+            .unwrap();
+        assert_eq!(result.kcl, "a = {\n    b = 1\n}\n");
+    }
+
+    #[test]
+    fn generate_kcl_explicit_format_wins_over_extension() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_kcl(&GenerateKclArgs {
+                source: "{\"a\": {\"b\": 1}}".to_string(),
+                filename: "data.yaml".to_string(),
+                format: "json".to_string(),
+            })
+            .unwrap();
+        assert_eq!(result.kcl, "a = {\n    b = 1\n}\n");
+    }
+
+    #[test]
+    fn generate_kcl_rejects_non_object_roots() {
+        let serv = KclServiceImpl::default();
+        let err = serv
+            .generate_kcl(&GenerateKclArgs {
+                source: "[1, 2]".to_string(),
+                filename: "data.json".to_string(),
+                ..Default::default()
+            })
+            .unwrap_err();
+        assert!(
+            err.to_string().contains("data root must be an object"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn generate_kcl_rejects_unknown_explicit_format() {
+        let serv = KclServiceImpl::default();
+        let err = serv
+            .generate_kcl(&GenerateKclArgs {
+                source: "a = 1".to_string(),
+                filename: "data.json".to_string(),
+                format: "xml".to_string(),
+            })
+            .unwrap_err();
+        assert!(
+            err.to_string().contains("unsupported data format"),
+            "unexpected error: {err}"
         );
     }
 }

@@ -1,0 +1,12 @@
+---
+source: crates/tools/src/testing/report.rs
+expression: "PrettyReporter::render(&result)"
+---
+test_not_log_message: PASS (1ms)
+test_foo: PASS (1ms)
+log message
+test_bar: FAIL (2ms)
+Error: assert failed
+--------------------------------------------------------------------------------
+PASS: 2/3
+FAIL: 1/3

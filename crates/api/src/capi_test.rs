@@ -455,6 +455,66 @@ fn test_c_api_parse_file() {
 }
 
 #[test]
+fn test_c_api_call_load_package_with_info_fields() {
+    // Round-trip LoadPackage through the C ABI dispatcher on the
+    // load_pkg_info fixture and check the decoded result carries the parsed
+    // kcl.mod manifest and the per-file import graph.
+    let _test_lock = TEST_MUTEX.lock().unwrap_or_else(|p| p.into_inner());
+    let serv = unsafe { kcl_service_new(0) };
+    let main_k = Path::new(TEST_DATA_PATH)
+        .join("load_pkg_info")
+        .join("main.k")
+        .canonicalize()
+        .unwrap()
+        .display()
+        .to_string();
+    let args = LoadPackageArgs {
+        parse_args: Some(ParseProgramArgs {
+            paths: vec![main_k],
+            ..Default::default()
+        }),
+        resolve_ast: true,
+        ..Default::default()
+    };
+    let args_vec = args.encode_to_vec();
+    let args_cstr = unsafe { CString::from_vec_unchecked(args_vec.clone()) };
+    let call = CString::new("KclService.LoadPackage").unwrap();
+    let mut result_len: usize = 0;
+    let src_ptr = unsafe {
+        kcl_service_call_with_length(
+            serv,
+            call.as_ptr(),
+            args_cstr.as_ptr(),
+            args_vec.len(),
+            &mut result_len,
+        )
+    };
+    let mut dest_data: Vec<u8> = Vec::with_capacity(result_len);
+    unsafe {
+        let dest_ptr: *mut u8 = dest_data.as_mut_ptr();
+        std::ptr::copy_nonoverlapping(src_ptr as *const u8, dest_ptr, result_len);
+        dest_data.set_len(result_len);
+    }
+    unsafe {
+        kcl_service_delete(serv);
+        kcl_service_free_string(src_ptr as *mut c_char);
+    }
+    let result = LoadPackageResult::decode(dest_data.as_slice()).unwrap();
+    let kcl_mod = result.kcl_mod.as_ref().expect("kcl_mod must be set");
+    assert_eq!(
+        kcl_mod.package.as_ref().unwrap().name,
+        "load_pkg_info".to_string()
+    );
+    assert!(!result.imports.is_empty());
+    assert!(
+        result
+            .imports
+            .values()
+            .any(|fi| fi.imports.iter().any(|i| i.path.contains("base")))
+    );
+}
+
+#[test]
 fn test_c_api_testing() {
     test_c_api::<TestArgs, TestResult, _>(
         "KclService.Test",
@@ -465,6 +525,307 @@ fn test_c_api_testing() {
                 i.duration = 0;
             }
         },
+    );
+}
+
+/// Round-trip `FormatTestReport` through the C ABI dispatcher: encode a
+/// fixed `TestResult`, dispatch by method name, decode the report and pin
+/// the exact rendered text (case lines, log/error lines, separator and
+/// summary counts).
+#[test]
+fn test_c_api_call_format_test_report() {
+    let _test_lock = TEST_MUTEX.lock().unwrap_or_else(|p| p.into_inner());
+    let serv = unsafe { kcl_service_new(0) };
+    let args = FormatTestReportArgs {
+        result: Some(TestResult {
+            info: vec![
+                TestCaseInfo {
+                    name: "test_ok".to_string(),
+                    duration: 1500,
+                    log_message: "log message".to_string(),
+                    ..Default::default()
+                },
+                TestCaseInfo {
+                    name: "test_bad".to_string(),
+                    error: "Error: assert failed".to_string(),
+                    duration: 2048,
+                    ..Default::default()
+                },
+            ],
+            ..Default::default()
+        }),
+    };
+    let args_vec = args.encode_to_vec();
+    let args_cstr = unsafe { CString::from_vec_unchecked(args_vec.clone()) };
+    let call = CString::new("KclService.FormatTestReport").unwrap();
+    let mut result_len: usize = 0;
+    let src_ptr = unsafe {
+        kcl_service_call_with_length(
+            serv,
+            call.as_ptr(),
+            args_cstr.as_ptr(),
+            args_vec.len(),
+            &mut result_len,
+        )
+    };
+    let mut dest_data: Vec<u8> = Vec::with_capacity(result_len);
+    unsafe {
+        let dest_ptr: *mut u8 = dest_data.as_mut_ptr();
+        std::ptr::copy_nonoverlapping(src_ptr as *const u8, dest_ptr, result_len);
+        dest_data.set_len(result_len);
+    }
+    unsafe {
+        kcl_service_delete(serv);
+        kcl_service_free_string(src_ptr as *mut c_char);
+    }
+    let result = FormatTestReportResult::decode(dest_data.as_slice()).unwrap();
+    let expected = "test_ok: PASS (1ms)\nlog message\ntest_bad: FAIL (2ms)\nError: assert failed\n--------------------------------------------------------------------------------\nPASS: 1/2\nFAIL: 1/2\n";
+    assert_eq!(result.report, expected);
+}
+
+/// Round-trip `GenerateToml` through the C ABI dispatcher: encode exec
+/// arguments for an inline KCL program, dispatch by method name and decode
+/// the TOML document.
+#[test]
+fn test_c_api_call_generate_toml() {
+    let _test_lock = TEST_MUTEX.lock().unwrap_or_else(|p| p.into_inner());
+    let serv = unsafe { kcl_service_new(0) };
+    let args = GenerateTomlArgs {
+        exec_args: Some(ExecProgramArgs {
+            k_filename_list: vec!["file.k".to_string()],
+            k_code_list: vec!["a = {b = 1, c = [1, 2]}".to_string()],
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+    let args_vec = args.encode_to_vec();
+    let args_cstr = unsafe { CString::from_vec_unchecked(args_vec.clone()) };
+    let call = CString::new("KclService.GenerateToml").unwrap();
+    let mut result_len: usize = 0;
+    let src_ptr = unsafe {
+        kcl_service_call_with_length(
+            serv,
+            call.as_ptr(),
+            args_cstr.as_ptr(),
+            args_vec.len(),
+            &mut result_len,
+        )
+    };
+    let mut dest_data: Vec<u8> = Vec::with_capacity(result_len);
+    unsafe {
+        let dest_ptr: *mut u8 = dest_data.as_mut_ptr();
+        std::ptr::copy_nonoverlapping(src_ptr as *const u8, dest_ptr, result_len);
+        dest_data.set_len(result_len);
+    }
+    unsafe {
+        kcl_service_delete(serv);
+        kcl_service_free_string(src_ptr as *mut c_char);
+    }
+    let result = GenerateTomlResult::decode(dest_data.as_slice()).unwrap();
+    assert_eq!(result.toml, "[a]\nb = 1\nc = [1, 2]\n");
+}
+
+/// Round-trip `GenerateKcl` through the C ABI dispatcher: encode inline JSON
+/// data content, dispatch by method name and decode the generated KCL source.
+#[test]
+fn test_c_api_call_generate_kcl() {
+    let _test_lock = TEST_MUTEX.lock().unwrap_or_else(|p| p.into_inner());
+    let serv = unsafe { kcl_service_new(0) };
+    let args = GenerateKclArgs {
+        source: "{\"a\": {\"b\": 1}}".to_string(),
+        filename: "data.json".to_string(),
+        format: "json".to_string(),
+    };
+    let args_vec = args.encode_to_vec();
+    let args_cstr = unsafe { CString::from_vec_unchecked(args_vec.clone()) };
+    let call = CString::new("KclService.GenerateKcl").unwrap();
+    let mut result_len: usize = 0;
+    let src_ptr = unsafe {
+        kcl_service_call_with_length(
+            serv,
+            call.as_ptr(),
+            args_cstr.as_ptr(),
+            args_vec.len(),
+            &mut result_len,
+        )
+    };
+    let mut dest_data: Vec<u8> = Vec::with_capacity(result_len);
+    unsafe {
+        let dest_ptr: *mut u8 = dest_data.as_mut_ptr();
+        std::ptr::copy_nonoverlapping(src_ptr as *const u8, dest_ptr, result_len);
+        dest_data.set_len(result_len);
+    }
+    unsafe {
+        kcl_service_delete(serv);
+        kcl_service_free_string(src_ptr as *mut c_char);
+    }
+    let result = GenerateKclResult::decode(dest_data.as_slice()).unwrap();
+    assert_eq!(result.kcl, "a = {\n    b = 1\n}\n");
+}
+
+/// Round-trip `GenerateOpenAPI` through the C ABI dispatcher: encode parse
+/// args for the schema fixture, dispatch by method name and decode the
+/// generated spec.
+#[test]
+fn test_c_api_call_generate_openapi() {
+    let _test_lock = TEST_MUTEX.lock().unwrap_or_else(|p| p.into_inner());
+    let serv = unsafe { kcl_service_new(0) };
+    let args = GenerateOpenApiArgs {
+        parse_args: Some(ParseProgramArgs {
+            paths: vec![
+                Path::new(TEST_DATA_PATH)
+                    .join("gen_openapi")
+                    .join("main.k")
+                    .canonicalize()
+                    .unwrap()
+                    .display()
+                    .to_string(),
+            ],
+            ..Default::default()
+        }),
+        version: "v3".to_string(),
+    };
+    let args_vec = args.encode_to_vec();
+    let args_cstr = unsafe { CString::from_vec_unchecked(args_vec.clone()) };
+    let call = CString::new("KclService.GenerateOpenAPI").unwrap();
+    let mut result_len: usize = 0;
+    let src_ptr = unsafe {
+        kcl_service_call_with_length(
+            serv,
+            call.as_ptr(),
+            args_cstr.as_ptr(),
+            args_vec.len(),
+            &mut result_len,
+        )
+    };
+    let mut dest_data: Vec<u8> = Vec::with_capacity(result_len);
+    unsafe {
+        let dest_ptr: *mut u8 = dest_data.as_mut_ptr();
+        std::ptr::copy_nonoverlapping(src_ptr as *const u8, dest_ptr, result_len);
+        dest_data.set_len(result_len);
+    }
+    unsafe {
+        kcl_service_delete(serv);
+        kcl_service_free_string(src_ptr as *mut c_char);
+    }
+    let result = GenerateOpenApiResult::decode(dest_data.as_slice()).unwrap();
+    assert!(result.spec.contains("\"openapi\": \"3.0.0\""));
+    assert!(result.spec.contains("\"Person\": {"));
+    assert!(result.spec.contains("#/components/schemas/Base"));
+    assert!(result.spec.contains("\"oneOf\": ["));
+}
+
+/// Round-trip `GenerateProto` through the C ABI dispatcher: encode parse
+/// args for the schema fixture, dispatch by method name and decode the
+/// generated proto definitions.
+#[test]
+fn test_c_api_call_generate_proto() {
+    let _test_lock = TEST_MUTEX.lock().unwrap_or_else(|p| p.into_inner());
+    let serv = unsafe { kcl_service_new(0) };
+    let args = GenerateProtoArgs {
+        parse_args: Some(ParseProgramArgs {
+            paths: vec![
+                Path::new(TEST_DATA_PATH)
+                    .join("gen_openapi")
+                    .join("main.k")
+                    .canonicalize()
+                    .unwrap()
+                    .display()
+                    .to_string(),
+            ],
+            ..Default::default()
+        }),
+        package: "example.v1".to_string(),
+    };
+    let args_vec = args.encode_to_vec();
+    let args_cstr = unsafe { CString::from_vec_unchecked(args_vec.clone()) };
+    let call = CString::new("KclService.GenerateProto").unwrap();
+    let mut result_len: usize = 0;
+    let src_ptr = unsafe {
+        kcl_service_call_with_length(
+            serv,
+            call.as_ptr(),
+            args_cstr.as_ptr(),
+            args_vec.len(),
+            &mut result_len,
+        )
+    };
+    let mut dest_data: Vec<u8> = Vec::with_capacity(result_len);
+    unsafe {
+        let dest_ptr: *mut u8 = dest_data.as_mut_ptr();
+        std::ptr::copy_nonoverlapping(src_ptr as *const u8, dest_ptr, result_len);
+        dest_data.set_len(result_len);
+    }
+    unsafe {
+        kcl_service_delete(serv);
+        kcl_service_free_string(src_ptr as *mut c_char);
+    }
+    let result = GenerateProtoResult::decode(dest_data.as_slice()).unwrap();
+    assert!(
+        result
+            .proto
+            .starts_with("syntax = \"proto3\";\n\npackage example.v1;\n")
+    );
+    assert!(result.proto.contains("message Person {"));
+    assert!(
+        result
+            .proto
+            .contains("import \"google/protobuf/struct.proto\";")
+    );
+}
+
+/// Round-trip `GenerateDoc` through the C ABI dispatcher: encode parse args
+/// for the schema fixture, dispatch by method name and decode the generated
+/// Markdown document.
+#[test]
+fn test_c_api_call_generate_doc() {
+    let _test_lock = TEST_MUTEX.lock().unwrap_or_else(|p| p.into_inner());
+    let serv = unsafe { kcl_service_new(0) };
+    let args = GenerateDocArgs {
+        parse_args: Some(ParseProgramArgs {
+            paths: vec![
+                Path::new(TEST_DATA_PATH)
+                    .join("gen_openapi")
+                    .join("main.k")
+                    .canonicalize()
+                    .unwrap()
+                    .display()
+                    .to_string(),
+            ],
+            ..Default::default()
+        }),
+        format: "md".to_string(),
+    };
+    let args_vec = args.encode_to_vec();
+    let args_cstr = unsafe { CString::from_vec_unchecked(args_vec.clone()) };
+    let call = CString::new("KclService.GenerateDoc").unwrap();
+    let mut result_len: usize = 0;
+    let src_ptr = unsafe {
+        kcl_service_call_with_length(
+            serv,
+            call.as_ptr(),
+            args_cstr.as_ptr(),
+            args_vec.len(),
+            &mut result_len,
+        )
+    };
+    let mut dest_data: Vec<u8> = Vec::with_capacity(result_len);
+    unsafe {
+        let dest_ptr: *mut u8 = dest_data.as_mut_ptr();
+        std::ptr::copy_nonoverlapping(src_ptr as *const u8, dest_ptr, result_len);
+        dest_data.set_len(result_len);
+    }
+    unsafe {
+        kcl_service_delete(serv);
+        kcl_service_free_string(src_ptr as *mut c_char);
+    }
+    let result = GenerateDocResult::decode(dest_data.as_slice()).unwrap();
+    assert!(result.content.starts_with("# Schemas\n"));
+    assert!(result.content.contains("### Person"));
+    assert!(
+        result
+            .content
+            .contains("| Name | Type | Required | Default | Description |")
     );
 }
 

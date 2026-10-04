@@ -209,10 +209,6 @@ fn collect_executable_lines(
             continue;
         }
         let key = canonicalize_for_coverage(file);
-        eprintln!(
-            "executable map key for {file}: {key:?} ({} lines)",
-            lines.len()
-        );
         out.entry(key).or_insert(lines);
     }
     out

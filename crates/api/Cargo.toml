@@ -10,6 +10,9 @@ maplit = "1.0.2"
 
 serde_json = "1.0"
 serde_yaml.workspace = true
+# `preserve_order` keeps `toml::map::Map` insertion-ordered so GenerateToml
+# can honor source key order (the default BTreeMap would always sort keys).
+toml = { version = "0.5.8", features = ["preserve_order"] }
 anyhow = "1.0.70"
 serde = { version = "1", features = ["derive"] }
 once_cell = "1.5.2"
