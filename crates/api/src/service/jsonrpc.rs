@@ -341,6 +341,94 @@ mod tests {
         assert_eq!(response["result"], expected);
     }
 
+    /// The generator RPCs must be dispatchable through the JSON-RPC handler,
+    /// end to end from JSON params to JSON result.
+    #[test]
+    fn kcl_service_generate_toml_dispatches() {
+        let mut io = IoHandler::default();
+        register_kcl_service(&mut io);
+        let request = r#"{"jsonrpc":"2.0","method":"KclService.GenerateToml","params":{"exec_args":{"k_filename_list":["file.k"],"k_code_list":["a = {b = 1, c = [1, 2]}"]}},"id":1}"#;
+        let response = io
+            .handle_request_sync(request)
+            .expect("KclService.GenerateToml should be registered");
+        let response: serde_json::Value = serde_json::from_str(&response).unwrap();
+        let expected = serde_json::json!({ "toml": "[a]\nb = 1\nc = [1, 2]\n" });
+        assert_eq!(response["result"], expected);
+    }
+
+    /// Absolute path of the shared schema fixture used by the schema
+    /// generator RPC tests.
+    fn gen_openapi_main_k() -> String {
+        std::path::Path::new(".")
+            .join("src")
+            .join("testdata")
+            .join("gen_openapi")
+            .join("main.k")
+            .canonicalize()
+            .unwrap()
+            .display()
+            .to_string()
+    }
+
+    /// The schema generator RPCs must be dispatchable through the JSON-RPC
+    /// handler, end to end from JSON params to JSON result.
+    #[test]
+    fn kcl_service_generate_openapi_dispatches() {
+        let mut io = IoHandler::default();
+        register_kcl_service(&mut io);
+        // Build the request with serde_json so the path is escaped correctly
+        // on Windows (a raw `format!` would emit `\a` and friends as invalid
+        // JSON escapes).
+        let request = serde_json::json!({
+            "jsonrpc": "2.0",
+            "method": "KclService.GenerateOpenAPI",
+            "params": {
+                "parse_args": {"paths": [gen_openapi_main_k()]},
+                "version": "v3"
+            },
+            "id": 1
+        })
+        .to_string();
+        let response = io
+            .handle_request_sync(&request)
+            .expect("KclService.GenerateOpenAPI should be registered");
+        let response: serde_json::Value = serde_json::from_str(&response).unwrap();
+        let spec = response["result"]["spec"].as_str().unwrap();
+        assert!(spec.contains("\"openapi\": \"3.0.0\""));
+        assert!(spec.contains("\"Person\": {"));
+        assert!(spec.contains("#/components/schemas/Base"));
+        assert!(spec.contains("\"oneOf\": ["));
+    }
+
+    /// The schema generator RPCs must be dispatchable through the JSON-RPC
+    /// handler, end to end from JSON params to JSON result.
+    #[test]
+    fn kcl_service_generate_proto_dispatches() {
+        let mut io = IoHandler::default();
+        register_kcl_service(&mut io);
+        // Build the request with serde_json so the path is escaped correctly
+        // on Windows (a raw `format!` would emit `\a` and friends as invalid
+        // JSON escapes).
+        let request = serde_json::json!({
+            "jsonrpc": "2.0",
+            "method": "KclService.GenerateProto",
+            "params": {
+                "parse_args": {"paths": [gen_openapi_main_k()]},
+                "package": "example.v1"
+            },
+            "id": 1
+        })
+        .to_string();
+        let response = io
+            .handle_request_sync(&request)
+            .expect("KclService.GenerateProto should be registered");
+        let response: serde_json::Value = serde_json::from_str(&response).unwrap();
+        let proto = response["result"]["proto"].as_str().unwrap();
+        assert!(proto.starts_with("syntax = \"proto3\";\n\npackage example.v1;\n"));
+        assert!(proto.contains("message Person {"));
+        assert!(proto.contains("import \"google/protobuf/struct.proto\";"));
+    }
+
     /// The schema generator RPCs must be dispatchable through the JSON-RPC
     /// handler, end to end from JSON params to JSON result.
     #[test]
