@@ -1082,13 +1082,16 @@ impl KclServiceImpl {
     ) -> anyhow::Result<GetSchemaTypeMappingUnderPathResult> {
         let exec_args = args.exec_args.clone().unwrap_or_default();
         // The extractor only speaks ParseProgramArgs; the exec-only knobs
-        // (work_dir, plugin agent, ...) do not affect schema collection.
+        // The plugin agent does not affect schema collection; work_dir DOES —
+        // callers may pass relative entry paths, so forward it (the
+        // pre-refactor implementation resolved them through exec_args).
+        let work_dir = exec_args.work_dir.clone();
         let parse_args = ParseProgramArgs {
             paths: exec_args.k_filename_list,
             sources: exec_args.k_code_list,
             external_pkgs: exec_args.external_pkgs,
         };
-        let mut type_mapping = gen_schema::load_pkg_schema_types(&parse_args)?;
+        let mut type_mapping = gen_schema::load_pkg_schema_types(&parse_args, &work_dir)?;
         if !args.schema_name.is_empty() {
             // Post-filter by schema name, mirroring the in-loader filter
             // (packages left without a matching schema drop out entirely).
@@ -1713,7 +1716,7 @@ impl KclServiceImpl {
             .parse_args
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("parse_args must be set to parse a KCL program"))?;
-        let mapping = gen_schema::load_pkg_schema_types(parse_args)?;
+        let mapping = gen_schema::load_pkg_schema_types(parse_args, "")?;
         Ok(GenerateOpenApiResult {
             spec: gen_openapi::generate_openapi(&mapping, &args.version)?,
         })
@@ -1751,7 +1754,7 @@ impl KclServiceImpl {
             .parse_args
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("parse_args must be set to parse a KCL program"))?;
-        let mapping = gen_schema::load_pkg_schema_types(parse_args)?;
+        let mapping = gen_schema::load_pkg_schema_types(parse_args, "")?;
         Ok(GenerateProtoResult {
             proto: gen_proto::generate_proto(&mapping, &args.package)?,
         })
@@ -1788,7 +1791,7 @@ impl KclServiceImpl {
             .parse_args
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("parse_args must be set to parse a KCL program"))?;
-        let mapping = gen_schema::load_pkg_schema_types(parse_args)?;
+        let mapping = gen_schema::load_pkg_schema_types(parse_args, "")?;
         Ok(GenerateDocResult {
             content: gen_doc::generate_doc(&mapping, &args.format)?,
         })

@@ -222,10 +222,13 @@ mod tests {
             .unwrap()
             .display()
             .to_string();
-        load_pkg_schema_types(&crate::gpyrpc::ParseProgramArgs {
-            paths: vec![path],
-            ..Default::default()
-        })
+        load_pkg_schema_types(
+            &crate::gpyrpc::ParseProgramArgs {
+                paths: vec![path],
+                ..Default::default()
+            },
+            "",
+        )
         .unwrap()
     }
 

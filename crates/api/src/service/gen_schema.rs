@@ -22,8 +22,13 @@ use kcl_sema::resolver::Options;
 ///
 /// This is the shared load-and-collect path previously inlined in
 /// `get_schema_type_mapping_under_path`; that RPC now delegates here.
+/// `work_dir` resolves relative entry paths; the generation RPCs pass ""
+/// (their `ParseProgramArgs` has no working-directory knob), while
+/// `GetSchemaTypeMappingUnderPath` forwards `exec_args.work_dir` to preserve
+/// its pre-refactor behavior.
 pub(crate) fn load_pkg_schema_types(
     parse_args: &ParseProgramArgs,
+    work_dir: &str,
 ) -> anyhow::Result<HashMap<String, gpyrpc::SchemaTypes>> {
     let mut package_maps = HashMap::new();
     for p in &parse_args.external_pkgs {
@@ -38,6 +43,7 @@ pub(crate) fn load_pkg_schema_types(
                 k_code_list: parse_args.sources.clone(),
                 package_maps,
                 load_plugins: true,
+                work_dir: work_dir.to_string(),
                 ..Default::default()
             }),
             resolve_opts: Options {
