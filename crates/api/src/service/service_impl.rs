@@ -2752,10 +2752,12 @@ mod format_test_report_tests {
 
 #[cfg(test)]
 mod generator_tests {
-    //! Tests for the `GenerateToml` and `GenerateKcl` services: exec
-    //! integration, error propagation and format resolution. The pure
-    //! emitter conversions (key ordering, null handling, KCL layout) are
-    //! covered by the `generator` module tests.
+    //! Tests for the code generation services: exec integration for
+    //! `GenerateToml`, format resolution for `GenerateKcl`, and
+    //! package-schema generation for `GenerateOpenAPI`, `GenerateProto` and
+    //! `GenerateDoc`. The pure emitter conversions (key ordering, null
+    //! handling, KCL layout, spec/doc rendering) are covered by the
+    //! `generator`, `gen_openapi`, `gen_proto` and `gen_doc` module tests.
     use super::*;
 
     fn toml_exec_args(code: &str) -> GenerateTomlArgs {
@@ -2765,6 +2767,25 @@ mod generator_tests {
                 k_code_list: vec![code.to_string()],
                 ..Default::default()
             }),
+            ..Default::default()
+        }
+    }
+
+    /// Parse args pointing at the shared schema fixture (`src/testdata/
+    /// gen_openapi/main.k`).
+    fn schema_parse_args() -> ParseProgramArgs {
+        ParseProgramArgs {
+            paths: vec![
+                std::path::Path::new(".")
+                    .join("src")
+                    .join("testdata")
+                    .join("gen_openapi")
+                    .join("main.k")
+                    .canonicalize()
+                    .unwrap()
+                    .display()
+                    .to_string(),
+            ],
             ..Default::default()
         }
     }
@@ -2876,6 +2897,136 @@ mod generator_tests {
             .unwrap_err();
         assert!(
             err.to_string().contains("unsupported data format"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn generate_openapi_v3_golden_output() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_openapi(&GenerateOpenApiArgs {
+                parse_args: Some(schema_parse_args()),
+                version: "v3".to_string(),
+            })
+            .unwrap();
+        assert!(result.spec.contains("\"openapi\": \"3.0.0\""));
+        assert!(result.spec.contains("\"Person\": {"));
+        assert!(result.spec.contains("#/components/schemas/Base"));
+        assert!(result.spec.contains("\"oneOf\": ["));
+    }
+
+    #[test]
+    fn generate_openapi_rejects_unknown_version() {
+        let serv = KclServiceImpl::default();
+        let err = serv
+            .generate_openapi(&GenerateOpenApiArgs {
+                parse_args: Some(schema_parse_args()),
+                version: "v4".to_string(),
+            })
+            .unwrap_err();
+        assert!(
+            err.to_string().contains("unsupported OpenAPI version"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn generate_openapi_requires_parse_args() {
+        let serv = KclServiceImpl::default();
+        let err = serv
+            .generate_openapi(&GenerateOpenApiArgs {
+                version: "v3".to_string(),
+                ..Default::default()
+            })
+            .unwrap_err();
+        assert!(
+            err.to_string().contains("parse_args must be set"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn generate_proto_golden_output() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_proto(&GenerateProtoArgs {
+                parse_args: Some(schema_parse_args()),
+                package: "example.v1".to_string(),
+            })
+            .unwrap();
+        assert!(
+            result
+                .proto
+                .starts_with("syntax = \"proto3\";\n\npackage example.v1;\n")
+        );
+        assert!(result.proto.contains("message Person {"));
+        assert!(
+            result
+                .proto
+                .contains("import \"google/protobuf/struct.proto\";")
+        );
+    }
+
+    #[test]
+    fn generate_proto_requires_parse_args() {
+        let serv = KclServiceImpl::default();
+        let err = serv
+            .generate_proto(&GenerateProtoArgs {
+                package: "example.v1".to_string(),
+                ..Default::default()
+            })
+            .unwrap_err();
+        assert!(
+            err.to_string().contains("parse_args must be set"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn generate_doc_markdown_golden_output() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_doc(&GenerateDocArgs {
+                parse_args: Some(schema_parse_args()),
+                format: "md".to_string(),
+            })
+            .unwrap();
+        assert!(result.content.starts_with("# Schemas\n"));
+        assert!(result.content.contains("### Person"));
+        assert!(
+            result
+                .content
+                .contains("| Name | Type | Required | Default | Description |")
+        );
+    }
+
+    #[test]
+    fn generate_doc_rejects_unsupported_html_format() {
+        let serv = KclServiceImpl::default();
+        let err = serv
+            .generate_doc(&GenerateDocArgs {
+                parse_args: Some(schema_parse_args()),
+                format: "html".to_string(),
+            })
+            .unwrap_err();
+        assert!(
+            err.to_string().contains("not supported yet"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn generate_doc_requires_parse_args() {
+        let serv = KclServiceImpl::default();
+        let err = serv
+            .generate_doc(&GenerateDocArgs {
+                format: "md".to_string(),
+                ..Default::default()
+            })
+            .unwrap_err();
+        assert!(
+            err.to_string().contains("parse_args must be set"),
             "unexpected error: {err}"
         );
     }
