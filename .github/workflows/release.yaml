@@ -101,8 +101,8 @@ jobs:
         run: |
           pip3 install ziglang
           cargo install --locked cargo-zigbuild
-          [ -n "${{ matrix.lib_subpath }}" ] && rustup target add ${{ matrix.lib_subpath }}
-          [ -n "${{ matrix.lsp_subpath }}" ] && rustup target add ${{ matrix.lsp_subpath }}
+          if [ -n "${{ matrix.lib_subpath }}" ]; then rustup target add ${{ matrix.lib_subpath }}; fi
+          if [ -n "${{ matrix.lsp_subpath }}" ]; then rustup target add ${{ matrix.lsp_subpath }}; fi
 
       - name: Set up MSVC dev command prompt (Windows)
         if: matrix.os == 'windows-latest'
