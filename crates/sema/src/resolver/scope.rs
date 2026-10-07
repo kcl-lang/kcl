@@ -109,6 +109,16 @@ pub struct Scope {
     pub end: Position,
     /// The scope kind.
     pub kind: ScopeKind,
+    /// For a [`ScopeKind::Config`] scope, whether its keys bind a name of the
+    /// enclosing scope. Only the config of a schema expression does: its keys
+    /// assign the schema's declared attributes, so rebinding one is
+    /// meaningful and a later entry of the same config types against the
+    /// rebound attribute (kcl-lang/kcl#1769). The keys of a plain config
+    /// expression are dict fields that bind no name, so they keep typing
+    /// against the enclosing schema attribute (kcl-lang/kcl#2212).
+    ///
+    /// Always `false` for the other scope kinds.
+    pub shadows: bool,
 }
 
 impl Scope {
@@ -414,12 +424,40 @@ pub fn builtin_scope() -> Scope {
         start: Position::dummy_pos(),
         end: Position::dummy_pos(),
         kind: ScopeKind::Builtin,
+        shadows: false,
     }
 }
 
 impl<'ctx> Resolver<'ctx> {
     /// Enter scope such as schema statement, for loop expressions.
     pub fn enter_scope(&mut self, start: Position, end: Position, kind: ScopeKind) {
+        self.enter_scope_with_shadowing(start, end, kind, false);
+    }
+
+    /// Enter a config expression scope.
+    ///
+    /// `shadows` tells whether the keys of this config bind a name of the
+    /// enclosing scope. See [`Scope::shadows`].
+    pub fn enter_config_scope(&mut self, start: Position, end: Position, shadows: bool) {
+        self.enter_scope_with_shadowing(start, end, ScopeKind::Config, shadows);
+    }
+
+    /// Whether `name` is bound by an entry of the schema config currently
+    /// being walked, i.e. an entry that rebinds an attribute of the enclosing
+    /// schema. Mirrors the runtime rule in `kcl-evaluator` so a later entry
+    /// of the same config type-checks against the rebound value.
+    pub fn is_rebound_config_entry(&self, name: &str) -> bool {
+        let scope = self.scope.borrow();
+        scope.shadows && scope.elems.contains_key(name)
+    }
+
+    fn enter_scope_with_shadowing(
+        &mut self,
+        start: Position,
+        end: Position,
+        kind: ScopeKind,
+        shadows: bool,
+    ) {
         let scope = Scope {
             parent: Some(Rc::downgrade(&self.scope)),
             children: vec![],
@@ -427,6 +465,7 @@ impl<'ctx> Resolver<'ctx> {
             start,
             end,
             kind,
+            shadows,
         };
         let scope = Rc::new(RefCell::new(scope));
         {

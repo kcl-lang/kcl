@@ -182,6 +182,21 @@ impl ScopeData {
         self.root_map.get(&name).copied()
     }
 
+    /// Whether the keys of `scope` bind a name of the enclosing scope. See
+    /// [`LocalSymbolScope::shadows`].
+    pub fn scope_shadows(&self, scope: &ScopeRef) -> bool {
+        self.try_get_local_scope(scope)
+            .is_some_and(|local| local.shadows)
+    }
+
+    /// Set whether the keys of a [`LocalSymbolScopeKind::Config`] scope bind a
+    /// name of the enclosing scope. See [`LocalSymbolScope::shadows`].
+    pub fn set_scope_shadows(&mut self, scope: ScopeRef, shadows: bool) {
+        if let Some(local) = self.locals.get_mut(scope.get_id()) {
+            local.shadows = shadows;
+        }
+    }
+
     pub fn add_def_to_scope(&mut self, scope: ScopeRef, name: String, symbol: SymbolRef) {
         match scope.get_kind() {
             ScopeKind::Local => {
@@ -443,6 +458,16 @@ pub struct LocalSymbolScope {
     pub(crate) start: Position,
     pub(crate) end: Position,
     pub(crate) kind: LocalSymbolScopeKind,
+    /// For a [`LocalSymbolScopeKind::Config`] scope, whether its keys bind a
+    /// name of the enclosing scope. Only the config of a schema expression
+    /// does: its keys assign the schema's declared attributes, so rebinding
+    /// one is meaningful and later entries resolve to the rebound attribute
+    /// (kcl-lang/kcl#1769). The keys of a plain config expression are dict
+    /// fields that bind no name, so they must keep resolving to the enclosing
+    /// schema attribute instead of the key (kcl-lang/kcl#2212).
+    ///
+    /// Always `false` for the other scope kinds.
+    pub(crate) shadows: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -715,6 +740,7 @@ impl LocalSymbolScope {
             start,
             end,
             kind,
+            shadows: false,
         }
     }
 

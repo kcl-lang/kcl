@@ -5,7 +5,7 @@ use kcl_ast::ast;
 use kcl_runtime::{BacktraceFrame, MAIN_PKG_PATH};
 
 use crate::{
-    EvalContext, Evaluator, LambdaOrSchemaEvalContext, error as kcl_error,
+    ConfigEntryScope, EvalContext, Evaluator, LambdaOrSchemaEvalContext, error as kcl_error,
     func::{FunctionCaller, FunctionEvalContextRef},
     lazy::{BacktrackMeta, Setter, SetterKind},
     proxy::{Frame, Proxy},
@@ -172,9 +172,15 @@ impl<'ctx> Evaluator<'ctx> {
     }
 
     /// Enter a config expression scope for config entry variable marks.
+    ///
+    /// `shadows` tells whether the entries of this config are allowed to bind
+    /// a name of the enclosing scope. See [`ConfigEntryScope::shadows`].
     #[inline]
-    pub(crate) fn enter_config_entry_scope(&self) {
-        self.config_entry_vars.borrow_mut().push(vec![]);
+    pub(crate) fn enter_config_entry_scope(&self, shadows: bool) {
+        self.config_entry_vars.borrow_mut().push(ConfigEntryScope {
+            shadows,
+            vars: Vec::new(),
+        });
     }
 
     /// Mark a config entry name as a local variable, so that the following
@@ -189,9 +195,12 @@ impl<'ctx> Evaluator<'ctx> {
             return;
         }
         match self.config_entry_vars.borrow_mut().last_mut() {
-            Some(frame) => frame.push(name.to_string()),
+            // The keys of this config bind no name, so an entry that happens
+            // to share a name with a schema attribute must keep resolving to
+            // that attribute.
+            Some(frame) if frame.shadows => frame.vars.push(name.to_string()),
             // No enclosing config scope to undo the mark, so do not add one.
-            None => return,
+            _ => return,
         }
         self.add_local_var(name);
     }
@@ -199,9 +208,8 @@ impl<'ctx> Evaluator<'ctx> {
     /// Leave a config expression scope and undo the marks it added.
     #[inline]
     pub(crate) fn leave_config_entry_scope(&self) {
-        let frame = self.config_entry_vars.borrow_mut().pop();
-        if let Some(frame) = frame {
-            for name in frame {
+        if let Some(frame) = self.config_entry_vars.borrow_mut().pop() {
+            for name in frame.vars {
                 self.remove_local_var(&name);
             }
         }
@@ -216,8 +224,11 @@ impl<'ctx> Evaluator<'ctx> {
     #[inline]
     pub(crate) fn restore_config_entry_vars(&self) {
         if let Some(frame) = self.config_entry_vars.borrow().last() {
+            if !frame.shadows {
+                return;
+            }
             let mut local_vars = self.local_vars.borrow_mut();
-            for name in frame {
+            for name in &frame.vars {
                 local_vars.insert(name.clone());
             }
         }

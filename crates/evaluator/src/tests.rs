@@ -1323,6 +1323,105 @@ outer = Outer { p: 100 }
     );
 }
 
+/// Regression test for kcl-lang/kcl#2212: a key of a plain config expression is
+/// a dict field, so it binds no name and must not shadow a schema attribute of
+/// the same name. The regression made name resolution depend on the textual
+/// order of the entries, silently dropping `authorization.superUsers`.
+#[test]
+fn test_dict_config_entry_does_not_shadow_schema_attr() {
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"
+schema Cfg:
+    super_users: [str] = ["alice", "bob"]
+
+schema Outer:
+    config: Cfg
+    before: {str:any} = {
+        authorization = {superUsers = config.super_users}
+        config = {"num.threads" = "8"}
+    }
+    after: {str:any} = {
+        config = {"num.threads" = "8"}
+        authorization = {superUsers = config.super_users}
+    }
+
+outer = Outer { config = Cfg {} }
+"#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator.run().unwrap();
+    // Both orders must resolve `config` to the schema attribute. Before the
+    // fix `after` resolved to the `config` dict entry, so `config.super_users`
+    // was undefined and `authorization` came out empty.
+    assert_eq!(
+        output.matches(r#""superUsers""#).count(),
+        2,
+        "expected both `before` and `after` to carry superUsers, got: {}",
+        output
+    );
+    assert_eq!(
+        output.matches(r#""superUsers": ["alice", "bob"]"#).count(),
+        2,
+        "expected both `before` and `after` to resolve the schema attribute, got: {}",
+        output
+    );
+}
+
+/// The type checker must agree with the runtime about a schema config entry
+/// that rebinds an attribute: a later entry of the same config type-checks
+/// against the rebound value, not against the attribute of the enclosing
+/// schema. The golden in `tests/grammar/schema/config_entry_scope` covers the
+/// same case end to end.
+#[test]
+fn test_schema_config_entry_rebinding_type_check() {
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![
+                r#"
+schema Inner:
+    x: str
+    y: str
+
+schema Outer:
+    x: [int]
+    item: any = Inner {
+        x: "hello"
+        y: x
+    }
+
+outer = Outer { x: [1, 2] }
+"#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let (output, _) = evaluator.run().unwrap();
+    // `y: x` sees the rebound `x`, so it is "hello" and not the enclosing
+    // `Outer.x` list. Compiling would fail outright if the type checker still
+    // resolved `x` to `Outer.x`.
+    assert!(
+        output.contains(r#""x": "hello""#) && output.contains(r#""y": "hello""#),
+        "expected the rebound x to flow into y, got: {}",
+        output
+    );
+}
+
 const MULTI_THREAD_SOURCE: &str = r#"
 import regex
 foo = option("foo")

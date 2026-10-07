@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use super::{
     Resolver,
-    scope::{ScopeKind, ScopeObject, ScopeObjectKind},
+    scope::{ScopeObject, ScopeObjectKind},
 };
 use crate::ty::{Attr, SchemaType};
 use crate::ty::{DictType, TypeInferMethods, TypeRef, sup};
@@ -670,9 +670,23 @@ impl<'ctx> Resolver<'_> {
         }
     }
 
+    /// Walk the config expression of a schema expression.
+    ///
+    /// The keys of a schema config assign the schema's declared attributes,
+    /// so they rebind those names for the entries that follow them
+    /// (kcl-lang/kcl#1769). See [`crate::resolver::scope::Scope::shadows`].
+    pub(crate) fn walk_schema_config_expr(
+        &mut self,
+        config: &'ctx ast::NodeRef<ast::Expr>,
+    ) -> TypeRef {
+        self.ctx.next_config_is_schema_config = true;
+        self.expr(config)
+    }
+
     pub(crate) fn walk_config_entries(
         &mut self,
         entries: &'ctx [ast::NodeRef<ast::ConfigEntry>],
+        shadows: bool,
     ) -> TypeRef {
         let (start, end) = match entries.len() {
             0 => (self.ctx.start_pos.clone(), self.ctx.end_pos.clone()),
@@ -682,7 +696,7 @@ impl<'ctx> Resolver<'_> {
                 entries.last().unwrap().get_end_pos(),
             ),
         };
-        self.enter_scope(start, end, ScopeKind::Config);
+        self.enter_config_scope(start, end, shadows);
         let mut key_types: Vec<TypeRef> = vec![];
         let mut val_types: Vec<TypeRef> = vec![];
         let mut attrs: IndexMap<String, Attr> = Default::default();

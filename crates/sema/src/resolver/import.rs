@@ -325,6 +325,7 @@ impl<'ctx> Resolver<'ctx> {
                 start: Position::dummy_pos(),
                 end: Position::dummy_pos(),
                 kind: ScopeKind::Package(Default::default()),
+                shadows: false,
             }));
             self.scope_map
                 .insert(pkgpath.to_string(), Rc::clone(&scope));
