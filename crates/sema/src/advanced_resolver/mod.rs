@@ -85,6 +85,11 @@ pub struct Context<'ctx> {
     maybe_def: bool,
     // whether in schema config right value, affect lookup def
     in_config_r_value: bool,
+    // Set just before walking the config of a schema expression, consumed by
+    // the next config expression walked. Its keys assign the schema's declared
+    // attributes, so they rebind those names for the entries that follow
+    // them (kcl-lang/kcl#1769). See `LocalSymbolScope::shadows`.
+    next_config_is_schema_config: bool,
 
     is_type_expr: bool,
 }
@@ -137,6 +142,7 @@ impl<'ctx> AdvancedResolver<'ctx> {
                 cur_node: AstIndex::default(),
                 maybe_def: false,
                 in_config_r_value: false,
+                next_config_is_schema_config: false,
                 is_type_expr: false,
             },
         };
@@ -267,6 +273,25 @@ impl<'ctx> AdvancedResolver<'ctx> {
             }
         }
         self.ctx.scopes.push(scope_ref);
+        Ok(())
+    }
+
+    /// Enter the scope of a config expression.
+    ///
+    /// `shadows` tells whether the keys of this config bind a name of the
+    /// enclosing scope. See [`LocalSymbolScope::shadows`].
+    fn enter_config_scope(
+        &mut self,
+        filepath: &str,
+        start: Position,
+        end: Position,
+        shadows: bool,
+    ) -> anyhow::Result<()> {
+        self.enter_local_scope(filepath, start, end, LocalSymbolScopeKind::Config)?;
+        let scope_ref = self.ctx.get_current_scope()?;
+        self.gs
+            .get_scopes_mut()
+            .set_scope_shadows(scope_ref, shadows);
         Ok(())
     }
 

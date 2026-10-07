@@ -99,10 +99,9 @@ pub struct Evaluator<'ctx> {
     pub lazy_reassign: RefCell<bool>,
     /// Loop (comprehension/quantifier) target variables, a subset of local_vars.
     pub loop_vars: RefCell<HashSet<String>>,
-    /// Names newly marked as local variables by config entries, one frame per
-    /// config expression scope. Used to undo the marks when the config
-    /// expression is left, so the shadowing does not outlive its scope.
-    pub config_entry_vars: RefCell<Vec<Vec<String>>>,
+    /// One frame per config expression scope, used to undo the local variable
+    /// marks its entries made so the shadowing does not outlive its scope.
+    pub config_entry_vars: RefCell<Vec<ConfigEntryScope>>,
     /// Schema attr backtrack meta.
     pub backtrack_meta: RefCell<Vec<BacktrackMeta>>,
     /// Current AST id for the evaluator walker.
@@ -124,6 +123,20 @@ pub struct Evaluator<'ctx> {
     /// legacy behaviour, preserved for embedders that build an
     /// `Evaluator` directly.
     pub(crate) referenced_pkgs: RefCell<Option<HashSet<String>>>,
+}
+
+/// A config expression scope.
+pub struct ConfigEntryScope {
+    /// Whether the entries of this config may shadow a name of the enclosing
+    /// scope. Only the config of a schema expression may: its keys assign the
+    /// schema's declared attributes, so rebinding one is meaningful
+    /// (kcl-lang/kcl#1769). The keys of a plain config expression are plain
+    /// dict fields that bind no name, so shadowing there is never intended
+    /// and silently changed the meaning of sibling entries
+    /// (kcl-lang/kcl#2212).
+    pub shadows: bool,
+    /// The names this config marked as local variables.
+    pub vars: Vec<String>,
 }
 
 #[derive(Clone)]

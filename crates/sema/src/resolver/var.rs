@@ -36,6 +36,15 @@ impl<'ctx> Resolver<'_> {
                     if self.ctx.local_vars.contains(name) {
                         return vec![scope_ty.map_or(self.any_ty(), |ty| ty)];
                     }
+                    // A schema config entry rebinds the attribute it assigns,
+                    // so a later entry of the same config sees the rebound
+                    // value, not the attribute of the enclosing schema. Keys
+                    // of a plain config expression bind nothing and fall
+                    // through to the schema attribute below. See
+                    // `Scope::shadows`.
+                    if self.is_rebound_config_entry(name) {
+                        return vec![scope_ty.map_or(self.any_ty(), |ty| ty)];
+                    }
                     // If it is a schema attribute, return the attribute type.
                     if let Some(ty) = &ty
                         && !ty.is_any()

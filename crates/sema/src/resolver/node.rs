@@ -855,7 +855,10 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
         config_if_entry_expr: &'ctx ast::ConfigIfEntryExpr,
     ) -> Self::Result {
         self.expr(&config_if_entry_expr.if_cond);
-        let dict_ty = self.walk_config_entries(&config_if_entry_expr.items);
+        // The `if` branches are entries of the config expression they appear
+        // in, so they bind names exactly like its other entries do.
+        let shadows = self.scope.borrow().shadows;
+        let dict_ty = self.walk_config_entries(&config_if_entry_expr.items, shadows);
         if let Some(orelse) = &config_if_entry_expr.orelse {
             let or_else_ty = self.expr(orelse);
             sup(&[dict_ty, or_else_ty])
@@ -942,7 +945,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
                     Position::dummy_pos(),
                 );
                 let init_stack_depth = self.switch_config_expr_context(Some(obj));
-                let config_ty = self.expr(&schema_expr.config);
+                let config_ty = self.walk_schema_config_expr(&schema_expr.config);
                 self.clear_config_expr_context(init_stack_depth as usize, false);
                 self.binary(def_ty.clone(), config_ty, &ast::BinOp::BitOr, range)
             }
@@ -987,7 +990,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
                     Position::dummy_pos(),
                 );
                 let init_stack_depth = self.switch_config_expr_context(Some(obj));
-                self.expr(&schema_expr.config);
+                self.walk_schema_config_expr(&schema_expr.config);
                 self.node_ty_map.borrow_mut().insert(
                     self.get_node_key(schema_expr.config.id.clone()),
                     def_ty.clone(),
@@ -1039,7 +1042,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'_> {
     }
 
     fn walk_config_expr(&mut self, config_expr: &'ctx ast::ConfigExpr) -> Self::Result {
-        self.walk_config_entries(&config_expr.items)
+        let shadows = std::mem::take(&mut self.ctx.next_config_is_schema_config);
+        self.walk_config_entries(&config_expr.items, shadows)
     }
 
     fn walk_check_expr(&mut self, check_expr: &'ctx ast::CheckExpr) -> Self::Result {

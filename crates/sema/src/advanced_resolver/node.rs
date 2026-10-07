@@ -865,8 +865,15 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'_> {
         &mut self,
         config_if_entry_expr: &'ctx ast::ConfigIfEntryExpr,
     ) -> Self::Result {
+        // The `if` branches are entries of the config expression they appear
+        // in, so they bind names exactly like its other entries do.
+        let shadows = self
+            .ctx
+            .get_current_scope()
+            .map(|scope| self.gs.get_scopes().scope_shadows(&scope))
+            .unwrap_or(false);
         self.expr(&config_if_entry_expr.if_cond)?;
-        self.walk_config_entries(&config_if_entry_expr.items)?;
+        self.walk_config_entries(&config_if_entry_expr.items, shadows)?;
         if let Some(expr) = config_if_entry_expr.orelse.as_ref() {
             self.expr(expr)?;
         }
@@ -902,6 +909,9 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'_> {
         };
         match schema_ty.kind {
             TypeKind::Schema(_) => {
+                // The config of a schema expression assigns the schema's
+                // declared attributes, so its keys may rebind them.
+                self.ctx.next_config_is_schema_config = true;
                 self.expr(&schema_expr.config)?;
                 self.do_arguments_symbol_resolve(&schema_expr.args, &schema_expr.kwargs)?;
             }
@@ -913,7 +923,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for AdvancedResolver<'_> {
     }
 
     fn walk_config_expr(&mut self, config_expr: &'ctx ast::ConfigExpr) -> Self::Result {
-        self.walk_config_entries(&config_expr.items)?;
+        let shadows = std::mem::take(&mut self.ctx.next_config_is_schema_config);
+        self.walk_config_entries(&config_expr.items, shadows)?;
         Ok(None)
     }
 
@@ -1220,11 +1231,20 @@ impl<'ctx> AdvancedResolver<'_> {
                         && let crate::core::symbol::SymbolKind::Attribute = symbol_ref.get_kind()
                         && maybe_def
                     {
-                        self.gs.get_scopes_mut().add_def_to_scope(
-                            cur_scope,
-                            name,
-                            first_unresolved_ref,
-                        );
+                        // Only the config of a schema expression binds the
+                        // attribute names it assigns, so only its keys rebind
+                        // the name for the entries that follow them. A plain
+                        // config key still resolves to the attribute (and the
+                        // unresolved symbol is returned for IDE features), but
+                        // it must not add a scope def that shadows the
+                        // enclosing name (kcl-lang/kcl#2212).
+                        if local_scope.shadows {
+                            self.gs.get_scopes_mut().add_def_to_scope(
+                                cur_scope,
+                                name,
+                                first_unresolved_ref,
+                            );
+                        }
                         ret_symbol = first_unresolved_ref;
                     }
                 }
@@ -1742,6 +1762,19 @@ impl<'ctx> AdvancedResolver<'_> {
                 let cur_scope = self.ctx.get_current_scope()?;
                 match cur_scope.kind {
                     crate::core::scope::ScopeKind::Local => {
+                        // A config key only rebinds the name when the config
+                        // is a schema config; a plain dict config key binds
+                        // nothing and must not shadow (kcl-lang/kcl#2212).
+                        if self
+                            .gs
+                            .get_scopes()
+                            .try_get_local_scope(&cur_scope)
+                            .is_some_and(|scope| {
+                                scope.get_kind() == &LocalSymbolScopeKind::Config && !scope.shadows
+                            })
+                        {
+                            return Ok(Some(identifier_symbol));
+                        }
                         self.gs.get_scopes_mut().add_def_to_scope(
                             cur_scope,
                             identifier
@@ -1976,13 +2009,13 @@ impl<'ctx> AdvancedResolver<'_> {
     pub(crate) fn walk_config_entries(
         &mut self,
         entries: &'ctx [ast::NodeRef<ast::ConfigEntry>],
+        shadows: bool,
     ) -> anyhow::Result<()> {
         let (start, end) = (self.ctx.start_pos.clone(), self.ctx.end_pos.clone());
 
         let schema_symbol = *self.ctx.schema_symbol_stack.last().unwrap_or(&None);
-        let kind = LocalSymbolScopeKind::Config;
 
-        self.enter_local_scope(&self.ctx.get_current_filename()?, start, end, kind)?;
+        self.enter_config_scope(&self.ctx.get_current_filename()?, start, end, shadows)?;
 
         if let Some(owner) = schema_symbol {
             let cur_scope = self.ctx.get_current_scope()?;

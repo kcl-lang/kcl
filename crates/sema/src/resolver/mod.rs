@@ -180,6 +180,11 @@ pub struct Context {
     pub in_lambda_expr: Vec<bool>,
     /// Current schema expr type stack
     pub config_expr_context: Vec<Option<ScopeObject>>,
+    /// Set just before walking the config of a schema expression, consumed by
+    /// the next config expression walked. Its keys assign the schema's
+    /// declared attributes, so they rebind those names for the entries that
+    /// follow them (kcl-lang/kcl#1769). See `Scope::shadows`.
+    pub next_config_is_schema_config: bool,
     /// Type context.
     pub ty_ctx: TypeContext,
     /// Type alias mapping

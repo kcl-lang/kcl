@@ -12,3 +12,29 @@ top:
       a: 50
       b: 50
     c: 11
+rebind_outer:
+  x:
+  - 1
+  - 2
+  item:
+    x: hello
+    'y': hello
+dict_outer:
+  config:
+    super_users:
+    - alice
+    - bob
+  before:
+    authorization:
+      superUsers:
+      - alice
+      - bob
+    config:
+      num.threads: '8'
+  after:
+    config:
+      num.threads: '8'
+    authorization:
+      superUsers:
+      - alice
+      - bob

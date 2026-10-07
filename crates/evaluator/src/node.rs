@@ -961,16 +961,16 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         defer! {
             self.pop_schema_expr();
         }
-        let config_value = self.walk_expr(&schema_expr.config)?;
+        let config_expr = match &schema_expr.config.node {
+            ast::Expr::Config(config_expr) => config_expr,
+            _ => panic!("invalid schema config expr"),
+        };
+        let config_value = self.walk_config_entries_expr(config_expr, true)?;
         let schema_type = self.walk_identifier_with_ctx(
             &schema_expr.name.node,
             &schema_expr.name.node.ctx,
             None,
         )?;
-        let config_expr = match &schema_expr.config.node {
-            ast::Expr::Config(config_expr) => config_expr,
-            _ => panic!("invalid schema config expr"),
-        };
         let config_meta = self.construct_schema_config_meta(Some(&schema_expr.name), config_expr);
         let mut list_value = self.list_value();
         for arg in &schema_expr.args {
@@ -1040,14 +1040,7 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
 
     #[inline]
     fn walk_config_expr(&self, config_expr: &'ctx ast::ConfigExpr) -> Self::Result {
-        self.enter_scope();
-        self.enter_config_entry_scope();
-        defer! {
-            self.leave_config_entry_scope();
-            self.leave_scope();
-        }
-
-        self.walk_config_entries(&config_expr.items)
+        self.walk_config_entries_expr(config_expr, false)
     }
 
     fn walk_check_expr(&self, check_expr: &'ctx ast::CheckExpr) -> Self::Result {
@@ -1834,6 +1827,30 @@ impl<'ctx> Evaluator<'ctx> {
         for v in targets {
             self.remove_loop_var(&v.node.names[0].node)
         }
+    }
+
+    /// Walk a config expression, either the config of a schema expression
+    /// (`shadows`) or a plain config expression such as a dict literal.
+    ///
+    /// A schema config assigns the schema's declared attributes, so one entry
+    /// may shadow a name of the enclosing scope for the entries that follow
+    /// it (kcl-lang/kcl#1769). The keys of a plain config expression are dict
+    /// fields, so they bind no name and must never shadow: doing so silently
+    /// changed the meaning of every sibling entry written after them
+    /// (kcl-lang/kcl#2212).
+    pub(crate) fn walk_config_entries_expr(
+        &self,
+        config_expr: &'ctx ast::ConfigExpr,
+        shadows: bool,
+    ) -> EvalResult {
+        self.enter_scope();
+        self.enter_config_entry_scope(shadows);
+        defer! {
+            self.leave_config_entry_scope();
+            self.leave_scope();
+        }
+
+        self.walk_config_entries(&config_expr.items)
     }
 
     pub(crate) fn walk_config_entries(&self, items: &'ctx [NodeRef<ConfigEntry>]) -> EvalResult {
