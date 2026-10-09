@@ -3,7 +3,7 @@
 use anyhow::Result;
 use clap::ArgMatches;
 use kcl_error::format::DiagnosticFormat;
-use kcl_error::{Diagnostic, Handler, Level, Message, StringError};
+use kcl_error::{Diagnostic, Handler, Level, Message, RenderedError, StringError};
 use kcl_parser::ParseSession;
 use kcl_runner::exec_program;
 use std::io::Write;
@@ -31,9 +31,10 @@ pub fn resolve_error_format(matches: &ArgMatches) -> Result<DiagnosticFormat> {
 
 /// Build a fallback KCL [`Diagnostic`] from a plain error message string.
 ///
-/// The runner reports compile/eval failures as plain text via
-/// `ExecProgramResult.err_message`. For machine-readable formats we still
-/// want to surface *something*, even without structured position info.
+/// Used only when the run produced no structured diagnostics (e.g. an
+/// argument error reported before compilation starts). The text has already
+/// been rendered for a terminal, so its ANSI escapes are stripped before it
+/// is embedded in a machine-readable record.
 fn diag_from_err_message(message: &str) -> Diagnostic {
     Diagnostic {
         level: Level::Error,
@@ -43,7 +44,7 @@ fn diag_from_err_message(message: &str) -> Diagnostic {
                 kcl_error::Position::dummy_pos(),
             ),
             style: kcl_error::Style::LineAndColumn,
-            message: message.to_string(),
+            message: kcl_error::format::strip_ansi(message).into_owned(),
             note: None,
             suggested_replacement: None,
         }],
@@ -51,12 +52,34 @@ fn diag_from_err_message(message: &str) -> Diagnostic {
     }
 }
 
+/// A [`Handler`] pre-loaded with the diagnostics the run produced.
+fn handler_with_diagnostics(diagnostics: Vec<Diagnostic>) -> Handler {
+    let mut handler = Handler::new();
+    for diag in diagnostics {
+        handler.add_diagnostic(diag);
+    }
+    handler
+}
+
+/// The structured diagnostics behind a failed run.
+///
+/// Compile failures arrive as a [`RenderedError`] carrying them; evaluation
+/// failures carry them on the result. Either way they hold the real
+/// file/line/column that the machine-readable formats report (issue #2216).
+fn diagnostics_from_error(err: &anyhow::Error) -> Vec<Diagnostic> {
+    err.downcast_ref::<RenderedError>()
+        .map(|rendered| rendered.diagnostics.clone())
+        .unwrap_or_default()
+}
+
 fn emit_machine_readable(
     handler: &mut Handler,
     message: &str,
     format: DiagnosticFormat,
 ) -> Result<()> {
-    handler.add_diagnostic(diag_from_err_message(message));
+    if handler.diagnostics.is_empty() {
+        handler.add_diagnostic(diag_from_err_message(message));
+    }
     let _ = handler.emit_as(format)?;
     Ok(())
 }
@@ -84,7 +107,7 @@ pub fn run_command<W: Write>(matches: &ArgMatches, writer: &mut W) -> Result<()>
                     }
                     sess.0.emit_stashed_diagnostics_and_abort()?;
                 } else {
-                    let mut handler = Handler::new();
+                    let mut handler = handler_with_diagnostics(result.diagnostics);
                     emit_machine_readable(&mut handler, &result.err_message, error_format)?;
                     std::process::exit(1);
                 }
@@ -121,7 +144,7 @@ pub fn run_command<W: Write>(matches: &ArgMatches, writer: &mut W) -> Result<()>
                 }
                 sess.0.emit_stashed_diagnostics_and_abort()?;
             } else {
-                let mut handler = Handler::new();
+                let mut handler = handler_with_diagnostics(diagnostics_from_error(&msg));
                 emit_machine_readable(&mut handler, &msg.to_string(), error_format)?;
                 std::process::exit(1);
             }

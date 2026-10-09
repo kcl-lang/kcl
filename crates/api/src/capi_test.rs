@@ -11,7 +11,11 @@ use std::os::raw::c_char;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 const TEST_DATA_PATH: &str = "./src/testdata";
-static TEST_MUTEX: Lazy<Mutex<i32>> = Lazy::new(|| Mutex::new(0i32));
+/// Serialises the C API tests. It also has to be held by any *other* test
+/// that evaluates a KCL program against [`TEST_DATA_PATH`]: the evaluator
+/// caches into a `.kcl` directory inside the work dir, so two concurrent
+/// runs over the same fixtures fight over the same files.
+pub(crate) static TEST_MUTEX: Lazy<Mutex<i32>> = Lazy::new(|| Mutex::new(0i32));
 
 #[test]
 fn test_c_api_call_exec_program() {

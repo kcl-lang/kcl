@@ -8,6 +8,7 @@ use kcl_ast::{
     MAIN_PKG,
     ast::{Module, Program, Stmt},
 };
+use kcl_error::{Diagnostic, Level, RenderedError};
 use kcl_parser::{KCLModuleCache, ParseSessionRef, load_program};
 use kcl_query::apply_overrides;
 use kcl_runtime::PKG_PATH_PREFIX;
@@ -309,6 +310,45 @@ fn emit_compile_diag_to_string(
     if res_str.is_empty() {
         Ok(())
     } else {
-        bail!(res_str)
+        // Keep the structured diagnostics alongside the rendered text so
+        // callers re-rendering this error in a machine-readable format
+        // (arcanist / SARIF) can report real file/line/column information
+        // instead of re-wrapping the text in a position-less diagnostic.
+        bail!(RenderedError::new(
+            res_str,
+            collect_compile_diagnostics(&sess, scope, include_warnings)
+        ))
     }
+}
+
+/// The parse and resolve diagnostics that [`emit_compile_diag_to_string`]
+/// rendered `res_str` from.
+///
+/// The parse session's handler and the resolve scope contribute on
+/// different terms, exactly as they do to the rendered text: the parse
+/// diagnostics are always rendered, while the resolve ones are filtered by
+/// `include_warnings`.
+fn collect_compile_diagnostics(
+    sess: &ParseSessionRef,
+    scope: &ProgramScope,
+    include_warnings: bool,
+) -> Vec<Diagnostic> {
+    let resolve_included = |diag: &Diagnostic| match diag.level {
+        Level::Error | Level::Suggestions => true,
+        Level::Warning => include_warnings,
+        Level::Note => false,
+    };
+    sess.1
+        .read()
+        .diagnostics
+        .iter()
+        .chain(
+            scope
+                .handler
+                .diagnostics
+                .iter()
+                .filter(|diag| resolve_included(diag)),
+        )
+        .cloned()
+        .collect()
 }

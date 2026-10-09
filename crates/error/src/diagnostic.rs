@@ -136,6 +136,44 @@ impl Diagnostic {
 
 pub type Range = (Position, Position);
 
+/// An error that carries the [`Diagnostic`]s behind an error message which
+/// has already been rendered to text.
+///
+/// The runner reports compile failures as a rendered string, which drops the
+/// positions that machine-readable formats (arcanist JSON, SARIF) exist to
+/// carry. Embedding the original diagnostics lets callers re-render them
+/// with the real file/line/column instead of re-wrapping the text in a
+/// position-less [`Diagnostic`].
+///
+/// [`Display`](std::fmt::Display) yields the rendered message, so
+/// `anyhow::Error::to_string()` is byte-identical to rendering the message
+/// directly and the pretty output is unaffected.
+#[derive(Debug, Clone)]
+pub struct RenderedError {
+    /// The already-rendered, human-readable error text.
+    pub message: String,
+    /// The diagnostics `message` was rendered from, in emission order.
+    pub diagnostics: Vec<Diagnostic>,
+}
+
+impl fmt::Display for RenderedError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.message)
+    }
+}
+
+impl std::error::Error for RenderedError {}
+
+impl RenderedError {
+    /// Pair a rendered error message with the diagnostics it came from.
+    pub fn new(message: String, diagnostics: Vec<Diagnostic>) -> Self {
+        Self {
+            message,
+            diagnostics,
+        }
+    }
+}
+
 /// Returns a dummy range whose filename is empty, line is 1 and column is None.
 #[inline]
 pub fn dummy_range() -> Range {

@@ -9,7 +9,7 @@ use crate::gpyrpc::{self, *};
 use kcl_ast::ast::SerializeProgram;
 use kcl_config::settings::build_settings_pathbuf;
 use kcl_error::format::DiagnosticFormat;
-use kcl_error::{Diagnostic, Handler, Level, Message};
+use kcl_error::{Diagnostic, Handler, Level, Message, RenderedError};
 use kcl_language_server::rename;
 use kcl_loader::option::list_options;
 use kcl_loader::{LoadPackageOptions, load_packages_with_cache};
@@ -66,43 +66,56 @@ pub(crate) fn resolve_error_format(args_error_format: &str) -> anyhow::Result<Di
     Ok(DiagnosticFormat::Pretty)
 }
 
-/// Render a machine-readable representation of `err_message` using the
-/// requested `format`. Returns an empty string when the caller asked for the
-/// default `Pretty` output or when `err_message` is empty. Otherwise wraps
-/// the message in a `Diagnostic` and dispatches to the format-specific
-/// renderer so the result can be inspected (e.g. in tests) without needing
-/// to capture process-global stderr.
+/// Render a machine-readable representation of `diagnostics` — falling back
+/// to `err_message` when the run produced none — using the requested
+/// `format`. Returns an empty string when the caller asked for the default
+/// `Pretty` output or when there is nothing to report.
+///
+/// The `diagnostics` come from the run itself and carry real file/line/column
+/// information, which is exactly what these formats exist to expose;
+/// re-wrapping the rendered text instead leaves the location fields blank
+/// (issue #2216).
 pub(crate) fn render_machine_readable_error(
     err_message: &str,
     format: DiagnosticFormat,
+    diagnostics: &[Diagnostic],
 ) -> anyhow::Result<String> {
-    if format == DiagnosticFormat::Pretty || err_message.is_empty() {
+    if format == DiagnosticFormat::Pretty || (err_message.is_empty() && diagnostics.is_empty()) {
         return Ok(String::new());
     }
     let mut handler = Handler::new();
-    let pos = kcl_error::Position::dummy_pos();
-    handler.add_diagnostic(Diagnostic {
-        level: Level::Error,
-        messages: vec![Message {
-            range: (pos.clone(), pos),
-            style: kcl_error::Style::LineAndColumn,
-            message: err_message.to_string(),
-            note: None,
-            suggested_replacement: None,
-        }],
-        code: None,
-    });
+    for diag in diagnostics {
+        handler.add_diagnostic(diag.clone());
+    }
+    if handler.diagnostics.is_empty() {
+        let pos = kcl_error::Position::dummy_pos();
+        handler.add_diagnostic(Diagnostic {
+            level: Level::Error,
+            messages: vec![Message {
+                range: (pos.clone(), pos),
+                style: kcl_error::Style::LineAndColumn,
+                // The text was rendered for a terminal; drop the color codes
+                // before it reaches a machine-readable record.
+                message: kcl_error::format::strip_ansi(err_message).into_owned(),
+                note: None,
+                suggested_replacement: None,
+            }],
+            code: None,
+        });
+    }
     handler.emit_to_string_as(format)
 }
 
-/// Emit a machine-readable representation of `err_message` to stderr when the
-/// caller asked for a non-pretty diagnostic format. Returns Ok(()) always so
-/// callers can use it in a tail position.
+/// Emit a machine-readable representation of `diagnostics` — falling back to
+/// `err_message` — to stderr when the caller asked for a non-pretty
+/// diagnostic format. Returns Ok(()) always so callers can use it in a tail
+/// position.
 pub(crate) fn emit_machine_readable_error(
     err_message: &str,
     format: DiagnosticFormat,
+    diagnostics: &[Diagnostic],
 ) -> anyhow::Result<()> {
-    let rendered = render_machine_readable_error(err_message, format)?;
+    let rendered = render_machine_readable_error(err_message, format, diagnostics)?;
     if !rendered.is_empty() {
         use std::io::Write;
         let mut stderr = std::io::stderr().lock();
@@ -271,8 +284,9 @@ fn from_proto_test_result(result: &gpyrpc::TestResult) -> testing::TestResult {
 ///
 /// Now: when the caller asked for `Pretty` (the default) we keep the existing
 /// pretty rendering so the wire text is byte-compatible with the previous
-/// behaviour; for the other formats we wrap the pretty text in a
-/// `Diagnostic` and re-dispatch to `render_machine_readable_error`. If
+/// behaviour; for the other formats we re-dispatch to
+/// `render_machine_readable_error`, preferring the structured diagnostics the
+/// runner attached to the error (issue #2216) over the rendered text. If
 /// re-rendering itself fails (extremely rare — only if the renderer can't
 /// construct a `Diagnostic` for the given input) we fall back to the raw
 /// pretty text so the caller never sees an empty error message.
@@ -281,7 +295,11 @@ pub(crate) fn format_anyhow_error(err: &anyhow::Error, format: DiagnosticFormat)
     if format == DiagnosticFormat::Pretty {
         return pretty;
     }
-    match render_machine_readable_error(&pretty, format) {
+    let diagnostics = err
+        .downcast_ref::<RenderedError>()
+        .map(|rendered| rendered.diagnostics.as_slice())
+        .unwrap_or_default();
+    match render_machine_readable_error(&pretty, format, diagnostics) {
         Ok(rendered) if !rendered.is_empty() => rendered,
         // Renderer returned empty (input was empty) or failed: never
         // drop the message on the floor.
@@ -868,7 +886,7 @@ impl KclServiceImpl {
         // If the caller asked for a machine-readable format and the run
         // produced an error message, mirror it to stderr in that format so
         // downstream tools can pick it up alongside the textual result.
-        emit_machine_readable_error(&result.err_message, error_format)?;
+        emit_machine_readable_error(&result.err_message, error_format, &result.diagnostics)?;
 
         // Bound RSS growth for cgo consumers (e.g. crossplane function-kcl)
         // that hold a single `KclServiceImpl` across many `exec_program`
@@ -1463,7 +1481,7 @@ impl KclServiceImpl {
                         .unwrap_or_default();
                     // Surface non-empty test errors to stderr in the
                     // requested format so CI integrations can consume them.
-                    emit_machine_readable_error(&err_text, error_format)?;
+                    emit_machine_readable_error(&err_text, error_format, &[])?;
                     result.info.push(TestCaseInfo {
                         name: name.clone(),
                         error: err_text,
@@ -1846,6 +1864,14 @@ mod error_format_tests {
         LOCK.get_or_init(|| Mutex::new(()))
     }
 
+    /// Process-global mutex serialising tests that redirect stderr. `gag`
+    /// installs a single process-wide redirector, so two of them running
+    /// concurrently would capture each other's output.
+    fn stderr_lock() -> &'static Mutex<()> {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| Mutex::new(()))
+    }
+
     /// RAII helper that snapshots and restores an env var.
     struct EnvGuard {
         name: &'static str,
@@ -1920,7 +1946,7 @@ mod error_format_tests {
     fn emit_noop_for_pretty_format() {
         // Pretty must short-circuit so existing callers don't see any
         // machine-readable side-effects.
-        assert!(emit_machine_readable_error("boom", DiagnosticFormat::Pretty).is_ok());
+        assert!(emit_machine_readable_error("boom", DiagnosticFormat::Pretty, &[]).is_ok());
     }
 
     #[test]
@@ -1933,7 +1959,7 @@ mod error_format_tests {
             DiagnosticFormat::Sarif,
         ] {
             assert!(
-                emit_machine_readable_error("", fmt).is_ok(),
+                emit_machine_readable_error("", fmt, &[]).is_ok(),
                 "fmt = {fmt:?}"
             );
         }
@@ -1943,6 +1969,7 @@ mod error_format_tests {
     fn emit_runs_handler_for_structured_formats() {
         // Smoke-test that the helper exercises Handler::emit_as without
         // panicking for any supported structured format.
+        let _lock = stderr_lock().lock().unwrap();
         for fmt in [
             DiagnosticFormat::Short,
             DiagnosticFormat::Arcanist,
@@ -1951,7 +1978,7 @@ mod error_format_tests {
             // We can't easily capture stderr in this scope; just ensure
             // the helper completes successfully.
             assert!(
-                emit_machine_readable_error("sample error", fmt).is_ok(),
+                emit_machine_readable_error("sample error", fmt, &[]).is_ok(),
                 "fmt = {fmt:?}"
             );
         }
@@ -1959,16 +1986,17 @@ mod error_format_tests {
 
     #[test]
     fn render_short_format_contains_message_and_level_marker() {
-        let s = render_machine_readable_error("divisor cannot be zero", DiagnosticFormat::Short)
-            .unwrap();
+        let s =
+            render_machine_readable_error("divisor cannot be zero", DiagnosticFormat::Short, &[])
+                .unwrap();
         assert!(s.contains("error["), "got: {s}");
         assert!(s.contains("divisor cannot be zero"), "got: {s}");
     }
 
     #[test]
     fn render_arcanist_format_is_valid_json_array_with_expected_keys() {
-        let s =
-            render_machine_readable_error("schema mismatch", DiagnosticFormat::Arcanist).unwrap();
+        let s = render_machine_readable_error("schema mismatch", DiagnosticFormat::Arcanist, &[])
+            .unwrap();
         let v: serde_json::Value = serde_json::from_str(&s).expect("must be valid JSON");
         let arr = v.as_array().expect("must be an array");
         assert_eq!(arr.len(), 1);
@@ -1989,7 +2017,7 @@ mod error_format_tests {
 
     #[test]
     fn render_sarif_format_is_valid_sarif_log() {
-        let s = render_machine_readable_error("boom", DiagnosticFormat::Sarif).unwrap();
+        let s = render_machine_readable_error("boom", DiagnosticFormat::Sarif, &[]).unwrap();
         let v: serde_json::Value = serde_json::from_str(&s).unwrap();
         assert_eq!(v["version"], "2.1.0");
         assert!(v["runs"].is_array());
@@ -1998,7 +2026,7 @@ mod error_format_tests {
     #[test]
     fn render_short_format_emits_pretty_marker_for_warning_via_level() {
         // Error level => output begins with "error[".
-        let s = render_machine_readable_error("boom", DiagnosticFormat::Short).unwrap();
+        let s = render_machine_readable_error("boom", DiagnosticFormat::Short, &[]).unwrap();
         assert!(s.starts_with("error["), "got: {s}");
     }
 
@@ -2006,7 +2034,7 @@ mod error_format_tests {
     fn render_pretty_format_returns_empty_string() {
         // Pretty must not contribute to the String-returning channel.
         assert!(
-            render_machine_readable_error("x", DiagnosticFormat::Pretty)
+            render_machine_readable_error("x", DiagnosticFormat::Pretty, &[])
                 .unwrap()
                 .is_empty()
         );
@@ -2020,7 +2048,9 @@ mod error_format_tests {
             DiagnosticFormat::Sarif,
         ] {
             assert!(
-                render_machine_readable_error("", fmt).unwrap().is_empty(),
+                render_machine_readable_error("", fmt, &[])
+                    .unwrap()
+                    .is_empty(),
                 "fmt = {fmt:?}"
             );
         }
@@ -2040,6 +2070,8 @@ mod error_format_tests {
         use gag::Redirect;
         use std::fs::OpenOptions;
         use std::io::{Read, Seek, SeekFrom};
+
+        let _lock = stderr_lock().lock().unwrap();
 
         // A non-empty message is required so emit_machine_readable_error
         // does not short-circuit on the empty-message guard.
@@ -2074,7 +2106,7 @@ mod error_format_tests {
                 .open(&path)
                 .expect("open redirect target");
             let redirect = Redirect::stderr(log).expect("redirect stderr");
-            emit_machine_readable_error(message, *fmt)
+            emit_machine_readable_error(message, *fmt, &[])
                 .unwrap_or_else(|e| panic!("emit_machine_readable_error({name}) failed: {e}"));
             let mut log = redirect.into_inner();
             let mut captured = String::new();
@@ -2139,6 +2171,10 @@ mod error_format_tests {
     /// close the user asked about: a test that covers the "KCL has a
     /// syntax / semantic error → service emits a machine-readable error
     /// to stderr" flow.
+    ///
+    /// The stderr redirect only covers the emit call, so it must hold
+    /// [`stderr_lock`] — otherwise a concurrent test writing to stderr
+    /// would land in this capture.
     #[cfg(not(target_os = "windows"))]
     #[test]
     fn exec_program_with_runtime_error_emits_per_format_stderr() {
@@ -2146,6 +2182,12 @@ mod error_format_tests {
         use std::fs::OpenOptions;
         use std::io::{Read, Seek, SeekFrom};
 
+        // This test evaluates KCL against `./src/testdata`, so it has to be
+        // mutually exclusive with the C API tests that do the same.
+        let _eval_lock = crate::capi_test::TEST_MUTEX
+            .lock()
+            .unwrap_or_else(|p| p.into_inner());
+        let _lock = stderr_lock().lock().unwrap();
         let serv = KclServiceImpl::default();
 
         // Helper: run a single bad-KCL exec and capture stderr.
@@ -2183,7 +2225,7 @@ mod error_format_tests {
                 .open(&path)
                 .expect("open redirect target");
             let redirect = Redirect::stderr(log).expect("redirect stderr");
-            emit_machine_readable_error(&result.err_message, format.parse().unwrap())
+            emit_machine_readable_error(&result.err_message, format.parse().unwrap(), &[])
                 .unwrap_or_else(|e| panic!("emit_machine_readable_error({format}) failed: {e}"));
             let mut log = redirect.into_inner();
             let mut captured = String::new();
@@ -2221,6 +2263,94 @@ mod error_format_tests {
         assert_ne!(short, arcanist, "Short vs Arcanist should differ");
         assert_ne!(short, sarif, "Short vs Sarif should differ");
         assert_ne!(arcanist, sarif, "Arcanist vs Sarif should differ");
+    }
+
+    /// The structured diagnostics a run produces must reach the
+    /// machine-readable renderers with their source location intact, and
+    /// the message must be the bare text rather than the whole rendered
+    /// pretty block (issue #2216).
+    ///
+    /// Unlike the stderr-capturing tests above this one needs no redirect,
+    /// so it is deterministic.
+    #[test]
+    fn render_machine_readable_error_reports_source_locations() {
+        let pos = kcl_error::Position {
+            filename: "main.k".to_string(),
+            line: 2,
+            column: Some(4),
+        };
+        let diagnostics = vec![Diagnostic {
+            level: Level::Error,
+            messages: vec![Message {
+                range: (pos.clone(), pos),
+                style: kcl_error::Style::LineAndColumn,
+                message: "expected int, got str(str)".to_string(),
+                note: None,
+                suggested_replacement: None,
+            }],
+            code: None,
+        }];
+
+        let arcanist = render_machine_readable_error(
+            "rendered pretty text",
+            DiagnosticFormat::Arcanist,
+            &diagnostics,
+        )
+        .unwrap();
+        let arcanist: serde_json::Value =
+            serde_json::from_str(&arcanist).expect("arcanist is JSON");
+        let entry = &arcanist[0];
+        assert_eq!(entry["Path"], "main.k", "arcanist: {arcanist}");
+        assert_eq!(entry["Line"], 2, "arcanist: {arcanist}");
+        assert_eq!(entry["Char"], 5, "arcanist: {arcanist}");
+        assert_eq!(
+            entry["Description"], "expected int, got str(str)",
+            "arcanist: {arcanist}"
+        );
+
+        let sarif = render_machine_readable_error(
+            "rendered pretty text",
+            DiagnosticFormat::Sarif,
+            &diagnostics,
+        )
+        .unwrap();
+        let sarif: serde_json::Value = serde_json::from_str(&sarif).expect("sarif is JSON");
+        let region = &sarif["runs"][0]["results"][0]["locations"][0]["physicalLocation"];
+        assert_eq!(
+            region["artifactLocation"]["uri"], "main.k",
+            "sarif: {sarif}"
+        );
+        assert_eq!(region["region"]["startLine"], 2, "sarif: {sarif}");
+        assert_eq!(region["region"]["startColumn"], 5, "sarif: {sarif}");
+        assert_eq!(
+            sarif["runs"][0]["results"][0]["message"]["text"], "expected int, got str(str)",
+            "sarif: {sarif}"
+        );
+
+        let short = render_machine_readable_error(
+            "rendered pretty text",
+            DiagnosticFormat::Short,
+            &diagnostics,
+        )
+        .unwrap();
+        assert!(short.starts_with("main.k:2:5 - error["), "short: {short}");
+    }
+
+    /// With no structured diagnostics the helper falls back to wrapping the
+    /// error text, and the text's terminal colours must not leak into the
+    /// machine-readable record.
+    #[test]
+    fn render_fallback_strips_ansi_from_error_text() {
+        let colorized = "\u{1b}[1;38;5;12merror[E2L23] boom\u{1b}[0m";
+        let arcanist =
+            render_machine_readable_error(colorized, DiagnosticFormat::Arcanist, &[]).unwrap();
+        assert!(
+            !arcanist.contains('\u{1b}'),
+            "arcanist must not carry ANSI escapes: {arcanist}"
+        );
+        let arcanist: serde_json::Value =
+            serde_json::from_str(&arcanist).expect("arcanist is JSON");
+        assert_eq!(arcanist[0]["Description"], "error[E2L23] boom");
     }
 }
 
