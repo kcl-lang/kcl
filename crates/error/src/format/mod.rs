@@ -18,6 +18,7 @@ pub mod short;
 
 use crate::{Diagnostic, DiagnosticId, Level, Message, Position, Style};
 use compiler_base_session::Session;
+use std::borrow::Cow;
 use std::str::FromStr;
 use thiserror::Error;
 
@@ -91,6 +92,41 @@ pub fn primary_message(diag: &Diagnostic) -> Option<&Message> {
 /// convention where the absent/zero column is normalized to 1).
 pub fn external_column(pos: &Position) -> u64 {
     pos.column.map(|c| c + 1).unwrap_or(1)
+}
+
+/// Strip ANSI escape sequences from already-rendered diagnostic text.
+///
+/// The fallback machine-readable record for an error that carries no
+/// structured [`Diagnostic`]s is built from the human-readable rendering,
+/// which is colorized for terminals. The structured fields of arcanist /
+/// SARIF output are consumed by tools, not a terminal, so the escape codes
+/// must not travel with them.
+pub fn strip_ansi(text: &str) -> Cow<'_, str> {
+    if !text.contains('\u{1b}') {
+        return Cow::Borrowed(text);
+    }
+    let mut out = String::with_capacity(text.len());
+    let mut chars = text.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c != '\u{1b}' {
+            out.push(c);
+            continue;
+        }
+        // CSI sequences (`ESC [ … final`), which is what `annotate_snippets`
+        // emits. Consume up to and including the final byte in `@`..`~`.
+        if chars.peek() == Some(&'[') {
+            chars.next();
+            for c in chars.by_ref() {
+                if ('@'..='~').contains(&c) {
+                    break;
+                }
+            }
+        } else {
+            // Any other two-character escape sequence.
+            chars.next();
+        }
+    }
+    Cow::Owned(out)
 }
 
 /// Look up the source line that contains `pos.line` from `filename`.
@@ -269,6 +305,23 @@ mod tests {
         let diag = diag_with_messages(msgs, None);
         // Falls back to first message rather than None.
         assert_eq!(primary_message(&diag).unwrap().message, "anything");
+    }
+
+    #[test]
+    fn strip_ansi_removes_csi_sequences() {
+        let colored = "\u{1b}[1;38;5;12mboom\u{1b}[0m";
+        assert_eq!(strip_ansi(colored), "boom");
+        // Text without escapes is borrowed, not copied.
+        assert!(matches!(strip_ansi("plain"), Cow::Borrowed("plain")));
+    }
+
+    #[test]
+    fn strip_ansi_keeps_surrounding_text() {
+        let rendered = "error[E2L23]\n --> a.k:2:5\n\u{1b}[1;38;5;12m2 | b = x\u{1b}[0m";
+        let stripped = strip_ansi(rendered);
+        assert!(!stripped.contains('\u{1b}'), "got: {stripped}");
+        assert!(stripped.contains("a.k:2:5"), "got: {stripped}");
+        assert!(stripped.contains("2 | b = x"), "got: {stripped}");
     }
 
     #[test]

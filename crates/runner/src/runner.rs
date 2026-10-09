@@ -8,7 +8,7 @@ use kcl_config::{
     modfile::get_vendor_home,
     settings::{SettingsFile, SettingsPathBuf},
 };
-use kcl_error::{Diagnostic, Handler};
+use kcl_error::{Diagnostic, Handler, RenderedError};
 #[cfg(not(target_arch = "wasm32"))]
 use kcl_runtime::kcl_plugin_init;
 use kcl_runtime::{Context, PanicInfo, RuntimePanicRecord};
@@ -137,6 +137,14 @@ pub struct ExecProgramResult {
     /// `true`. Maps `filename -> line -> hits`. Empty otherwise.
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     pub coverage: HashMap<String, HashMap<u64, u64>>,
+    /// The structured diagnostics `err_message` was rendered from.
+    ///
+    /// Callers that re-render the error in a machine-readable format
+    /// (arcanist JSON, SARIF) need these to report real source positions
+    /// rather than the position-less text in `err_message` (issue #2216).
+    /// Never serialized: this is an in-process carrier only.
+    #[serde(skip)]
+    pub diagnostics: Vec<Diagnostic>,
 }
 
 pub trait MapErrorResult {
@@ -155,7 +163,13 @@ impl MapErrorResult for ExecProgramResult {
         if self.err_message.is_empty() {
             Ok(self)
         } else {
-            Err(anyhow!(self.err_message))
+            // `RenderedError` displays as `err_message`, so callers still see
+            // the same text; the diagnostics travel along for callers that
+            // re-render the error in a machine-readable format.
+            Err(anyhow!(RenderedError::new(
+                self.err_message,
+                self.diagnostics
+            )))
         }
     }
 }
@@ -438,12 +452,13 @@ impl FastRunner {
         }
         // Wrap runtime JSON Panic error string into diagnostic style string.
         if !result.err_message.is_empty() && std::env::var(KCL_DEBUG_ERROR_ENV_VAR).is_err() {
-            result.err_message = match Handler::default()
-                .add_diagnostic(<PanicInfo as Into<Diagnostic>>::into(PanicInfo::from(
-                    result.err_message.as_str(),
-                )))
-                .emit_to_string()
-            {
+            let diag =
+                <PanicInfo as Into<Diagnostic>>::into(PanicInfo::from(result.err_message.as_str()));
+            // Keep the structured form around so callers can re-render the
+            // error in a machine-readable format without losing the source
+            // positions that `emit_to_string` bakes into the text.
+            result.diagnostics.push(diag.clone());
+            result.err_message = match Handler::default().add_diagnostic(diag).emit_to_string() {
                 Ok(msg) => msg,
                 Err(err) => err.to_string(),
             };

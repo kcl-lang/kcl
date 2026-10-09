@@ -447,3 +447,80 @@ fn test_kcl_issue_1799() {
         )
     );
 }
+
+/// Regression test for issue #2216: a compile error must reach callers as a
+/// [`RenderedError`] carrying the structured diagnostics, so that
+/// machine-readable renderers (arcanist / SARIF) can report real source
+/// positions instead of re-wrapping the rendered text.
+#[test]
+fn test_compile_error_carries_structured_diagnostics() {
+    let mut args = ExecProgramArgs::default();
+    args.k_filename_list.push(
+        PathBuf::from("./src/test_issues/github.com/kcl-lang/kcl/2216/compile_error.k")
+            .display()
+            .to_string(),
+    );
+    args.work_dir = Some(".".to_string());
+    let err = exec_program(Arc::new(ParseSession::default()), &args)
+        .expect_err("a type error must fail compilation");
+
+    let rendered = err
+        .downcast_ref::<kcl_error::RenderedError>()
+        .expect("compile errors must carry their diagnostics");
+    // `RenderedError` must display exactly the rendered text so the human
+    // readable output is unchanged.
+    assert_eq!(rendered.to_string(), rendered.message);
+    assert!(
+        rendered.message.contains("expected int, got str"),
+        "unexpected message: {}",
+        rendered.message
+    );
+
+    let diag = rendered
+        .diagnostics
+        .first()
+        .expect("at least one diagnostic");
+    let pos = &diag.messages[0].range.0;
+    assert!(
+        pos.filename.ends_with("compile_error.k"),
+        "compile diagnostics must name the source file: {pos:?}"
+    );
+    assert_eq!(
+        pos.line, 1,
+        "compile diagnostics must carry a line: {pos:?}"
+    );
+    assert!(
+        pos.column.is_some(),
+        "compile diagnostics must carry a column"
+    );
+}
+
+/// An evaluation error must leave the diagnostics on the result so the CLI
+/// and the service can re-render them with their source position intact.
+#[test]
+fn test_eval_error_reports_diagnostics_on_result() {
+    let main_test_path = PathBuf::from("./src/test_issues/github.com/kcl-lang/kcl/2216/main.k");
+    let mut args = ExecProgramArgs::default();
+    args.k_filename_list
+        .push(main_test_path.display().to_string());
+    args.work_dir = Some(".".to_string());
+    let res = exec_program(Arc::new(ParseSession::default()), &args)
+        .expect("a runtime failure is reported through the result, not an Err");
+
+    assert!(!res.err_message.is_empty());
+    assert_eq!(
+        res.diagnostics.len(),
+        1,
+        "expected exactly one runtime diagnostic"
+    );
+    let diag = &res.diagnostics[0];
+    let pos = &diag.messages[0].range.0;
+    assert!(
+        pos.filename.ends_with("main.k"),
+        "runtime diagnostics must name the source file: {pos:?}"
+    );
+    assert_eq!(
+        pos.line, 2,
+        "runtime diagnostics must carry a line: {pos:?}"
+    );
+}

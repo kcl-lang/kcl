@@ -27,7 +27,7 @@ use kcl_runtime::PanicInfo;
 use std::{any::Any, sync::Arc};
 use thiserror::Error;
 
-pub use diagnostic::{Diagnostic, DiagnosticId, Level, Message, Position, Style};
+pub use diagnostic::{Diagnostic, DiagnosticId, Level, Message, Position, RenderedError, Style};
 pub use error::*;
 
 /// A handler deals with errors and other compiler output.

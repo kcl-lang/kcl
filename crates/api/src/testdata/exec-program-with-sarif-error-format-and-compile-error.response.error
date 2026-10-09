@@ -9,10 +9,10 @@
           "informationUri": "https://kcl-lang.io/",
           "rules": [
             {
-              "id": "E3M38",
-              "name": "EvaluationError",
+              "id": "E2G22",
+              "name": "TypeError",
               "shortDescription": {
-                "text": "EvaluationError"
+                "text": "TypeError"
               }
             }
           ]
@@ -20,20 +20,22 @@
       },
       "results": [
         {
-          "ruleId": "E3M38",
+          "ruleId": "E2G22",
           "level": "error",
           "message": {
-            "text": "\nerror[E2G22]: TypeError\n---> File main.k:1:1: expected int, got str(str)\n\n"
+            "text": "expected int, got str(str)"
           },
           "locations": [
             {
               "physicalLocation": {
                 "artifactLocation": {
-                  "uri": ""
+                  "uri": "main.k"
                 },
                 "region": {
                   "startLine": 1,
-                  "startColumn": 1
+                  "startColumn": 1,
+                  "endLine": 1,
+                  "endColumn": 2
                 }
               }
             }
