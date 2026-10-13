@@ -820,11 +820,18 @@ impl KclServiceImpl {
     /// ```
     /// use kcl_api::service::service_impl::KclServiceImpl;
     /// use kcl_api::gpyrpc::*;
-    /// use std::path::Path;
+    /// # // Read a private copy of the fixture. Every doctest in this file
+    /// # // runs concurrently in one process, and the `override_file` and
+    /// # // `format_path` examples below rewrite `src/testdata/test.k` in
+    /// # // place -- `std::fs::write` truncates before it writes, so a
+    /// # // concurrent read can observe a zero-length file and evaluate to
+    /// # // `{}` instead. That made this assertion fail intermittently.
+    /// # let dir = tempfile::tempdir().unwrap();
+    /// # std::fs::copy("./src/testdata/test.k", dir.path().join("test.k")).unwrap();
     /// // File case
     /// let serv = KclServiceImpl::default();
     /// let args = &ExecProgramArgs {
-    ///     work_dir: Path::new(".").join("src").join("testdata").canonicalize().unwrap().display().to_string(),
+    ///     work_dir: dir.path().display().to_string(),
     ///     k_filename_list: vec!["test.k".to_string()],
     ///     ..Default::default()
     /// };
@@ -933,10 +940,15 @@ impl KclServiceImpl {
     /// ```
     /// use kcl_api::service::service_impl::KclServiceImpl;
     /// use kcl_api::gpyrpc::*;
-    ///
+    /// # // `override_file` rewrites the file in place, so give it a private
+    /// # // copy -- the `exec_program` example above reads the same fixture
+    /// # // while the doctests run concurrently.
+    /// # let dir = tempfile::tempdir().unwrap();
+    /// # let file = dir.path().join("test.k");
+    /// # std::fs::copy("./src/testdata/test.k", &file).unwrap();
     /// let serv = KclServiceImpl::default();
     /// let args = &OverrideFileArgs {
-    ///     file: "./src/testdata/test.k".to_string(),
+    ///     file: file.display().to_string(),
     ///     specs: vec!["alice.age=18".to_string()],
     ///     import_paths: vec![],
     ///     ..Default::default()
@@ -1174,10 +1186,14 @@ impl KclServiceImpl {
     /// ```
     /// use kcl_api::service::service_impl::KclServiceImpl;
     /// use kcl_api::gpyrpc::*;
-    ///
+    /// # // Private copy: `format_path` rewrites in place, and the
+    /// # // `exec_program` example reads this same fixture concurrently.
+    /// # let dir = tempfile::tempdir().unwrap();
+    /// # let file = dir.path().join("test.k");
+    /// # std::fs::copy("./src/testdata/test.k", &file).unwrap();
     /// let serv = KclServiceImpl::default();
     /// let result = serv.format_path(&FormatPathArgs {
-    ///     path: "./src/testdata/test.k".to_string(),
+    ///     path: file.display().to_string(),
     ///     ..Default::default()
     /// }).unwrap();
     /// assert!(result.changed_paths.is_empty());
