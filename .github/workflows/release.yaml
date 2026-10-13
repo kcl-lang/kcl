@@ -73,6 +73,17 @@ jobs:
             lib_name: kcl.dll
             lsp_build: native
             lsp_bin: kcl-language-server.exe
+          # Windows MSVC on ARM64, cross-compiled from the x64 runner. There is
+          # no ARM64 language server, so only the C API library is built. The
+          # kcl-lang/lib vendoring flow needs this: its Go SDK embeds a
+          # kcl.dll for windows/arm64 and zig/build.zig links the same path.
+          - target: windows-arm64
+            os: windows-latest
+            lib_build: native
+            lib_target: aarch64-pc-windows-msvc
+            lib_subpath: aarch64-pc-windows-msvc
+            lib_name: kcl.dll
+            lsp_build: none
           # WebAssembly (WASI preview1)
           - target: wasm32-wasip1
             os: ubuntu-latest
@@ -128,9 +139,21 @@ jobs:
         if: matrix.lib_build == 'native' && matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          cargo build --release -p kcl-lib
+          # matrix.lib_target is empty for the host-native windows-amd64 leg
+          # and set for the cross-compiled windows-arm64 leg. Either way the
+          # artifact lands in target/[lib_subpath/]release/<lib_name>.
+          $target = "${{ matrix.lib_target }}"
+          $subpath = "${{ matrix.lib_subpath }}"
+          if ($target) {
+            rustup target add $target
+            cargo build --release -p kcl-lib --target $target
+          } else {
+            cargo build --release -p kcl-lib
+          }
           New-Item -ItemType Directory -Force -Path release/lib | Out-Null
-          Copy-Item -Force "target/release/${{ matrix.lib_name }}" release/lib/
+          $src = if ($subpath) { "target/$subpath/release/${{ matrix.lib_name }}" } else { "target/release/${{ matrix.lib_name }}" }
+          Write-Host "staging $src"
+          Copy-Item -Force $src release/lib/
 
       - name: Build kcl-lib (WASM)
         if: matrix.lib_build == 'wasm'
