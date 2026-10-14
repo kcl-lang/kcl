@@ -137,9 +137,10 @@ impl ConfigScopeContext {
     }
 
     pub fn in_right_value(&self, pos: &Position) -> bool {
+        // A shorthand entry (`{name}`) has the same range for its key and value: it is a key.
         self.entries_range
             .iter()
-            .any(|(_, value)| value.contains_pos(pos))
+            .any(|(key, value)| key.as_ref() != Some(value) && value.contains_pos(pos))
     }
 }
 

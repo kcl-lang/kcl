@@ -2031,7 +2031,16 @@ impl<'ctx> AdvancedResolver<'_> {
                 entry.node.value.get_span_pos(),
             ));
             self.ctx.in_config_r_value = true;
-            self.expr(&entry.node.value)?;
+            match &entry.node.value.node {
+                // The value of a shorthand entry is at the position of its key: `expr` allocates an
+                // expression symbol for an undefined name, which would shadow the key symbol.
+                ast::Expr::Identifier(identifier) if entry.node.is_shorthand => {
+                    self.walk_identifier(identifier)?;
+                }
+                _ => {
+                    self.expr(&entry.node.value)?;
+                }
+            }
             self.ctx.in_config_r_value = false;
 
             if let Some(key) = &entry.node.key {

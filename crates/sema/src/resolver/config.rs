@@ -744,6 +744,16 @@ impl<'ctx> Resolver<'_> {
                         for _ in 0..identifier.names.len() - 1 {
                             val_ty = Type::dict_ref(self.str_ty(), val_ty.clone());
                         }
+                        // An undefined shorthand entry (`{name}`) is an attribute being typed: keep it
+                        // out of the type so the config can still be upgraded to the expected schema.
+                        if item.node.is_shorthand
+                            && identifier.names.len() == 1
+                            && self.find_type_in_scope(&identifier.names[0].node).is_none()
+                        {
+                            self.clear_config_expr_context(stack_depth, false);
+                            self.ctx.current_schema_inherited_provided = prev_inherited;
+                            continue;
+                        }
                         let key_ty = if identifier.names.len() == 1 {
                             let name = &identifier.names[0].node;
                             let key_ty = if self.ctx.local_vars.contains(name) {
