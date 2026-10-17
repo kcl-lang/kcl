@@ -6,23 +6,22 @@ use criterion::{Criterion, criterion_group, criterion_main};
 use walkdir::WalkDir;
 
 use kcl_parser::{ParseSession, load_program};
-use kcl_runner::{execute, runner::ExecProgramArgs};
+use kcl_runner::{
+    execute,
+    runner::{ExecProgramArgs, catch_unwind_silent},
+};
 
 const EXEC_DATA_PATH: &str = "./src/exec_data/";
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("refactor kcl-runner", |b| {
         b.iter(|| {
-            let prev_hook = std::panic::take_hook();
-            // disable print panic info
-            std::panic::set_hook(Box::new(|_| {}));
-            let result = std::panic::catch_unwind(|| {
+            let result = catch_unwind_silent(|| {
                 for file in get_files(EXEC_DATA_PATH, false, true, ".k") {
                     exec(&file).unwrap();
                 }
             });
             assert!(result.is_ok());
-            std::panic::set_hook(prev_hook);
         })
     });
 }

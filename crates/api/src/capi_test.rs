@@ -900,10 +900,7 @@ where
 {
     let _test_lock = TEST_MUTEX.lock().unwrap_or_else(|p| p.into_inner());
     let serv = unsafe { kcl_service_new(0) };
-    let prev_hook = std::panic::take_hook();
-    // disable print panic info
-    std::panic::set_hook(Box::new(|_info| {}));
-    let result = std::panic::catch_unwind(|| {
+    let result = kcl_runner::runner::catch_unwind_silent(|| {
         let input_path = Path::new(TEST_DATA_PATH).join(input);
         let input = fs::read_to_string(&input_path)
             .unwrap_or_else(|_| panic!("Something went wrong reading {}", input_path.display()));
@@ -912,7 +909,6 @@ where
         let call = CString::new(svc_name).unwrap();
         unsafe { kcl_service_call(serv, call.as_ptr(), args.as_ptr(), args_vec.len()) }
     });
-    std::panic::set_hook(prev_hook);
     match result {
         Ok(result_ptr) => {
             let result = unsafe { CStr::from_ptr(result_ptr) };

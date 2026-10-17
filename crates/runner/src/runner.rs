@@ -1,7 +1,10 @@
 use anyhow::{Result, anyhow};
 use kcl_evaluator::Evaluator;
 use std::collections::{HashMap, HashSet};
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+};
 
 use kcl_ast::ast;
 use kcl_config::{
@@ -12,7 +15,6 @@ use kcl_error::{Diagnostic, Handler, RenderedError};
 #[cfg(not(target_arch = "wasm32"))]
 use kcl_runtime::kcl_plugin_init;
 use kcl_runtime::{Context, PanicInfo, RuntimePanicRecord};
-#[cfg(target_arch = "wasm32")]
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::os::raw::c_char;
@@ -301,14 +303,18 @@ pub trait ProgramRunner {
 }
 
 thread_local! {
-    pub static KCL_RUNTIME_PANIC_RECORD: RefCell<RuntimePanicRecord> = RefCell::new(RuntimePanicRecord::default())
+    pub static KCL_RUNTIME_PANIC_RECORD: RefCell<RuntimePanicRecord> = RefCell::new(RuntimePanicRecord::default());
+    static RECORDING_PANICS: Cell<bool> = const { Cell::new(false) };
 }
 
-#[cfg(target_arch = "wasm32")]
 static ONCE_PANIC_HOOK: Lazy<()> = Lazy::new(|| {
-    std::panic::set_hook(Box::new(|info: &std::panic::PanicHookInfo| {
-        KCL_RUNTIME_PANIC_RECORD.with(|record| {
-            let mut record = record.borrow_mut();
+    let prev_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info: &std::panic::PanicHookInfo| {
+        // This hook runs for every panic in the process, so it must not panic.
+        let _ = KCL_RUNTIME_PANIC_RECORD.try_with(|record| {
+            let Ok(mut record) = record.try_borrow_mut() else {
+                return;
+            };
             record.kcl_panic_info = true;
             record.message = if let Some(s) = info.payload().downcast_ref::<&str>() {
                 s.to_string()
@@ -324,9 +330,29 @@ static ONCE_PANIC_HOOK: Lazy<()> = Lazy::new(|| {
                 record.rust_line = location.line() as i32;
                 record.rust_col = location.column() as i32;
             }
-        })
+        });
+        if !RECORDING_PANICS.get() {
+            prev_hook(info);
+        }
     }));
 });
+
+/// Run `f` like [`std::panic::catch_unwind`] without printing its panic.
+///
+/// The panic hook is process-global, so it is installed once. It records
+/// every panic into the thread-local [`KCL_RUNTIME_PANIC_RECORD`] and prints
+/// it through the hook it replaced only on threads outside this function. A
+/// hook set after the first call replaces this one for the whole process, so
+/// panics inside this function then reach that hook and are not recorded.
+pub fn catch_unwind_silent<F: FnOnce() -> R + std::panic::UnwindSafe, R>(
+    f: F,
+) -> std::thread::Result<R> {
+    Lazy::force(&ONCE_PANIC_HOOK);
+    let recording = RECORDING_PANICS.replace(true);
+    let result = std::panic::catch_unwind(f);
+    RECORDING_PANICS.set(recording);
+    result
+}
 
 pub struct FastRunner {
     opts: RunnerOptions,
@@ -358,34 +384,9 @@ impl FastRunner {
         if let Some(pkgs) = self.opts.referenced_pkgs_set() {
             evaluator.set_referenced_pkgs(pkgs);
         }
-        #[cfg(target_arch = "wasm32")]
-        // Ensure the panic hook is set (this will only happen once) for the WASM target,
-        // because it is single threaded.
-        Lazy::force(&ONCE_PANIC_HOOK);
-        #[cfg(not(target_arch = "wasm32"))]
-        let prev_hook = std::panic::take_hook();
-        #[cfg(not(target_arch = "wasm32"))]
-        std::panic::set_hook(Box::new(|info: &std::panic::PanicHookInfo| {
-            KCL_RUNTIME_PANIC_RECORD.with(|record| {
-                let mut record = record.borrow_mut();
-                record.kcl_panic_info = true;
-                record.message = if let Some(s) = info.payload().downcast_ref::<&str>() {
-                    s.to_string()
-                } else if let Some(s) = info.payload().downcast_ref::<&String>() {
-                    (*s).clone()
-                } else if let Some(s) = info.payload().downcast_ref::<String>() {
-                    (*s).clone()
-                } else {
-                    "unknown runtime error".to_string()
-                };
-                if let Some(location) = info.location() {
-                    record.rust_file = location.file().to_string();
-                    record.rust_line = location.line() as i32;
-                    record.rust_col = location.column() as i32;
-                }
-            })
-        }));
-        let evaluator_result = std::panic::catch_unwind(|| {
+        // Drop panics recorded on this thread before this run.
+        KCL_RUNTIME_PANIC_RECORD.take();
+        let evaluator_result = catch_unwind_silent(|| {
             if self.opts.plugin_agent_ptr > 0 {
                 #[cfg(not(target_arch = "wasm32"))]
                 unsafe {
@@ -399,8 +400,6 @@ impl FastRunner {
             }
             evaluator.run()
         });
-        #[cfg(not(target_arch = "wasm32"))]
-        std::panic::set_hook(prev_hook);
         KCL_RUNTIME_PANIC_RECORD.with(|record| {
             let record = record.borrow();
             ctx.borrow_mut().set_panic_info(&record);
@@ -409,7 +408,6 @@ impl FastRunner {
             log_message: ctx.borrow().log_message.clone(),
             ..Default::default()
         };
-        let is_err = evaluator_result.is_err();
         match evaluator_result {
             Ok(r) => match r {
                 Ok((json, yaml)) => {
@@ -441,13 +439,16 @@ impl FastRunner {
                 }
             },
             Err(err) => {
-                result.err_message = if is_err {
-                    ctx.borrow()
-                        .get_panic_info_json_string()
-                        .unwrap_or_default()
-                } else {
-                    kcl_error::err_to_str(err)
-                };
+                // The payload is this run's own panic, whereas the record is
+                // written by a process-global hook the host may have replaced.
+                let message = kcl_error::err_to_str(err);
+                if !message.is_empty() {
+                    ctx.borrow_mut().panic_info.message = message;
+                }
+                result.err_message = ctx
+                    .borrow()
+                    .get_panic_info_json_string()
+                    .unwrap_or_default();
             }
         }
         // Wrap runtime JSON Panic error string into diagnostic style string.

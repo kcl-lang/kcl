@@ -330,10 +330,7 @@ fn exec_with_err_result_at(path: &str) {
     let kcl_files = get_files(path, false, true, ".k");
     let output_files = get_files(path, false, true, ".stderr.json");
 
-    let prev_hook = std::panic::take_hook();
-    // disable print panic info
-    std::panic::set_hook(Box::new(|_| {}));
-    let result = std::panic::catch_unwind(|| {
+    let result = crate::runner::catch_unwind_silent(|| {
         for (kcl_file, _) in kcl_files.iter().zip(&output_files) {
             let mut args = ExecProgramArgs::default();
             args.k_filename_list.push(kcl_file.to_string());
@@ -346,7 +343,6 @@ fn exec_with_err_result_at(path: &str) {
         }
     });
     assert!(result.is_ok());
-    std::panic::set_hook(prev_hook);
 }
 
 /// Get kcl files from path.
@@ -522,5 +518,52 @@ fn test_eval_error_reports_diagnostics_on_result() {
     assert_eq!(
         pos.line, 2,
         "runtime diagnostics must carry a line: {pos:?}"
+    );
+}
+
+/// Regression test for issue #2223: evaluations running concurrently in one
+/// process must each report their own runtime error message.
+#[test]
+fn test_concurrent_eval_errors_keep_message() {
+    let main_test_path = PathBuf::from("./src/test_issues/github.com/kcl-lang/kcl/2223/main.k");
+    for _ in 0..20 {
+        // Each evaluation runs on a fresh thread so that no message can
+        // carry over from an earlier evaluation on the same thread.
+        let handles: Vec<_> = (0..8)
+            .map(|_| {
+                let main_test_path = main_test_path.clone();
+                std::thread::spawn(move || {
+                    let mut args = ExecProgramArgs::default();
+                    args.k_filename_list
+                        .push(main_test_path.display().to_string());
+                    args.work_dir = Some(".".to_string());
+                    let res = exec_program(Arc::new(ParseSession::default()), &args).unwrap();
+                    res.diagnostics[0].messages[0].message.clone()
+                })
+            })
+            .collect();
+        for handle in handles {
+            assert_eq!(handle.join().unwrap(), "items must be empty");
+        }
+    }
+}
+
+/// A host that replaces the panic hook after KCL installed its own must not
+/// lose runtime error messages.
+#[test]
+fn test_eval_error_keeps_message_after_hook_replaced() {
+    let mut args = ExecProgramArgs::default();
+    args.k_filename_list
+        .push("./src/test_issues/github.com/kcl-lang/kcl/2223/main.k".to_string());
+    args.work_dir = Some(".".to_string());
+    // Install KCL's hook, then replace it as a host would.
+    crate::runner::catch_unwind_silent(|| ()).unwrap();
+    let prev_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(|_| {}));
+    let res = exec_program(Arc::new(ParseSession::default()), &args);
+    std::panic::set_hook(prev_hook);
+    assert_eq!(
+        res.unwrap().diagnostics[0].messages[0].message,
+        "items must be empty"
     );
 }
