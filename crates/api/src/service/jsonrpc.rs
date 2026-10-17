@@ -22,12 +22,8 @@ pub async fn start_stdio_server() -> Result<(), anyhow::Error> {
 
 macro_rules! catch {
     ($serv:expr, $args:expr, $serv_name:ident) => {{
-        let prev_hook = std::panic::take_hook();
-
-        // disable print panic info
-        std::panic::set_hook(Box::new(|_info| {}));
-        let result = std::panic::catch_unwind(|| to_json_result(&$serv.$serv_name(&$args)));
-        std::panic::set_hook(prev_hook);
+        let result =
+            kcl_runner::runner::catch_unwind_silent(|| to_json_result(&$serv.$serv_name(&$args)));
         match result {
             Ok(result) => result,
             Err(panic_err) => {
