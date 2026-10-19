@@ -250,6 +250,19 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      # update-taps rewrites the tap and bucket to point at the assets this job
+      # publishes. Without the token that would leave every published kcl-lsp
+      # install path pointing at a release nobody can update, so fail here first.
+      - name: Check that the deploy token is available
+        shell: bash
+        env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: |
+          if [ -z "${DEPLOY_TOKEN}" ]; then
+            echo "::error::DEPLOY_TOKEN is not available to this workflow"
+            exit 1
+          fi
+
       - name: Download all build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -300,9 +313,9 @@ jobs:
           repository: kcl-lang/homebrew-tap
           ref: main
           path: homebrew-tap
-          # GITHUB_TOKEN is scoped to this repo, so a PAT is needed to push to
-          # the tap and the bucket. Needs write access to both.
-          token: ${{ secrets.TAP_TOKEN }}
+          # GITHUB_TOKEN is scoped to this repo, so the org deploy token is used
+          # to push to the tap and the bucket. Needs write access to both.
+          token: ${{ secrets.DEPLOY_TOKEN }}
 
       - name: Check out scoop-bucket
         uses: actions/checkout@v3
@@ -310,7 +323,7 @@ jobs:
           repository: kcl-lang/scoop-bucket
           ref: main
           path: scoop-bucket
-          token: ${{ secrets.TAP_TOKEN }}
+          token: ${{ secrets.DEPLOY_TOKEN }}
 
       - name: Commit kcl-lsp formula and Scoop manifest
         shell: bash
