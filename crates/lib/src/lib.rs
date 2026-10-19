@@ -10,6 +10,7 @@ mod capi;
 pub use capi::*;
 use kcl_parser::ParseSessionRef;
 use kcl_runner::exec_program;
+use kcl_runner::runner::catch_unwind_silent;
 use kcl_runtime::PanicInfo;
 
 /// KCL CLI run function CAPI.
@@ -20,13 +21,7 @@ pub unsafe extern "C-unwind" fn libkcl_run(
     args: *const c_char,
     plugin_agent: *const c_char,
 ) -> *const c_char {
-    let prev_hook = std::panic::take_hook();
-
-    // disable print panic info
-    std::panic::set_hook(Box::new(|_info| {}));
-    let libkcl_run_unsafe_result =
-        std::panic::catch_unwind(|| libkcl_run_unsafe(args, plugin_agent));
-    std::panic::set_hook(prev_hook);
+    let libkcl_run_unsafe_result = catch_unwind_silent(|| libkcl_run_unsafe(args, plugin_agent));
 
     match libkcl_run_unsafe_result {
         Ok(result) => match result {
@@ -71,11 +66,7 @@ pub unsafe extern "C-unwind" fn libkcl_main(
     argc: c_int,
     argv: *const *const c_char,
 ) -> *mut ExitCode {
-    let prev_hook = std::panic::take_hook();
-
-    // disable print panic info
-    std::panic::set_hook(Box::new(|_info| {}));
-    let libkcl_main_result = std::panic::catch_unwind(|| {
+    let libkcl_main_result = catch_unwind_silent(|| {
         let args: Vec<&str> = unsafe {
             std::slice::from_raw_parts(argv, argc as usize)
                 .iter()
@@ -84,7 +75,6 @@ pub unsafe extern "C-unwind" fn libkcl_main(
         };
         kcl_cmd::main(args.as_slice())
     });
-    std::panic::set_hook(prev_hook);
 
     match libkcl_main_result {
         Ok(result) => match result {
