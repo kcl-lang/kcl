@@ -296,7 +296,10 @@ jobs:
       - name: Download kcl-language-server artifacts
         uses: actions/download-artifact@v4
         with:
-          name: kcl-language-server-*
+          # `name` is an exact match, so the wildcard has to go in `pattern`.
+          # Each artifact lands in its own subdirectory, which the render step
+          # searches recursively.
+          pattern: kcl-language-server-*
           path: artifacts
 
       - name: Render kcl-lsp formula and Scoop manifest
