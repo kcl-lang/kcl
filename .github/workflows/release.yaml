@@ -269,3 +269,72 @@ jobs:
               artifacts/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-taps:
+    name: Update Homebrew tap and Scoop bucket
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      # GoReleaser only manages the kcl CLI in these repos, so kcl-lsp is bumped
+      # here. The checksums come from the artifacts published by the release job.
+      - name: Download kcl-language-server artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: kcl-language-server-*
+          path: artifacts
+
+      - name: Render kcl-lsp formula and Scoop manifest
+        shell: bash
+        run: |
+          python3 .github/scripts/update_lsp_taps.py \
+            --tag "${{ github.ref_name }}" \
+            --assets-dir artifacts \
+            --out-dir tap-files
+
+      - name: Check out homebrew-tap
+        uses: actions/checkout@v3
+        with:
+          repository: kcl-lang/homebrew-tap
+          ref: main
+          path: homebrew-tap
+          # GITHUB_TOKEN is scoped to this repo, so a PAT is needed to push to
+          # the tap and the bucket. Needs write access to both.
+          token: ${{ secrets.TAP_TOKEN }}
+
+      - name: Check out scoop-bucket
+        uses: actions/checkout@v3
+        with:
+          repository: kcl-lang/scoop-bucket
+          ref: main
+          path: scoop-bucket
+          token: ${{ secrets.TAP_TOKEN }}
+
+      - name: Commit kcl-lsp formula and Scoop manifest
+        shell: bash
+        run: |
+          TAG="${{ github.ref_name }}"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          cp tap-files/HomebrewFormula/*.rb homebrew-tap/HomebrewFormula/
+          cp tap-files/Scoops/kcl-lsp.json scoop-bucket/Scoops/
+
+          # GoReleaser also pushes to these repos, so rebase before pushing in
+          # case it landed a commit first.
+          commit_and_push() {
+            local dir="$1" message="$2"
+            git -C "$dir" add -A
+            if git -C "$dir" diff --cached --quiet; then
+              echo "$dir already up to date, nothing to commit"
+              return
+            fi
+            git -C "$dir" commit -m "$message"
+            git -C "$dir" pull --rebase origin main
+            git -C "$dir" push origin main
+          }
+
+          commit_and_push homebrew-tap "chore(kcl-lsp): update formula to ${TAG}"
+          commit_and_push scoop-bucket "chore(kcl-lsp): update manifest to ${TAG}"
