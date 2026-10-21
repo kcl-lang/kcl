@@ -265,7 +265,7 @@ pub unsafe extern "C-unwind" fn kcl_call(
     let name_bytes = unsafe { std::slice::from_raw_parts(name_ptr as *const u8, name_len) };
     let arg_bytes = unsafe { std::slice::from_raw_parts(args_ptr, args_len) };
 
-    let result_bytes = match unsafe { kcl_api::call(name_bytes, arg_bytes) } {
+    let result_bytes = match { kcl_api::call(name_bytes, arg_bytes) } {
         Ok(bytes) => bytes,
         Err(err) => format!("ERROR:{err}").into_bytes(),
     };
