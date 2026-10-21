@@ -3170,10 +3170,7 @@ mod generator_tests {
                 parse_args: Some(ParseProgramArgs {
                     paths: vec![
                         std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-                            .join("src")
-                            .join("testdata")
-                            .join("gen_rust")
-                            .join("main.k")
+                            .join("src/testdata/gen_rust/main.k")
                             .canonicalize()
                             .unwrap()
                             .display()

@@ -220,7 +220,7 @@ impl<'ctx> Evaluator<'ctx> {
             variables.insert(name.to_string(), pointer.clone());
         }
         // Release the borrow before calling update_lazy_scope_cache
-        let _= pkg_scopes;
+        let _ = pkg_scopes;
         // If updating an existing variable, also update the lazy scope cache
         // to avoid stale references when the variable is reassigned with a new
         // ValueRef (for example, via += which creates a new list).

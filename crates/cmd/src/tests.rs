@@ -171,6 +171,17 @@ fn test_export_rust_command() {
 }
 
 #[test]
+fn test_export_help_lists_supported_target() {
+    let mut command = app();
+    let help = command
+        .find_subcommand_mut("export")
+        .unwrap()
+        .render_help()
+        .to_string();
+    assert!(help.contains("currently supported: rust"));
+}
+
+#[test]
 fn test_multi_external_cmd() {
     let matches = app().get_matches_from([
         ROOT_CMD,
