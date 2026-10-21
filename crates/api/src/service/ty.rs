@@ -68,6 +68,13 @@ pub(crate) fn kcl_schema_ty_to_pb_ty(schema_ty: &SchemaType) -> KclType {
                 any_other: i.any_other,
             })
         }),
+        checks_json: schema_ty
+            .checks
+            .iter()
+            .map(|check| {
+                serde_json::to_string(check).expect("KCL check AST serialization should succeed")
+            })
+            .collect(),
         ..Default::default()
     }
 }

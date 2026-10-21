@@ -264,6 +264,8 @@ pub struct SchemaType {
     pub index_signature: Option<Box<SchemaIndexSignature>>,
     /// Schema decorators including self and attribute decorators.
     pub decorators: Vec<Decorator>,
+    /// Schema and rule checks retained for target-language validation generation.
+    pub checks: Vec<ast::CheckExpr>,
     /// Whether the schema body contains statements other than attribute
     /// definitions (e.g. `if/elif/else`, expression statements, schema attribute
     /// reassignments). Such statements may compute values for otherwise

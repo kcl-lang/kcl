@@ -139,6 +139,7 @@ impl<'ctx> Resolver<'_> {
                         }),
                         index_signature: None,
                         decorators: vec![],
+                        checks: vec![],
                         body_has_stmts: false,
                     };
                     self.insert_object(
@@ -1006,6 +1007,11 @@ impl<'ctx> Resolver<'_> {
             }),
             index_signature,
             decorators,
+            checks: schema_stmt
+                .checks
+                .iter()
+                .map(|check| check.node.clone())
+                .collect(),
             body_has_stmts,
         };
         let schema_runtime_ty = kcl_runtime::schema_runtime_type(name, &self.ctx.pkgpath);
@@ -1161,6 +1167,11 @@ impl<'ctx> Resolver<'_> {
             }),
             index_signature,
             decorators,
+            checks: rule_stmt
+                .checks
+                .iter()
+                .map(|check| check.node.clone())
+                .collect(),
             body_has_stmts: false,
         }
     }

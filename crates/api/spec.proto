@@ -1007,6 +1007,9 @@ service KclService {
 	/// ```
 	rpc GenerateProto(GenerateProtoArgs) returns (GenerateProtoResult);
 
+	/// Generate Rust DTOs from the schemas of a KCL package.
+	rpc GenerateRust(GenerateRustArgs) returns (GenerateRustResult);
+
 	/// Generate documentation from the schemas of a KCL package.
 	///
 	/// # Examples
@@ -1884,6 +1887,18 @@ message GenerateProtoResult {
 	string proto = 1;
 }
 
+// Message for Rust DTO generation request arguments.
+message GenerateRustArgs {
+	// Arguments for parsing the program whose schemas are exported.
+	ParseProgramArgs parse_args = 1;
+}
+
+// Message for Rust DTO generation response.
+message GenerateRustResult {
+	// The generated Rust source.
+	string rust_source = 1;
+}
+
 // Message for generate doc request arguments.
 message GenerateDocArgs {
 	// Arguments for parsing the program whose schemas are documented.
@@ -1942,6 +1957,8 @@ message KclType {
 	optional FunctionType function = 17;
 	// Optional schema index signature
 	optional IndexSignature index_signature = 18;
+	// Schema CheckExpr AST nodes serialized as JSON for code generators.
+	repeated string checks_json = 19;
 }
 
 message FunctionType {
