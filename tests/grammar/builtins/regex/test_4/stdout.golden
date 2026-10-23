@@ -1,0 +1,27 @@
+split_unlimited:
+- a
+- b
+- c
+- d
+split_zero:
+- a
+- b
+- c
+- d
+split_one:
+- a
+- b,c,d
+split_two:
+- a
+- b
+- c,d
+split_exact:
+- a
+- b
+- c
+- d
+split_more:
+- a
+- b
+- c
+- d
