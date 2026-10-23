@@ -759,6 +759,7 @@ mod test_value_plan {
 /// marker, returns that marker. In a document with nested markers,
 /// returns the innermost marker (which is emitted first because the
 /// inner schema is processed before its parent picks up its own marker).
+#[cfg(test)]
 fn slice_marker_section(s: &str, key: &str) -> String {
     let start = match s.find(key) {
         Some(idx) => idx,
@@ -796,6 +797,7 @@ fn slice_marker_section(s: &str, key: &str) -> String {
 /// returns the outermost marker (which is emitted last because the
 /// parent schema's marker is added after all its children have been
 /// recursively processed).
+#[cfg(test)]
 fn slice_last_marker_section(s: &str, key: &str) -> String {
     let start = match s.rfind(key) {
         Some(idx) => idx,

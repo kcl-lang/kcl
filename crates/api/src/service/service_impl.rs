@@ -42,6 +42,7 @@ use super::SERVICE_METHODS;
 use super::gen_doc;
 use super::gen_openapi;
 use super::gen_proto;
+use super::gen_rust;
 use super::gen_schema;
 use super::generator;
 use super::into::*;
@@ -1794,6 +1795,18 @@ impl KclServiceImpl {
         })
     }
 
+    /// Generate serde-enabled Rust DTOs from the schemas of a KCL package.
+    pub fn generate_rust(&self, args: &GenerateRustArgs) -> anyhow::Result<GenerateRustResult> {
+        let parse_args = args
+            .parse_args
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("parse_args must be set to parse a KCL program"))?;
+        let mapping = gen_schema::load_pkg_schema_types(parse_args, "")?;
+        Ok(GenerateRustResult {
+            rust_source: gen_rust::generate_rust(&mapping)?,
+        })
+    }
+
     /// Generate documentation from the schemas of a KCL package.
     ///
     /// The program referenced by `parse_args` is loaded and every schema
@@ -3125,6 +3138,178 @@ mod generator_tests {
                 package: "example.v1".to_string(),
                 ..Default::default()
             })
+            .unwrap_err();
+        assert!(
+            err.to_string().contains("parse_args must be set"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn generate_rust_golden_output() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_rust(&GenerateRustArgs {
+                parse_args: Some(schema_parse_args()),
+            })
+            .unwrap();
+        assert!(result.rust_source.contains("pub struct Person {"));
+        assert!(result.rust_source.contains("pub age: Option<i64>,"));
+        assert!(result.rust_source.contains("pub address: Address,"));
+        assert!(result.rust_source.contains("pub val: serde_json::Value,"));
+        assert!(result.rust_source.contains("pub struct Base {"));
+        assert!(result.rust_source.contains("let errors = Vec::new();"));
+        assert!(!result.rust_source.contains("let mut errors = Vec::new();"));
+    }
+
+    #[test]
+    fn generate_rust_emits_customer_dtos_and_runtime_validation() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_rust(&GenerateRustArgs {
+                parse_args: Some(ParseProgramArgs {
+                    paths: vec![
+                        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                            .join("src/testdata/gen_rust/main.k")
+                            .canonicalize()
+                            .unwrap()
+                            .display()
+                            .to_string(),
+                    ],
+                    ..Default::default()
+                }),
+            })
+            .unwrap();
+        assert!(result.rust_source.contains("pub struct Entity {"));
+        assert!(result.rust_source.contains("pub struct Address {"));
+        assert!(result.rust_source.contains("pub struct Customer {"));
+        assert!(result.rust_source.contains("pub id: String,"));
+        assert!(result.rust_source.contains("pub version: i64,"));
+        assert!(result.rust_source.contains("pub age: Option<i64>,"));
+        assert!(result.rust_source.contains("pub credit_limit: f64,"));
+        assert!(result.rust_source.contains("pub addresses: Vec<Address>,"));
+        assert!(
+            result
+                .rust_source
+                .contains("pub billing_address: Option<Address>,")
+        );
+        assert!(result.rust_source.contains("KCL default: 0"));
+        assert!(result.rust_source.contains("KCL default: \"EUR\""));
+        assert!(result.rust_source.contains("pub fn validate(&self)"));
+        assert!(result.rust_source.contains("self.age.is_some()"));
+        assert!(result.rust_source.contains("self.age.as_ref().expect"));
+        assert!(result.rust_source.contains("id must be a UUID"));
+        assert!(
+            result
+                .rust_source
+                .contains("country must be an ISO 3166-1 alpha-2 code")
+        );
+        assert!(result.rust_source.contains("customer must be an adult"));
+        assert!(result.rust_source.contains("name must be 1..100 chars"));
+        assert!(result.rust_source.contains("Regex::new"));
+        assert!(result.rust_source.contains(".iter().all("));
+        assert!(result.rust_source.contains(".contains("));
+        assert!(result.rust_source.contains("to_uppercase()"));
+
+        let generated = result
+            .rust_source
+            .lines()
+            .filter(|line| !line.trim_start().starts_with("#[serde"))
+            .map(|line| {
+                if line.trim_start().starts_with("#[derive") {
+                    "#[derive(Clone, Debug, PartialEq)]"
+                } else {
+                    line
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        let temp = tempfile::tempdir().unwrap();
+        let source_path = temp.path().join("generated.rs");
+        let binary_path = temp.path().join("generated");
+        let source = format!(
+            r#"
+mod serde_json {{
+    #[derive(Clone, Debug, PartialEq)]
+    pub struct Value;
+}}
+mod regex {{
+    pub struct Regex(String);
+    impl Regex {{
+        pub fn new(pattern: &str) -> Result<Self, ()> {{ Ok(Self(pattern.to_string())) }}
+        pub fn is_match(&self, value: &str) -> bool {{
+            if self.0.contains("0-9a-f") {{
+                let bytes = value.as_bytes();
+                bytes.len() == 36 && [8, 13, 18, 23].iter().all(|index| bytes[*index] == b'-')
+            }} else {{
+                value.contains('@') && value.contains('.')
+            }}
+        }}
+    }}
+}}
+{generated}
+fn main() {{
+    let address = Address {{
+        street: "Main".into(), city: "London".into(), country: "GB".into()
+    }};
+    assert!(address.validate().is_ok());
+    let invalid_address = Address {{
+        street: "Main".into(), city: "London".into(), country: "us".into()
+    }};
+    assert!(invalid_address.validate().is_err());
+    let valid = Customer {{
+        id: "123e4567-e89b-12d3-a456-426614174000".into(), version: 0,
+        name: "Ada Lovelace".into(), email: "ada@example.com".into(), age: None,
+        credit_limit: 100.0, currency: serde_json::Value,
+        tags: vec!["customer".into()], addresses: vec![address.clone()],
+        billing_address: Some(address),
+    }};
+    assert!(valid.validate().is_ok());
+    let invalid = Customer {{
+        id: "not-a-uuid".into(), version: -1,
+        name: "".into(), email: "not-an-email".into(), age: Some(16),
+        credit_limit: -1.0, currency: serde_json::Value,
+        tags: vec![String::new(); 11], addresses: vec![],
+        billing_address: Some(Address {{
+            street: "Main".into(), city: "London".into(), country: "US".into()
+        }}),
+    }};
+    let errors = invalid.validate().unwrap_err();
+    assert!(errors.len() >= 9, "expected all invalid checks, got: {{errors:?}}");
+}}
+"#
+        );
+        std::fs::write(&source_path, source).unwrap();
+        let compile = std::process::Command::new("rustc")
+            .arg("--edition=2024")
+            .arg(&source_path)
+            .arg("-o")
+            .arg(&binary_path)
+            .output()
+            .unwrap();
+        assert!(
+            compile.status.success(),
+            "generated validation code did not compile:\n{}",
+            String::from_utf8_lossy(&compile.stderr)
+        );
+        assert!(
+            compile.stderr.is_empty(),
+            "generated source emitted compiler warnings:\n{}",
+            String::from_utf8_lossy(&compile.stderr)
+        );
+        let run = std::process::Command::new(binary_path).output().unwrap();
+        assert!(
+            run.status.success(),
+            "generated validation behavior failed:\n{}",
+            String::from_utf8_lossy(&run.stderr)
+        );
+    }
+
+    #[test]
+    fn generate_rust_requires_parse_args() {
+        let serv = KclServiceImpl::default();
+        let err = serv
+            .generate_rust(&GenerateRustArgs::default())
             .unwrap_err();
         assert!(
             err.to_string().contains("parse_args must be set"),

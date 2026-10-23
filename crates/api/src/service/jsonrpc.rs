@@ -267,6 +267,14 @@ fn register_kcl_service(io: &mut IoHandler) {
         };
         futures::future::ready(catch!(kcl_service_impl, args, generate_proto))
     });
+    io.add_method("KclService.GenerateRust", |params: Params| {
+        let kcl_service_impl = KclServiceImpl::default();
+        let args: GenerateRustArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kcl_service_impl, args, generate_rust))
+    });
     io.add_method("KclService.GenerateDoc", |params: Params| {
         let kcl_service_impl = KclServiceImpl::default();
         let args: GenerateDocArgs = match params.parse() {
@@ -423,6 +431,28 @@ mod tests {
         assert!(proto.starts_with("syntax = \"proto3\";\n\npackage example.v1;\n"));
         assert!(proto.contains("message Person {"));
         assert!(proto.contains("import \"google/protobuf/struct.proto\";"));
+    }
+
+    #[test]
+    fn kcl_service_generate_rust_dispatches() {
+        let mut io = IoHandler::default();
+        register_kcl_service(&mut io);
+        let request = serde_json::json!({
+            "jsonrpc": "2.0",
+            "method": "KclService.GenerateRust",
+            "params": {
+                "parse_args": {"paths": [gen_openapi_main_k()]}
+            },
+            "id": 1
+        })
+        .to_string();
+        let response = io
+            .handle_request_sync(&request)
+            .expect("KclService.GenerateRust should be registered");
+        let response: serde_json::Value = serde_json::from_str(&response).unwrap();
+        let rust_source = response["result"]["rust_source"].as_str().unwrap();
+        assert!(rust_source.contains("pub struct Person {"));
+        assert!(rust_source.contains("pub address: Address,"));
     }
 
     /// The schema generator RPCs must be dispatchable through the JSON-RPC

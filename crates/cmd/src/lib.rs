@@ -3,6 +3,7 @@
 #[macro_use]
 extern crate clap;
 
+pub mod export;
 pub mod run;
 pub mod settings;
 pub(crate) mod util;
@@ -23,6 +24,7 @@ pub fn main(args: &[&str]) -> Result<()> {
     // Sub commands
     match matches.subcommand() {
         Some(("run", sub_matches)) => run_command(sub_matches, &mut io::stdout()),
+        Some(("export", sub_matches)) => export::export_command(sub_matches, &mut io::stdout()),
         Some(("version", _)) => {
             println!("{}", kcl_version::get_version_info());
             Ok(())
@@ -62,6 +64,13 @@ pub fn app() -> Command {
             .arg(arg!(recursive: -R --recursive "Compile the files directory recursively"))
             .arg(arg!(package_map: -E --external <package_map> ... "Mapping of package name and path where the package is located").num_args(1..)),
         )
+    .subcommand(
+        Command::new("export")
+            .about("export KCL schemas to source code")
+            .arg(arg!([input] ... "KCL input files").num_args(1..).required(true))
+            .arg(arg!(target: --target <target> "Target language (currently supported: rust)").value_parser(["rust"]).required(true))
+            .arg(arg!(output: -o --output <output> "Write generated source to this file")),
+    )
     .subcommand(Command::new("server").about("Start a rpc server for APIs"))
     .subcommand(Command::new("version").about("Show the KCL version"))
 }
