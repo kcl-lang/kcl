@@ -275,6 +275,14 @@ fn register_kcl_service(io: &mut IoHandler) {
         };
         futures::future::ready(catch!(kcl_service_impl, args, generate_rust))
     });
+    io.add_method("KclService.GeneratePython", |params: Params| {
+        let kcl_service_impl = KclServiceImpl::default();
+        let args: GeneratePythonArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kcl_service_impl, args, generate_python))
+    });
     io.add_method("KclService.GenerateDoc", |params: Params| {
         let kcl_service_impl = KclServiceImpl::default();
         let args: GenerateDocArgs = match params.parse() {
@@ -453,6 +461,28 @@ mod tests {
         let rust_source = response["result"]["rust_source"].as_str().unwrap();
         assert!(rust_source.contains("pub struct Person {"));
         assert!(rust_source.contains("pub address: Address,"));
+    }
+
+    #[test]
+    fn kcl_service_generate_python_dispatches() {
+        let mut io = IoHandler::default();
+        register_kcl_service(&mut io);
+        let request = serde_json::json!({
+            "jsonrpc": "2.0",
+            "method": "KclService.GeneratePython",
+            "params": {
+                "parse_args": {"paths": [gen_openapi_main_k()]}
+            },
+            "id": 1
+        })
+        .to_string();
+        let response = io
+            .handle_request_sync(&request)
+            .expect("KclService.GeneratePython should be registered");
+        let response: serde_json::Value = serde_json::from_str(&response).unwrap();
+        let python_source = response["result"]["python_source"].as_str().unwrap();
+        assert!(python_source.contains("class Person:"));
+        assert!(python_source.contains("address: Address"));
     }
 
     /// The schema generator RPCs must be dispatchable through the JSON-RPC
