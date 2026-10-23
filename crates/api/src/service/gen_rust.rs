@@ -5,29 +5,11 @@ use std::collections::{HashMap, HashSet};
 use kcl_ast::ast;
 
 use crate::gpyrpc::{KclType, SchemaTypes};
-use crate::service::gen_schema::{
-    SchemaNameResolver, emit_schema_list, ordered_schemas, require_schemas,
-};
+use crate::service::gen_ident::{is_keyword, to_pascal_case, to_snake_case};
+use crate::service::gen_schema::{self, SchemaNameResolver};
 
 pub(crate) fn generate_rust(mapping: &HashMap<String, SchemaTypes>) -> anyhow::Result<String> {
-    let ordered = ordered_schemas(mapping);
-    require_schemas(&ordered)?;
-    let resolver = SchemaNameResolver::new(&ordered);
-    let schemas = emit_schema_list(&ordered);
-    let mut used_schema_names = HashSet::new();
-    for schema in &schemas {
-        let rust_name = rust_type_name(&schema.name);
-        if !used_schema_names.insert(rust_name.clone()) {
-            anyhow::bail!("Rust schema name collision after normalization: {rust_name:?}");
-        }
-    }
-
-    let mut out = String::new();
-    for schema in schemas {
-        emit_schema(&mut out, &schema.name, schema.ty, &resolver)?;
-        out.push('\n');
-    }
-    Ok(out)
+    gen_schema::generate_source(mapping, "Rust", rust_type_name, emit_schema)
 }
 
 fn emit_schema(
@@ -105,10 +87,9 @@ fn emit_validator(out: &mut String, name: &str, ty: &KclType) -> anyhow::Result<
         })
         .collect::<HashMap<_, _>>();
     let mut errors = Vec::new();
-    if let Some(base) = &ty.base_schema {
-        collect_checks(base, &fields, &mut errors)?;
+    for check in gen_schema::decode_checks(ty)? {
+        collect_check(&check, &fields, &mut errors)?;
     }
-    collect_checks(ty, &fields, &mut errors)?;
 
     out.push_str(&format!("impl {} {{\n", rust_type_name(name)));
     out.push_str("    pub fn validate(&self) -> Result<(), Vec<String>> {\n");
@@ -130,54 +111,46 @@ fn emit_validator(out: &mut String, name: &str, ty: &KclType) -> anyhow::Result<
     Ok(())
 }
 
-fn collect_checks(
-    ty: &KclType,
+fn collect_check(
+    check: &ast::CheckExpr,
     fields: &HashMap<String, (String, KclType, bool)>,
     errors: &mut Vec<String>,
 ) -> anyhow::Result<()> {
-    for check_json in &ty.checks_json {
-        let check: ast::CheckExpr = serde_json::from_str(check_json).map_err(|error| {
-            anyhow::anyhow!(
-                "cannot decode KCL check AST for schema {:?}: {error}",
-                ty.schema_name
-            )
-        })?;
-        let mut context = RustExprContext {
+    let mut context = RustExprContext {
+        fields,
+        locals: HashMap::new(),
+        unwrapped_optional_fields: HashSet::new(),
+    };
+    if let Some(condition) = &check.if_cond {
+        collect_guarded_optionals(
+            &condition.node,
             fields,
-            locals: HashMap::new(),
-            unwrapped_optional_fields: HashSet::new(),
-        };
-        if let Some(condition) = &check.if_cond {
-            collect_guarded_optionals(
-                &condition.node,
-                fields,
-                &mut context.unwrapped_optional_fields,
-            );
-        }
-        let condition = check
-            .if_cond
-            .as_ref()
-            .map(|condition| render_condition(&condition.node, &context))
-            .transpose()?;
-        let test = render_expr(&check.test.node, &context)?;
-        let message = check
-            .msg
-            .as_ref()
-            .map(|message| render_expr(&message.node, &context))
-            .transpose()?
-            .unwrap_or_else(|| format!("{:?}", format!("KCL check failed: {test}")));
-        let condition = condition.map_or_else(String::new, |condition| {
-            format!("if {condition} && !({test})")
-        });
-        let condition = if condition.is_empty() {
-            format!("if !({test})")
-        } else {
-            condition
-        };
-        errors.push(format!(
-            "        {condition} {{ errors.push(({message}).to_string()); }}\n"
-        ));
+            &mut context.unwrapped_optional_fields,
+        );
     }
+    let condition = check
+        .if_cond
+        .as_ref()
+        .map(|condition| render_condition(&condition.node, &context))
+        .transpose()?;
+    let test = render_expr(&check.test.node, &context)?;
+    let message = check
+        .msg
+        .as_ref()
+        .map(|message| render_expr(&message.node, &context))
+        .transpose()?
+        .unwrap_or_else(|| gen_schema::default_check_message(&test));
+    let condition = condition.map_or_else(String::new, |condition| {
+        format!("if {condition} && !({test})")
+    });
+    let condition = if condition.is_empty() {
+        format!("if !({test})")
+    } else {
+        condition
+    };
+    errors.push(format!(
+        "        {condition} {{ errors.push(({message}).to_string()); }}\n"
+    ));
     Ok(())
 }
 
@@ -680,102 +653,24 @@ fn rust_type(ty: &KclType, resolver: &SchemaNameResolver, field: &str) -> anyhow
 }
 
 fn rust_type_name(name: &str) -> String {
-    let mut result = String::new();
-    let mut capitalize = true;
-    for ch in name.chars() {
-        if ch.is_ascii_alphanumeric() {
-            if capitalize {
-                result.push(ch.to_ascii_uppercase());
-            } else {
-                result.push(ch);
-            }
-            capitalize = false;
-        } else {
-            capitalize = true;
-        }
-    }
-    if result.is_empty() || result.as_bytes()[0].is_ascii_digit() {
-        result.insert_str(0, "Kcl");
-    }
-    result
+    to_pascal_case(name)
 }
 
 fn rust_field_name(name: &str) -> String {
-    let mut chars = name.chars().peekable();
-    let mut result = String::new();
-    while let Some(ch) = chars.next() {
-        if ch.is_ascii_uppercase() {
-            if !result.is_empty()
-                && !result.ends_with('_')
-                && (result
-                    .chars()
-                    .last()
-                    .is_some_and(|prev| prev.is_ascii_lowercase())
-                    || chars.peek().is_some_and(|next| next.is_ascii_lowercase()))
-            {
-                result.push('_');
-            }
-            result.push(ch.to_ascii_lowercase());
-        } else if ch.is_ascii_alphanumeric() || ch == '_' {
-            result.push(ch);
-        } else if !result.ends_with('_') {
-            result.push('_');
-        }
-    }
-    while result.ends_with('_') {
-        result.pop();
-    }
-    if result.is_empty() || result.as_bytes()[0].is_ascii_digit() {
-        result.insert_str(0, "field_");
-    }
-    if is_rust_keyword(&result) {
+    let result = to_snake_case(name);
+    if is_keyword(&result, RUST_KEYWORDS) {
         format!("r#{result}")
     } else {
         result
     }
 }
 
-fn is_rust_keyword(name: &str) -> bool {
-    matches!(
-        name,
-        "as" | "break"
-            | "const"
-            | "continue"
-            | "crate"
-            | "else"
-            | "enum"
-            | "extern"
-            | "false"
-            | "fn"
-            | "for"
-            | "if"
-            | "impl"
-            | "in"
-            | "let"
-            | "loop"
-            | "match"
-            | "mod"
-            | "move"
-            | "mut"
-            | "pub"
-            | "ref"
-            | "return"
-            | "self"
-            | "static"
-            | "struct"
-            | "super"
-            | "trait"
-            | "true"
-            | "type"
-            | "unsafe"
-            | "use"
-            | "where"
-            | "while"
-            | "async"
-            | "await"
-            | "dyn"
-    )
-}
+const RUST_KEYWORDS: &[&str] = &[
+    "as", "break", "const", "continue", "crate", "else", "enum", "extern", "false", "fn", "for",
+    "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut", "pub", "ref", "return",
+    "self", "static", "struct", "super", "trait", "true", "type", "unsafe", "use", "where",
+    "while", "async", "await", "dyn",
+];
 
 #[cfg(test)]
 mod tests {

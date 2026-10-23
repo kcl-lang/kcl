@@ -5,33 +5,13 @@ use std::collections::{HashMap, HashSet};
 use kcl_ast::ast;
 
 use crate::gpyrpc::{KclType, SchemaTypes};
-use crate::service::gen_schema::{
-    SchemaNameResolver, emit_schema_list, ordered_schemas, require_schemas,
-};
+use crate::service::gen_ident::{is_keyword, to_pascal_case, to_snake_case};
+use crate::service::gen_schema::{self, SchemaNameResolver};
 
 pub(crate) fn generate_python(mapping: &HashMap<String, SchemaTypes>) -> anyhow::Result<String> {
-    let ordered = ordered_schemas(mapping);
-    require_schemas(&ordered)?;
-    let resolver = SchemaNameResolver::new(&ordered);
-    let schemas = emit_schema_list(&ordered);
-    let mut used_schema_names = HashSet::new();
-    for schema in &schemas {
-        let python_name = python_type_name(&schema.name);
-        if !used_schema_names.insert(python_name.clone()) {
-            anyhow::bail!("Python schema name collision after normalization: {python_name:?}");
-        }
-    }
-
-    let mut out = String::new();
-    out.push_str("import dataclasses\n");
-    out.push_str("import re\n");
-    out.push_str("import typing\n\n\n");
-    for (index, schema) in schemas.iter().enumerate() {
-        emit_schema(&mut out, &schema.name, schema.ty, &resolver)?;
-        if index + 1 != schemas.len() {
-            out.push('\n');
-        }
-    }
+    let body = gen_schema::generate_source(mapping, "Python", python_type_name, emit_schema)?;
+    let mut out = String::from("import dataclasses\nimport re\nimport typing\n\n\n");
+    out.push_str(&body);
     Ok(out)
 }
 
@@ -108,58 +88,43 @@ fn emit_validator(out: &mut String, ty: &KclType) -> anyhow::Result<()> {
             )
         })
         .collect::<HashMap<_, _>>();
-    let mut checks = Vec::new();
-    if let Some(base) = &ty.base_schema {
-        collect_checks(base, &fields, &mut checks)?;
-    }
-    collect_checks(ty, &fields, &mut checks)?;
 
     out.push_str("    def validate(self) -> typing.List[str]:\n");
     out.push_str("        errors: typing.List[str] = []\n");
-    for check in checks {
-        out.push_str(&check);
+    for check in gen_schema::decode_checks(ty)? {
+        out.push_str(&render_check(&check, &fields)?);
     }
     out.push_str("        return errors\n");
     Ok(())
 }
 
-fn collect_checks(
-    ty: &KclType,
+fn render_check(
+    check: &ast::CheckExpr,
     fields: &HashMap<String, (String, KclType, bool)>,
-    checks: &mut Vec<String>,
-) -> anyhow::Result<()> {
-    for check_json in &ty.checks_json {
-        let check: ast::CheckExpr = serde_json::from_str(check_json).map_err(|error| {
-            anyhow::anyhow!(
-                "cannot decode KCL check AST for schema {:?}: {error}",
-                ty.schema_name
-            )
-        })?;
-        let context = PythonExprContext {
-            fields,
-            locals: HashMap::new(),
-        };
-        let condition = check
-            .if_cond
-            .as_ref()
-            .map(|condition| render_condition(&condition.node, &context))
-            .transpose()?;
-        let test = render_expr(&check.test.node, &context)?;
-        let message = check
-            .msg
-            .as_ref()
-            .map(|message| render_expr(&message.node, &context))
-            .transpose()?
-            .unwrap_or_else(|| format!("{:?}", format!("KCL check failed: {test}")));
-        let condition = match condition {
-            Some(condition) => format!("{condition} and not ({test})"),
-            None => format!("not ({test})"),
-        };
-        checks.push(format!(
-            "        if {condition}:\n            errors.append({message})\n"
-        ));
-    }
-    Ok(())
+) -> anyhow::Result<String> {
+    let context = PythonExprContext {
+        fields,
+        locals: HashMap::new(),
+    };
+    let condition = check
+        .if_cond
+        .as_ref()
+        .map(|condition| render_condition(&condition.node, &context))
+        .transpose()?;
+    let test = render_expr(&check.test.node, &context)?;
+    let message = check
+        .msg
+        .as_ref()
+        .map(|message| render_expr(&message.node, &context))
+        .transpose()?
+        .unwrap_or_else(|| gen_schema::default_check_message(&test));
+    let condition = match condition {
+        Some(condition) => format!("{condition} and not ({test})"),
+        None => format!("not ({test})"),
+    };
+    Ok(format!(
+        "        if {condition}:\n            errors.append({message})\n"
+    ))
 }
 
 struct PythonExprContext<'a> {
@@ -427,100 +392,24 @@ fn python_type(ty: &KclType, resolver: &SchemaNameResolver, field: &str) -> anyh
 }
 
 fn python_type_name(name: &str) -> String {
-    let mut result = String::new();
-    let mut capitalize = true;
-    for ch in name.chars() {
-        if ch.is_ascii_alphanumeric() {
-            if capitalize {
-                result.push(ch.to_ascii_uppercase());
-            } else {
-                result.push(ch);
-            }
-            capitalize = false;
-        } else {
-            capitalize = true;
-        }
-    }
-    if result.is_empty() || result.as_bytes()[0].is_ascii_digit() {
-        result.insert_str(0, "Kcl");
-    }
-    result
+    to_pascal_case(name)
 }
 
 fn python_field_name(name: &str) -> String {
-    let mut chars = name.chars().peekable();
-    let mut result = String::new();
-    while let Some(ch) = chars.next() {
-        if ch.is_ascii_uppercase() {
-            if !result.is_empty()
-                && !result.ends_with('_')
-                && (result
-                    .chars()
-                    .last()
-                    .is_some_and(|prev| prev.is_ascii_lowercase())
-                    || chars.peek().is_some_and(|next| next.is_ascii_lowercase()))
-            {
-                result.push('_');
-            }
-            result.push(ch.to_ascii_lowercase());
-        } else if ch.is_ascii_alphanumeric() || ch == '_' {
-            result.push(ch);
-        } else if !result.ends_with('_') {
-            result.push('_');
-        }
+    let result = to_snake_case(name);
+    if is_keyword(&result, PYTHON_KEYWORDS) {
+        format!("{result}_")
+    } else {
+        result
     }
-    while result.ends_with('_') {
-        result.pop();
-    }
-    if result.is_empty() || result.as_bytes()[0].is_ascii_digit() {
-        result.insert_str(0, "field_");
-    }
-    if is_python_keyword(&result) {
-        result.push('_');
-    }
-    result
 }
 
-fn is_python_keyword(name: &str) -> bool {
-    matches!(
-        name,
-        "False"
-            | "None"
-            | "True"
-            | "and"
-            | "as"
-            | "assert"
-            | "async"
-            | "await"
-            | "break"
-            | "class"
-            | "continue"
-            | "def"
-            | "del"
-            | "elif"
-            | "else"
-            | "except"
-            | "finally"
-            | "for"
-            | "from"
-            | "global"
-            | "if"
-            | "import"
-            | "in"
-            | "is"
-            | "lambda"
-            | "nonlocal"
-            | "not"
-            | "or"
-            | "pass"
-            | "raise"
-            | "return"
-            | "try"
-            | "while"
-            | "with"
-            | "yield"
-    )
-}
+const PYTHON_KEYWORDS: &[&str] = &[
+    "False", "None", "True", "and", "as", "assert", "async", "await", "break", "class", "continue",
+    "def", "del", "elif", "else", "except", "finally", "for", "from", "global", "if", "import",
+    "in", "is", "lambda", "nonlocal", "not", "or", "pass", "raise", "return", "try", "while",
+    "with", "yield",
+];
 
 #[cfg(test)]
 mod tests {

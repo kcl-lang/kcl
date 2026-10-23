@@ -1,5 +1,6 @@
 pub mod capi;
 pub(crate) mod gen_doc;
+pub(crate) mod gen_ident;
 pub(crate) mod gen_openapi;
 pub(crate) mod gen_proto;
 pub(crate) mod gen_python;
