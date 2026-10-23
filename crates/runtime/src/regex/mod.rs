@@ -182,10 +182,11 @@ pub unsafe extern "C-unwind" fn kcl_regex_split(
                     .map_or(None, |c| c);
                 if let Some(Some(cap)) = capture.map(|c| c.get(0)) {
                     fields.push(string[current_pos..cap.start()].to_string());
+                    current_pos = cap.end();
                     if maxsplit > 0 && fields.len() >= (maxsplit as usize) {
+                        fields.push(string[current_pos..].to_string());
                         break;
                     }
-                    current_pos = cap.end();
                 } else {
                     fields.push(string[current_pos..].to_string());
                     break;
