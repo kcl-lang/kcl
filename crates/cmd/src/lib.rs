@@ -68,7 +68,7 @@ pub fn app() -> Command {
         Command::new("export")
             .about("export KCL schemas to source code")
             .arg(arg!([input] ... "KCL input files").num_args(1..).required(true))
-            .arg(arg!(target: --target <target> "Target language (currently supported: rust)").value_parser(["rust"]).required(true))
+            .arg(arg!(target: --target <target> "Target language (currently supported: rust, python)").value_parser(["rust", "python"]).required(true))
             .arg(arg!(output: -o --output <output> "Write generated source to this file")),
     )
     .subcommand(Command::new("server").about("Start a rpc server for APIs"))

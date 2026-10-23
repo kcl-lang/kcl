@@ -2,6 +2,7 @@ pub mod capi;
 pub(crate) mod gen_doc;
 pub(crate) mod gen_openapi;
 pub(crate) mod gen_proto;
+pub(crate) mod gen_python;
 pub(crate) mod gen_rust;
 pub(crate) mod gen_schema;
 pub(crate) mod generator;
@@ -51,6 +52,7 @@ pub(crate) const SERVICE_METHODS: &[&str] = &[
     "KclService.GenerateKcl",
     "KclService.GenerateOpenAPI",
     "KclService.GenerateProto",
+    "KclService.GeneratePython",
     "KclService.GenerateRust",
     "KclService.GenerateDoc",
     "BuiltinService.Ping",
