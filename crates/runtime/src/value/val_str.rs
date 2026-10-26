@@ -44,6 +44,33 @@ fn adjust_indices(
     start as usize..end as usize
 }
 
+/// Resolve the `start`/`end` arguments of the str search methods, which count
+/// characters, into the selected substring and the character index it starts
+/// at. Returns `None` when the resulting range is empty or inverted.
+fn char_range<'a>(
+    value: &'a str,
+    start: Option<&ValueRef>,
+    end: Option<&ValueRef>,
+) -> Option<(&'a str, usize)> {
+    let char_len = value.chars().count();
+    let range = adjust_indices(start, end, char_len);
+    if !range.is_normal() {
+        return None;
+    }
+    let mut offsets = value
+        .char_indices()
+        .map(|(offset, _)| offset)
+        .chain(std::iter::once(value.len()));
+    let byte_start = offsets.clone().nth(range.start)?;
+    let byte_end = offsets.nth(range.end)?;
+    Some((&value[byte_start..byte_end], range.start))
+}
+
+/// Convert a byte offset within `value` into a character index.
+fn char_index(value: &str, byte_offset: usize) -> usize {
+    value[..byte_offset].chars().count()
+}
+
 fn is_case<F, G>(value: &str, is_case: F, is_opposite: G) -> bool
 where
     F: Fn(char) -> bool,
@@ -132,11 +159,9 @@ impl ValueRef {
 
         match (&*self.rc.borrow(), &*sub.rc.borrow()) {
             (Value::str_value(v), Value::str_value(sub_str)) => {
-                let range = adjust_indices(start, end, v.len());
-                let count = if range.is_normal() {
-                    v.get(range).unwrap().matches(sub_str).count()
-                } else {
-                    0
+                let count = match char_range(v, start, end) {
+                    Some((slice, _)) => slice.matches(sub_str.as_str()).count(),
+                    None => 0,
                 };
                 ValueRef::int(count as i64)
             }
@@ -155,11 +180,9 @@ impl ValueRef {
 
         match (&*self.rc.borrow(), &*prefix.rc.borrow()) {
             (Value::str_value(v), Value::str_value(prefix)) => {
-                let range = adjust_indices(start, end, v.len());
-                let result = if range.is_normal() {
-                    v.get(range).unwrap().starts_with(prefix)
-                } else {
-                    false
+                let result = match char_range(v, start, end) {
+                    Some((slice, _)) => slice.starts_with(prefix.as_str()),
+                    None => false,
                 };
                 ValueRef::bool(result)
             }
@@ -178,11 +201,9 @@ impl ValueRef {
 
         match (&*self.rc.borrow(), &*suffix.rc.borrow()) {
             (Value::str_value(v), Value::str_value(suffix)) => {
-                let range = adjust_indices(start, end, v.len());
-                let result = if range.is_normal() {
-                    v.get(range).unwrap().ends_with(suffix)
-                } else {
-                    false
+                let result = match char_range(v, start, end) {
+                    Some((slice, _)) => slice.ends_with(suffix.as_str()),
+                    None => false,
                 };
                 ValueRef::bool(result)
             }
@@ -216,15 +237,12 @@ impl ValueRef {
 
         match (&*self.rc.borrow(), &*sub.rc.borrow()) {
             (Value::str_value(v), Value::str_value(sub)) => {
-                let range = adjust_indices(start, end, v.len());
-                let range_start = range.start;
-                let result: i64 = if range.is_normal() {
-                    match v.get(range).unwrap().find(sub) {
-                        Some(index) => (index + range_start) as i64,
+                let result: i64 = match char_range(v, start, end) {
+                    Some((slice, range_start)) => match slice.find(sub.as_str()) {
+                        Some(index) => (char_index(slice, index) + range_start) as i64,
                         None => -1,
-                    }
-                } else {
-                    -1
+                    },
+                    None => -1,
                 };
                 ValueRef::int(result)
             }
@@ -243,15 +261,12 @@ impl ValueRef {
 
         match (&*self.rc.borrow(), &*sub.rc.borrow()) {
             (Value::str_value(v), Value::str_value(sub)) => {
-                let range = adjust_indices(start, end, v.len());
-                let range_start = range.start;
-                let result: i64 = if range.is_normal() {
-                    match v.get(range).unwrap().rfind(sub) {
-                        Some(index) => (index + range_start) as i64,
+                let result: i64 = match char_range(v, start, end) {
+                    Some((slice, range_start)) => match slice.rfind(sub.as_str()) {
+                        Some(index) => (char_index(slice, index) + range_start) as i64,
                         None => -1,
-                    }
-                } else {
-                    -1
+                    },
+                    None => -1,
                 };
                 ValueRef::int(result)
             }
@@ -270,15 +285,12 @@ impl ValueRef {
 
         match (&*self.rc.borrow(), &*sub.rc.borrow()) {
             (Value::str_value(v), Value::str_value(sub)) => {
-                let range = adjust_indices(start, end, v.len());
-                let range_start = range.start;
-                let result: i64 = if range.is_normal() {
-                    match v.get(range).unwrap().find(sub) {
-                        Some(index) => (index + range_start) as i64,
+                let result: i64 = match char_range(v, start, end) {
+                    Some((slice, range_start)) => match slice.find(sub.as_str()) {
+                        Some(index) => (char_index(slice, index) + range_start) as i64,
                         None => panic!("substring not found"),
-                    }
-                } else {
-                    panic!("substring not found");
+                    },
+                    None => panic!("substring not found"),
                 };
                 ValueRef::int(result)
             }
@@ -297,15 +309,12 @@ impl ValueRef {
 
         match (&*self.rc.borrow(), &*sub.rc.borrow()) {
             (Value::str_value(v), Value::str_value(sub)) => {
-                let range = adjust_indices(start, end, v.len());
-                let range_start = range.start;
-                let result: i64 = if range.is_normal() {
-                    match v.get(range).unwrap().rfind(sub) {
-                        Some(index) => (index + range_start) as i64,
+                let result: i64 = match char_range(v, start, end) {
+                    Some((slice, range_start)) => match slice.rfind(sub.as_str()) {
+                        Some(index) => (char_index(slice, index) + range_start) as i64,
                         None => panic!("substring not found"),
-                    }
-                } else {
-                    panic!("substring not found");
+                    },
+                    None => panic!("substring not found"),
                 };
                 ValueRef::int(result)
             }
