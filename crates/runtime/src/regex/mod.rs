@@ -108,15 +108,21 @@ pub unsafe extern "C-unwind" fn kcl_regex_findall(
                 .captures_iter(string.as_ref())
                 .flatten()
             {
-                let len = x.len();
-                if len < 3 {
-                    list.list_append(&ValueRef::str(x.get(0).unwrap().as_str()));
-                } else {
-                    let mut sub_list = ValueRef::list(None);
-                    for i in 1..len {
-                        sub_list.list_append(&ValueRef::str(x.get(i).unwrap().as_str()));
+                // Like Python's `re.findall`, return the whole match when the pattern
+                // has no group, the group when it has exactly one, and a list of the
+                // groups otherwise. A group that did not participate in the match
+                // yields an empty string.
+                let group = |i| ValueRef::str(x.get(i).map_or("", |m| m.as_str()));
+                match x.len() {
+                    1 => list.list_append(&group(0)),
+                    2 => list.list_append(&group(1)),
+                    len => {
+                        let mut sub_list = ValueRef::list(None);
+                        for i in 1..len {
+                            sub_list.list_append(&group(i));
+                        }
+                        list.list_append(&sub_list)
                     }
-                    list.list_append(&sub_list)
                 }
             }
 
