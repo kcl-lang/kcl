@@ -533,7 +533,7 @@ pub fn multiplyof(a: &ValueRef, b: &ValueRef) -> ValueRef {
     }
 }
 
-pub fn pow(x: &ValueRef, y: &ValueRef, z: &ValueRef) -> ValueRef {
+pub fn pow(ctx: &mut Context, x: &ValueRef, y: &ValueRef, z: &ValueRef) -> ValueRef {
     match &*z.rc.borrow() {
         Value::int_value(z) => {
             if *z == 0 {
@@ -541,7 +541,7 @@ pub fn pow(x: &ValueRef, y: &ValueRef, z: &ValueRef) -> ValueRef {
             }
             match (&*x.rc.borrow(), &*y.rc.borrow()) {
                 (Value::int_value(x), Value::int_value(y)) => match (*y).cmp(&0) {
-                    std::cmp::Ordering::Equal => ValueRef::int(1),
+                    std::cmp::Ordering::Equal => ValueRef::int(1).bin_mod(&ValueRef::int(*z)),
                     std::cmp::Ordering::Greater => {
                         let mut ans = 1_i128;
                         let mut base = *x as i128;
@@ -554,7 +554,9 @@ pub fn pow(x: &ValueRef, y: &ValueRef, z: &ValueRef) -> ValueRef {
                             base = (base * base) % m;
                             exp /= 2;
                         }
-                        ValueRef::int(ans as i64)
+                        // Rust's `%` keeps the sign of the dividend, so apply KCL's `%`
+                        // to give the result the sign of `z`, as `x ** y % z` does.
+                        ValueRef::int(ans as i64).bin_mod(&ValueRef::int(*z))
                     }
                     std::cmp::Ordering::Less => {
                         panic!("pow() 2nd argument cannot be negative when 3rd argument specified")
@@ -564,12 +566,10 @@ pub fn pow(x: &ValueRef, y: &ValueRef, z: &ValueRef) -> ValueRef {
             }
         }
         _ => match (&*x.rc.borrow(), &*y.rc.borrow()) {
+            // Non-negative int exponents give an exact int result, as `x ** y` does.
+            (Value::int_value(_), Value::int_value(exp)) if *exp >= 0 => x.bin_pow(ctx, y),
             (Value::int_value(x), Value::int_value(y)) => {
-                if *y >= 0 {
-                    ValueRef::int((*x as f64).powf(*y as f64) as i64)
-                } else {
-                    ValueRef::float((*x as f64).powf(*y as f64))
-                }
+                ValueRef::float((*x as f64).powf(*y as f64))
             }
             (Value::int_value(x), Value::float_value(y)) => ValueRef::float((*x as f64).powf(*y)),
             (Value::float_value(x), Value::int_value(y)) => ValueRef::float((*x).powf(*y as f64)),
@@ -672,27 +672,86 @@ mod test_builtin {
 
     #[test]
     fn test_pow() {
+        let mut ctx = Context::new();
+        let ctx = &mut ctx;
         assert_eq!(
             8,
-            builtin::pow(&ValueRef::int(2), &ValueRef::int(3), &ValueRef::none()).as_int()
+            builtin::pow(ctx, &ValueRef::int(2), &ValueRef::int(3), &ValueRef::none()).as_int()
         );
         assert_eq!(
             3,
-            builtin::pow(&ValueRef::int(2), &ValueRef::int(3), &ValueRef::int(5)).as_int()
+            builtin::pow(ctx, &ValueRef::int(2), &ValueRef::int(3), &ValueRef::int(5)).as_int()
         );
         assert_eq!(
             (2.0_f64).powf(0.5),
-            builtin::pow(&ValueRef::int(2), &ValueRef::float(0.5), &ValueRef::none()).as_float()
+            builtin::pow(
+                ctx,
+                &ValueRef::int(2),
+                &ValueRef::float(0.5),
+                &ValueRef::none()
+            )
+            .as_float()
         );
         assert_eq!(
             182523810312617,
             builtin::pow(
+                ctx,
                 &ValueRef::int(141592653589793),
                 &ValueRef::int(238462643383279),
                 &ValueRef::int(502884197169399)
             )
             .as_int()
         )
+    }
+
+    #[test]
+    fn test_pow_int_is_exact() {
+        let mut ctx = Context::new();
+        let result = builtin::pow(
+            &mut ctx,
+            &ValueRef::int(3),
+            &ValueRef::int(39),
+            &ValueRef::none(),
+        );
+        assert!(result.is_int());
+        assert_eq!(4052555153018976267, result.as_int());
+        let result = builtin::pow(
+            &mut ctx,
+            &ValueRef::int(2),
+            &ValueRef::int(-1),
+            &ValueRef::none(),
+        );
+        assert_eq!(0.5, result.as_float());
+        assert_panic("A 64 bit integer overflow", || {
+            let mut ctx = Context::new();
+            let _ = builtin::pow(
+                &mut ctx,
+                &ValueRef::int(2),
+                &ValueRef::int(64),
+                &ValueRef::none(),
+            );
+        });
+    }
+
+    #[test]
+    fn test_pow_mod_sign() {
+        let mut ctx = Context::new();
+        for (x, y, z, expected) in [
+            (-2, 3, 5, 2),
+            (2, 3, -5, -2),
+            (-2, 3, -5, -3),
+            (-3, 2, 5, 4),
+            (7, 0, 1, 0),
+            (7, 0, -3, -2),
+        ] {
+            let result = builtin::pow(
+                &mut ctx,
+                &ValueRef::int(x),
+                &ValueRef::int(y),
+                &ValueRef::int(z),
+            );
+            assert_eq!(expected, result.as_int(), "pow({x}, {y}, {z})");
+        }
     }
 
     #[test]

@@ -477,8 +477,8 @@ pub unsafe extern "C-unwind" fn kcl_builtin_pow(
         get_call_arg(args, kwargs, 1, Some("y")),
     ) {
         (Some(arg0), Some(arg1)) => match get_call_arg(args, kwargs, 2, Some("z")) {
-            Some(arg2) => builtin::pow(&arg0, &arg1, &arg2).into_raw(ctx_ref),
-            _ => builtin::pow(&arg0, &arg1, &ValueRef::none()).into_raw(ctx_ref),
+            Some(arg2) => builtin::pow(ctx_ref, &arg0, &arg1, &arg2).into_raw(ctx_ref),
+            _ => builtin::pow(ctx_ref, &arg0, &arg1, &ValueRef::none()).into_raw(ctx_ref),
         },
         _ => unsafe { kcl_value_Undefined(ctx) },
     }
