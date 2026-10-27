@@ -100,7 +100,7 @@ impl RangeNormal for std::ops::Range<usize> {
 impl ValueRef {
     pub fn str_len(&self) -> usize {
         match &*self.rc.borrow() {
-            Value::str_value(v) => v.len(),
+            Value::str_value(v) => v.chars().count(),
             _ => panic!("Invalid str object in str len"),
         }
     }

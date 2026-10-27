@@ -410,7 +410,7 @@ impl ValueRef {
                 if string_len != 1 {
                     panic!(
                         " ord() expected string of length 1, but string of length {} found",
-                        str.len()
+                        string_len
                     )
                 }
                 let ch = str.chars().next().unwrap();

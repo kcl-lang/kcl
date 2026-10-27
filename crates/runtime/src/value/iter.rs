@@ -22,7 +22,7 @@ impl ValueIterator {
         }
         match &*p.rc.borrow() {
             Value::str_value(s) => ValueIterator {
-                len: s.len(),
+                len: s.chars().count(),
                 cur_key: Default::default(),
                 cur_val: Default::default(),
                 keys: Vec::new(),
@@ -102,9 +102,6 @@ impl ValueIterator {
         }
         match &*host.rc.borrow() {
             Value::str_value(s) => {
-                if self.pos >= s.chars().count() as i32 {
-                    return None;
-                }
                 let ch = s.chars().nth(self.pos as usize).unwrap();
                 self.cur_key = ValueRef::int(self.pos as i64);
                 self.cur_val = ValueRef::str(&ch.to_string());
@@ -171,6 +168,18 @@ mod test_value_iter {
 
         let _ = it.next(&s);
         assert!(it.is_end());
+    }
+
+    #[test]
+    fn test_str_iter_non_ascii() {
+        let s = ValueRef::str("hé");
+
+        let mut it = s.iter();
+        assert_eq!(it.next(&s).unwrap().as_str(), "h");
+        assert!(!it.is_end());
+        assert_eq!(it.next(&s).unwrap().as_str(), "é");
+        assert!(it.is_end());
+        assert!(it.next(&s).is_none());
     }
 
     #[test]
