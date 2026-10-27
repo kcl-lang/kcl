@@ -189,6 +189,18 @@ impl ValueRef {
         default
     }
 
+    pub fn kwarg_num(&self, name: &str, default: Option<f64>) -> Option<f64> {
+        if let Some(x) = self.kwarg(name) {
+            match *x.rc.borrow() {
+                Value::float_value(v) => return Some(v),
+                Value::int_value(v) => return Some(v as f64),
+                Value::none | Value::undefined => return default,
+                _ => return None,
+            }
+        }
+        default
+    }
+
     pub fn kwarg_str(&self, name: &str, default: Option<String>) -> Option<String> {
         if let Some(x) = self.kwarg(name) {
             match &*x.rc.borrow() {
