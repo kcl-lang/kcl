@@ -582,10 +582,10 @@ pub fn pow(x: &ValueRef, y: &ValueRef, z: &ValueRef) -> ValueRef {
 pub fn round(number: &ValueRef, ndigits: &ValueRef) -> ValueRef {
     match &*ndigits.rc.borrow() {
         Value::int_value(ndigits) => match &*number.rc.borrow() {
-            Value::int_value(number) => ValueRef::float(*number as f64),
+            Value::int_value(number) => ValueRef::int(round_int(*number, *ndigits)),
             Value::float_value(number) => {
                 if *ndigits == 0 {
-                    ValueRef::float(number.round())
+                    ValueRef::float(number.round_ties_even())
                 } else {
                     let (y, pow1, pow2) = if *ndigits >= 0 {
                         // according to cpython: pow1 and pow2 are each safe from overflow, but
@@ -629,9 +629,32 @@ pub fn round(number: &ValueRef, ndigits: &ValueRef) -> ValueRef {
         },
         _ => match &*number.rc.borrow() {
             Value::int_value(number) => ValueRef::int(*number),
-            Value::float_value(number) => ValueRef::int(number.round() as i64),
+            Value::float_value(number) => ValueRef::int(number.round_ties_even() as i64),
             _ => ValueRef::undefined(),
         },
+    }
+}
+
+/// Round an integer to `ndigits` decimal digits, rounding half to even.
+/// A non-negative `ndigits` leaves the integer unchanged.
+fn round_int(number: i64, ndigits: i64) -> i64 {
+    if ndigits >= 0 {
+        return number;
+    }
+    // Half of 10^20 is already larger than any i64, so every i64 rounds to 0.
+    if ndigits < -19 {
+        return 0;
+    }
+    let pow = 10_i128.pow((-ndigits) as u32);
+    let number = number as i128;
+    let mut quotient = number.div_euclid(pow);
+    let remainder = number.rem_euclid(pow);
+    if remainder * 2 > pow || (remainder * 2 == pow && quotient % 2 != 0) {
+        quotient += 1;
+    }
+    match i64::try_from(quotient * pow) {
+        Ok(result) => result,
+        Err(_) => panic!("round() result overflow"),
     }
 }
 
@@ -781,6 +804,46 @@ mod test_builtin {
             2.0,
             builtin::round(&ValueRef::float(1.5555), &ValueRef::int(0)).as_float()
         );
+    }
+
+    #[test]
+    fn test_round_half_to_even() {
+        for (number, expected) in [(0.5, 0), (1.5, 2), (2.5, 2), (-0.5, 0), (-2.5, -2)] {
+            let result = builtin::round(&ValueRef::float(number), &ValueRef::none());
+            assert!(result.is_int());
+            assert_eq!(expected, result.as_int());
+        }
+        for (number, expected) in [(0.5, 0.0), (2.5, 2.0), (3.5, 4.0), (-2.5, -2.0)] {
+            assert_eq!(
+                expected,
+                builtin::round(&ValueRef::float(number), &ValueRef::int(0)).as_float()
+            );
+        }
+    }
+
+    #[test]
+    fn test_round_int_ndigits() {
+        for (number, ndigits, expected) in [
+            (5, 2, 5),
+            (5, 0, 5),
+            (1234, -2, 1200),
+            (1250, -2, 1200),
+            (1350, -2, 1400),
+            (-1250, -2, -1200),
+            (-1251, -2, -1300),
+            (15, -1, 20),
+            (25, -1, 20),
+            (4_000_000_000_000_000_000, -19, 0),
+            (i64::MAX, -20, 0),
+            (i64::MIN, i64::MIN, 0),
+        ] {
+            let result = builtin::round(&ValueRef::int(number), &ValueRef::int(ndigits));
+            assert!(result.is_int());
+            assert_eq!(expected, result.as_int());
+        }
+        assert_panic("round() result overflow", || {
+            let _ = builtin::round(&ValueRef::int(i64::MAX), &ValueRef::int(-19));
+        });
     }
 
     #[test]
