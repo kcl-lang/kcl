@@ -1,0 +1,69 @@
+replaced:
+- a-b-
+- '-1-22'
+- a-b-
+- c-d
+- '-333-'
+- c-d
+split:
+- - a
+  - b
+  - c
+- - x
+  - 'y'
+found:
+- - a
+  - b
+  - c
+- - x
+  - 'y'
+matched:
+- true
+- false
+- true
+searched:
+- false
+- true
+compiled:
+- true
+- false
+- true
+- false
+inline_flags:
+- false
+- true
+- false
+- true
+replaced_limited:
+- a-b-
+- a-b22
+- a-b-
+split_limited:
+- - a
+  - b
+  - c
+- - a
+  - b22c
+- - a
+  - b
+  - c
+backreferences:
+- - a
+  - b
+  - c
+- - a
+  - b
+  - c
+lookbehind:
+- true
+- false
+- true
+unicode_matches:
+- - αβ
+  - γ
+- - δ
+empty_matches:
+- - ''
+  - ''
+  - ''
+- []
