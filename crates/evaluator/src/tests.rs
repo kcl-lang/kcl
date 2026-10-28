@@ -2307,3 +2307,153 @@ fn issue_1758_referenced_pkgs_with_extra_member_is_noop() {
         json
     );
 }
+
+/// Run `src`, which must fail with a runtime error, and return the error
+/// message and the panic info left in the runtime context.
+fn eval_runtime_error(src: &str) -> (String, kcl_runtime::PanicInfo) {
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![src.to_string()],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| evaluator.run()));
+    let Err(err) = result else {
+        panic!("expected a runtime error");
+    };
+    let panic_info = evaluator.runtime_ctx.borrow().panic_info.clone();
+    (kcl_error::err_to_str(err), panic_info)
+}
+
+/// The 1-based number of the first line of `src` that contains `pat`.
+fn line_of(src: &str, pat: &str) -> i32 {
+    src.lines().position(|line| line.contains(pat)).unwrap() as i32 + 1
+}
+
+#[test]
+fn test_runtime_catch_preserves_panic_info_lifecycle() {
+    let src = r#"
+_caught = lambda {
+    assert False, "caught"
+}
+_normal = lambda {
+    1
+}
+"#;
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![src.to_string()],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    for debug_mode in [false, true] {
+        for name in ["_caught", "_normal"] {
+            let evaluator = Evaluator::new(&p.program);
+            evaluator.run().unwrap();
+            let func = evaluator.get_variable(name);
+            let saved = kcl_runtime::PanicInfo {
+                kcl_pkgpath: MAIN_PKG.to_string(),
+                kcl_file: "caller.k".to_string(),
+                kcl_line: 42,
+                kcl_arg_msg: "outer message".to_string(),
+                kcl_config_meta_file: "outer_config.k".to_string(),
+                message: "outer error".to_string(),
+                backtrace: vec![kcl_runtime::BacktraceFrame::default()],
+                ..Default::default()
+            };
+            {
+                let mut ctx = evaluator.runtime_ctx.borrow_mut();
+                ctx.cfg.debug_mode = debug_mode;
+                ctx.panic_info = saved.clone();
+                ctx.backtrace = saved.backtrace.clone();
+            }
+            let result = crate::runtime::runtime_catch(
+                &evaluator,
+                &ValueRef::list(Some(&[&func])),
+                &ValueRef::dict(None),
+            );
+            let ctx = evaluator.runtime_ctx.borrow();
+            assert_eq!(ctx.backtrace, saved.backtrace);
+            if name == "_caught" {
+                assert_eq!(result.as_str(), "caught");
+                assert_eq!(ctx.panic_info, saved);
+            } else {
+                assert!(result.is_undefined());
+                if !debug_mode {
+                    // A normal return must keep the callee's updates, including
+                    // errors recorded without panicking on wasm32.
+                    assert_eq!(ctx.panic_info.kcl_line, line_of(src, "    1"));
+                    assert_ne!(ctx.panic_info.kcl_file, saved.kcl_file);
+                }
+                assert_eq!(ctx.panic_info.kcl_arg_msg, saved.kcl_arg_msg);
+                assert_eq!(ctx.panic_info.message, saved.message);
+            }
+        }
+    }
+}
+
+#[test]
+fn test_runtime_catch_restores_panic_info_after_schema_check_failure() {
+    // A schema check failure caught by `runtime.catch` must not leave its
+    // error type, check message and instance position behind for a later
+    // uncaught error.
+    let src = r#"
+import runtime
+
+schema Port:
+    number: int
+
+    check:
+        number > 0, "port number must be positive"
+
+msg = runtime.catch(lambda {
+    Port {number = -1}
+})
+assert msg == "port number must be positive"
+assert False, "own message"
+"#;
+    let (msg, panic_info) = eval_runtime_error(src);
+    assert_eq!(msg, "own message");
+    assert_eq!(
+        panic_info.err_type_code,
+        kcl_runtime::RuntimeErrorType::AssertionError as i32
+    );
+    assert_eq!(panic_info.kcl_arg_msg, "");
+    assert_eq!(panic_info.kcl_config_meta_file, "");
+    assert_eq!(panic_info.kcl_config_meta_arg_msg, "");
+    assert_eq!(panic_info.kcl_line, line_of(src, "own message"));
+}
+
+#[test]
+fn test_runtime_catch_restores_panic_info_after_missing_attribute() {
+    // Same for a caught required-attribute error followed by an error that
+    // does not set a message of its own.
+    let src = r#"
+import runtime
+
+schema Port:
+    number: int
+
+msg = runtime.catch(lambda {
+    Port {number = None}
+})
+a = [][0]
+"#;
+    let (msg, panic_info) = eval_runtime_error(src);
+    assert_eq!(msg, "list index out of range: 0");
+    assert_ne!(
+        panic_info.err_type_code,
+        kcl_runtime::RuntimeErrorType::SchemaCheckFailure as i32
+    );
+    assert_eq!(panic_info.kcl_arg_msg, "");
+    assert_eq!(panic_info.kcl_line, line_of(src, "[][0]"));
+}
