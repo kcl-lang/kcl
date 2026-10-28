@@ -96,20 +96,22 @@ impl<'ctx> Evaluator<'ctx> {
 
     /// Get the scope level
     pub(crate) fn scope_level(&self) -> usize {
-        let current_pkgpath = self.current_pkgpath();
+        let current_pkgpath = self.current_pkgpath_ref();
         let pkg_scopes = &self.pkg_scopes.borrow();
-        let msg = format!("pkgpath {} is not found", current_pkgpath);
-        let scopes = pkg_scopes.get(&current_pkgpath).expect(&msg);
+        let scopes = pkg_scopes
+            .get(&*current_pkgpath)
+            .unwrap_or_else(|| panic!("pkgpath {} is not found", current_pkgpath));
         // Sub the builtin global scope
         scopes.len() - 1
     }
 
     /// Get the scope level
     pub(crate) fn is_schema_scope(&self) -> bool {
-        let current_pkgpath = self.current_pkgpath();
+        let current_pkgpath = self.current_pkgpath_ref();
         let pkg_scopes = &self.pkg_scopes.borrow();
-        let msg = format!("pkgpath {} is not found", current_pkgpath);
-        let scopes = pkg_scopes.get(&current_pkgpath).expect(&msg);
+        let scopes = pkg_scopes
+            .get(&*current_pkgpath)
+            .unwrap_or_else(|| panic!("pkgpath {} is not found", current_pkgpath));
         if let Some(last_scope) = scopes.last() {
             last_scope.is_schema
         } else {
@@ -119,10 +121,11 @@ impl<'ctx> Evaluator<'ctx> {
 
     /// Enter a schema scope
     pub(crate) fn enter_schema_scope(&self, is_schema: bool) {
-        let current_pkgpath = self.current_pkgpath();
+        let current_pkgpath = self.current_pkgpath_ref();
         let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
-        let msg = format!("pkgpath {} is not found", current_pkgpath);
-        let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
+        let scopes = pkg_scopes
+            .get_mut(&*current_pkgpath)
+            .unwrap_or_else(|| panic!("pkgpath {} is not found", current_pkgpath));
         scopes.push(Scope {
             is_schema,
             ..Default::default()
@@ -137,10 +140,11 @@ impl<'ctx> Evaluator<'ctx> {
 
     /// Leave scope
     pub(crate) fn leave_scope(&self) {
-        let current_pkgpath = self.current_pkgpath();
+        let current_pkgpath = self.current_pkgpath_ref();
         let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
-        let msg = format!("pkgpath {} is not found", current_pkgpath);
-        let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
+        let scopes = pkg_scopes
+            .get_mut(&*current_pkgpath)
+            .unwrap_or_else(|| panic!("pkgpath {} is not found", current_pkgpath));
         scopes.pop();
     }
 
@@ -185,10 +189,10 @@ impl<'ctx> Evaluator<'ctx> {
 
     /// Append a scalar value into the scope.
     pub fn add_scalar(&self, scalar: ValueRef, is_schema: bool) {
-        let current_pkgpath = self.current_pkgpath();
+        let current_pkgpath = self.current_pkgpath_ref();
         let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
         let scopes = pkg_scopes
-            .get_mut(&current_pkgpath)
+            .get_mut(&*current_pkgpath)
             .unwrap_or_else(|| panic!("pkgpath {} is not found", current_pkgpath));
         if let Some(last) = scopes.last_mut() {
             let scalars = &mut last.scalars;
@@ -209,10 +213,11 @@ impl<'ctx> Evaluator<'ctx> {
 
     /// Append a variable into the scope
     pub fn add_variable(&self, name: &str, pointer: ValueRef) {
-        let current_pkgpath = self.current_pkgpath();
+        let current_pkgpath = self.current_pkgpath_ref();
         let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
-        let msg = format!("pkgpath {} is not found", current_pkgpath);
-        let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
+        let scopes = pkg_scopes
+            .get_mut(&*current_pkgpath)
+            .unwrap_or_else(|| panic!("pkgpath {} is not found", current_pkgpath));
         let mut existed = false;
         if let Some(last) = scopes.last_mut() {
             let variables = &mut last.variables;
@@ -232,10 +237,11 @@ impl<'ctx> Evaluator<'ctx> {
     /// Store the argument named `name` in the current scope.
     pub(crate) fn store_argument_in_current_scope(&self, name: &str) {
         // Find argument name in the scope
-        let current_pkgpath = self.current_pkgpath();
+        let current_pkgpath = self.current_pkgpath_ref();
         let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
-        let msg = format!("pkgpath {} is not found", current_pkgpath);
-        let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
+        let scopes = pkg_scopes
+            .get_mut(&*current_pkgpath)
+            .unwrap_or_else(|| panic!("pkgpath {} is not found", current_pkgpath));
         let index = scopes.len() - 1;
         let arguments_mut = &mut scopes[index].arguments;
         arguments_mut.insert(name.to_string());
@@ -244,14 +250,15 @@ impl<'ctx> Evaluator<'ctx> {
     /// Store the variable named `name` with `value` from the current scope, return false when not found
     pub fn store_variable_in_current_scope(&self, name: &str, value: ValueRef) -> bool {
         // Find argument name in the scope
-        let current_pkgpath = self.current_pkgpath();
+        let current_pkgpath = self.current_pkgpath_ref();
         let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
-        let msg = format!("pkgpath {} is not found", current_pkgpath);
-        let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
+        let scopes = pkg_scopes
+            .get_mut(&*current_pkgpath)
+            .unwrap_or_else(|| panic!("pkgpath {} is not found", current_pkgpath));
         let index = scopes.len() - 1;
         let variables = &mut scopes[index].variables;
         // If exists and update it
-        if variables.get(&name.to_string()).is_some() {
+        if variables.contains_key(name) {
             variables.insert(name.to_string(), value);
             return true;
         }
@@ -261,15 +268,16 @@ impl<'ctx> Evaluator<'ctx> {
     /// Store the variable named `name` with `value` from the scope, return false when not found
     pub fn store_variable(&self, name: &str, value: ValueRef) -> bool {
         // Find argument name in the scope
-        let current_pkgpath = self.current_pkgpath();
+        let current_pkgpath = self.current_pkgpath_ref();
         let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
-        let msg = format!("pkgpath {} is not found", current_pkgpath);
-        let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
+        let scopes = pkg_scopes
+            .get_mut(&*current_pkgpath)
+            .unwrap_or_else(|| panic!("pkgpath {} is not found", current_pkgpath));
         for i in 0..scopes.len() {
             let index = scopes.len() - i - 1;
             let variables = &mut scopes[index].variables;
             // If exists and update it
-            if variables.get(&name.to_string()).is_some() {
+            if variables.contains_key(name) {
                 variables.insert(name.to_string(), value);
                 return true;
             }
@@ -286,10 +294,11 @@ impl<'ctx> Evaluator<'ctx> {
     /// Resolve variable level in scope, return None when not found.
     pub fn resolve_variable_level(&self, name: &str) -> Option<usize> {
         // Find argument name in the scope
-        let current_pkgpath = self.current_pkgpath();
+        let current_pkgpath = self.current_pkgpath_ref();
         let pkg_scopes = &self.pkg_scopes.borrow();
-        let msg = format!("pkgpath {} is not found", current_pkgpath);
-        let scopes = pkg_scopes.get(&current_pkgpath).expect(&msg);
+        let scopes = pkg_scopes
+            .get(&*current_pkgpath)
+            .unwrap_or_else(|| panic!("pkgpath {} is not found", current_pkgpath));
         let mut level = None;
         for i in 0..scopes.len() {
             let index = scopes.len() - i - 1;
@@ -309,10 +318,11 @@ impl<'ctx> Evaluator<'ctx> {
 
     /// Append a variable or update the existed local variable within the current scope.
     pub(crate) fn add_or_update_local_variable_within_scope(&self, name: &str, value: ValueRef) {
-        let current_pkgpath = self.current_pkgpath();
+        let current_pkgpath = self.current_pkgpath_ref();
         let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
-        let msg = format!("pkgpath {} is not found", current_pkgpath);
-        let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
+        let scopes = pkg_scopes
+            .get_mut(&*current_pkgpath)
+            .unwrap_or_else(|| panic!("pkgpath {} is not found", current_pkgpath));
         let index = scopes.len() - 1;
         if let Some(scope) = scopes.last_mut() {
             let variables_mut = &mut scope.variables;
@@ -330,14 +340,15 @@ impl<'ctx> Evaluator<'ctx> {
         save_lazy_scope: bool,
     ) {
         // Find argument name in the scope
-        let current_pkgpath = self.current_pkgpath();
+        let current_pkgpath = self.current_pkgpath_ref();
         let pkg_scopes = &mut self.pkg_scopes.borrow_mut();
-        let msg = format!("pkgpath {} is not found", current_pkgpath);
-        let scopes = pkg_scopes.get_mut(&current_pkgpath).expect(&msg);
+        let scopes = pkg_scopes
+            .get_mut(&*current_pkgpath)
+            .unwrap_or_else(|| panic!("pkgpath {} is not found", current_pkgpath));
         let mut existed = false;
         if let Some(last) = scopes.last_mut() {
             let variables = &mut last.variables;
-            if variables.get(&name.to_string()).is_some() {
+            if variables.contains_key(name) {
                 variables.insert(name.to_string(), value.clone());
                 if save_lazy_scope {
                     self.set_value_to_lazy_scope(&current_pkgpath, name, &value);
@@ -786,5 +797,116 @@ impl<'ctx> Evaluator<'ctx> {
             }
         }
         self.ok_result()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::panic::{AssertUnwindSafe, catch_unwind};
+
+    type ScopeHelper = fn(&Evaluator<'_>);
+
+    const SCOPE_HELPERS: [ScopeHelper; 12] = [
+        |e| {
+            e.scope_level();
+        },
+        |e| {
+            e.is_schema_scope();
+        },
+        |e| e.enter_schema_scope(true),
+        |e| e.leave_scope(),
+        |e| e.add_scalar(ValueRef::int(1), false),
+        |e| e.add_variable("value", ValueRef::int(1)),
+        |e| e.store_argument_in_current_scope("arg"),
+        |e| {
+            e.store_variable_in_current_scope("value", ValueRef::int(1));
+        },
+        |e| {
+            e.store_variable("value", ValueRef::int(1));
+        },
+        |e| {
+            e.resolve_variable_level("value");
+        },
+        |e| e.add_or_update_local_variable_within_scope("value", ValueRef::int(1)),
+        |e| e.add_or_update_global_variable("value", ValueRef::int(1), true),
+    ];
+
+    #[test]
+    fn test_scope_helper_panic_messages() {
+        let program = ast::Program::default();
+        for empty_stack in [false, true] {
+            for (index, helper) in SCOPE_HELPERS.iter().enumerate() {
+                let evaluator = Evaluator::new(&program);
+                if empty_stack {
+                    evaluator.pkgpath_stack.borrow_mut().clear();
+                }
+                let panic = catch_unwind(AssertUnwindSafe(|| helper(&evaluator))).unwrap_err();
+                let message = panic
+                    .downcast_ref::<String>()
+                    .map(String::as_str)
+                    .or_else(|| panic.downcast_ref::<&str>().copied())
+                    .expect("string panic payload");
+                let expected = if empty_stack {
+                    kcl_error::INTERNAL_ERROR_MSG
+                } else {
+                    "pkgpath __main__ is not found"
+                };
+                assert_eq!(
+                    message, expected,
+                    "helper {index}, empty_stack={empty_stack}"
+                );
+                assert!(evaluator.pkgpath_stack.try_borrow_mut().is_ok());
+            }
+        }
+    }
+
+    #[test]
+    fn test_scope_helpers_release_pkgpath_borrow() {
+        let program = ast::Program::default();
+        let evaluator = Evaluator::new(&program);
+        evaluator.pkg_scopes.borrow_mut().insert(
+            MAIN_PKG_PATH.to_string(),
+            vec![Scope::default(), Scope::default()],
+        );
+        evaluator
+            .lazy_scopes
+            .borrow_mut()
+            .insert(MAIN_PKG_PATH.to_string(), LazyEvalScope::default());
+        *evaluator.lazy_reassign.borrow_mut() = true;
+
+        for (index, helper) in SCOPE_HELPERS.iter().enumerate() {
+            helper(&evaluator);
+            assert!(
+                evaluator.pkgpath_stack.try_borrow_mut().is_ok(),
+                "helper {index}"
+            );
+            evaluator.push_pkgpath("@other");
+            assert_eq!(&*evaluator.current_pkgpath_ref(), "@other");
+            evaluator.pop_pkgpath();
+            assert_eq!(&*evaluator.current_pkgpath_ref(), MAIN_PKG_PATH);
+        }
+        // Updating existing entries exercises both lazy-scope cache paths.
+        evaluator.add_variable("value", ValueRef::int(2));
+        evaluator.add_or_update_global_variable("value", ValueRef::int(3), true);
+        assert!(evaluator.pkgpath_stack.try_borrow_mut().is_ok());
+        assert_eq!(evaluator.scope_level(), GLOBAL_LEVEL);
+        assert!(!evaluator.is_schema_scope());
+        assert_eq!(
+            evaluator.resolve_variable_level("value"),
+            Some(GLOBAL_LEVEL)
+        );
+        assert!(!evaluator.store_variable("missing", ValueRef::int(4)));
+        assert!(!evaluator.store_variable_in_current_scope("missing", ValueRef::int(4)));
+        assert!(evaluator.store_variable("value", ValueRef::int(4)));
+        assert!(evaluator.store_variable_in_current_scope("value", ValueRef::int(5)));
+        evaluator.enter_schema_scope(true);
+        assert!(evaluator.is_schema_scope());
+        evaluator.add_or_update_local_variable_within_scope("local", ValueRef::int(6));
+        evaluator.store_argument_in_current_scope("arg");
+        assert_eq!(evaluator.resolve_variable_level("local"), Some(INNER_LEVEL));
+        assert_eq!(evaluator.resolve_variable_level("arg"), Some(INNER_LEVEL));
+        evaluator.leave_scope();
+        assert!(evaluator.pkgpath_stack.try_borrow_mut().is_ok());
     }
 }

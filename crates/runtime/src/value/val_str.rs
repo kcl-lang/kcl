@@ -8,6 +8,18 @@ use unicode_casing::CharExt;
 
 const ASCII_WHITESPACES: [u8; 6] = [0x20, 0x09, 0x0a, 0x0c, 0x0d, 0x0b];
 
+/// Superscript digits that `str.isdigit()` accepts besides the ASCII digits.
+const SUPERSCRIPT_DIGITS: [u16; 10] = [
+    0x2070, 0x00B9, 0x00B2, 0x00B3, 0x2074, 0x2075, 0x2076, 0x2077, 0x2078, 0x2079,
+];
+
+/// Returns whether `c` is a digit for `str.isdigit()`.
+#[inline]
+pub(crate) fn is_digit_char(c: char) -> bool {
+    // Preserve the historical u16 truncation, including its non-BMP aliases.
+    c.is_ascii_digit() || SUPERSCRIPT_DIGITS.contains(&(c as u16))
+}
+
 fn adjust_indices(
     start: Option<&ValueRef>,
     end: Option<&ValueRef>,
@@ -345,14 +357,7 @@ impl ValueRef {
     pub fn str_isdigit(&self) -> ValueRef {
         match &*self.rc.borrow() {
             Value::str_value(v) => {
-                let valid_unicodes: [u16; 10] = [
-                    0x2070, 0x00B9, 0x00B2, 0x00B3, 0x2074, 0x2075, 0x2076, 0x2077, 0x2078, 0x2079,
-                ];
-
-                let result = !v.is_empty()
-                    && v.chars()
-                        .filter(|c| !c.is_ascii_digit())
-                        .all(|c| valid_unicodes.contains(&(c as u16)));
+                let result = !v.is_empty() && v.chars().all(is_digit_char);
                 ValueRef::bool(result)
             }
             _ => panic!("Invalid str object in str_isdigit"),
@@ -749,6 +754,52 @@ impl ValueRef {
         match &*self.rc.borrow() {
             Value::str_value(v) => *v == *value,
             _ => false,
+        }
+    }
+}
+
+#[cfg(test)]
+mod test_value_str {
+    use crate::*;
+
+    #[test]
+    fn test_str_isdigit() {
+        let cases = [
+            ("0123456789", true),
+            (
+                "\u{2070}\u{b9}\u{b2}\u{b3}\u{2074}\u{2075}\u{2076}\u{2077}\u{2078}\u{2079}",
+                true,
+            ),
+            ("1\u{b2}", true),
+            ("\u{102070}", true),
+            ("\u{100b2}9", true),
+            ("", false),
+            (" ", false),
+            ("a1", false),
+            ("-1", false),
+            ("1.0", false),
+            ("\u{661}", false),
+            ("\u{ff11}", false),
+            ("\u{2080}", false),
+            ("\u{1d7d9}", false),
+        ];
+        for (value, expected) in cases {
+            assert_eq!(
+                ValueRef::str(value).str_isdigit().is_truthy(),
+                expected,
+                "{value:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_is_digit_char_matches_previous_check() {
+        let valid_unicodes: [u16; 10] = [
+            0x2070, 0x00B9, 0x00B2, 0x00B3, 0x2074, 0x2075, 0x2076, 0x2077, 0x2078, 0x2079,
+        ];
+        for c in (0..=0x10ffff).filter_map(char::from_u32) {
+            let expected = c.is_ascii_digit() || valid_unicodes.contains(&(c as u16));
+            assert_eq!(super::is_digit_char(c), expected, "{c:?}");
         }
     }
 }
