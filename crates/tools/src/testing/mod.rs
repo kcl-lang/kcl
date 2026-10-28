@@ -7,7 +7,9 @@
 //! To perform the testing, the tool compiles and executes the test suite file together with
 //! its dependencies as a single program entry point. Then, it executes each test case
 //! separately and collects information about the test cases, such as the execution time and
-//! whether the test passes or fails.
+//! whether the test passes or fails. By default every case evaluates the package anew; with
+//! [`TestOptions::eval_once`], the package is evaluated once and every case runs in that
+//! evaluation.
 //!
 //! When [`TestOptions::coverage`] is enabled, the test tool additionally records
 //! line-level coverage for every KCL statement that executes during the run. The
@@ -75,6 +77,39 @@ pub struct TestOptions {
     /// Defaults to false — coverage recording has a small cost so callers
     /// must opt in.
     pub coverage: bool,
+    /// When true, every test suite evaluates its package once and runs all
+    /// of its test cases in that one evaluation, instead of evaluating the
+    /// package again for every case. A suite whose module-level code is
+    /// expensive, such as large fixtures, then pays for it once rather
+    /// than once per case.
+    ///
+    /// Every case still reports its own result, error and log, and each
+    /// log starts with what the module-level code printed, as before.
+    /// A case's schema instances, log and error don't reach the next case,
+    /// and a case that fails, even only to plan, hands the next one a
+    /// freshly evaluated package. Cases do share the values the package
+    /// defines, though, so a case that passes after mutating one in place,
+    /// for example by assigning to an attribute of a schema it got as a
+    /// lambda argument, changes what the cases after it see, and planning,
+    /// which runs before the cases, does not see the change. That is why
+    /// this is opt-in. In a suite whose cases leave the package's values
+    /// as they found them, every case reports the same result either way.
+    ///
+    /// A case's duration then excludes the evaluation of the package. The
+    /// package's values are planned once, after the evaluation, and an
+    /// error from planning them is reported for every case that passes, as
+    /// before, so a package that fails to plan is evaluated again for every
+    /// case. The error is always reported at the end of the main file
+    /// generated to run the cases, while a package evaluated for the last
+    /// case alone reports it where that case stopped. A case that sets the
+    /// output, e.g. with `manifests.yaml_stream`, is planned on its own.
+    /// The coverage of the generated main file differs too: it selects no
+    /// case, so each of its lines is hit once, while a package evaluated
+    /// for a case also calls the case from the line that selects it, and
+    /// stops there if the case fails. The lambdas the cases create, and the
+    /// values they capture, are kept until the suite has run. Defaults to
+    /// false.
+    pub eval_once: bool,
 }
 
 /// Per-file coverage entry. `covered_lines` and `executable_lines` are kept

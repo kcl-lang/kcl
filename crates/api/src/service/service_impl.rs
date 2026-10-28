@@ -1485,6 +1485,7 @@ impl KclServiceImpl {
             run_regexp: args.run_regexp.clone(),
             fail_fast: args.fail_fast,
             coverage: args.coverage,
+            eval_once: args.eval_once,
         };
         for pkg in &args.pkg_list {
             let suites = testing::load_test_suites(pkg, &opts)?;

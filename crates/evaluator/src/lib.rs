@@ -232,17 +232,84 @@ impl<'ctx> Evaluator<'ctx> {
 
     /// Evaluate the program and return the JSON and YAML result.
     pub fn run(self: &Evaluator<'ctx>) -> Result<(String, String)> {
+        self.eval()?;
+        Ok(self.plan())
+    }
+
+    /// Evaluate every statement of the main package without planning the
+    /// result: the first half of [`Evaluator::run`].
+    pub fn eval(&self) -> Result<()> {
         let modules = self.program.get_modules_for_pkg(kcl_ast::MAIN_PKG);
         self.init_scope(kcl_ast::MAIN_PKG);
         self.compile_ast_modules(&modules);
-        // On wasm32, runtime errors from check/assert blocks are recorded
-        // into the context instead of panicking (panic=abort would trap the
-        // whole WASI instance); bail out with the recorded error here.
+        self.check_recorded_error()
+    }
+
+    /// Plan the globals of an evaluated program into the JSON and YAML
+    /// result: the second half of [`Evaluator::run`]. Call it after
+    /// [`Evaluator::eval`].
+    #[inline]
+    pub fn plan(&self) -> (String, String) {
+        self.plan_globals_to_string()
+    }
+
+    /// Call the global function `name` of the main package with no
+    /// arguments, as a `name()` statement appended to the main package
+    /// would, and return its result. Call it after [`Evaluator::eval`].
+    /// A `name` that is not a function there is an error, as such a
+    /// statement would not compile.
+    ///
+    /// The `kcl test` tool uses this to run every test case in one
+    /// evaluation of the package.
+    pub fn call_global(&self, name: &str) -> Result<ValueRef> {
+        let func = self.get_variable_in_pkgpath(name, kcl_ast::MAIN_PKG);
+        if !func.is_func() {
+            return Err(anyhow::anyhow!("'{name}' is not a function"));
+        }
+        let mut args = self.list_value();
+        let kwargs = self.dict_value();
+        let vars = self.clean_and_cloned_local_vars();
+        let result = if let Some(proxy) = func.try_get_proxy() {
+            self.invoke_proxy_function(proxy, &args, &kwargs)
+        } else {
+            runtime::invoke_function(self, &func, &mut args, &kwargs)
+        };
+        self.set_local_vars(vars);
+        self.check_recorded_error()?;
+        Ok(result)
+    }
+
+    /// The depths of the stacks the evaluator pushes to while it walks
+    /// code. A call that returns leaves them as it found them, but one
+    /// that a panic interrupted, even a panic that `runtime.catch` stopped,
+    /// can leave entries behind. Compare only depths of one evaluator.
+    pub fn stack_depths(&self) -> Vec<usize> {
+        vec![
+            self.pkgpath_stack.borrow().len(),
+            self.filename_stack.borrow().len(),
+            self.target_vars.borrow().len(),
+            self.lambda_stack.borrow().len(),
+            self.schema_stack.borrow().len(),
+            self.ctx_stack.borrow().len(),
+            self.schema_expr_stack.borrow().len(),
+            self.scope_covers.borrow().len(),
+            self.config_entry_vars.borrow().len(),
+            self.backtrack_meta.borrow().len(),
+            self.pkg_scopes.borrow().values().map(Vec::len).sum(),
+            usize::from(*self.lazy_reassign.borrow()),
+        ]
+    }
+
+    /// On wasm32, runtime errors from check/assert blocks are recorded
+    /// into the context instead of panicking (panic=abort would trap the
+    /// whole WASI instance); bail out with the recorded error here.
+    #[inline]
+    fn check_recorded_error(&self) -> Result<()> {
         #[cfg(target_arch = "wasm32")]
         if let Some(info) = self.runtime_ctx.borrow().get_panic_info_json_string() {
             return Err(anyhow::anyhow!(info));
         }
-        Ok(self.plan_globals_to_string())
+        Ok(())
     }
 
     /// Build the Source Map v3 for a planned YAML string produced by
