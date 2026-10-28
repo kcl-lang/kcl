@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:5:1
+  |
+5 | value = _any.get("name")
+  |  schema 'Data' attribute 'get' not found
+  |

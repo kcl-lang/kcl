@@ -152,6 +152,8 @@ impl ValueRef {
         }
     }
 
+    /// Convert a schema value into a dict value. For a schema this copies the
+    /// whole config, so to read one attribute use `dict_get_value` instead.
     pub fn schema_to_dict(&self) -> Self {
         match &*self.rc.borrow() {
             Value::schema_value(schema) => {

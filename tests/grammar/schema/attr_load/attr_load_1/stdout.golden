@@ -1,0 +1,14 @@
+inherited_default: 2
+inherited_config: 20
+hidden_default: 3
+hidden_config: 30
+mixed: 4
+mixed_method: 5
+builtin: 2
+instances_attr: attribute
+optional_is_undefined: true
+nested_schema: Child
+nested_default: 1
+nested_config: 10
+relaxed_default: 5
+relaxed_config: 6
