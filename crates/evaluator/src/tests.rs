@@ -1513,6 +1513,131 @@ sum = testing.add(1, 1)
     insta::assert_snapshot!(format!("{}", evaluator.run().unwrap().1));
 }
 
+/// Runs `calls` iterations of builtin, member, system module and plugin calls
+/// and returns the output and the number of objects left in the context.
+fn run_builtin_calls(calls: usize) -> (String, usize) {
+    let src = format!(
+        r#"
+import json
+import regex
+import runtime
+import kcl_plugin.testing
+
+_s = "x" * 100
+
+_one = lambda i: int -> int {{
+    _a = _s.replace("x", "y")
+    _b = json.encode({{"i": i}})
+    _c = regex.replace(_a, "y+", "z")
+    _d = runtime.catch(lambda {{ int("x") }})
+    testing.add(len(_c), int(str(i)) - i) if _b and _d else 0
+}}
+
+result = sum([_one(i) for i in range({calls})])
+"#
+    );
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            load_plugins: true,
+            k_code_list: vec![src],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let ctx = context_with_plugin();
+    let evaluator = Evaluator::new_with_runtime_ctx(&p.program, ctx.clone());
+    let output = evaluator.run().unwrap().1;
+    let objects = ctx.borrow().objects.len();
+    drop(evaluator);
+    ctx.borrow().gc();
+    (output, objects)
+}
+
+#[test]
+fn test_builtin_call_values_are_not_retained() {
+    // C-ABI calls above return a raw pointer registered in `Context::objects`.
+    // The evaluator must take those back (and must not register the argument
+    // list), including when runtime.catch catches a panic in a builtin.
+    let (output, objects) = run_builtin_calls(1);
+    assert_eq!(output, "result: 1");
+    let (output, many_objects) = run_builtin_calls(200);
+    assert_eq!(output, "result: 200");
+    assert_eq!(objects, many_objects);
+}
+
+#[test]
+fn test_builtin_call_shared_results() {
+    let program = kcl_ast::ast::Program::default();
+    let ctx = context_with_plugin();
+    let evaluator = Evaluator::new_with_runtime_ctx(&program, ctx.clone());
+    let method = ValueRef::str("xy").load_attr("replace");
+    ctx.borrow_mut()
+        .option_values
+        .insert("method".to_string(), method.clone());
+    let option =
+        evaluator.function_value_with_ptr(kcl_runtime::kcl_builtin_option as *const () as u64);
+    let mut args = ValueRef::list(Some(&[&ValueRef::str("method")]));
+    let kwargs = ValueRef::dict(None);
+    let returned = crate::runtime::invoke_function(&evaluator, &option, &mut args, &kwargs);
+    assert!(returned.is_same_ref(&method));
+    let mut args = ValueRef::list(Some(&[&ValueRef::str("x"), &ValueRef::str("z")]));
+    let result = crate::runtime::invoke_function(&evaluator, &returned, &mut args, &kwargs);
+    assert_eq!(result.as_str(), "zy");
+    // String methods pop their receiver from the shared argument list.
+    assert_eq!(args.args_len(), 2);
+    assert_eq!(method.as_function().closure.arg_0().unwrap().as_str(), "xy");
+
+    for return_kwargs in [false, true] {
+        ctx.borrow_mut().plugin_functions.insert(
+            "testing.identity".to_string(),
+            Arc::new(move |_, args, kwargs| Ok(if return_kwargs { kwargs } else { args }.clone())),
+        );
+        let plugin = ValueRef::func(0, 0, ValueRef::undefined(), "testing.identity", "", true);
+        let mut args = ValueRef::list(Some(&[&method]));
+        let kwargs = ValueRef::dict(Some(&[("method", &method)]));
+        let result = crate::runtime::invoke_function(&evaluator, &plugin, &mut args, &kwargs);
+        assert!(result.is_same_ref(if return_kwargs { &kwargs } else { &args }));
+        drop(args);
+        drop(kwargs);
+        let returned = if return_kwargs {
+            result.kwarg("method").unwrap()
+        } else {
+            result.arg_0().unwrap()
+        };
+        assert!(returned.is_same_ref(&method));
+        assert_eq!(
+            returned.as_function().closure.arg_0().unwrap().as_str(),
+            "xy"
+        );
+    }
+    assert!(ctx.borrow().objects.is_empty());
+}
+
+#[test]
+fn test_builtin_call_borrowed_result() {
+    unsafe extern "C-unwind" fn borrow_kwargs(
+        _: *mut Context,
+        _: *const ValueRef,
+        kwargs: *const ValueRef,
+    ) -> *const ValueRef {
+        kwargs
+    }
+
+    let program = kcl_ast::ast::Program::default();
+    let evaluator = Evaluator::new(&program);
+    let func = evaluator.function_value_with_ptr(borrow_kwargs as *const () as u64);
+    let mut args = ValueRef::list(None);
+    let kwargs = ValueRef::dict(Some(&[("value", &ValueRef::str("borrowed"))]));
+    let result = crate::runtime::invoke_function(&evaluator, &func, &mut args, &kwargs);
+    assert!(result.is_same_ref(&kwargs));
+    drop(kwargs);
+    assert_eq!(result.kwarg("value").unwrap().as_str(), "borrowed");
+    assert!(evaluator.runtime_ctx.borrow().objects.is_empty());
+}
+
 #[test]
 fn test_issue_1915_child_schema_arg_overrides_parent_type() {
     // Regression test for issue https://github.com/kcl-lang/kcl/issues/1915
