@@ -315,9 +315,9 @@ pub unsafe extern "C-unwind" fn kcl_units_to_Pi(
 
 fn to_unit(num: f64, suffix: to_unit_suffix) -> String {
     match suffix {
-        to_unit_suffix::n => format!("{}{:?}", (num / 1e-09) as i64, suffix),
-        to_unit_suffix::u => format!("{}{:?}", (num / 1e-06) as i64, suffix),
-        to_unit_suffix::m => format!("{}{:?}", (num / 0.001) as i64, suffix),
+        to_unit_suffix::n => format!("{}{:?}", (num * 1e9) as i64, suffix),
+        to_unit_suffix::u => format!("{}{:?}", (num * 1e6) as i64, suffix),
+        to_unit_suffix::m => format!("{}{:?}", (num * 1e3) as i64, suffix),
         to_unit_suffix::k => format!("{}{:?}", (num / 1_000.0) as i64, suffix),
         to_unit_suffix::K => format!("{}{:?}", (num / 1_000.0) as i64, suffix),
         to_unit_suffix::M => format!("{}{:?}", (num / 1_000_000.0) as i64, suffix),
