@@ -1,6 +1,7 @@
 // Copyright The KCL Authors. All rights reserved.
 
 use std::cell::RefCell;
+use std::collections::HashSet;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
@@ -43,6 +44,46 @@ impl MutSelfWalker for SelfRefFinder<'_> {
         }
     }
     fn walk_lambda_expr(&mut self, _lambda_expr: &ast::LambdaExpr) {}
+}
+
+/// Collects the root names of in-place mutations: path assignment targets
+/// (`a.b = 1`, `a[0] = 1`) and augmented assignment targets (`a += [1]`).
+#[derive(Default)]
+struct MutatedNameCollector {
+    names: HashSet<String>,
+}
+
+impl MutSelfWalker for MutatedNameCollector {
+    fn walk_assign_stmt(&mut self, assign_stmt: &ast::AssignStmt) {
+        for target in &assign_stmt.targets {
+            if !target.node.paths.is_empty() {
+                self.names.insert(target.node.name.node.clone());
+            }
+            self.walk_target(&target.node)
+        }
+        self.walk_expr(&assign_stmt.value.node);
+    }
+    fn walk_aug_assign_stmt(&mut self, aug_assign_stmt: &ast::AugAssignStmt) {
+        self.names.insert(aug_assign_stmt.target.node.name.node.clone());
+        self.walk_target(&aug_assign_stmt.target.node);
+        self.walk_expr(&aug_assign_stmt.value.node);
+    }
+}
+
+/// True if an expr reads any of the given names, including inside lambda bodies.
+struct NameRefFinder<'a> {
+    names: &'a HashSet<String>,
+    found: bool,
+}
+
+impl MutSelfWalker for NameRefFinder<'_> {
+    fn walk_identifier(&mut self, identifier: &ast::Identifier) {
+        if let Some(first) = identifier.names.first()
+            && self.names.contains(&first.node)
+        {
+            self.found = true;
+        }
+    }
 }
 
 /// Impl TypedResultWalker for Evaluator to visit AST nodes to evaluate the result.
@@ -195,7 +236,13 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
             let name = &assign_stmt.targets[0];
             // Deep copy the value to ensure assign-by-value semantics.
             // This mirrors the behavior of multi-target assignment below.
-            let value = self.value_deep_copy(&value);
+            // The copy is only observable when the target or a name read by
+            // the right-hand side is mutated in place, so skip it otherwise.
+            let value = if self.assign_needs_copy(&name.node, &assign_stmt.value.node) {
+                self.value_deep_copy(&value)
+            } else {
+                value.clone()
+            };
             *self.lazy_reassign.borrow_mut() = self_ref;
             defer! {
                 *self.lazy_reassign.borrow_mut() = false;
@@ -1345,6 +1392,38 @@ impl<'ctx> Evaluator<'ctx> {
         } else {
             self.ok_result()
         }
+    }
+
+    /// Whether a single-target assignment must deep copy its value to keep
+    /// assign-by-value semantics, i.e. whether the target or any name read by
+    /// the right-hand side is mutated in place somewhere in the program.
+    fn assign_needs_copy(&self, target: &ast::Target, value: &ast::Expr) -> bool {
+        let mutated_names = self.mutated_names.get_or_init(|| {
+            let mut collector = MutatedNameCollector::default();
+            for module in self
+                .program
+                .modules
+                .values()
+                .chain(self.program.modules_not_imported.values())
+            {
+                if let Result::Ok(module) = module.read() {
+                    collector.walk_module(&module);
+                }
+            }
+            collector.names
+        });
+        if mutated_names.is_empty() {
+            return false;
+        }
+        if mutated_names.contains(&target.name.node) {
+            return true;
+        }
+        let mut finder = NameRefFinder {
+            names: mutated_names,
+            found: false,
+        };
+        finder.walk_expr(value);
+        finder.found
     }
 
     pub fn walk_target_with_value(

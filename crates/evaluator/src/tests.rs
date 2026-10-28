@@ -500,6 +500,19 @@ bar = Bar {
 output = testCopyByValue(bar)
 "#}
 
+// Assign by value must also hold when the source of the assignment, rather
+// than the target, is mutated afterwards.
+evaluator_snapshot! {lambda_11, r#"
+f = lambda {
+    _src = {a = 1}
+    _copy = _src
+    _src.a = 2
+    {src = _src, copy = _copy}
+}
+
+output = f()
+"#}
+
 evaluator_snapshot! {schema_0, r#"
 schema Person:
     name: str = "Alice"
