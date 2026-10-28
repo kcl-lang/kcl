@@ -193,14 +193,25 @@ impl<'ctx> TypedResultWalker<'ctx> for Evaluator<'ctx> {
         if assign_stmt.targets.len() == 1 {
             // Store the single target
             let name = &assign_stmt.targets[0];
-            // Deep copy the value to ensure assign-by-value semantics.
-            // This mirrors the behavior of multi-target assignment below.
-            let value = self.value_deep_copy(&value);
+            // Deep copy the value to ensure assign-by-value semantics
+            // (kcl-lang/kcl#2080). This mirrors the behavior of multi-target
+            // assignment below. A lambda local may share the value instead
+            // when nothing in the program can mutate a shared value in place,
+            // which keeps assignments in functions O(1).
+            let is_lambda_local = name.node.paths.is_empty()
+                && self.scope_level() != GLOBAL_LEVEL
+                && self.is_in_lambda()
+                && !self.is_schema_scope();
+            let stored = if is_lambda_local && self.copy_elision_safe() {
+                value.clone()
+            } else {
+                self.value_deep_copy(&value)
+            };
             *self.lazy_reassign.borrow_mut() = self_ref;
             defer! {
                 *self.lazy_reassign.borrow_mut() = false;
             }
-            self.walk_target_with_value(&name.node, value.clone())?;
+            self.walk_target_with_value(&name.node, stored)?;
         } else {
             // Store multiple targets
             for name in &assign_stmt.targets {
