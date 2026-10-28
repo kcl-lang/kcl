@@ -277,18 +277,11 @@ pub unsafe extern "C-unwind" fn kcl_math_log(
     let args = unsafe { ptr_as_ref(args) };
     let kwargs = unsafe { ptr_as_ref(kwargs) };
 
-    if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None))
-        && let Some(base) = args
-            .arg_i_float(1, Some(std::f64::consts::E))
-            .or_else(|| kwargs.kwarg_float("e", Some(std::f64::consts::E)))
-    {
-        return unsafe { kcl_value_Int(ctx, (x as f64).log(base) as i64) };
-    }
-    if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None))
-        && let Some(base) = args
-            .arg_i_float(1, Some(std::f64::consts::E))
-            .or_else(|| kwargs.kwarg_float("e", Some(std::f64::consts::E)))
-    {
+    if let Some(x) = args.arg_i_num(0, None).or(kwargs.kwarg_num("x", None)) {
+        let base = args
+            .arg_i_num(1, None)
+            .or(kwargs.kwarg_num("e", None))
+            .unwrap_or(std::f64::consts::E);
         return unsafe { kcl_value_Float(ctx, x.log(base)) };
     }
     panic!("log() takes exactly one argument (0 given)");
@@ -306,10 +299,10 @@ pub unsafe extern "C-unwind" fn kcl_math_log1p(
     let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
-        return unsafe { kcl_value_Float(ctx, ((x + 1) as f64).ln_1p()) };
+        return unsafe { kcl_value_Float(ctx, (x as f64).ln_1p()) };
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
-        return unsafe { kcl_value_Float(ctx, (x + 1.0).ln_1p()) };
+        return unsafe { kcl_value_Float(ctx, x.ln_1p()) };
     }
     panic!("log1p() takes exactly one argument (0 given)");
 }
@@ -326,7 +319,7 @@ pub unsafe extern "C-unwind" fn kcl_math_log2(
     let kwargs = unsafe { ptr_as_ref(kwargs) };
 
     if let Some(x) = args.arg_i_int(0, None).or(kwargs.kwarg_int("x", None)) {
-        return unsafe { kcl_value_Int(ctx, (x as f64).log2() as i64) };
+        return unsafe { kcl_value_Float(ctx, (x as f64).log2()) };
     }
     if let Some(x) = args.arg_i_float(0, None).or(kwargs.kwarg_float("x", None)) {
         return unsafe { kcl_value_Float(ctx, x.log2()) };
