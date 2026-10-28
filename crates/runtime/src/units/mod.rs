@@ -340,46 +340,43 @@ fn to_unit(num: f64, suffix: to_unit_suffix) -> String {
     }
 }
 
+/// Suffixes accepted by [`to_quantity`], the same set as number literal suffixes.
+const QUANTITY_SUFFIXES: [&str; 14] = [
+    "n", "u", "m", "k", "K", "M", "G", "T", "P", "Ki", "Mi", "Gi", "Ti", "Pi",
+];
+
 /// Parse and return number based on input quantity.
 ///
 /// Supported suffixes:
 /// SI: n | u | m | k | K | M | G | T | P
 /// IEC: Ki | Mi | Gi | Ti | Pi
 ///
+/// The `n`, `u` and `m` suffixes divide the number and the result truncates
+/// towards zero, as `int()` does for the number literal `1500m`.
+///
 /// Input:
 /// quantity: &str.
 ///
 /// Returns:
-/// result: i64
-pub fn to_quantity(quantity: &str) -> i64 {
-    let quantity_len = quantity.len();
-    let mut number = quantity;
-    let mut suffix: Option<&str> = None;
-    if quantity_len >= 2 && &quantity[quantity_len - 1..] == IEC_SUFFIX {
-        if EXPONENTS.contains_key(&quantity[quantity_len - 2..quantity_len - 1]) {
-            number = &quantity[..quantity_len - 2];
-            suffix = Some(&quantity[quantity_len - 2..]);
-        }
-    } else if quantity_len >= 1 && EXPONENTS.contains_key(&quantity[quantity_len - 1..]) {
-        number = &quantity[..quantity_len - 1];
-        suffix = Some(&quantity[quantity_len - 1..]);
-    }
-    if number.is_empty() {
-        panic!("number can't be empty")
-    }
-    let number: i64 = number.parse().unwrap();
-    if suffix.is_none() {
-        return number;
-    }
-    let suffix = suffix.unwrap();
-    validate_unit(&suffix[0..1]);
-    let base: i64 = if suffix.ends_with(IEC_SUFFIX) {
-        1024
-    } else {
-        1000
-    };
-    let exponent = EXPONENTS.get(&suffix[0..1]).unwrap();
-    number * (base.pow(*exponent as u32))
+/// result: the exact value, which may not fit in an i64, or the error from
+/// parsing the number before the suffix.
+pub fn to_quantity(quantity: &str) -> Result<i128, std::num::ParseIntError> {
+    let (number, suffix) = QUANTITY_SUFFIXES
+        .iter()
+        .find_map(|suffix| {
+            quantity
+                .strip_suffix(suffix)
+                .map(|number| (number, *suffix))
+        })
+        .unwrap_or((quantity, ""));
+    let number = number.parse::<i64>()? as i128;
+    Ok(match suffix {
+        "" => number,
+        "n" => number / 1_000_000_000,
+        "u" => number / 1_000_000,
+        "m" => number / 1_000,
+        _ => number * u64_unit_value(suffix) as i128,
+    })
 }
 
 /// Calculate number based on value and binary suffix.
@@ -452,5 +449,36 @@ pub fn u64_unit_value(unit: &str) -> u64 {
         "Ti" => 1099511627776,
         "Pi" => 1125899906842624,
         _ => 1_u64,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::to_quantity;
+    use std::num::IntErrorKind;
+
+    #[test]
+    fn test_to_quantity() {
+        assert_eq!(to_quantity("10"), Ok(10));
+        assert_eq!(to_quantity("-10"), Ok(-10));
+        assert_eq!(to_quantity("3k"), Ok(3_000));
+        assert_eq!(to_quantity("1024Mi"), Ok(1_073_741_824));
+        assert_eq!(to_quantity("1500m"), Ok(1));
+        assert_eq!(to_quantity("-1500m"), Ok(-1));
+        assert_eq!(to_quantity("2500000u"), Ok(2));
+        assert_eq!(to_quantity("3000000000n"), Ok(3));
+        // The exact value is returned even when it does not fit in an i64.
+        assert_eq!(to_quantity("9000Pi"), Ok(10_133_099_161_583_616_000));
+    }
+
+    #[test]
+    fn test_to_quantity_invalid() {
+        for quantity in ["", "Ki", "abc", "1.5", "1ki", "1mi", "5é", "5éi"] {
+            assert!(to_quantity(quantity).is_err(), "{quantity}");
+        }
+        assert_eq!(
+            to_quantity("99999999999999999999Ki").map_err(|err| *err.kind()),
+            Err(IntErrorKind::PosOverflow)
+        );
     }
 }
