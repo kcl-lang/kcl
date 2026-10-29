@@ -561,17 +561,18 @@ pub fn is_literal_type(tpe: &str) -> bool {
     if tpe.starts_with('\'') {
         return tpe.ends_with('\'');
     }
-    if ValueRef::str(tpe).str_isdigit().is_truthy() {
-        return true;
-    }
-    if ValueRef::str(tpe.replacen('.', "", 1).as_str())
-        .str_isdigit()
-        .is_truthy()
-        && tpe.matches('.').count() < 2
-    {
-        return true;
-    }
-    false
+    is_number_literal_type(tpe)
+}
+
+/// Returns whether `tpe` is a number literal type: a non-empty run of
+/// `str.isdigit()` digits with at most one `.` anywhere in it, e.g. `1`, `1.0`,
+/// `.5` or `1.`. Checks the string in place, without allocating.
+#[inline]
+fn is_number_literal_type(tpe: &str) -> bool {
+    let (int_part, frac_part) = tpe.split_once('.').unwrap_or((tpe, ""));
+    (!int_part.is_empty() || !frac_part.is_empty())
+        && int_part.chars().all(val_str::is_digit_char)
+        && frac_part.chars().all(val_str::is_digit_char)
 }
 
 /// is_dict_type returns the type string whether is a dict type
@@ -925,9 +926,127 @@ mod test_value_type {
             ("any", false),
             ("[", false),
             ("]", false),
+            // name constants
+            ("None", true),
+            ("Undefined", true),
+            ("none", false),
+            ("true", false),
+            ("NoneType", false),
+            ("UndefinedType", false),
+            // string literals: a leading quote must be matched by a trailing one
+            ("\"\"", true),
+            ("''", true),
+            ("'abc'", true),
+            ("\"", true),
+            ("'", true),
+            ("\"abc", false),
+            ("'abc\"", false),
+            ("abc\"", false),
+            // ints: unsigned decimal digits only
+            ("0", true),
+            ("007", true),
+            ("-1", false),
+            ("+1", false),
+            ("1_000", false),
+            ("0x10", false),
+            (" 1", false),
+            ("1 ", false),
+            // floats: at most one '.', anywhere
+            ("0.25", true),
+            (".5", true),
+            ("5.", true),
+            (".", false),
+            ("1.2.3", false),
+            ("1..", false),
+            ("..1", false),
+            ("-1.0", false),
+            ("1e3", false),
+            ("1.0e3", false),
+            ("inf", false),
+            ("nan", false),
+            // number multiplier units are not literal types here
+            ("1Ki", false),
+            ("2M", false),
+            ("1.5Gi", false),
+            // digits are the ones `str.isdigit()` accepts
+            ("\u{b2}", true),
+            ("1\u{b9}", true),
+            ("1.\u{2075}", true),
+            ("\u{102070}", true),
+            ("\u{100b2}.\u{2075}", true),
+            ("\u{661}", false),
+            ("\u{ff11}", false),
+            ("\u{1d7d9}", false),
         ];
         for (value, expected) in cases {
-            assert_eq!(is_literal_type(value), expected);
+            assert_eq!(is_literal_type(value), expected, "{value:?}");
+        }
+    }
+
+    /// Keep the previous string algorithm and digit predicate independent of
+    /// the production helpers, so a change to both cannot hide a regression.
+    fn is_literal_type_by_previous_check(tpe: &str) -> bool {
+        fn isdigit(value: &str) -> bool {
+            let valid_unicodes: [u16; 10] = [
+                0x2070, 0x00B9, 0x00B2, 0x00B3, 0x2074, 0x2075, 0x2076, 0x2077, 0x2078, 0x2079,
+            ];
+            !value.is_empty()
+                && value
+                    .chars()
+                    .filter(|c| !c.is_ascii_digit())
+                    .all(|c| valid_unicodes.contains(&(c as u16)))
+        }
+
+        if KCL_NAME_CONSTANTS.contains(&tpe) {
+            return true;
+        }
+        if tpe.starts_with('\"') {
+            return tpe.ends_with('\"');
+        }
+        if tpe.starts_with('\'') {
+            return tpe.ends_with('\'');
+        }
+        if isdigit(tpe) {
+            return true;
+        }
+        isdigit(&tpe.replacen('.', "", 1)) && tpe.matches('.').count() < 2
+    }
+
+    #[test]
+    fn test_is_literal_type_matches_previous_check() {
+        let alphabet = [
+            '0',
+            '7',
+            '.',
+            '-',
+            '+',
+            'e',
+            '_',
+            ' ',
+            '"',
+            '\'',
+            'N',
+            '\u{b2}',
+            '\u{2079}',
+            '\u{661}',
+            '\u{102070}',
+            '\0',
+        ];
+        let mut inputs = vec![String::new()];
+        let mut last = vec![String::new()];
+        for _ in 0..4 {
+            last = last
+                .iter()
+                .flat_map(|prefix| alphabet.iter().map(move |c| format!("{prefix}{c}")))
+                .collect();
+            inputs.extend(last.iter().cloned());
+        }
+        for tpe in &inputs {
+            assert_eq!(
+                is_literal_type(tpe),
+                is_literal_type_by_previous_check(tpe),
+                "{tpe:?}"
+            );
         }
     }
 
