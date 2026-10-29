@@ -1,0 +1,21 @@
+name: data
+count: 2
+nick_is_undefined: true
+alias_is_none: true
+child_value: 1
+labels: {}
+added: 3
+extra: x
+opt_name: data
+opt_none: null
+counts:
+- 2
+- 2
+- 2
+data:
+  name: data
+  count: 2
+  alias: null
+  child:
+    value: 1
+  labels: {}

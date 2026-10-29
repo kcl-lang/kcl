@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:5:1
+  |
+5 | value = _any.missing
+  |  schema 'Data' attribute 'missing' not found
+  |
