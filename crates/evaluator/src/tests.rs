@@ -2582,3 +2582,96 @@ a = [][0]
     assert_eq!(panic_info.kcl_arg_msg, "");
     assert_eq!(panic_info.kcl_line, line_of(src, "[][0]"));
 }
+
+// Typed arguments give the function its own copy of every list and dict the
+// type describes, so changing them inside the function or merging them into a
+// schema config does not change the caller's value.
+evaluator_snapshot! {typed_args_copy_described_containers, r#"
+schema S[d: {str:str}]:
+    a: {str:str} = d
+
+f = lambda xs: [{str:str}] {
+    xs[0].k = "changed"
+    xs
+}
+g = lambda d: {str:[int]} {
+    d.k = [0]
+    d
+}
+_xs = [{k = "v0"}, {k = "v1"}]
+_d = {k = [1]}
+_c = {k = "v"}
+r1 = f(_xs)
+r2 = g(_d)
+s = S(_c) {a: {k2 = "v2"}}
+xs = _xs
+d = _d
+c = _c
+"#}
+
+// Typed arguments keep their values and the entry operators of their dicts.
+evaluator_snapshot! {typed_args_keep_values_and_operators, r#"
+_l: any = [1, 2.5, None]
+_n: any = {a = {b = [1, 2]}, c = None}
+_i: any = {k += [2]}
+f = lambda xs: [float] { xs }
+g = lambda d: {str:{str:[int]}} { d }
+h = lambda d: {str:[int]} { {k = [1]} | d }
+k = lambda xs: [any], d: {str:any} { [xs, d] }
+a = f(_l)
+b = g(_n)
+c = h(_i)
+e = k([{x = 1}], {y = [1]})
+"#}
+
+fn run_and_get_error(src: &str) -> String {
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![src.to_string()],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        Evaluator::new(&p.program).run()
+    }));
+    match result {
+        Ok(Ok(_)) => panic!("expected a runtime type error, but evaluation succeeded"),
+        Ok(Err(err)) => format!("{}", err),
+        Err(panic) => {
+            if let Some(s) = panic.downcast_ref::<&'static str>() {
+                s.to_string()
+            } else if let Some(s) = panic.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                String::from("<non-string panic payload>")
+            }
+        }
+    }
+}
+
+#[test]
+fn test_typed_args_type_error_messages() {
+    for (value, tpe, message) in [
+        (
+            r#"[{k = "v"}, {k = 1}]"#,
+            "[{str:str}]",
+            "expect [{str:str}], got list",
+        ),
+        (
+            r#"{k = [1, "x"]}"#,
+            "{str:[int]}",
+            "expect {str:[int]}, got dict",
+        ),
+        ("{k = 1}", "[int]", "expect [int], got dict"),
+        ("[1, 2]", "{str:int}", "expect {str:int}, got list"),
+        ("[1.5]", "[int]", "expect [int], got list"),
+        ("[True]", "[int]", "expect [int], got list"),
+    ] {
+        let src = format!("_x: any = {value}\nf = lambda x: {tpe} {{ 1 }}\na = f(_x)\n");
+        assert_eq!(run_and_get_error(&src), message, "{src}");
+    }
+}

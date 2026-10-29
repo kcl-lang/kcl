@@ -171,8 +171,7 @@ pub fn type_pack_and_check(
     let is_schema = value.is_schema();
     let mut checked = false;
     let mut converted_value = value.clone();
-    let expected_type = &expected_types.join(" | ").replace('@', "");
-    for tpe in expected_types {
+    for &tpe in &expected_types {
         let tpe = if !tpe.contains('.') {
             match ctx.import_names.get(tpe) {
                 Some(mapping) => mapping.keys().next().unwrap(),
@@ -192,6 +191,7 @@ pub fn type_pack_and_check(
         }
     }
     if !checked {
+        let expected_type = expected_types.join(" | ").replace('@', "");
         panic!(
             "expect {expected_type}, got {}",
             val_plan::type_of(value, true)
