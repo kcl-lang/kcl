@@ -1,6 +1,6 @@
 //! Copyright The KCL Authors. All rights reserved.
 
-use std::{collections::HashSet, ops::Index};
+use std::{collections::HashSet, num::IntErrorKind, ops::Index};
 
 use crate::*;
 
@@ -181,28 +181,44 @@ impl ValueRef {
                 let base = if let Some(v) = base { v.as_int() } else { 10 };
                 // When base is explicitly provided and not 10, don't use to_quantity
                 // because it's designed for decimal-based unit suffixes (Ki, Mi, Gi, etc.)
-                let number_str = if base == 10 {
-                    to_quantity(v.as_str()).to_string()
+                if base == 10 {
+                    return match to_quantity(v.as_str()) {
+                        Ok(value) => match i64::try_from(value) {
+                            Ok(value) => ValueRef::int(value),
+                            Err(_) => {
+                                panic_i64_overflow!(ctx, value);
+                            }
+                        },
+                        Err(err)
+                            if matches!(
+                                err.kind(),
+                                IntErrorKind::PosOverflow | IntErrorKind::NegOverflow
+                            ) =>
+                        {
+                            ctx.set_err_type(&RuntimeErrorType::IntOverflow);
+                            panic!("{v}: A 64 bit integer overflow")
+                        }
+                        Err(_) => panic!("invalid literal for int() with base 10: '{self}'"),
+                    };
+                }
+                // For non-base-10 parsing, strip common prefixes (0x, 0o, 0b) if present
+                // This allows parsing strings like "0xe4" with base=16
+                // Handle negative numbers by stripping the sign first
+                let s = v.as_str();
+                let is_negative = s.starts_with('-');
+                let s = if is_negative { &s[1..] } else { s };
+                let s = s
+                    .strip_prefix("0x")
+                    .or_else(|| s.strip_prefix("0X"))
+                    .or_else(|| s.strip_prefix("0o"))
+                    .or_else(|| s.strip_prefix("0O"))
+                    .or_else(|| s.strip_prefix("0b"))
+                    .or_else(|| s.strip_prefix("0B"))
+                    .unwrap_or(s);
+                let number_str = if is_negative {
+                    format!("-{s}")
                 } else {
-                    // For non-base-10 parsing, strip common prefixes (0x, 0o, 0b) if present
-                    // This allows parsing strings like "0xe4" with base=16
-                    // Handle negative numbers by stripping the sign first
-                    let s = v.as_str();
-                    let is_negative = s.starts_with('-');
-                    let s = if is_negative { &s[1..] } else { s };
-                    let s = s
-                        .strip_prefix("0x")
-                        .or_else(|| s.strip_prefix("0X"))
-                        .or_else(|| s.strip_prefix("0o"))
-                        .or_else(|| s.strip_prefix("0O"))
-                        .or_else(|| s.strip_prefix("0b"))
-                        .or_else(|| s.strip_prefix("0B"))
-                        .unwrap_or(s);
-                    if is_negative {
-                        format!("-{s}")
-                    } else {
-                        s.to_string()
-                    }
+                    s.to_string()
                 };
                 let v: i64 =
                     i64::from_str_radix(number_str.as_str(), base as u32).unwrap_or_else(|_| {
@@ -774,6 +790,27 @@ mod test_builtin {
                 &ValueRef::int(z),
             );
             assert_eq!(expected, result.as_int(), "pow({x}, {y}, {z})");
+        }
+    }
+
+    #[test]
+    fn test_convert_str_to_int() {
+        let mut ctx = Context::new();
+        for (s, expected) in [("10", 10), ("1024Mi", 1073741824), ("1500m", 1)] {
+            let result = ValueRef::str(s).convert_to_int(&mut ctx, None);
+            assert_eq!(expected, result.as_int(), "int({s:?})");
+        }
+        for s in ["", "abc", "1ki", "5é"] {
+            assert_panic("invalid literal for int() with base 10", || {
+                let mut ctx = Context::new();
+                let _ = ValueRef::str(s).convert_to_int(&mut ctx, None);
+            });
+        }
+        for s in ["9000Pi", "99999999999999999999"] {
+            assert_panic("A 64 bit integer overflow", || {
+                let mut ctx = Context::new();
+                let _ = ValueRef::str(s).convert_to_int(&mut ctx, None);
+            });
         }
     }
 
