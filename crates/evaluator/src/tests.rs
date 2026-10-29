@@ -2582,3 +2582,735 @@ a = [][0]
     assert_eq!(panic_info.kcl_arg_msg, "");
     assert_eq!(panic_info.kcl_line, line_of(src, "[][0]"));
 }
+
+fn load_test_program(src: &str) -> kcl_loader::Packages {
+    load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![src.to_string()],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap()
+}
+
+fn eval_yaml(src: &str) -> String {
+    let p = load_test_program(src);
+    let yaml = Evaluator::new(&p.program).run().unwrap().1;
+    format!("{}\n", yaml.trim_end())
+}
+
+fn allows_copy_elision(src: &str) -> bool {
+    let p = load_test_program(src);
+    crate::copy_elision::program_allows_copy_elision(&p.program)
+}
+
+/// Asserts that `src` evaluates to `expected` and that the copy of a lambda
+/// local is kept, because skipping it would change that result.
+fn assert_copy_kept(src: &str, expected: &str) {
+    assert_eq!(eval_yaml(src), expected);
+    assert!(!allows_copy_elision(src));
+}
+
+/// kcl-lang/kcl#2080 inside a function: clearing an attribute of a copy must
+/// not clear it in the original.
+#[test]
+fn assign_copy_path_assign_undefined() {
+    assert_copy_kept(
+        r#"
+schema Foo:
+    hello: str = "world"
+    world?: str = "x"
+
+clear = lambda x: Foo -> Foo {
+    _y = x
+    _y.world = Undefined
+    _y
+}
+foo = Foo {}
+bar = clear(foo)
+"#,
+        "foo:\n  hello: world\n  world: x\nbar:\n  hello: world\n",
+    );
+}
+
+#[test]
+fn assign_copy_list_path_assign() {
+    assert_copy_kept(
+        r#"
+f = lambda v {
+    _t = v
+    _t[0] = 9
+    _t
+}
+a = [1, 2]
+b = f(a)
+"#,
+        "a:\n- 1\n- 2\nb:\n- 9\n- 2\n",
+    );
+}
+
+#[test]
+fn assign_copy_dict_path_aug_assign() {
+    assert_copy_kept(
+        r#"
+f = lambda v {
+    _t = v
+    _t.k += [2]
+    _t
+}
+a = {k = [1]}
+b = f(a)
+"#,
+        "a:\n  k:\n  - 1\nb:\n  k:\n  - 1\n  - 2\n",
+    );
+}
+
+/// The value returned by a function may be its argument.
+#[test]
+fn assign_copy_function_return_alias() {
+    assert_copy_kept(
+        r#"
+id = lambda v { v }
+f = lambda v {
+    _t = id(v)
+    _t.x = 2
+    _t
+}
+a = {x = 1}
+b = f(a)
+"#,
+        "a:\n  x: 1\nb:\n  x: 2\n",
+    );
+}
+
+#[test]
+fn assign_copy_closure_capture() {
+    assert_copy_kept(
+        r#"
+a = {x = 1}
+f = lambda {
+    _t = a
+    _t.x = 2
+    _t
+}
+b = f()
+c = a
+"#,
+        "a:\n  x: 1\nb:\n  x: 2\nc:\n  x: 1\n",
+    );
+}
+
+/// The copy is mutated through another function's parameter, so no name in
+/// `f` is ever mutated through a path.
+#[test]
+fn assign_copy_param_path_assign() {
+    assert_copy_kept(
+        r#"
+set = lambda d {
+    d.x = 2
+    d
+}
+f = lambda v {
+    _t = v
+    set(_t)
+    v
+}
+a = {x = 1}
+b = f(a)
+"#,
+        "a:\n  x: 1\nb:\n  x: 1\n",
+    );
+}
+
+/// The config of a schema instance is unioned into the attribute default in
+/// place, so the default must not share a value with anything else.
+#[test]
+fn assign_copy_schema_default() {
+    assert_copy_kept(
+        r#"
+id = lambda v {
+    _t = v
+    _t
+}
+v = [1]
+schema S:
+    x: [int] = id(v)
+s = S {x += [2]}
+w = v
+"#,
+        "v:\n- 1\ns:\n  x:\n  - 1\n  - 2\nw:\n- 1\n",
+    );
+}
+
+/// A schema body stores the result of `x |= ...` and then unions the
+/// instance config into it in place.
+#[test]
+fn assign_copy_schema_body_bit_or() {
+    assert_copy_kept(
+        r#"
+id = lambda v {
+    _t = v
+    _t
+}
+v = {k = {a = 1}}
+schema S:
+    x: any = None
+    x |= id(v)
+s = S {x: {k: {c = 3}}}
+w = v
+"#,
+        "v:\n  k:\n    a: 1\ns:\n  x:\n    k:\n      a: 1\n      c: 3\nw:\n  k:\n    a: 1\n",
+    );
+}
+
+#[test]
+fn assign_copy_schema_body_unification() {
+    assert_copy_kept(
+        r#"
+id = lambda v {
+    _t = v
+    _t
+}
+schema T:
+    k: any
+v = {a = 1}
+schema S:
+    x: T
+    x: T {k = id(v)}
+s = S {x: {k: {c = 3}}}
+w = v
+"#,
+        "v:\n  a: 1\ns:\n  x:\n    k:\n      a: 1\n      c: 3\nw:\n  a: 1\n",
+    );
+}
+
+#[test]
+fn assign_copy_config_insert() {
+    assert_copy_kept(
+        r#"
+f = lambda v {
+    _t = v
+    {k = _t, k += [2]}
+}
+a = [1]
+b = f(a)
+c = a
+"#,
+        "a:\n- 1\nb:\n  k:\n  - 1\n  - 2\nc:\n- 1\n",
+    );
+}
+
+#[test]
+fn assign_copy_config_union() {
+    assert_copy_kept(
+        r#"
+f = lambda v {
+    _t = v
+    {k = _t, k: {y = 2}}
+}
+a = {x = 1}
+b = f(a)
+c = a
+"#,
+        "a:\n  x: 1\nb:\n  k:\n    x: 1\n    'y': 2\nc:\n  x: 1\n",
+    );
+}
+
+/// `+` builds a new list that shares its elements, so the union still
+/// reaches the elements of `_t`.
+#[test]
+fn assign_copy_config_union_through_list_add() {
+    assert_copy_kept(
+        r#"
+f = lambda v {
+    _t = v
+    {k = [] + _t, k: [{c = 3}]}
+}
+a = [{x = 1}]
+b = f(a)
+c = a
+"#,
+        "a:\n- x: 1\nb:\n  k:\n  - x: 1\n    c: 3\nc:\n- x: 1\n",
+    );
+}
+
+#[test]
+fn assign_copy_config_unpack() {
+    assert_copy_kept(
+        r#"
+f = lambda v, w {
+    _t = v
+    {k = _t, **w}
+}
+a = {x = 1}
+b = f(a, {k: {y = 2}})
+c = a
+"#,
+        "a:\n  x: 1\nb:\n  k:\n    x: 1\n    'y': 2\nc:\n  x: 1\n",
+    );
+}
+
+/// A config entry binds its value to a name the following entries can read,
+/// so `id(a)` may return the list `a += [2]` later extends in place.
+#[test]
+fn assign_copy_config_sibling_capture() {
+    assert_copy_kept(
+        r#"
+id = lambda v {
+    _t = v
+    _t
+}
+c = {a = [1], b = id(a), a += [2]}
+"#,
+        "c:\n  a:\n  - 1\n  - 2\n  b:\n  - 1\n",
+    );
+}
+
+/// A function body resolves a free name against the config entries around
+/// the call, so `g()` reads the entry `a` rather than the global `a`.
+#[test]
+fn assign_copy_config_dynamic_scope_capture() {
+    assert_copy_kept(
+        r#"
+a = [0]
+g = lambda {
+    _t = a
+    _t
+}
+c = {a = [1], b = g(), a += [2]}
+"#,
+        "a:\n- 0\nc:\n  a:\n  - 1\n  - 2\n  b:\n  - 1\n",
+    );
+}
+
+/// A key spelled as a loop variable is evaluated, so the if entry below
+/// inserts into `a`.
+#[test]
+fn assign_copy_config_if_entry_loop_var_key() {
+    assert_copy_kept(
+        r#"
+id = lambda v {
+    _t = v
+    _t
+}
+a = [1]
+c = [{a = id(a), if True: k += [2]} for k in ["a"]]
+"#,
+        "a:\n- 1\nc:\n- a:\n  - 1\n  - 2\n",
+    );
+}
+
+/// `S.instances()` returns the instance stored in `a`, so a schema literal
+/// is never fresh.
+#[test]
+fn assign_copy_config_schema_instances() {
+    assert_copy_kept(
+        r#"
+schema S:
+    x: [int] = [1]
+
+id = lambda v {
+    _t = v
+    _t
+}
+
+c = {a = S {}, b = id(S.instances()[0]), a: {x += [2]}}
+"#,
+        "c:\n  a:\n    x:\n    - 1\n    - 2\n  b:\n    x:\n    - 1\n",
+    );
+}
+
+/// `_a += []` in `f` reads the entry `_a` around the call.
+#[test]
+fn assign_copy_config_aug_assign_capture() {
+    assert_copy_kept(
+        r#"
+_a = [{x = 0}]
+f = lambda {
+    _a += []
+}
+id = lambda v {
+    _t = v
+    _t
+}
+c = {_a = [{x = 1}], b = id(f()), _a: [{y = 2}]}
+"#,
+        "c:\n  b:\n  - x: 1\n",
+    );
+}
+
+/// The second config is built before it is unioned into `k`, so `x` arrives
+/// as `[1, 2]` with the insert operation of its last entry.
+#[test]
+fn assign_copy_config_union_repeated_key() {
+    assert_copy_kept(
+        r#"
+f = lambda v {
+    _t = v
+    {k = {x = _t}, k: {x = [1], x += [2]}}
+}
+a = [0]
+b = f(a)
+"#,
+        "a:\n- 0\nb:\n  k:\n    x:\n    - 0\n    - 1\n    - 2\n",
+    );
+}
+
+/// Building `S` runs its body, which calls `make` while `_a` is `[1]`.
+#[test]
+fn assign_copy_config_schema_expr_capture() {
+    assert_copy_kept(
+        r#"
+_a = [0]
+make = lambda {
+    _t = _a
+    lambda { _t }
+}
+schema S:
+    f: any
+    f = make()
+_c = {_a = [1], b = S {}, _a += [2]}
+result = _c.b.f()
+"#,
+        "result:\n- 1\n",
+    );
+}
+
+/// Reading `gg` first evaluates it, which calls `make` while `_a` is `[1]`.
+#[test]
+fn assign_copy_config_lazy_global_capture() {
+    assert_copy_kept(
+        r#"
+_a = [0]
+make = lambda {
+    _t = _a
+    lambda { _t }
+}
+_c = {_a = [1], b = gg, _a += [2]}
+gg = make()
+result = _c.b()
+"#,
+        "result:\n- 1\n",
+    );
+}
+
+/// `Child` declares `x` again, which unions the config into the inherited
+/// value in place after `make` stored it.
+#[test]
+fn assign_copy_schema_attr_redeclared() {
+    assert_copy_kept(
+        r#"
+make = lambda v {
+    _t = v
+    lambda { _t }
+}
+schema Base:
+    x: [int] = [1]
+schema Child(Base):
+    f: any
+    f = make(x)
+    x: [int]
+_s = Child {x += [2]}
+result = _s.f()
+"#,
+        "result:\n- 1\n- 2\n- 2\n",
+    );
+}
+
+/// The same through `Base.instances()`, which returns the instance that is
+/// still being built.
+#[test]
+fn assign_copy_schema_attr_redeclared_instances() {
+    assert_copy_kept(
+        r#"
+make = lambda v {
+    _t = v
+    lambda { _t }
+}
+schema Base:
+    x: [int] = [1]
+schema Child(Base):
+    f: any
+    f = make(Base.instances()[0].x)
+    x: [int]
+_s = Child {x += [2]}
+result = _s.f()
+"#,
+        "result:\n- 1\n- 2\n",
+    );
+}
+
+/// Reading `gg` while the inner literal is built calls `make`, which reads
+/// `_a` from the inner literal, so that literal is not fresh.
+#[test]
+fn assign_copy_config_nested_literal_capture() {
+    assert_copy_kept(
+        r#"
+_a = [0]
+make = lambda {
+    _t = _a
+    lambda { _t }
+}
+_c = {k = {_a = [1], b = not gg}, k: {_a += [2]}}
+gg = make()
+result = gg()
+"#,
+        "result:\n- 1\n",
+    );
+}
+
+/// The same for a schema attribute default.
+#[test]
+fn assign_copy_schema_default_nested_capture() {
+    assert_copy_kept(
+        r#"
+_a = [0]
+make = lambda {
+    _t = _a
+    lambda { _t }
+}
+schema S:
+    x: any = {_a = [1], b = not gg}
+_s = S {x: {_a += [2]}}
+gg = make()
+result = gg()
+"#,
+        "result:\n- 1\n",
+    );
+}
+
+/// A global evaluated on first read resolves `_a` against the config, even
+/// though no lambda reads `_a`.
+#[test]
+fn assign_copy_config_lazy_global_reads_entry() {
+    assert_copy_kept(
+        r#"
+_a = [0]
+f = lambda v {
+    _t = v
+    lambda { _t }
+}
+_c = {_a = [1], b = gg, _a += [2]}
+gg = f(_a)
+result = gg()
+"#,
+        "result:\n- 1\n",
+    );
+}
+
+/// The same for the value of an outer entry, which the union then extends.
+#[test]
+fn assign_copy_config_lazy_global_reads_slot() {
+    assert_copy_kept(
+        r#"
+k = {}
+f = lambda v {
+    _t = v
+    lambda { _t }
+}
+_c = {k = {x = [1]}, k: {z = gg, y = [2]}}
+gg = f(k)
+result = gg()
+"#,
+        "k: {}\nresult:\n  x:\n  - 1\n",
+    );
+}
+
+/// `|` and `|=` build a new value, so a program that only uses them can share
+/// values between lambda locals.
+#[test]
+fn assign_copy_elided_with_union_operators() {
+    let src = r#"
+f = lambda v {
+    _t = v
+    _u = _t | {y = 2}
+    _t |= {z = 3}
+    [_t, _u, v]
+}
+a = {x = 1}
+b = f(a)
+c = a
+"#;
+    assert!(allows_copy_elision(src));
+    assert_eq!(
+        eval_yaml(src),
+        "a:\n  x: 1\nb:\n- x: 1\n  z: 3\n- x: 1\n  'y': 2\n- x: 1\nc:\n  x: 1\n"
+    );
+}
+
+#[test]
+fn assign_copy_elided_without_mutation() {
+    let src = r#"
+f = lambda big {
+    _local = big
+    _acc = [x * 2 for x in _local]
+    _acc += [0]
+    _local = _local + [7]
+    [_acc, _local]
+}
+a = [1, 2]
+b = f(a)
+c = a
+"#;
+    assert!(allows_copy_elision(src));
+    assert_eq!(
+        eval_yaml(src),
+        "a:\n- 1\n- 2\nb:\n- - 2\n  - 4\n  - 0\n- - 1\n  - 2\n  - 7\nc:\n- 1\n- 2\n"
+    );
+}
+
+#[test]
+fn assign_copy_elision_analysis() {
+    let allowed = [
+        // Distinct keys cannot mutate a value stored by an earlier entry.
+        "c = {a = [1], b: {x = 1}, c: {y = [2]}}",
+        "c = {metadata = {name = \"n\", labels = {app = \"a\"}}}",
+        "v = {x = 1}\nc = {**v, k = [1]}",
+        "c = {if True: a += [2]}",
+        "c = [{if True: k += [2]} for k in [\"a\"]]",
+        // Overriding drops the old value.
+        "v = [1]\nc = {a = v, a = [2]}",
+        // The attribute type only admits scalars.
+        "n = \"n\"\nschema S:\n    name: str = n\n    port: int | str = 80\ns = S {name: \"m\"}",
+        // Augmented assignments outside schemas build a new value.
+        "f = lambda v {\n    _t = v\n    _t += [1]\n    _t\n}\nx = [1]\nx += [2]",
+    ];
+    for src in allowed {
+        assert!(allows_copy_elision(src), "expected elision for:\n{src}");
+    }
+    let rejected = [
+        // Do not attempt a freshness/escape proof, even for simple literals.
+        "c = {a = [1], a += [2]}",
+        "c = {metadata.name = \"n\", metadata.labels.app = \"a\"}",
+        "c = {a = [1], if True: a += [2]}",
+        "v = [1]\nc = {a = v, a: 1}",
+        "schema S:\n    x: [int] = [1]",
+        // Function aliases must not bypass conservative builtin rejection.
+        "f = dict\nc = f({x = 1})",
+        "import collection as c\nf = c.union_all",
+        "a = {x = 1}\na.x = 2",
+        "v = [1]\nschema S:\n    x: [int] = v",
+        "schema S:\n    x: [int] = [1]\n    x += [2]",
+        "v = [1]\nc = {k = v, k += [2]}",
+        "v = {x = 1}\nc = {k = v, k: {y = 1}}",
+        "v = {x = 1}\nw = {k = 1}\nc = {k = v, **w}",
+        "v = {x = 1}\nc = {k = v, if True: k: {y = 1}}",
+        "v = {x = [1]}\nc = {k: {x = v}, k: {x: {y = 1}}}",
+        "c = {a = [1], b = a, a += [2]}",
+        "a = [0]\ng = lambda { a }\nc = {a = [1], b = g(), a += [2]}",
+        "c = {a = [1], b = [x for x in a], a[0] = 2}",
+        "schema S:\n    x: [int] = [1]\nc = {a = S {}, a: {x += [2]}}",
+        "v = [1]\nc = [{a = v, if True: k += [2]} for k in [\"a\"]]",
+        "v = [1]\nc = {k = {x = v}, k: {x = [1], x += [2]}}",
+        "f = lambda { _a }\nschema S:\n    n: int = 1\nc = {_a = [1], b = S {}, _a += [2]}",
+        "f = lambda { _a }\nc = {_a = [1], b = g, _a += [2]}\ng = 1",
+        "schema S:\n    x: [int]",
+        "c = {a = [1], b = g, a += [2]}\ng = a",
+        "c = {k = {a = [1], b = g}, k: {a += [2]}}\ng = a",
+        "schema S:\n    x: any = {a = [1], b = g}\ng = a",
+    ];
+    for src in rejected {
+        assert!(!allows_copy_elision(src), "expected a copy for:\n{src}");
+    }
+}
+
+#[test]
+fn assign_copy_cache_reuse_fails_closed() {
+    let safe = load_test_program("f1 = lambda v {\n    _t = v\n    _t\n}\na = f1([1])");
+    let unsafe_program =
+        load_test_program("f2 = lambda v {\n    _t = v\n    _t[0] = 2\n    v\n}\nb = f2([1])");
+    let mut evaluator = Evaluator::new(&safe.program);
+    assert_eq!(evaluator.run().unwrap().1.trim(), "a:\n- 1");
+    assert!(evaluator.copy_elision_safe());
+    evaluator.program = &unsafe_program.program;
+    assert_eq!(evaluator.run().unwrap().1.trim(), "a:\n- 1\nb:\n- 1");
+    assert!(!evaluator.copy_elision_safe());
+}
+
+#[test]
+fn assign_copy_cache_reuse_in_function_mode_fails_closed() {
+    let safe = load_test_program("f1 = lambda v {\n    _t = v\n    _t\n}\nf1([1])");
+    let unsafe_program =
+        load_test_program("f2 = lambda v {\n    _t = v\n    _t[0] = 2\n    v\n}\nf2([1])");
+    let mut evaluator = Evaluator::new(&safe.program);
+    evaluator.run_as_function();
+    assert!(evaluator.copy_elision_safe());
+    evaluator.program = &unsafe_program.program;
+    assert_eq!(evaluator.run_as_function().to_json_string(), "[1]");
+    assert!(!evaluator.copy_elision_safe());
+}
+
+#[test]
+fn assign_copy_cache_ast_revision_fails_closed() {
+    let packages = load_test_program("f1 = lambda v {\n    _t = v\n    _t\n}\na = f1([1])");
+    let revision =
+        load_test_program("f2 = lambda v {\n    _t = v\n    _t[0] = 2\n    v\n}\nb = f2([1])");
+    let evaluator = Evaluator::new(&packages.program);
+    evaluator.run().unwrap();
+    assert!(evaluator.copy_elision_safe());
+    let module = packages.program.modules.values().next().unwrap();
+    *module.write().unwrap() = revision
+        .program
+        .modules
+        .values()
+        .next()
+        .unwrap()
+        .read()
+        .unwrap()
+        .clone();
+    assert_eq!(evaluator.run().unwrap().1.trim(), "a:\n- 1\nb:\n- 1");
+    assert!(!evaluator.copy_elision_safe());
+}
+
+#[test]
+fn assign_copy_analysis_rejects_locked_modules() {
+    let packages = load_test_program("f = lambda v {\n    _t = v\n    _t\n}\na = f([1])");
+    let module = packages.program.modules.values().next().unwrap();
+    let _writer = module.write().unwrap();
+    assert!(!crate::copy_elision::program_allows_copy_elision(
+        &packages.program
+    ));
+}
+
+#[test]
+fn assign_copy_native_plugin_mutation() {
+    fn mutate(_: &Context, args: &ValueRef, _: &ValueRef) -> anyhow::Result<ValueRef> {
+        let mut value = args.arg_0().unwrap();
+        value.list_set(0, &ValueRef::int(9));
+        Ok(value)
+    }
+
+    let packages = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            load_plugins: true,
+            k_code_list: vec![
+                r#"
+import kcl_plugin.testing
+f = lambda v {
+    _t = v
+    testing.mutate(_t)
+    v
+}
+a = f([1])
+"#
+                .to_string(),
+            ],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let mut context = Context::new();
+    context
+        .plugin_functions
+        .insert("testing.mutate".to_string(), Arc::new(mutate));
+    let evaluator =
+        Evaluator::new_with_runtime_ctx(&packages.program, Rc::new(RefCell::new(context)));
+    assert_eq!(evaluator.run().unwrap().1.trim(), "a:\n- 1");
+    assert!(!evaluator.copy_elision_safe());
+}

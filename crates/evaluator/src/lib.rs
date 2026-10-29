@@ -5,6 +5,7 @@ mod tests;
 
 mod calculation;
 mod context;
+mod copy_elision;
 mod coverage;
 mod error;
 mod func;
@@ -41,7 +42,10 @@ use std::collections::{HashMap, HashSet};
 use std::panic::RefUnwindSafe;
 use std::rc::Rc;
 use std::str;
-use std::{cell::RefCell, panic::UnwindSafe};
+use std::{
+    cell::{Cell, RefCell},
+    panic::UnwindSafe,
+};
 
 use crate::error as eval_error;
 use anyhow::Result;
@@ -123,6 +127,11 @@ pub struct Evaluator<'ctx> {
     /// legacy behaviour, preserved for embedders that build an
     /// `Evaluator` directly.
     pub(crate) referenced_pkgs: RefCell<Option<HashSet<String>>>,
+    /// Whether assignments to lambda locals may skip their deep copy, see
+    /// [`copy_elision`]. Computed on first use in the first evaluation.
+    copy_elision_safe: Cell<Option<bool>>,
+    /// Reused evaluators can retain frames from an earlier program.
+    evaluation_started: Cell<bool>,
 }
 
 /// A config expression scope.
@@ -208,6 +217,27 @@ impl<'ctx> Evaluator<'ctx> {
             source_positions: RefCell::new(Default::default()),
             coverage_state: None,
             referenced_pkgs: RefCell::new(None),
+            copy_elision_safe: Cell::new(None),
+            evaluation_started: Cell::new(false),
+        }
+    }
+
+    /// Whether no in-place mutation in the program can reach a value shared
+    /// with another name, so assignments may bind values without copying them.
+    pub(crate) fn copy_elision_safe(&self) -> bool {
+        if let Some(safe) = self.copy_elision_safe.get() {
+            return safe;
+        }
+        let safe = copy_elision::program_allows_copy_elision(self.program);
+        self.copy_elision_safe.set(Some(safe));
+        safe
+    }
+
+    fn begin_evaluation(&self) {
+        // `program` is public and scopes/frames can outlive a run. Do not reuse
+        // a proof for another evaluation, even if its Program pointer is equal.
+        if self.evaluation_started.replace(true) {
+            self.copy_elision_safe.set(Some(false));
         }
     }
 
@@ -232,6 +262,7 @@ impl<'ctx> Evaluator<'ctx> {
 
     /// Evaluate the program and return the JSON and YAML result.
     pub fn run(self: &Evaluator<'ctx>) -> Result<(String, String)> {
+        self.begin_evaluation();
         let modules = self.program.get_modules_for_pkg(kcl_ast::MAIN_PKG);
         self.init_scope(kcl_ast::MAIN_PKG);
         self.compile_ast_modules(&modules);
@@ -281,6 +312,7 @@ impl<'ctx> Evaluator<'ctx> {
     /// return the result of the function run, rather than a dictionary composed of each
     /// configuration attribute.
     pub fn run_as_function(self: &Evaluator<'ctx>) -> ValueRef {
+        self.begin_evaluation();
         let modules = self.program.get_modules_for_pkg(kcl_ast::MAIN_PKG);
         if modules.is_empty() {
             ValueRef::undefined()
