@@ -37,6 +37,7 @@ use proxy::{Frame, Proxy};
 use rule::RuleEvalContextRef;
 use schema::SchemaEvalContextRef;
 use scope::Scope;
+use std::cell::OnceCell;
 use std::collections::{HashMap, HashSet};
 use std::panic::RefUnwindSafe;
 use std::rc::Rc;
@@ -123,6 +124,12 @@ pub struct Evaluator<'ctx> {
     /// legacy behaviour, preserved for embedders that build an
     /// `Evaluator` directly.
     pub(crate) referenced_pkgs: RefCell<Option<HashSet<String>>>,
+    /// Names that are mutated in place somewhere in the program, i.e. the root
+    /// name of a path assignment target (`a.b = 1`, `a[0] = 1`) or of an
+    /// augmented assignment target (`a += [1]`). Lazily collected and used to
+    /// skip the assign-by-value deep copy for bindings that can never observe
+    /// a mutation.
+    pub(crate) mutated_names: OnceCell<HashSet<String>>,
 }
 
 /// A config expression scope.
@@ -208,6 +215,7 @@ impl<'ctx> Evaluator<'ctx> {
             source_positions: RefCell::new(Default::default()),
             coverage_state: None,
             referenced_pkgs: RefCell::new(None),
+            mutated_names: OnceCell::new(),
         }
     }
 
