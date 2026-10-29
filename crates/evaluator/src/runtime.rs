@@ -79,6 +79,13 @@ pub fn invoke_function(
 /// message in case of a runtime panic.
 pub fn runtime_catch(s: &Evaluator, args: &ValueRef, kwargs: &ValueRef) -> ValueRef {
     if let Some(func) = get_call_arg(args, kwargs, 0, Some("func")) {
+        // An error fills the panic info (error type, message and positions)
+        // before it panics. Restore it when the panic is caught, as
+        // `kcl_runtime_catch` does, or a later uncaught error is reported
+        // with the caught error's message and positions. A call that returns
+        // keeps its panic info: on wasm32, errors are recorded there instead
+        // of panicking, and they must still be reported.
+        let panic_info = s.runtime_ctx.borrow().panic_info.clone();
         let wrapper = UnsafeWrapper::new(|| {
             if let Some(proxy) = func.try_get_proxy() {
                 let args = ValueRef::list(None);
@@ -91,7 +98,10 @@ pub fn runtime_catch(s: &Evaluator, args: &ValueRef, kwargs: &ValueRef) -> Value
         }));
         return match result {
             Ok(_) => ValueRef::undefined(),
-            Err(err) => ValueRef::str(&kcl_error::err_to_str(err)),
+            Err(err) => {
+                s.runtime_ctx.borrow_mut().panic_info = panic_info;
+                ValueRef::str(&kcl_error::err_to_str(err))
+            }
         };
     }
     panic!("catch() takes exactly one argument (0 given)");
