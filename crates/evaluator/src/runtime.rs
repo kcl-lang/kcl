@@ -6,7 +6,7 @@ use std::{
 
 use kcl_runtime::{
     Context, SchemaTypeFunc, UnsafeWrapper, ValueRef, get_call_arg, kcl_builtin_reduce,
-    kcl_plugin_invoke, kcl_runtime_catch, ptr_as_ref,
+    kcl_plugin_invoke, kcl_runtime_catch, ptr_as_ref, take_mut_ptr,
 };
 
 use crate::Evaluator;
@@ -51,18 +51,23 @@ pub fn invoke_function(
             handler(s, args, kwargs)
         } else {
             let ctx: &mut Context = &mut s.runtime_ctx.borrow_mut();
-            // Call schema constructor twice
             let value = if func.is_external {
                 let name = format!("{}\0", func.name);
                 unsafe { kcl_plugin_invoke(ctx, name.as_ptr() as *const c_char, args, kwargs) }
             } else {
                 let call_fn: SchemaTypeFunc = unsafe { transmute_copy(&fn_ptr) };
                 args.list_append_unpack_first(closure);
-                let args = args.clone().into_raw(ctx);
+                // Pass `args` by reference like `kwargs`. Boxing it with `into_raw`
+                // would keep it in `ctx.objects` until the context is dropped.
                 unsafe { call_fn(ctx, args, kwargs) }
             };
-            let value = unsafe { ptr_as_ref(value) };
-            value.clone()
+            // Builtins and plugin dispatch return a fresh box, even when its
+            // ValueRef shares an Rc with another value. No callee keeps the box.
+            // Take it back without clearing shared function closures.
+            match unsafe { take_mut_ptr(ctx, value) } {
+                Some(value) => value,
+                None => unsafe { ptr_as_ref(value) }.clone(),
+            }
         }
     } else {
         ValueRef::undefined()

@@ -15,6 +15,24 @@ pub fn new_mut_ptr(ctx: &mut Context, x: ValueRef) -> *mut ValueRef {
     ptr
 }
 
+/// Take back the value behind a pointer that `new_mut_ptr` registered in `ctx`.
+///
+/// The pointer is removed from `ctx.objects` and its box is freed, so the context
+/// no longer keeps an extra `ValueRef` alive. Existing value aliases are unaffected.
+/// Returns `None`, leaving `p` untouched, if `ctx` does not own `p`.
+///
+/// # Safety
+/// If `ctx` owns `p`, it must point to a live box allocated by `new_mut_ptr`.
+/// No other references to that box may be used during or after this call.
+/// References to the underlying reference-counted value remain valid.
+pub unsafe fn take_mut_ptr(ctx: &mut Context, p: *const ValueRef) -> Option<ValueRef> {
+    if ctx.objects.swap_remove(&(p as usize)) {
+        Some(*unsafe { Box::from_raw(p as *mut ValueRef) })
+    } else {
+        None
+    }
+}
+
 /// Free a mutable raw pointer.
 /// # Safety
 /// The caller must ensure `p` is a valid pointer obtained from `new_mut_ptr`.
@@ -127,4 +145,49 @@ pub fn assert_panic<F: FnOnce() + std::panic::UnwindSafe>(msg: &str, func: F) {
             },
         },
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_take_mut_ptr() {
+        let mut ctx = Context::new();
+        let value = ValueRef::str("value");
+        let other = new_mut_ptr(&mut ctx, ValueRef::str("other"));
+        let p = new_mut_ptr(&mut ctx, value.clone());
+        assert!(ctx.objects.contains(&(p as usize)));
+        let taken = unsafe { take_mut_ptr(&mut ctx, p) }.unwrap();
+        assert!(taken.is_same_ref(&value));
+        assert_eq!(ctx.objects.len(), 1);
+        assert!(ctx.objects.contains(&(other as usize)));
+        assert_eq!(unsafe { ptr_as_ref(other) }.as_str(), "other");
+        // The box is gone: only `value` holds the value once `taken` drops.
+        drop(taken);
+        assert_eq!(std::rc::Rc::strong_count(&value.rc), 1);
+        // Pointers the context does not own are left alone.
+        assert!(unsafe { take_mut_ptr(&mut ctx, &value) }.is_none());
+        assert!(unsafe { take_mut_ptr(&mut ctx, std::ptr::null()) }.is_none());
+        // Context cleanup must not free the box that was taken back.
+        ctx.gc();
+        assert_eq!(value.as_str(), "value");
+    }
+
+    #[test]
+    fn test_take_mut_ptr_preserves_function_closure() {
+        let mut ctx = Context::new();
+        let method = ValueRef::str("value").load_attr("replace");
+        let p = new_mut_ptr(&mut ctx, method.clone());
+        let taken = unsafe { take_mut_ptr(&mut ctx, p) }.unwrap();
+        assert!(taken.is_same_ref(&method));
+        assert!(ctx.objects.is_empty());
+        // Unlike kcl_value_delete, taking a value must not clear its closure:
+        // builtins such as option(default=...) can return a shared function.
+        drop(taken);
+        assert_eq!(
+            method.as_function().closure.arg_0().unwrap().as_str(),
+            "value"
+        );
+    }
 }
