@@ -19,6 +19,21 @@ impl Context {
     }
 }
 
+/// Truncate a float towards zero for `int()`. NaN and values whose result does
+/// not fit in an i64 are errors instead of saturating.
+fn float_to_int(ctx: &mut Context, v: f64) -> i64 {
+    if v.is_nan() {
+        panic!("cannot convert float NaN to integer");
+    }
+    let v = v.trunc();
+    // i64::MIN as f64 is exactly -2^63, and i64::MAX as f64 rounds up to 2^63.
+    if v < i64::MIN as f64 || v >= i64::MAX as f64 {
+        ctx.set_err_type(&RuntimeErrorType::IntOverflow);
+        panic!("{v}: A 64 bit integer overflow");
+    }
+    v as i64
+}
+
 impl ValueRef {
     pub fn any_true(&self) -> bool {
         match &*self.rc.borrow() {
@@ -155,7 +170,7 @@ impl ValueRef {
 
         match &*self.rc.borrow() {
             Value::int_value(v) => ValueRef::int(*v),
-            Value::float_value(v) => ValueRef::int(*v as i64),
+            Value::float_value(v) => ValueRef::int(float_to_int(ctx, *v)),
             Value::unit_value(v, raw, unit) => {
                 let v_i128 = crate::real_uint_value(*raw, unit);
                 let int_32_overflow = strict_range_check_i32 && v_i128 != ((v_i128 as i32) as i128);
@@ -174,7 +189,7 @@ impl ValueRef {
                     }
                 }
 
-                ValueRef::int(*v as i64)
+                ValueRef::int(float_to_int(ctx, *v))
             }
             Value::bool_value(v) => ValueRef::int(*v as i64),
             Value::str_value(v) => {
@@ -706,6 +721,30 @@ mod test_builtin {
     fn test_sorted() {
         assert_panic("sorted only for str|list|dict type", || {
             let _ = ValueRef::int(1).sorted(None);
+        });
+    }
+
+    #[test]
+    fn test_convert_float_to_int() {
+        let mut ctx = Context::new();
+        for (v, expected) in [
+            (1.9, 1),
+            (-1.9, -1),
+            (9.2e18, 9200000000000000000),
+            (-9223372036854775808.0, i64::MIN),
+        ] {
+            let result = ValueRef::float(v).convert_to_int(&mut ctx, None);
+            assert_eq!(expected, result.as_int(), "int({v})");
+        }
+        for v in [9223372036854775808.0, -9.3e18, 1e300, f64::INFINITY] {
+            assert_panic("A 64 bit integer overflow", || {
+                let mut ctx = Context::new();
+                let _ = ValueRef::float(v).convert_to_int(&mut ctx, None);
+            });
+        }
+        assert_panic("cannot convert float NaN to integer", || {
+            let mut ctx = Context::new();
+            let _ = ValueRef::float(f64::NAN).convert_to_int(&mut ctx, None);
         });
     }
 
