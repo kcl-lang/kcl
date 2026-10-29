@@ -16,7 +16,7 @@ use kcl_sema::resolver::{
     Options, collect_referenced_pkgs, resolve_program, resolve_program_with_opts,
     scope::ProgramScope,
 };
-pub use runner::{ExecProgramArgs, ExecProgramResult, MapErrorResult};
+pub use runner::{ExecCallResult, ExecProgramArgs, ExecProgramResult, MapErrorResult};
 use runner::{FastRunner, RunnerOptions};
 
 pub mod runner;
@@ -70,6 +70,63 @@ pub mod tests;
 /// let result = exec_program(sess, &args).unwrap();
 /// ```
 pub fn exec_program(sess: ParseSessionRef, args: &ExecProgramArgs) -> Result<ExecProgramResult> {
+    let program = load_program_with_overrides(sess.clone(), args)?;
+    execute(sess, program, args)
+}
+
+/// Evaluate the program once, then call each global function of its main
+/// package named in `names`, with no arguments, one after another in that
+/// evaluation.
+///
+/// Each call is reported as [`exec_program`] would report the program
+/// with a `name()` statement appended: the log, the error and the
+/// coverage of the evaluation plus the call. Calls are isolated from each
+/// other's log, error and schema instances, and a call that fails, even
+/// only to plan, leaves the next one a freshly evaluated program. Values
+/// the program defines are shared, though, so a call that succeeds after
+/// mutating one in place, for example through a lambda parameter, makes
+/// the change visible to later calls, but not to planning.
+///
+/// The calls are not resolved, so a parameter without a default gets
+/// `None` rather than a compile error. To keep that check, include the
+/// calls in the program where they don't run, as `kcl test` does. A name
+/// that is not a function of the main package still fails its call.
+///
+/// The program is planned once, after the evaluation, and a planning
+/// error is reported for every call that succeeded, so a program that
+/// fails to plan is evaluated again for every call. A call that sets the
+/// output, e.g. with `manifests.yaml_stream`, is planned on its own.
+/// With `stop_on_error`, no call runs after the first one that failed.
+///
+/// The evaluator keeps every lambda it creates, with the values the lambda
+/// captures, until it is dropped, so the lambdas the calls create add up
+/// until all the calls have run.
+///
+/// The `kcl test` tool uses this to run all the test cases of a package
+/// in one evaluation.
+///
+/// **Note that it is not thread safe.**
+pub fn exec_program_calls(
+    sess: ParseSessionRef,
+    args: &ExecProgramArgs,
+    names: &[String],
+    stop_on_error: bool,
+) -> Result<Vec<ExecCallResult>> {
+    let mut program = load_program_with_overrides(sess.clone(), args)?;
+    match resolve_for_run(sess, &mut program, args)? {
+        Some(opts) => FastRunner::new(Some(opts)).run_calls(&program, args, names, stop_on_error),
+        None => Ok(names
+            .iter()
+            .map(|name| ExecCallResult {
+                name: name.clone(),
+                ..Default::default()
+            })
+            .collect()),
+    }
+}
+
+/// Load the program `args` names and apply its overrides.
+fn load_program_with_overrides(sess: ParseSessionRef, args: &ExecProgramArgs) -> Result<Program> {
     // parse args from json string
     let opts = args.get_load_program_options();
     let kcl_paths_str = args
@@ -79,7 +136,7 @@ pub fn exec_program(sess: ParseSessionRef, args: &ExecProgramArgs) -> Result<Exe
         .collect::<Vec<&str>>();
     let module_cache = KCLModuleCache::default();
     let mut program = load_program(
-        sess.clone(),
+        sess,
         kcl_paths_str.as_slice(),
         Some(opts),
         Some(module_cache),
@@ -91,7 +148,7 @@ pub fn exec_program(sess: ParseSessionRef, args: &ExecProgramArgs) -> Result<Exe
         &[],
         args.print_override_ast || args.debug > 0,
     )?;
-    execute(sess, program, args)
+    Ok(program)
 }
 
 /// After the kcl program passed through kcl-parser in the compiler frontend,
@@ -149,6 +206,20 @@ pub fn execute(
     mut program: Program,
     args: &ExecProgramArgs,
 ) -> Result<ExecProgramResult> {
+    match resolve_for_run(sess, &mut program, args)? {
+        Some(opts) => FastRunner::new(Some(opts)).run(&program, args),
+        None => Ok(ExecProgramResult::default()),
+    }
+}
+
+/// Resolve `program` and emit its compile diagnostics as an error. Return
+/// the options to run it with, or `None` when `args.compile_only` asks
+/// only to check it.
+fn resolve_for_run(
+    sess: ParseSessionRef,
+    program: &mut Program,
+    args: &ExecProgramArgs,
+) -> Result<Option<RunnerOptions>> {
     // If the user only wants to compile the kcl program, the following code will only resolve ast.
     if args.compile_only {
         let resolve_opts = Options {
@@ -156,12 +227,12 @@ pub fn execute(
             ..Default::default()
         };
         // Resolve ast
-        let scope = resolve_program_with_opts(&mut program, resolve_opts, None)?;
+        let scope = resolve_program_with_opts(program, resolve_opts, None)?;
         emit_compile_diag_to_string(sess, &scope, args.compile_only)?;
-        return Ok(ExecProgramResult::default());
+        return Ok(None);
     }
     // Resolve ast
-    let mut scope = resolve_program(&mut program)?;
+    let mut scope = resolve_program(program)?;
     // Build the set of user packages actually referenced from the
     // entry-point program so that the evaluator can skip pass-3 for
     // unused imports (issue #1758). Compute this *before* emitting
@@ -169,15 +240,14 @@ pub fn execute(
     // packages the entry point never touches — the user's program
     // shouldn't see them.
     let referenced_pkgs = collect_referenced_pkgs(&scope);
-    suppress_unreferenced_pkg_diags(&mut scope, &program, &referenced_pkgs);
+    suppress_unreferenced_pkg_diags(&mut scope, program, &referenced_pkgs);
     // Emit parse and resolve errors if exists.
     emit_compile_diag_to_string(sess, &scope, false)?;
     let referenced_pkgs = Some(referenced_pkgs);
-    FastRunner::new(Some(RunnerOptions {
+    Ok(Some(RunnerOptions {
         plugin_agent_ptr: args.plugin_agent,
         referenced_pkgs,
     }))
-    .run(&program, args)
 }
 
 /// Drop diagnostics from packages that the entry point never

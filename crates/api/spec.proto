@@ -1736,6 +1736,17 @@ message TestArgs {
 	// the source file path and line number. The aggregated result is returned
 	// in [TestResult.coverage]. Defaults to false.
 	bool coverage = 5;
+	// Flag to evaluate each test package once and run all of its test cases in
+	// that one evaluation, instead of evaluating the package again for every
+	// case. Each case still reports its own result, error and log, and a case
+	// that fails hands the next one a freshly evaluated package, but cases
+	// share the values the package defines, so a case that passes after
+	// mutating one in place changes what the cases after it see, and planning,
+	// which runs before the cases, does not see the change. Case durations
+	// then exclude the evaluation of the package, a planning error is always
+	// reported at the end of the generated main file, and that file selects no
+	// case, so the coverage counts each of its lines once. Defaults to false.
+	bool eval_once = 6;
 }
 
 // Message for test response.

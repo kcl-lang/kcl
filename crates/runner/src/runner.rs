@@ -1,9 +1,11 @@
 use anyhow::{Result, anyhow};
-use kcl_evaluator::Evaluator;
+use kcl_evaluator::{CoverageState, Evaluator};
 use std::collections::{HashMap, HashSet};
 use std::{
+    any::Any,
     cell::{Cell, RefCell},
     rc::Rc,
+    time::{Duration, Instant},
 };
 
 use kcl_ast::ast;
@@ -12,9 +14,13 @@ use kcl_config::{
     settings::{SettingsFile, SettingsPathBuf},
 };
 use kcl_error::{Diagnostic, Handler, RenderedError};
+use kcl_primitives::IndexMap;
 #[cfg(not(target_arch = "wasm32"))]
 use kcl_runtime::kcl_plugin_init;
-use kcl_runtime::{Context, PanicInfo, RuntimePanicRecord};
+use kcl_runtime::val_plan::PlanOptions;
+use kcl_runtime::{
+    BacktraceFrame, Context, ContextBuffer, PanicInfo, RuntimePanicRecord, ValueRef,
+};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::os::raw::c_char;
@@ -187,6 +193,18 @@ impl MapErrorResult for Result<ExecProgramResult> {
             Err(err) => Err(err),
         }
     }
+}
+
+/// The result of one call made by [`crate::exec_program_calls`].
+#[derive(Debug, Default, Clone)]
+pub struct ExecCallResult {
+    /// Name of the called function.
+    pub name: String,
+    /// The log, the error and the coverage of the evaluation plus the
+    /// call. The JSON and YAML results are always empty.
+    pub result: ExecProgramResult,
+    /// How long the call took, not counting the evaluation it ran in.
+    pub duration: Duration,
 }
 
 impl ExecProgramArgs {
@@ -375,7 +393,7 @@ impl FastRunner {
         // `args.coverage` is false the state is `None` and the evaluator
         // short-circuits on its own.
         let coverage_state = if args.coverage {
-            Some(kcl_evaluator::CoverageState::new())
+            Some(CoverageState::new())
         } else {
             None
         };
@@ -387,22 +405,8 @@ impl FastRunner {
         // Drop panics recorded on this thread before this run.
         KCL_RUNTIME_PANIC_RECORD.take();
         let evaluator_result = catch_unwind_silent(|| {
-            if self.opts.plugin_agent_ptr > 0 {
-                #[cfg(not(target_arch = "wasm32"))]
-                unsafe {
-                    let plugin_method: extern "C-unwind" fn(
-                        method: *const c_char,
-                        args: *const c_char,
-                        kwargs: *const c_char,
-                    ) -> *const c_char = std::mem::transmute(self.opts.plugin_agent_ptr);
-                    kcl_plugin_init(plugin_method);
-                }
-            }
+            self.init_plugin_agent();
             evaluator.run()
-        });
-        KCL_RUNTIME_PANIC_RECORD.with(|record| {
-            let record = record.borrow();
-            ctx.borrow_mut().set_panic_info(&record);
         });
         let mut result = ExecProgramResult {
             log_message: ctx.borrow().log_message.clone(),
@@ -439,31 +443,10 @@ impl FastRunner {
                 }
             },
             Err(err) => {
-                // The payload is this run's own panic, whereas the record is
-                // written by a process-global hook the host may have replaced.
-                let message = kcl_error::err_to_str(err);
-                if !message.is_empty() {
-                    ctx.borrow_mut().panic_info.message = message;
-                }
-                result.err_message = ctx
-                    .borrow()
-                    .get_panic_info_json_string()
-                    .unwrap_or_default();
+                result.err_message = panic_err_message(&ctx, err);
             }
         }
-        // Wrap runtime JSON Panic error string into diagnostic style string.
-        if !result.err_message.is_empty() && std::env::var(KCL_DEBUG_ERROR_ENV_VAR).is_err() {
-            let diag =
-                <PanicInfo as Into<Diagnostic>>::into(PanicInfo::from(result.err_message.as_str()));
-            // Keep the structured form around so callers can re-render the
-            // error in a machine-readable format without losing the source
-            // positions that `emit_to_string` bakes into the text.
-            result.diagnostics.push(diag.clone());
-            result.err_message = match Handler::default().add_diagnostic(diag).emit_to_string() {
-                Ok(msg) => msg,
-                Err(err) => err.to_string(),
-            };
-        }
+        render_runtime_error(&mut result);
         // Free all value references at runtime. This is because the runtime context marks
         // all KCL objects and holds their copies, so it is necessary to actively GC them.
         ctx.borrow().gc();
@@ -473,14 +456,299 @@ impl FastRunner {
         // correctly. This runs after `ctx.borrow().gc()` so it observes
         // only what the evaluator actually walked.
         if let Some(state) = coverage_state.as_ref() {
-            let mut by_file: HashMap<String, HashMap<u64, u64>> = HashMap::new();
-            for (filename, line, hits) in state.drain() {
-                by_file.entry(filename).or_default().insert(line, hits);
-            }
-            result.coverage = by_file;
+            result.coverage = coverage_by_file(state.drain());
         }
         Ok(result)
     }
+
+    /// Evaluate the program once, then call the global functions `names`
+    /// one after another in that evaluation. See
+    /// [`crate::exec_program_calls`].
+    pub fn run_calls(
+        &self,
+        program: &ast::Program,
+        args: &ExecProgramArgs,
+        names: &[String],
+        stop_on_error: bool,
+    ) -> Result<Vec<ExecCallResult>> {
+        let mut shared = self.eval_shared(program, args);
+        let eval_hits = shared.drain_coverage();
+        // Plan once instead of after every call, which would cost as much
+        // as the evaluation for a program with large values. A call
+        // changes what planning reports only if it sets the output, which
+        // is checked after the call, or mutates a value in place, which
+        // planning does not see: like the later calls that see such a
+        // mutation, that is a documented difference.
+        let mut plan_err_message = String::new();
+        // Whether the next call needs a freshly evaluated program.
+        let mut stale = false;
+        if shared.err_message.is_empty() {
+            KCL_RUNTIME_PANIC_RECORD.take();
+            let plan = catch_unwind_silent(|| shared.evaluator.plan());
+            plan_err_message = step_err_message(&shared.ctx, plan.map(Ok));
+            stale = !plan_err_message.is_empty();
+        }
+        let mut results = Vec::with_capacity(names.len());
+        for name in names {
+            // A call that panicked may have left the evaluator midway
+            // through a lambda or a schema, and a call that failed may
+            // have changed values that the next call must not see;
+            // evaluate the program again rather than undo either by hand.
+            if stale {
+                shared.ctx.borrow().gc();
+                shared = self.eval_shared(program, args);
+                shared.drain_coverage();
+                stale = false;
+            }
+            let mut result = ExecProgramResult::default();
+            let mut duration = Duration::ZERO;
+            if shared.err_message.is_empty() {
+                shared.rest.restore(&mut shared.ctx.borrow_mut());
+                let depths = shared.evaluator.stack_depths();
+                let objects = shared.ctx.borrow().objects.len();
+                KCL_RUNTIME_PANIC_RECORD.take();
+                let start = Instant::now();
+                let call = catch_unwind_silent(|| {
+                    // A plugin that an earlier call ran may have evaluated
+                    // another program with another plugin agent.
+                    self.init_plugin_agent();
+                    shared.evaluator.call_global(name)
+                });
+                duration = start.elapsed();
+                // The record also shows a panic that `runtime.catch`
+                // stopped inside the call, unless an evaluation nested in
+                // the call, e.g. one a plugin ran, cleared it; the stacks
+                // show what such a panic left behind either way.
+                stale = !matches!(call, Ok(Ok(_)))
+                    || KCL_RUNTIME_PANIC_RECORD.with(|record| record.borrow().kcl_panic_info)
+                    || shared.evaluator.stack_depths() != depths;
+                result.log_message = shared.ctx.borrow().log_message.clone();
+                result.err_message = step_err_message(&shared.ctx, call);
+                if result.err_message.is_empty() {
+                    // Planning reads the output and the options a call
+                    // set, e.g. with `manifests.yaml_stream`, so plan again
+                    // for such a call, whether or not the program planned.
+                    let replan = {
+                        let ctx = shared.ctx.borrow();
+                        ctx.buffer.custom_manifests_output
+                            != shared.rest.buffer.custom_manifests_output
+                            || ctx.plan_opts != shared.rest.plan_opts
+                    };
+                    if replan {
+                        KCL_RUNTIME_PANIC_RECORD.take();
+                        let plan = catch_unwind_silent(|| shared.evaluator.plan());
+                        result.err_message = step_err_message(&shared.ctx, plan.map(Ok));
+                    } else {
+                        result.err_message = plan_err_message.clone();
+                    }
+                }
+                // A call that failed, even only to plan, leaves the next
+                // call none of its changes, as when it runs on its own.
+                stale = stale || !result.err_message.is_empty();
+                if !stale {
+                    shared.free_objects_from(objects);
+                }
+            } else {
+                result.log_message = shared.rest.log_message.clone();
+                result.err_message = shared.err_message.clone();
+            }
+            render_runtime_error(&mut result);
+            if args.coverage {
+                result.coverage =
+                    coverage_by_file(eval_hits.iter().cloned().chain(shared.drain_coverage()));
+            }
+            let failed = !result.err_message.is_empty();
+            results.push(ExecCallResult {
+                name: name.clone(),
+                result,
+                duration,
+            });
+            if failed && stop_on_error {
+                break;
+            }
+        }
+        shared.ctx.borrow().gc();
+        Ok(results)
+    }
+
+    /// Evaluate the program for [`FastRunner::run_calls`], recording the
+    /// error of the evaluation instead of returning it.
+    fn eval_shared<'p>(&self, program: &'p ast::Program, args: &ExecProgramArgs) -> SharedEval<'p> {
+        let ctx = Rc::new(RefCell::new(args_to_ctx(program, args)));
+        let coverage_state = if args.coverage {
+            Some(CoverageState::new())
+        } else {
+            None
+        };
+        let mut evaluator = Evaluator::new_with_runtime_ctx(program, ctx.clone());
+        evaluator.set_coverage_state(coverage_state.clone());
+        if let Some(pkgs) = self.opts.referenced_pkgs_set() {
+            evaluator.set_referenced_pkgs(pkgs);
+        }
+        KCL_RUNTIME_PANIC_RECORD.take();
+        let eval = catch_unwind_silent(|| {
+            self.init_plugin_agent();
+            evaluator.eval()
+        });
+        let err_message = step_err_message(&ctx, eval);
+        let rest = ContextRest::save(&ctx.borrow());
+        SharedEval {
+            ctx,
+            evaluator,
+            coverage_state,
+            rest,
+            err_message,
+        }
+    }
+
+    /// Hand the plugin agent, if any, to the runtime.
+    fn init_plugin_agent(&self) {
+        if self.opts.plugin_agent_ptr > 0 {
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe {
+                let plugin_method: extern "C-unwind" fn(
+                    method: *const c_char,
+                    args: *const c_char,
+                    kwargs: *const c_char,
+                ) -> *const c_char = std::mem::transmute(self.opts.plugin_agent_ptr);
+                kcl_plugin_init(plugin_method);
+            }
+        }
+    }
+}
+
+/// A program evaluated once by [`FastRunner::run_calls`].
+struct SharedEval<'p> {
+    ctx: Rc<RefCell<Context>>,
+    evaluator: Evaluator<'p>,
+    coverage_state: Option<CoverageState>,
+    /// The context as the evaluation left it, restored before every call.
+    rest: ContextRest,
+    /// The raw error of the evaluation, empty when it succeeded.
+    err_message: String,
+}
+
+impl SharedEval<'_> {
+    /// Take the coverage hits recorded since the last drain.
+    fn drain_coverage(&self) -> Vec<(String, u64, u64)> {
+        self.coverage_state
+            .as_ref()
+            .map(CoverageState::drain)
+            .unwrap_or_default()
+    }
+
+    /// Free the values that the runtime boxed after its first `len`.
+    ///
+    /// The runtime boxes the arguments and the result of every builtin
+    /// call and frees the boxes only with the context, so without this,
+    /// the boxes of every call would live until the last call ends. Once
+    /// a call has returned, nothing points to the boxes it made. They are
+    /// freed without `kcl_value_delete`, which clears the closure of a
+    /// boxed function value that the program may still use.
+    fn free_objects_from(&self, len: usize) {
+        let mut ctx = self.ctx.borrow_mut();
+        for ptr in ctx.objects.drain(len..) {
+            // SAFETY: `new_mut_ptr` boxed every object, and an object
+            // drained from the set isn't freed again by `Context::gc`.
+            unsafe { kcl_runtime::free_mut_ptr(ptr as *mut ValueRef) };
+        }
+    }
+}
+
+/// The parts of a [`Context`] that a call of [`FastRunner::run_calls`]
+/// changes and that must not reach the next call: what the call printed,
+/// where it failed, the schema instances it created and the output and
+/// planning options it set.
+struct ContextRest {
+    log_message: String,
+    panic_info: PanicInfo,
+    backtrace: Vec<BacktraceFrame>,
+    instances: IndexMap<String, IndexMap<String, Vec<ValueRef>>>,
+    buffer: ContextBuffer,
+    plan_opts: PlanOptions,
+}
+
+impl ContextRest {
+    fn save(ctx: &Context) -> Self {
+        Self {
+            log_message: ctx.log_message.clone(),
+            panic_info: ctx.panic_info.clone(),
+            backtrace: ctx.backtrace.clone(),
+            instances: ctx.instances.clone(),
+            buffer: ctx.buffer.clone(),
+            plan_opts: ctx.plan_opts.clone(),
+        }
+    }
+
+    fn restore(&self, ctx: &mut Context) {
+        ctx.log_message.clone_from(&self.log_message);
+        ctx.panic_info.clone_from(&self.panic_info);
+        ctx.backtrace.clone_from(&self.backtrace);
+        ctx.instances.clone_from(&self.instances);
+        ctx.buffer.clone_from(&self.buffer);
+        ctx.plan_opts.clone_from(&self.plan_opts);
+    }
+}
+
+/// The raw error message of an evaluation step that [`catch_unwind_silent`]
+/// ran in `ctx`: the error it returned or the panic it raised. Empty when
+/// the step succeeded.
+fn step_err_message<T>(ctx: &RefCell<Context>, result: std::thread::Result<Result<T>>) -> String {
+    match result {
+        Ok(Ok(_)) => String::new(),
+        Ok(Err(err)) => err.to_string(),
+        Err(err) => panic_err_message(ctx, err),
+    }
+}
+
+/// The runtime panic info of `ctx`, as JSON, for a panic that
+/// [`catch_unwind_silent`] caught with the payload `err`.
+fn panic_err_message(ctx: &RefCell<Context>, err: Box<dyn Any + Send>) -> String {
+    KCL_RUNTIME_PANIC_RECORD.with(|record| {
+        let record = record.borrow();
+        ctx.borrow_mut().set_panic_info(&record);
+    });
+    // The payload is this run's own panic, whereas the record is
+    // written by a process-global hook the host may have replaced.
+    let message = kcl_error::err_to_str(err);
+    if !message.is_empty() {
+        ctx.borrow_mut().panic_info.message = message;
+    }
+    ctx.borrow()
+        .get_panic_info_json_string()
+        .unwrap_or_default()
+}
+
+/// Wrap runtime JSON Panic error string into diagnostic style string.
+fn render_runtime_error(result: &mut ExecProgramResult) {
+    if !result.err_message.is_empty() && std::env::var(KCL_DEBUG_ERROR_ENV_VAR).is_err() {
+        let diag =
+            <PanicInfo as Into<Diagnostic>>::into(PanicInfo::from(result.err_message.as_str()));
+        // Keep the structured form around so callers can re-render the
+        // error in a machine-readable format without losing the source
+        // positions that `emit_to_string` bakes into the text.
+        result.diagnostics.push(diag.clone());
+        result.err_message = match Handler::default().add_diagnostic(diag).emit_to_string() {
+            Ok(msg) => msg,
+            Err(err) => err.to_string(),
+        };
+    }
+}
+
+/// Group coverage hits `(filename, line, hits)` by filename, summing the
+/// hits of a line that occurs more than once.
+fn coverage_by_file(
+    hits: impl IntoIterator<Item = (String, u64, u64)>,
+) -> HashMap<String, HashMap<u64, u64>> {
+    let mut by_file: HashMap<String, HashMap<u64, u64>> = HashMap::new();
+    for (filename, line, hits) in hits {
+        *by_file
+            .entry(filename)
+            .or_default()
+            .entry(line)
+            .or_default() += hits;
+    }
+    by_file
 }
 
 pub(crate) fn args_to_ctx(program: &ast::Program, args: &ExecProgramArgs) -> Context {

@@ -7,10 +7,9 @@ use kcl_driver::get_pkg_list;
 use kcl_parser::get_kcl_files;
 use kcl_parser::{ParseSessionRef, parse_file_force_errors};
 use kcl_primitives::{DefaultHashBuilder, IndexMap};
-use kcl_runner::ExecProgramArgs;
-use kcl_runner::exec_program;
+use kcl_runner::{ExecProgramArgs, ExecProgramResult, exec_program, exec_program_calls};
 use std::collections::BTreeMap;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 /// File suffix for test files.
 pub const TEST_FILE_SUFFIX: &str = "_test.k";
@@ -49,6 +48,34 @@ impl TestRun for TestSuite {
         if self.skip || self.cases.is_empty() {
             return Ok(result);
         }
+        if opts.eval_once {
+            self.run_cases_in_one_eval(opts, &mut result)?;
+        } else {
+            self.run_cases_one_by_one(opts, &mut result)?;
+        }
+        // Finalize coverage now that every case has run. We seed the
+        // `executable_lines` map from a fresh parse of every non-generated
+        // file in the package: the AST already gives us a precise
+        // per-statement line number and we filter out the synthetic
+        // `_kcl_test_<pid>.k` dispatch shim so it doesn't inflate the
+        // denominator.
+        if opts.coverage {
+            let executable = collect_executable_lines(&self.normal_files, &self.test_files);
+            // The merge step stored hits under absolute-path keys
+            // (the evaluator normalizes filenames through the parser).
+            // `executable` is keyed the same way — see
+            // `collect_executable_lines` — so the lookup below finds
+            // matches directly without further rewriting.
+            result.coverage.finalize(&executable);
+        }
+        Ok(result)
+    }
+}
+
+impl TestSuite {
+    /// Run every case in its own evaluation of the package, selected by
+    /// a generated main file.
+    fn run_cases_one_by_one(&self, opts: &TestOptions, result: &mut TestResult) -> Result<()> {
         // Generate the test main entry file.
         let main_file = self.gen_test_main_file()?;
         // Set up execution arguments. Coverage is opted into via
@@ -73,39 +100,9 @@ impl TestRun for TestSuite {
             let start = Instant::now();
             // Check if is the fast eval mode.
             let exec_result = exec_program(ParseSessionRef::default(), &args)?;
-            // Check if there was an error.
-            let error = if exec_result.err_message.is_empty() {
-                None
-            } else {
-                Some(anyhow!("{}", exec_result.err_message))
-            };
+            let failed = record_case(result, opts, name, &exec_result, start.elapsed());
             // Check if the fail_fast option is enabled and there was an error.
-            let fail_fast = error.is_some() && opts.fail_fast;
-            // Per-case line hits. Empty unless coverage was requested —
-            // in that case the runner drains the evaluator's coverage
-            // state into `exec_result.coverage`, which we flatten into the
-            // `<file>:<line>` convention the report expects.
-            let line_hits = if opts.coverage {
-                flatten_case_coverage(&exec_result.coverage)
-            } else {
-                Default::default()
-            };
-            // Merge into the aggregate report before we drop the per-case
-            // map. Even failing cases contribute to coverage — a case
-            // that panics halfway through still partially exercised the
-            // code under test.
-            result.coverage.merge(&line_hits);
-            // Add test case information to the result.
-            result.info.insert(
-                name.clone(),
-                TestCaseInfo {
-                    log_message: exec_result.log_message.clone(),
-                    duration: Instant::now() - start,
-                    error,
-                    line_hits,
-                },
-            );
-            if fail_fast {
+            if failed && opts.fail_fast {
                 break;
             }
         }
@@ -116,26 +113,36 @@ impl TestRun for TestSuite {
         if opts.exec_args.debug == 0 {
             let _ = remove_file(main_file);
         }
-        // Finalize coverage now that every case has run. We seed the
-        // `executable_lines` map from a fresh parse of every non-generated
-        // file in the package: the AST already gives us a precise
-        // per-statement line number and we filter out the synthetic
-        // `_kcl_test_<pid>.k` dispatch shim so it doesn't inflate the
-        // denominator.
-        if opts.coverage {
-            let executable = collect_executable_lines(&self.normal_files, &self.test_files);
-            // The merge step above stored hits under absolute-path keys
-            // (the evaluator normalizes filenames through the parser).
-            // `executable` is keyed the same way — see
-            // `collect_executable_lines` — so the lookup below finds
-            // matches directly without further rewriting.
-            result.coverage.finalize(&executable);
-        }
-        Ok(result)
+        Ok(())
     }
-}
 
-impl TestSuite {
+    /// Evaluate the package once and run every case in that evaluation.
+    /// See [`TestOptions::eval_once`].
+    fn run_cases_in_one_eval(&self, opts: &TestOptions, result: &mut TestResult) -> Result<()> {
+        // The generated main file runs no case without the case option,
+        // but it keeps the program as it is when the cases run one by
+        // one, so the calls to the cases are still checked.
+        let main_file = self.gen_test_main_file()?;
+        let args = ExecProgramArgs {
+            k_filename_list: self.get_input_files(&main_file),
+            overrides: vec![],
+            disable_yaml_result: true,
+            coverage: opts.coverage,
+            ..opts.exec_args.clone()
+        };
+        let names: Vec<String> = self.cases.keys().cloned().collect();
+        // `exec_program_calls` stops after the first failure itself with
+        // `fail_fast`.
+        let calls = exec_program_calls(ParseSessionRef::default(), &args, &names, opts.fail_fast);
+        if opts.exec_args.debug == 0 {
+            let _ = remove_file(main_file);
+        }
+        for call in &calls? {
+            record_case(result, opts, &call.name, &call.result, call.duration);
+        }
+        Ok(())
+    }
+
     fn gen_test_main_file(&self) -> Result<String> {
         let test_codes = self
             .cases
@@ -166,6 +173,49 @@ impl TestSuite {
         files.push(main_file.into());
         files
     }
+}
+
+/// Add the case `name`, which ran with `exec_result`, to `result` and
+/// return whether it failed.
+fn record_case(
+    result: &mut TestResult,
+    opts: &TestOptions,
+    name: &str,
+    exec_result: &ExecProgramResult,
+    duration: Duration,
+) -> bool {
+    // Check if there was an error.
+    let error = if exec_result.err_message.is_empty() {
+        None
+    } else {
+        Some(anyhow!("{}", exec_result.err_message))
+    };
+    let failed = error.is_some();
+    // Per-case line hits. Empty unless coverage was requested —
+    // in that case the runner drains the evaluator's coverage
+    // state into `exec_result.coverage`, which we flatten into the
+    // `<file>:<line>` convention the report expects.
+    let line_hits = if opts.coverage {
+        flatten_case_coverage(&exec_result.coverage)
+    } else {
+        Default::default()
+    };
+    // Merge into the aggregate report before we drop the per-case
+    // map. Even failing cases contribute to coverage — a case
+    // that panics halfway through still partially exercised the
+    // code under test.
+    result.coverage.merge(&line_hits);
+    // Add test case information to the result.
+    result.info.insert(
+        name.to_string(),
+        TestCaseInfo {
+            log_message: exec_result.log_message.clone(),
+            duration,
+            error,
+            line_hits,
+        },
+    );
+    failed
 }
 
 pub struct TestCase;
