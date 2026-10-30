@@ -1,0 +1,7 @@
+servers:
+- name: a
+- name: b
+check: {}
+names:
+- a
+- b
