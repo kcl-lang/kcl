@@ -38,6 +38,7 @@ impl HasErrorFormat for GenerateKclArgs {}
 impl HasErrorFormat for GenerateOpenApiArgs {}
 impl HasErrorFormat for GenerateProtoArgs {}
 impl HasErrorFormat for GenerateRustArgs {}
+impl HasErrorFormat for GeneratePythonArgs {}
 impl HasErrorFormat for GenerateDocArgs {}
 impl HasErrorFormat for ListMethodArgs {}
 
@@ -249,6 +250,7 @@ pub(crate) fn lookup_service_fn_ptr(name: &str) -> Option<u64> {
         "KclService.GenerateOpenAPI" => generate_openapi as *const () as u64,
         "KclService.GenerateProto" => generate_proto as *const () as u64,
         "KclService.GenerateRust" => generate_rust as *const () as u64,
+        "KclService.GeneratePython" => generate_python as *const () as u64,
         "KclService.GenerateDoc" => generate_doc as *const () as u64,
         // BuiltinService.Ping reuses the KclService.Ping implementation —
         // both services share the same PingArgs/PingResult message types.
@@ -828,6 +830,23 @@ pub(crate) fn generate_rust(
         result_len,
         GenerateRustArgs,
         generate_rust
+    )
+}
+
+/// Service for generating Python DTOs from the schemas of a KCL package.
+pub(crate) fn generate_python(
+    serv: *mut kcl_service,
+    args: *const c_char,
+    args_len: usize,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(
+        serv,
+        args,
+        args_len,
+        result_len,
+        GeneratePythonArgs,
+        generate_python
     )
 }
 

@@ -42,6 +42,7 @@ use super::SERVICE_METHODS;
 use super::gen_doc;
 use super::gen_openapi;
 use super::gen_proto;
+use super::gen_python;
 use super::gen_rust;
 use super::gen_schema;
 use super::generator;
@@ -1807,6 +1808,21 @@ impl KclServiceImpl {
         })
     }
 
+    /// Generate Python dataclasses from the schemas of a KCL package.
+    pub fn generate_python(
+        &self,
+        args: &GeneratePythonArgs,
+    ) -> anyhow::Result<GeneratePythonResult> {
+        let parse_args = args
+            .parse_args
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("parse_args must be set to parse a KCL program"))?;
+        let mapping = gen_schema::load_pkg_schema_types(parse_args, "")?;
+        Ok(GeneratePythonResult {
+            python_source: gen_python::generate_python(&mapping)?,
+        })
+    }
+
     /// Generate documentation from the schemas of a KCL package.
     ///
     /// The program referenced by `parse_args` is loaded and every schema
@@ -3163,6 +3179,30 @@ mod generator_tests {
     }
 
     #[test]
+    fn generate_python_golden_output() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_python(&GeneratePythonArgs {
+                parse_args: Some(schema_parse_args()),
+            })
+            .unwrap();
+        assert!(result.python_source.contains("class Person:"));
+        assert!(
+            result
+                .python_source
+                .contains("age: typing.Optional[int] = None")
+        );
+        assert!(result.python_source.contains("address: Address"));
+        assert!(result.python_source.contains("val: typing.Any"));
+        assert!(result.python_source.contains("class Base:"));
+        assert!(
+            result
+                .python_source
+                .contains("errors: typing.List[str] = []")
+        );
+    }
+
+    #[test]
     fn generate_rust_emits_customer_dtos_and_runtime_validation() {
         let serv = KclServiceImpl::default();
         let result = serv
@@ -3306,10 +3346,127 @@ fn main() {{
     }
 
     #[test]
+    fn generate_python_emits_customer_dtos_and_runtime_validation() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_python(&GeneratePythonArgs {
+                parse_args: Some(ParseProgramArgs {
+                    paths: vec![
+                        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                            .join("src/testdata/gen_rust/main.k")
+                            .canonicalize()
+                            .unwrap()
+                            .display()
+                            .to_string(),
+                    ],
+                    ..Default::default()
+                }),
+            })
+            .unwrap();
+        assert!(result.python_source.contains("class Entity:"));
+        assert!(result.python_source.contains("class Address:"));
+        assert!(result.python_source.contains("class Customer:"));
+        assert!(result.python_source.contains("id: str"));
+        assert!(result.python_source.contains("version: int"));
+        assert!(
+            result
+                .python_source
+                .contains("age: typing.Optional[int] = None")
+        );
+        assert!(result.python_source.contains("credit_limit: float"));
+        assert!(
+            result
+                .python_source
+                .contains("addresses: typing.List[Address]")
+        );
+        assert!(
+            result
+                .python_source
+                .contains("billing_address: typing.Optional[Address] = None")
+        );
+        assert!(result.python_source.contains("KCL default: 0"));
+        assert!(result.python_source.contains("KCL default: \"EUR\""));
+        assert!(
+            result
+                .python_source
+                .contains("def validate(self) -> typing.List[str]:")
+        );
+        assert!(result.python_source.contains("self.age is not None"));
+        assert!(result.python_source.contains("id must be a UUID"));
+        assert!(
+            result
+                .python_source
+                .contains("country must be an ISO 3166-1 alpha-2 code")
+        );
+        assert!(result.python_source.contains("customer must be an adult"));
+        assert!(result.python_source.contains("name must be 1..100 chars"));
+        assert!(result.python_source.contains("re.match("));
+        assert!(
+            result
+                .python_source
+                .contains("all(len(t) > 0 for t in self.tags)")
+        );
+        assert!(result.python_source.contains("in self.addresses"));
+        assert!(result.python_source.contains(".upper()"));
+
+        let temp = tempfile::tempdir().unwrap();
+        let source_path = temp.path().join("generated.py");
+        let source = format!(
+            r#"{}
+address = Address(street="Main", city="London", country="GB")
+assert address.validate() == []
+invalid_address = Address(street="Main", city="London", country="us")
+assert invalid_address.validate() != []
+
+valid = Customer(
+    id="123e4567-e89b-12d3-a456-426614174000", version=0,
+    name="Ada Lovelace", email="ada@example.com", age=None,
+    credit_limit=100.0, currency="EUR",
+    tags=["customer"], addresses=[address], billing_address=address,
+)
+assert valid.validate() == [], valid.validate()
+
+invalid = Customer(
+    id="not-a-uuid", version=-1,
+    name="", email="not-an-email", age=16,
+    credit_limit=-1.0, currency="EUR",
+    tags=[""] * 11, addresses=[],
+    billing_address=Address(street="Main", city="London", country="US"),
+)
+errors = invalid.validate()
+assert len(errors) >= 9, f"expected all invalid checks, got: {{errors}}"
+"#,
+            result.python_source
+        );
+        std::fs::write(&source_path, source).unwrap();
+        let run = std::process::Command::new("python3")
+            .arg(&source_path)
+            .output()
+            .unwrap();
+        assert!(
+            run.status.success(),
+            "generated validation behavior failed:\n{}",
+            String::from_utf8_lossy(&run.stderr)
+        );
+    }
+
+    #[test]
     fn generate_rust_requires_parse_args() {
         let serv = KclServiceImpl::default();
         let err = serv
             .generate_rust(&GenerateRustArgs::default())
+            .unwrap_err();
+        assert!(
+            err.to_string().contains("parse_args must be set"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn generate_python_requires_parse_args() {
+        let serv = KclServiceImpl::default();
+        let err = serv
+            .generate_python(&GeneratePythonArgs::default())
             .unwrap_err();
         assert!(
             err.to_string().contains("parse_args must be set"),

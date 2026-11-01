@@ -1010,6 +1010,9 @@ service KclService {
 	/// Generate Rust DTOs from the schemas of a KCL package.
 	rpc GenerateRust(GenerateRustArgs) returns (GenerateRustResult);
 
+	/// Generate Python DTOs from the schemas of a KCL package.
+	rpc GeneratePython(GeneratePythonArgs) returns (GeneratePythonResult);
+
 	/// Generate documentation from the schemas of a KCL package.
 	///
 	/// # Examples
@@ -1897,6 +1900,18 @@ message GenerateRustArgs {
 message GenerateRustResult {
 	// The generated Rust source.
 	string rust_source = 1;
+}
+
+// Message for Python DTO generation request arguments.
+message GeneratePythonArgs {
+	// Arguments for parsing the program whose schemas are exported.
+	ParseProgramArgs parse_args = 1;
+}
+
+// Message for Python DTO generation response.
+message GeneratePythonResult {
+	// The generated Python source.
+	string python_source = 1;
 }
 
 // Message for generate doc request arguments.

@@ -171,6 +171,26 @@ fn test_export_rust_command() {
 }
 
 #[test]
+fn test_export_python_command() {
+    let input = Path::new("../api/src/testdata/gen_openapi/main.k")
+        .canonicalize()
+        .unwrap();
+    let matches = app().get_matches_from([
+        ROOT_CMD,
+        "export",
+        input.to_str().unwrap(),
+        "--target",
+        "python",
+    ]);
+    let mut output = Vec::new();
+    crate::export::export_command(matches.subcommand_matches("export").unwrap(), &mut output)
+        .unwrap();
+    let output = String::from_utf8(output).unwrap();
+    assert!(output.contains("class Person:"));
+    assert!(output.contains("age: typing.Optional[int] = None"));
+}
+
+#[test]
 fn test_export_help_lists_supported_target() {
     let mut command = app();
     let help = command
@@ -178,7 +198,7 @@ fn test_export_help_lists_supported_target() {
         .unwrap()
         .render_help()
         .to_string();
-    assert!(help.contains("currently supported: rust"));
+    assert!(help.contains("currently supported: rust, python"));
 }
 
 #[test]
