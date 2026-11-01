@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:1:1
+  |
+1 | a = int("9000Pi")
+  |  10133099161583616000: A 64 bit integer overflow
+  |

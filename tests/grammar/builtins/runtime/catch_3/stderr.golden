@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+  --> ${CWD}/main.k:14:1
+   |
+14 | assert False, "own message"
+   |  own message
+   |

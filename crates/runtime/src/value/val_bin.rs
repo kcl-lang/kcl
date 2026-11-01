@@ -299,7 +299,7 @@ impl ValueRef {
                 let str_len = a.chars().count();
                 let index = *b;
                 let index = must_normalize_index(index as i32, str_len);
-                if index < a.len() {
+                if index < str_len {
                     let ch = a.chars().nth(index).unwrap();
                     Self::str(ch.to_string().as_ref())
                 } else {
@@ -411,6 +411,26 @@ mod test_value_bin {
             let result = data.bin_subscr(&index).as_str();
             assert_eq!(result, expected);
         }
+    }
+
+    #[test]
+    fn test_str_subscr_non_ascii() {
+        let data = ValueRef::str("héllo");
+        let cases = [(0, "h"), (1, "é"), (4, "o"), (-1, "o"), (-4, "é")];
+        for (index, expected) in cases {
+            let index = ValueRef::int(index as i64);
+            let result = data.bin_subscr(&index).as_str();
+            assert_eq!(result, expected);
+        }
+        // The index is out of range in characters but not in bytes.
+        let err = std::panic::catch_unwind(|| {
+            ValueRef::str("héllo").bin_subscr(&ValueRef::int(5));
+        })
+        .unwrap_err();
+        assert_eq!(
+            err.downcast_ref::<String>().unwrap(),
+            "string index out of range: 5"
+        );
     }
 
     #[test]

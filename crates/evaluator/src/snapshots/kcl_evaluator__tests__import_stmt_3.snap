@@ -2,4 +2,4 @@
 source: crates/evaluator/src/tests.rs
 expression: "format! (\"{}\", evaluator.run().unwrap().1)"
 ---
-x: 2
+x: 2.302585092994046

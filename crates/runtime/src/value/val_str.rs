@@ -8,6 +8,18 @@ use unicode_casing::CharExt;
 
 const ASCII_WHITESPACES: [u8; 6] = [0x20, 0x09, 0x0a, 0x0c, 0x0d, 0x0b];
 
+/// Superscript digits that `str.isdigit()` accepts besides the ASCII digits.
+const SUPERSCRIPT_DIGITS: [u16; 10] = [
+    0x2070, 0x00B9, 0x00B2, 0x00B3, 0x2074, 0x2075, 0x2076, 0x2077, 0x2078, 0x2079,
+];
+
+/// Returns whether `c` is a digit for `str.isdigit()`.
+#[inline]
+pub(crate) fn is_digit_char(c: char) -> bool {
+    // Preserve the historical u16 truncation, including its non-BMP aliases.
+    c.is_ascii_digit() || SUPERSCRIPT_DIGITS.contains(&(c as u16))
+}
+
 fn adjust_indices(
     start: Option<&ValueRef>,
     end: Option<&ValueRef>,
@@ -44,6 +56,33 @@ fn adjust_indices(
     start as usize..end as usize
 }
 
+/// Resolve the `start`/`end` arguments of the str search methods, which count
+/// characters, into the selected substring and the character index it starts
+/// at. Returns `None` when the resulting range is empty or inverted.
+fn char_range<'a>(
+    value: &'a str,
+    start: Option<&ValueRef>,
+    end: Option<&ValueRef>,
+) -> Option<(&'a str, usize)> {
+    let char_len = value.chars().count();
+    let range = adjust_indices(start, end, char_len);
+    if !range.is_normal() {
+        return None;
+    }
+    let mut offsets = value
+        .char_indices()
+        .map(|(offset, _)| offset)
+        .chain(std::iter::once(value.len()));
+    let byte_start = offsets.clone().nth(range.start)?;
+    let byte_end = offsets.nth(range.end)?;
+    Some((&value[byte_start..byte_end], range.start))
+}
+
+/// Convert a byte offset within `value` into a character index.
+fn char_index(value: &str, byte_offset: usize) -> usize {
+    value[..byte_offset].chars().count()
+}
+
 fn is_case<F, G>(value: &str, is_case: F, is_opposite: G) -> bool
 where
     F: Fn(char) -> bool,
@@ -73,7 +112,7 @@ impl RangeNormal for std::ops::Range<usize> {
 impl ValueRef {
     pub fn str_len(&self) -> usize {
         match &*self.rc.borrow() {
-            Value::str_value(v) => v.len(),
+            Value::str_value(v) => v.chars().count(),
             _ => panic!("Invalid str object in str len"),
         }
     }
@@ -132,11 +171,9 @@ impl ValueRef {
 
         match (&*self.rc.borrow(), &*sub.rc.borrow()) {
             (Value::str_value(v), Value::str_value(sub_str)) => {
-                let range = adjust_indices(start, end, v.len());
-                let count = if range.is_normal() {
-                    v.get(range).unwrap().matches(sub_str).count()
-                } else {
-                    0
+                let count = match char_range(v, start, end) {
+                    Some((slice, _)) => slice.matches(sub_str.as_str()).count(),
+                    None => 0,
                 };
                 ValueRef::int(count as i64)
             }
@@ -155,11 +192,9 @@ impl ValueRef {
 
         match (&*self.rc.borrow(), &*prefix.rc.borrow()) {
             (Value::str_value(v), Value::str_value(prefix)) => {
-                let range = adjust_indices(start, end, v.len());
-                let result = if range.is_normal() {
-                    v.get(range).unwrap().starts_with(prefix)
-                } else {
-                    false
+                let result = match char_range(v, start, end) {
+                    Some((slice, _)) => slice.starts_with(prefix.as_str()),
+                    None => false,
                 };
                 ValueRef::bool(result)
             }
@@ -178,11 +213,9 @@ impl ValueRef {
 
         match (&*self.rc.borrow(), &*suffix.rc.borrow()) {
             (Value::str_value(v), Value::str_value(suffix)) => {
-                let range = adjust_indices(start, end, v.len());
-                let result = if range.is_normal() {
-                    v.get(range).unwrap().ends_with(suffix)
-                } else {
-                    false
+                let result = match char_range(v, start, end) {
+                    Some((slice, _)) => slice.ends_with(suffix.as_str()),
+                    None => false,
                 };
                 ValueRef::bool(result)
             }
@@ -216,15 +249,12 @@ impl ValueRef {
 
         match (&*self.rc.borrow(), &*sub.rc.borrow()) {
             (Value::str_value(v), Value::str_value(sub)) => {
-                let range = adjust_indices(start, end, v.len());
-                let range_start = range.start;
-                let result: i64 = if range.is_normal() {
-                    match v.get(range).unwrap().find(sub) {
-                        Some(index) => (index + range_start) as i64,
+                let result: i64 = match char_range(v, start, end) {
+                    Some((slice, range_start)) => match slice.find(sub.as_str()) {
+                        Some(index) => (char_index(slice, index) + range_start) as i64,
                         None => -1,
-                    }
-                } else {
-                    -1
+                    },
+                    None => -1,
                 };
                 ValueRef::int(result)
             }
@@ -243,15 +273,12 @@ impl ValueRef {
 
         match (&*self.rc.borrow(), &*sub.rc.borrow()) {
             (Value::str_value(v), Value::str_value(sub)) => {
-                let range = adjust_indices(start, end, v.len());
-                let range_start = range.start;
-                let result: i64 = if range.is_normal() {
-                    match v.get(range).unwrap().rfind(sub) {
-                        Some(index) => (index + range_start) as i64,
+                let result: i64 = match char_range(v, start, end) {
+                    Some((slice, range_start)) => match slice.rfind(sub.as_str()) {
+                        Some(index) => (char_index(slice, index) + range_start) as i64,
                         None => -1,
-                    }
-                } else {
-                    -1
+                    },
+                    None => -1,
                 };
                 ValueRef::int(result)
             }
@@ -270,15 +297,12 @@ impl ValueRef {
 
         match (&*self.rc.borrow(), &*sub.rc.borrow()) {
             (Value::str_value(v), Value::str_value(sub)) => {
-                let range = adjust_indices(start, end, v.len());
-                let range_start = range.start;
-                let result: i64 = if range.is_normal() {
-                    match v.get(range).unwrap().find(sub) {
-                        Some(index) => (index + range_start) as i64,
+                let result: i64 = match char_range(v, start, end) {
+                    Some((slice, range_start)) => match slice.find(sub.as_str()) {
+                        Some(index) => (char_index(slice, index) + range_start) as i64,
                         None => panic!("substring not found"),
-                    }
-                } else {
-                    panic!("substring not found");
+                    },
+                    None => panic!("substring not found"),
                 };
                 ValueRef::int(result)
             }
@@ -297,15 +321,12 @@ impl ValueRef {
 
         match (&*self.rc.borrow(), &*sub.rc.borrow()) {
             (Value::str_value(v), Value::str_value(sub)) => {
-                let range = adjust_indices(start, end, v.len());
-                let range_start = range.start;
-                let result: i64 = if range.is_normal() {
-                    match v.get(range).unwrap().rfind(sub) {
-                        Some(index) => (index + range_start) as i64,
+                let result: i64 = match char_range(v, start, end) {
+                    Some((slice, range_start)) => match slice.rfind(sub.as_str()) {
+                        Some(index) => (char_index(slice, index) + range_start) as i64,
                         None => panic!("substring not found"),
-                    }
-                } else {
-                    panic!("substring not found");
+                    },
+                    None => panic!("substring not found"),
                 };
                 ValueRef::int(result)
             }
@@ -336,14 +357,7 @@ impl ValueRef {
     pub fn str_isdigit(&self) -> ValueRef {
         match &*self.rc.borrow() {
             Value::str_value(v) => {
-                let valid_unicodes: [u16; 10] = [
-                    0x2070, 0x00B9, 0x00B2, 0x00B3, 0x2074, 0x2075, 0x2076, 0x2077, 0x2078, 0x2079,
-                ];
-
-                let result = !v.is_empty()
-                    && v.chars()
-                        .filter(|c| !c.is_ascii_digit())
-                        .all(|c| valid_unicodes.contains(&(c as u16)));
+                let result = !v.is_empty() && v.chars().all(is_digit_char);
                 ValueRef::bool(result)
             }
             _ => panic!("Invalid str object in str_isdigit"),
@@ -740,6 +754,52 @@ impl ValueRef {
         match &*self.rc.borrow() {
             Value::str_value(v) => *v == *value,
             _ => false,
+        }
+    }
+}
+
+#[cfg(test)]
+mod test_value_str {
+    use crate::*;
+
+    #[test]
+    fn test_str_isdigit() {
+        let cases = [
+            ("0123456789", true),
+            (
+                "\u{2070}\u{b9}\u{b2}\u{b3}\u{2074}\u{2075}\u{2076}\u{2077}\u{2078}\u{2079}",
+                true,
+            ),
+            ("1\u{b2}", true),
+            ("\u{102070}", true),
+            ("\u{100b2}9", true),
+            ("", false),
+            (" ", false),
+            ("a1", false),
+            ("-1", false),
+            ("1.0", false),
+            ("\u{661}", false),
+            ("\u{ff11}", false),
+            ("\u{2080}", false),
+            ("\u{1d7d9}", false),
+        ];
+        for (value, expected) in cases {
+            assert_eq!(
+                ValueRef::str(value).str_isdigit().is_truthy(),
+                expected,
+                "{value:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_is_digit_char_matches_previous_check() {
+        let valid_unicodes: [u16; 10] = [
+            0x2070, 0x00B9, 0x00B2, 0x00B3, 0x2074, 0x2075, 0x2076, 0x2077, 0x2078, 0x2079,
+        ];
+        for c in (0..=0x10ffff).filter_map(char::from_u32) {
+            let expected = c.is_ascii_digit() || valid_unicodes.contains(&(c as u16));
+            assert_eq!(super::is_digit_char(c), expected, "{c:?}");
         }
     }
 }

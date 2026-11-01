@@ -1,4 +1,4 @@
-use std::{collections::HashSet, rc::Rc};
+use std::{cell::Ref, collections::HashSet, rc::Rc};
 
 use generational_arena::Index;
 use kcl_ast::ast;
@@ -22,6 +22,16 @@ impl<'ctx> Evaluator<'ctx> {
             .last()
             .expect(kcl_error::INTERNAL_ERROR_MSG)
             .to_string()
+    }
+
+    /// Current package path, borrowed from the package path stack instead of
+    /// cloned. The returned guard must be dropped before any package path is
+    /// pushed or popped, including by calls that re-enter evaluation.
+    #[inline]
+    pub(crate) fn current_pkgpath_ref(&self) -> Ref<'_, str> {
+        Ref::map(self.pkgpath_stack.borrow(), |stack| {
+            stack.last().expect(kcl_error::INTERNAL_ERROR_MSG).as_str()
+        })
     }
 
     /// Last package path

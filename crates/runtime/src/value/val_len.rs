@@ -5,7 +5,7 @@ use crate::*;
 impl ValueRef {
     pub fn len(&self) -> usize {
         match &*self.rc.borrow() {
-            Value::str_value(s) => s.len(),
+            Value::str_value(s) => s.chars().count(),
             Value::list_value(v) => v.values.len(),
             Value::dict_value(v) => v.values.len(),
             Value::schema_value(v) => v.config.values.len(),
@@ -31,6 +31,8 @@ mod test_value_len {
     fn test_len() {
         let mut ctx = Context::new();
         assert_eq!(ValueRef::str("abc").len(), 3);
+        assert_eq!(ValueRef::str("héllo").len(), 5);
+        assert_eq!(ValueRef::str("你好").len(), 2);
         assert_eq!(
             ValueRef::str("abc")
                 .bin_aug_mul(&mut ctx, &ValueRef::int(10))

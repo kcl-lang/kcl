@@ -1,6 +1,6 @@
 //! Copyright The KCL Authors. All rights reserved.
 
-use std::{collections::HashSet, ops::Index};
+use std::{collections::HashSet, num::IntErrorKind, ops::Index};
 
 use crate::*;
 
@@ -17,6 +17,21 @@ impl Context {
     pub fn builtin_option_reset(&mut self) {
         self.option_values.clear();
     }
+}
+
+/// Truncate a float towards zero for `int()`. NaN and values whose result does
+/// not fit in an i64 are errors instead of saturating.
+fn float_to_int(ctx: &mut Context, v: f64) -> i64 {
+    if v.is_nan() {
+        panic!("cannot convert float NaN to integer");
+    }
+    let v = v.trunc();
+    // i64::MIN as f64 is exactly -2^63, and i64::MAX as f64 rounds up to 2^63.
+    if v < i64::MIN as f64 || v >= i64::MAX as f64 {
+        ctx.set_err_type(&RuntimeErrorType::IntOverflow);
+        panic!("{v}: A 64 bit integer overflow");
+    }
+    v as i64
 }
 
 impl ValueRef {
@@ -155,7 +170,7 @@ impl ValueRef {
 
         match &*self.rc.borrow() {
             Value::int_value(v) => ValueRef::int(*v),
-            Value::float_value(v) => ValueRef::int(*v as i64),
+            Value::float_value(v) => ValueRef::int(float_to_int(ctx, *v)),
             Value::unit_value(v, raw, unit) => {
                 let v_i128 = crate::real_uint_value(*raw, unit);
                 let int_32_overflow = strict_range_check_i32 && v_i128 != ((v_i128 as i32) as i128);
@@ -174,35 +189,51 @@ impl ValueRef {
                     }
                 }
 
-                ValueRef::int(*v as i64)
+                ValueRef::int(float_to_int(ctx, *v))
             }
             Value::bool_value(v) => ValueRef::int(*v as i64),
             Value::str_value(v) => {
                 let base = if let Some(v) = base { v.as_int() } else { 10 };
                 // When base is explicitly provided and not 10, don't use to_quantity
                 // because it's designed for decimal-based unit suffixes (Ki, Mi, Gi, etc.)
-                let number_str = if base == 10 {
-                    to_quantity(v.as_str()).to_string()
+                if base == 10 {
+                    return match to_quantity(v.as_str()) {
+                        Ok(value) => match i64::try_from(value) {
+                            Ok(value) => ValueRef::int(value),
+                            Err(_) => {
+                                panic_i64_overflow!(ctx, value);
+                            }
+                        },
+                        Err(err)
+                            if matches!(
+                                err.kind(),
+                                IntErrorKind::PosOverflow | IntErrorKind::NegOverflow
+                            ) =>
+                        {
+                            ctx.set_err_type(&RuntimeErrorType::IntOverflow);
+                            panic!("{v}: A 64 bit integer overflow")
+                        }
+                        Err(_) => panic!("invalid literal for int() with base 10: '{self}'"),
+                    };
+                }
+                // For non-base-10 parsing, strip common prefixes (0x, 0o, 0b) if present
+                // This allows parsing strings like "0xe4" with base=16
+                // Handle negative numbers by stripping the sign first
+                let s = v.as_str();
+                let is_negative = s.starts_with('-');
+                let s = if is_negative { &s[1..] } else { s };
+                let s = s
+                    .strip_prefix("0x")
+                    .or_else(|| s.strip_prefix("0X"))
+                    .or_else(|| s.strip_prefix("0o"))
+                    .or_else(|| s.strip_prefix("0O"))
+                    .or_else(|| s.strip_prefix("0b"))
+                    .or_else(|| s.strip_prefix("0B"))
+                    .unwrap_or(s);
+                let number_str = if is_negative {
+                    format!("-{s}")
                 } else {
-                    // For non-base-10 parsing, strip common prefixes (0x, 0o, 0b) if present
-                    // This allows parsing strings like "0xe4" with base=16
-                    // Handle negative numbers by stripping the sign first
-                    let s = v.as_str();
-                    let is_negative = s.starts_with('-');
-                    let s = if is_negative { &s[1..] } else { s };
-                    let s = s
-                        .strip_prefix("0x")
-                        .or_else(|| s.strip_prefix("0X"))
-                        .or_else(|| s.strip_prefix("0o"))
-                        .or_else(|| s.strip_prefix("0O"))
-                        .or_else(|| s.strip_prefix("0b"))
-                        .or_else(|| s.strip_prefix("0B"))
-                        .unwrap_or(s);
-                    if is_negative {
-                        format!("-{s}")
-                    } else {
-                        s.to_string()
-                    }
+                    s.to_string()
                 };
                 let v: i64 =
                     i64::from_str_radix(number_str.as_str(), base as u32).unwrap_or_else(|_| {
@@ -410,7 +441,7 @@ impl ValueRef {
                 if string_len != 1 {
                     panic!(
                         " ord() expected string of length 1, but string of length {} found",
-                        str.len()
+                        string_len
                     )
                 }
                 let ch = str.chars().next().unwrap();
@@ -533,7 +564,7 @@ pub fn multiplyof(a: &ValueRef, b: &ValueRef) -> ValueRef {
     }
 }
 
-pub fn pow(x: &ValueRef, y: &ValueRef, z: &ValueRef) -> ValueRef {
+pub fn pow(ctx: &mut Context, x: &ValueRef, y: &ValueRef, z: &ValueRef) -> ValueRef {
     match &*z.rc.borrow() {
         Value::int_value(z) => {
             if *z == 0 {
@@ -541,7 +572,7 @@ pub fn pow(x: &ValueRef, y: &ValueRef, z: &ValueRef) -> ValueRef {
             }
             match (&*x.rc.borrow(), &*y.rc.borrow()) {
                 (Value::int_value(x), Value::int_value(y)) => match (*y).cmp(&0) {
-                    std::cmp::Ordering::Equal => ValueRef::int(1),
+                    std::cmp::Ordering::Equal => ValueRef::int(1).bin_mod(&ValueRef::int(*z)),
                     std::cmp::Ordering::Greater => {
                         let mut ans = 1_i128;
                         let mut base = *x as i128;
@@ -554,7 +585,9 @@ pub fn pow(x: &ValueRef, y: &ValueRef, z: &ValueRef) -> ValueRef {
                             base = (base * base) % m;
                             exp /= 2;
                         }
-                        ValueRef::int(ans as i64)
+                        // Rust's `%` keeps the sign of the dividend, so apply KCL's `%`
+                        // to give the result the sign of `z`, as `x ** y % z` does.
+                        ValueRef::int(ans as i64).bin_mod(&ValueRef::int(*z))
                     }
                     std::cmp::Ordering::Less => {
                         panic!("pow() 2nd argument cannot be negative when 3rd argument specified")
@@ -564,12 +597,10 @@ pub fn pow(x: &ValueRef, y: &ValueRef, z: &ValueRef) -> ValueRef {
             }
         }
         _ => match (&*x.rc.borrow(), &*y.rc.borrow()) {
+            // Non-negative int exponents give an exact int result, as `x ** y` does.
+            (Value::int_value(_), Value::int_value(exp)) if *exp >= 0 => x.bin_pow(ctx, y),
             (Value::int_value(x), Value::int_value(y)) => {
-                if *y >= 0 {
-                    ValueRef::int((*x as f64).powf(*y as f64) as i64)
-                } else {
-                    ValueRef::float((*x as f64).powf(*y as f64))
-                }
+                ValueRef::float((*x as f64).powf(*y as f64))
             }
             (Value::int_value(x), Value::float_value(y)) => ValueRef::float((*x as f64).powf(*y)),
             (Value::float_value(x), Value::int_value(y)) => ValueRef::float((*x).powf(*y as f64)),
@@ -582,10 +613,10 @@ pub fn pow(x: &ValueRef, y: &ValueRef, z: &ValueRef) -> ValueRef {
 pub fn round(number: &ValueRef, ndigits: &ValueRef) -> ValueRef {
     match &*ndigits.rc.borrow() {
         Value::int_value(ndigits) => match &*number.rc.borrow() {
-            Value::int_value(number) => ValueRef::float(*number as f64),
+            Value::int_value(number) => ValueRef::int(round_int(*number, *ndigits)),
             Value::float_value(number) => {
                 if *ndigits == 0 {
-                    ValueRef::float(number.round())
+                    ValueRef::float(number.round_ties_even())
                 } else {
                     let (y, pow1, pow2) = if *ndigits >= 0 {
                         // according to cpython: pow1 and pow2 are each safe from overflow, but
@@ -629,9 +660,32 @@ pub fn round(number: &ValueRef, ndigits: &ValueRef) -> ValueRef {
         },
         _ => match &*number.rc.borrow() {
             Value::int_value(number) => ValueRef::int(*number),
-            Value::float_value(number) => ValueRef::int(number.round() as i64),
+            Value::float_value(number) => ValueRef::int(number.round_ties_even() as i64),
             _ => ValueRef::undefined(),
         },
+    }
+}
+
+/// Round an integer to `ndigits` decimal digits, rounding half to even.
+/// A non-negative `ndigits` leaves the integer unchanged.
+fn round_int(number: i64, ndigits: i64) -> i64 {
+    if ndigits >= 0 {
+        return number;
+    }
+    // Half of 10^20 is already larger than any i64, so every i64 rounds to 0.
+    if ndigits < -19 {
+        return 0;
+    }
+    let pow = 10_i128.pow((-ndigits) as u32);
+    let number = number as i128;
+    let mut quotient = number.div_euclid(pow);
+    let remainder = number.rem_euclid(pow);
+    if remainder * 2 > pow || (remainder * 2 == pow && quotient % 2 != 0) {
+        quotient += 1;
+    }
+    match i64::try_from(quotient * pow) {
+        Ok(result) => result,
+        Err(_) => panic!("round() result overflow"),
     }
 }
 
@@ -671,28 +725,132 @@ mod test_builtin {
     }
 
     #[test]
+    fn test_convert_float_to_int() {
+        let mut ctx = Context::new();
+        for (v, expected) in [
+            (1.9, 1),
+            (-1.9, -1),
+            (9.2e18, 9200000000000000000),
+            (-9223372036854775808.0, i64::MIN),
+        ] {
+            let result = ValueRef::float(v).convert_to_int(&mut ctx, None);
+            assert_eq!(expected, result.as_int(), "int({v})");
+        }
+        for v in [9223372036854775808.0, -9.3e18, 1e300, f64::INFINITY] {
+            assert_panic("A 64 bit integer overflow", || {
+                let mut ctx = Context::new();
+                let _ = ValueRef::float(v).convert_to_int(&mut ctx, None);
+            });
+        }
+        assert_panic("cannot convert float NaN to integer", || {
+            let mut ctx = Context::new();
+            let _ = ValueRef::float(f64::NAN).convert_to_int(&mut ctx, None);
+        });
+    }
+
+    #[test]
     fn test_pow() {
+        let mut ctx = Context::new();
+        let ctx = &mut ctx;
         assert_eq!(
             8,
-            builtin::pow(&ValueRef::int(2), &ValueRef::int(3), &ValueRef::none()).as_int()
+            builtin::pow(ctx, &ValueRef::int(2), &ValueRef::int(3), &ValueRef::none()).as_int()
         );
         assert_eq!(
             3,
-            builtin::pow(&ValueRef::int(2), &ValueRef::int(3), &ValueRef::int(5)).as_int()
+            builtin::pow(ctx, &ValueRef::int(2), &ValueRef::int(3), &ValueRef::int(5)).as_int()
         );
         assert_eq!(
             (2.0_f64).powf(0.5),
-            builtin::pow(&ValueRef::int(2), &ValueRef::float(0.5), &ValueRef::none()).as_float()
+            builtin::pow(
+                ctx,
+                &ValueRef::int(2),
+                &ValueRef::float(0.5),
+                &ValueRef::none()
+            )
+            .as_float()
         );
         assert_eq!(
             182523810312617,
             builtin::pow(
+                ctx,
                 &ValueRef::int(141592653589793),
                 &ValueRef::int(238462643383279),
                 &ValueRef::int(502884197169399)
             )
             .as_int()
         )
+    }
+
+    #[test]
+    fn test_pow_int_is_exact() {
+        let mut ctx = Context::new();
+        let result = builtin::pow(
+            &mut ctx,
+            &ValueRef::int(3),
+            &ValueRef::int(39),
+            &ValueRef::none(),
+        );
+        assert!(result.is_int());
+        assert_eq!(4052555153018976267, result.as_int());
+        let result = builtin::pow(
+            &mut ctx,
+            &ValueRef::int(2),
+            &ValueRef::int(-1),
+            &ValueRef::none(),
+        );
+        assert_eq!(0.5, result.as_float());
+        assert_panic("A 64 bit integer overflow", || {
+            let mut ctx = Context::new();
+            let _ = builtin::pow(
+                &mut ctx,
+                &ValueRef::int(2),
+                &ValueRef::int(64),
+                &ValueRef::none(),
+            );
+        });
+    }
+
+    #[test]
+    fn test_pow_mod_sign() {
+        let mut ctx = Context::new();
+        for (x, y, z, expected) in [
+            (-2, 3, 5, 2),
+            (2, 3, -5, -2),
+            (-2, 3, -5, -3),
+            (-3, 2, 5, 4),
+            (7, 0, 1, 0),
+            (7, 0, -3, -2),
+        ] {
+            let result = builtin::pow(
+                &mut ctx,
+                &ValueRef::int(x),
+                &ValueRef::int(y),
+                &ValueRef::int(z),
+            );
+            assert_eq!(expected, result.as_int(), "pow({x}, {y}, {z})");
+        }
+    }
+
+    #[test]
+    fn test_convert_str_to_int() {
+        let mut ctx = Context::new();
+        for (s, expected) in [("10", 10), ("1024Mi", 1073741824), ("1500m", 1)] {
+            let result = ValueRef::str(s).convert_to_int(&mut ctx, None);
+            assert_eq!(expected, result.as_int(), "int({s:?})");
+        }
+        for s in ["", "abc", "1ki", "5é"] {
+            assert_panic("invalid literal for int() with base 10", || {
+                let mut ctx = Context::new();
+                let _ = ValueRef::str(s).convert_to_int(&mut ctx, None);
+            });
+        }
+        for s in ["9000Pi", "99999999999999999999"] {
+            assert_panic("A 64 bit integer overflow", || {
+                let mut ctx = Context::new();
+                let _ = ValueRef::str(s).convert_to_int(&mut ctx, None);
+            });
+        }
     }
 
     #[test]
@@ -781,6 +939,46 @@ mod test_builtin {
             2.0,
             builtin::round(&ValueRef::float(1.5555), &ValueRef::int(0)).as_float()
         );
+    }
+
+    #[test]
+    fn test_round_half_to_even() {
+        for (number, expected) in [(0.5, 0), (1.5, 2), (2.5, 2), (-0.5, 0), (-2.5, -2)] {
+            let result = builtin::round(&ValueRef::float(number), &ValueRef::none());
+            assert!(result.is_int());
+            assert_eq!(expected, result.as_int());
+        }
+        for (number, expected) in [(0.5, 0.0), (2.5, 2.0), (3.5, 4.0), (-2.5, -2.0)] {
+            assert_eq!(
+                expected,
+                builtin::round(&ValueRef::float(number), &ValueRef::int(0)).as_float()
+            );
+        }
+    }
+
+    #[test]
+    fn test_round_int_ndigits() {
+        for (number, ndigits, expected) in [
+            (5, 2, 5),
+            (5, 0, 5),
+            (1234, -2, 1200),
+            (1250, -2, 1200),
+            (1350, -2, 1400),
+            (-1250, -2, -1200),
+            (-1251, -2, -1300),
+            (15, -1, 20),
+            (25, -1, 20),
+            (4_000_000_000_000_000_000, -19, 0),
+            (i64::MAX, -20, 0),
+            (i64::MIN, i64::MIN, 0),
+        ] {
+            let result = builtin::round(&ValueRef::int(number), &ValueRef::int(ndigits));
+            assert!(result.is_int());
+            assert_eq!(expected, result.as_int());
+        }
+        assert_panic("round() result overflow", || {
+            let _ = builtin::round(&ValueRef::int(i64::MAX), &ValueRef::int(-19));
+        });
     }
 
     #[test]

@@ -116,6 +116,9 @@ class BaseTest(unittest.TestCase):
             re.findall(r"^(\d{0,63})(E|P|T|G|M|K|Ei|Pi|Ti|Gi|Mi|Ki)$", "4Gi"),
             [["4", "Gi"]],
         )
+        self.assertEqual(re.findall(r"(\w)=\d", "a=1 b=2"), ["a", "b"])
+        self.assertEqual(re.findall("(a)?b", "b"), [""])
+        self.assertEqual(re.findall("(a)|(b)", "ab"), [["a", ""], ["", "b"]])
         for string in "a:b::c:::d", S("a:b::c:::d"):
             self.assertEqual(re.findall(":+", string), [":", "::", ":::"])
             self.assertEqual(re.findall("(:+)", string), [":", "::", ":::"])

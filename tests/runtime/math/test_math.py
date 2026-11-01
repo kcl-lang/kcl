@@ -56,8 +56,8 @@ class kclx_Math:
     def expm1(self, x) -> float:
         return self.dylib.Invoke(f"math.expm1", x)
 
-    def log(self, x) -> float:
-        return self.dylib.Invoke(f"math.log", x)
+    def log(self, x, *args) -> float:
+        return self.dylib.Invoke(f"math.log", x, *args)
 
     def log1p(self, x) -> float:
         return self.dylib.Invoke(f"math.log1p", x)
@@ -306,7 +306,10 @@ class BaseTest(unittest.TestCase):
         self.ftest("log(1/e)", math.log(1 / pymath.e), -1)
         self.ftest("log(1)", math.log(1), 0)
         self.ftest("log(e)", math.log(pymath.e), 1)
-        # self.ftest("log(32,2)", math.log(32, 2), 5)
+        self.ftest("log(10)", math.log(10), 2.302585092994046)
+        self.ftest("log(32,2)", math.log(32, 2), 5)
+        self.ftest("log(100,10)", math.log(100, 10), 2)
+        self.ftest("log(8,2.0)", math.log(8, 2.0), 3)
         # self.ftest("log(10**40, 10)", math.log(10 ** 40, 10), 40)
         # self.ftest("log(10**40, 10**20)", math.log(10 ** 40, 10 ** 20), 2)
         # self.ftest("log(10**1000)", math.log(10 ** 1000), 2302.5850929940457)
@@ -316,6 +319,13 @@ class BaseTest(unittest.TestCase):
         # self.assertEqual(math.log(INF), INF)
         # self.assertTrue(math.isnan(math.log(NAN)))
 
+    def testLog1p(self):
+        self.ftest("log1p(0)", math.log1p(0), 0)
+        self.ftest("log1p(0.0)", math.log1p(0.0), 0)
+        self.ftest("log1p(1)", math.log1p(1), pymath.log(2))
+        self.ftest("log1p(e-1)", math.log1p(pymath.e - 1), 1)
+        self.ftest("log1p(1e-10)", math.log1p(1e-10), 9.9999999995e-11)
+
     def testLog2(self):
         # self.assertRaises(TypeError, math.log2)
 
@@ -323,6 +333,7 @@ class BaseTest(unittest.TestCase):
         self.assertEqual(math.log2(1), 0.0)
         self.assertEqual(math.log2(2), 1.0)
         self.assertEqual(math.log2(4), 2.0)
+        self.ftest("log2(3)", math.log2(3), 1.584962500721156)
 
         # Large integer values
         # self.assertEqual(math.log2(2**1023), 1023.0)

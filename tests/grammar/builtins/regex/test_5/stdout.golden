@@ -1,0 +1,10 @@
+keys:
+- a
+- b
+optional:
+- ''
+either:
+- - a
+  - ''
+- - ''
+  - b
