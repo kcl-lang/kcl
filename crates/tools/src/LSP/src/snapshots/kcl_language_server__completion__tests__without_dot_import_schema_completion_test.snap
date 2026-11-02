@@ -1,0 +1,7 @@
+---
+source: crates/tools/src/LSP/src/completion.rs
+expression: completion_snapshot(got)
+---
+label: Person1
+kind: Class
+detail: Person1: Person1

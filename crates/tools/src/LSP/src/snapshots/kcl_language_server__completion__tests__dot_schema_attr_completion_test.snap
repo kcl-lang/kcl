@@ -1,0 +1,11 @@
+---
+source: crates/tools/src/LSP/src/completion.rs
+expression: completion_snapshot(got)
+---
+label: age
+kind: Field
+detail: age: int
+
+label: name
+kind: Field
+detail: name: str

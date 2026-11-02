@@ -1,0 +1,11 @@
+---
+source: crates/tools/src/LSP/src/completion.rs
+expression: completion_snapshot(got)
+---
+label: debug
+kind: Variable
+detail: bool
+
+label: verbose
+kind: Variable
+detail: bool
