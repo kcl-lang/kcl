@@ -40,6 +40,7 @@ use tempfile::NamedTempFile;
 
 use super::SERVICE_METHODS;
 use super::gen_doc;
+use super::gen_go;
 use super::gen_openapi;
 use super::gen_proto;
 use super::gen_python;
@@ -1823,6 +1824,18 @@ impl KclServiceImpl {
         })
     }
 
+    /// Generate Go DTOs from the schemas of a KCL package.
+    pub fn generate_go(&self, args: &GenerateGoArgs) -> anyhow::Result<GenerateGoResult> {
+        let parse_args = args
+            .parse_args
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("parse_args must be set to parse a KCL program"))?;
+        let mapping = gen_schema::load_pkg_schema_types(parse_args, "")?;
+        Ok(GenerateGoResult {
+            go_source: gen_go::generate_go(&mapping, &args.package)?,
+        })
+    }
+
     /// Generate documentation from the schemas of a KCL package.
     ///
     /// The program referenced by `parse_args` is loaded and every schema
@@ -3203,6 +3216,32 @@ mod generator_tests {
     }
 
     #[test]
+    fn generate_go_golden_output() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_go(&GenerateGoArgs {
+                parse_args: Some(schema_parse_args()),
+                package: String::new(),
+            })
+            .unwrap();
+        assert!(result.go_source.starts_with("package generated\n"));
+        assert!(result.go_source.contains("type Person struct {"));
+        assert!(
+            result
+                .go_source
+                .contains("Age *int64 `json:\"age,omitempty\"`")
+        );
+        assert!(
+            result
+                .go_source
+                .contains("Address Address `json:\"address\"`")
+        );
+        assert!(result.go_source.contains("Val any `json:\"val\"`"));
+        assert!(result.go_source.contains("type Base struct {"));
+        assert!(result.go_source.contains("errors := []string{}"));
+    }
+
+    #[test]
     fn generate_rust_emits_customer_dtos_and_runtime_validation() {
         let serv = KclServiceImpl::default();
         let result = serv
@@ -3451,6 +3490,138 @@ assert len(errors) >= 9, f"expected all invalid checks, got: {{errors}}"
     }
 
     #[test]
+    fn generate_go_emits_customer_dtos_and_runtime_validation() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_go(&GenerateGoArgs {
+                parse_args: Some(ParseProgramArgs {
+                    paths: vec![
+                        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                            .join("src/testdata/gen_rust/main.k")
+                            .canonicalize()
+                            .unwrap()
+                            .display()
+                            .to_string(),
+                    ],
+                    ..Default::default()
+                }),
+                package: "main".to_string(),
+            })
+            .unwrap();
+        assert!(result.go_source.starts_with("package main\n"));
+        assert!(result.go_source.contains("type Entity struct {"));
+        assert!(result.go_source.contains("type Address struct {"));
+        assert!(result.go_source.contains("type Customer struct {"));
+        assert!(result.go_source.contains("Id string `json:\"id\"`"));
+        assert!(
+            result
+                .go_source
+                .contains("Version int64 `json:\"version\"`")
+        );
+        assert!(
+            result
+                .go_source
+                .contains("Age *int64 `json:\"age,omitempty\"`")
+        );
+        assert!(
+            result
+                .go_source
+                .contains("CreditLimit float64 `json:\"credit_limit\"`")
+        );
+        assert!(
+            result
+                .go_source
+                .contains("Addresses []Address `json:\"addresses\"`")
+        );
+        assert!(
+            result
+                .go_source
+                .contains("BillingAddress *Address `json:\"billing_address,omitempty\"`")
+        );
+        assert!(result.go_source.contains("KCL default: 0"));
+        assert!(result.go_source.contains("KCL default: \"EUR\""));
+        assert!(
+            result
+                .go_source
+                .contains("func (s *Customer) Validate() []string {")
+        );
+        assert!(result.go_source.contains("s.Age != nil"));
+        assert!(result.go_source.contains("*s.Age"));
+        assert!(result.go_source.contains("id must be a UUID"));
+        assert!(
+            result
+                .go_source
+                .contains("country must be an ISO 3166-1 alpha-2 code")
+        );
+        assert!(result.go_source.contains("customer must be an adult"));
+        assert!(result.go_source.contains("name must be 1..100 chars"));
+        assert!(result.go_source.contains("kclRegexMatch("));
+        assert!(result.go_source.contains("range s.Tags"));
+        assert!(result.go_source.contains("slices.Contains("));
+        assert!(result.go_source.contains("strings.ToUpper("));
+
+        let temp = tempfile::tempdir().unwrap();
+        let source_path = temp.path().join("main.go");
+        let source = format!(
+            r#"{}
+func main() {{
+	address := &Address{{Street: "Main", City: "London", Country: "GB"}}
+	if errs := address.Validate(); len(errs) != 0 {{
+		panic(strings.Join(errs, "; "))
+	}}
+	invalidAddress := &Address{{Street: "Main", City: "London", Country: "us"}}
+	if errs := invalidAddress.Validate(); len(errs) == 0 {{
+		panic("expected invalid address to fail validation")
+	}}
+
+	valid := &Customer{{
+		Id: "123e4567-e89b-12d3-a456-426614174000", Version: 0,
+		Name: "Ada Lovelace", Email: "ada@example.com", Age: nil,
+		CreditLimit: 100.0, Currency: "EUR",
+		Tags: []string{{"customer"}}, Addresses: []Address{{*address}},
+		BillingAddress: address,
+	}}
+	if errs := valid.Validate(); len(errs) != 0 {{
+		panic(strings.Join(errs, "; "))
+	}}
+
+	age := int64(16)
+	invalid := &Customer{{
+		Id: "not-a-uuid", Version: -1,
+		Name: "", Email: "not-an-email", Age: &age,
+		CreditLimit: -1.0, Currency: "EUR",
+		Tags: make([]string, 11), Addresses: []Address{{}},
+		BillingAddress: &Address{{Street: "Main", City: "London", Country: "US"}},
+	}}
+	errs := invalid.Validate()
+	if len(errs) < 9 {{
+		panic("expected all invalid checks, got: " + strings.Join(errs, "; "))
+	}}
+}}
+"#,
+            result.go_source
+        );
+        std::fs::write(&source_path, source).unwrap();
+        std::fs::write(
+            temp.path().join("go.mod"),
+            "module generated_test\n\ngo 1.21\n",
+        )
+        .unwrap();
+
+        let run = std::process::Command::new("go")
+            .arg("run")
+            .arg(&source_path)
+            .current_dir(temp.path())
+            .output()
+            .unwrap();
+        assert!(
+            run.status.success(),
+            "generated validation behavior failed:\n{}",
+            String::from_utf8_lossy(&run.stderr)
+        );
+    }
+
+    #[test]
     fn generate_rust_requires_parse_args() {
         let serv = KclServiceImpl::default();
         let err = serv
@@ -3468,6 +3639,16 @@ assert len(errors) >= 9, f"expected all invalid checks, got: {{errors}}"
         let err = serv
             .generate_python(&GeneratePythonArgs::default())
             .unwrap_err();
+        assert!(
+            err.to_string().contains("parse_args must be set"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn generate_go_requires_parse_args() {
+        let serv = KclServiceImpl::default();
+        let err = serv.generate_go(&GenerateGoArgs::default()).unwrap_err();
         assert!(
             err.to_string().contains("parse_args must be set"),
             "unexpected error: {err}"
