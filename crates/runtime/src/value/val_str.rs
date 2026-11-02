@@ -1,12 +1,67 @@
 //! Copyright The KCL Authors. All rights reserved.
 
 use crate::*;
-use bstr::ByteSlice;
 use unic_ucd_bidi::BidiClass;
 use unic_ucd_category::GeneralCategory;
 use unicode_casing::CharExt;
 
-const ASCII_WHITESPACES: [u8; 6] = [0x20, 0x09, 0x0a, 0x0c, 0x0d, 0x0b];
+/// Returns whether `c` is whitespace for `str.isspace()`, `str.split()` and `str.rsplit()`.
+#[inline]
+fn is_space_char(c: char) -> bool {
+    use unic_ucd_bidi::bidi_class::abbr_names::*;
+    GeneralCategory::of(c) == GeneralCategory::SpaceSeparator
+        || matches!(BidiClass::of(c), WS | B | S)
+}
+
+/// Splits `s` on runs of whitespace, at most `maxsplit` times (unlimited if negative).
+/// The remainder after the last split is returned as is, like Python's `str.split()`.
+fn split_whitespace_n(s: &str, maxsplit: i64) -> Vec<&str> {
+    let mut parts = Vec::new();
+    let mut rest = s.trim_start_matches(is_space_char);
+    while !rest.is_empty() {
+        if maxsplit >= 0 && parts.len() as i64 == maxsplit {
+            parts.push(rest);
+            break;
+        }
+        match rest.find(is_space_char) {
+            Some(end) => {
+                parts.push(&rest[..end]);
+                rest = rest[end..].trim_start_matches(is_space_char);
+            }
+            None => {
+                parts.push(rest);
+                break;
+            }
+        }
+    }
+    parts
+}
+
+/// Splits `s` on runs of whitespace from the right, at most `maxsplit` times (unlimited if
+/// negative). The remainder before the last split is returned as is, like Python's `str.rsplit()`.
+/// The parts are returned from the right, so the caller reverses them.
+fn rsplit_whitespace_n(s: &str, maxsplit: i64) -> Vec<&str> {
+    let mut parts = Vec::new();
+    let mut rest = s.trim_end_matches(is_space_char);
+    while !rest.is_empty() {
+        if maxsplit >= 0 && parts.len() as i64 == maxsplit {
+            parts.push(rest);
+            break;
+        }
+        match rest.rfind(is_space_char) {
+            Some(start) => {
+                let width = rest[start..].chars().next().map_or(1, char::len_utf8);
+                parts.push(&rest[start + width..]);
+                rest = rest[..start].trim_end_matches(is_space_char);
+            }
+            None => {
+                parts.push(rest);
+                break;
+            }
+        }
+    }
+    parts
+}
 
 /// Superscript digits that `str.isdigit()` accepts besides the ASCII digits.
 const SUPERSCRIPT_DIGITS: [u16; 10] = [
@@ -380,12 +435,7 @@ impl ValueRef {
                 if v.is_empty() {
                     return ValueRef::bool(false);
                 }
-                use unic_ucd_bidi::bidi_class::abbr_names::*;
-                let result = v.chars().all(|c| {
-                    GeneralCategory::of(c) == GeneralCategory::SpaceSeparator
-                        || matches!(BidiClass::of(c), WS | B | S)
-                });
-                ValueRef::bool(result)
+                ValueRef::bool(v.chars().all(is_space_char))
             }
             _ => panic!("Invalid str object in str_isspace"),
         }
@@ -569,7 +619,7 @@ impl ValueRef {
                     Some(v) => v.as_int(),
                     None => -1,
                 };
-                let splited = if let Some(pattern) = sep {
+                let splited: Vec<ValueRef> = if let Some(pattern) = sep {
                     let s = pattern.as_str();
                     if maxsplit < 0 {
                         v.split(s.as_str()).map(convert).collect()
@@ -580,27 +630,10 @@ impl ValueRef {
                     }
                 } else {
                     // Split whitespace
-                    let mut splited = Vec::new();
-                    let mut last_offset = 0;
-                    let mut count = maxsplit;
-                    for (offset, _) in
-                        v.match_indices(|c: char| c.is_ascii_whitespace() || c == '\x0b')
-                    {
-                        if last_offset == offset {
-                            last_offset += 1;
-                            continue;
-                        }
-                        if count == 0 {
-                            break;
-                        }
-                        splited.push(convert(&v[last_offset..offset]));
-                        last_offset = offset + 1;
-                        count -= 1;
-                    }
-                    if last_offset != v.len() {
-                        splited.push(convert(&v[last_offset..]));
-                    }
-                    splited
+                    split_whitespace_n(v, maxsplit)
+                        .into_iter()
+                        .map(convert)
+                        .collect()
                 };
                 ValueRef::list_value(Some(splited.as_slice()))
             }
@@ -619,7 +652,7 @@ impl ValueRef {
                     Some(v) => v.as_int(),
                     None => -1,
                 };
-                let mut splited = if let Some(pattern) = sep {
+                let mut splited: Vec<ValueRef> = if let Some(pattern) = sep {
                     let s = pattern.as_str();
                     if maxsplit < 0 {
                         v.rsplit(s.as_str()).map(convert).collect()
@@ -630,25 +663,10 @@ impl ValueRef {
                     }
                 } else {
                     // Split whitespace
-                    let mut splited = Vec::new();
-                    let mut count = maxsplit;
-                    let mut haystack = v.as_bytes();
-                    while let Some(offset) = haystack.rfind_byteset(ASCII_WHITESPACES) {
-                        if offset + 1 != haystack.len() {
-                            if count == 0 {
-                                break;
-                            }
-                            splited.push(convert(
-                                std::str::from_utf8(&haystack[offset + 1..]).unwrap(),
-                            ));
-                            count -= 1;
-                        }
-                        haystack = &haystack[..offset];
-                    }
-                    if !haystack.is_empty() {
-                        splited.push(convert(std::str::from_utf8(haystack).unwrap()));
-                    }
-                    splited
+                    rsplit_whitespace_n(v, maxsplit)
+                        .into_iter()
+                        .map(convert)
+                        .collect()
                 };
                 splited.reverse();
                 ValueRef::list_value(Some(splited.as_slice()))
