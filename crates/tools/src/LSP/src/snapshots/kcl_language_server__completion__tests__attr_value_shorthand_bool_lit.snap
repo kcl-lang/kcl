@@ -1,0 +1,9 @@
+---
+source: crates/tools/src/LSP/src/completion.rs
+expression: completion_snapshot(got)
+---
+label: " True"
+kind: Variable
+detail: e: bool(True)
+insert_text: " True"
+insert_text_format: Snippet

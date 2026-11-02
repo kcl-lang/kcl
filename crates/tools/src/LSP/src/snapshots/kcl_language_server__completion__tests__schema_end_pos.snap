@@ -1,0 +1,23 @@
+---
+source: crates/tools/src/LSP/src/completion.rs
+expression: completion_snapshot(got)
+---
+label: Params
+kind: Class
+detail: "__main__\n\nschema Params:\nAttributes:\nmin: int\nmax: int"
+documentation: ""
+
+label: Params{}
+kind: Class
+detail: "__main__\n\nschema Params:\nAttributes:\nmin: int\nmax: int"
+insert_text: Params{$0}
+insert_text_format: Snippet
+documentation: ""
+
+label: max
+kind: Variable
+detail: int
+
+label: min
+kind: Variable
+detail: int

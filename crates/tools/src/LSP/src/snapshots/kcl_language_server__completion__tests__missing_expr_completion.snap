@@ -1,0 +1,11 @@
+---
+source: crates/tools/src/LSP/src/completion.rs
+expression: completion_snapshot(got)
+---
+label: cpu
+kind: Field
+detail: cpu: str
+
+label: memory
+kind: Field
+detail: memory: str
