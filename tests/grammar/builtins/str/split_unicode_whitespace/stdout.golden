@@ -1,0 +1,8 @@
+a: a|b|c
+b: a|b|c
+c: a|b c 
+d:   a b|c
+e: 0
+f: 0
+g: a|b
+h: é|é
