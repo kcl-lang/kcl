@@ -3709,7 +3709,7 @@ func main() {{
         );
         assert!(result.java_source.contains("customer must be an adult"));
         assert!(result.java_source.contains("name must be 1..100 chars"));
-        assert!(result.java_source.contains("KclRegexUtil.match("));
+        assert!(result.java_source.contains("KclRegexUtil.INSTANCE.match("));
         assert!(result.java_source.contains(".stream().allMatch("));
         assert!(result.java_source.contains(".contains("));
         assert!(result.java_source.contains(".toUpperCase()"));
@@ -3756,6 +3756,28 @@ public class Main {{
         List<String> errors = invalid.validate();
         if (errors.size() < 9) {{
             throw new AssertionError("expected all invalid checks, got: " + errors);
+        }}
+
+        // KclRegexUtil.match is an overridable instance method dispatched
+        // through a reassignable static INSTANCE field (not `static` on the
+        // method itself, which Java can only hide, never override) — a
+        // consumer can globally swap in custom matching behavior without
+        // touching the generated DTO classes. Confirm the override is
+        // genuinely polymorphic: an id that fails the UUID regex check
+        // today must start passing once INSTANCE is swapped for a
+        // subclass whose `match` always returns true.
+        KclRegexUtil.INSTANCE = new KclRegexUtil() {{
+            @Override
+            boolean match(String pattern, String value) {{
+                return true;
+            }}
+        }};
+        Entity overridden = new Entity();
+        overridden.id = "not-a-uuid-at-all"; overridden.version = 0;
+        if (!overridden.validate().isEmpty()) {{
+            throw new AssertionError(
+                "expected KclRegexUtil.INSTANCE override to bypass the regex check, got: "
+                    + overridden.validate());
         }}
     }}
 }}

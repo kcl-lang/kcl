@@ -10,8 +10,16 @@
 //! `.java` *file* may declare at most one `public` top-level type, and that
 //! type's name must match the filename. Since this emitter has no control
 //! over what filename a caller saves its output under, every generated
-//! class (and the small `KclRegexUtil` helper) is package-private (no
-//! `public` modifier) so the file compiles under any filename.
+//! class is package-private (no `public` modifier) so the file compiles
+//! under any filename.
+//!
+//! The `KclRegexUtil` helper is extendable and overridable on purpose: its
+//! `match` method is an *instance* method (not `static`, which Java can
+//! only hide, never override), dispatched through a reassignable
+//! `KclRegexUtil.INSTANCE` field — the same pluggable-backend idiom used by
+//! e.g. SLF4J. A consumer can swap in custom matching behavior globally by
+//! assigning `KclRegexUtil.INSTANCE` to a subclass instance that overrides
+//! `match`, without regenerating or editing the DTO classes themselves.
 
 use std::collections::{HashMap, HashSet};
 
@@ -21,7 +29,7 @@ use crate::gpyrpc::{KclType, SchemaTypes};
 use crate::service::gen_ident::{is_keyword, to_camel_case, to_pascal_case};
 use crate::service::gen_schema::{self, SchemaNameResolver};
 
-const REGEX_UTIL_HELPER: &str = "final class KclRegexUtil {\n    static boolean match(String pattern, String value) {\n        return java.util.regex.Pattern.compile(pattern).matcher(value).find();\n    }\n}\n\n";
+const REGEX_UTIL_HELPER: &str = "class KclRegexUtil {\n    // Overridable: assign a subclass instance (e.g.\n    // `KclRegexUtil.INSTANCE = new KclRegexUtil() { ... };`) to customize\n    // regex matching for every generated `validate()` method.\n    static KclRegexUtil INSTANCE = new KclRegexUtil();\n\n    boolean match(String pattern, String value) {\n        return java.util.regex.Pattern.compile(pattern).matcher(value).find();\n    }\n}\n\n";
 
 pub(crate) fn generate_java(
     mapping: &HashMap<String, SchemaTypes>,
@@ -411,7 +419,7 @@ fn render_call(call: &ast::CallExpr, context: &JavaExprContext<'_>) -> anyhow::R
         "regex.match" if call.args.len() == 2 => {
             let value = render_expr(&call.args[0].node, context)?;
             let pattern = render_expr(&call.args[1].node, context)?;
-            Ok(format!("KclRegexUtil.match({pattern}, {value})"))
+            Ok(format!("KclRegexUtil.INSTANCE.match({pattern}, {value})"))
         }
         _ => {
             if let ast::Expr::Selector(selector) = &call.func.node
