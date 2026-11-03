@@ -191,6 +191,48 @@ fn test_export_python_command() {
 }
 
 #[test]
+fn test_export_go_command() {
+    let input = Path::new("../api/src/testdata/gen_openapi/main.k")
+        .canonicalize()
+        .unwrap();
+    let matches = app().get_matches_from([
+        ROOT_CMD,
+        "export",
+        input.to_str().unwrap(),
+        "--target",
+        "go",
+        "--package",
+        "dto",
+    ]);
+    let mut output = Vec::new();
+    crate::export::export_command(matches.subcommand_matches("export").unwrap(), &mut output)
+        .unwrap();
+    let output = String::from_utf8(output).unwrap();
+    assert!(output.starts_with("package dto\n"));
+    assert!(output.contains("type Person struct {"));
+    assert!(output.contains("Age *int64 `json:\"age,omitempty\"`"));
+}
+
+#[test]
+fn test_export_go_command_defaults_package_when_omitted() {
+    let input = Path::new("../api/src/testdata/gen_openapi/main.k")
+        .canonicalize()
+        .unwrap();
+    let matches = app().get_matches_from([
+        ROOT_CMD,
+        "export",
+        input.to_str().unwrap(),
+        "--target",
+        "go",
+    ]);
+    let mut output = Vec::new();
+    crate::export::export_command(matches.subcommand_matches("export").unwrap(), &mut output)
+        .unwrap();
+    let output = String::from_utf8(output).unwrap();
+    assert!(output.starts_with("package generated\n"));
+}
+
+#[test]
 fn test_export_help_lists_supported_target() {
     let mut command = app();
     let help = command
@@ -198,7 +240,7 @@ fn test_export_help_lists_supported_target() {
         .unwrap()
         .render_help()
         .to_string();
-    assert!(help.contains("currently supported: rust, python"));
+    assert!(help.contains("currently supported: rust, python, go"));
 }
 
 #[test]
