@@ -3911,3 +3911,26 @@ b = f(S, a)
         "a:\n  x: 1\nb:\n  x: 1\n",
     );
 }
+
+/// A scalar attribute is type checked only after a config entry merges into
+/// its default, and `runtime.catch` resumes the program after that error.
+#[test]
+fn assign_copy_caught_error_after_merge() {
+    assert_copy_kept(
+        r#"
+import runtime
+
+schema S[p: any]:
+    n: int = p
+
+f = lambda ctor: any, v: any {
+    _t = v
+    ctor(_t) {n: {extra = 2}}
+}
+
+a = {x = 1}
+_error = runtime.catch(lambda { f(S, a) })
+"#,
+        "a:\n  x: 1\n",
+    );
+}

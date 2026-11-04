@@ -10,7 +10,8 @@
 //! construction before a later entry mutates them. Instead, reject all path
 //! writes, composite schema attributes, schema-body augmented assignments and
 //! unifications, plugins, repeated schema keyword arguments, and config entries
-//! that could merge into an existing slot.
+//! that could merge into an existing slot. Also reject `runtime.catch`, so an
+//! error that interrupts a merge always ends the run.
 //! This sacrifices precision to keep the proof independent of alias analysis.
 //! Native code is outside the AST too: besides plugins, a host can hand the
 //! program a native function as an option, a recorded schema instance or in
@@ -193,7 +194,13 @@ impl MutSelfWalker for MutationChecker<'_> {
         // that subsequent inputs merge into. Import aliases must reject too.
         // Native plugins receive ValueRefs and can mutate their arguments.
         // Their implementations are outside the AST being checked.
-        if stmt.path.node == "collection" || stmt.path.node.starts_with("kcl_plugin") {
+        // runtime.catch() resumes the program after an error, which can stop a
+        // merge after it mutated a value in place: a scalar attribute is only
+        // type checked after a config entry merges into its default.
+        if stmt.path.node == "collection"
+            || stmt.path.node == "runtime"
+            || stmt.path.node.starts_with("kcl_plugin")
+        {
             self.safe = false;
         }
     }
