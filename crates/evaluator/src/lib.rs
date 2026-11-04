@@ -237,6 +237,10 @@ impl<'ctx> Evaluator<'ctx> {
     /// Whether no in-place mutation in the program can reach a value shared
     /// with another name, so assignments may bind values without copying them.
     pub(crate) fn copy_elision_safe(&self) -> bool {
+        // Host values are only checked when a run begins.
+        if !self.evaluation_started.get() {
+            return false;
+        }
         if let Some(safe) = self.copy_elision_safe.get() {
             return safe;
         }
@@ -272,24 +276,24 @@ impl<'ctx> Evaluator<'ctx> {
     }
 
     fn begin_evaluation(&self) {
-        // A later run can read the instances recorded by an earlier one, and
-        // `program` is public, so do not reuse the first run's decision. A
-        // host can also put values in this evaluator's public fields or in
-        // the context; check them before the program can copy them elsewhere.
+        // A later run can read the instances recorded by an earlier one,
+        // scopes and frames can outlive a run, and `program` is public, so do
+        // not reuse the first run's decisions, even for an equal Program.
         let reused = self.evaluation_started.replace(true);
-        if reused
-            || (self.owns_runtime_ctx
-                && (self.has_evaluator_state()
-                    || self
-                        .runtime_ctx
-                        .try_borrow()
-                        .map_or(true, |ctx| instance_reads::context_may_read_instances(&ctx))))
-        {
+        // A host can also put values in this evaluator's public fields or in
+        // the context; check them before the program can copy them elsewhere.
+        // Native functions among them can read the context and mutate their
+        // arguments in place.
+        let host_values = !reused
+            && (self.has_evaluator_state()
+                || self
+                    .runtime_ctx
+                    .try_borrow()
+                    .map_or(true, |ctx| instance_reads::context_may_read_instances(&ctx)));
+        if reused || (self.owns_runtime_ctx && host_values) {
             self.record_instances.set(Some(true));
         }
-        // Scopes and frames can also outlive a run, so do not reuse the copy
-        // elision proof either, even if the Program pointer is equal.
-        if reused {
+        if reused || host_values {
             self.copy_elision_safe.set(Some(false));
         }
     }

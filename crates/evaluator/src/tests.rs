@@ -3745,3 +3745,62 @@ fn instances_scan_finds_attribute_loads() {
         assert!(!scan_source(no_read), "{no_read}");
     }
 }
+
+unsafe extern "C-unwind" fn set_first_item_to_nine(
+    ctx: *mut Context,
+    args: *const ValueRef,
+    _kwargs: *const ValueRef,
+) -> *const ValueRef {
+    let mut value = unsafe { &*args }.list_get(0).unwrap();
+    value.list_set(0, &ValueRef::int(9));
+    unsafe { kcl_runtime::kcl_value_None(ctx) }
+}
+
+/// A native function that sets the first item of its list argument in place.
+fn host_list_mutator() -> ValueRef {
+    let mutate = set_first_item_to_nine as *const () as usize as u64;
+    ValueRef::func(mutate, 0, ValueRef::list(None), "", "", false)
+}
+
+#[test]
+fn assign_copy_host_option_mutation() {
+    // A native function a host passes in as an option can mutate its argument.
+    let src = "f = lambda v {\n    _t = v\n    option(\"m\")(_t)\n    v\n}\na = f([1])\n";
+    let p = load_test_program(src);
+    let evaluator =
+        Evaluator::new_with_runtime_ctx(&p.program, ctx_with_option("m", host_list_mutator()));
+    assert_eq!(evaluator.run().unwrap().1.trim(), "a:\n- 1");
+    assert!(!evaluator.copy_elision_safe());
+}
+
+#[test]
+fn assign_copy_preloaded_evaluator_mutation() {
+    // A host can also preload one in the evaluator's public scopes.
+    let src = "f = lambda v {\n    _t = v\n    str(_t)\n    v\n}\na = f([1])\n";
+    let p = load_test_program(src);
+    let evaluator = Evaluator::new(&p.program);
+    evaluator.pkg_scopes.borrow_mut().insert(
+        MAIN_PKG.to_string(),
+        vec![Default::default(), Default::default()],
+    );
+    evaluator
+        .lazy_scopes
+        .borrow_mut()
+        .insert(MAIN_PKG.to_string(), Default::default());
+    evaluator.add_variable("str", host_list_mutator());
+    assert_eq!(evaluator.run().unwrap().1.trim(), "a:\n- 1");
+    assert!(!evaluator.copy_elision_safe());
+}
+
+#[test]
+fn assign_copy_elided_with_plain_data_options() {
+    let p = load_test_program("f = lambda v {\n    _t = v\n    _t\n}\na = f(option(\"v\"))\n");
+    let ctx = Rc::new(RefCell::new(Context::new()));
+    // As `FastRunner` sets the options passed to it.
+    ctx.borrow_mut().builtin_option_init("v", "[1]");
+    let evaluator = Evaluator::new_with_runtime_ctx(&p.program, ctx);
+    // Host values are only checked when a run begins.
+    assert!(!evaluator.copy_elision_safe());
+    assert_eq!(evaluator.run().unwrap().1.trim(), "a:\n- 1");
+    assert!(evaluator.copy_elision_safe());
+}
