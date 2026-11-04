@@ -14,7 +14,10 @@
 //! Native code is outside the AST too: besides plugins, a host can hand the
 //! program a native function as an option, a recorded schema instance or in
 //! the evaluator's scopes, so the evaluator keeps the copies when it finds
-//! host values as a run begins. The proof only covers that run.
+//! host values as a run begins. Values shared during a run also stay reachable
+//! from the evaluator after it, so only the single run of an evaluator that
+//! owns its runtime context (`Evaluator::set_owns_runtime_ctx`, as the runner
+//! sets it) skips copies, and the proof only covers that run.
 //!
 //! The opt-out is whole-program and all-or-nothing by design: one rejected
 //! construct anywhere, such as a composite schema attribute, keeps the deep

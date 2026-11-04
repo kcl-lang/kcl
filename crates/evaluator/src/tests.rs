@@ -2596,9 +2596,24 @@ fn load_test_program(src: &str) -> kcl_loader::Packages {
     .unwrap()
 }
 
+/// An evaluator whose single run owns its runtime context, as the runner sets
+/// it up, so lambda locals may share values.
+fn single_run_evaluator(
+    program: &kcl_ast::ast::Program,
+    ctx: Rc<RefCell<Context>>,
+) -> Evaluator<'_> {
+    let mut evaluator = Evaluator::new_with_runtime_ctx(program, ctx);
+    evaluator.set_owns_runtime_ctx(true);
+    evaluator
+}
+
+fn new_ctx() -> Rc<RefCell<Context>> {
+    Rc::new(RefCell::new(Context::new()))
+}
+
 fn eval_yaml(src: &str) -> String {
     let p = load_test_program(src);
-    let yaml = Evaluator::new(&p.program).run().unwrap().1;
+    let yaml = single_run_evaluator(&p.program, new_ctx()).run().unwrap().1;
     format!("{}\n", yaml.trim_end())
 }
 
@@ -3227,7 +3242,7 @@ fn assign_copy_cache_reuse_fails_closed() {
     let safe = load_test_program("f1 = lambda v {\n    _t = v\n    _t\n}\na = f1([1])");
     let unsafe_program =
         load_test_program("f2 = lambda v {\n    _t = v\n    _t[0] = 2\n    v\n}\nb = f2([1])");
-    let mut evaluator = Evaluator::new(&safe.program);
+    let mut evaluator = single_run_evaluator(&safe.program, new_ctx());
     assert_eq!(evaluator.run().unwrap().1.trim(), "a:\n- 1");
     assert!(copy_elision_proven(&evaluator));
     evaluator.program = &unsafe_program.program;
@@ -3240,7 +3255,7 @@ fn assign_copy_cache_reuse_in_function_mode_fails_closed() {
     let safe = load_test_program("f1 = lambda v {\n    _t = v\n    _t\n}\nf1([1])");
     let unsafe_program =
         load_test_program("f2 = lambda v {\n    _t = v\n    _t[0] = 2\n    v\n}\nf2([1])");
-    let mut evaluator = Evaluator::new(&safe.program);
+    let mut evaluator = single_run_evaluator(&safe.program, new_ctx());
     evaluator.run_as_function();
     assert!(copy_elision_proven(&evaluator));
     evaluator.program = &unsafe_program.program;
@@ -3253,7 +3268,7 @@ fn assign_copy_cache_ast_revision_fails_closed() {
     let packages = load_test_program("f1 = lambda v {\n    _t = v\n    _t\n}\na = f1([1])");
     let revision =
         load_test_program("f2 = lambda v {\n    _t = v\n    _t[0] = 2\n    v\n}\nb = f2([1])");
-    let evaluator = Evaluator::new(&packages.program);
+    let evaluator = single_run_evaluator(&packages.program, new_ctx());
     evaluator.run().unwrap();
     assert!(copy_elision_proven(&evaluator));
     let module = packages.program.modules.values().next().unwrap();
@@ -3314,8 +3329,7 @@ a = f([1])
     context
         .plugin_functions
         .insert("testing.mutate".to_string(), Arc::new(mutate));
-    let evaluator =
-        Evaluator::new_with_runtime_ctx(&packages.program, Rc::new(RefCell::new(context)));
+    let evaluator = single_run_evaluator(&packages.program, Rc::new(RefCell::new(context)));
     assert_eq!(evaluator.run().unwrap().1.trim(), "a:\n- 1");
     assert!(!copy_elision_proven(&evaluator));
 }
@@ -3772,8 +3786,7 @@ fn assign_copy_host_option_mutation() {
     // A native function a host passes in as an option can mutate its argument.
     let src = "f = lambda v {\n    _t = v\n    option(\"m\")(_t)\n    v\n}\na = f([1])\n";
     let p = load_test_program(src);
-    let evaluator =
-        Evaluator::new_with_runtime_ctx(&p.program, ctx_with_option("m", host_list_mutator()));
+    let evaluator = single_run_evaluator(&p.program, ctx_with_option("m", host_list_mutator()));
     assert_eq!(evaluator.run().unwrap().1.trim(), "a:\n- 1");
     assert!(!copy_elision_proven(&evaluator));
 }
@@ -3783,7 +3796,7 @@ fn assign_copy_preloaded_evaluator_mutation() {
     // A host can also preload one in the evaluator's public scopes.
     let src = "f = lambda v {\n    _t = v\n    str(_t)\n    v\n}\na = f([1])\n";
     let p = load_test_program(src);
-    let evaluator = Evaluator::new(&p.program);
+    let evaluator = single_run_evaluator(&p.program, new_ctx());
     evaluator.pkg_scopes.borrow_mut().insert(
         MAIN_PKG.to_string(),
         vec![Default::default(), Default::default()],
@@ -3803,7 +3816,7 @@ fn assign_copy_elided_with_plain_data_options() {
     let ctx = Rc::new(RefCell::new(Context::new()));
     // As `FastRunner` sets the options passed to it.
     ctx.borrow_mut().builtin_option_init("v", "[1]");
-    let evaluator = Evaluator::new_with_runtime_ctx(&p.program, ctx);
+    let evaluator = single_run_evaluator(&p.program, ctx);
     // Host values are only checked when a run begins.
     assert!(!evaluator.copy_elision_safe());
     assert_eq!(evaluator.run().unwrap().1.trim(), "a:\n- 1");
@@ -3825,7 +3838,7 @@ fn assign_copy_host_instance_mutation() {
         .entry(kcl_runtime::schema_runtime_type("A", MAIN_PKG))
         .or_default()
         .insert(MAIN_PKG.to_string(), vec![record]);
-    let evaluator = Evaluator::new_with_runtime_ctx(&p.program, ctx);
+    let evaluator = single_run_evaluator(&p.program, ctx);
     assert_eq!(evaluator.run().unwrap().1.trim(), "a:\n- 1");
     assert!(!copy_elision_proven(&evaluator));
 }
@@ -3840,11 +3853,37 @@ fn assign_copy_statement_walk_after_run() {
         .read()
         .unwrap()
         .clone();
-    let evaluator = Evaluator::new(&safe.program);
+    let evaluator = single_run_evaluator(&safe.program, new_ctx());
     assert_eq!(evaluator.run().unwrap().1.trim(), "a:\n- 1");
     evaluator.walk_stmts(&module.body).unwrap();
     assert_eq!(
         evaluator.plan_globals_to_string().1.trim(),
         "a:\n- 1\nb:\n- 1"
     );
+}
+
+#[test]
+fn assign_copy_kept_unless_run_owns_ctx() {
+    // A closure can keep a lambda local after the run, so a host that walks
+    // more statements with the evaluator could see a shared value change.
+    let first = load_test_program(
+        "a = [1]\nmake = lambda v {\n    _t = v\n    lambda { _t }\n}\nread = make(a)\n",
+    );
+    let later = load_test_program("a = [1]\nread = lambda { [1] }\na[0] = 9\nb = read()\n");
+    let module = later.program.get_modules_for_pkg(MAIN_PKG)[0]
+        .read()
+        .unwrap()
+        .clone();
+    let evaluator = Evaluator::new(&first.program);
+    evaluator.run().unwrap();
+    assert!(!copy_elision_proven(&evaluator));
+    evaluator.walk_stmts(&module.body[2..]).unwrap();
+    assert_eq!(
+        evaluator.plan_globals_to_string().1.trim(),
+        "a:\n- 9\nb:\n- 1"
+    );
+    // The runner's single run of the same program skips the copy.
+    let evaluator = single_run_evaluator(&first.program, new_ctx());
+    evaluator.run().unwrap();
+    assert!(copy_elision_proven(&evaluator));
 }

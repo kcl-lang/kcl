@@ -132,7 +132,8 @@ pub struct Evaluator<'ctx> {
     /// [`copy_elision`]. Computed on first use in the first evaluation.
     copy_elision_safe: Cell<Option<bool>>,
     /// Whether the runtime context is owned by this evaluator's single run,
-    /// so unread schema instances need not be recorded in it.
+    /// so unread schema instances need not be recorded in it and values the
+    /// run shares instead of copying cannot be observed after it.
     owns_runtime_ctx: bool,
     /// Whether schema instances are recorded for `Schema.instances()`, see
     /// [`instance_reads`]. Computed on first use in the first evaluation.
@@ -253,9 +254,11 @@ impl<'ctx> Evaluator<'ctx> {
     /// Whether no in-place mutation in the program can reach a value shared
     /// with another name, so assignments may bind values without copying them.
     pub(crate) fn copy_elision_safe(&self) -> bool {
-        // The proof only covers the program and the host values checked when
-        // the executing run began.
-        if !self.evaluating.get() {
+        // Shared values stay reachable from this evaluator's scopes and
+        // closures after the run, so only the single run of an evaluator that
+        // owns its context may share them. The proof only covers the program
+        // and the host values checked when that run began.
+        if !self.owns_runtime_ctx || !self.evaluating.get() {
             return false;
         }
         if let Some(safe) = self.copy_elision_safe.get() {
@@ -269,10 +272,13 @@ impl<'ctx> Evaluator<'ctx> {
     /// Declare that the runtime context is used only by a single run of this
     /// evaluator, so nothing outside the program can read the schema instances
     /// it records. The evaluator then skips recording instances when no code
-    /// in the program can call `Schema.instances()`.
+    /// in the program can call `Schema.instances()`, and assignments to lambda
+    /// locals share values instead of copying them when nothing in the program
+    /// can mutate a value in place.
     ///
     /// The context and evaluator state are checked when the run begins; the
-    /// host must not change the context during the run.
+    /// host must not change the context during the run, nor evaluate more code
+    /// with this evaluator after it.
     #[inline]
     pub fn set_owns_runtime_ctx(&mut self, owns: bool) {
         self.owns_runtime_ctx = owns;
@@ -296,28 +302,26 @@ impl<'ctx> Evaluator<'ctx> {
     fn begin_evaluation(&self) -> Evaluating<'_, 'ctx> {
         // A later run can read the instances recorded by an earlier one,
         // scopes and frames can outlive a run, and `program` is public, so do
-        // not reuse the first run's decisions, even for an equal Program.
-        let reused = self.evaluation_started.replace(true);
-        // A host can also put values in this evaluator's public fields or in
-        // the context; check them before the program can copy them elsewhere.
-        // Native functions among them can read the context and mutate their
-        // arguments in place.
-        let host_values = !reused
-            && (self.has_evaluator_state()
-                || self
-                    .runtime_ctx
-                    .try_borrow()
-                    .map_or(true, |ctx| instance_reads::context_may_read_instances(&ctx)));
-        if reused || (self.owns_runtime_ctx && host_values) {
+        // not reuse the first run's decisions. A host can also put values in
+        // this evaluator's public fields or in the context; check them before
+        // the program can copy them elsewhere. Native functions among them can
+        // read the context and mutate their arguments in place.
+        if self.evaluation_started.replace(true)
+            || (self.owns_runtime_ctx
+                && (self.has_evaluator_state()
+                    || self
+                        .runtime_ctx
+                        .try_borrow()
+                        .map_or(true, |ctx| instance_reads::context_may_read_instances(&ctx))))
+        {
             self.record_instances.set(Some(true));
+            self.copy_elision_safe.set(Some(false));
         }
         // Values a host recorded reach the program through `Schema.instances()`.
-        if reused
-            || host_values
-            || self
-                .runtime_ctx
-                .try_borrow()
-                .map_or(true, |ctx| !ctx.instances.is_empty())
+        if self
+            .runtime_ctx
+            .try_borrow()
+            .map_or(true, |ctx| !ctx.instances.is_empty())
         {
             self.copy_elision_safe.set(Some(false));
         }
