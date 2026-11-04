@@ -584,6 +584,11 @@ impl FastRunner {
             None
         };
         let mut evaluator = Evaluator::new_with_runtime_ctx(program, ctx.clone());
+        // The context is created for this evaluation and the calls after
+        // it, which are code of the program; between calls, only what the
+        // evaluation left in the context is restored, and only its logs,
+        // panic info, output and planning options are read.
+        evaluator.set_owns_runtime_ctx(true);
         evaluator.set_coverage_state(coverage_state.clone());
         if let Some(pkgs) = self.opts.referenced_pkgs_set() {
             evaluator.set_referenced_pkgs(pkgs);

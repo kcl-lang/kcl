@@ -233,6 +233,12 @@ impl<'ctx> Evaluator<'ctx> {
     ///
     /// The context and evaluator state are checked when the run begins; the
     /// host must not change the context during the run.
+    ///
+    /// A run is [`Evaluator::run`], or [`Evaluator::eval`] and the
+    /// [`Evaluator::call_global`] calls after it, which keep the decision
+    /// the evaluation made. Between those calls the host may only restore
+    /// the context to what the evaluation left, as `kcl test` does when it
+    /// evaluates a package once for all its cases.
     #[inline]
     pub fn set_owns_runtime_ctx(&mut self, owns: bool) {
         self.owns_runtime_ctx = owns;

@@ -2953,6 +2953,58 @@ fn instances_recorded_after_first_run() {
     assert_eq!(recorded_instances(&evaluator), 5);
 }
 
+/// Evaluates a program and then calls its global function `name`, as
+/// `kcl test` does to run a case in a package evaluated once, returning
+/// the result as JSON and the number of recorded instances.
+fn call_after_eval(program: &kcl_ast::ast::Program, owns: bool, name: &str) -> (String, usize) {
+    let mut evaluator =
+        Evaluator::new_with_runtime_ctx(program, Rc::new(RefCell::new(Context::new())));
+    evaluator.set_owns_runtime_ctx(owns);
+    evaluator.eval().unwrap();
+    let result = evaluator.call_global(name).unwrap();
+    (result.to_json_string(), recorded_instances(&evaluator))
+}
+
+/// A function called with `call_global` is code of the program, so in a
+/// context the evaluator owns, the instances it creates are recorded only
+/// if the program can read them, and a function that reads them sees what
+/// it sees when every instance is recorded.
+#[test]
+fn instances_in_called_functions_match_default() {
+    let unread = r#"
+schema A:
+    x: int = 1
+
+a = A {}
+f = lambda {
+    [A {x = i} for i in range(3)]
+}
+"#;
+    let p = load_instances_program(unread, false);
+    let (expected, recorded) = call_after_eval(&p.program, false, "f");
+    assert_eq!(recorded, 4);
+    let (result, recorded) = call_after_eval(&p.program, true, "f");
+    assert_eq!(result, expected);
+    assert_eq!(recorded, 0);
+
+    let read_in_call = r#"
+schema A:
+    x: int = 1
+
+a = A {}
+f = lambda {
+    b = [A {x = i} for i in range(3)]
+    len(A.instances())
+}
+"#;
+    let p = load_instances_program(read_in_call, false);
+    let (expected, _) = call_after_eval(&p.program, false, "f");
+    assert_eq!(expected, "4");
+    let (result, recorded) = call_after_eval(&p.program, true, "f");
+    assert_eq!(result, expected);
+    assert_eq!(recorded, 4);
+}
+
 #[test]
 fn instances_scan_rejects_locked_modules() {
     let p = load_instances_program(UNREAD_INSTANCES, false);
