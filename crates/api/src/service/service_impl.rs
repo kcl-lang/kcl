@@ -3274,6 +3274,16 @@ mod generator_tests {
                 .java_source
                 .contains("List<String> errors = new ArrayList<>();")
         );
+        // `Address.geo` is a `dict` field, so the Map import must be
+        // tracked and emitted; this fixture has no `check:` blocks at all,
+        // so the regex helper class must be tracked as unused and omitted.
+        assert!(result.java_source.contains("import java.util.Map;"));
+        assert!(
+            result
+                .java_source
+                .contains("public Map<String, Double> geo;")
+        );
+        assert!(!result.java_source.contains("KclRegexUtil"));
     }
 
     #[test]
@@ -3713,6 +3723,11 @@ func main() {{
         assert!(result.java_source.contains(".stream().allMatch("));
         assert!(result.java_source.contains(".contains("));
         assert!(result.java_source.contains(".toUpperCase()"));
+        // No schema in this fixture has a `dict` field, so the Map import
+        // must be tracked as unused and omitted even though two `check:`
+        // blocks use `regex.match` (which the helper-class assertion
+        // above already confirms is correctly tracked as used).
+        assert!(!result.java_source.contains("import java.util.Map;"));
 
         let temp = tempfile::tempdir().unwrap();
         let source_path = temp.path().join("Main.java");

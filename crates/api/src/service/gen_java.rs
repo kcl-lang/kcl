@@ -1,10 +1,12 @@
 //! Java DTO emitter from the shared package schema mapping.
 //!
-//! Unlike [`gen_go`](super::gen_go), Java needs no analog of `GoImports`:
-//! `javac` treats an unused import as, at most, a silent no-op (confirmed
-//! empirically — it is not even a lint warning by default), so this emitter
-//! always emits the same fixed import block instead of tracking which
-//! stdlib types a given file's `check:` expressions actually used.
+//! Unlike Go, an unused Java import is not a compile error — `javac`
+//! silently ignores it (confirmed empirically — it is not even a lint
+//! warning by default) — but this emitter still tracks which optional
+//! pieces a given file's fields/`check:` expressions actually used
+//! ([`JavaImports`]), purely to keep generated output free of an import or
+//! helper class the KCL schemas don't need, mirroring
+//! [`gen_go`](super::gen_go)'s `GoImports`.
 //!
 //! Java also imposes a constraint Go/Rust/Python don't have: a single
 //! `.java` *file* may declare at most one `public` top-level type, and that
@@ -21,6 +23,7 @@
 //! assigning `KclRegexUtil.INSTANCE` to a subclass instance that overrides
 //! `match`, without regenerating or editing the DTO classes themselves.
 
+use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 
 use kcl_ast::ast;
@@ -29,13 +32,40 @@ use crate::gpyrpc::{KclType, SchemaTypes};
 use crate::service::gen_ident::{is_keyword, to_camel_case, to_pascal_case};
 use crate::service::gen_schema::{self, SchemaNameResolver};
 
+/// Optional pieces of a generated file: the `java.util.Map` import (needed
+/// only if some field is a KCL `dict`) and the `KclRegexUtil` helper class
+/// (needed only if some `check:` uses `regex.match`). Both default to
+/// unused and are marked on demand while rendering field types and check
+/// expressions, mirroring [`gen_go`](super::gen_go)'s `GoImports`.
+#[derive(Default)]
+struct JavaImports {
+    uses_map: Cell<bool>,
+    uses_regex: Cell<bool>,
+}
+
+impl JavaImports {
+    fn mark_map(&self) {
+        self.uses_map.set(true);
+    }
+
+    fn mark_regex(&self) {
+        self.uses_regex.set(true);
+    }
+}
+
 const REGEX_UTIL_HELPER: &str = "class KclRegexUtil {\n    // Overridable: assign a subclass instance (e.g.\n    // `KclRegexUtil.INSTANCE = new KclRegexUtil() { ... };`) to customize\n    // regex matching for every generated `validate()` method.\n    static KclRegexUtil INSTANCE = new KclRegexUtil();\n\n    boolean match(String pattern, String value) {\n        return java.util.regex.Pattern.compile(pattern).matcher(value).find();\n    }\n}\n\n";
 
 pub(crate) fn generate_java(
     mapping: &HashMap<String, SchemaTypes>,
     package: &str,
 ) -> anyhow::Result<String> {
-    let body = gen_schema::generate_source(mapping, "Java", java_type_name, emit_schema)?;
+    let imports = JavaImports::default();
+    let body = gen_schema::generate_source(
+        mapping,
+        "Java",
+        java_type_name,
+        |out, name, ty, resolver| emit_schema(out, name, ty, resolver, &imports),
+    )?;
 
     let mut out = String::new();
     if !package.is_empty() {
@@ -43,9 +73,13 @@ pub(crate) fn generate_java(
     }
     out.push_str("import java.util.ArrayList;\n");
     out.push_str("import java.util.List;\n");
-    out.push_str("import java.util.Map;\n");
+    if imports.uses_map.get() {
+        out.push_str("import java.util.Map;\n");
+    }
     out.push_str("import java.util.Objects;\n\n");
-    out.push_str(REGEX_UTIL_HELPER);
+    if imports.uses_regex.get() {
+        out.push_str(REGEX_UTIL_HELPER);
+    }
     out.push_str(&body);
     Ok(out)
 }
@@ -55,6 +89,7 @@ fn emit_schema(
     name: &str,
     ty: &KclType,
     resolver: &SchemaNameResolver,
+    imports: &JavaImports,
 ) -> anyhow::Result<()> {
     for line in ty.schema_doc.lines() {
         out.push_str("//");
@@ -93,13 +128,13 @@ fn emit_schema(
             out.push_str(&format!("    // KCL name: {property}\n"));
         }
         let optional = !ty.required.iter().any(|required| required == *property);
-        let field_ty = java_type(field, resolver, property, optional)?;
+        let field_ty = java_type(field, resolver, property, optional, imports)?;
         out.push_str(&format!("    public {field_ty} {field_name};\n"));
         fields.push(field_name);
     }
     out.push('\n');
     emit_equals_and_hash_code(out, name, &fields);
-    emit_validator(out, ty)?;
+    emit_validator(out, ty, imports)?;
     out.push_str("}\n");
     Ok(())
 }
@@ -138,7 +173,7 @@ fn emit_equals_and_hash_code(out: &mut String, name: &str, fields: &[String]) {
     out.push_str("    }\n\n");
 }
 
-fn emit_validator(out: &mut String, ty: &KclType) -> anyhow::Result<()> {
+fn emit_validator(out: &mut String, ty: &KclType, imports: &JavaImports) -> anyhow::Result<()> {
     let fields = ty
         .properties
         .iter()
@@ -157,7 +192,7 @@ fn emit_validator(out: &mut String, ty: &KclType) -> anyhow::Result<()> {
     out.push_str("    public List<String> validate() {\n");
     out.push_str("        List<String> errors = new ArrayList<>();\n");
     for check in gen_schema::decode_checks(ty)? {
-        out.push_str(&render_check(&check, &fields)?);
+        out.push_str(&render_check(&check, &fields, imports)?);
     }
     out.push_str("        return errors;\n");
     out.push_str("    }\n");
@@ -167,10 +202,12 @@ fn emit_validator(out: &mut String, ty: &KclType) -> anyhow::Result<()> {
 fn render_check(
     check: &ast::CheckExpr,
     fields: &HashMap<String, (String, KclType, bool)>,
+    imports: &JavaImports,
 ) -> anyhow::Result<String> {
     let context = JavaExprContext {
         fields,
         locals: HashMap::new(),
+        imports,
     };
     let condition = check
         .if_cond
@@ -196,6 +233,7 @@ fn render_check(
 struct JavaExprContext<'a> {
     fields: &'a HashMap<String, (String, KclType, bool)>,
     locals: HashMap<String, (String, KclType)>,
+    imports: &'a JavaImports,
 }
 
 /// Render a KCL `if` guard. A bare optional-field identifier (the common
@@ -419,6 +457,7 @@ fn render_call(call: &ast::CallExpr, context: &JavaExprContext<'_>) -> anyhow::R
         "regex.match" if call.args.len() == 2 => {
             let value = render_expr(&call.args[0].node, context)?;
             let pattern = render_expr(&call.args[1].node, context)?;
+            context.imports.mark_regex();
             Ok(format!("KclRegexUtil.INSTANCE.match({pattern}, {value})"))
         }
         _ => {
@@ -478,6 +517,7 @@ fn render_quant(quant: &ast::QuantExpr, context: &JavaExprContext<'_>) -> anyhow
     let mut nested = JavaExprContext {
         fields: context.fields,
         locals: context.locals.clone(),
+        imports: context.imports,
     };
     nested
         .locals
@@ -513,8 +553,9 @@ fn java_type(
     resolver: &SchemaNameResolver,
     field: &str,
     optional: bool,
+    imports: &JavaImports,
 ) -> anyhow::Result<String> {
-    java_type_impl(ty, resolver, field, optional)
+    java_type_impl(ty, resolver, field, optional, imports)
 }
 
 fn java_type_impl(
@@ -522,6 +563,7 @@ fn java_type_impl(
     resolver: &SchemaNameResolver,
     field: &str,
     boxed: bool,
+    imports: &JavaImports,
 ) -> anyhow::Result<String> {
     Ok(match ty.r#type.as_str() {
         "str" => "String".to_string(),
@@ -535,7 +577,10 @@ fn java_type_impl(
                 .item
                 .as_deref()
                 .ok_or_else(|| anyhow::anyhow!("list field {field:?} has no item type"))?;
-            format!("List<{}>", java_type_impl(item, resolver, field, true)?)
+            format!(
+                "List<{}>",
+                java_type_impl(item, resolver, field, true, imports)?
+            )
         }
         "dict" => {
             let key = ty
@@ -546,10 +591,11 @@ fn java_type_impl(
                 .item
                 .as_deref()
                 .ok_or_else(|| anyhow::anyhow!("dict field {field:?} has no value type"))?;
+            imports.mark_map();
             format!(
                 "Map<{}, {}>",
-                java_type_impl(key, resolver, field, true)?,
-                java_type_impl(item, resolver, field, true)?
+                java_type_impl(key, resolver, field, true, imports)?,
+                java_type_impl(item, resolver, field, true, imports)?
             )
         }
         other => anyhow::bail!("unsupported KCL type {other:?} for Java field {field:?}"),
@@ -686,6 +732,43 @@ mod tests {
         assert!(
             generated.find("class Address").unwrap() < generated.find("class Customer").unwrap()
         );
+        // Neither schema uses a `dict` field or a `regex.match` check, so
+        // tracking must omit both the Map import and the regex helper
+        // class rather than emitting them unconditionally.
+        assert!(!generated.contains("import java.util.Map;"));
+        assert!(!generated.contains("KclRegexUtil"));
+    }
+
+    #[test]
+    fn emits_map_import_only_when_a_dict_field_is_used() {
+        let mut coordinates = schema("Coordinates", "main");
+        coordinates.properties.insert(
+            "values".to_string(),
+            KclType {
+                r#type: "dict".to_string(),
+                key: Some(Box::new(KclType {
+                    r#type: "str".to_string(),
+                    ..Default::default()
+                })),
+                item: Some(Box::new(KclType {
+                    r#type: "float".to_string(),
+                    ..Default::default()
+                })),
+                ..Default::default()
+            },
+        );
+        coordinates.required.push("values".to_string());
+
+        let mapping = HashMap::from([(
+            "main".to_string(),
+            SchemaTypes {
+                schema_type: vec![coordinates],
+            },
+        )]);
+        let generated = generate_java(&mapping, "").unwrap();
+
+        assert!(generated.contains("import java.util.Map;"));
+        assert!(generated.contains("public Map<String, Double> values;"));
     }
 
     #[test]
