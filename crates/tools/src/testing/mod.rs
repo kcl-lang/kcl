@@ -9,7 +9,9 @@
 //! separately and collects information about the test cases, such as the execution time and
 //! whether the test passes or fails. By default every case evaluates the package anew; with
 //! [`TestOptions::eval_once`], the package is evaluated once and every case runs in that
-//! evaluation.
+//! evaluation. Cases then share the package's values, so a passing case that mutates one in
+//! place, e.g. a schema instance it got as a lambda argument, changes what the cases after it
+//! see; only a suite whose cases don't rely on that isolation should enable it.
 //!
 //! When [`TestOptions::coverage`] is enabled, the test tool additionally records
 //! line-level coverage for every KCL statement that executes during the run. The
@@ -83,17 +85,21 @@ pub struct TestOptions {
     /// expensive, such as large fixtures, then pays for it once rather
     /// than once per case.
     ///
+    /// **Cases share the package's values.** A case that passes after
+    /// mutating a value of the package in place, for example by assigning
+    /// to an attribute of a schema instance it got as a lambda argument,
+    /// changes what every case after it sees, and planning, which runs
+    /// before the cases, does not see the change. A suite whose cases rely
+    /// on each starting from the package as it is defined, not as the
+    /// cases before it left it, must not use this mode. That is why it is
+    /// opt-in. In a suite whose cases leave the package's values as they
+    /// found them, every case reports the same result either way.
+    ///
     /// Every case still reports its own result, error and log, and each
     /// log starts with what the module-level code printed, as before.
     /// A case's schema instances, log and error don't reach the next case,
     /// and a case that fails, even only to plan, hands the next one a
-    /// freshly evaluated package. Cases do share the values the package
-    /// defines, though, so a case that passes after mutating one in place,
-    /// for example by assigning to an attribute of a schema it got as a
-    /// lambda argument, changes what the cases after it see, and planning,
-    /// which runs before the cases, does not see the change. That is why
-    /// this is opt-in. In a suite whose cases leave the package's values
-    /// as they found them, every case reports the same result either way.
+    /// freshly evaluated package.
     ///
     /// A case's duration then excludes the evaluation of the package. The
     /// package's values are planned once, after the evaluation, and an

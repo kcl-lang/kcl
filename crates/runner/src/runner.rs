@@ -647,12 +647,15 @@ impl SharedEval<'_> {
 
     /// Free the values that the runtime boxed after its first `len`.
     ///
-    /// The runtime boxes the arguments and the result of every builtin
-    /// call and frees the boxes only with the context, so without this,
-    /// the boxes of every call would live until the last call ends. Once
-    /// a call has returned, nothing points to the boxes it made. They are
-    /// freed without `kcl_value_delete`, which clears the closure of a
-    /// boxed function value that the program may still use.
+    /// Native code boxes values in the context, which frees them only when
+    /// it is dropped. The evaluator takes back the results of the builtins
+    /// it calls, but boxes that native code makes and does not return, e.g.
+    /// the arguments of a schema function it calls to convert a value,
+    /// would otherwise live until the last call ends. Taking a box back
+    /// never moves another to a higher index, so the boxes after `len` are
+    /// the call's own. Once a call has returned, nothing points to them.
+    /// They are freed without `kcl_value_delete`, which clears the closure
+    /// of a boxed function value that the program may still use.
     fn free_objects_from(&self, len: usize) {
         let mut ctx = self.ctx.borrow_mut();
         for ptr in ctx.objects.drain(len..) {

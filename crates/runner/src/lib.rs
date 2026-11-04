@@ -85,12 +85,16 @@ pub fn exec_program(sess: ParseSessionRef, args: &ExecProgramArgs) -> Result<Exe
 /// only to plan, leaves the next one a freshly evaluated program. Values
 /// the program defines are shared, though, so a call that succeeds after
 /// mutating one in place, for example through a lambda parameter, makes
-/// the change visible to later calls, but not to planning.
+/// the change visible to later calls, but not to planning: callers must
+/// not rely on calls being isolated from each other's in-place changes.
 ///
-/// The calls are not resolved, so a parameter without a default gets
-/// `None` rather than a compile error. To keep that check, include the
-/// calls in the program where they don't run, as `kcl test` does. A name
-/// that is not a function of the main package still fails its call.
+/// The calls are not resolved: the resolver checks only the program, so a
+/// call to a function whose parameter has no default passes `None` rather
+/// than failing to compile. If you need the resolver's checks of the
+/// calls, include the calls in the program, where they don't run, e.g.
+/// behind an `if` on an option, as `kcl test` does with its generated main
+/// file. A name that is not a function of the main package still fails
+/// its call.
 ///
 /// The program is planned once, after the evaluation, and a planning
 /// error is reported for every call that succeeded, so a program that
