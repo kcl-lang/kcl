@@ -890,7 +890,9 @@ pub(crate) fn schema_with_config(
         }
     }
 
-    {
+    // Recorded instances stay alive as long as the context; skip them when
+    // nothing can read them.
+    if s.record_instances() {
         let mut runtime_ctx = s.runtime_ctx.borrow_mut();
         // Record schema instance in the context
         if !runtime_ctx.instances.contains_key(&runtime_type) {
