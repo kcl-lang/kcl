@@ -3474,7 +3474,7 @@ fn main() {{
         );
         assert!(result.python_source.contains("customer must be an adult"));
         assert!(result.python_source.contains("name must be 1..100 chars"));
-        assert!(result.python_source.contains("re.match("));
+        assert!(result.python_source.contains("re.search("));
         assert!(
             result
                 .python_source
@@ -3832,6 +3832,62 @@ public class Main {{
         assert!(
             err.to_string().contains("parse_args must be set"),
             "unexpected error: {err}"
+        );
+    }
+
+    /// `regex.match` searches anywhere in the string (see
+    /// `kcl_regex_match` in `kcl-runtime`, which calls `is_match`, not an
+    /// anchored match) — a pattern without its own `^` anchor must still
+    /// match when the matching text sits in the middle of the value, not
+    /// only when it happens to start at position 0. Python's `re.match`
+    /// anchors at the start regardless of the pattern; `re.search` is the
+    /// correct primitive, and this is what actually failed before the fix.
+    #[test]
+    fn generate_python_regex_check_matches_anywhere_not_only_at_the_start() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_python(&GeneratePythonArgs {
+                parse_args: Some(ParseProgramArgs {
+                    paths: vec!["token.k".to_string()],
+                    sources: vec![
+                        r#"
+schema Token:
+    code: str
+
+    check:
+        regex.match(code, "ab+c"), "code must contain ab+c"
+"#
+                        .to_string(),
+                    ],
+                    ..Default::default()
+                }),
+            })
+            .unwrap();
+        assert!(result.python_source.contains("re.search("));
+        assert!(!result.python_source.contains("re.match("));
+
+        let temp = tempfile::tempdir().unwrap();
+        let source_path = temp.path().join("generated.py");
+        let source = format!(
+            r#"{}
+# The matching substring "abbc" starts at index 3, not index 0.
+matched_mid_string = Token(code="xxxabbcxxx")
+assert matched_mid_string.validate() == [], matched_mid_string.validate()
+
+no_match_anywhere = Token(code="xyz")
+assert no_match_anywhere.validate() != []
+"#,
+            result.python_source
+        );
+        std::fs::write(&source_path, source).unwrap();
+        let run = std::process::Command::new("python3")
+            .arg(&source_path)
+            .output()
+            .unwrap();
+        assert!(
+            run.status.success(),
+            "generated validation behavior failed:\n{}",
+            String::from_utf8_lossy(&run.stderr)
         );
     }
 

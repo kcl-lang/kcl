@@ -322,7 +322,13 @@ fn render_call(call: &ast::CallExpr, context: &PythonExprContext<'_>) -> anyhow:
         "regex.match" if call.args.len() == 2 => {
             let value = render_expr(&call.args[0].node, context)?;
             let pattern = render_expr(&call.args[1].node, context)?;
-            Ok(format!("re.match({pattern}, {value}) is not None"))
+            // KCL's `regex.match` searches anywhere in the string (it
+            // compiles to `Regex::is_match`, same as Rust/Go/Java's
+            // generated checks), not just at the start — `re.search` is
+            // the matching Python primitive. `re.match` would silently
+            // reject values a pattern without its own `^` anchor should
+            // accept.
+            Ok(format!("re.search({pattern}, {value}) is not None"))
         }
         _ => anyhow::bail!("KCL call {function:?} is not supported in Python validation"),
     }
