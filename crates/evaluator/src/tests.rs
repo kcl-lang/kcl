@@ -3192,6 +3192,8 @@ fn assign_copy_elision_analysis() {
         "n = \"n\"\nschema S:\n    name: str = n\n    port: int | str = 80\ns = S {name: \"m\"}",
         // Augmented assignments outside schemas build a new value.
         "f = lambda v {\n    _t = v\n    _t += [1]\n    _t\n}\nx = [1]\nx += [2]",
+        // Distinct keyword arguments bind distinct parameters.
+        "schema S[p, q]:\n    n: int = 0\ns = S(p = [1], q = [2]) {}",
     ];
     for src in allowed {
         assert!(allows_copy_elision(src), "expected elision for:\n{src}");
@@ -3886,4 +3888,26 @@ fn assign_copy_kept_unless_run_owns_ctx() {
     let evaluator = single_run_evaluator(&first.program, new_ctx());
     evaluator.run().unwrap();
     assert!(copy_elision_proven(&evaluator));
+}
+
+/// A repeated schema keyword argument unions into the first one in place, and
+/// the resolver does not check the keywords of a constructor typed `any`.
+#[test]
+fn assign_copy_schema_repeated_keyword() {
+    assert_copy_kept(
+        r#"
+schema S[p]:
+    n: int = 0
+
+f = lambda ctor: any, v: any {
+    _t = v
+    _s = ctor(p=_t, p={extra = 2}) {}
+    v
+}
+
+a = {x = 1}
+b = f(S, a)
+"#,
+        "a:\n  x: 1\nb:\n  x: 1\n",
+    );
 }

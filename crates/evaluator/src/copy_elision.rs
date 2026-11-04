@@ -9,7 +9,8 @@
 //! entries can escape through sibling names, closures, lazy globals and schema
 //! construction before a later entry mutates them. Instead, reject all path
 //! writes, composite schema attributes, schema-body augmented assignments and
-//! unifications, plugins, and config entries that could merge into an existing slot.
+//! unifications, plugins, repeated schema keyword arguments, and config entries
+//! that could merge into an existing slot.
 //! This sacrifices precision to keep the proof independent of alias analysis.
 //! Native code is outside the AST too: besides plugins, a host can hand the
 //! program a native function as an option, a recorded schema instance or in
@@ -240,6 +241,24 @@ impl MutSelfWalker for MutationChecker<'_> {
             self.walk_stmt(&stmt.node);
         }
         self.in_schema_body = previous;
+    }
+
+    fn walk_schema_expr(&mut self, schema_expr: &ast::SchemaExpr) {
+        // A repeated keyword argument unions into the value of the first one.
+        let mut names = HashSet::new();
+        for keyword in &schema_expr.kwargs {
+            if !names.insert(keyword.node.arg.node.names.first().map(|name| &name.node)) {
+                self.safe = false;
+            }
+        }
+        self.walk_identifier(&schema_expr.name.node);
+        for arg in &schema_expr.args {
+            self.walk_expr(&arg.node);
+        }
+        for keyword in &schema_expr.kwargs {
+            self.walk_keyword(&keyword.node);
+        }
+        self.walk_expr(&schema_expr.config.node);
     }
 
     fn walk_config_expr(&mut self, config: &ast::ConfigExpr) {
