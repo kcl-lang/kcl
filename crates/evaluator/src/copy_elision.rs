@@ -12,6 +12,16 @@
 //! unifications, plugins, and config entries that could merge into an existing slot.
 //! This sacrifices precision to keep the proof independent of alias analysis.
 //!
+//! The opt-out is whole-program and all-or-nothing by design: one rejected
+//! construct anywhere, such as a composite schema attribute, keeps the deep
+//! copy of every assignment, so schema-heavy packages see no speedup. Such a
+//! program runs exactly as before; finer per-assignment precision is a possible
+//! follow-up, not a regression.
+//!
+//! The check is only sound while it models every way a value can be mutated
+//! in place. Any new runtime mutation path, such as a new builtin, unpacking
+//! form or plugin surface, must update `MutationChecker` as well.
+//!
 //! Ordinary binary/augmented operators build new values or copy their left
 //! operand. Dict comprehensions copy each value before merging it. Config
 //! unpacking and conditional entries copy their input, but may still mutate an
