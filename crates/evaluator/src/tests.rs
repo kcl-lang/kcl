@@ -3217,6 +3217,11 @@ fn assign_copy_elision_analysis() {
     }
 }
 
+/// Whether the last run of the evaluator proved its copies unobservable.
+fn copy_elision_proven(evaluator: &Evaluator) -> bool {
+    evaluator.copy_elision_safe.get() == Some(true)
+}
+
 #[test]
 fn assign_copy_cache_reuse_fails_closed() {
     let safe = load_test_program("f1 = lambda v {\n    _t = v\n    _t\n}\na = f1([1])");
@@ -3224,10 +3229,10 @@ fn assign_copy_cache_reuse_fails_closed() {
         load_test_program("f2 = lambda v {\n    _t = v\n    _t[0] = 2\n    v\n}\nb = f2([1])");
     let mut evaluator = Evaluator::new(&safe.program);
     assert_eq!(evaluator.run().unwrap().1.trim(), "a:\n- 1");
-    assert!(evaluator.copy_elision_safe());
+    assert!(copy_elision_proven(&evaluator));
     evaluator.program = &unsafe_program.program;
     assert_eq!(evaluator.run().unwrap().1.trim(), "a:\n- 1\nb:\n- 1");
-    assert!(!evaluator.copy_elision_safe());
+    assert!(!copy_elision_proven(&evaluator));
 }
 
 #[test]
@@ -3237,10 +3242,10 @@ fn assign_copy_cache_reuse_in_function_mode_fails_closed() {
         load_test_program("f2 = lambda v {\n    _t = v\n    _t[0] = 2\n    v\n}\nf2([1])");
     let mut evaluator = Evaluator::new(&safe.program);
     evaluator.run_as_function();
-    assert!(evaluator.copy_elision_safe());
+    assert!(copy_elision_proven(&evaluator));
     evaluator.program = &unsafe_program.program;
     assert_eq!(evaluator.run_as_function().to_json_string(), "[1]");
-    assert!(!evaluator.copy_elision_safe());
+    assert!(!copy_elision_proven(&evaluator));
 }
 
 #[test]
@@ -3250,7 +3255,7 @@ fn assign_copy_cache_ast_revision_fails_closed() {
         load_test_program("f2 = lambda v {\n    _t = v\n    _t[0] = 2\n    v\n}\nb = f2([1])");
     let evaluator = Evaluator::new(&packages.program);
     evaluator.run().unwrap();
-    assert!(evaluator.copy_elision_safe());
+    assert!(copy_elision_proven(&evaluator));
     let module = packages.program.modules.values().next().unwrap();
     *module.write().unwrap() = revision
         .program
@@ -3262,7 +3267,7 @@ fn assign_copy_cache_ast_revision_fails_closed() {
         .unwrap()
         .clone();
     assert_eq!(evaluator.run().unwrap().1.trim(), "a:\n- 1\nb:\n- 1");
-    assert!(!evaluator.copy_elision_safe());
+    assert!(!copy_elision_proven(&evaluator));
 }
 
 #[test]
@@ -3312,7 +3317,7 @@ a = f([1])
     let evaluator =
         Evaluator::new_with_runtime_ctx(&packages.program, Rc::new(RefCell::new(context)));
     assert_eq!(evaluator.run().unwrap().1.trim(), "a:\n- 1");
-    assert!(!evaluator.copy_elision_safe());
+    assert!(!copy_elision_proven(&evaluator));
 }
 
 fn load_instances_program(src: &str, load_plugins: bool) -> kcl_loader::Packages {
@@ -3770,7 +3775,7 @@ fn assign_copy_host_option_mutation() {
     let evaluator =
         Evaluator::new_with_runtime_ctx(&p.program, ctx_with_option("m", host_list_mutator()));
     assert_eq!(evaluator.run().unwrap().1.trim(), "a:\n- 1");
-    assert!(!evaluator.copy_elision_safe());
+    assert!(!copy_elision_proven(&evaluator));
 }
 
 #[test]
@@ -3789,7 +3794,7 @@ fn assign_copy_preloaded_evaluator_mutation() {
         .insert(MAIN_PKG.to_string(), Default::default());
     evaluator.add_variable("str", host_list_mutator());
     assert_eq!(evaluator.run().unwrap().1.trim(), "a:\n- 1");
-    assert!(!evaluator.copy_elision_safe());
+    assert!(!copy_elision_proven(&evaluator));
 }
 
 #[test]
@@ -3802,5 +3807,44 @@ fn assign_copy_elided_with_plain_data_options() {
     // Host values are only checked when a run begins.
     assert!(!evaluator.copy_elision_safe());
     assert_eq!(evaluator.run().unwrap().1.trim(), "a:\n- 1");
-    assert!(evaluator.copy_elision_safe());
+    assert!(copy_elision_proven(&evaluator));
+}
+
+#[test]
+fn assign_copy_host_instance_mutation() {
+    // `A.instances()` returns the values a host recorded in the context.
+    let p = load_test_program(
+        "schema A:\n    [str]: any\n\n\
+         f = lambda v {\n    _t = v\n    A.instances()[0].m(_t)\n    v\n}\na = f([1])\n",
+    );
+    let ctx = Rc::new(RefCell::new(Context::new()));
+    let mut record = ValueRef::dict(None);
+    record.dict_update_key_value("m", host_list_mutator());
+    ctx.borrow_mut()
+        .instances
+        .entry(kcl_runtime::schema_runtime_type("A", MAIN_PKG))
+        .or_default()
+        .insert(MAIN_PKG.to_string(), vec![record]);
+    let evaluator = Evaluator::new_with_runtime_ctx(&p.program, ctx);
+    assert_eq!(evaluator.run().unwrap().1.trim(), "a:\n- 1");
+    assert!(!copy_elision_proven(&evaluator));
+}
+
+#[test]
+fn assign_copy_statement_walk_after_run() {
+    // `walk_stmts` is public, but a proof only covers the run it was made for.
+    let safe = load_test_program("f1 = lambda v {\n    _t = v\n    _t\n}\na = f1([1])");
+    let unsafe_program =
+        load_test_program("f2 = lambda v {\n    _t = v\n    _t[0] = 2\n    v\n}\nb = f2([1])");
+    let module = unsafe_program.program.get_modules_for_pkg(MAIN_PKG)[0]
+        .read()
+        .unwrap()
+        .clone();
+    let evaluator = Evaluator::new(&safe.program);
+    assert_eq!(evaluator.run().unwrap().1.trim(), "a:\n- 1");
+    evaluator.walk_stmts(&module.body).unwrap();
+    assert_eq!(
+        evaluator.plan_globals_to_string().1.trim(),
+        "a:\n- 1\nb:\n- 1"
+    );
 }

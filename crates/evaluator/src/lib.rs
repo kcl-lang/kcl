@@ -142,6 +142,21 @@ pub struct Evaluator<'ctx> {
     /// earlier run stay readable in a reused context, so later evaluations
     /// keep both the assignment copies and the instance records.
     evaluation_started: Cell<bool>,
+    /// Whether `run` or `run_as_function` is executing. Statements walked
+    /// outside a run keep their assignment copies.
+    evaluating: Cell<bool>,
+}
+
+/// Marks an executing run until it returns or unwinds.
+struct Evaluating<'a, 'ctx> {
+    evaluator: &'a Evaluator<'ctx>,
+    outer: bool,
+}
+
+impl Drop for Evaluating<'_, '_> {
+    fn drop(&mut self) {
+        self.evaluator.evaluating.set(self.outer);
+    }
 }
 
 /// A config expression scope.
@@ -231,14 +246,16 @@ impl<'ctx> Evaluator<'ctx> {
             owns_runtime_ctx: false,
             record_instances: Cell::new(None),
             evaluation_started: Cell::new(false),
+            evaluating: Cell::new(false),
         }
     }
 
     /// Whether no in-place mutation in the program can reach a value shared
     /// with another name, so assignments may bind values without copying them.
     pub(crate) fn copy_elision_safe(&self) -> bool {
-        // Host values are only checked when a run begins.
-        if !self.evaluation_started.get() {
+        // The proof only covers the program and the host values checked when
+        // the executing run began.
+        if !self.evaluating.get() {
             return false;
         }
         if let Some(safe) = self.copy_elision_safe.get() {
@@ -275,7 +292,8 @@ impl<'ctx> Evaluator<'ctx> {
         record
     }
 
-    fn begin_evaluation(&self) {
+    #[must_use]
+    fn begin_evaluation(&self) -> Evaluating<'_, 'ctx> {
         // A later run can read the instances recorded by an earlier one,
         // scopes and frames can outlive a run, and `program` is public, so do
         // not reuse the first run's decisions, even for an equal Program.
@@ -293,8 +311,19 @@ impl<'ctx> Evaluator<'ctx> {
         if reused || (self.owns_runtime_ctx && host_values) {
             self.record_instances.set(Some(true));
         }
-        if reused || host_values {
+        // Values a host recorded reach the program through `Schema.instances()`.
+        if reused
+            || host_values
+            || self
+                .runtime_ctx
+                .try_borrow()
+                .map_or(true, |ctx| !ctx.instances.is_empty())
+        {
             self.copy_elision_safe.set(Some(false));
+        }
+        Evaluating {
+            evaluator: self,
+            outer: self.evaluating.replace(true),
         }
     }
 
@@ -330,7 +359,7 @@ impl<'ctx> Evaluator<'ctx> {
 
     /// Evaluate the program and return the JSON and YAML result.
     pub fn run(self: &Evaluator<'ctx>) -> Result<(String, String)> {
-        self.begin_evaluation();
+        let _evaluating = self.begin_evaluation();
         let modules = self.program.get_modules_for_pkg(kcl_ast::MAIN_PKG);
         self.init_scope(kcl_ast::MAIN_PKG);
         self.compile_ast_modules(&modules);
@@ -380,7 +409,7 @@ impl<'ctx> Evaluator<'ctx> {
     /// return the result of the function run, rather than a dictionary composed of each
     /// configuration attribute.
     pub fn run_as_function(self: &Evaluator<'ctx>) -> ValueRef {
-        self.begin_evaluation();
+        let _evaluating = self.begin_evaluation();
         let modules = self.program.get_modules_for_pkg(kcl_ast::MAIN_PKG);
         if modules.is_empty() {
             ValueRef::undefined()
