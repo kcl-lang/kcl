@@ -1,12 +1,79 @@
 //! Copyright The KCL Authors. All rights reserved.
 
 use crate::*;
-use bstr::ByteSlice;
 use unic_ucd_bidi::BidiClass;
 use unic_ucd_category::GeneralCategory;
 use unicode_casing::CharExt;
 
-const ASCII_WHITESPACES: [u8; 6] = [0x20, 0x09, 0x0a, 0x0c, 0x0d, 0x0b];
+/// Returns whether `c` is whitespace for `str.isspace()`, `str.split()` and `str.rsplit()`.
+#[inline]
+fn is_space_char(c: char) -> bool {
+    use unic_ucd_bidi::bidi_class::abbr_names::*;
+    GeneralCategory::of(c) == GeneralCategory::SpaceSeparator
+        || matches!(BidiClass::of(c), WS | B | S)
+}
+
+/// Splits `s` on runs of whitespace, at most `maxsplit` times (unlimited if negative).
+/// The remainder after the last split is returned as is, like Python's `str.split()`.
+fn split_whitespace_n(s: &str, maxsplit: i64) -> Vec<&str> {
+    let mut parts = Vec::new();
+    let mut rest = s.trim_start_matches(is_space_char);
+    while !rest.is_empty() {
+        if maxsplit >= 0 && parts.len() as i64 == maxsplit {
+            parts.push(rest);
+            break;
+        }
+        match rest.find(is_space_char) {
+            Some(end) => {
+                parts.push(&rest[..end]);
+                rest = rest[end..].trim_start_matches(is_space_char);
+            }
+            None => {
+                parts.push(rest);
+                break;
+            }
+        }
+    }
+    parts
+}
+
+/// Splits `s` on runs of whitespace from the right, at most `maxsplit` times (unlimited if
+/// negative). The remainder before the last split is returned as is, like Python's `str.rsplit()`.
+/// The parts are returned from the right, so the caller reverses them.
+fn rsplit_whitespace_n(s: &str, maxsplit: i64) -> Vec<&str> {
+    let mut parts = Vec::new();
+    let mut rest = s.trim_end_matches(is_space_char);
+    while !rest.is_empty() {
+        if maxsplit >= 0 && parts.len() as i64 == maxsplit {
+            parts.push(rest);
+            break;
+        }
+        match rest.rfind(is_space_char) {
+            Some(start) => {
+                let width = rest[start..].chars().next().map_or(1, char::len_utf8);
+                parts.push(&rest[start + width..]);
+                rest = rest[..start].trim_end_matches(is_space_char);
+            }
+            None => {
+                parts.push(rest);
+                break;
+            }
+        }
+    }
+    parts
+}
+
+/// Superscript digits that `str.isdigit()` accepts besides the ASCII digits.
+const SUPERSCRIPT_DIGITS: [u16; 10] = [
+    0x2070, 0x00B9, 0x00B2, 0x00B3, 0x2074, 0x2075, 0x2076, 0x2077, 0x2078, 0x2079,
+];
+
+/// Returns whether `c` is a digit for `str.isdigit()`.
+#[inline]
+pub(crate) fn is_digit_char(c: char) -> bool {
+    // Preserve the historical u16 truncation, including its non-BMP aliases.
+    c.is_ascii_digit() || SUPERSCRIPT_DIGITS.contains(&(c as u16))
+}
 
 fn adjust_indices(
     start: Option<&ValueRef>,
@@ -345,14 +412,7 @@ impl ValueRef {
     pub fn str_isdigit(&self) -> ValueRef {
         match &*self.rc.borrow() {
             Value::str_value(v) => {
-                let valid_unicodes: [u16; 10] = [
-                    0x2070, 0x00B9, 0x00B2, 0x00B3, 0x2074, 0x2075, 0x2076, 0x2077, 0x2078, 0x2079,
-                ];
-
-                let result = !v.is_empty()
-                    && v.chars()
-                        .filter(|c| !c.is_ascii_digit())
-                        .all(|c| valid_unicodes.contains(&(c as u16)));
+                let result = !v.is_empty() && v.chars().all(is_digit_char);
                 ValueRef::bool(result)
             }
             _ => panic!("Invalid str object in str_isdigit"),
@@ -375,12 +435,7 @@ impl ValueRef {
                 if v.is_empty() {
                     return ValueRef::bool(false);
                 }
-                use unic_ucd_bidi::bidi_class::abbr_names::*;
-                let result = v.chars().all(|c| {
-                    GeneralCategory::of(c) == GeneralCategory::SpaceSeparator
-                        || matches!(BidiClass::of(c), WS | B | S)
-                });
-                ValueRef::bool(result)
+                ValueRef::bool(v.chars().all(is_space_char))
             }
             _ => panic!("Invalid str object in str_isspace"),
         }
@@ -564,7 +619,7 @@ impl ValueRef {
                     Some(v) => v.as_int(),
                     None => -1,
                 };
-                let splited = if let Some(pattern) = sep {
+                let splited: Vec<ValueRef> = if let Some(pattern) = sep {
                     let s = pattern.as_str();
                     if maxsplit < 0 {
                         v.split(s.as_str()).map(convert).collect()
@@ -575,27 +630,10 @@ impl ValueRef {
                     }
                 } else {
                     // Split whitespace
-                    let mut splited = Vec::new();
-                    let mut last_offset = 0;
-                    let mut count = maxsplit;
-                    for (offset, _) in
-                        v.match_indices(|c: char| c.is_ascii_whitespace() || c == '\x0b')
-                    {
-                        if last_offset == offset {
-                            last_offset += 1;
-                            continue;
-                        }
-                        if count == 0 {
-                            break;
-                        }
-                        splited.push(convert(&v[last_offset..offset]));
-                        last_offset = offset + 1;
-                        count -= 1;
-                    }
-                    if last_offset != v.len() {
-                        splited.push(convert(&v[last_offset..]));
-                    }
-                    splited
+                    split_whitespace_n(v, maxsplit)
+                        .into_iter()
+                        .map(convert)
+                        .collect()
                 };
                 ValueRef::list_value(Some(splited.as_slice()))
             }
@@ -614,7 +652,7 @@ impl ValueRef {
                     Some(v) => v.as_int(),
                     None => -1,
                 };
-                let mut splited = if let Some(pattern) = sep {
+                let mut splited: Vec<ValueRef> = if let Some(pattern) = sep {
                     let s = pattern.as_str();
                     if maxsplit < 0 {
                         v.rsplit(s.as_str()).map(convert).collect()
@@ -625,25 +663,10 @@ impl ValueRef {
                     }
                 } else {
                     // Split whitespace
-                    let mut splited = Vec::new();
-                    let mut count = maxsplit;
-                    let mut haystack = v.as_bytes();
-                    while let Some(offset) = haystack.rfind_byteset(ASCII_WHITESPACES) {
-                        if offset + 1 != haystack.len() {
-                            if count == 0 {
-                                break;
-                            }
-                            splited.push(convert(
-                                std::str::from_utf8(&haystack[offset + 1..]).unwrap(),
-                            ));
-                            count -= 1;
-                        }
-                        haystack = &haystack[..offset];
-                    }
-                    if !haystack.is_empty() {
-                        splited.push(convert(std::str::from_utf8(haystack).unwrap()));
-                    }
-                    splited
+                    rsplit_whitespace_n(v, maxsplit)
+                        .into_iter()
+                        .map(convert)
+                        .collect()
                 };
                 splited.reverse();
                 ValueRef::list_value(Some(splited.as_slice()))
@@ -749,6 +772,52 @@ impl ValueRef {
         match &*self.rc.borrow() {
             Value::str_value(v) => *v == *value,
             _ => false,
+        }
+    }
+}
+
+#[cfg(test)]
+mod test_value_str {
+    use crate::*;
+
+    #[test]
+    fn test_str_isdigit() {
+        let cases = [
+            ("0123456789", true),
+            (
+                "\u{2070}\u{b9}\u{b2}\u{b3}\u{2074}\u{2075}\u{2076}\u{2077}\u{2078}\u{2079}",
+                true,
+            ),
+            ("1\u{b2}", true),
+            ("\u{102070}", true),
+            ("\u{100b2}9", true),
+            ("", false),
+            (" ", false),
+            ("a1", false),
+            ("-1", false),
+            ("1.0", false),
+            ("\u{661}", false),
+            ("\u{ff11}", false),
+            ("\u{2080}", false),
+            ("\u{1d7d9}", false),
+        ];
+        for (value, expected) in cases {
+            assert_eq!(
+                ValueRef::str(value).str_isdigit().is_truthy(),
+                expected,
+                "{value:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_is_digit_char_matches_previous_check() {
+        let valid_unicodes: [u16; 10] = [
+            0x2070, 0x00B9, 0x00B2, 0x00B3, 0x2074, 0x2075, 0x2076, 0x2077, 0x2078, 0x2079,
+        ];
+        for c in (0..=0x10ffff).filter_map(char::from_u32) {
+            let expected = c.is_ascii_digit() || valid_unicodes.contains(&(c as u16));
+            assert_eq!(super::is_digit_char(c), expected, "{c:?}");
         }
     }
 }

@@ -1,0 +1,12 @@
+shared:
+  items:
+  - kept
+  - alive
+method: zy
+roundtrip:
+  items:
+  - kept
+  - alive
+instances:
+- kept
+caught: true

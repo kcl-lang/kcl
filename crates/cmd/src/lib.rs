@@ -68,8 +68,9 @@ pub fn app() -> Command {
         Command::new("export")
             .about("export KCL schemas to source code")
             .arg(arg!([input] ... "KCL input files").num_args(1..).required(true))
-            .arg(arg!(target: --target <target> "Target language (currently supported: rust)").value_parser(["rust"]).required(true))
-            .arg(arg!(output: -o --output <output> "Write generated source to this file")),
+            .arg(arg!(target: --target <target> "Target language (currently supported: rust, python, go)").value_parser(["rust", "python", "go"]).required(true))
+            .arg(arg!(output: -o --output <output> "Write generated source to this file"))
+            .arg(arg!(package: --package <package> "Go package name for the generated file (target=go only; defaults to \"generated\")")),
     )
     .subcommand(Command::new("server").about("Start a rpc server for APIs"))
     .subcommand(Command::new("version").about("Show the KCL version"))

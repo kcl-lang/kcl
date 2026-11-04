@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:1:1
+  |
+1 | a = int(float("nan"))
+  |  cannot convert float NaN to integer
+  |

@@ -1513,6 +1513,131 @@ sum = testing.add(1, 1)
     insta::assert_snapshot!(format!("{}", evaluator.run().unwrap().1));
 }
 
+/// Runs `calls` iterations of builtin, member, system module and plugin calls
+/// and returns the output and the number of objects left in the context.
+fn run_builtin_calls(calls: usize) -> (String, usize) {
+    let src = format!(
+        r#"
+import json
+import regex
+import runtime
+import kcl_plugin.testing
+
+_s = "x" * 100
+
+_one = lambda i: int -> int {{
+    _a = _s.replace("x", "y")
+    _b = json.encode({{"i": i}})
+    _c = regex.replace(_a, "y+", "z")
+    _d = runtime.catch(lambda {{ int("x") }})
+    testing.add(len(_c), int(str(i)) - i) if _b and _d else 0
+}}
+
+result = sum([_one(i) for i in range({calls})])
+"#
+    );
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            load_plugins: true,
+            k_code_list: vec![src],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let ctx = context_with_plugin();
+    let evaluator = Evaluator::new_with_runtime_ctx(&p.program, ctx.clone());
+    let output = evaluator.run().unwrap().1;
+    let objects = ctx.borrow().objects.len();
+    drop(evaluator);
+    ctx.borrow().gc();
+    (output, objects)
+}
+
+#[test]
+fn test_builtin_call_values_are_not_retained() {
+    // C-ABI calls above return a raw pointer registered in `Context::objects`.
+    // The evaluator must take those back (and must not register the argument
+    // list), including when runtime.catch catches a panic in a builtin.
+    let (output, objects) = run_builtin_calls(1);
+    assert_eq!(output, "result: 1");
+    let (output, many_objects) = run_builtin_calls(200);
+    assert_eq!(output, "result: 200");
+    assert_eq!(objects, many_objects);
+}
+
+#[test]
+fn test_builtin_call_shared_results() {
+    let program = kcl_ast::ast::Program::default();
+    let ctx = context_with_plugin();
+    let evaluator = Evaluator::new_with_runtime_ctx(&program, ctx.clone());
+    let method = ValueRef::str("xy").load_attr("replace");
+    ctx.borrow_mut()
+        .option_values
+        .insert("method".to_string(), method.clone());
+    let option =
+        evaluator.function_value_with_ptr(kcl_runtime::kcl_builtin_option as *const () as u64);
+    let mut args = ValueRef::list(Some(&[&ValueRef::str("method")]));
+    let kwargs = ValueRef::dict(None);
+    let returned = crate::runtime::invoke_function(&evaluator, &option, &mut args, &kwargs);
+    assert!(returned.is_same_ref(&method));
+    let mut args = ValueRef::list(Some(&[&ValueRef::str("x"), &ValueRef::str("z")]));
+    let result = crate::runtime::invoke_function(&evaluator, &returned, &mut args, &kwargs);
+    assert_eq!(result.as_str(), "zy");
+    // String methods pop their receiver from the shared argument list.
+    assert_eq!(args.args_len(), 2);
+    assert_eq!(method.as_function().closure.arg_0().unwrap().as_str(), "xy");
+
+    for return_kwargs in [false, true] {
+        ctx.borrow_mut().plugin_functions.insert(
+            "testing.identity".to_string(),
+            Arc::new(move |_, args, kwargs| Ok(if return_kwargs { kwargs } else { args }.clone())),
+        );
+        let plugin = ValueRef::func(0, 0, ValueRef::undefined(), "testing.identity", "", true);
+        let mut args = ValueRef::list(Some(&[&method]));
+        let kwargs = ValueRef::dict(Some(&[("method", &method)]));
+        let result = crate::runtime::invoke_function(&evaluator, &plugin, &mut args, &kwargs);
+        assert!(result.is_same_ref(if return_kwargs { &kwargs } else { &args }));
+        drop(args);
+        drop(kwargs);
+        let returned = if return_kwargs {
+            result.kwarg("method").unwrap()
+        } else {
+            result.arg_0().unwrap()
+        };
+        assert!(returned.is_same_ref(&method));
+        assert_eq!(
+            returned.as_function().closure.arg_0().unwrap().as_str(),
+            "xy"
+        );
+    }
+    assert!(ctx.borrow().objects.is_empty());
+}
+
+#[test]
+fn test_builtin_call_borrowed_result() {
+    unsafe extern "C-unwind" fn borrow_kwargs(
+        _: *mut Context,
+        _: *const ValueRef,
+        kwargs: *const ValueRef,
+    ) -> *const ValueRef {
+        kwargs
+    }
+
+    let program = kcl_ast::ast::Program::default();
+    let evaluator = Evaluator::new(&program);
+    let func = evaluator.function_value_with_ptr(borrow_kwargs as *const () as u64);
+    let mut args = ValueRef::list(None);
+    let kwargs = ValueRef::dict(Some(&[("value", &ValueRef::str("borrowed"))]));
+    let result = crate::runtime::invoke_function(&evaluator, &func, &mut args, &kwargs);
+    assert!(result.is_same_ref(&kwargs));
+    drop(kwargs);
+    assert_eq!(result.kwarg("value").unwrap().as_str(), "borrowed");
+    assert!(evaluator.runtime_ctx.borrow().objects.is_empty());
+}
+
 #[test]
 fn test_issue_1915_child_schema_arg_overrides_parent_type() {
     // Regression test for issue https://github.com/kcl-lang/kcl/issues/1915
@@ -2306,4 +2431,585 @@ fn issue_1758_referenced_pkgs_with_extra_member_is_noop() {
         "expected main result in output, got {}",
         json
     );
+}
+
+/// Run `src`, which must fail with a runtime error, and return the error
+/// message and the panic info left in the runtime context.
+fn eval_runtime_error(src: &str) -> (String, kcl_runtime::PanicInfo) {
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![src.to_string()],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    let evaluator = Evaluator::new(&p.program);
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| evaluator.run()));
+    let Err(err) = result else {
+        panic!("expected a runtime error");
+    };
+    let panic_info = evaluator.runtime_ctx.borrow().panic_info.clone();
+    (kcl_error::err_to_str(err), panic_info)
+}
+
+/// The 1-based number of the first line of `src` that contains `pat`.
+fn line_of(src: &str, pat: &str) -> i32 {
+    src.lines().position(|line| line.contains(pat)).unwrap() as i32 + 1
+}
+
+#[test]
+fn test_runtime_catch_preserves_panic_info_lifecycle() {
+    let src = r#"
+_caught = lambda {
+    assert False, "caught"
+}
+_normal = lambda {
+    1
+}
+"#;
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            k_code_list: vec![src.to_string()],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap();
+    for debug_mode in [false, true] {
+        for name in ["_caught", "_normal"] {
+            let evaluator = Evaluator::new(&p.program);
+            evaluator.run().unwrap();
+            let func = evaluator.get_variable(name);
+            let saved = kcl_runtime::PanicInfo {
+                kcl_pkgpath: MAIN_PKG.to_string(),
+                kcl_file: "caller.k".to_string(),
+                kcl_line: 42,
+                kcl_arg_msg: "outer message".to_string(),
+                kcl_config_meta_file: "outer_config.k".to_string(),
+                message: "outer error".to_string(),
+                backtrace: vec![kcl_runtime::BacktraceFrame::default()],
+                ..Default::default()
+            };
+            {
+                let mut ctx = evaluator.runtime_ctx.borrow_mut();
+                ctx.cfg.debug_mode = debug_mode;
+                ctx.panic_info = saved.clone();
+                ctx.backtrace = saved.backtrace.clone();
+            }
+            let result = crate::runtime::runtime_catch(
+                &evaluator,
+                &ValueRef::list(Some(&[&func])),
+                &ValueRef::dict(None),
+            );
+            let ctx = evaluator.runtime_ctx.borrow();
+            assert_eq!(ctx.backtrace, saved.backtrace);
+            if name == "_caught" {
+                assert_eq!(result.as_str(), "caught");
+                assert_eq!(ctx.panic_info, saved);
+            } else {
+                assert!(result.is_undefined());
+                if !debug_mode {
+                    // A normal return must keep the callee's updates, including
+                    // errors recorded without panicking on wasm32.
+                    assert_eq!(ctx.panic_info.kcl_line, line_of(src, "    1"));
+                    assert_ne!(ctx.panic_info.kcl_file, saved.kcl_file);
+                }
+                assert_eq!(ctx.panic_info.kcl_arg_msg, saved.kcl_arg_msg);
+                assert_eq!(ctx.panic_info.message, saved.message);
+            }
+        }
+    }
+}
+
+#[test]
+fn test_runtime_catch_restores_panic_info_after_schema_check_failure() {
+    // A schema check failure caught by `runtime.catch` must not leave its
+    // error type, check message and instance position behind for a later
+    // uncaught error.
+    let src = r#"
+import runtime
+
+schema Port:
+    number: int
+
+    check:
+        number > 0, "port number must be positive"
+
+msg = runtime.catch(lambda {
+    Port {number = -1}
+})
+assert msg == "port number must be positive"
+assert False, "own message"
+"#;
+    let (msg, panic_info) = eval_runtime_error(src);
+    assert_eq!(msg, "own message");
+    assert_eq!(
+        panic_info.err_type_code,
+        kcl_runtime::RuntimeErrorType::AssertionError as i32
+    );
+    assert_eq!(panic_info.kcl_arg_msg, "");
+    assert_eq!(panic_info.kcl_config_meta_file, "");
+    assert_eq!(panic_info.kcl_config_meta_arg_msg, "");
+    assert_eq!(panic_info.kcl_line, line_of(src, "own message"));
+}
+
+#[test]
+fn test_runtime_catch_restores_panic_info_after_missing_attribute() {
+    // Same for a caught required-attribute error followed by an error that
+    // does not set a message of its own.
+    let src = r#"
+import runtime
+
+schema Port:
+    number: int
+
+msg = runtime.catch(lambda {
+    Port {number = None}
+})
+a = [][0]
+"#;
+    let (msg, panic_info) = eval_runtime_error(src);
+    assert_eq!(msg, "list index out of range: 0");
+    assert_ne!(
+        panic_info.err_type_code,
+        kcl_runtime::RuntimeErrorType::SchemaCheckFailure as i32
+    );
+    assert_eq!(panic_info.kcl_arg_msg, "");
+    assert_eq!(panic_info.kcl_line, line_of(src, "[][0]"));
+}
+
+fn load_instances_program(src: &str, load_plugins: bool) -> kcl_loader::Packages {
+    load_packages(&LoadPackageOptions {
+        paths: vec!["test.k".to_string()],
+        load_opts: Some(LoadProgramOptions {
+            load_plugins,
+            k_code_list: vec![src.to_string()],
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .unwrap()
+}
+
+fn recorded_instances(evaluator: &Evaluator) -> usize {
+    let ctx = evaluator.runtime_ctx.borrow();
+    ctx.instances
+        .values()
+        .flat_map(|pkgs| pkgs.values())
+        .map(Vec::len)
+        .sum()
+}
+
+/// Runs a program in a context the evaluator owns, returning its YAML and
+/// the number of recorded instances.
+fn run_owning_ctx(program: &kcl_ast::ast::Program, ctx: Rc<RefCell<Context>>) -> (String, usize) {
+    let mut evaluator = Evaluator::new_with_runtime_ctx(program, ctx);
+    evaluator.set_owns_runtime_ctx(true);
+    let yaml = evaluator.run().unwrap().1;
+    (yaml, recorded_instances(&evaluator))
+}
+
+const UNREAD_INSTANCES: &str = r#"
+schema A:
+    x: int = 1
+
+schema B(A):
+    y: int = 2
+
+instances = [A {x = i} for i in range(3)]
+b = B {}
+n = len(instances)
+"#;
+
+#[test]
+fn unread_instances_not_recorded_in_owned_ctx() {
+    let p = load_instances_program(UNREAD_INSTANCES, false);
+    let evaluator = Evaluator::new(&p.program);
+    let expected = evaluator.run().unwrap().1;
+    assert_eq!(recorded_instances(&evaluator), 5);
+
+    let (yaml, recorded) = run_owning_ctx(&p.program, Rc::new(RefCell::new(Context::new())));
+    assert_eq!(yaml, expected);
+    assert_eq!(recorded, 0);
+}
+
+#[test]
+fn instances_recorded_unless_ctx_owned() {
+    let p = load_instances_program(UNREAD_INSTANCES, false);
+    let mut evaluator = Evaluator::new(&p.program);
+    evaluator.set_owns_runtime_ctx(false);
+    evaluator.run().unwrap();
+    assert_eq!(recorded_instances(&evaluator), 5);
+}
+
+#[test]
+fn instances_reads_in_owned_ctx_match_default() {
+    let reads = [
+        "n = len(A.instances())",
+        "n = len(A.instances(full_pkg=True))",
+        "n = len(A.instances(True))",
+        "f = A.instances\nn = len(f())",
+        "t = A\nn = len(t?.instances())",
+        "g = lambda { A }\nn = len(g().instances())",
+        "g = lambda s { len(s.instances()) }\nn = g(A)",
+        "g = lambda { lambda s { [i.x for i in s.instances()] } }\nn = g()(A)",
+        "n = \"${len(A.instances())}\"",
+        "n = [i.x for i in A.instances() if i.x > 0]",
+        "schema C:\n    n: int = len(A.instances())\nn = C {}",
+        "schema C:\n    check:\n        len(A.instances()) == 3, \"lost instances\"\nn = C {}",
+        "schema C:\n    n: int = 0\n    n = len(A.instances())\nn = C {}",
+        "n = {k = len(A.instances())}",
+        "n = [len(A.instances()) for _ in range(2)]",
+        "assert len(A.instances()) == 3\nn = 1",
+        "n = len(A.instances()) if True else 0",
+        "n = A.instances()[0].x + A.instances()[-1].x",
+    ];
+    for read in reads {
+        let src =
+            format!("schema A:\n    x: int = 1\n\na = [A {{x = i}} for i in range(3)]\n{read}\n");
+        let p = load_instances_program(&src, false);
+        let evaluator = Evaluator::new(&p.program);
+        let expected = evaluator.run().unwrap().1;
+        let (yaml, recorded) = run_owning_ctx(&p.program, Rc::new(RefCell::new(Context::new())));
+        assert_eq!(yaml, expected, "{read}");
+        assert!(recorded >= 3, "{read}");
+    }
+}
+
+#[test]
+fn instances_read_in_another_package() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let main_path = write_kcl_file(
+        dir.path(),
+        "main.k",
+        r#"
+import pkg
+
+a = [pkg.A {x = i} for i in range(3)]
+n = pkg.count()
+"#,
+    );
+    write_kcl_file(
+        dir.path(),
+        "pkg/pkg.k",
+        r#"
+schema A:
+    x: int = 1
+
+count = lambda { len(A.instances(full_pkg=True)) }
+"#,
+    );
+    let p = load_packages(&LoadPackageOptions {
+        paths: vec![main_path],
+        load_opts: Some(LoadProgramOptions {
+            work_dir: dir.path().to_string_lossy().into_owned(),
+            ..Default::default()
+        }),
+        load_builtin: false,
+        ..Default::default()
+    })
+    .expect("load_packages");
+    let evaluator = Evaluator::new(&p.program);
+    let expected = evaluator.run().unwrap().1;
+    assert!(expected.contains("'n': 3"), "{expected}");
+    let (yaml, recorded) = run_owning_ctx(&p.program, Rc::new(RefCell::new(Context::new())));
+    assert_eq!(yaml, expected);
+    assert_eq!(recorded, 3);
+}
+
+#[test]
+fn instances_recorded_for_native_plugins() {
+    fn count(ctx: &Context, _: &ValueRef, _: &ValueRef) -> anyhow::Result<ValueRef> {
+        let n: usize = ctx
+            .instances
+            .values()
+            .flat_map(|pkgs| pkgs.values())
+            .map(Vec::len)
+            .sum();
+        Ok(ValueRef::int(n as i64))
+    }
+    let src = r#"
+import kcl_plugin.testing
+
+schema A:
+    x: int = 1
+
+a = [A {x = i} for i in range(3)]
+n = testing.count()
+"#;
+    let p = load_instances_program(src, true);
+    let ctx = || {
+        let mut ctx = Context::new();
+        ctx.plugin_functions
+            .insert("testing.count".to_string(), Arc::new(count));
+        Rc::new(RefCell::new(ctx))
+    };
+    let evaluator = Evaluator::new_with_runtime_ctx(&p.program, ctx());
+    let expected = evaluator.run().unwrap().1;
+    assert!(expected.contains("'n': 3"), "{expected}");
+    let (yaml, recorded) = run_owning_ctx(&p.program, ctx());
+    assert_eq!(yaml, expected);
+    assert_eq!(recorded, 3);
+}
+
+fn ctx_with_option(key: &str, value: ValueRef) -> Rc<RefCell<Context>> {
+    let mut ctx = Context::new();
+    ctx.option_values.insert(key.to_string(), value);
+    Rc::new(RefCell::new(ctx))
+}
+
+/// The bound method `A.instances`, loaded by the host rather than the program.
+fn host_instances_reader() -> ValueRef {
+    ValueRef::func(0, 0, ValueRef::list(None), "A", "__main__.A", false).load_attr("instances")
+}
+
+fn nested_host_instances_reader() -> ValueRef {
+    let reader = host_instances_reader();
+    let entry = ValueRef::dict(Some(&[("r", &reader)]));
+    ValueRef::list(Some(&[&entry]))
+}
+
+#[test]
+fn instances_recorded_for_function_options() {
+    let cases = [
+        (
+            "option(\"reader\")()",
+            host_instances_reader as fn() -> ValueRef,
+        ),
+        ("option(\"reader\")[0].r()", nested_host_instances_reader),
+    ];
+    for (call, value) in cases {
+        let src = format!("schema A:\n    x: int = 1\n\na = A {{}}\nn = len({call})\n");
+        let p = load_instances_program(&src, false);
+        let evaluator =
+            Evaluator::new_with_runtime_ctx(&p.program, ctx_with_option("reader", value()));
+        let expected = evaluator.run().unwrap().1;
+        assert!(expected.contains("'n': 1"), "{call}: {expected}");
+        let (yaml, recorded) = run_owning_ctx(&p.program, ctx_with_option("reader", value()));
+        assert_eq!(yaml, expected, "{call}");
+        assert_eq!(recorded, 1, "{call}");
+    }
+}
+
+#[test]
+fn instances_not_recorded_for_plain_data_options() {
+    let p = load_instances_program(UNREAD_INSTANCES, false);
+    let ctx = Rc::new(RefCell::new(Context::new()));
+    // As `FastRunner` sets the options passed to it.
+    ctx.borrow_mut()
+        .builtin_option_init("json", r#"{"k": [1, "s", null, {"f": 1.5}]}"#);
+    ctx.borrow_mut().builtin_option_init("str", "s");
+    let tree = {
+        let item = ValueRef::str("s");
+        ValueRef::dict(Some(&[("k", &ValueRef::list(Some(&[&item])))]))
+    };
+    ctx.borrow_mut()
+        .option_values
+        .insert("tree".to_string(), tree);
+    let (_, recorded) = run_owning_ctx(&p.program, ctx);
+    assert_eq!(recorded, 0);
+}
+
+#[test]
+fn instances_recorded_for_shared_options() {
+    let p = load_instances_program(UNREAD_INSTANCES, false);
+    let expected = Evaluator::new(&p.program).run().unwrap().1;
+    // The host could change a value it still holds during the run.
+    let held = ValueRef::none();
+    // 2^40 paths through 41 values must not be walked one by one.
+    let mut dag = ValueRef::int(0);
+    for _ in 0..40 {
+        dag = ValueRef::list(Some(&[&dag, &dag]));
+    }
+    let mut cyclic = ValueRef::list(None);
+    let inner = cyclic.clone();
+    cyclic.list_append(&inner);
+    drop(inner);
+    for data in [held.clone(), dag, cyclic] {
+        let (yaml, recorded) = run_owning_ctx(&p.program, ctx_with_option("data", data));
+        assert_eq!(yaml, expected);
+        assert_eq!(recorded, 5);
+    }
+}
+
+#[test]
+fn instances_recorded_for_preloaded_evaluator() {
+    // A host can preload a reader in the evaluator's public scopes.
+    let src = "schema A:\n    x: int = 1\n\n_a = A {}\nn = str(None)\n";
+    let p = load_instances_program(src, false);
+    let run = |owns: bool| {
+        let mut evaluator = Evaluator::new(&p.program);
+        evaluator.pkg_scopes.borrow_mut().insert(
+            MAIN_PKG.to_string(),
+            vec![Default::default(), Default::default()],
+        );
+        evaluator
+            .lazy_scopes
+            .borrow_mut()
+            .insert(MAIN_PKG.to_string(), Default::default());
+        evaluator.add_variable("str", host_instances_reader());
+        evaluator.set_owns_runtime_ctx(owns);
+        let yaml = evaluator.run().unwrap().1;
+        (yaml, recorded_instances(&evaluator))
+    };
+    let (expected, _) = run(false);
+    assert!(expected.contains("- x: 1"), "{expected}");
+    let (yaml, recorded) = run(true);
+    assert_eq!(yaml, expected);
+    assert_eq!(recorded, 1);
+}
+
+#[test]
+fn instances_recorded_for_options_moved_before_first_instance() {
+    // The program keeps the reader after the options are cleared.
+    let reset = || {
+        let reset = kcl_runtime::kcl_builtin_option_reset as *const () as usize as u64;
+        ValueRef::func(reset, 0, ValueRef::list(None), "", "", false)
+    };
+    let ctx = || {
+        let ctx = ctx_with_option("reader", host_instances_reader());
+        ctx.borrow_mut()
+            .option_values
+            .insert("reset".to_string(), reset());
+        ctx
+    };
+    let src = "schema A:\n    x: int = 1\n\n_reader = option(\"reader\")\noption(\"reset\")()\na = A {}\nn = len(_reader())\n";
+    let p = load_instances_program(src, false);
+    let evaluator = Evaluator::new_with_runtime_ctx(&p.program, ctx());
+    let expected = evaluator.run().unwrap().1;
+    assert!(expected.contains("'n': 1"), "{expected}");
+    let (yaml, recorded) = run_owning_ctx(&p.program, ctx());
+    assert_eq!(yaml, expected);
+    assert_eq!(recorded, 1);
+}
+
+thread_local! {
+    static CONSTRUCTOR_SAW_INSTANCES: std::cell::Cell<Option<bool>> =
+        const { std::cell::Cell::new(None) };
+}
+
+unsafe extern "C-unwind" fn instances_probe_constructor(
+    ctx: *mut Context,
+    _args: *const ValueRef,
+    _kwargs: *const ValueRef,
+) -> *const ValueRef {
+    let ctx = unsafe { &*ctx };
+    CONSTRUCTOR_SAW_INSTANCES.with(|saw| saw.set(Some(!ctx.instances.is_empty())));
+    panic!("instances probe");
+}
+
+#[test]
+fn instances_recorded_for_host_schema_constructors() {
+    // Updating a schema value calls the constructor registered for its type.
+    let src = "schema A:\n    x: int = 1\n\n_a = A {}\n_a[\"x\"] = 2\n";
+    let p = load_instances_program(src, false);
+    let ctx = || {
+        let probe = instances_probe_constructor as *const () as usize as u64;
+        let mut ctx = Context::new();
+        ctx.all_schemas.insert(
+            "__main__.A".to_string(),
+            kcl_runtime::SchemaType {
+                name: "__main__.A".to_string(),
+                attrs: Default::default(),
+                has_index_signature: false,
+                func: ValueRef::func(probe, 0, ValueRef::list(None), "", "__main__.A", false),
+            },
+        );
+        Rc::new(RefCell::new(ctx))
+    };
+    for owns in [false, true] {
+        CONSTRUCTOR_SAW_INSTANCES.with(|saw| saw.set(None));
+        let mut evaluator = Evaluator::new_with_runtime_ctx(&p.program, ctx());
+        evaluator.set_owns_runtime_ctx(owns);
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| evaluator.run()));
+        assert!(result.is_err(), "owns = {owns}");
+        let saw = CONSTRUCTOR_SAW_INSTANCES.with(|saw| saw.get());
+        assert_eq!(saw, Some(true), "owns = {owns}");
+    }
+}
+
+#[test]
+fn instances_recorded_after_first_run() {
+    let p = load_instances_program(UNREAD_INSTANCES, false);
+    let mut evaluator = Evaluator::new(&p.program);
+    evaluator.set_owns_runtime_ctx(true);
+    let first = evaluator.run().unwrap();
+    assert_eq!(recorded_instances(&evaluator), 0);
+    // Even with the evaluator's own state reset, the context keeps what
+    // this run records for the next one.
+    evaluator.frames.borrow_mut().clear();
+    evaluator.schemas.borrow_mut().clear();
+    evaluator.pkg_scopes.borrow_mut().clear();
+    evaluator.lazy_scopes.borrow_mut().clear();
+    evaluator.imported.borrow_mut().clear();
+    evaluator.import_names.borrow_mut().clear();
+    assert_eq!(evaluator.run().unwrap(), first);
+    assert_eq!(recorded_instances(&evaluator), 5);
+}
+
+#[test]
+fn instances_scan_rejects_locked_modules() {
+    let p = load_instances_program(UNREAD_INSTANCES, false);
+    assert!(!crate::instance_reads::program_may_read_instances(
+        &p.program
+    ));
+    let module = p.program.modules.values().next().unwrap();
+    let _writer = module.write().unwrap();
+    assert!(crate::instance_reads::program_may_read_instances(
+        &p.program
+    ));
+}
+
+fn scan_source(src: &str) -> bool {
+    let module = kcl_parser::parse_file_force_errors("test.k", Some(src.to_string())).unwrap();
+    let mut program = kcl_ast::ast::Program::default();
+    program.modules.insert(
+        "test.k".to_string(),
+        Arc::new(std::sync::RwLock::new(module)),
+    );
+    crate::instance_reads::program_may_read_instances(&program)
+}
+
+#[test]
+fn instances_scan_finds_attribute_loads() {
+    let reads = [
+        "a = A.instances",
+        "a = pkg.A.instances()",
+        "a = f().instances",
+        "a = x?.instances",
+        "a = x.y.instances.z",
+        "a = \"${A.instances()}\"",
+        "a = [A.instances]",
+        "a = {k: A.instances}",
+        "a = lambda { A.instances() }",
+        "a.instances.b = 1",
+        "a.instances[0] = 1",
+        "a = b[A.instances()[0]]",
+        "schema S:\n    x: int = len(A.instances())",
+        "schema S:\n    check:\n        A.instances()",
+        "schema S[n: int = len(A.instances())]:\n    x: int = n",
+        "schema S:\n    [k: str]: int = len(A.instances())",
+        "rule R:\n    len(A.instances()) > 0",
+        "import kcl_plugin.testing",
+    ];
+    for read in reads {
+        assert!(scan_source(read), "{read}");
+    }
+    let no_reads = [
+        "instances = [1]\na = instances",
+        "a = {instances = 1}",
+        "f = lambda instances { instances }\na = f(instances = 1)",
+        "a = \"A.instances()\"",
+        "a = x.instance",
+        "import collection",
+    ];
+    for no_read in no_reads {
+        assert!(!scan_source(no_read), "{no_read}");
+    }
 }

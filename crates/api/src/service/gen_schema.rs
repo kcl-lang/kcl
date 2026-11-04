@@ -1,16 +1,23 @@
 //! Shared schema extraction for the schema-driven generator RPCs
-//! (`GenerateOpenAPI`, `GenerateProto`, `GenerateDoc`).
+//! (`GenerateOpenAPI`, `GenerateProto`, `GenerateDoc`, `GenerateRust`,
+//! `GeneratePython`, and future per-language DTO emitters).
 //!
-//! All three emitters consume the same extracted model: the package schema
+//! Every emitter consumes the same extracted model: the package schema
 //! type mapping produced by [`load_pkg_schema_types`], plus the deterministic
 //! ordering ([`ordered_schemas`]) and cross-package name collision resolution
 //! ([`SchemaNameResolver`]) shared by every emitter so that references to the
-//! same schema render identically no matter the target format.
+//! same schema render identically no matter the target format. The
+//! struct/class-shaped DTO emitters additionally share [`generate_source`]
+//! (the collision-check-then-emit driver) and [`decode_checks`] /
+//! [`default_check_message`] (decoding a schema's `check:` block AST, base
+//! schema first) — each target still owns how a decoded check renders as
+//! source code.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::gpyrpc::{self, KclType, ParseProgramArgs, SchemaTypes};
 use crate::service::ty::kcl_schema_ty_to_pb_ty;
+use kcl_ast::ast;
 use kcl_parser::LoadProgramOptions;
 use kcl_query::GetSchemaOption;
 use kcl_query::query::{CompilationOptions, get_full_schema_type_under_path};
@@ -239,6 +246,68 @@ fn collect_schema_refs_shallow<'a>(ty: &'a KclType, out: &mut Vec<&'a KclType>) 
         }
         _ => {}
     }
+}
+
+/// Drive a struct/class-shaped DTO emitter: load the deterministic emission
+/// list ([`emit_schema_list`]), reject type names that collide once
+/// normalized to the target's identifier casing, then emit each schema
+/// (top-level schemas followed by the referenced-only closure) separated by
+/// a blank line. `target` names the output in the collision error message
+/// (e.g. `"Rust"`, `"Python"`).
+pub(crate) fn generate_source(
+    mapping: &HashMap<String, SchemaTypes>,
+    target: &str,
+    type_name: impl Fn(&str) -> String,
+    mut emit_schema: impl FnMut(&mut String, &str, &KclType, &SchemaNameResolver) -> anyhow::Result<()>,
+) -> anyhow::Result<String> {
+    let ordered = ordered_schemas(mapping);
+    require_schemas(&ordered)?;
+    let resolver = SchemaNameResolver::new(&ordered);
+    let schemas = emit_schema_list(&ordered);
+    let mut used_names = HashSet::new();
+    for schema in &schemas {
+        let name = type_name(&schema.name);
+        if !used_names.insert(name.clone()) {
+            anyhow::bail!("{target} schema name collision after normalization: {name:?}");
+        }
+    }
+
+    let mut out = String::new();
+    for schema in &schemas {
+        emit_schema(&mut out, &schema.name, schema.ty, &resolver)?;
+        out.push('\n');
+    }
+    Ok(out)
+}
+
+/// Decode every `check:` expression declared on `ty`, base schema first (so
+/// inherited checks render before the schema's own), ready for a
+/// target-specific renderer to turn each into source code.
+pub(crate) fn decode_checks(ty: &KclType) -> anyhow::Result<Vec<ast::CheckExpr>> {
+    let mut checks = Vec::new();
+    if let Some(base) = &ty.base_schema {
+        decode_checks_from(base, &mut checks)?;
+    }
+    decode_checks_from(ty, &mut checks)?;
+    Ok(checks)
+}
+
+fn decode_checks_from(ty: &KclType, checks: &mut Vec<ast::CheckExpr>) -> anyhow::Result<()> {
+    for check_json in &ty.checks_json {
+        let check: ast::CheckExpr = serde_json::from_str(check_json).map_err(|error| {
+            anyhow::anyhow!(
+                "cannot decode KCL check AST for schema {:?}: {error}",
+                ty.schema_name
+            )
+        })?;
+        checks.push(check);
+    }
+    Ok(())
+}
+
+/// The error message a check renders when it has no explicit KCL `msg`.
+pub(crate) fn default_check_message(test: &str) -> String {
+    format!("{:?}", format!("KCL check failed: {test}"))
 }
 
 /// Render the KCL type string of a pb [`KclType`] for documentation output,

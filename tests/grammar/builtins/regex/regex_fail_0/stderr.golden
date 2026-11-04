@@ -1,0 +1,6 @@
+error[E3M38]: EvaluationError
+ --> ${CWD}/main.k:4:1
+  |
+4 | matched = [regex.match("a", p) for p in ["a", "a", "("]]
+  |  called `Result::unwrap()` on an `Err` value: UnclosedOpenParen
+  |

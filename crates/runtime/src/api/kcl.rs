@@ -376,6 +376,8 @@ pub struct Context {
     pub plan_opts: PlanOptions,
     /// Builtin plugin functions, the key of the map is the form <module_name>.<module_func> e.g., `hello.say_hello`
     pub plugin_functions: IndexMap<String, PluginFunction>,
+    /// Patterns compiled by the `regex` system module, reused across calls.
+    pub regex_cache: crate::regex::RegexCache,
 }
 
 impl UnwindSafe for Context {}
