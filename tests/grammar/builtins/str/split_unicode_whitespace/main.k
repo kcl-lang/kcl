@@ -1,0 +1,8 @@
+a = "|".join("a b　c".split())
+b = "|".join("a b　c".rsplit())
+c = "|".join("  a 　b c ".split(maxsplit=1))
+d = "|".join("  a b 　c ".rsplit(maxsplit=1))
+e = len(" 　".split())
+f = len(" 　".rsplit())
+g = "|".join("  a  b ".split())
+h = "|".join("é é".rsplit())

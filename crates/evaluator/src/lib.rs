@@ -8,6 +8,7 @@ mod context;
 mod coverage;
 mod error;
 mod func;
+mod instance_reads;
 #[macro_use]
 mod lazy;
 mod module;
@@ -41,7 +42,10 @@ use std::collections::{HashMap, HashSet};
 use std::panic::RefUnwindSafe;
 use std::rc::Rc;
 use std::str;
-use std::{cell::RefCell, panic::UnwindSafe};
+use std::{
+    cell::{Cell, RefCell},
+    panic::UnwindSafe,
+};
 
 use crate::error as eval_error;
 use anyhow::Result;
@@ -123,6 +127,14 @@ pub struct Evaluator<'ctx> {
     /// legacy behaviour, preserved for embedders that build an
     /// `Evaluator` directly.
     pub(crate) referenced_pkgs: RefCell<Option<HashSet<String>>>,
+    /// Whether the runtime context is owned by this evaluator's single run,
+    /// so unread schema instances need not be recorded in it.
+    owns_runtime_ctx: bool,
+    /// Whether schema instances are recorded for `Schema.instances()`, see
+    /// [`instance_reads`]. Computed on first use in the first evaluation.
+    record_instances: Cell<Option<bool>>,
+    /// Instances recorded by an earlier run stay readable in a reused context.
+    evaluation_started: Cell<bool>,
 }
 
 /// A config expression scope.
@@ -208,7 +220,64 @@ impl<'ctx> Evaluator<'ctx> {
             source_positions: RefCell::new(Default::default()),
             coverage_state: None,
             referenced_pkgs: RefCell::new(None),
+            owns_runtime_ctx: false,
+            record_instances: Cell::new(None),
+            evaluation_started: Cell::new(false),
         }
+    }
+
+    /// Declare that the runtime context is used only by a single run of this
+    /// evaluator, so nothing outside the program can read the schema instances
+    /// it records. The evaluator then skips recording instances when no code
+    /// in the program can call `Schema.instances()`.
+    ///
+    /// The context and evaluator state are checked when the run begins; the
+    /// host must not change the context during the run.
+    #[inline]
+    pub fn set_owns_runtime_ctx(&mut self, owns: bool) {
+        self.owns_runtime_ctx = owns;
+    }
+
+    /// Whether a schema instance must be recorded in the runtime context.
+    pub(crate) fn record_instances(&self) -> bool {
+        // The context is only checked when a run begins.
+        if !self.owns_runtime_ctx || !self.evaluation_started.get() {
+            return true;
+        }
+        if let Some(record) = self.record_instances.get() {
+            return record;
+        }
+        let record = instance_reads::program_may_read_instances(self.program);
+        self.record_instances.set(Some(record));
+        record
+    }
+
+    fn begin_evaluation(&self) {
+        // A later run can read the instances recorded by an earlier one, and
+        // `program` is public, so do not reuse the first run's decision. A
+        // host can also put values in this evaluator's public fields or in
+        // the context; check them before the program can copy them elsewhere.
+        if self.evaluation_started.replace(true)
+            || (self.owns_runtime_ctx
+                && (self.has_evaluator_state()
+                    || self
+                        .runtime_ctx
+                        .try_borrow()
+                        .map_or(true, |ctx| instance_reads::context_may_read_instances(&ctx))))
+        {
+            self.record_instances.set(Some(true));
+        }
+    }
+
+    /// Whether this evaluator already holds values in its frames, scopes or
+    /// evaluation stacks.
+    fn has_evaluator_state(&self) -> bool {
+        !self.frames.borrow().is_empty()
+            || !self.pkg_scopes.borrow().is_empty()
+            || !self.lazy_scopes.borrow().is_empty()
+            || !self.lambda_stack.borrow().is_empty()
+            || !self.schema_stack.borrow().is_empty()
+            || !self.ctx_stack.borrow().is_empty()
     }
 
     /// Attach a shared [`CoverageState`] to this evaluator. Subsequent
@@ -232,6 +301,7 @@ impl<'ctx> Evaluator<'ctx> {
 
     /// Evaluate the program and return the JSON and YAML result.
     pub fn run(self: &Evaluator<'ctx>) -> Result<(String, String)> {
+        self.begin_evaluation();
         let modules = self.program.get_modules_for_pkg(kcl_ast::MAIN_PKG);
         self.init_scope(kcl_ast::MAIN_PKG);
         self.compile_ast_modules(&modules);
@@ -281,6 +351,7 @@ impl<'ctx> Evaluator<'ctx> {
     /// return the result of the function run, rather than a dictionary composed of each
     /// configuration attribute.
     pub fn run_as_function(self: &Evaluator<'ctx>) -> ValueRef {
+        self.begin_evaluation();
         let modules = self.program.get_modules_for_pkg(kcl_ast::MAIN_PKG);
         if modules.is_empty() {
             ValueRef::undefined()
