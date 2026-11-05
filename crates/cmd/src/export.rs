@@ -4,15 +4,11 @@ use anyhow::{Result, bail};
 use clap::ArgMatches;
 use kcl_api::{
     gpyrpc::{
-        GenerateGoArgs, GenerateJavaArgs, GeneratePythonArgs, GenerateRustArgs, ParseProgramArgs,
+        GenerateGoArgs, GenerateJavaArgs, GeneratePythonArgs, GenerateRustArgs,
+        GenerateTypeScriptArgs, ParseProgramArgs,
     },
     service::service_impl::KclServiceImpl,
 };
-
-// TODO: once the TypeScript export target is added (alongside the existing
-// rust/python/go/java), document the `export` subcommand (targets,
-// --package, --output) on the user-facing docs site:
-// https://github.com/kcl-lang/kcl-lang.io
 
 pub fn export_command<W: Write>(matches: &ArgMatches, writer: &mut W) -> Result<()> {
     let target = matches
@@ -66,8 +62,13 @@ pub fn export_command<W: Write>(matches: &ArgMatches, writer: &mut W) -> Result<
                 })?
                 .java_source
         }
+        "typescript" => {
+            KclServiceImpl::default()
+                .generate_typescript(&GenerateTypeScriptArgs { parse_args })?
+                .typescript_source
+        }
         _ => bail!(
-            "export target {target:?} is not implemented yet; available targets: rust, python, go, java"
+            "export target {target:?} is not implemented yet; available targets: rust, python, go, java, typescript"
         ),
     };
 

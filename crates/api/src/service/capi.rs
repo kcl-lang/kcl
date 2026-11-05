@@ -41,6 +41,7 @@ impl HasErrorFormat for GenerateRustArgs {}
 impl HasErrorFormat for GeneratePythonArgs {}
 impl HasErrorFormat for GenerateGoArgs {}
 impl HasErrorFormat for GenerateJavaArgs {}
+impl HasErrorFormat for GenerateTypeScriptArgs {}
 impl HasErrorFormat for GenerateDocArgs {}
 impl HasErrorFormat for ListMethodArgs {}
 
@@ -255,6 +256,7 @@ pub(crate) fn lookup_service_fn_ptr(name: &str) -> Option<u64> {
         "KclService.GeneratePython" => generate_python as *const () as u64,
         "KclService.GenerateGo" => generate_go as *const () as u64,
         "KclService.GenerateJava" => generate_java as *const () as u64,
+        "KclService.GenerateTypeScript" => generate_typescript as *const () as u64,
         "KclService.GenerateDoc" => generate_doc as *const () as u64,
         // BuiltinService.Ping reuses the KclService.Ping implementation —
         // both services share the same PingArgs/PingResult message types.
@@ -885,6 +887,24 @@ pub(crate) fn generate_java(
         result_len,
         GenerateJavaArgs,
         generate_java
+    )
+}
+
+/// Service for generating TypeScript DTOs from the schemas of a KCL
+/// package.
+pub(crate) fn generate_typescript(
+    serv: *mut kcl_service,
+    args: *const c_char,
+    args_len: usize,
+    result_len: *mut usize,
+) -> *const c_char {
+    call!(
+        serv,
+        args,
+        args_len,
+        result_len,
+        GenerateTypeScriptArgs,
+        generate_typescript
     )
 }
 

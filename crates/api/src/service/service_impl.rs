@@ -47,6 +47,7 @@ use super::gen_proto;
 use super::gen_python;
 use super::gen_rust;
 use super::gen_schema;
+use super::gen_typescript;
 use super::generator;
 use super::into::*;
 use super::pkg_info;
@@ -1850,6 +1851,21 @@ impl KclServiceImpl {
         })
     }
 
+    /// Generate TypeScript DTOs from the schemas of a KCL package.
+    pub fn generate_typescript(
+        &self,
+        args: &GenerateTypeScriptArgs,
+    ) -> anyhow::Result<GenerateTypeScriptResult> {
+        let parse_args = args
+            .parse_args
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("parse_args must be set to parse a KCL program"))?;
+        let mapping = gen_schema::load_pkg_schema_types(parse_args, "")?;
+        Ok(GenerateTypeScriptResult {
+            typescript_source: gen_typescript::generate_typescript(&mapping)?,
+        })
+    }
+
     /// Generate documentation from the schemas of a KCL package.
     ///
     /// The program referenced by `parse_args` is loaded and every schema
@@ -3288,6 +3304,41 @@ mod generator_tests {
     }
 
     #[test]
+    fn generate_typescript_golden_output() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_typescript(&GenerateTypeScriptArgs {
+                parse_args: Some(schema_parse_args()),
+            })
+            .unwrap();
+        assert!(result.typescript_source.contains("export class Person {"));
+        assert!(result.typescript_source.contains("age?: number;"));
+        assert!(result.typescript_source.contains("address!: Address;"));
+        assert!(result.typescript_source.contains("val!: any;"));
+        assert!(result.typescript_source.contains("export class Base {"));
+        assert!(
+            result
+                .typescript_source
+                .contains("const errors: string[] = [];")
+        );
+        // `Address.geo` is a `dict` field (required — no `?` or default
+        // in the KCL source, despite the schema doc comment's stale
+        // "optional" note), rendered as `Record<...>` — a TypeScript
+        // built-in global type needing no helper or import at all, unlike
+        // Java's `java.util.Map`. This fixture has no `check:` blocks
+        // either, so none of the three tracked helper functions should be
+        // emitted.
+        assert!(
+            result
+                .typescript_source
+                .contains("geo!: Record<string, number>;")
+        );
+        assert!(!result.typescript_source.contains("function kclDeepEqual"));
+        assert!(!result.typescript_source.contains("function kclContains"));
+        assert!(!result.typescript_source.contains("function kclRegexMatch"));
+    }
+
+    #[test]
     fn generate_rust_emits_customer_dtos_and_runtime_validation() {
         let serv = KclServiceImpl::default();
         let result = serv
@@ -3828,6 +3879,135 @@ public class Main {{
     }
 
     #[test]
+    fn generate_typescript_emits_customer_dtos_and_runtime_validation() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_typescript(&GenerateTypeScriptArgs {
+                parse_args: Some(ParseProgramArgs {
+                    paths: vec![
+                        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                            .join("src/testdata/gen_rust/main.k")
+                            .canonicalize()
+                            .unwrap()
+                            .display()
+                            .to_string(),
+                    ],
+                    ..Default::default()
+                }),
+            })
+            .unwrap();
+        assert!(result.typescript_source.contains("export class Entity {"));
+        assert!(result.typescript_source.contains("export class Address {"));
+        assert!(result.typescript_source.contains("export class Customer {"));
+        assert!(result.typescript_source.contains("id!: string;"));
+        assert!(result.typescript_source.contains("version!: number;"));
+        assert!(result.typescript_source.contains("age?: number;"));
+        assert!(result.typescript_source.contains("creditLimit!: number;"));
+        assert!(result.typescript_source.contains("addresses!: Address[];"));
+        assert!(
+            result
+                .typescript_source
+                .contains("billingAddress?: Address;")
+        );
+        assert!(result.typescript_source.contains("KCL default: 0"));
+        assert!(result.typescript_source.contains("KCL default: \"EUR\""));
+        assert!(result.typescript_source.contains("validate(): string[] {"));
+        assert!(result.typescript_source.contains("this.age != null"));
+        assert!(result.typescript_source.contains("id must be a UUID"));
+        assert!(
+            result
+                .typescript_source
+                .contains("country must be an ISO 3166-1 alpha-2 code")
+        );
+        assert!(
+            result
+                .typescript_source
+                .contains("customer must be an adult")
+        );
+        assert!(
+            result
+                .typescript_source
+                .contains("name must be 1..100 chars")
+        );
+        assert!(result.typescript_source.contains("kclRegexMatch("));
+        assert!(result.typescript_source.contains(".every("));
+        assert!(result.typescript_source.contains("kclContains("));
+        assert!(result.typescript_source.contains(".toUpperCase()"));
+        // `kclContains` depends on `kclDeepEqual` internally, so using
+        // `in` (`billing_address in addresses`) must transitively mark
+        // `kclDeepEqual` as used too, even though this fixture has no
+        // direct `==`/`!=` check anywhere.
+        assert!(result.typescript_source.contains("function kclDeepEqual"));
+        assert!(result.typescript_source.contains("function kclContains"));
+        assert!(result.typescript_source.contains("function kclRegexMatch"));
+
+        let temp = tempfile::tempdir().unwrap();
+        let source_path = temp.path().join("main.ts");
+        let source = format!(
+            r#"{}
+const address = Object.assign(new Address(), {{ street: "Main", city: "London", country: "GB" }});
+if (address.validate().length !== 0) {{
+    throw new Error("expected address to validate: " + address.validate());
+}}
+const invalidAddress = Object.assign(new Address(), {{ street: "Main", city: "London", country: "us" }});
+if (invalidAddress.validate().length === 0) {{
+    throw new Error("expected invalid address to fail validation");
+}}
+
+const valid = Object.assign(new Customer(), {{
+    id: "123e4567-e89b-12d3-a456-426614174000", version: 0,
+    name: "Ada Lovelace", email: "ada@example.com", age: undefined,
+    creditLimit: 100.0, currency: "EUR",
+    tags: ["customer"], addresses: [address], billingAddress: address,
+}});
+if (valid.validate().length !== 0) {{
+    throw new Error("expected valid customer: " + valid.validate());
+}}
+
+const invalid = Object.assign(new Customer(), {{
+    id: "not-a-uuid", version: -1,
+    name: "", email: "not-an-email", age: 16,
+    creditLimit: -1.0, currency: "EUR",
+    tags: new Array(11).fill(""), addresses: [] as Address[],
+    billingAddress: Object.assign(new Address(), {{ street: "Main", city: "London", country: "US" }}),
+}});
+const errors = invalid.validate();
+if (errors.length < 9) {{
+    throw new Error("expected all invalid checks, got: " + JSON.stringify(errors));
+}}
+"#,
+            result.typescript_source
+        );
+        std::fs::write(&source_path, source).unwrap();
+
+        let compile = std::process::Command::new("npx")
+            .args(["-y", "-p", "typescript", "tsc"])
+            .arg("--strict")
+            .arg("--target")
+            .arg("es2020")
+            .arg("--outDir")
+            .arg(temp.path())
+            .arg(&source_path)
+            .output()
+            .unwrap();
+        assert!(
+            compile.status.success(),
+            "generated validation code did not compile:\n{}",
+            String::from_utf8_lossy(&compile.stderr)
+        );
+
+        let run = std::process::Command::new("node")
+            .arg(temp.path().join("main.js"))
+            .output()
+            .unwrap();
+        assert!(
+            run.status.success(),
+            "generated validation behavior failed:\n{}",
+            String::from_utf8_lossy(&run.stderr)
+        );
+    }
+
+    #[test]
     fn generate_rust_requires_parse_args() {
         let serv = KclServiceImpl::default();
         let err = serv
@@ -3922,6 +4102,18 @@ assert no_match_anywhere.validate() != []
         let serv = KclServiceImpl::default();
         let err = serv
             .generate_java(&GenerateJavaArgs::default())
+            .unwrap_err();
+        assert!(
+            err.to_string().contains("parse_args must be set"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn generate_typescript_requires_parse_args() {
+        let serv = KclServiceImpl::default();
+        let err = serv
+            .generate_typescript(&GenerateTypeScriptArgs::default())
             .unwrap_err();
         assert!(
             err.to_string().contains("parse_args must be set"),

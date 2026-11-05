@@ -1019,6 +1019,9 @@ service KclService {
 	/// Generate Java DTOs from the schemas of a KCL package.
 	rpc GenerateJava(GenerateJavaArgs) returns (GenerateJavaResult);
 
+	/// Generate TypeScript DTOs from the schemas of a KCL package.
+	rpc GenerateTypeScript(GenerateTypeScriptArgs) returns (GenerateTypeScriptResult);
+
 	/// Generate documentation from the schemas of a KCL package.
 	///
 	/// # Examples
@@ -1965,6 +1968,18 @@ message GenerateJavaArgs {
 message GenerateJavaResult {
 	// The generated Java source.
 	string java_source = 1;
+}
+
+// Message for TypeScript DTO generation request arguments.
+message GenerateTypeScriptArgs {
+	// Arguments for parsing the program whose schemas are exported.
+	ParseProgramArgs parse_args = 1;
+}
+
+// Message for TypeScript DTO generation response.
+message GenerateTypeScriptResult {
+	// The generated TypeScript source.
+	string typescript_source = 1;
 }
 
 // Message for generate doc request arguments.
