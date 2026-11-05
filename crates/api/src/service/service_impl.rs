@@ -3011,6 +3011,26 @@ mod generator_tests {
         }
     }
 
+    /// Spawn `npx`, resolving its on-disk name per platform.
+    ///
+    /// npm installs CLI entry points (including `npx` itself) as `.cmd`
+    /// wrapper scripts on Windows, not a real `.exe` — unlike Unix, where
+    /// `npx` is a plain, extension-less executable. Windows'
+    /// `CreateProcess`-based spawning (which `std::process::Command` uses
+    /// under the hood) only auto-appends the `.exe` extension when none is
+    /// given; unlike a `cmd.exe` prompt, it does not search `PATHEXT` for
+    /// `.cmd`/`.bat`. So `Command::new("npx")` fails with `NotFound` on
+    /// Windows even though `npx.cmd` is right there on `PATH` — this is
+    /// what actually broke the TypeScript runtime-validation tests in CI
+    /// (Windows-only; Unix runners never hit it).
+    fn npx_command() -> std::process::Command {
+        std::process::Command::new(if cfg!(target_os = "windows") {
+            "npx.cmd"
+        } else {
+            "npx"
+        })
+    }
+
     #[test]
     fn generate_toml_source_order_and_sort_keys() {
         let serv = KclServiceImpl::default();
@@ -4400,7 +4420,7 @@ if (errors.length < 9) {{
         );
         std::fs::write(&source_path, source).unwrap();
 
-        let compile = std::process::Command::new("npx")
+        let compile = npx_command()
             .args(["-y", "-p", "typescript", "tsc"])
             .arg("--strict")
             .arg("--target")
@@ -4515,7 +4535,7 @@ if (built.validate().length !== 0) {{
         );
         std::fs::write(&source_path, source).unwrap();
 
-        let compile = std::process::Command::new("npx")
+        let compile = npx_command()
             .args(["-y", "-p", "typescript", "tsc"])
             .arg("--strict")
             .arg("--target")
