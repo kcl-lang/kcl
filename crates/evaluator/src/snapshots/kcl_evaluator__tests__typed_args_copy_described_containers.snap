@@ -1,0 +1,22 @@
+---
+source: crates/evaluator/src/tests.rs
+expression: "format! (\"{}\", evaluator.run().unwrap().1)"
+---
+r1:
+- k: changed
+- k: v1
+r2:
+  k:
+  - 0
+s:
+  a:
+    k: v
+    k2: v2
+xs:
+- k: v0
+- k: v1
+d:
+  k:
+  - 1
+c:
+  k: v
