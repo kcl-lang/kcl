@@ -11,12 +11,11 @@
 //!
 //! Unlike Go/Java, there is no package/file-visibility constraint to work
 //! around: a `.ts` module may freely export any number of top-level
-//! classes, so every generated class is `export`ed directly and no
+//! classes, so every generated class is exported directly and no
 //! `--package`-style argument is needed (`generate_typescript` takes only
 //! the schema mapping, like `generate_rust`/`generate_python`).
 //!
-//! Three design points worth calling out, each verified against the real
-//! `tsc --strict` compiler before relying on them here:
+//! Design points
 //! - Required fields (no KCL default rendered as a real initializer — see
 //!   [`gen_rust`](super::gen_rust)/[`gen_go`](super::gen_go)/
 //!   [`gen_java`](super::gen_java), none of which render an actual default

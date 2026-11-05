@@ -4007,6 +4007,121 @@ if (errors.length < 9) {{
         );
     }
 
+    /// Generated classes emit no constructor at all — only field
+    /// declarations and `validate()` — so TypeScript's implicit no-arg
+    /// constructor is what a consumer actually gets. That means
+    /// `Object.assign(new X(), {...})` (used by the test above) is just
+    /// one convenient way to populate a generated DTO, not the only one:
+    /// nothing about the generated class (no `private` fields, no
+    /// required-arg constructor) stops plain lazy, field-by-field
+    /// assignment, or wrapping it in a hand-written builder. Both must
+    /// keep compiling under `--strict` and behaving correctly.
+    #[test]
+    fn generate_typescript_supports_lazy_field_assignment_and_builder_pattern() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_typescript(&GenerateTypeScriptArgs {
+                parse_args: Some(ParseProgramArgs {
+                    paths: vec!["customer.k".to_string()],
+                    sources: vec![
+                        r#"
+schema Customer:
+    id: str
+    name: str
+    age?: int
+
+    check:
+        age >= 18 if age, "customer must be an adult"
+"#
+                        .to_string(),
+                    ],
+                    ..Default::default()
+                }),
+            })
+            .unwrap();
+
+        let temp = tempfile::tempdir().unwrap();
+        let source_path = temp.path().join("main.ts");
+        let source = format!(
+            r#"{}
+// Pattern 1: plain lazy, field-by-field assignment — no `Object.assign`,
+// fields set individually, in separate statements, one of them
+// conditionally.
+const lazy = new Customer();
+lazy.id = "123";
+if (true) {{
+    lazy.age = 30;
+}}
+lazy.name = "Ada";
+if (lazy.validate().length !== 0) {{
+    throw new Error("expected lazily-assigned valid customer: " + lazy.validate());
+}}
+
+const lazyInvalid = new Customer();
+lazyInvalid.id = "456";
+lazyInvalid.name = "Grace";
+lazyInvalid.age = 16;
+if (lazyInvalid.validate().length === 0) {{
+    throw new Error("expected lazily-assigned underage customer to fail validation");
+}}
+
+// Pattern 2: a hand-written builder wrapping the generated class —
+// nothing about the generated class prevents a consumer layering their
+// own fluent builder on top of it.
+class CustomerBuilder {{
+    private customer = new Customer();
+    withId(id: string): this {{
+        this.customer.id = id;
+        return this;
+    }}
+    withName(name: string): this {{
+        this.customer.name = name;
+        return this;
+    }}
+    withAge(age: number): this {{
+        this.customer.age = age;
+        return this;
+    }}
+    build(): Customer {{
+        return this.customer;
+    }}
+}}
+const built = new CustomerBuilder().withId("789").withName("Turing").withAge(40).build();
+if (built.validate().length !== 0) {{
+    throw new Error("expected builder-constructed valid customer: " + built.validate());
+}}
+"#,
+            result.typescript_source
+        );
+        std::fs::write(&source_path, source).unwrap();
+
+        let compile = std::process::Command::new("npx")
+            .args(["-y", "-p", "typescript", "tsc"])
+            .arg("--strict")
+            .arg("--target")
+            .arg("es2020")
+            .arg("--outDir")
+            .arg(temp.path())
+            .arg(&source_path)
+            .output()
+            .unwrap();
+        assert!(
+            compile.status.success(),
+            "generated validation code did not compile:\n{}",
+            String::from_utf8_lossy(&compile.stderr)
+        );
+
+        let run = std::process::Command::new("node")
+            .arg(temp.path().join("main.js"))
+            .output()
+            .unwrap();
+        assert!(
+            run.status.success(),
+            "lazy/builder construction behavior failed:\n{}",
+            String::from_utf8_lossy(&run.stderr)
+        );
+    }
+
     #[test]
     fn generate_rust_requires_parse_args() {
         let serv = KclServiceImpl::default();
