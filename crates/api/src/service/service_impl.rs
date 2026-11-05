@@ -41,6 +41,7 @@ use tempfile::NamedTempFile;
 use super::SERVICE_METHODS;
 use super::gen_doc;
 use super::gen_go;
+use super::gen_java;
 use super::gen_openapi;
 use super::gen_proto;
 use super::gen_python;
@@ -1837,6 +1838,18 @@ impl KclServiceImpl {
         })
     }
 
+    /// Generate Java DTOs from the schemas of a KCL package.
+    pub fn generate_java(&self, args: &GenerateJavaArgs) -> anyhow::Result<GenerateJavaResult> {
+        let parse_args = args
+            .parse_args
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("parse_args must be set to parse a KCL program"))?;
+        let mapping = gen_schema::load_pkg_schema_types(parse_args, "")?;
+        Ok(GenerateJavaResult {
+            java_source: gen_java::generate_java(&mapping, &args.package)?,
+        })
+    }
+
     /// Generate documentation from the schemas of a KCL package.
     ///
     /// The program referenced by `parse_args` is loaded and every schema
@@ -3243,6 +3256,38 @@ mod generator_tests {
     }
 
     #[test]
+    fn generate_java_golden_output() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_java(&GenerateJavaArgs {
+                parse_args: Some(schema_parse_args()),
+                package: String::new(),
+            })
+            .unwrap();
+        assert!(!result.java_source.contains("package "));
+        assert!(result.java_source.contains("class Person {"));
+        assert!(result.java_source.contains("public Long age;"));
+        assert!(result.java_source.contains("public Address address;"));
+        assert!(result.java_source.contains("public Object val;"));
+        assert!(result.java_source.contains("class Base {"));
+        assert!(
+            result
+                .java_source
+                .contains("List<String> errors = new ArrayList<>();")
+        );
+        // `Address.geo` is a `dict` field, so the Map import must be
+        // tracked and emitted; this fixture has no `check:` blocks at all,
+        // so the regex helper class must be tracked as unused and omitted.
+        assert!(result.java_source.contains("import java.util.Map;"));
+        assert!(
+            result
+                .java_source
+                .contains("public Map<String, Double> geo;")
+        );
+        assert!(!result.java_source.contains("KclRegexUtil"));
+    }
+
+    #[test]
     fn generate_rust_emits_customer_dtos_and_runtime_validation() {
         let serv = KclServiceImpl::default();
         let result = serv
@@ -3440,7 +3485,7 @@ fn main() {{
         );
         assert!(result.python_source.contains("customer must be an adult"));
         assert!(result.python_source.contains("name must be 1..100 chars"));
-        assert!(result.python_source.contains("re.match("));
+        assert!(result.python_source.contains("re.search("));
         assert!(
             result
                 .python_source
@@ -3623,6 +3668,166 @@ func main() {{
     }
 
     #[test]
+    fn generate_java_emits_customer_dtos_and_runtime_validation() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_java(&GenerateJavaArgs {
+                parse_args: Some(ParseProgramArgs {
+                    paths: vec![
+                        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                            .join("src/testdata/gen_rust/main.k")
+                            .canonicalize()
+                            .unwrap()
+                            .display()
+                            .to_string(),
+                    ],
+                    ..Default::default()
+                }),
+                package: String::new(),
+            })
+            .unwrap();
+        assert!(!result.java_source.contains("package "));
+        assert!(result.java_source.contains("class Entity {"));
+        assert!(result.java_source.contains("class Address {"));
+        assert!(result.java_source.contains("class Customer {"));
+        assert!(result.java_source.contains("public String id;"));
+        assert!(result.java_source.contains("public long version;"));
+        assert!(result.java_source.contains("public Long age;"));
+        assert!(result.java_source.contains("public double creditLimit;"));
+        assert!(
+            result
+                .java_source
+                .contains("public List<Address> addresses;")
+        );
+        assert!(
+            result
+                .java_source
+                .contains("public Address billingAddress;")
+        );
+        assert!(result.java_source.contains("KCL default: 0"));
+        assert!(result.java_source.contains("KCL default: \"EUR\""));
+        assert!(
+            result
+                .java_source
+                .contains("public List<String> validate() {")
+        );
+        assert!(result.java_source.contains("this.age != null"));
+        assert!(result.java_source.contains("id must be a UUID"));
+        assert!(
+            result
+                .java_source
+                .contains("country must be an ISO 3166-1 alpha-2 code")
+        );
+        assert!(result.java_source.contains("customer must be an adult"));
+        assert!(result.java_source.contains("name must be 1..100 chars"));
+        assert!(result.java_source.contains("KclRegexUtil.INSTANCE.match("));
+        assert!(result.java_source.contains(".stream().allMatch("));
+        assert!(result.java_source.contains(".contains("));
+        assert!(result.java_source.contains(".toUpperCase()"));
+        // No schema in this fixture has a `dict` field, so the Map import
+        // must be tracked as unused and omitted even though two `check:`
+        // blocks use `regex.match` (which the helper-class assertion
+        // above already confirms is correctly tracked as used).
+        assert!(!result.java_source.contains("import java.util.Map;"));
+
+        let temp = tempfile::tempdir().unwrap();
+        let source_path = temp.path().join("Main.java");
+        let source = format!(
+            r#"{}
+public class Main {{
+    public static void main(String[] args) {{
+        Address address = new Address();
+        address.street = "Main"; address.city = "London"; address.country = "GB";
+        if (!address.validate().isEmpty()) {{
+            throw new AssertionError(String.join("; ", address.validate()));
+        }}
+        Address invalidAddress = new Address();
+        invalidAddress.street = "Main"; invalidAddress.city = "London"; invalidAddress.country = "us";
+        if (invalidAddress.validate().isEmpty()) {{
+            throw new AssertionError("expected invalid address to fail validation");
+        }}
+
+        Customer valid = new Customer();
+        valid.id = "123e4567-e89b-12d3-a456-426614174000"; valid.version = 0;
+        valid.name = "Ada Lovelace"; valid.email = "ada@example.com"; valid.age = null;
+        valid.creditLimit = 100.0; valid.currency = "EUR";
+        valid.tags = List.of("customer"); valid.addresses = List.of(address);
+        valid.billingAddress = address;
+        if (!valid.validate().isEmpty()) {{
+            throw new AssertionError(String.join("; ", valid.validate()));
+        }}
+
+        Customer invalid = new Customer();
+        invalid.id = "not-a-uuid"; invalid.version = -1;
+        invalid.name = ""; invalid.email = "not-an-email"; invalid.age = 16L;
+        invalid.creditLimit = -1.0; invalid.currency = "EUR";
+        invalid.tags = new ArrayList<>();
+        for (int i = 0; i < 11; i++) {{
+            invalid.tags.add("");
+        }}
+        invalid.addresses = new ArrayList<>();
+        Address billing = new Address();
+        billing.street = "Main"; billing.city = "London"; billing.country = "US";
+        invalid.billingAddress = billing;
+        List<String> errors = invalid.validate();
+        if (errors.size() < 9) {{
+            throw new AssertionError("expected all invalid checks, got: " + errors);
+        }}
+
+        // KclRegexUtil.match is an overridable instance method dispatched
+        // through a reassignable static INSTANCE field (not `static` on the
+        // method itself, which Java can only hide, never override) — a
+        // consumer can globally swap in custom matching behavior without
+        // touching the generated DTO classes. Confirm the override is
+        // genuinely polymorphic: an id that fails the UUID regex check
+        // today must start passing once INSTANCE is swapped for a
+        // subclass whose `match` always returns true.
+        KclRegexUtil.INSTANCE = new KclRegexUtil() {{
+            @Override
+            boolean match(String pattern, String value) {{
+                return true;
+            }}
+        }};
+        Entity overridden = new Entity();
+        overridden.id = "not-a-uuid-at-all"; overridden.version = 0;
+        if (!overridden.validate().isEmpty()) {{
+            throw new AssertionError(
+                "expected KclRegexUtil.INSTANCE override to bypass the regex check, got: "
+                    + overridden.validate());
+        }}
+    }}
+}}
+"#,
+            result.java_source
+        );
+        std::fs::write(&source_path, source).unwrap();
+
+        let compile = std::process::Command::new("javac")
+            .arg("-d")
+            .arg(temp.path())
+            .arg(&source_path)
+            .output()
+            .unwrap();
+        assert!(
+            compile.status.success(),
+            "generated validation code did not compile:\n{}",
+            String::from_utf8_lossy(&compile.stderr)
+        );
+
+        let run = std::process::Command::new("java")
+            .arg("-cp")
+            .arg(temp.path())
+            .arg("Main")
+            .output()
+            .unwrap();
+        assert!(
+            run.status.success(),
+            "generated validation behavior failed:\n{}",
+            String::from_utf8_lossy(&run.stderr)
+        );
+    }
+
+    #[test]
     fn generate_rust_requires_parse_args() {
         let serv = KclServiceImpl::default();
         let err = serv
@@ -3646,10 +3851,78 @@ func main() {{
         );
     }
 
+    /// `regex.match` searches anywhere in the string (see
+    /// `kcl_regex_match` in `kcl-runtime`, which calls `is_match`, not an
+    /// anchored match) — a pattern without its own `^` anchor must still
+    /// match when the matching text sits in the middle of the value, not
+    /// only when it happens to start at position 0. Python's `re.match`
+    /// anchors at the start regardless of the pattern; `re.search` is the
+    /// correct primitive, and this is what actually failed before the fix.
+    #[test]
+    fn generate_python_regex_check_matches_anywhere_not_only_at_the_start() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_python(&GeneratePythonArgs {
+                parse_args: Some(ParseProgramArgs {
+                    paths: vec!["token.k".to_string()],
+                    sources: vec![
+                        r#"
+schema Token:
+    code: str
+
+    check:
+        regex.match(code, "ab+c"), "code must contain ab+c"
+"#
+                        .to_string(),
+                    ],
+                    ..Default::default()
+                }),
+            })
+            .unwrap();
+        assert!(result.python_source.contains("re.search("));
+        assert!(!result.python_source.contains("re.match("));
+
+        let temp = tempfile::tempdir().unwrap();
+        let source_path = temp.path().join("generated.py");
+        let source = format!(
+            r#"{}
+# The matching substring "abbc" starts at index 3, not index 0.
+matched_mid_string = Token(code="xxxabbcxxx")
+assert matched_mid_string.validate() == [], matched_mid_string.validate()
+
+no_match_anywhere = Token(code="xyz")
+assert no_match_anywhere.validate() != []
+"#,
+            result.python_source
+        );
+        std::fs::write(&source_path, source).unwrap();
+        let run = std::process::Command::new("python3")
+            .arg(&source_path)
+            .output()
+            .unwrap();
+        assert!(
+            run.status.success(),
+            "generated validation behavior failed:\n{}",
+            String::from_utf8_lossy(&run.stderr)
+        );
+    }
+
     #[test]
     fn generate_go_requires_parse_args() {
         let serv = KclServiceImpl::default();
         let err = serv.generate_go(&GenerateGoArgs::default()).unwrap_err();
+        assert!(
+            err.to_string().contains("parse_args must be set"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn generate_java_requires_parse_args() {
+        let serv = KclServiceImpl::default();
+        let err = serv
+            .generate_java(&GenerateJavaArgs::default())
+            .unwrap_err();
         assert!(
             err.to_string().contains("parse_args must be set"),
             "unexpected error: {err}"

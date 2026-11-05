@@ -291,6 +291,14 @@ fn register_kcl_service(io: &mut IoHandler) {
         };
         futures::future::ready(catch!(kcl_service_impl, args, generate_go))
     });
+    io.add_method("KclService.GenerateJava", |params: Params| {
+        let kcl_service_impl = KclServiceImpl::default();
+        let args: GenerateJavaArgs = match params.parse() {
+            Ok(val) => val,
+            Err(err) => return futures::future::ready(Err(err)),
+        };
+        futures::future::ready(catch!(kcl_service_impl, args, generate_java))
+    });
     io.add_method("KclService.GenerateDoc", |params: Params| {
         let kcl_service_impl = KclServiceImpl::default();
         let args: GenerateDocArgs = match params.parse() {
@@ -513,6 +521,28 @@ mod tests {
         let go_source = response["result"]["go_source"].as_str().unwrap();
         assert!(go_source.contains("type Person struct {"));
         assert!(go_source.contains("Address Address `json:\"address\"`"));
+    }
+
+    #[test]
+    fn kcl_service_generate_java_dispatches() {
+        let mut io = IoHandler::default();
+        register_kcl_service(&mut io);
+        let request = serde_json::json!({
+            "jsonrpc": "2.0",
+            "method": "KclService.GenerateJava",
+            "params": {
+                "parse_args": {"paths": [gen_openapi_main_k()]}
+            },
+            "id": 1
+        })
+        .to_string();
+        let response = io
+            .handle_request_sync(&request)
+            .expect("KclService.GenerateJava should be registered");
+        let response: serde_json::Value = serde_json::from_str(&response).unwrap();
+        let java_source = response["result"]["java_source"].as_str().unwrap();
+        assert!(java_source.contains("class Person {"));
+        assert!(java_source.contains("public Address address;"));
     }
 
     /// The schema generator RPCs must be dispatchable through the JSON-RPC
