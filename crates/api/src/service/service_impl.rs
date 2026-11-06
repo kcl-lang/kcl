@@ -47,6 +47,7 @@ use super::gen_proto;
 use super::gen_python;
 use super::gen_rust;
 use super::gen_schema;
+use super::gen_typescript;
 use super::generator;
 use super::into::*;
 use super::pkg_info;
@@ -1850,6 +1851,21 @@ impl KclServiceImpl {
         })
     }
 
+    /// Generate TypeScript DTOs from the schemas of a KCL package.
+    pub fn generate_typescript(
+        &self,
+        args: &GenerateTypeScriptArgs,
+    ) -> anyhow::Result<GenerateTypeScriptResult> {
+        let parse_args = args
+            .parse_args
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("parse_args must be set to parse a KCL program"))?;
+        let mapping = gen_schema::load_pkg_schema_types(parse_args, "")?;
+        Ok(GenerateTypeScriptResult {
+            typescript_source: gen_typescript::generate_typescript(&mapping)?,
+        })
+    }
+
     /// Generate documentation from the schemas of a KCL package.
     ///
     /// The program referenced by `parse_args` is loaded and every schema
@@ -2995,6 +3011,26 @@ mod generator_tests {
         }
     }
 
+    /// Spawn `npx`, resolving its on-disk name per platform.
+    ///
+    /// npm installs CLI entry points (including `npx` itself) as `.cmd`
+    /// wrapper scripts on Windows, not a real `.exe` — unlike Unix, where
+    /// `npx` is a plain, extension-less executable. Windows'
+    /// `CreateProcess`-based spawning (which `std::process::Command` uses
+    /// under the hood) only auto-appends the `.exe` extension when none is
+    /// given; unlike a `cmd.exe` prompt, it does not search `PATHEXT` for
+    /// `.cmd`/`.bat`. So `Command::new("npx")` fails with `NotFound` on
+    /// Windows even though `npx.cmd` is right there on `PATH` — this is
+    /// what actually broke the TypeScript runtime-validation tests in CI
+    /// (Windows-only; Unix runners never hit it).
+    fn npx_command() -> std::process::Command {
+        std::process::Command::new(if cfg!(target_os = "windows") {
+            "npx.cmd"
+        } else {
+            "npx"
+        })
+    }
+
     #[test]
     fn generate_toml_source_order_and_sort_keys() {
         let serv = KclServiceImpl::default();
@@ -3288,6 +3324,41 @@ mod generator_tests {
     }
 
     #[test]
+    fn generate_typescript_golden_output() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_typescript(&GenerateTypeScriptArgs {
+                parse_args: Some(schema_parse_args()),
+            })
+            .unwrap();
+        assert!(result.typescript_source.contains("export class Person {"));
+        assert!(result.typescript_source.contains("age?: number;"));
+        assert!(result.typescript_source.contains("address!: Address;"));
+        assert!(result.typescript_source.contains("val!: any;"));
+        assert!(result.typescript_source.contains("export class Base {"));
+        assert!(
+            result
+                .typescript_source
+                .contains("const errors: string[] = [];")
+        );
+        // `Address.geo` is a `dict` field (required — no `?` or default
+        // in the KCL source, despite the schema doc comment's stale
+        // "optional" note), rendered as `Record<...>` — a TypeScript
+        // built-in global type needing no helper or import at all, unlike
+        // Java's `java.util.Map`. This fixture has no `check:` blocks
+        // either, so none of the three tracked helper functions should be
+        // emitted.
+        assert!(
+            result
+                .typescript_source
+                .contains("geo!: Record<string, number>;")
+        );
+        assert!(!result.typescript_source.contains("function kclDeepEqual"));
+        assert!(!result.typescript_source.contains("function kclContains"));
+        assert!(!result.typescript_source.contains("function kclRegexMatch"));
+    }
+
+    #[test]
     fn generate_rust_emits_customer_dtos_and_runtime_validation() {
         let serv = KclServiceImpl::default();
         let result = serv
@@ -3430,6 +3501,121 @@ fn main() {{
         );
     }
 
+    /// Unlike TypeScript/Java/Go, a Rust struct literal requires every
+    /// field in one expression — there is no `Default` impl emitted, so
+    /// there is no "construct empty, mutate lazily" equivalent at all.
+    /// The idiomatic Rust analog is a hand-written builder (`Option<T>`
+    /// fields, consuming `.with_x()` setters, a final `.build()`) that
+    /// only constructs the real generated struct once every required
+    /// field is known — this must keep compiling and behaving correctly.
+    #[test]
+    fn generate_rust_supports_builder_pattern() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_rust(&GenerateRustArgs {
+                parse_args: Some(ParseProgramArgs {
+                    paths: vec!["customer.k".to_string()],
+                    sources: vec![
+                        r#"
+schema Customer:
+    id: str
+    name: str
+    age?: int
+
+    check:
+        age >= 18 if age, "customer must be an adult"
+"#
+                        .to_string(),
+                    ],
+                    ..Default::default()
+                }),
+            })
+            .unwrap();
+
+        let generated = result
+            .rust_source
+            .lines()
+            .filter(|line| !line.trim_start().starts_with("#[serde"))
+            .map(|line| {
+                if line.trim_start().starts_with("#[derive") {
+                    "#[derive(Clone, Debug, PartialEq)]"
+                } else {
+                    line
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        let temp = tempfile::tempdir().unwrap();
+        let source_path = temp.path().join("generated.rs");
+        let binary_path = temp.path().join("generated");
+        let source = format!(
+            r#"
+{generated}
+#[derive(Default)]
+struct CustomerBuilder {{
+    id: Option<String>,
+    name: Option<String>,
+    age: Option<i64>,
+}}
+impl CustomerBuilder {{
+    fn id(mut self, id: impl Into<String>) -> Self {{
+        self.id = Some(id.into());
+        self
+    }}
+    fn name(mut self, name: impl Into<String>) -> Self {{
+        self.name = Some(name.into());
+        self
+    }}
+    fn age(mut self, age: i64) -> Self {{
+        self.age = Some(age);
+        self
+    }}
+    fn build(self) -> Customer {{
+        Customer {{
+            id: self.id.expect("id is required"),
+            name: self.name.expect("name is required"),
+            age: self.age,
+        }}
+    }}
+}}
+fn main() {{
+    let built = CustomerBuilder::default()
+        .id("789")
+        .name("Turing")
+        .age(40)
+        .build();
+    assert!(built.validate().is_ok());
+
+    let built_invalid = CustomerBuilder::default()
+        .id("000")
+        .name("Minor")
+        .age(16)
+        .build();
+    assert!(built_invalid.validate().is_err());
+}}
+"#
+        );
+        std::fs::write(&source_path, source).unwrap();
+        let compile = std::process::Command::new("rustc")
+            .arg("--edition=2024")
+            .arg(&source_path)
+            .arg("-o")
+            .arg(&binary_path)
+            .output()
+            .unwrap();
+        assert!(
+            compile.status.success(),
+            "builder-pattern code did not compile:\n{}",
+            String::from_utf8_lossy(&compile.stderr)
+        );
+        let run = std::process::Command::new(binary_path).output().unwrap();
+        assert!(
+            run.status.success(),
+            "builder-pattern behavior failed:\n{}",
+            String::from_utf8_lossy(&run.stderr)
+        );
+    }
+
     #[test]
     fn generate_python_emits_customer_dtos_and_runtime_validation() {
         let serv = KclServiceImpl::default();
@@ -3531,6 +3717,82 @@ assert len(errors) >= 9, f"expected all invalid checks, got: {{errors}}"
         assert!(
             run.status.success(),
             "generated validation behavior failed:\n{}",
+            String::from_utf8_lossy(&run.stderr)
+        );
+    }
+
+    /// A `@dataclass`'s generated `__init__` requires every non-defaulted
+    /// field as an argument, so (unlike TypeScript/Java/Go) there is no
+    /// "construct an empty Customer, mutate it lazily" equivalent for a
+    /// schema with required fields. The idiomatic Python analog is a
+    /// builder that accumulates plain attributes and only constructs the
+    /// real dataclass in one shot, at the final `.build()` call.
+    #[test]
+    fn generate_python_supports_builder_pattern() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_python(&GeneratePythonArgs {
+                parse_args: Some(ParseProgramArgs {
+                    paths: vec!["customer.k".to_string()],
+                    sources: vec![
+                        r#"
+schema Customer:
+    id: str
+    name: str
+    age?: int
+
+    check:
+        age >= 18 if age, "customer must be an adult"
+"#
+                        .to_string(),
+                    ],
+                    ..Default::default()
+                }),
+            })
+            .unwrap();
+
+        let temp = tempfile::tempdir().unwrap();
+        let source_path = temp.path().join("generated.py");
+        let source = format!(
+            r#"{}
+class CustomerBuilder:
+    def __init__(self):
+        self._id = None
+        self._name = None
+        self._age = None
+
+    def with_id(self, id):
+        self._id = id
+        return self
+
+    def with_name(self, name):
+        self._name = name
+        return self
+
+    def with_age(self, age):
+        self._age = age
+        return self
+
+    def build(self) -> Customer:
+        return Customer(id=self._id, name=self._name, age=self._age)
+
+
+built = CustomerBuilder().with_id("789").with_name("Turing").with_age(40).build()
+assert built.validate() == [], built.validate()
+
+built_invalid = CustomerBuilder().with_id("000").with_name("Minor").with_age(16).build()
+assert built_invalid.validate() != []
+"#,
+            result.python_source
+        );
+        std::fs::write(&source_path, source).unwrap();
+        let run = std::process::Command::new("python3")
+            .arg(&source_path)
+            .output()
+            .unwrap();
+        assert!(
+            run.status.success(),
+            "builder-pattern behavior failed:\n{}",
             String::from_utf8_lossy(&run.stderr)
         );
     }
@@ -3663,6 +3925,120 @@ func main() {{
         assert!(
             run.status.success(),
             "generated validation behavior failed:\n{}",
+            String::from_utf8_lossy(&run.stderr)
+        );
+    }
+
+    /// Go has no implicit "all fields required" construction syntax — a
+    /// zero-valued struct literal (`&Customer{}`) followed by field-by-
+    /// field assignment is Go's most natural, idiomatic construction
+    /// style, since every type has a well-defined zero value. A
+    /// hand-written builder (chained `*Builder` methods) is also common
+    /// Go idiom; nothing about the generated struct (all fields exported,
+    /// no required-arg constructor) prevents either.
+    #[test]
+    fn generate_go_supports_lazy_field_assignment_and_builder_pattern() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_go(&GenerateGoArgs {
+                parse_args: Some(ParseProgramArgs {
+                    paths: vec!["customer.k".to_string()],
+                    sources: vec![
+                        r#"
+schema Customer:
+    id: str
+    name: str
+    age?: int
+
+    check:
+        age >= 18 if age, "customer must be an adult"
+"#
+                        .to_string(),
+                    ],
+                    ..Default::default()
+                }),
+                package: "main".to_string(),
+            })
+            .unwrap();
+
+        let temp = tempfile::tempdir().unwrap();
+        let source_path = temp.path().join("main.go");
+        let source = format!(
+            r#"{}
+type CustomerBuilder struct {{
+	customer Customer
+}}
+
+func NewCustomerBuilder() *CustomerBuilder {{
+	return &CustomerBuilder{{}}
+}}
+
+func (b *CustomerBuilder) WithID(id string) *CustomerBuilder {{
+	b.customer.Id = id
+	return b
+}}
+
+func (b *CustomerBuilder) WithName(name string) *CustomerBuilder {{
+	b.customer.Name = name
+	return b
+}}
+
+func (b *CustomerBuilder) WithAge(age int64) *CustomerBuilder {{
+	b.customer.Age = &age
+	return b
+}}
+
+func (b *CustomerBuilder) Build() *Customer {{
+	return &b.customer
+}}
+
+func main() {{
+	// Pattern 1: plain lazy, zero-value-then-mutate construction.
+	lazy := &Customer{{}}
+	lazy.Id = "123"
+	if true {{
+		age := int64(30)
+		lazy.Age = &age
+	}}
+	lazy.Name = "Ada"
+	if errs := lazy.Validate(); len(errs) != 0 {{
+		panic("expected lazily-assigned valid customer to validate")
+	}}
+
+	lazyInvalidAge := int64(16)
+	lazyInvalid := &Customer{{}}
+	lazyInvalid.Id = "456"
+	lazyInvalid.Name = "Grace"
+	lazyInvalid.Age = &lazyInvalidAge
+	if errs := lazyInvalid.Validate(); len(errs) == 0 {{
+		panic("expected lazily-assigned underage customer to fail validation")
+	}}
+
+	// Pattern 2: a hand-written builder wrapping the generated struct.
+	built := NewCustomerBuilder().WithID("789").WithName("Turing").WithAge(40).Build()
+	if errs := built.Validate(); len(errs) != 0 {{
+		panic("expected builder-constructed valid customer to validate")
+	}}
+}}
+"#,
+            result.go_source
+        );
+        std::fs::write(&source_path, source).unwrap();
+        std::fs::write(
+            temp.path().join("go.mod"),
+            "module generated_test\n\ngo 1.21\n",
+        )
+        .unwrap();
+
+        let run = std::process::Command::new("go")
+            .arg("run")
+            .arg(&source_path)
+            .current_dir(temp.path())
+            .output()
+            .unwrap();
+        assert!(
+            run.status.success(),
+            "lazy/builder construction behavior failed:\n{}",
             String::from_utf8_lossy(&run.stderr)
         );
     }
@@ -3827,6 +4203,365 @@ public class Main {{
         );
     }
 
+    /// Like TypeScript, a Java class with no declared constructor gets an
+    /// implicit no-arg one, and every generated field is public and
+    /// mutable — so plain lazy, field-by-field assignment and a
+    /// hand-written builder wrapper both work exactly the same way they
+    /// do for TypeScript, by the same underlying mechanism.
+    #[test]
+    fn generate_java_supports_lazy_field_assignment_and_builder_pattern() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_java(&GenerateJavaArgs {
+                parse_args: Some(ParseProgramArgs {
+                    paths: vec!["customer.k".to_string()],
+                    sources: vec![
+                        r#"
+schema Customer:
+    id: str
+    name: str
+    age?: int
+
+    check:
+        age >= 18 if age, "customer must be an adult"
+"#
+                        .to_string(),
+                    ],
+                    ..Default::default()
+                }),
+                package: String::new(),
+            })
+            .unwrap();
+
+        let temp = tempfile::tempdir().unwrap();
+        let source_path = temp.path().join("Main.java");
+        let source = format!(
+            r#"{}
+class CustomerBuilder {{
+    private Customer customer = new Customer();
+
+    CustomerBuilder withId(String id) {{
+        customer.id = id;
+        return this;
+    }}
+
+    CustomerBuilder withName(String name) {{
+        customer.name = name;
+        return this;
+    }}
+
+    CustomerBuilder withAge(long age) {{
+        customer.age = age;
+        return this;
+    }}
+
+    Customer build() {{
+        return customer;
+    }}
+}}
+
+public class Main {{
+    public static void main(String[] args) {{
+        // Pattern 1: plain lazy, field-by-field assignment.
+        Customer lazy = new Customer();
+        lazy.id = "123";
+        if (true) {{
+            lazy.age = 30L;
+        }}
+        lazy.name = "Ada";
+        if (!lazy.validate().isEmpty()) {{
+            throw new AssertionError("expected lazily-assigned valid customer to validate");
+        }}
+
+        Customer lazyInvalid = new Customer();
+        lazyInvalid.id = "456";
+        lazyInvalid.name = "Grace";
+        lazyInvalid.age = 16L;
+        if (lazyInvalid.validate().isEmpty()) {{
+            throw new AssertionError("expected lazily-assigned underage customer to fail validation");
+        }}
+
+        // Pattern 2: a hand-written builder wrapping the generated class.
+        Customer built = new CustomerBuilder().withId("789").withName("Turing").withAge(40).build();
+        if (!built.validate().isEmpty()) {{
+            throw new AssertionError("expected builder-constructed valid customer to validate");
+        }}
+    }}
+}}
+"#,
+            result.java_source
+        );
+        std::fs::write(&source_path, source).unwrap();
+
+        let compile = std::process::Command::new("javac")
+            .arg("-d")
+            .arg(temp.path())
+            .arg(&source_path)
+            .output()
+            .unwrap();
+        assert!(
+            compile.status.success(),
+            "lazy/builder construction code did not compile:\n{}",
+            String::from_utf8_lossy(&compile.stderr)
+        );
+
+        let run = std::process::Command::new("java")
+            .arg("-cp")
+            .arg(temp.path())
+            .arg("Main")
+            .output()
+            .unwrap();
+        assert!(
+            run.status.success(),
+            "lazy/builder construction behavior failed:\n{}",
+            String::from_utf8_lossy(&run.stderr)
+        );
+    }
+
+    #[test]
+    fn generate_typescript_emits_customer_dtos_and_runtime_validation() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_typescript(&GenerateTypeScriptArgs {
+                parse_args: Some(ParseProgramArgs {
+                    paths: vec![
+                        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                            .join("src/testdata/gen_rust/main.k")
+                            .canonicalize()
+                            .unwrap()
+                            .display()
+                            .to_string(),
+                    ],
+                    ..Default::default()
+                }),
+            })
+            .unwrap();
+        assert!(result.typescript_source.contains("export class Entity {"));
+        assert!(result.typescript_source.contains("export class Address {"));
+        assert!(result.typescript_source.contains("export class Customer {"));
+        assert!(result.typescript_source.contains("id!: string;"));
+        assert!(result.typescript_source.contains("version!: number;"));
+        assert!(result.typescript_source.contains("age?: number;"));
+        assert!(result.typescript_source.contains("creditLimit!: number;"));
+        assert!(result.typescript_source.contains("addresses!: Address[];"));
+        assert!(
+            result
+                .typescript_source
+                .contains("billingAddress?: Address;")
+        );
+        assert!(result.typescript_source.contains("KCL default: 0"));
+        assert!(result.typescript_source.contains("KCL default: \"EUR\""));
+        assert!(result.typescript_source.contains("validate(): string[] {"));
+        assert!(result.typescript_source.contains("this.age != null"));
+        assert!(result.typescript_source.contains("id must be a UUID"));
+        assert!(
+            result
+                .typescript_source
+                .contains("country must be an ISO 3166-1 alpha-2 code")
+        );
+        assert!(
+            result
+                .typescript_source
+                .contains("customer must be an adult")
+        );
+        assert!(
+            result
+                .typescript_source
+                .contains("name must be 1..100 chars")
+        );
+        assert!(result.typescript_source.contains("kclRegexMatch("));
+        assert!(result.typescript_source.contains(".every("));
+        assert!(result.typescript_source.contains("kclContains("));
+        assert!(result.typescript_source.contains(".toUpperCase()"));
+        // `kclContains` depends on `kclDeepEqual` internally, so using
+        // `in` (`billing_address in addresses`) must transitively mark
+        // `kclDeepEqual` as used too, even though this fixture has no
+        // direct `==`/`!=` check anywhere.
+        assert!(result.typescript_source.contains("function kclDeepEqual"));
+        assert!(result.typescript_source.contains("function kclContains"));
+        assert!(result.typescript_source.contains("function kclRegexMatch"));
+
+        let temp = tempfile::tempdir().unwrap();
+        let source_path = temp.path().join("main.ts");
+        let source = format!(
+            r#"{}
+const address = Object.assign(new Address(), {{ street: "Main", city: "London", country: "GB" }});
+if (address.validate().length !== 0) {{
+    throw new Error("expected address to validate: " + address.validate());
+}}
+const invalidAddress = Object.assign(new Address(), {{ street: "Main", city: "London", country: "us" }});
+if (invalidAddress.validate().length === 0) {{
+    throw new Error("expected invalid address to fail validation");
+}}
+
+const valid = Object.assign(new Customer(), {{
+    id: "123e4567-e89b-12d3-a456-426614174000", version: 0,
+    name: "Ada Lovelace", email: "ada@example.com", age: undefined,
+    creditLimit: 100.0, currency: "EUR",
+    tags: ["customer"], addresses: [address], billingAddress: address,
+}});
+if (valid.validate().length !== 0) {{
+    throw new Error("expected valid customer: " + valid.validate());
+}}
+
+const invalid = Object.assign(new Customer(), {{
+    id: "not-a-uuid", version: -1,
+    name: "", email: "not-an-email", age: 16,
+    creditLimit: -1.0, currency: "EUR",
+    tags: new Array(11).fill(""), addresses: [] as Address[],
+    billingAddress: Object.assign(new Address(), {{ street: "Main", city: "London", country: "US" }}),
+}});
+const errors = invalid.validate();
+if (errors.length < 9) {{
+    throw new Error("expected all invalid checks, got: " + JSON.stringify(errors));
+}}
+"#,
+            result.typescript_source
+        );
+        std::fs::write(&source_path, source).unwrap();
+
+        let compile = npx_command()
+            .args(["-y", "-p", "typescript", "tsc"])
+            .arg("--strict")
+            .arg("--target")
+            .arg("es2020")
+            .arg("--outDir")
+            .arg(temp.path())
+            .arg(&source_path)
+            .output()
+            .unwrap();
+        assert!(
+            compile.status.success(),
+            "generated validation code did not compile:\n{}",
+            String::from_utf8_lossy(&compile.stderr)
+        );
+
+        let run = std::process::Command::new("node")
+            .arg(temp.path().join("main.js"))
+            .output()
+            .unwrap();
+        assert!(
+            run.status.success(),
+            "generated validation behavior failed:\n{}",
+            String::from_utf8_lossy(&run.stderr)
+        );
+    }
+
+    /// Generated classes emit no constructor at all — only field
+    /// declarations and `validate()` — so TypeScript's implicit no-arg
+    /// constructor is what a consumer actually gets. That means
+    /// `Object.assign(new X(), {...})` (used by the test above) is just
+    /// one convenient way to populate a generated DTO, not the only one:
+    /// nothing about the generated class (no `private` fields, no
+    /// required-arg constructor) stops plain lazy, field-by-field
+    /// assignment, or wrapping it in a hand-written builder. Both must
+    /// keep compiling under `--strict` and behaving correctly.
+    #[test]
+    fn generate_typescript_supports_lazy_field_assignment_and_builder_pattern() {
+        let serv = KclServiceImpl::default();
+        let result = serv
+            .generate_typescript(&GenerateTypeScriptArgs {
+                parse_args: Some(ParseProgramArgs {
+                    paths: vec!["customer.k".to_string()],
+                    sources: vec![
+                        r#"
+schema Customer:
+    id: str
+    name: str
+    age?: int
+
+    check:
+        age >= 18 if age, "customer must be an adult"
+"#
+                        .to_string(),
+                    ],
+                    ..Default::default()
+                }),
+            })
+            .unwrap();
+
+        let temp = tempfile::tempdir().unwrap();
+        let source_path = temp.path().join("main.ts");
+        let source = format!(
+            r#"{}
+// Pattern 1: plain lazy, field-by-field assignment — no `Object.assign`,
+// fields set individually, in separate statements, one of them
+// conditionally.
+const lazy = new Customer();
+lazy.id = "123";
+if (true) {{
+    lazy.age = 30;
+}}
+lazy.name = "Ada";
+if (lazy.validate().length !== 0) {{
+    throw new Error("expected lazily-assigned valid customer: " + lazy.validate());
+}}
+
+const lazyInvalid = new Customer();
+lazyInvalid.id = "456";
+lazyInvalid.name = "Grace";
+lazyInvalid.age = 16;
+if (lazyInvalid.validate().length === 0) {{
+    throw new Error("expected lazily-assigned underage customer to fail validation");
+}}
+
+// Pattern 2: a hand-written builder wrapping the generated class —
+// nothing about the generated class prevents a consumer layering their
+// own fluent builder on top of it.
+class CustomerBuilder {{
+    private customer = new Customer();
+    withId(id: string): this {{
+        this.customer.id = id;
+        return this;
+    }}
+    withName(name: string): this {{
+        this.customer.name = name;
+        return this;
+    }}
+    withAge(age: number): this {{
+        this.customer.age = age;
+        return this;
+    }}
+    build(): Customer {{
+        return this.customer;
+    }}
+}}
+const built = new CustomerBuilder().withId("789").withName("Turing").withAge(40).build();
+if (built.validate().length !== 0) {{
+    throw new Error("expected builder-constructed valid customer: " + built.validate());
+}}
+"#,
+            result.typescript_source
+        );
+        std::fs::write(&source_path, source).unwrap();
+
+        let compile = npx_command()
+            .args(["-y", "-p", "typescript", "tsc"])
+            .arg("--strict")
+            .arg("--target")
+            .arg("es2020")
+            .arg("--outDir")
+            .arg(temp.path())
+            .arg(&source_path)
+            .output()
+            .unwrap();
+        assert!(
+            compile.status.success(),
+            "generated validation code did not compile:\n{}",
+            String::from_utf8_lossy(&compile.stderr)
+        );
+
+        let run = std::process::Command::new("node")
+            .arg(temp.path().join("main.js"))
+            .output()
+            .unwrap();
+        assert!(
+            run.status.success(),
+            "lazy/builder construction behavior failed:\n{}",
+            String::from_utf8_lossy(&run.stderr)
+        );
+    }
+
     #[test]
     fn generate_rust_requires_parse_args() {
         let serv = KclServiceImpl::default();
@@ -3922,6 +4657,18 @@ assert no_match_anywhere.validate() != []
         let serv = KclServiceImpl::default();
         let err = serv
             .generate_java(&GenerateJavaArgs::default())
+            .unwrap_err();
+        assert!(
+            err.to_string().contains("parse_args must be set"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn generate_typescript_requires_parse_args() {
+        let serv = KclServiceImpl::default();
+        let err = serv
+            .generate_typescript(&GenerateTypeScriptArgs::default())
             .unwrap_err();
         assert!(
             err.to_string().contains("parse_args must be set"),

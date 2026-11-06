@@ -8,6 +8,7 @@ pub(crate) mod gen_proto;
 pub(crate) mod gen_python;
 pub(crate) mod gen_rust;
 pub(crate) mod gen_schema;
+pub(crate) mod gen_typescript;
 pub(crate) mod generator;
 pub(crate) mod into;
 #[cfg(not(target_arch = "wasm32"))]
@@ -59,6 +60,7 @@ pub(crate) const SERVICE_METHODS: &[&str] = &[
     "KclService.GeneratePython",
     "KclService.GenerateGo",
     "KclService.GenerateJava",
+    "KclService.GenerateTypeScript",
     "KclService.GenerateDoc",
     "BuiltinService.Ping",
     "BuiltinService.ListMethod",
