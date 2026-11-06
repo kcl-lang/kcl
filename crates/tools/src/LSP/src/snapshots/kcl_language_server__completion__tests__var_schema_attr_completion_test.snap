@@ -1,0 +1,20 @@
+---
+source: crates/tools/src/LSP/src/completion.rs
+expression: completion_snapshot(got)
+---
+label: ""
+kind: Module
+
+label: age
+kind: Variable
+detail: int
+
+label: math
+kind: Module
+
+label: name
+kind: Variable
+detail: str
+
+label: subpkg
+kind: Module

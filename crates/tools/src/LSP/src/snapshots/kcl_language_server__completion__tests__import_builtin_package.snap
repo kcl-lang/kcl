@@ -1,0 +1,51 @@
+---
+source: crates/tools/src/LSP/src/completion.rs
+expression: completion_snapshot(got)
+---
+label: base32
+kind: Module
+
+label: base64
+kind: Module
+
+label: collection
+kind: Module
+
+label: crypto
+kind: Module
+
+label: datetime
+kind: Module
+
+label: duration
+kind: Module
+
+label: file
+kind: Module
+
+label: json
+kind: Module
+
+label: manifests
+kind: Module
+
+label: math
+kind: Module
+
+label: net
+kind: Module
+
+label: regex
+kind: Module
+
+label: runtime
+kind: Module
+
+label: template
+kind: Module
+
+label: units
+kind: Module
+
+label: yaml
+kind: Module
