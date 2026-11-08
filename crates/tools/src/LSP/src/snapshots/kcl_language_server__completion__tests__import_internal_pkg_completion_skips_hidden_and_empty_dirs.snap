@@ -1,0 +1,5 @@
+---
+source: crates/tools/src/LSP/src/completion.rs
+expression: "format!(\"{labels:?}\")"
+---
+["pkg_a", "pkg_b"]

@@ -1,0 +1,60 @@
+---
+source: crates/tools/src/LSP/src/completion.rs
+expression: completion_snapshot(got)
+---
+builtin_functions: all
+
+label: Base
+kind: Class
+detail: "__main__\n\nschema Base:\nAttributes:\na: int"
+documentation: ""
+
+label: Base{}
+kind: Class
+detail: "__main__\n\nschema Base:\nAttributes:\na: int"
+insert_text: Base{$0}
+insert_text_format: Snippet
+documentation: ""
+
+label: Config
+kind: Class
+detail: "__main__\n\nschema Config:\nAttributes:\nnames: [Name]\nnames1: {str:Name}\nnames2: str | Name"
+documentation: ""
+
+label: Config{}
+kind: Class
+detail: "__main__\n\nschema Config:\nAttributes:\nnames: [Name]\nnames1: {str:Name}\nnames2: str | Name"
+insert_text: Config{$0}
+insert_text_format: Snippet
+documentation: ""
+
+label: Name
+kind: Class
+detail: "__main__\n\nschema Name:\nAttributes:\nname: str"
+documentation: ""
+
+label: Name{}
+kind: Class
+detail: "__main__\n\nschema Name:\nAttributes:\nname: str"
+insert_text: Name{$0}
+insert_text_format: Snippet
+documentation: ""
+
+label: Person
+kind: Class
+detail: "__main__\n\nschema Person[b: int](Base):\nAttributes:\nc: int"
+documentation: ""
+
+label: Person(b){}
+kind: Class
+detail: "__main__\n\nschema Person[b: int](Base):\nAttributes:\nc: int"
+insert_text: Person(${1:b}){$0}
+insert_text_format: Snippet
+documentation: ""
+
+label: n
+kind: Class
+detail: Name
+
+label: p
+detail: any

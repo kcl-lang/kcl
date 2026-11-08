@@ -1,0 +1,6 @@
+---
+source: crates/tools/src/LSP/src/completion.rs
+expression: "format!(\"my_pkg: {top_labels:?}\\nmy_pkg.sub: {nested_labels:?}\")"
+---
+my_pkg: ["sub", "util"]
+my_pkg.sub: ["model"]
