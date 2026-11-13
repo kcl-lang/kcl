@@ -233,6 +233,68 @@ fn test_export_go_command_defaults_package_when_omitted() {
 }
 
 #[test]
+fn test_export_java_command() {
+    let input = Path::new("../api/src/testdata/gen_openapi/main.k")
+        .canonicalize()
+        .unwrap();
+    let matches = app().get_matches_from([
+        ROOT_CMD,
+        "export",
+        input.to_str().unwrap(),
+        "--target",
+        "java",
+        "--package",
+        "com.example.dto",
+    ]);
+    let mut output = Vec::new();
+    crate::export::export_command(matches.subcommand_matches("export").unwrap(), &mut output)
+        .unwrap();
+    let output = String::from_utf8(output).unwrap();
+    assert!(output.starts_with("package com.example.dto;\n"));
+    assert!(output.contains("class Person {"));
+    assert!(output.contains("public Long age;"));
+}
+
+#[test]
+fn test_export_java_command_omits_package_clause_when_omitted() {
+    let input = Path::new("../api/src/testdata/gen_openapi/main.k")
+        .canonicalize()
+        .unwrap();
+    let matches = app().get_matches_from([
+        ROOT_CMD,
+        "export",
+        input.to_str().unwrap(),
+        "--target",
+        "java",
+    ]);
+    let mut output = Vec::new();
+    crate::export::export_command(matches.subcommand_matches("export").unwrap(), &mut output)
+        .unwrap();
+    let output = String::from_utf8(output).unwrap();
+    assert!(!output.contains("package "));
+}
+
+#[test]
+fn test_export_typescript_command() {
+    let input = Path::new("../api/src/testdata/gen_openapi/main.k")
+        .canonicalize()
+        .unwrap();
+    let matches = app().get_matches_from([
+        ROOT_CMD,
+        "export",
+        input.to_str().unwrap(),
+        "--target",
+        "typescript",
+    ]);
+    let mut output = Vec::new();
+    crate::export::export_command(matches.subcommand_matches("export").unwrap(), &mut output)
+        .unwrap();
+    let output = String::from_utf8(output).unwrap();
+    assert!(output.contains("export class Person {"));
+    assert!(output.contains("age?: number;"));
+}
+
+#[test]
 fn test_export_help_lists_supported_target() {
     let mut command = app();
     let help = command
@@ -240,7 +302,7 @@ fn test_export_help_lists_supported_target() {
         .unwrap()
         .render_help()
         .to_string();
-    assert!(help.contains("currently supported: rust, python, go"));
+    assert!(help.contains("currently supported: rust, python, go, java, typescript"));
 }
 
 #[test]

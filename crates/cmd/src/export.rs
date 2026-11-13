@@ -3,7 +3,10 @@ use std::io::Write;
 use anyhow::{Result, bail};
 use clap::ArgMatches;
 use kcl_api::{
-    gpyrpc::{GenerateGoArgs, GeneratePythonArgs, GenerateRustArgs, ParseProgramArgs},
+    gpyrpc::{
+        GenerateGoArgs, GenerateJavaArgs, GeneratePythonArgs, GenerateRustArgs,
+        GenerateTypeScriptArgs, ParseProgramArgs,
+    },
     service::service_impl::KclServiceImpl,
 };
 
@@ -47,8 +50,25 @@ pub fn export_command<W: Write>(matches: &ArgMatches, writer: &mut W) -> Result<
                 })?
                 .go_source
         }
+        "java" => {
+            let package = matches
+                .get_one::<String>("package")
+                .cloned()
+                .unwrap_or_default();
+            KclServiceImpl::default()
+                .generate_java(&GenerateJavaArgs {
+                    parse_args,
+                    package,
+                })?
+                .java_source
+        }
+        "typescript" => {
+            KclServiceImpl::default()
+                .generate_typescript(&GenerateTypeScriptArgs { parse_args })?
+                .typescript_source
+        }
         _ => bail!(
-            "export target {target:?} is not implemented yet; available targets: rust, python, go"
+            "export target {target:?} is not implemented yet; available targets: rust, python, go, java, typescript"
         ),
     };
 

@@ -532,6 +532,34 @@ fn test_c_api_testing() {
     );
 }
 
+/// `eval_once` reaches the test tool: with it, the package is evaluated
+/// once for all its cases, so a case sees the values that the case before
+/// it mutated in place.
+#[test]
+fn test_testing_eval_once() {
+    let _test_lock = TEST_MUTEX.lock().unwrap_or_else(|p| p.into_inner());
+    let serv = crate::service::service_impl::KclServiceImpl::default();
+    let run = |eval_once| {
+        serv.test(&TestArgs {
+            pkg_list: vec!["./src/testdata/testing/eval_once/...".to_string()],
+            eval_once,
+            ..Default::default()
+        })
+        .unwrap()
+    };
+    let per_case = run(false);
+    assert_eq!(per_case.info.len(), 2);
+    assert!(per_case.info.iter().all(|info| info.error.is_empty()));
+    let once = run(true);
+    assert_eq!(once.info.len(), 2);
+    assert!(once.info[0].error.is_empty(), "{}", once.info[0].error);
+    assert!(
+        once.info[1].error.contains("n is 2"),
+        "{}",
+        once.info[1].error
+    );
+}
+
 /// Round-trip `FormatTestReport` through the C ABI dispatcher: encode a
 /// fixed `TestResult`, dispatch by method name, decode the report and pin
 /// the exact rendered text (case lines, log/error lines, separator and

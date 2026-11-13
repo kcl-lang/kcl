@@ -1016,6 +1016,12 @@ service KclService {
 	/// Generate Go DTOs from the schemas of a KCL package.
 	rpc GenerateGo(GenerateGoArgs) returns (GenerateGoResult);
 
+	/// Generate Java DTOs from the schemas of a KCL package.
+	rpc GenerateJava(GenerateJavaArgs) returns (GenerateJavaResult);
+
+	/// Generate TypeScript DTOs from the schemas of a KCL package.
+	rpc GenerateTypeScript(GenerateTypeScriptArgs) returns (GenerateTypeScriptResult);
+
 	/// Generate documentation from the schemas of a KCL package.
 	///
 	/// # Examples
@@ -1742,6 +1748,20 @@ message TestArgs {
 	// the source file path and line number. The aggregated result is returned
 	// in [TestResult.coverage]. Defaults to false.
 	bool coverage = 5;
+	// Flag to evaluate each test package once and run all of its test cases in
+	// that one evaluation, instead of evaluating the package again for every
+	// case. Each case still reports its own result, error and log, and a case
+	// that fails hands the next one a freshly evaluated package.
+	// NOTE: cases share the values the package defines. A case that passes
+	// after mutating one in place, e.g. a schema instance it got as a lambda
+	// argument, changes what the cases after it see, and planning, which runs
+	// before the cases, does not see the change; a suite whose cases rely on
+	// starting from the package as it is defined must not set this flag.
+	// Case durations then exclude the evaluation of the package, a planning
+	// error is always reported at the end of the generated main file, and
+	// that file selects no case, so the coverage counts each of its lines
+	// once. Defaults to false.
+	bool eval_once = 6;
 }
 
 // Message for test response.
@@ -1931,6 +1951,35 @@ message GenerateGoArgs {
 message GenerateGoResult {
 	// The generated Go source.
 	string go_source = 1;
+}
+
+// Message for Java DTO generation request arguments.
+message GenerateJavaArgs {
+	// Arguments for parsing the program whose schemas are exported.
+	ParseProgramArgs parse_args = 1;
+	// Java package name for the generated file's `package` clause, e.g.
+	// "com.example.dto". Empty omits the package clause entirely (valid
+	// Java — the "default package") rather than defaulting to a synthetic
+	// name as GenerateGo does, since Java (unlike Go) does not require one.
+	string package = 2;
+}
+
+// Message for Java DTO generation response.
+message GenerateJavaResult {
+	// The generated Java source.
+	string java_source = 1;
+}
+
+// Message for TypeScript DTO generation request arguments.
+message GenerateTypeScriptArgs {
+	// Arguments for parsing the program whose schemas are exported.
+	ParseProgramArgs parse_args = 1;
+}
+
+// Message for TypeScript DTO generation response.
+message GenerateTypeScriptResult {
+	// The generated TypeScript source.
+	string typescript_source = 1;
 }
 
 // Message for generate doc request arguments.

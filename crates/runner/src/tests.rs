@@ -567,3 +567,152 @@ fn test_eval_error_keeps_message_after_hook_replaced() {
         "items must be empty"
     );
 }
+
+/// Serializes the tests that set a plugin agent, which is global to the
+/// process.
+static PLUGIN_AGENT: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// A plugin that evaluates another program, as a plugin that renders a
+/// package does.
+extern "C-unwind" fn nested_eval_plugin(
+    _method: *const std::os::raw::c_char,
+    _args: *const std::os::raw::c_char,
+    _kwargs: *const std::os::raw::c_char,
+) -> *const std::os::raw::c_char {
+    let mut args = ExecProgramArgs::default();
+    args.k_filename_list.push("nested.k".to_string());
+    args.k_code_list.push("a = 1".to_string());
+    let res = exec_program(Arc::new(ParseSession::default()), &args).unwrap();
+    assert_eq!(res.err_message, "");
+    c"null".as_ptr()
+}
+
+/// A call that stopped a panic with `runtime.catch` leaves the next call a
+/// freshly evaluated program, even when a nested evaluation ran after the
+/// panic and cleared what the thread recorded of it.
+#[test]
+fn test_exec_program_calls_after_caught_panic_and_nested_eval() {
+    let code = r#"import runtime
+import kcl_plugin.nested
+
+schema S:
+    v: int = 1
+    f: any = lambda {
+        assert False, "caught"
+    }
+
+s = S {}
+v = 2
+
+test_first = lambda {
+    assert "caught" in runtime.catch(s.f)
+    nested.run()
+}
+
+test_second = lambda {
+    assert v == 2, "v is {}".format(v)
+}
+"#;
+    let _lock = PLUGIN_AGENT.lock().unwrap_or_else(|err| err.into_inner());
+    let mut args = ExecProgramArgs::default();
+    args.k_filename_list.push("main.k".to_string());
+    args.k_code_list.push(code.to_string());
+    args.plugin_agent = nested_eval_plugin as *const () as usize as u64;
+    let names = ["test_first".to_string(), "test_second".to_string()];
+    let results =
+        crate::exec_program_calls(Arc::new(ParseSession::default()), &args, &names, false).unwrap();
+    assert_eq!(results.len(), 2);
+    for call in &results {
+        assert_eq!(call.result.err_message, "", "{}", call.name);
+    }
+}
+
+/// The plugin agent of a program that `outer_plugin` evaluates.
+extern "C-unwind" fn inner_plugin(
+    _method: *const std::os::raw::c_char,
+    _args: *const std::os::raw::c_char,
+    _kwargs: *const std::os::raw::c_char,
+) -> *const std::os::raw::c_char {
+    c"\"inner\"".as_ptr()
+}
+
+/// A plugin whose `nest` method evaluates another program with another
+/// plugin agent, `inner_plugin`, and whose other methods return "outer".
+extern "C-unwind" fn outer_plugin(
+    method: *const std::os::raw::c_char,
+    _args: *const std::os::raw::c_char,
+    _kwargs: *const std::os::raw::c_char,
+) -> *const std::os::raw::c_char {
+    let method = unsafe { std::ffi::CStr::from_ptr(method) };
+    if !method.to_string_lossy().ends_with("nest") {
+        return c"\"outer\"".as_ptr();
+    }
+    let mut args = ExecProgramArgs::default();
+    args.k_filename_list.push("nested.k".to_string());
+    args.k_code_list.push("a = 1".to_string());
+    args.plugin_agent = inner_plugin as *const () as usize as u64;
+    let res = exec_program(Arc::new(ParseSession::default()), &args).unwrap();
+    assert_eq!(res.err_message, "");
+    c"null".as_ptr()
+}
+
+/// Every call reaches the plugin agent of its program, even after an
+/// earlier call ran a plugin that evaluated another program with another
+/// plugin agent.
+#[test]
+fn test_exec_program_calls_after_nested_eval_with_another_plugin_agent() {
+    let code = r#"import kcl_plugin.agent
+
+test_nest = lambda {
+    agent.nest()
+}
+
+test_who = lambda {
+    who = agent.who()
+    assert who == "outer", "who is {}".format(who)
+}
+"#;
+    let _lock = PLUGIN_AGENT.lock().unwrap_or_else(|err| err.into_inner());
+    let mut args = ExecProgramArgs::default();
+    args.k_filename_list.push("main.k".to_string());
+    args.k_code_list.push(code.to_string());
+    args.plugin_agent = outer_plugin as *const () as usize as u64;
+    let names = ["test_nest".to_string(), "test_who".to_string()];
+    let results =
+        crate::exec_program_calls(Arc::new(ParseSession::default()), &args, &names, false).unwrap();
+    assert_eq!(results.len(), 2);
+    for call in &results {
+        assert_eq!(call.result.err_message, "", "{}", call.name);
+    }
+}
+
+/// A name that is not a function of the main package fails its call, as
+/// a `name()` statement would fail to compile, rather than calling
+/// nothing and passing.
+#[test]
+fn test_exec_program_calls_fails_a_name_that_is_not_a_function() {
+    let code = r#"a = 1
+
+f = lambda {
+    a + 1
+}
+"#;
+    let mut args = ExecProgramArgs::default();
+    args.k_filename_list.push("main.k".to_string());
+    args.k_code_list.push(code.to_string());
+    let names = ["f".to_string(), "a".to_string(), "missing".to_string()];
+    let results =
+        crate::exec_program_calls(Arc::new(ParseSession::default()), &args, &names, false).unwrap();
+    assert_eq!(results.len(), 3);
+    assert_eq!(results[0].result.err_message, "");
+    for call in &results[1..] {
+        assert!(
+            call.result
+                .err_message
+                .contains(&format!("'{}' is not a function", call.name)),
+            "{}: {}",
+            call.name,
+            call.result.err_message
+        );
+    }
+}

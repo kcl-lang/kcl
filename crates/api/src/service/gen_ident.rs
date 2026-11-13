@@ -1,12 +1,13 @@
 //! Identifier-casing helpers shared by every schema-to-source-code emitter
-//! (`gen_rust`, `gen_python`, and future targets such as Go or Java).
+//! (`gen_rust`, `gen_python`, `gen_go`, `gen_java`, and future targets such
+//! as TypeScript).
 //!
 //! Each target still owns its *field*-casing convention — Rust and Python
-//! both use `snake_case`, but a Go emitter would want exported `PascalCase`
-//! struct fields and a Java emitter `camelCase` fields — and its own keyword
-//! list and escaping style (Rust's raw identifiers prefix with `r#`, Python
-//! conventionally suffixes with `_`). Those per-target decisions stay in
-//! each `gen_*` module as a thin wrapper around the primitives here.
+//! use `snake_case`, Go wants exported `PascalCase` struct fields, Java
+//! wants `camelCase` fields — and its own keyword list and escaping style
+//! (Rust's raw identifiers prefix with `r#`, Python/Java conventionally
+//! suffix with `_`). Those per-target decisions stay in each `gen_*` module
+//! as a thin wrapper around the primitives here.
 
 /// Convert a KCL identifier (`snake_case`, `camelCase`, `kebab-case`, ...)
 /// to `PascalCase`, suitable for a type/class/struct name. Falls back to a
@@ -67,6 +68,19 @@ pub(crate) fn to_snake_case(name: &str) -> String {
     result
 }
 
+/// Convert a KCL identifier to `camelCase`, suitable for a Java (or future
+/// TypeScript) field name: same word-splitting as [`to_pascal_case`], with
+/// the first letter decapitalized. Never starts with a digit since
+/// `to_pascal_case` already guarantees that for its own output.
+pub(crate) fn to_camel_case(name: &str) -> String {
+    let pascal = to_pascal_case(name);
+    let mut chars = pascal.chars();
+    match chars.next() {
+        Some(first) => first.to_ascii_lowercase().to_string() + chars.as_str(),
+        None => pascal,
+    }
+}
+
 /// Whether `name` collides with one of the target language's reserved
 /// words, so callers know to escape it (e.g. `r#{name}` in Rust, `{name}_`
 /// in Python).
@@ -102,5 +116,14 @@ mod tests {
     fn is_keyword_checks_membership() {
         assert!(is_keyword("type", &["type", "match"]));
         assert!(!is_keyword("value", &["type", "match"]));
+    }
+
+    #[test]
+    fn to_camel_case_decapitalizes_the_pascal_case_result() {
+        assert_eq!(to_camel_case("zip_code"), "zipCode");
+        assert_eq!(to_camel_case("ZipCode"), "zipCode");
+        assert_eq!(to_camel_case("my-field.name"), "myFieldName");
+        assert_eq!(to_camel_case("123"), "kcl123");
+        assert_eq!(to_camel_case(""), "kcl");
     }
 }

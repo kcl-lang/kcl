@@ -19,7 +19,8 @@
 //! host values as a run begins. Values shared during a run also stay reachable
 //! from the evaluator after it, so only the single run of an evaluator that
 //! owns its runtime context (`Evaluator::set_owns_runtime_ctx`, as the runner
-//! sets it) skips copies, and the proof only covers that run.
+//! sets it) skips copies while it evaluates the program, not in the
+//! `Evaluator::call_global` calls after it, and the proof only covers that run.
 //!
 //! The opt-out is whole-program and all-or-nothing by design: one rejected
 //! construct anywhere, such as a composite schema attribute, keeps the deep

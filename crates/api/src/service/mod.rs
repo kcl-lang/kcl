@@ -2,11 +2,13 @@ pub mod capi;
 pub(crate) mod gen_doc;
 pub(crate) mod gen_go;
 pub(crate) mod gen_ident;
+pub(crate) mod gen_java;
 pub(crate) mod gen_openapi;
 pub(crate) mod gen_proto;
 pub(crate) mod gen_python;
 pub(crate) mod gen_rust;
 pub(crate) mod gen_schema;
+pub(crate) mod gen_typescript;
 pub(crate) mod generator;
 pub(crate) mod into;
 #[cfg(not(target_arch = "wasm32"))]
@@ -57,6 +59,8 @@ pub(crate) const SERVICE_METHODS: &[&str] = &[
     "KclService.GenerateRust",
     "KclService.GeneratePython",
     "KclService.GenerateGo",
+    "KclService.GenerateJava",
+    "KclService.GenerateTypeScript",
     "KclService.GenerateDoc",
     "BuiltinService.Ping",
     "BuiltinService.ListMethod",
