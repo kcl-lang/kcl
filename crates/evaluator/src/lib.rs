@@ -5,6 +5,7 @@ mod tests;
 
 mod calculation;
 mod context;
+mod copy_elision;
 mod coverage;
 mod error;
 mod func;
@@ -127,14 +128,36 @@ pub struct Evaluator<'ctx> {
     /// legacy behaviour, preserved for embedders that build an
     /// `Evaluator` directly.
     pub(crate) referenced_pkgs: RefCell<Option<HashSet<String>>>,
+    /// Whether assignments to lambda locals may skip their deep copy, see
+    /// [`copy_elision`]. Computed on first use in the first evaluation.
+    copy_elision_safe: Cell<Option<bool>>,
     /// Whether the runtime context is owned by this evaluator's single run,
-    /// so unread schema instances need not be recorded in it.
+    /// so unread schema instances need not be recorded in it and values the
+    /// run shares instead of copying cannot be observed after it.
     owns_runtime_ctx: bool,
     /// Whether schema instances are recorded for `Schema.instances()`, see
     /// [`instance_reads`]. Computed on first use in the first evaluation.
     record_instances: Cell<Option<bool>>,
-    /// Instances recorded by an earlier run stay readable in a reused context.
+    /// Whether `eval` or `run_as_function` has begun. A reused evaluator can
+    /// retain frames from an earlier program, and instances recorded by an
+    /// earlier run stay readable in a reused context, so later evaluations
+    /// keep both the assignment copies and the instance records.
     evaluation_started: Cell<bool>,
+    /// Whether `eval` or `run_as_function` is executing. Statements walked
+    /// outside them, including in `call_global`, keep their assignment copies.
+    evaluating: Cell<bool>,
+}
+
+/// Marks an executing `eval` or `run_as_function` until it returns or unwinds.
+struct Evaluating<'a, 'ctx> {
+    evaluator: &'a Evaluator<'ctx>,
+    outer: bool,
+}
+
+impl Drop for Evaluating<'_, '_> {
+    fn drop(&mut self) {
+        self.evaluator.evaluating.set(self.outer);
+    }
 }
 
 /// A config expression scope.
@@ -220,25 +243,50 @@ impl<'ctx> Evaluator<'ctx> {
             source_positions: RefCell::new(Default::default()),
             coverage_state: None,
             referenced_pkgs: RefCell::new(None),
+            copy_elision_safe: Cell::new(None),
             owns_runtime_ctx: false,
             record_instances: Cell::new(None),
             evaluation_started: Cell::new(false),
+            evaluating: Cell::new(false),
         }
+    }
+
+    /// Whether no in-place mutation in the program can reach a value shared
+    /// with another name, so assignments may bind values without copying them.
+    pub(crate) fn copy_elision_safe(&self) -> bool {
+        // Shared values stay reachable from this evaluator's scopes and
+        // closures after the run, so only the single run of an evaluator that
+        // owns its context may share them, and only while it evaluates the
+        // program, not in the `call_global` calls after it. The proof only
+        // covers the program and the host values checked when that run began.
+        if !self.owns_runtime_ctx || !self.evaluating.get() {
+            return false;
+        }
+        if let Some(safe) = self.copy_elision_safe.get() {
+            return safe;
+        }
+        let safe = copy_elision::program_allows_copy_elision(self.program);
+        self.copy_elision_safe.set(Some(safe));
+        safe
     }
 
     /// Declare that the runtime context is used only by a single run of this
     /// evaluator, so nothing outside the program can read the schema instances
     /// it records. The evaluator then skips recording instances when no code
-    /// in the program can call `Schema.instances()`.
+    /// in the program can call `Schema.instances()`, and assignments to lambda
+    /// locals share values instead of copying them when nothing in the program
+    /// can mutate a value in place.
     ///
     /// The context and evaluator state are checked when the run begins; the
-    /// host must not change the context during the run.
+    /// host must not change the context during the run, nor evaluate more code
+    /// with this evaluator after it.
     ///
     /// A run is [`Evaluator::run`], or [`Evaluator::eval`] and the
     /// [`Evaluator::call_global`] calls after it, which keep the decision
     /// the evaluation made. Between those calls the host may only restore
     /// the context to what the evaluation left, as `kcl test` does when it
-    /// evaluates a package once for all its cases.
+    /// evaluates a package once for all its cases. Assignments in those
+    /// calls keep their copies.
     #[inline]
     pub fn set_owns_runtime_ctx(&mut self, owns: bool) {
         self.owns_runtime_ctx = owns;
@@ -258,11 +306,14 @@ impl<'ctx> Evaluator<'ctx> {
         record
     }
 
-    fn begin_evaluation(&self) {
-        // A later run can read the instances recorded by an earlier one, and
-        // `program` is public, so do not reuse the first run's decision. A
-        // host can also put values in this evaluator's public fields or in
-        // the context; check them before the program can copy them elsewhere.
+    #[must_use]
+    fn begin_evaluation(&self) -> Evaluating<'_, 'ctx> {
+        // A later run can read the instances recorded by an earlier one,
+        // scopes and frames can outlive a run, and `program` is public, so do
+        // not reuse the first run's decisions. A host can also put values in
+        // this evaluator's public fields or in the context; check them before
+        // the program can copy them elsewhere. Native functions among them can
+        // read the context and mutate their arguments in place.
         if self.evaluation_started.replace(true)
             || (self.owns_runtime_ctx
                 && (self.has_evaluator_state()
@@ -272,6 +323,19 @@ impl<'ctx> Evaluator<'ctx> {
                         .map_or(true, |ctx| instance_reads::context_may_read_instances(&ctx))))
         {
             self.record_instances.set(Some(true));
+            self.copy_elision_safe.set(Some(false));
+        }
+        // Values a host recorded reach the program through `Schema.instances()`.
+        if self
+            .runtime_ctx
+            .try_borrow()
+            .map_or(true, |ctx| !ctx.instances.is_empty())
+        {
+            self.copy_elision_safe.set(Some(false));
+        }
+        Evaluating {
+            evaluator: self,
+            outer: self.evaluating.replace(true),
         }
     }
 
@@ -314,7 +378,7 @@ impl<'ctx> Evaluator<'ctx> {
     /// Evaluate every statement of the main package without planning the
     /// result: the first half of [`Evaluator::run`].
     pub fn eval(&self) -> Result<()> {
-        self.begin_evaluation();
+        let _evaluating = self.begin_evaluation();
         let modules = self.program.get_modules_for_pkg(kcl_ast::MAIN_PKG);
         self.init_scope(kcl_ast::MAIN_PKG);
         self.compile_ast_modules(&modules);
@@ -424,7 +488,7 @@ impl<'ctx> Evaluator<'ctx> {
     /// return the result of the function run, rather than a dictionary composed of each
     /// configuration attribute.
     pub fn run_as_function(self: &Evaluator<'ctx>) -> ValueRef {
-        self.begin_evaluation();
+        let _evaluating = self.begin_evaluation();
         let modules = self.program.get_modules_for_pkg(kcl_ast::MAIN_PKG);
         if modules.is_empty() {
             ValueRef::undefined()
