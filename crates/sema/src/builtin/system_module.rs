@@ -1080,6 +1080,20 @@ register_duration_member! {
         false,
         None,
     )
+    millisecond => Type::function(
+        None,
+        Type::str_ref(),
+        &[Parameter {
+            name: "n".to_string(),
+            ty: Type::float_ref(),
+            has_default: false,
+            default_value: None,
+            range: dummy_range(),
+        }],
+        r#"Build a duration string representing `n` milliseconds (e.g. `millisecond(500)` returns `"0.5s"`)."#,
+        false,
+        None,
+    )
     to_seconds => Type::function(
         None,
         Type::float_ref(),
@@ -1090,7 +1104,7 @@ register_duration_member! {
             default_value: None,
             range: dummy_range(),
         }],
-        r#"Parse a duration string and return the equivalent number of seconds (e.g. `to_seconds("1h30m")` returns `5400.0`)."#,
+        r#"Parse a duration string and return the equivalent number of seconds (e.g. `to_seconds("1h30m")` returns `5400.0`). Accepts the same forms as `parse`."#,
         false,
         None,
     )
@@ -1108,6 +1122,76 @@ register_duration_member! {
         false,
         None,
     )
+    to_milliseconds => Type::function(
+        None,
+        Type::float_ref(),
+        &[Parameter {
+            name: "d".to_string(),
+            ty: Type::str_ref(),
+            has_default: false,
+            default_value: None,
+            range: dummy_range(),
+        }],
+        r#"Parse a duration string and return milliseconds (e.g. `to_milliseconds("1.5s")` returns `1500.0`)."#,
+        false,
+        None,
+    )
+    to_minutes => Type::function(
+        None,
+        Type::float_ref(),
+        &[Parameter {
+            name: "d".to_string(),
+            ty: Type::str_ref(),
+            has_default: false,
+            default_value: None,
+            range: dummy_range(),
+        }],
+        r#"Parse a duration string and return minutes (e.g. `to_minutes("1h30m")` returns `90.0`)."#,
+        false,
+        None,
+    )
+    to_hours => Type::function(
+        None,
+        Type::float_ref(),
+        &[Parameter {
+            name: "d".to_string(),
+            ty: Type::str_ref(),
+            has_default: false,
+            default_value: None,
+            range: dummy_range(),
+        }],
+        r#"Parse a duration string and return hours (e.g. `to_hours("30m")` returns `0.5`)."#,
+        false,
+        None,
+    )
+    to_days => Type::function(
+        None,
+        Type::float_ref(),
+        &[Parameter {
+            name: "d".to_string(),
+            ty: Type::str_ref(),
+            has_default: false,
+            default_value: None,
+            range: dummy_range(),
+        }],
+        r#"Parse a duration string and return days (e.g. `to_days("36h")` returns `1.5`)."#,
+        false,
+        None,
+    )
+    to_iso8601 => Type::function(
+        None,
+        Type::str_ref(),
+        &[Parameter {
+            name: "d".to_string(),
+            ty: Type::str_ref(),
+            has_default: false,
+            default_value: None,
+            range: dummy_range(),
+        }],
+        r#"Render a duration as a normalized ISO 8601 duration (e.g. `to_iso8601("1h30m")` returns `"PT1H30M"` and `to_iso8601("0s")` returns `"PT0S"`). Weeks are emitted as days."#,
+        false,
+        None,
+    )
     parse => Type::function(
         None,
         Type::str_ref(),
@@ -1118,7 +1202,7 @@ register_duration_member! {
             default_value: None,
             range: dummy_range(),
         }],
-        r#"Validate and re-render a duration string in canonical form (e.g. `parse("60s")` returns `"1m"`). Panics on invalid input."#,
+        r#"Validate and re-render a duration in canonical compact form. Accepts `1h30m`, Go subsecond units (`500ms`, `250us`, `100ns`) and fixed-length ISO 8601 durations (`PT1H30M`, `P1DT2H`, `P1W`). Years and months are rejected. `parse("60s")` returns `"1m"` and `parse("PT90M")` returns `"1h30m"`. Panics on invalid input."#,
         false,
         None,
     )
@@ -1132,7 +1216,7 @@ register_duration_member! {
             default_value: None,
             range: dummy_range(),
         }],
-        r#"Return true if `d` is a valid duration string (e.g. `is_valid("1h30m")` returns `True`, `is_valid("foo")` returns `False`)."#,
+        r#"Return true if `d` is a fixed-length duration in compact form (`1h30m`, `500ms`) or ISO 8601 without years or months (`PT1H`, `P1W`). `is_valid("1h30m")` returns `True` and `is_valid("P1Y")` returns `False`."#,
         false,
         None,
     )
@@ -1182,6 +1266,75 @@ register_duration_member! {
         false,
         None,
     )
+    mul => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "d".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+            Parameter {
+                name: "n".to_string(),
+                ty: Type::float_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Scale duration `d` by a non-negative number `n` (e.g. `mul("30m", 2)` returns `"1h"` and `mul("500ms", 3)` returns `"1.5s"`)."#,
+        false,
+        None,
+    )
+    div => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "d".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+            Parameter {
+                name: "n".to_string(),
+                ty: Type::float_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Divide duration `d` by a positive number `n` (e.g. `div("1h", 2)` returns `"30m"`). Panics when `n` is not positive."#,
+        false,
+        None,
+    )
+    cmp => Type::function(
+        None,
+        Type::int_ref(),
+        &[
+            Parameter {
+                name: "a".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+            Parameter {
+                name: "b".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Compare two durations. Returns `-1` when `a < b`, `0` when they are equal, and `1` when `a > b` (e.g. `cmp("2h", "30m")` returns `1`). String comparison is not duration order."#,
+        false,
+        None,
+    )
     add_to_datetime => Type::function(
         None,
         Type::str_ref(),
@@ -1201,7 +1354,7 @@ register_duration_member! {
                 range: dummy_range(),
             },
         ],
-        r#"Add duration `d` to RFC 3339 datetime `dt` and return a new RFC 3339 string. Useful for scheduling: `end = duration.add_to_datetime(start, duration.hour(1))`."#,
+        r#"Add duration `d` to datetime `dt` and return an RFC 3339 string. `dt` may be RFC 3339 or the text produced by `datetime.today()`, `datetime.date()`, or `datetime.now()` with its default format. Example: `end = duration.add_to_datetime(datetime.today(), duration.add(duration.minute(10), duration.minute(30)))`."#,
         false,
         None,
     )
@@ -1224,7 +1377,30 @@ register_duration_member! {
                 range: dummy_range(),
             },
         ],
-        r#"Subtract duration `d` from RFC 3339 datetime `dt` and return a new RFC 3339 string."#,
+        r#"Subtract duration `d` from datetime `dt` and return an RFC 3339 string. `dt` accepts the same forms as `add_to_datetime`."#,
+        false,
+        None,
+    )
+    between => Type::function(
+        None,
+        Type::str_ref(),
+        &[
+            Parameter {
+                name: "start".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+            Parameter {
+                name: "end".to_string(),
+                ty: Type::str_ref(),
+                has_default: false,
+                default_value: None,
+                range: dummy_range(),
+            },
+        ],
+        r#"Return the duration from `start` to `end`. Both arguments accept the same datetime forms as `add_to_datetime`. Panics when `end` is earlier than `start` (e.g. `between("2024-01-15T10:00:00Z", "2024-01-15T11:30:00Z")` returns `"1h30m"`)."#,
         false,
         None,
     )

@@ -313,15 +313,25 @@ kcl_value_ref_t* kcl_duration_add(kcl_context_t* ctx, kcl_value_ref_t* args, kcl
 
 kcl_value_ref_t* kcl_duration_add_to_datetime(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
 
+kcl_value_ref_t* kcl_duration_between(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
+kcl_value_ref_t* kcl_duration_cmp(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
 kcl_value_ref_t* kcl_duration_day(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
+kcl_value_ref_t* kcl_duration_div(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
 
 kcl_value_ref_t* kcl_duration_from_seconds(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
 
 kcl_value_ref_t* kcl_duration_hour(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
 
-kcl_bool_t kcl_duration_is_valid(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+kcl_value_ref_t* kcl_duration_is_valid(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
+kcl_value_ref_t* kcl_duration_millisecond(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
 
 kcl_value_ref_t* kcl_duration_minute(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
+kcl_value_ref_t* kcl_duration_mul(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
 
 kcl_value_ref_t* kcl_duration_parse(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
 
@@ -330,6 +340,16 @@ kcl_value_ref_t* kcl_duration_second(kcl_context_t* ctx, kcl_value_ref_t* args, 
 kcl_value_ref_t* kcl_duration_sub(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
 
 kcl_value_ref_t* kcl_duration_sub_from_datetime(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
+kcl_value_ref_t* kcl_duration_to_days(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
+kcl_value_ref_t* kcl_duration_to_hours(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
+kcl_value_ref_t* kcl_duration_to_iso8601(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
+kcl_value_ref_t* kcl_duration_to_milliseconds(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
+
+kcl_value_ref_t* kcl_duration_to_minutes(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
 
 kcl_value_ref_t* kcl_duration_to_seconds(kcl_context_t* ctx, kcl_value_ref_t* args, kcl_value_ref_t* kwargs);
 

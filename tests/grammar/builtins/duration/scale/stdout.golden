@@ -1,0 +1,9 @@
+doubled: '1h'
+scaled: '1.5s'
+half: '30m'
+half_sec: '0.5s'
+zero: '0s'
+gt: 1
+lt: -1
+eq: 0
+eq_ms: 0
