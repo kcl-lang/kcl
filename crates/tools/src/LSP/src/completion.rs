@@ -1991,10 +1991,13 @@ mod tests {
         std::fs::write(pkg_root.join("util.k"), "x = 1\n").unwrap();
 
         let metadata = Metadata {
-            packages: [("my_pkg".to_string(), Package {
-                name: "my_pkg".to_string(),
-                manifest_path: pkg_root.clone(),
-            })]
+            packages: [(
+                "my_pkg".to_string(),
+                Package {
+                    name: "my_pkg".to_string(),
+                    manifest_path: pkg_root.clone(),
+                },
+            )]
             .into_iter()
             .collect(),
         };
