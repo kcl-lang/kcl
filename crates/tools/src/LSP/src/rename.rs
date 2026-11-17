@@ -414,20 +414,52 @@ mod tests {
         normalized
     }
 
+    fn strip_verbatim(path: &str) -> String {
+        let normalized = path.replace('\\', "/");
+        normalized
+            .strip_prefix("//?/")
+            .unwrap_or(&normalized)
+            .to_string()
+    }
+
     fn relativize_to(root: &Path, path: &str) -> String {
-        let path_buf = PathBuf::from(path);
-        if let Ok(rel) = path_buf.strip_prefix(root) {
-            return rel.display().to_string().replace('\\', "/");
-        }
-        let root_s = root.display().to_string().replace('\\', "/");
+        let root_s = strip_verbatim(&root.display().to_string());
         let root_s = root_s.trim_end_matches('/');
-        let path_s = path.replace('\\', "/");
-        if let Some(idx) = path_s.rfind(root_s) {
-            return path_s[idx + root_s.len()..]
-                .trim_start_matches('/')
-                .to_string();
+        let path_s = strip_verbatim(path);
+        if let Some(rest) = path_s.strip_prefix(root_s) {
+            return rest.trim_start_matches('/').to_string();
         }
         path_s
+    }
+
+    /// `/`-separated path relative to the crate manifest.
+    fn posix_rel(path: &Path) -> String {
+        let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.strip_prefix(&manifest)
+            .unwrap_or(path)
+            .components()
+            .map(|component| component.as_os_str().to_string_lossy().replace('\\', "/"))
+            .collect::<Vec<_>>()
+            .join("/")
+    }
+
+    /// `VfsPath::new_virtual_path` requires a leading `/` on every OS.
+    /// A Windows absolute path (`D:\...`) panics there, so in-memory fixtures
+    /// use this stable virtual path instead of the host path.
+    fn virtual_vfs_path(path: &Path) -> String {
+        format!("/{}", posix_rel(path))
+    }
+
+    /// Path string `rename_symbol_on_code` will use as a change key.
+    /// Real VFS paths are normalized on the way in, and on Windows that can
+    /// rewrite separators. The source map has to use the same string.
+    fn source_key(path: &Path) -> String {
+        let raw = path.to_str().expect("utf-8 path").to_string();
+        if raw.starts_with('/') {
+            raw
+        } else {
+            VfsPath::new_real_path(raw).to_string()
+        }
     }
 
     fn fixture_root(rel: &str) -> PathBuf {
@@ -448,16 +480,22 @@ mod tests {
         files
     }
 
-    /// Loads every file under `rel` into a fresh VFS. Virtual paths back the
-    /// in-memory helpers. Real paths back rename, which resolves imports from
-    /// the fixture on disk.
-    fn load_vfs(rel: &str, virtual_path: bool) -> (PathBuf, KCLVfs) {
+    /// Loads every file under `rel` into a fresh VFS.
+    ///
+    /// Virtual paths back the in-memory helpers and always start with `/`.
+    /// Real paths back rename, which resolves imports from the fixture on disk.
+    /// The returned root uses the same path spelling as the VFS entries.
+    fn load_vfs(rel: &str, virtual_path: bool) -> (String, KCLVfs) {
         let root = fixture_root(rel);
         let vfs = KCLVfs::default();
         for path in fixture_files(&root) {
             let content =
                 fs::read(&path).unwrap_or_else(|err| panic!("read {}: {err}", path.display()));
-            let path_string = path.to_str().expect("utf-8 fixture path").to_string();
+            let path_string = if virtual_path {
+                virtual_vfs_path(&path)
+            } else {
+                path.to_str().expect("utf-8 fixture path").to_string()
+            };
             let vfs_path = if virtual_path {
                 VfsPath::new_virtual_path(path_string)
             } else {
@@ -465,7 +503,12 @@ mod tests {
             };
             vfs.write().set_file_contents(vfs_path, Some(content));
         }
-        (root, vfs)
+        let root_string = if virtual_path {
+            virtual_vfs_path(&root)
+        } else {
+            root.to_str().expect("utf-8 fixture root").to_string()
+        };
+        (root_string, vfs)
     }
 
     fn fmt_paths(files: &[String]) -> String {
@@ -569,6 +612,10 @@ mod tests {
             let path = std::env::temp_dir()
                 .join(format!("kcl-rename-{name}-{}-{nanos}", std::process::id()));
             fs::create_dir_all(&path).unwrap_or_else(|err| panic!("create temp dir: {err}"));
+            // Resolve 8.3 short names before rename. On Windows the parser
+            // canonicalizes paths, and a short temp prefix would not match the
+            // long definition path, so no edits would be produced.
+            let path = path.canonicalize().unwrap_or(path);
             Self(path)
         }
     }
@@ -601,9 +648,8 @@ mod tests {
             #[test]
             fn $name() {
                 let (root, vfs) = load_vfs($fixture, true);
-                let pkg = root.join($pkg_rel);
-                let files =
-                    package_path_to_file_path(pkg.to_str().expect("utf-8 package path"), vfs);
+                let pkg = format!("{}/{}", root.trim_end_matches('/'), $pkg_rel);
+                let files = package_path_to_file_path(&pkg, vfs);
                 insta::assert_snapshot!(fmt_paths(&files));
             }
         };
@@ -617,7 +663,7 @@ mod tests {
                 let (root, vfs) = load_vfs($fixture, true);
                 let got = select_symbol(
                     &kcl_ast::ast::SymbolSelectorSpec {
-                        pkg_root: root.to_str().expect("utf-8 fixture root").to_string(),
+                        pkg_root: root,
                         pkgpath: $pkgpath.to_string(),
                         field_path: $field_path.to_string(),
                     },
@@ -636,7 +682,7 @@ mod tests {
             fn $name() {
                 let (root, vfs) = load_vfs($fixture, false);
                 let changes = rename_symbol(
-                    root.to_str().expect("utf-8 fixture root"),
+                    &root,
                     vfs,
                     $symbol_path,
                     $new_name.to_string(),
@@ -658,13 +704,10 @@ mod tests {
                 for path in fixture_files(&root) {
                     let content = std::fs::read_to_string(&path)
                         .unwrap_or_else(|err| panic!("read {}: {err}", path.display()));
-                    source_codes.insert(
-                        path.to_str().expect("utf-8 fixture path").to_string(),
-                        content,
-                    );
+                    source_codes.insert(source_key(&path), content);
                 }
                 let renamed = rename_symbol_on_code(
-                    root.to_str().expect("utf-8 fixture root"),
+                    &source_key(&root),
                     $symbol_path,
                     source_codes,
                     $new_name.to_string(),
@@ -685,10 +728,10 @@ mod tests {
                 copy_tree(&src, &tmp.0);
                 let file_paths: Vec<String> = fixture_files(&tmp.0)
                     .iter()
-                    .map(|path| path.to_str().expect("utf-8 fixture path").to_string())
+                    .map(|path| source_key(path))
                     .collect();
                 let changed = rename_symbol_on_file(
-                    tmp.0.to_str().expect("utf-8 temp root"),
+                    &source_key(&tmp.0),
                     $symbol_path,
                     &file_paths,
                     $new_name.to_string(),
