@@ -1,0 +1,9 @@
+---
+source: crates/tools/src/LSP/src/completion.rs
+expression: completion_snapshot(got)
+---
+label: " 1"
+kind: Variable
+detail: d: int(1)
+insert_text: " 1"
+insert_text_format: Snippet

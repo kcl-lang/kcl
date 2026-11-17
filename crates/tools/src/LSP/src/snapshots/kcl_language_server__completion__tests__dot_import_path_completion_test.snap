@@ -1,0 +1,12 @@
+---
+source: crates/tools/src/LSP/src/completion.rs
+expression: completion_snapshot(got)
+---
+label: file1
+kind: File
+
+label: file2
+kind: File
+
+label: subpkg
+kind: Folder

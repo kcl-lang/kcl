@@ -1,0 +1,81 @@
+---
+source: crates/tools/src/LSP/src/completion.rs
+expression: completion_snapshot(got)
+---
+builtin_functions: all
+
+label: ""
+kind: Module
+
+label: Config
+kind: Class
+detail: "__main__\n\nschema Config:\nAttributes:\ncontainerRuntime?: str(runc) | str(rund)"
+documentation: ""
+
+label: Config{}
+kind: Class
+detail: "__main__\n\nschema Config:\nAttributes:\ncontainerRuntime?: str(runc) | str(rund)"
+insert_text: Config{$0}
+insert_text_format: Snippet
+documentation: ""
+
+label: P
+kind: Class
+detail: "__main__\n\nschema P:\nAttributes:\na: int"
+documentation: ""
+
+label: Person
+kind: Class
+detail: "__main__\n\nschema Person:\nAttributes:\nname: str\nage: int"
+documentation: ""
+
+label: Person1{}
+kind: Class
+detail: "pkg.subpkg\n\nschema Person1:\nAttributes:\nname: str\nage: int"
+insert_text: subpkg.Person1{$0}
+insert_text_format: Snippet
+documentation: ""
+
+label: Person{}
+kind: Class
+detail: "__main__\n\nschema Person:\nAttributes:\nname: str\nage: int"
+insert_text: Person{$0}
+insert_text_format: Snippet
+documentation: ""
+
+label: P{}
+kind: Class
+detail: "__main__\n\nschema P:\nAttributes:\na: int"
+insert_text: P{$0}
+insert_text_format: Snippet
+documentation: ""
+
+label: aaaa
+detail: any
+
+label: math
+kind: Module
+
+label: n
+kind: Class
+detail: Config
+
+label: p
+kind: Class
+detail: Person
+
+label: p1
+detail: any
+
+label: p2
+detail: any
+
+label: p3
+detail: any
+
+label: p4
+kind: Class
+detail: Person
+
+label: subpkg
+kind: Module

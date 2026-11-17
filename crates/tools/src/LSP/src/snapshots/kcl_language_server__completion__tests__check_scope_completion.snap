@@ -1,0 +1,19 @@
+---
+source: crates/tools/src/LSP/src/completion.rs
+expression: completion_snapshot(got)
+---
+label: Person
+kind: Class
+detail: "__main__\n\nschema Person:\nAttributes:\nname: str"
+documentation: ""
+
+label: Person{}
+kind: Class
+detail: "__main__\n\nschema Person:\nAttributes:\nname: str"
+insert_text: Person{$0}
+insert_text_format: Snippet
+documentation: ""
+
+label: name
+kind: Variable
+detail: str

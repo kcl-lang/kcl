@@ -1,0 +1,8 @@
+---
+source: crates/tools/src/LSP/src/completion.rs
+expression: completion_snapshot(got)
+---
+label: "\n\nAttributes\n----------\nname: \nworkloadType: \nreplica: \n\nExamples\n--------\n"
+kind: Snippet
+detail: generate docstring
+documentation: "docstring for Server"
