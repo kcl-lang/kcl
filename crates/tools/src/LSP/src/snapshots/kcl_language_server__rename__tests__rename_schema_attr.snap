@@ -1,0 +1,8 @@
+---
+source: crates/tools/src/LSP/src/rename.rs
+expression: fmt_text_edits(& changes)
+---
+file: src/test_data/rename/rename_schema_attr/base/person.k
+  1:4-1:8 "new_name"
+file: src/test_data/rename/rename_schema_attr/config.k
+  4:4-4:8 "new_name"

@@ -1,0 +1,8 @@
+---
+source: crates/tools/src/LSP/src/rename.rs
+expression: fmt_renamed_sources(& renamed)
+---
+src/test_data/rename/rename_symbol_on_code_schema/base/person.k
+"schema NewPerson:\n    name: Name\n    age: int\n\nschema Name:\n    first: str\n\na = {\n    abc: \"d\"\n}\n\nd = a.abc\ne = a[\"abc\"]"
+src/test_data/rename/rename_symbol_on_code_schema/config.k
+"import .base\n\na = base.NewPerson {\n    age: 1,\n    name: {\n        first: \"aa\"\n    }\n}"
