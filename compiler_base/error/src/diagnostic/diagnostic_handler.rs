@@ -86,7 +86,7 @@ const DIAGNOSTIC_MESSAGES_ROOT: &str = env!("CARGO_MANIFEST_DIR");
 /// ```ignore
 /// impl Lexer {
 ///     fn lex(&self, diag_handler: &DiagnosticHandler){
-///        handler.XXXX(); // do something to diaplay diagnostic.
+///        handler.XXXX(); // do something to display diagnostic.
 ///     }
 /// }
 /// ```
