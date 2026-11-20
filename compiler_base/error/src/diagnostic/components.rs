@@ -10,7 +10,7 @@ use rustc_span::LineInfo;
 const CODE_LINE_PREFIX: &str = " | ";
 const FILE_PATH_PREFIX: &str = "-->";
 
-/// `Label` can be considered as a component of diagnostic to display a short label message in `Diagnositc`.
+/// `Label` can be considered as a component of diagnostic to display a short label message in `Diagnostic`.
 /// `Label` provides "error", "warning", "note" and "Help" four kinds of labels.
 ///
 /// # Examples
