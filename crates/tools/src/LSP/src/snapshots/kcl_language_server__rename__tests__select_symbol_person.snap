@@ -1,0 +1,7 @@
+---
+source: crates/tools/src/LSP/src/rename.rs
+expression: fmt_symbol(got)
+---
+name: Person
+start: src/test_data/rename/select_symbol_person/base/person.k:1:7
+end: src/test_data/rename/select_symbol_person/base/person.k:1:13

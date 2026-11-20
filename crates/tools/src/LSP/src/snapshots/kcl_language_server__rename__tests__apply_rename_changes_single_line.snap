@@ -1,0 +1,5 @@
+---
+source: crates/tools/src/LSP/src/rename.rs
+expression: "format!(\"{:?}\", result.get(&key).expect(\"renamed file\"))"
+---
+"import .pkg.vars\n\nBob = vars.Person2 {\n    name: \"Bob\"\n    age: 30\n}"

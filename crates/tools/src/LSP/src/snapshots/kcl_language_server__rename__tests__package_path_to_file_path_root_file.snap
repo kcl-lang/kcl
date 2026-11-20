@@ -1,0 +1,5 @@
+---
+source: crates/tools/src/LSP/src/rename.rs
+expression: fmt_paths(& files)
+---
+src/test_data/rename/package_path_to_file_path_root_file/config.k

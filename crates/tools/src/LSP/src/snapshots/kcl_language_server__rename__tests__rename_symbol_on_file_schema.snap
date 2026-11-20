@@ -1,0 +1,8 @@
+---
+source: crates/tools/src/LSP/src/rename.rs
+expression: fmt_named_sources(& rows)
+---
+base/person.k
+"schema NewPerson:\n    name: Name\n    age: int\n\nschema Name:\n    first: str\n\na = {\n    abc: \"d\"\n}\n\nd = a.abc\ne = a[\"abc\"]"
+config.k
+"import .base\n\na = base.NewPerson {\n    age: 1,\n    name: {\n        first: \"aa\"\n    }\n}"

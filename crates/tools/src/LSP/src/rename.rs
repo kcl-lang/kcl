@@ -384,525 +384,484 @@ where
 
 #[cfg(test)]
 mod tests {
-    use kcl_ast::ast;
+    use super::{
+        apply_rename_changes, package_path_to_file_path, rename_symbol, rename_symbol_on_code,
+        rename_symbol_on_file, select_symbol,
+    };
+    use crate::state::KCLVfs;
     use kcl_error::diagnostic;
     use lsp_types::{Position, Range, TextEdit};
-    use maplit::hashmap;
-    use std::collections::{HashMap, HashSet};
-    use std::fs;
-    use std::path::PathBuf;
-
-    use crate::rename::rename_symbol_on_code;
-
-    use super::{
-        apply_rename_changes, package_path_to_file_path, rename_symbol, rename_symbol_on_file,
-        select_symbol,
-    };
-
-    use crate::state::KCLVfs;
     use ra_ap_vfs::VfsPath;
+    use std::collections::HashMap;
+    use std::fs;
+    use std::path::{Path, PathBuf};
+    use std::time::{SystemTime, UNIX_EPOCH};
 
-    /// prepare_vfs constructs a vfs for test:
-    /// /mock_root
-    /// ├── config.k
-    /// └── base
-    ///     ├── server.k
-    ///     └── person.k
-    fn prepare_vfs() -> (PathBuf, PathBuf, PathBuf, PathBuf, PathBuf, KCLVfs) {
-        // mock paths
-        let root = PathBuf::from("/mock_root");
-        let base_path = root.join("base");
-        let server_path = root.join("base").join("server.k");
-        let person_path = root.join("base").join("person.k");
-        let config_path = root.join("config.k");
-        // mock file contents
-        let person_content = r#"schema Person:
-    name: Name
-    age: int
+    /// Removes `CARGO_MANIFEST_DIR` so snapshots stay stable across machines.
+    fn relativize(path: &str) -> String {
+        let normalized = path.replace('\\', "/");
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .display()
+            .to_string()
+            .replace('\\', "/");
+        let root = root.trim_end_matches('/');
+        if let Some(stripped) = normalized.strip_prefix(root) {
+            return stripped.trim_start_matches('/').to_string();
+        }
+        if let Some(idx) = normalized.find("src/test_data/") {
+            return normalized[idx..].to_string();
+        }
+        normalized
+    }
 
-schema Name:
-    first: str
+    fn strip_verbatim(path: &str) -> String {
+        let normalized = path.replace('\\', "/");
+        normalized
+            .strip_prefix("//?/")
+            .unwrap_or(&normalized)
+            .to_string()
+    }
 
-a = {
-    abc: "d"
-}
+    fn relativize_to(root: &Path, path: &str) -> String {
+        let root_s = strip_verbatim(&root.display().to_string());
+        let root_s = root_s.trim_end_matches('/');
+        let path_s = strip_verbatim(path);
+        if let Some(rest) = path_s.strip_prefix(root_s) {
+            return rest.trim_start_matches('/').to_string();
+        }
+        path_s
+    }
 
-d = a.abc
-e = a["abc"]
-"#;
-        let server_content = r#"schema Server:
-    name: str
-"#;
-        let config_content = r#""#;
+    /// `/`-separated path relative to the crate manifest.
+    fn posix_rel(path: &Path) -> String {
+        let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.strip_prefix(&manifest)
+            .unwrap_or(path)
+            .components()
+            .map(|component| component.as_os_str().to_string_lossy().replace('\\', "/"))
+            .collect::<Vec<_>>()
+            .join("/")
+    }
 
-        // set vfs
+    /// `VfsPath::new_virtual_path` requires a leading `/` on every OS.
+    /// A Windows absolute path (`D:\...`) panics there, so in-memory fixtures
+    /// use this stable virtual path instead of the host path.
+    fn virtual_vfs_path(path: &Path) -> String {
+        format!("/{}", posix_rel(path))
+    }
+
+    /// Path string `rename_symbol_on_code` will use as a change key.
+    /// Real VFS paths are normalized on the way in, and on Windows that can
+    /// rewrite separators. The source map has to use the same string.
+    fn source_key(path: &Path) -> String {
+        let raw = path.to_str().expect("utf-8 path").to_string();
+        if raw.starts_with('/') {
+            raw
+        } else {
+            VfsPath::new_real_path(raw).to_string()
+        }
+    }
+
+    fn fixture_root(rel: &str) -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(rel)
+    }
+
+    fn fixture_files(root: &Path) -> Vec<PathBuf> {
+        let mut files = Vec::new();
+        for entry in walkdir::WalkDir::new(root)
+            .into_iter()
+            .filter_map(Result::ok)
+        {
+            if entry.file_type().is_file() {
+                files.push(entry.into_path());
+            }
+        }
+        files.sort();
+        files
+    }
+
+    /// Loads every file under `rel` into a fresh VFS.
+    ///
+    /// Virtual paths back the in-memory helpers and always start with `/`.
+    /// Real paths back rename, which resolves imports from the fixture on disk.
+    /// The returned root uses the same path spelling as the VFS entries.
+    fn load_vfs(rel: &str, virtual_path: bool) -> (String, KCLVfs) {
+        let root = fixture_root(rel);
         let vfs = KCLVfs::default();
-        vfs.write().set_file_contents(
-            VfsPath::new_virtual_path(person_path.as_path().to_str().unwrap().to_string()),
-            Some(person_content.as_bytes().to_owned()),
-        );
-        vfs.write().set_file_contents(
-            VfsPath::new_virtual_path(server_path.as_path().to_str().unwrap().to_string()),
-            Some(server_content.as_bytes().to_owned()),
-        );
-        vfs.write().set_file_contents(
-            VfsPath::new_virtual_path(config_path.as_path().to_str().unwrap().to_string()),
-            Some(config_content.as_bytes().to_owned()),
-        );
-
-        (root, base_path, person_path, server_path, config_path, vfs)
-    }
-
-    #[test]
-    fn test_package_path_to_file_path() {
-        let (root, base_path, person_path, server_path, config_path, vfs) = prepare_vfs();
-
-        let files = package_path_to_file_path(base_path.as_path().to_str().unwrap(), vfs.clone());
-        assert_eq!(
-            files,
-            vec![
-                person_path.as_path().to_str().unwrap().to_string(),
-                server_path.as_path().to_str().unwrap().to_string()
-            ]
-        );
-
-        let files = package_path_to_file_path(
-            root.join("base").join("person").as_path().to_str().unwrap(),
-            vfs.clone(),
-        );
-        assert_eq!(
-            files,
-            vec![person_path.as_path().to_str().unwrap().to_string()]
-        );
-
-        let files =
-            package_path_to_file_path(root.join("config").as_path().to_str().unwrap(), vfs.clone());
-        assert_eq!(
-            files,
-            vec![config_path.as_path().to_str().unwrap().to_string()]
-        );
-    }
-
-    #[test]
-    fn test_select_symbol() {
-        let (root, _, person_path, server_path, _config_path, vfs) = prepare_vfs();
-        let pkg_root = root.as_path().to_str().unwrap().to_string();
-
-        if let Some((name, range)) = select_symbol(
-            &ast::SymbolSelectorSpec {
-                pkg_root: pkg_root.clone(),
-                pkgpath: "base".to_string(),
-                field_path: "Person.name".to_string(),
-            },
-            vfs.clone(),
-            VfsPath::new_virtual_path,
-        ) {
-            assert_eq!(name, "name");
-            assert_eq!(
-                range,
-                (
-                    diagnostic::Position {
-                        filename: person_path.as_path().to_str().unwrap().to_string(),
-                        line: 2,
-                        column: Some(4),
-                    },
-                    diagnostic::Position {
-                        filename: person_path.as_path().to_str().unwrap().to_string(),
-                        line: 2,
-                        column: Some(8),
-                    },
-                )
-            );
+        for path in fixture_files(&root) {
+            let content =
+                fs::read(&path).unwrap_or_else(|err| panic!("read {}: {err}", path.display()));
+            let path_string = if virtual_path {
+                virtual_vfs_path(&path)
+            } else {
+                path.to_str().expect("utf-8 fixture path").to_string()
+            };
+            let vfs_path = if virtual_path {
+                VfsPath::new_virtual_path(path_string)
+            } else {
+                VfsPath::new_real_path(path_string)
+            };
+            vfs.write().set_file_contents(vfs_path, Some(content));
+        }
+        let root_string = if virtual_path {
+            virtual_vfs_path(&root)
         } else {
-            unreachable!("select symbol failed")
-        }
+            root.to_str().expect("utf-8 fixture root").to_string()
+        };
+        (root_string, vfs)
+    }
 
-        if let Some((name, range)) = select_symbol(
-            &ast::SymbolSelectorSpec {
-                pkg_root: pkg_root.clone(),
-                pkgpath: "base".to_string(),
-                field_path: "Name.first".to_string(),
-            },
-            vfs.clone(),
-            VfsPath::new_virtual_path,
-        ) {
-            assert_eq!(name, "first");
-            assert_eq!(
-                range,
-                (
-                    diagnostic::Position {
-                        filename: person_path.as_path().to_str().unwrap().to_string(),
-                        line: 6,
-                        column: Some(4),
-                    },
-                    diagnostic::Position {
-                        filename: person_path.as_path().to_str().unwrap().to_string(),
-                        line: 6,
-                        column: Some(9),
-                    },
-                )
-            );
+    fn fmt_paths(files: &[String]) -> String {
+        let mut files: Vec<_> = files.iter().map(|file| relativize(file)).collect();
+        files.sort();
+        if files.is_empty() {
+            "no files".to_string()
         } else {
-            unreachable!("select symbol failed")
-        }
-
-        if let Some((name, range)) = select_symbol(
-            &ast::SymbolSelectorSpec {
-                pkg_root: pkg_root.clone(),
-                pkgpath: "base".to_string(),
-                field_path: "Person".to_string(),
-            },
-            vfs.clone(),
-            VfsPath::new_virtual_path,
-        ) {
-            assert_eq!(name, "Person");
-            assert_eq!(
-                range,
-                (
-                    diagnostic::Position {
-                        filename: person_path.as_path().to_str().unwrap().to_string(),
-                        line: 1,
-                        column: Some(7),
-                    },
-                    diagnostic::Position {
-                        filename: person_path.as_path().to_str().unwrap().to_string(),
-                        line: 1,
-                        column: Some(13),
-                    },
-                )
-            );
-        } else {
-            unreachable!("select symbol failed")
-        }
-
-        if let Some((name, range)) = select_symbol(
-            &ast::SymbolSelectorSpec {
-                pkg_root: pkg_root.clone(),
-                pkgpath: "base".to_string(),
-                field_path: "a".to_string(),
-            },
-            vfs.clone(),
-            VfsPath::new_virtual_path,
-        ) {
-            assert_eq!(name, "a");
-            assert_eq!(
-                range,
-                (
-                    diagnostic::Position {
-                        filename: person_path.as_path().to_str().unwrap().to_string(),
-                        line: 8,
-                        column: Some(0),
-                    },
-                    diagnostic::Position {
-                        filename: person_path.as_path().to_str().unwrap().to_string(),
-                        line: 8,
-                        column: Some(1),
-                    },
-                )
-            );
-        } else {
-            unreachable!("select symbol failed")
-        }
-
-        if let Some((name, range)) = select_symbol(
-            &ast::SymbolSelectorSpec {
-                pkg_root: pkg_root.clone(),
-                pkgpath: "base".to_string(),
-                field_path: "Server.name".to_string(),
-            },
-            vfs.clone(),
-            VfsPath::new_virtual_path,
-        ) {
-            assert_eq!(name, "name");
-            assert_eq!(
-                range,
-                (
-                    diagnostic::Position {
-                        filename: server_path.as_path().to_str().unwrap().to_string(),
-                        line: 2,
-                        column: Some(4),
-                    },
-                    diagnostic::Position {
-                        filename: server_path.as_path().to_str().unwrap().to_string(),
-                        line: 2,
-                        column: Some(8),
-                    },
-                )
-            );
-        } else {
-            unreachable!("select symbol failed")
+            files.join("\n")
         }
     }
 
-    #[test]
-    fn test_select_symbol_failed() {
-        let (root, _, _, _, _, vfs) = prepare_vfs();
-        let pkg_root = root.as_path().to_str().unwrap().to_string();
-        let result = select_symbol(
-            &ast::SymbolSelectorSpec {
-                pkg_root: pkg_root.clone(),
-                pkgpath: "base".to_string(),
-                field_path: "name".to_string(),
-            },
-            vfs.clone(),
-            VfsPath::new_virtual_path,
-        );
-        assert!(result.is_none(), "should not find the target symbol")
-    }
-
-    #[test]
-    fn test_rename() {
-        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let root = root.join("src").join("test_data").join("rename_test");
-
-        let main_path = root.clone();
-        let base_path = root.clone();
-        let base_path = base_path.join("base").join("person.k");
-        let main_path = main_path.join("config.k");
-
-        let base_path = base_path.to_str().unwrap();
-        let main_path = main_path.to_str().unwrap();
-
-        let vfs = KCLVfs::default();
-        for path in [base_path, main_path] {
-            let content = fs::read_to_string(path).unwrap();
-            vfs.write().set_file_contents(
-                VfsPath::new_real_path(path.to_string()),
-                Some(content.into_bytes()),
-            );
-        }
-
-        if let Ok(changes) = rename_symbol(
-            root.to_str().unwrap(),
-            vfs.clone(),
-            "base:Person",
-            "NewPerson".to_string(),
-            VfsPath::new_real_path,
-        ) {
-            assert_eq!(changes.len(), 2);
-            assert!(changes.contains_key(base_path));
-            assert!(changes.contains_key(main_path));
-            assert!(changes.get(base_path).unwrap().len() == 1);
-            assert!(changes.get(base_path).unwrap()[0].range.start == Position::new(0, 7));
-            assert!(changes.get(main_path).unwrap().len() == 1);
-            assert!(changes.get(main_path).unwrap()[0].range.start == Position::new(2, 9));
-            assert!(changes.get(main_path).unwrap()[0].new_text == "NewPerson");
-        } else {
-            unreachable!("rename failed")
-        }
-
-        if let Ok(changes) = rename_symbol(
-            root.to_str().unwrap(),
-            vfs.clone(),
-            "base:Person.name",
-            "new_name".to_string(),
-            VfsPath::new_real_path,
-        ) {
-            assert_eq!(changes.len(), 2);
-            assert!(changes.contains_key(base_path));
-            assert!(changes.contains_key(main_path));
-            assert!(changes.get(base_path).unwrap().len() == 1);
-            assert!(changes.get(base_path).unwrap()[0].range.start == Position::new(1, 4));
-            assert!(changes.get(main_path).unwrap().len() == 1);
-            assert!(changes.get(main_path).unwrap()[0].range.start == Position::new(4, 4));
-            assert!(changes.get(main_path).unwrap()[0].new_text == "new_name");
-        } else {
-            unreachable!("rename failed")
-        }
-    }
-
-    #[test]
-    fn test_apply_rename_changes() {
-        let path = "/mock_root/main.k".to_string();
-        let mut source_codes = HashMap::new();
-        source_codes.insert(
-            path.clone(),
-            r#"import .pkg.vars
-
-Bob = vars.Person {
-    name: "Bob"
-    age: 30
-}"#
-            .to_string(),
-        );
-
-        struct TestCase {
-            changes: HashMap<String, Vec<TextEdit>>,
-            expected: String,
-        }
-
-        let test_cases = vec![TestCase {
-            changes: HashMap::from([(
-                path.clone(),
-                vec![TextEdit {
-                    range: Range {
-                        start: Position {
-                            line: 2,
-                            character: 11,
-                        },
-                        end: Position {
-                            line: 2,
-                            character: 17,
-                        },
-                    },
-                    new_text: "Person2".to_string(),
-                }],
-            )]),
-            expected: "import .pkg.vars\n\nBob = vars.Person2 {\n    name: \"Bob\"\n    age: 30\n}"
-                .to_string(),
-        }];
-
-        for test_case in test_cases {
-            let result = apply_rename_changes(&test_case.changes, source_codes.clone());
-            assert_eq!(result.unwrap().get(&path).unwrap(), &test_case.expected);
-        }
-    }
-
-    #[test]
-    fn test_rename_symbol_on_file() {
-        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let root = root
-            .join("src")
-            .join("test_data")
-            .join("rename_test")
-            .join("rename_on_file");
-
-        let main_path = root.clone();
-        let base_path = root.clone();
-        let main_path = main_path.join("config.k");
-        let base_path = base_path.join("base").join("person.k");
-        let base_path_string = base_path.to_str().unwrap().to_string();
-        let main_path_string = main_path.to_str().unwrap().to_string();
-
-        // before test, back up the old file content
-        for path in [base_path.clone(), main_path.clone()] {
-            let content = fs::read_to_string(path.clone()).unwrap();
-            let backup_path = path.with_extension("bak");
-            fs::write(backup_path.clone(), content).unwrap();
-        }
-
-        let result = rename_symbol_on_file(
-            root.to_str().unwrap(),
-            "base:Person",
-            &[base_path_string.clone(), main_path_string.clone()],
-            "NewPerson".to_string(),
-        );
-        let expect_changed_paths: HashSet<_> = [base_path_string.clone(), main_path_string.clone()]
-            .iter()
-            .cloned()
-            .collect();
-        let got_changed_paths: HashSet<_> = result.unwrap().iter().cloned().collect();
-        assert_eq!(expect_changed_paths, got_changed_paths);
-        let base_new_content = fs::read_to_string(base_path.clone()).unwrap();
-        let main_new_content = fs::read_to_string(main_path.clone()).unwrap();
-        assert_eq!(
-            base_new_content,
-            r#"schema NewPerson:
-    name: Name
-    age: int
-
-schema Name:
-    first: str
-
-a = {
-    abc: "d"
-}
-
-d = a.abc
-e = a["abc"]"#
-        );
-        assert_eq!(
-            main_new_content,
-            "import .base\n\na = base.NewPerson {\n    age: 1,\n    name: {\n        first: \"aa\"\n    }\n}"
-        );
-
-        // after test, restore the old file content
-        for path in [base_path.clone(), main_path.clone()] {
-            let backup_path = path.with_extension("bak");
-            let content = fs::read_to_string(backup_path.clone()).unwrap();
-            fs::write(path.clone(), content).unwrap();
-            fs::remove_file(backup_path.clone()).unwrap();
-        }
-    }
-
-    #[test]
-    fn test_rename_symbol_on_code() {
-        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-
-        let root = root.join("src").join("test_data").join("rename_test");
-
-        let base_path = root.clone();
-        let main_path = root.clone();
-
-        let base_path = base_path.join("base").join("person.k");
-        let main_path = main_path.join("config.k");
-
-        let base_path_string = base_path.to_str().unwrap().to_string();
-        let main_path_string = main_path.to_str().unwrap().to_string();
-
-        let base_source_code = r#"schema Person:
-    name: Name
-    age: int
-
-schema Name:
-    first: str
-
-a = {
-    abc: "d"
-}
-
-d = a.abc
-e = a["abc"]"#;
-
-        let main_source_code = r#"import .base
-
-a = base.Person {
-    age: 1,
-    name: {
-        first: "aa"
-    }
-}"#;
-
-        let result: HashMap<String, String> = rename_symbol_on_code(
-            root.to_str().unwrap(),
-            "base:Person",
-            hashmap! {
-                base_path_string.clone() => base_source_code.to_string(),
-                main_path_string.clone() => main_source_code.to_string(),
-            },
-            "NewPerson".to_string(),
+    fn fmt_symbol(got: Option<(String, diagnostic::Range)>) -> String {
+        let Some((name, (start, end))) = got else {
+            return "None".to_string();
+        };
+        format!(
+            "name: {name}\nstart: {}\nend: {}",
+            fmt_diagnostic_pos(&start),
+            fmt_diagnostic_pos(&end)
         )
-        .unwrap();
-
-        let base_new_content = result.get(base_path_string.clone().as_str()).unwrap();
-        assert_eq!(
-            base_new_content,
-            r#"schema NewPerson:
-    name: Name
-    age: int
-
-schema Name:
-    first: str
-
-a = {
-    abc: "d"
-}
-
-d = a.abc
-e = a["abc"]"#
-        );
-
-        let main_new_content = result.get(main_path_string.clone().as_str()).unwrap();
-        assert_eq!(
-            main_new_content,
-            r#"import .base
-
-a = base.NewPerson {
-    age: 1,
-    name: {
-        first: "aa"
     }
-}"#
-        );
+
+    fn fmt_diagnostic_pos(pos: &diagnostic::Position) -> String {
+        match pos.column {
+            Some(column) => format!("{}:{}:{column}", relativize(&pos.filename), pos.line),
+            None => format!("{}:{}:-", relativize(&pos.filename), pos.line),
+        }
     }
+
+    fn fmt_text_edits(changes: &HashMap<String, Vec<TextEdit>>) -> String {
+        let mut files: Vec<_> = changes.keys().cloned().collect();
+        files.sort();
+        if files.is_empty() {
+            return "no edits".to_string();
+        }
+        let mut out = String::new();
+        for file in files {
+            out.push_str(&format!("file: {}\n", relativize(&file)));
+            let mut edits = changes[&file].clone();
+            edits.sort_by(|left, right| {
+                (
+                    left.range.start.line,
+                    left.range.start.character,
+                    left.range.end.line,
+                    left.range.end.character,
+                    &left.new_text,
+                )
+                    .cmp(&(
+                        right.range.start.line,
+                        right.range.start.character,
+                        right.range.end.line,
+                        right.range.end.character,
+                        &right.new_text,
+                    ))
+            });
+            for edit in edits {
+                out.push_str(&format!(
+                    "  {}:{}-{}:{} {:?}\n",
+                    edit.range.start.line,
+                    edit.range.start.character,
+                    edit.range.end.line,
+                    edit.range.end.character,
+                    edit.new_text
+                ));
+            }
+        }
+        out
+    }
+
+    /// Renders renamed sources with `Debug` so a missing trailing newline stays visible.
+    fn fmt_named_sources(rows: &[(String, String)]) -> String {
+        let mut rows = rows.to_vec();
+        rows.sort_by(|left, right| left.0.cmp(&right.0));
+        let mut out = String::new();
+        for (path, content) in rows {
+            out.push_str(&path);
+            out.push('\n');
+            out.push_str(&format!("{content:?}"));
+            out.push('\n');
+        }
+        out
+    }
+
+    fn fmt_renamed_sources(sources: &HashMap<String, String>) -> String {
+        let rows: Vec<_> = sources
+            .iter()
+            .map(|(path, content)| (relativize(path), content.clone()))
+            .collect();
+        fmt_named_sources(&rows)
+    }
+
+    struct TempDir(PathBuf);
+
+    impl TempDir {
+        fn new(name: &str) -> Self {
+            let nanos = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("clock")
+                .as_nanos();
+            let path = std::env::temp_dir()
+                .join(format!("kcl-rename-{name}-{}-{nanos}", std::process::id()));
+            fs::create_dir_all(&path).unwrap_or_else(|err| panic!("create temp dir: {err}"));
+            // Resolve 8.3 short names before rename. On Windows the parser
+            // canonicalizes paths, and a short temp prefix would not match the
+            // long definition path, so no edits would be produced.
+            let path = path.canonicalize().unwrap_or(path);
+            Self(path)
+        }
+    }
+
+    impl Drop for TempDir {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    fn copy_tree(src: &Path, dst: &Path) {
+        for path in fixture_files(src) {
+            let rel = path.strip_prefix(src).expect("file is under the fixture");
+            let target = dst.join(rel);
+            if let Some(parent) = target.parent() {
+                fs::create_dir_all(parent)
+                    .unwrap_or_else(|err| panic!("create {}: {err}", parent.display()));
+            }
+            fs::copy(&path, &target).unwrap_or_else(|err| {
+                panic!("copy {} -> {}: {err}", path.display(), target.display())
+            });
+        }
+    }
+
+    /// Each test loads its own fixture directory into a new VFS and snapshots
+    /// the helper result. Mirrors the `*_test_snapshot!` suites in this crate.
+    #[macro_export]
+    macro_rules! package_path_test_snapshot {
+        ($name:ident, $fixture:expr, $pkg_rel:expr) => {
+            #[test]
+            fn $name() {
+                let (root, vfs) = load_vfs($fixture, true);
+                let pkg = format!("{}/{}", root.trim_end_matches('/'), $pkg_rel);
+                let files = package_path_to_file_path(&pkg, vfs);
+                insta::assert_snapshot!(fmt_paths(&files));
+            }
+        };
+    }
+
+    #[macro_export]
+    macro_rules! select_symbol_test_snapshot {
+        ($name:ident, $fixture:expr, $pkgpath:expr, $field_path:expr) => {
+            #[test]
+            fn $name() {
+                let (root, vfs) = load_vfs($fixture, true);
+                let got = select_symbol(
+                    &kcl_ast::ast::SymbolSelectorSpec {
+                        pkg_root: root,
+                        pkgpath: $pkgpath.to_string(),
+                        field_path: $field_path.to_string(),
+                    },
+                    vfs,
+                    ra_ap_vfs::VfsPath::new_virtual_path,
+                );
+                insta::assert_snapshot!(fmt_symbol(got));
+            }
+        };
+    }
+
+    #[macro_export]
+    macro_rules! rename_symbol_test_snapshot {
+        ($name:ident, $fixture:expr, $symbol_path:expr, $new_name:expr) => {
+            #[test]
+            fn $name() {
+                let (root, vfs) = load_vfs($fixture, false);
+                let changes = rename_symbol(
+                    &root,
+                    vfs,
+                    $symbol_path,
+                    $new_name.to_string(),
+                    ra_ap_vfs::VfsPath::new_real_path,
+                )
+                .unwrap_or_else(|err| panic!("rename failed: {err}"));
+                insta::assert_snapshot!(fmt_text_edits(&changes));
+            }
+        };
+    }
+
+    #[macro_export]
+    macro_rules! rename_on_code_test_snapshot {
+        ($name:ident, $fixture:expr, $symbol_path:expr, $new_name:expr) => {
+            #[test]
+            fn $name() {
+                let root = fixture_root($fixture);
+                let mut source_codes = std::collections::HashMap::new();
+                for path in fixture_files(&root) {
+                    let content = std::fs::read_to_string(&path)
+                        .unwrap_or_else(|err| panic!("read {}: {err}", path.display()));
+                    source_codes.insert(source_key(&path), content);
+                }
+                let renamed = rename_symbol_on_code(
+                    &source_key(&root),
+                    $symbol_path,
+                    source_codes,
+                    $new_name.to_string(),
+                )
+                .unwrap_or_else(|err| panic!("rename failed: {err}"));
+                insta::assert_snapshot!(fmt_renamed_sources(&renamed));
+            }
+        };
+    }
+
+    #[macro_export]
+    macro_rules! rename_on_file_test_snapshot {
+        ($name:ident, $fixture:expr, $symbol_path:expr, $new_name:expr) => {
+            #[test]
+            fn $name() {
+                let src = fixture_root($fixture);
+                let tmp = TempDir::new(stringify!($name));
+                copy_tree(&src, &tmp.0);
+                let file_paths: Vec<String> = fixture_files(&tmp.0)
+                    .iter()
+                    .map(|path| source_key(path))
+                    .collect();
+                let changed = rename_symbol_on_file(
+                    &source_key(&tmp.0),
+                    $symbol_path,
+                    &file_paths,
+                    $new_name.to_string(),
+                )
+                .unwrap_or_else(|err| panic!("rename failed: {err}"));
+                let rows: Vec<(String, String)> = changed
+                    .iter()
+                    .map(|path| {
+                        let content = std::fs::read_to_string(path)
+                            .unwrap_or_else(|err| panic!("read {path}: {err}"));
+                        (relativize_to(&tmp.0, path), content)
+                    })
+                    .collect();
+                insta::assert_snapshot!(fmt_named_sources(&rows));
+            }
+        };
+    }
+
+    package_path_test_snapshot!(
+        package_path_to_file_path_package,
+        "src/test_data/rename/package_path_to_file_path_package",
+        "base"
+    );
+
+    package_path_test_snapshot!(
+        package_path_to_file_path_module,
+        "src/test_data/rename/package_path_to_file_path_module",
+        "base/person"
+    );
+
+    package_path_test_snapshot!(
+        package_path_to_file_path_root_file,
+        "src/test_data/rename/package_path_to_file_path_root_file",
+        "config"
+    );
+
+    select_symbol_test_snapshot!(
+        select_symbol_person_name,
+        "src/test_data/rename/select_symbol_person_name",
+        "base",
+        "Person.name"
+    );
+
+    select_symbol_test_snapshot!(
+        select_symbol_name_first,
+        "src/test_data/rename/select_symbol_name_first",
+        "base",
+        "Name.first"
+    );
+
+    select_symbol_test_snapshot!(
+        select_symbol_person,
+        "src/test_data/rename/select_symbol_person",
+        "base",
+        "Person"
+    );
+
+    select_symbol_test_snapshot!(
+        select_symbol_var_a,
+        "src/test_data/rename/select_symbol_var_a",
+        "base",
+        "a"
+    );
+
+    select_symbol_test_snapshot!(
+        select_symbol_server_name,
+        "src/test_data/rename/select_symbol_server_name",
+        "base",
+        "Server.name"
+    );
+
+    select_symbol_test_snapshot!(
+        select_symbol_missing,
+        "src/test_data/rename/select_symbol_missing",
+        "base",
+        "name"
+    );
+
+    rename_symbol_test_snapshot!(
+        rename_schema,
+        "src/test_data/rename/rename_schema",
+        "base:Person",
+        "NewPerson"
+    );
+
+    rename_symbol_test_snapshot!(
+        rename_schema_attr,
+        "src/test_data/rename/rename_schema_attr",
+        "base:Person.name",
+        "new_name"
+    );
+
+    #[test]
+    fn apply_rename_changes_single_line() {
+        let path = fixture_root("src/test_data/rename/apply_rename_changes/main.k");
+        let key = path.to_str().expect("utf-8 fixture path").to_string();
+        let source = fs::read_to_string(&path)
+            .unwrap_or_else(|err| panic!("read {}: {err}", path.display()));
+        let changes = HashMap::from([(
+            key.clone(),
+            vec![TextEdit {
+                range: Range {
+                    start: Position {
+                        line: 2,
+                        character: 11,
+                    },
+                    end: Position {
+                        line: 2,
+                        character: 17,
+                    },
+                },
+                new_text: "Person2".to_string(),
+            }],
+        )]);
+        let result = apply_rename_changes(&changes, HashMap::from([(key.clone(), source)]))
+            .unwrap_or_else(|err| panic!("apply rename failed: {err}"));
+        insta::assert_snapshot!(format!("{:?}", result.get(&key).expect("renamed file")));
+    }
+
+    rename_on_code_test_snapshot!(
+        rename_symbol_on_code_schema,
+        "src/test_data/rename/rename_symbol_on_code_schema",
+        "base:Person",
+        "NewPerson"
+    );
+
+    rename_on_file_test_snapshot!(
+        rename_symbol_on_file_schema,
+        "src/test_data/rename/rename_symbol_on_file_schema",
+        "base:Person",
+        "NewPerson"
+    );
 }
