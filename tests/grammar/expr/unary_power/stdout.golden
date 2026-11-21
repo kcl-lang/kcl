@@ -1,0 +1,9 @@
+result: -4
+negated_power: -4
+negative_base: 4
+negative_exponent: 0.25
+positive: 4
+bitwise_not: -5
+product: -12
+sum: -3
+chained: -16

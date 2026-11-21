@@ -125,9 +125,16 @@ impl<'a> Parser<'a> {
 
     fn do_parse_simple_expr(&mut self, prec1: Precedence) -> NodeRef<Expr> {
         let token = self.token;
+        let x = self.parse_unary_expr();
+        self.parse_binary_expr(token, x, prec1)
+    }
 
-        let mut x = self.parse_unary_expr();
-
+    fn parse_binary_expr(
+        &mut self,
+        token: token::Token,
+        mut x: NodeRef<Expr>,
+        prec1: Precedence,
+    ) -> NodeRef<Expr> {
         let mut cmp_expr = Compare {
             left: x.clone(),
             ops: Vec::new(),
@@ -340,7 +347,10 @@ impl<'a> Parser<'a> {
         };
 
         self.bump();
+        let operand_token = self.token;
         let operand = self.parse_primary_expr();
+        // Exponentiation binds more tightly than unary operators.
+        let operand = self.parse_binary_expr(operand_token, operand, Precedence::Prefix);
 
         Box::new(Node::new_with_loc(
             Expr::Unary(UnaryExpr { op, operand }),

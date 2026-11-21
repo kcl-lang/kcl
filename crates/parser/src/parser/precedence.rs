@@ -33,10 +33,10 @@ pub enum Precedence {
     Sum,
     /// *, /, % //
     Product,
+    /// +X, -X, ~X
+    Prefix,
     /// **
     Power,
-    /// +X, -X, !X
-    Prefix,
 }
 
 impl From<Token> for Precedence {
