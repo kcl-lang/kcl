@@ -39,6 +39,9 @@ jobs:
           cargo zigbuild --target x86_64-unknown-linux-musl -r -p kcl-lib
           mkdir -p _build/dist/linux/core
           cp -f target/x86_64-unknown-linux-musl/release/libkcl.a _build/dist/linux/core
+          # The staticlib carries the LLVM bitcode of every upstream crate,
+          # and Go 1.26.11 refuses to link an archive that has it.
+          scripts/strip-llvm-bitcode.sh _build/dist/linux/core/libkcl.a
           make release
 
       - name: Read VERSION file
