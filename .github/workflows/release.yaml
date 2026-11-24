@@ -127,6 +127,15 @@ jobs:
           mkdir -p release/lib
           cp -f target/${{ matrix.lib_subpath }}/release/${{ matrix.lib_name }} release/lib/
 
+      # The musl staticlib is the only kcl artifact that is an archive, and
+      # rustc leaves the LLVM bitcode of every upstream crate in it. Go
+      # 1.26.11 refuses to link such an archive from a #cgo LDFLAGS, so the
+      # bitcode has to go before the artifact is published.
+      - name: "Strip the embedded LLVM bitcode (musl staticlib)"
+        if: matrix.lib_name == 'libkcl.a'
+        shell: bash
+        run: scripts/strip-llvm-bitcode.sh release/lib/libkcl.a
+
       - name: "Build kcl-lib (native: macOS)"
         if: matrix.lib_build == 'native' && matrix.os != 'windows-latest'
         shell: bash
